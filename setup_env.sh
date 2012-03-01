@@ -24,7 +24,7 @@ virtualenv env
 source env/bin/activate
 
 # install the required modules
-pip install -r requirements.txt
+pip install --upgrade -r requirements.txt
 
 # save the directory path to pwd.sh, used by some running scripts that need absolute paths
 export THISDIR=`pwd`
