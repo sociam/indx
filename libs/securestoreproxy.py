@@ -98,7 +98,11 @@ class SecureStoreProxy:
         rww_host = self.config.get("rww", "host") + ":" + self.config.get("rww", "port")
 
         response = http_get(rww_host, path)
-        ctype = response['type']
+
+        if "type" in response:
+            ctype = response['type']
+        else:
+            ctype = "text/plain"
 
         if response['status'] >= 200 and response['status'] <= 299:
             logging.debug("decrypting because: status of GET was " + str(response['status']))
