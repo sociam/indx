@@ -1,0 +1,6 @@
+@prefix webbox: <http://webbox.ecs.soton.ac.uk/ns#> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+
+<http://purl.org/net/das301.xrdf> <http://rdfs.org/sioc/ns#addressed_to> <http://danielsmith.eu/me#dan> .
+
+

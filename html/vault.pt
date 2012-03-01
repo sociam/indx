@@ -1,0 +1,69 @@
+<!doctype html>
+<!--[if lt IE 7]> <html class="no-js ie6 oldie" lang="en"> <![endif]-->
+<!--[if IE 7]>    <html class="no-js ie7 oldie" lang="en"> <![endif]-->
+<!--[if IE 8]>    <html class="no-js ie8 oldie" lang="en"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en"> <!--<![endif]-->
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+
+	<title></title>
+	<meta name="description" content="">
+	<meta name="author" content="">
+
+	<meta name="viewport" content="width=device-width,initial-scale=1">
+
+	<link rel="stylesheet" href="../css/style.css">
+
+	<script src="../js/libs/modernizr-2.0.6.min.js"></script>
+	<script src="../js/sha256.js"></script>
+</head>
+<body>
+
+<div id="container">
+	<header>
+        <h1>SecureStore</h1>
+
+        <p>This is a SecureStore v0.1 server.</p>
+
+
+	</header>
+	<div id="main" role="main">
+
+        <h2>Vault</h2>
+
+        <h3>Name: <span tal:content="vault.name"></span></h3>
+
+        <div id="set_encryption_box" class="error_box" tal:condition="python: not vault.has_key('passwordhash')">
+            <h3>Encryption</h3>
+            <p>You have not set up a password for this vault, you can do this now:</p>
+            <p><label for="input_password">Password: </label><input type="password" id="input_password" name="input_password" /></p>
+            <p>The password is never sent to the server or saved. You must generate the hash, which is then stored on the server:<p><button id="button_genhash">Generate Hash</button></p></p>
+            <p><label for="input_passhash">Hash: </label><input disabled="disabled" id="input_passhash" name="input_passhash" /></p>
+        </div>
+
+	</div>
+	<footer>
+
+	</footer>
+</div> <!--! end of #container -->
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+<script>window.jQuery || document.write('<script src="../js/libs/jquery-1.6.2.min.js"><\/script>')</script>
+
+<!-- scripts concatenated and minified via ant build script-->
+<script src="../js/plugins.js"></script>
+<script>
+window.vault = ${vault};
+</script>
+<script src="../js/script.js"></script>
+<!-- end scripts-->
+
+
+<!--[if lt IE 7 ]>
+	<script src="//ajax.googleapis.com/ajax/libs/chrome-frame/1.0.2/CFInstall.min.js"></script>
+	<script>window.attachEvent("onload",function(){CFInstall.check({mode:"overlay"})})</script>
+<![endif]-->
+
+</body>
+</html>

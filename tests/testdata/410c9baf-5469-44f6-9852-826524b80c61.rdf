@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rdf:RDF xmlns:rdf      = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns:rdfs     = "http://www.w3.org/2000/01/rdf-schema#"
+         xmlns:owl      = "http://www.w3.org/2002/07/owl#"
+         xmlns:bio      = "http://purl.org/vocab/bio/0.1/"
+         xmlns:dc       = "http://purl.org/dc/elements/1.1/"
+         xmlns:foaf     = "http://xmlns.com/foaf/0.1/"
+         xmlns:mo       = "http://purl.org/ontology/mo/"
+         xmlns:ov       = "http://open.vocab.org/terms/"
+         xmlns:rel      = "http://purl.org/vocab/relationship/"
+         xmlns:rev      = "http://purl.org/stuff/rev#"
+>
+
+<rdf:Description rdf:about="/music/artists/410c9baf-5469-44f6-9852-826524b80c61.rdf">
+  <rdfs:label>Description of the artist Autechre</rdfs:label>
+  <foaf:primaryTopic rdf:resource="/music/artists/410c9baf-5469-44f6-9852-826524b80c61#artist"/>
+</rdf:Description>
+
+<mo:MusicArtist rdf:about="/music/artists/410c9baf-5469-44f6-9852-826524b80c61#artist">
+    <rdf:type rdf:resource="http://purl.org/ontology/mo/MusicGroup" />
+  <foaf:name>Autechre</foaf:name>
+  <ov:sortLabel>Autechre</ov:sortLabel>
+  
+  <bio:event>
+    <bio:Birth>
+      <bio:date rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">1991</bio:date>
+    </bio:Birth>
+  </bio:event>
+  <foaf:page rdf:resource="/music/artists/410c9baf-5469-44f6-9852-826524b80c61.html" />
+  <owl:sameAs rdf:resource="http://dbpedia.org/resource/Autechre" />
+  <mo:musicbrainz rdf:resource="http://musicbrainz.org/artist/410c9baf-5469-44f6-9852-826524b80c61.html" />
+  <mo:image rdf:resource="http://static.bbc.co.uk/music/images/artists/234x132/410c9baf-5469-44f6-9852-826524b80c61.jpg" />
+
+
+    <foaf:homepage rdf:resource="http://warp.net/records/autechre" />
+    <mo:wikipedia rdf:resource="http://en.wikipedia.org/wiki/Autechre" />
+    <mo:imdb rdf:resource="http://www.imdb.com/name/nm1803949/" />
+    <mo:myspace rdf:resource="http://www.myspace.com/myslb" />
+
+  <mo:member rdf:resource="/music/artists/18da95e1-52a8-44e6-bcba-2ff5d35b01d2#artist" />
+  <mo:member rdf:resource="/music/artists/1d53ee1f-c299-4774-a365-e2956cc426a3#artist" />
+
+
+    <foaf:made>
+      <mo:Record>
+        <dc:title>Oversteps</dc:title>
+        
+        <mo:musicbrainz rdf:resource="http://musicbrainz.org/release/0474af49-be72-40ef-9d83-74d7ea616158.html" />
+        <rev:hasReview rdf:resource="/music/reviews/wpq4#review" />
+      </mo:Record>
+    </foaf:made>
+    <foaf:made>
+      <mo:Record>
+        <dc:title>Quaristice</dc:title>
+        
+        <mo:musicbrainz rdf:resource="http://musicbrainz.org/release/da6d7583-ebc9-4e21-ba42-e0d74a4c1823.html" />
+        <rev:hasReview rdf:resource="/music/reviews/xrn8#review" />
+      </mo:Record>
+    </foaf:made>
+    <foaf:made>
+      <mo:Record>
+        <dc:title>Untilted</dc:title>
+        
+        <mo:musicbrainz rdf:resource="http://musicbrainz.org/release/a2180edf-1250-4477-8830-07972c2b8f85.html" />
+        <rev:hasReview rdf:resource="/music/reviews/jqjw#review" />
+      </mo:Record>
+    </foaf:made>
+    <foaf:made>
+      <mo:Record>
+        <dc:title>Draft 7.30</dc:title>
+        
+        <mo:musicbrainz rdf:resource="http://musicbrainz.org/release/fdfc01e4-eeb3-4c9e-8d34-83c3f04993b3.html" />
+        <rev:hasReview rdf:resource="/music/reviews/rxqv#review" />
+      </mo:Record>
+    </foaf:made>
+    <foaf:made>
+      <mo:Record>
+        <dc:title>Gantz Graf</dc:title>
+        
+        <mo:musicbrainz rdf:resource="http://musicbrainz.org/release/5d1e8c2d-af99-4307-8c0a-44c713a727f4.html" />
+        <rev:hasReview rdf:resource="/music/reviews/f8rg#review" />
+      </mo:Record>
+    </foaf:made>
+
+</mo:MusicArtist>
+
+<mo:MusicArtist rdf:about="/music/artists/18da95e1-52a8-44e6-bcba-2ff5d35b01d2#artist">
+  <foaf:name>Sean Booth</foaf:name>
+</mo:MusicArtist>
+<mo:MusicArtist rdf:about="/music/artists/1d53ee1f-c299-4774-a365-e2956cc426a3#artist">
+  <foaf:name>Rob Brown</foaf:name>
+</mo:MusicArtist>
+
+
+
+</rdf:RDF>

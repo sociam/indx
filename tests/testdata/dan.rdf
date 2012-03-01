@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+         xmlns:foaf="http://xmlns.com/foaf/0.1/"
+         xmlns:contact="http://www.w3.org/2000/10/swap/pim/contact#" 
+         xmlns:air="http://www.daml.org/2001/10/html/airport-ont#"
+         xmlns:pos="http://www.w3.org/2003/01/geo/wgs84_pos#" 
+         xmlns:wn="http://xmlns.com/wordnet/1.6/"  
+         xmlns:cv="http://kaste.lv/~captsolo/semweb/resume/cv.rdfs#"
+         xmlns:cvt="http://kaste.lv/~captsolo/semweb/resume/base.rdfs#"
+         xmlns:dc="http://purl.org/dc/elements/1.1/"
+         xmlns:dct="http://purl.org/dc/terms/"
+	 xmlns:base="http://purl.org/net/das301.xrdf#"
+	 xmlns="http://purl.org/net/das301.xrdf#"
+         xmlns:webbox="http://webbox.ecs.soton.ac.uk/ns#"
+         xmlns:owl="http://www.w3.org/2002/07/owl#">
+
+  <foaf:PersonalProfileDocument rdf:about="">
+    <foaf:maker rdf:resource="http://danielsmith.eu/me#dan"/>
+    <foaf:primaryTopic rdf:resource="http://danielsmith.eu/me#dan"/>
+  </foaf:PersonalProfileDocument>
+
+  <rdf:Description rdf:about="">
+    <dc:title>FOAF for Daniel Smith</dc:title>
+    <dc:description>Friend-of-a-Friend description for Daniel Smith</dc:description>
+  </rdf:Description>
+
+  <foaf:Person rdf:about="http://danielsmith.eu/me#dan">
+    <owl:sameAs rdf:resource="http://purl.org/net/das301.xrdf#me"/> <!-- old name -->
+
+    <webbox:address rdf:resource="https://data.ld.is/webbox"/>
+
+    <foaf:name xml:lang="en">Daniel Alexander Smith</foaf:name>
+    <foaf:title>Dr</foaf:title>
+    <foaf:givenname>Daniel</foaf:givenname>
+    <foaf:firstName>Daniel</foaf:firstName>
+    <foaf:family_name>Smith</foaf:family_name>
+    <foaf:surname>Smith</foaf:surname>
+
+    <!-- university alum e-mail -->
+    <foaf:mbox_sha1sum>5709f82a90407d95dd1319e7a21dc9a21a5ad235</foaf:mbox_sha1sum>
+    <!-- personal mail -->
+    <foaf:mbox_sha1sum>12537007ca7fa876224de1469f2238f249984051</foaf:mbox_sha1sum>
+
+    <foaf:gender>male</foaf:gender>
+    <foaf:interest rdf:resource="http://www.w3.org/RDF/"/>
+    <foaf:homepage rdf:resource="http://danielsmith.eu/"/>
+    <foaf:depiction rdf:resource="http://users.ecs.soton.ac.uk/ds/images/IMG_1060-300px.jpg"/>
+    <foaf:schoolHomepage rdf:resource="http://www.ecs.soton.ac.uk/"/>
+    <foaf:pastProject rdf:resource="http://www.aktors.org/"/>
+    <foaf:pastProject rdf:resource="http://mspace.fm/"/>
+    <foaf:based_near>
+      <pos:Point>
+        <dc:title>University of Southampton</dc:title> 
+        <pos:lat>50.933930</pos:lat> 
+        <pos:long>-1.396087</pos:long> 
+      </pos:Point> 
+    </foaf:based_near> 
+    <contact:nearestAirport>  
+      <wn:Airport>
+        <dc:title>Southampton Airport</dc:title>
+        <air:name>Southampton</air:name> 
+        <air:iataCode>SOU</air:iataCode>
+        <air:icaoCode>EGHI</air:icaoCode> 
+        <air:sameIndividualAs rdf:resource="http://www.daml.org/cgi-bin/airport?SOU"/>
+        <owl:sameAs rdf:resource="http://www.daml.org/cgi-bin/airport?SOU"/>
+        <rdfs:seeAlso rdf:resource="http://www.daml.org/cgi-bin/airport?SOU"/>
+        <air:location>Southampton, United Kingdom</air:location>
+        <air:latitude>50.95</air:latitude>
+        <air:longitude>-1.3566666666666667</air:longitude>
+    	<air:elevation>44</air:elevation>
+    	<pos:lat>50.95</pos:lat>
+    	<pos:long>-1.3566666666666667</pos:long>
+       </wn:Airport>
+    </contact:nearestAirport>
+    <foaf:knows>
+      <foaf:Person>
+        <foaf:name>Steve Harris</foaf:name>
+        <foaf:mbox_sha1sum>c6644f4c0c8df465a740f13c4ebba73a010487b7</foaf:mbox_sha1sum>
+        <rdfs:seeAlso rdf:resource="http://www.purl.org/net/swh.xrdf"/>
+      </foaf:Person>
+    </foaf:knows>
+    <foaf:knows>
+      <foaf:Person>
+        <foaf:name>Nick Gibbins</foaf:name>
+        <foaf:mbox_sha1sum>37a62bbceb0e3a9c265ee1ab8072c743675c5c9c</foaf:mbox_sha1sum>
+        <rdfs:seeAlso rdf:resource="http://www.ecs.soton.ac.uk/~nmg/nmg-foaf.rdf"/>
+      </foaf:Person>
+    </foaf:knows>
+  </foaf:Person>
+
+</rdf:RDF>

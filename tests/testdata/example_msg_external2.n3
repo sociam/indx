@@ -1,0 +1,6 @@
+@prefix webbox: <http://webbox.ecs.soton.ac.uk/ns#> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+
+<http://www.bbc.co.uk/music/artists/7e54bb8a-d5c6-4dab-9bb8-a40b418e3532.rdf#artist> <http://rdfs.org/sioc/ns#addressed_to> <http://danielsmith.eu/me#dan> .
+
+

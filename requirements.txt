@@ -1,0 +1,10 @@
+rdflib>=3.1.0
+elementtree
+celementtree
+pycrypto
+chameleon
+lxml
+cherrypy
+m2crypto
+pyopenssl
+#https://github.com/Lawouach/WebSocket-for-Python/zipball/v0.1.5
