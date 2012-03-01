@@ -192,7 +192,50 @@ class WebBox:
                 return put_response
         # never reach here
 
+    def handle_update(self):
+        if "since" in self.req_qs:
+            # get the triples of all changed URIs since this repository URI version
+            since_repository_hash = self.req_qs['since'][0]
+        else:
+            since_repository_hash = None
+
+
+        uris_changed = self.journal.since(since_repository_hash)
+        logging.debug("URIs changed: %s" % str(uris_changed))
+
+        if len(uris_changed) > 0:
+
+            ntrips = ""
+            for uri in uris_changed:
+                query = "CONSTRUCT {?s ?p ?o} WHERE { GRAPH <%s> {?s ?p ?o}}" % uri
+                logging.debug("Sending query for triples as: %s " % query)
+
+                result = self.proxy.query_store.query(query, {"Accept": "text/plain"})
+                # graceful fail per U
+
+                rdf = result['data']
+                ntrips += rdf + "\n"
+
+            # TODO conneg
+            rdf_type = "text/plain" # text/plain is n-triples (really)
+
+            return {"data": ntrips, "status": 200, "type": rdf_type}
+
+        else:
+            # no update
+            logging.debug("Client is up to date")
+            return {"data": "", "status": 204}
+
+
+
     def do_GET(self):
+
+        logging.debug("path: %s req_path: %s" % (self.path, self.req_path))
+
+        # journal update called
+        if self.req_path == self.path + "/update":
+            return self.handle_update()
+
 
         if self.req_qs.has_key("query"):
             # SPARQL query because ?query= is present
