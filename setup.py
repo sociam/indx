@@ -20,6 +20,7 @@ DATA_FILES = [
  'securestore.cfg',
  'README.md',
  'rww',
+ 'logs', # should be empty!
  'tests',
  ]
 #OPTIONS = {'argv_emulation': True,
