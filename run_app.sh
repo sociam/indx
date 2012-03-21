@@ -60,10 +60,11 @@ cd "$SSDIR"
 
 # run the py2app runner and pass arguments along
 #./run "$@" >> "${LOG_SECURESTORE}" 2>> "${LOG_SECURESTORE}" &
-../MacOS/run "$@" &
+../MacOS/run "$@"
 export PID_SECURESTORE=$!
 
 # wait..
-cat
+echo "WebBox terminated, calling bashtrap..."
+bashtrap
 
 
