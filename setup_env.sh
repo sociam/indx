@@ -20,11 +20,11 @@
 
 
 # set up the virtualenv
-virtualenv env
+virtualenv -p /usr/local/bin/python env
 source env/bin/activate
 
 # install the required modules
-pip install --upgrade -r requirements.txt
+pip install --ignore-installed --upgrade -r requirements.txt
 
 # save the directory path to pwd.sh, used by some running scripts that need absolute paths
 export THISDIR=`pwd`

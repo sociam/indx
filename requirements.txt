@@ -2,7 +2,7 @@ rdflib>=3.1.0
 elementtree
 celementtree
 pycrypto
-chameleon
+#chameleon
 lxml
 cherrypy
 m2crypto

@@ -18,8 +18,8 @@
 
 
 import logging
+import cElementTree
 
-from cElementTree import iterparse
 from cStringIO import StringIO
 from lxml.builder import E
 from lxml import etree
@@ -40,7 +40,7 @@ class SparqlResults:
 
         logging.debug(data)
 
-        for event, elem in iterparse(StringIO(data), events=("start","end")):
+        for event, elem in cElementTree.iterparse(StringIO(data), events=("start","end")):
             if event == "start":
                 if elem.tag == '{http://www.w3.org/2005/sparql-results#}uri':
                     current_type = 'uri'
