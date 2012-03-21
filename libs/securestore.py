@@ -19,7 +19,6 @@
 
 import socket, os, urllib, posixpath, shutil, mimetypes, re, logging
 
-from chameleon import PageTemplate
 from SocketServer import BaseServer
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 from SimpleHTTPServer import SimpleHTTPRequestHandler
@@ -418,9 +417,10 @@ class SecureStoreRequestHandler:
         if source.name.endswith(".html"):
             # treat all *.html files as chameleon templates
             filedata = source.read()
-            template = PageTemplate(filedata)
-            rendered = template.render(**self.template_data)
-            return rendered
+#            template = PageTemplate(filedata)
+#            rendered = template.render(**self.template_data)
+#            return rendered
+            return filedata
         else:
             filedata = source.read()
             return filedata
