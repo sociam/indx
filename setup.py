@@ -9,27 +9,28 @@ from setuptools import setup
 
 APP = ['run.py']
 DATA_FILES = [
- 'libs',
  'html',
  'data',
+ 'securestore.cfg',
+ 'rww', # should be empty!
+ 'logs', # should be empty!
+
+# 'libs', # don't include, py2app compiles them in for us.
+
+ # don't really need these to run, but nice to include them
  'scripts',
  'setup_env.sh',
  'config2env.py',
- 'run.sh',
  'COPYING',
- 'securestore.cfg',
- 'README.md',
- 'rww',
- 'logs', # should be empty!
  'tests',
+ 'README.md',
  ]
-#OPTIONS = {'argv_emulation': True,
+
 OPTIONS = {
-#            'site_packages': True,
-#           'packages': ['chameleon'], # packages to be included on their own
-            'includes': # all external modules, taken from generate_includes.py
-                ['querycache', 'cStringIO', 'traceback', 'cherrypy', 'SimpleHTTPServer', 'subscriptions', 'cherrypy.lib.encoding', 'cherrypy.wsgiserver', 'rdfcrypto', 'webbox', 'BaseHTTPServer', 'shutil', 'hashlib', 'lxml.builder', 'cherrypy.wsgiserver.ssl_builtin', 'lxml', 'uuid', 'webboxhandler', 'base64', 'OpenSSL', 'urllib', 'securestore', 're', 'json', 'rdflib', 'fourstore', 'time', 'sqlite3', 'ConfigParser', 'SocketServer', 'glob', 'mimetypes', 'setuptools', 'httputils', 'journal', 'diskstore', 'urllib2', 'sys', 'certificates', 'M2Crypto', 'sparqlresults', 'webboxx509', 'pickle', 'Crypto.Cipher', 'os.path', 'posixpath', 'hashstorage', 'httplib', 'logging', 'socket', 'cElementTree', 'vaults', 'journalmodule', 'sparqlparse', 'urlparse', 'securestorewsgi', 'shelve', 'securestoreproxy', 'os', 'rdflib.graph', 'lxml._elementpath'],
-            }
+    'argv_emulation': True,
+    'includes': # all external modules, taken from generate_includes.py
+        ['querycache', 'cStringIO', 'traceback', 'cherrypy', 'SimpleHTTPServer', 'subscriptions', 'cherrypy.lib.encoding', 'cherrypy.wsgiserver', 'rdfcrypto', 'webbox', 'BaseHTTPServer', 'shutil', 'hashlib', 'lxml.builder', 'cherrypy.wsgiserver.ssl_builtin', 'lxml', 'uuid', 'webboxhandler', 'base64', 'OpenSSL', 'urllib', 'securestore', 're', 'json', 'rdflib', 'fourstore', 'time', 'sqlite3', 'ConfigParser', 'SocketServer', 'glob', 'mimetypes', 'setuptools', 'httputils', 'journal', 'diskstore', 'urllib2', 'sys', 'certificates', 'M2Crypto', 'sparqlresults', 'webboxx509', 'pickle', 'Crypto.Cipher', 'os.path', 'posixpath', 'hashstorage', 'httplib', 'logging', 'socket', 'cElementTree', 'vaults', 'journalmodule', 'sparqlparse', 'urlparse', 'securestorewsgi', 'shelve', 'securestoreproxy', 'os', 'rdflib.graph', 'lxml._elementpath'],
+    }
 
 setup(
     app=APP,

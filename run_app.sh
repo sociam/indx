@@ -20,7 +20,10 @@
 
 
 # to change back to current dir
-export SSDIR="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+export MACOSDIR="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$MACOSDIR/../Resources"
+
+export SSDIR=`pwd`
 export SECURESTORE_HOME="$SSDIR"
 
 
@@ -39,27 +42,25 @@ bashtrap()
     echo "done."
 }
 
-
-
-
 # set up bash trap, will exec bashtrap() function on ctrl-c
 trap bashtrap INT
 
 # run rww, output to log
+cd "$SSDIR"
 . scripts/run_rww.sh
 
 cd "$SSDIR"
-
 # run 4store, output to log
 . scripts/run_4store.sh
 
 cd "$SSDIR"
-
 # run securestore, output to log
-source env/bin/activate
+##source env/bin/activate
 . scripts/config.sh
-#valgrind python run.py >> "${LOG_SECURESTORE}" 2>> "${LOG_SECURESTORE}" &
-python run.py >> "${LOG_SECURESTORE}" 2>> "${LOG_SECURESTORE}" &
+
+# run the py2app runner and pass arguments along
+#./run "$@" >> "${LOG_SECURESTORE}" 2>> "${LOG_SECURESTORE}" &
+../MacOS/run "$@" &
 export PID_SECURESTORE=$!
 
 # wait..

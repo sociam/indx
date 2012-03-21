@@ -31,20 +31,35 @@ if __name__ == "__main__":
     import cherrypy.wsgiserver
     import cherrypy.wsgiserver.ssl_builtin
 
-    # securestore wsgi app module
-    from securestorewsgi import securestore_wsgi
 
     # websockets modules
 #    import ws4py.server.cherrypyserver
 #    from ws4py.server.handler.threadedhandler import EchoWebSocketHandler
 
 
-    # show debug messages in console
-    logging.basicConfig(level=logging.DEBUG)
 
     # read the config file
     config = ConfigParser.ConfigParser()
     config.read("securestore.cfg")
+
+    # set up logging to a file
+    logfile = config.get("securestore", "log")
+
+    # show debug messages in log
+#    logging.basicConfig(level=logging.DEBUG)
+
+    log_handler = logging.FileHandler(logfile, "a")
+    log_handler.setLevel(logging.DEBUG)
+
+    logger = logging.getLogger() # root logger
+    logger.addHandler(log_handler)
+    logger.debug("Logger initialised")
+    logger.setLevel(logging.DEBUG)
+
+
+    # securestore wsgi app module
+    from securestorewsgi import securestore_wsgi
+
 
     # get values to pass to cherrypy
     server_address = config.get("securestore","address")

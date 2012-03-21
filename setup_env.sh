@@ -26,7 +26,3 @@ source env/bin/activate
 # install the required modules
 pip install --ignore-installed --upgrade -r requirements.txt
 
-# save the directory path to pwd.sh, used by some running scripts that need absolute paths
-export THISDIR=`pwd`
-echo "export SECURESTORE_HOME=\"$THISDIR\"" > scripts/pwd.sh
-
