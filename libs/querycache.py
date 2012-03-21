@@ -21,12 +21,14 @@ import shelve, hashlib
 
 class QueryCache:
     def __init__(self, cache_file):
-        self.store = shelve.open(cache_file)
+#        self.store = shelve.open(cache_file)
+        self.store = None
 
     def hash_query_and_key(self, query, key):
-        if key is None:
-            key = ""
-        return hashlib.sha256(query + "::::" + key).hexdigest() 
+        return None
+#        if key is None:
+#            key = ""
+#        return hashlib.sha256(query + "::::" + key).hexdigest() 
 
     def add(self, query, key, results):
         pass

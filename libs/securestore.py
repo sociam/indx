@@ -119,10 +119,11 @@ class SecureStoreRequestHandler:
         self.proxy = SecureStoreProxy(self.server.config, self.server.hashstore, self.server.query_store) # i.e. SecureHTTPServer.config
 
         # put here because this will be per-user
-        self.vaults = Vaults(self.server.config.get("securestore","vaults"))
+#        self.vaults = Vaults(self.server.config.get("securestore","vaults"))
+        self.vaults = None # temp
 
         self.template_data = {'vaults': []}
-        self.template_data['vaults'] = self.vaults.get_all()
+#        self.template_data['vaults'] = self.vaults.get_all()
         self.web_prefix = "/web"
 
         url = urlparse(self.environment['REQUEST_URI'])
