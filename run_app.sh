@@ -45,6 +45,14 @@ bashtrap()
 # set up bash trap, will exec bashtrap() function on ctrl-c
 trap bashtrap INT
 
+cd "$SSDIR"
+# do initial set up
+if [ ! -f SETUP_DONE_V1 ]
+then
+    ./scripts/new_4store_kb.sh
+fi
+touch SETUP_DONE_V1
+
 # run rww, output to log
 cd "$SSDIR"
 . scripts/run_rww.sh
@@ -55,15 +63,13 @@ cd "$SSDIR"
 
 cd "$SSDIR"
 # run securestore, output to log
-##source env/bin/activate
 . scripts/config.sh
 
 # run the py2app runner and pass arguments along
-#./run "$@" >> "${LOG_SECURESTORE}" 2>> "${LOG_SECURESTORE}" &
 ../MacOS/run "$@"
 export PID_SECURESTORE=$!
 
-# wait..
+# terminate subprocesses of 4store and RWW
 echo "WebBox terminated, calling bashtrap..."
 bashtrap
 
