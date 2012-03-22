@@ -9,6 +9,7 @@ from setuptools import setup
 
 APP = ['run.py']
 DATA_FILES = [
+# 'webbox.icns', # assigned as icon of app in options
  'html',
  'data',
  'securestore.cfg',
@@ -28,6 +29,7 @@ DATA_FILES = [
  ]
 
 OPTIONS = {
+    'iconfile': 'webbox.icns',
     'argv_emulation': True,
     'includes': # all external modules, taken from generate_includes.py
         ['querycache', 'cStringIO', 'traceback', 'cherrypy', 'SimpleHTTPServer', 'subscriptions', 'cherrypy.lib.encoding', 'cherrypy.wsgiserver', 'rdfcrypto', 'webbox', 'BaseHTTPServer', 'shutil', 'hashlib', 'lxml.builder', 'cherrypy.wsgiserver.ssl_builtin', 'lxml', 'uuid', 'webboxhandler', 'base64', 'OpenSSL', 'urllib', 'securestore', 're', 'json', 'rdflib', 'fourstore', 'time', 'sqlite3', 'ConfigParser', 'SocketServer', 'glob', 'mimetypes', 'setuptools', 'httputils', 'journal', 'diskstore', 'urllib2', 'sys', 'certificates', 'M2Crypto', 'sparqlresults', 'webboxx509', 'pickle', 'Crypto.Cipher', 'os.path', 'posixpath', 'hashstorage', 'httplib', 'logging', 'socket', 'cElementTree', 'vaults', 'journalmodule', 'sparqlparse', 'urlparse', 'securestorewsgi', 'shelve', 'securestoreproxy', 'os', 'rdflib.graph', 'lxml._elementpath'],
