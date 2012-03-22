@@ -19,12 +19,9 @@
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
 
-export PATH="/Applications/4store.app/Contents/MacOS/bin:$PATH"
-
 DIR="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$DIR"
-
-. config.sh
+. config.sh # set up PATH
 
 4s-backend -D "$KBNAME" >> "$LOG_4S" 2>> "$LOG_4S" &
 export PID_4S_BACKEND=$!

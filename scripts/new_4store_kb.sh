@@ -18,10 +18,16 @@
 #    You should have received a copy of the GNU General Public License
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
+DIR="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$DIR"
+. config.sh # PATH etc
 
-export PATH="/Applications/4store.app/Contents/MacOS/bin:$PATH"
+if [ -d /var/lib/4store/$KBNAME ]
+then
+    echo "KB already exists! Not removing!"
+else
+    mkdir -p "/var/lib/4store/$KBNAME" # so this user owns it
+    4s-backend-setup "$KBNAME"
+fi
 
-. config.sh
-
-4s-backend-setup "$KBNAME"
 

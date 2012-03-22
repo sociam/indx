@@ -22,6 +22,8 @@ export THISDIR="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 #. "${THISDIR}/pwd.sh" # gives SECURESTORE_HOME
 
+export PATH="${SECURESTORE_HOME}/4store:$PATH"
+
 export PORT="8212"
 export KBNAME="securestore"
 export RWW_PORT="8213"
