@@ -49,7 +49,8 @@ cd "$SSDIR"
 # do initial set up
 if [ ! -f SETUP_DONE_V1 ]
 then
-    ./scripts/new_4store_kb.sh
+    ./scripts/setup_4store.sh # create /var/lib/4store (prompts for admin password)
+    ./scripts/new_4store_kb.sh # create securestore kb
 fi
 touch SETUP_DONE_V1
 
@@ -64,6 +65,8 @@ cd "$SSDIR"
 cd "$SSDIR"
 # run securestore, output to log
 . scripts/config.sh
+
+# TODO pop up a browser after "run" has started - put in run.py ?
 
 # run the py2app runner and pass arguments along
 ../MacOS/run "$@"

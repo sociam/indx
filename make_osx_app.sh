@@ -23,6 +23,7 @@ cp run_app.sh dist/WebBox.app/Contents/MacOS/
 
 # make all scripts executable
 find dist/WebBox.app -name '*.sh' -exec chmod +x {} \;
+chmod +x dist/WebBox.app/Contents/Resources/4store/*
 
 # replace run with run.sh in the bundle Info.plist
 python scripts/change_app_run_script.py dist/WebBox.app/Contents/Info.plist

@@ -12,7 +12,8 @@ DATA_FILES = [
  'html',
  'data',
  'securestore.cfg',
- 'rww', # should be empty!
+ 'rww',
+ '4store',
  'logs', # should be empty!
 
 # 'libs', # don't include, py2app compiles them in for us.
