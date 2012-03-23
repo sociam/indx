@@ -12,17 +12,15 @@ DATA_FILES = [
 # 'webbox.icns', # assigned as icon of app in options
  'html',
  'data',
- 'securestore.cfg',
  'rww',
  '4store',
- 'logs', # should be empty!
-
-# 'libs', # don't include, py2app compiles them in for us.
+ 'initial_setup.py',
+ 'config2env.py',
+ 'webbox.json.default',
+ 'scripts',
 
  # don't really need these to run, but nice to include them
- 'scripts',
  'setup_env.sh',
- 'config2env.py',
  'COPYING',
  'tests',
  'README.md',
