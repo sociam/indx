@@ -38,7 +38,7 @@ class Certificates:
         self.req_type = req_type # the type of query, e.g. the HTTP operation, GET/PUT/POST
         self.config = config # configuration from server
 
-        self.certstore = WebboxX509(self.config.get("securestore","certstore"))
+        self.certstore = WebboxX509(os.path.join(config['webbox_dir'],config['webbox']['data_dir'],config['webbox']['certstore']))
 
         logging.debug("new instance of certificates with path %s, query string %s and type %s" % (self.req_path, str(self.req_qs), self.req_type))
 

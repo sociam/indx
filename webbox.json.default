@@ -1,0 +1,53 @@
+{
+    # configuration of the webbox server and per-user location of data
+    "webbox": {
+        # HTTP server configuration
+        "address": "", # empty is default bind, specify an IP to bind to a specific interface
+        "port": "8211", # port to listen on
+        "hostname": "localhost", # hostname the server will use
+
+        # TLS/SSL configuration
+        "ssl_off": "false", # force SSL off/on
+        "ssl_cert": "server.crt", # relative to data_dir
+        "ssl_private_key": "server.key", # relative to data_dir
+
+        # root location of everything for this webbox
+        "data_dir": "data", # relative to webbox_dir (~/.webbox/)
+
+        # sqlite dbs
+        "vaults": "vaults", # relative to data_dir 
+        "hashstore": "hashstore", # relative to data_dir
+        "certstore": "certstore", # relative to data_dir
+        "querycache": "query_cache", # relative to data_dir
+        "subscriptions": "subscriptions",
+
+        # subdirectories
+        "file_dir": "files", # relative to data_dir
+        "log_dir": "logs", # relative to data_dir
+        "journal_dir": "journals", # relative to data_dir
+
+        "log": "webbox_server.log", # relative to logdir
+        "journalid": "webbox_journal", # relative to journal_dir
+
+        "url": "http://localhost:8211" # how the webbox sees itself (used to check owner in RDF)
+    },
+
+    # 4store configuration
+    "4store": {
+        "host": "localhost",
+        "port": "8212",
+        "kbname": "webbox_", # replaced with webbox_USERNAME by initial_setup.py
+        "put_path": "/data/",
+        "log": "4store.log" # relative to webbox:logdir
+    },
+
+    # rww configuration
+    "rww": {
+        "host": "localhost",
+        "port": "8213",
+        "put_path": "/",
+        "ld": "rww", # relative to webbox data dir
+        "jar": "rww/read-write-web.jar", # in app bundle
+        "log": "rww.log" # relative to webbox:logdir
+    }
+}

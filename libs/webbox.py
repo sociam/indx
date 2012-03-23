@@ -42,7 +42,7 @@ class WebBox:
     def __init__(self, server_url, path, req_type, req_path, req_qs, environ, proxy, file_dir, config):
         self.graph = "http://webbox.ecs.soton.ac.uk/ns#ReceivedGraph" # the default graph URI for 4store
 
-        self.subscriptions = Subscriptions(server_url)
+        self.subscriptions = Subscriptions(server_url, config)
 
         self.server_url = server_url # base url of the server, e.g. http://localhost:8212
         self.path = path # the path this module is associated with, e.g. /webbox
@@ -69,7 +69,7 @@ class WebBox:
         }
 
         #self.journal = Journal(self.uri2path(server_url))
-        self.journal = Journal(config.get("securestore", "journalid"))
+        self.journal = Journal(os.path.join(config['webbox_dir'],config['webbox']['data_dir'],config['webbox']['journal_dir']), config['webbox']['journalid'])
             
 
     def response(self, rfile):

@@ -38,15 +38,15 @@ class SecureStore:
         self.enabled_modules = {}
         self.registered_modules = {}
         self.query_store = None
-        self.url = self.config.get("securestore", "url")
-        self.filedir = self.config.get("securestore", "filedir")
+        self.url = config["webbox"]["url"]
+        self.filedir = os.path.join(config['webbox_dir'],config['webbox']['data_dir'],config['webbox']['file_dir'])
 
         logging.debug("New SecureStore inited.")
 
         """ Here you put the server-level objects """
-        self.hashstore = self.config.get("securestore","hashstore")
+        self.hashstore = os.path.join(config['webbox_dir'],config['webbox']['data_dir'],config['webbox']['hashstore'])
         self.docroot = os.getcwd() + "/html" # TODO configurable docroot ?
-        self.certstore = WebboxX509(self.config.get("securestore","certstore"))
+        self.certstore = WebboxX509(os.path.join(config['webbox_dir'],config['webbox']['data_dir'],config['webbox']['certstore']))
 
     def enable_module(self, module, name):
         """ Enable a module, e.g. that python module "module" has a name "name". """

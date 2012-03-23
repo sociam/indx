@@ -17,7 +17,7 @@
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import httplib, urllib, urllib2, logging
+import httplib, urllib, urllib2, logging, os
 
 from rdfcrypto import RDFCrypto
 from sparqlresults import SparqlResults
@@ -34,7 +34,7 @@ class SecureStoreProxy:
 
         self.key = None # for optional encryption
 
-        self.querycache = QueryCache(config.get("securestore", "querycache")) # to cache repeated queries
+        self.querycache = QueryCache(os.path.join(config['webbox_dir'],config['webbox']['data_dir'],config['webbox']['querycache']))
 
     def expire_store_cache(self):
         """ Called when new data is PUT/POSTed to the local store. """
@@ -95,7 +95,7 @@ class SecureStoreProxy:
         #TODO send the HTTP headers to the sub-servers
 
         # send file to rww
-        rww_host = self.config.get("rww", "host") + ":" + self.config.get("rww", "port")
+        rww_host = self.config["rww"]["host"] + ":" + self.config["rww"]["port"]
 
         response = http_get(rww_host, path)
 
@@ -137,8 +137,8 @@ class SecureStoreProxy:
 
 
         # send file to rww
-        rww_host = self.config.get("rww", "host") + ":" + self.config.get("rww", "port")
-        rww_path = self.config.get("rww", "put_path") + filename
+        rww_host = self.config["rww"]["host"] + ":" + self.config["rww"]["port"]
+        rww_path = self.config["rww"]["put_path"] + filename
         status2 = http_put(rww_host, rww_path, encrypted, "application/rdf+xml")
 
         self.expire_store_cache()
@@ -214,8 +214,8 @@ class SecureStoreProxy:
         status1 = self.query_store.post_rdf(encrypted, "application/rdf+xml", graph)
 
         # send file to rww
-        rww_host = self.config.get("rww", "host") + ":" + self.config.get("rww", "port")
-        rww_path = self.config.get("rww", "put_path") + filename
+        rww_host = self.config["rww"]["host"] + ":" + self.config["rww"]["port"]
+        rww_path = self.config["rww"]["put_path"] + filename
         logging.debug("POST to "+rww_host+rww_path)
         status2 = self.send_post(rww_host, rww_path, encrypted, {"Content-type": "application/rdf+xml"})
 

@@ -24,7 +24,7 @@ cd "$DIR"
 
 if [ -d /var/lib/4store/$KBNAME ]
 then
-    echo "KB already exists! Not removing!"
+    echo "KB $KBNAME already exists! Not removing!"
 else
     mkdir -p "/var/lib/4store/$KBNAME" # so this user owns it
     4s-backend-setup "$KBNAME"

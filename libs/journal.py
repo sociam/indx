@@ -22,14 +22,12 @@ import uuid, os, sqlite3, logging
 class Journal:
     """ A journal of all POSTs and PUTs to the store. """
 
-    basedir = "data" + os.sep + "journals" # TODO customisable
-
-    def __init__(self, journalid):
+    def __init__(self, basedir, journalid):
         """ Initialise with a journal. """
         # TODO connect to journal with id: "journalid"
 
-        self.dir = Journal.basedir + os.sep + journalid
-        self.db = Journal.basedir + os.sep + journalid + ".sqlite"
+        self.dir = basedir + os.sep + journalid
+        self.db = basedir + os.sep + journalid + ".sqlite"
         
         if not os.path.exists(self.dir):
             os.makedirs(self.dir)

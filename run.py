@@ -18,11 +18,15 @@
 
 
 # import core modules
-import sys, os, logging
+import sys, os, logging, json
 import ConfigParser
 
 # add ./libs/ to the python path
 sys.path.append(os.path.join(os.path.dirname(__file__), "libs")) 
+
+# per user webbox configuration and data
+webbox_dir = os.path.expanduser('~'+os.sep+".webbox")
+webbox_config = webbox_dir + os.sep + "webbox.json"
 
 if __name__ == "__main__":
 
@@ -31,23 +35,23 @@ if __name__ == "__main__":
     import cherrypy.wsgiserver
     import cherrypy.wsgiserver.ssl_builtin
 
-
     # websockets modules
 #    import ws4py.server.cherrypyserver
 #    from ws4py.server.handler.threadedhandler import EchoWebSocketHandler
 
-
-
     # read the config file
-    config = ConfigParser.ConfigParser()
-    config.read("securestore.cfg")
+    conf_fh = open(webbox_config, "r")
+    config = json.load(conf_fh)
+    conf_fh.close()
+
+    # add the webbox path to the config
+    config['webbox_dir'] = webbox_dir
 
     # set up logging to a file
-    logfile = config.get("securestore", "log")
+    logdir = os.path.join(webbox_dir,config['webbox']['data_dir'],config['webbox']['log_dir'])
+    logfile = os.path.join(logdir, config['webbox']['log'])
 
     # show debug messages in log
-#    logging.basicConfig(level=logging.DEBUG)
-
     log_handler = logging.FileHandler(logfile, "a")
     log_handler.setLevel(logging.DEBUG)
 
@@ -56,27 +60,63 @@ if __name__ == "__main__":
     logger.debug("Logger initialised")
     logger.setLevel(logging.DEBUG)
 
+    # securestore wsgi app
+    from securestorewsgi import SecureStoreWSGI 
 
-    # securestore wsgi app module
-    from securestorewsgi import securestore_wsgi
+
+    # import SecureStore module
+    from securestore import SecureStore
+    ss = SecureStore(config)
+
+    # register the WebBox module under the name "webbox" - this name is then used in the config file to define paths
+    from webbox import WebBox
+    ss.enable_module(WebBox, "webbox")
+    ss.register_module("webbox", "/webbox")
+
+    # register the certificate generation JSON module
+    from certificates import Certificates
+    ss.enable_module(Certificates, "certificates")
+    ss.register_module("certificates", "/certificates")
+
+    # register the journal update module
+    from journalmodule import JournalModule
+    ss.enable_module(JournalModule, "journal")
+    ss.register_module("journal", "/update")
+
+    # register and set the query store to 4store
+    from fourstore import FourStore
+    ss.set_query_store(FourStore)
+
+    # register and set the query store to the in-memory pure python CwmStore
+    #from cwm import CwmStore
+    #ss.setQueryStore(CwmStore)
+
+    def securestore_wsgi(environ, start_response):
+        global ss
+        global config
+    #    def ws(self):
+    #        logging.debug("ws (websockets function) called in securestore_wsgi") 
+        ssw = SecureStoreWSGI(environ, start_response, config, ss)
+        return [ssw.respond()]
+
 
 
     # get values to pass to cherrypy
-    server_address = config.get("securestore","address")
+    server_address = config['webbox']['address']
     if server_address == "":
         server_address = "0.0.0.0"
-    server_port = int(config.get("securestore","port"))
-    server_hostname = config.get("securestore","hostname")
-    server_cert = config.get("securestore", "cert")
-    server_private_key = config.get("securestore", "private_key")
+    server_port = int(config['webbox']['port'])
+    server_hostname = config['webbox']['hostname']
+    server_cert = os.path.join(webbox_dir,config['webbox']['data_dir'],config['webbox']['ssl_cert'])
+    server_private_key =  os.path.join(webbox_dir,config['webbox']['data_dir'],config['webbox']['ssl_private_key'])
 
     # set cherrypy to use gzip compression
     cherrypy.config.update({'gzipfilter.mime_types': ['text/html','text/plain','application/javascript','text/css']})
     cherrypy.config.update({'gzipfilter.on': True})
 
     # set up cherrypy logging
-    access_file = os.path.abspath(".") + os.sep + config.get("securestore","logdir") + os.sep + "access.log"
-    error_file = os.path.abspath(".") + os.sep + config.get("securestore","logdir") + os.sep + "error.log"
+    access_file = os.path.join(logdir, 'access.log')
+    error_file = os.path.join(logdir, 'error.log')
     cherrypy.config.update({"log.access_file": access_file,
                             "log.error_file" : error_file,
                            })
@@ -91,6 +131,7 @@ if __name__ == "__main__":
 #    cherrypy.config.update({'tools.websocket.on': True,
 #                            'tools.websocket.handler_cls': EchoWebSocketHandler})
 
+
     # create a cherrypy server
     server = cherrypy.wsgiserver.CherryPyWSGIServer(
         (server_address, server_port), securestore_wsgi, server_name=server_hostname, numthreads=20)
@@ -98,7 +139,7 @@ if __name__ == "__main__":
 
     # enable ssl (or not)
     try:
-        ssl_off = config.get("securestore","ssl_off")
+        ssl_off = config['webbox']['ssl_off']
     except Exception as e:
         # not found
         ssl_off = False

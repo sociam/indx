@@ -19,4 +19,4 @@
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
 # 3 year cert
-openssl req -new -x509 -keyout server.key -out server.pem -days 1095 -nodes
+openssl req -new -x509 -keyout server.key -out server.crt -days 1095 -nodes

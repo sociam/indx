@@ -18,7 +18,6 @@
 #    You should have received a copy of the GNU General Public License
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
-
 # to change back to current dir
 export SSDIR="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 export SECURESTORE_HOME="$SSDIR"
@@ -45,7 +44,21 @@ bashtrap()
 # set up bash trap, will exec bashtrap() function on ctrl-c
 trap bashtrap INT
 
+
+cd "$SSDIR"
+# do initial set up
+if [ ! -f SETUP_DONE_V1 ]
+then
+    python initial_setup.py # create ~/.webbox/ and set up configuration script
+    ./scripts/setup_4store.sh # create /var/lib/4store (prompts for admin password)
+    ./scripts/new_4store_kb.sh # create webbox kb
+fi
+touch SETUP_DONE_V1
+
+python config2env.py # set up bash configuration (config.sh) (important to run after the initial set up)
+
 # run rww, output to log
+cd "$SSDIR"
 . scripts/run_rww.sh
 
 cd "$SSDIR"

@@ -37,7 +37,7 @@ class JournalModule:
         self.req_type = req_type # the type of query, e.g. the HTTP operation, GET/PUT/POST
         self.config = config # configuration from server
 
-        self.journal = Journal(config.get("securestore", "journalid"))
+        self.journal = Journal(os.path.join(config['webbox_dir'],config['webbox']['data_dir'],config['webbox']['journal_dir']), config['webbox']['journalid'])
 
         logging.debug("new instance of journalmodule with path %s, query string %s and type %s" % (self.req_path, str(self.req_qs), self.req_type))
 

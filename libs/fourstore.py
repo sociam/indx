@@ -27,8 +27,8 @@ class FourStore:
     """ Interface to a 4store SPARQL server. """
 
     def __init__(self, config):
-        self.host = config.get("4store", "host") + ":" + config.get("4store", "port") # specified in config
-        self.put_path = config.get("4store", "put_path")
+        self.host = config["4store"]["host"] + ":" + config["4store"]["port"] # specified in config
+        self.put_path = config["4store"]["put_path"]
         self.path = "/sparql/" # 4store query url prefix
 
     def query(self, sparql_query, headers={}):
