@@ -29,7 +29,7 @@
         "log": "webbox_server.log", # relative to logdir
         "journalid": "webbox_journal", # relative to journal_dir
 
-        "url": "http://localhost:8211" # how the webbox sees itself (used to check owner in RDF)
+        "url": "https://localhost:8211" # how the webbox sees itself (used to check owner in RDF)
     },
 
     # 4store configuration
