@@ -52,6 +52,9 @@ cd "$SSDIR"
 if [ ! -f SETUP_DONE_V1 ]
 then
     python initial_setup.py # create ~/.webbox/ and set up configuration script
+    python config2env.py # set up bash configuration (config.sh) (important to run after the initial set up)
+
+    # these use config.sh
     ./scripts/setup_4store.sh # create /var/lib/4store (prompts for admin password)
     ./scripts/new_4store_kb.sh # create webbox kb
 fi
