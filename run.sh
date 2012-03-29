@@ -45,17 +45,15 @@ bashtrap()
 trap bashtrap INT
 
 
+# do initial per-user set up
 cd "$SSDIR"
-# do initial set up
-if [ ! -f SETUP_DONE_V1 ]
-then
-    python initial_setup.py # create ~/.webbox/ and set up configuration script
-    ./scripts/setup_4store.sh # create /var/lib/4store (prompts for admin password)
-    ./scripts/new_4store_kb.sh # create webbox kb
-fi
-touch SETUP_DONE_V1
-
+python initial_setup.py # create ~/.webbox/ and set up configuration script (non-destructive)
 python config2env.py # set up bash configuration (config.sh) (important to run after the initial set up)
+
+./scripts/setup_4store.sh # create /var/lib/4store (prompts for admin password)
+./scripts/new_4store_kb.sh # create webbox kb (if not exists)
+
+
 
 # run rww, output to log
 cd "$SSDIR"
