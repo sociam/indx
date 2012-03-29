@@ -153,7 +153,7 @@ if __name__ == "__main__":
     # run the server
     def on_start(*args, **kwargs):
         import webbrowser
-        webbrowser.open("https://localhost:8211/") # FIXME set to config host
+        webbrowser.open(config['webbox']['url']) # FIXME set to config host
 
     s1 = cherrypy.process.servers.ServerAdapter(cherrypy.engine, server)
     s1.subscribe()
