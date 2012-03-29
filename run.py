@@ -151,5 +151,13 @@ if __name__ == "__main__":
         server.ssl_adapter = cherrypy.wsgiserver.ssl_builtin.BuiltinSSLAdapter(server_cert,server_private_key,None)
 
     # run the server
-    server.start()
+    def on_start(*args, **kwargs):
+        import webbrowser
+        webbrowser.open("https://localhost:8211/") # FIXME set to config host
+
+    s1 = cherrypy.process.servers.ServerAdapter(cherrypy.engine, server)
+    s1.subscribe()
+    cherrypy.engine.start_with_callback(on_start)
+
+#    server.start()
 
