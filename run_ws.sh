@@ -18,20 +18,18 @@
 #    You should have received a copy of the GNU General Public License
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
+# to change back to current dir
+export SSDIR="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$SSDIR"
 
-export CRYPT_KEY="test"
-export URI_SCHEME="https"
+# run wsupdateserver, output to log
+source env/bin/activate
+. scripts/config.sh
 
-echo "PUTing RDF file:"
-curl -v -k -T 'testdata/410c9baf-5469-44f6-9852-826524b80c61.rdf' "$URI_SCHEME://127.0.0.1:8211/autechre.rdf?key=$CRYPT_KEY"
+# TODO set up config
+export LOG_WSUPDATE="wsupdate.log"
 
-echo "GETing and decrypting an RDF file:"
-curl -v -k "$URI_SCHEME://127.0.0.1:8211/autechre.rdf?key=$CRYPT_KEY"
-
-echo "QUERYing and NOT decrypting:"
-curl -v -k "$URI_SCHEME://127.0.0.1:8211/query/?query=SELECT+*+WHERE+%7B+%3Fs+%3Fp+%3Fo+%7D+LIMIT+10&"
-
-echo "QUERYing and decrypting:"
-curl -v -k "$URI_SCHEME://127.0.0.1:8211/query/?query=SELECT+*+WHERE+%7B+%3Fs+%3Fp+%3Fo+%7D+LIMIT+10&key=$CRYPT_KEY"
-
+# TODO for deployment run this in background and kill with 4s/rww
+python wsupdate/wsupdate.py >> "${LOG_WSUPDATE}" 2>> "${LOG_WSUPDATE}" &
+export PID_WSUPDATE=$!
 

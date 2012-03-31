@@ -24,5 +24,6 @@ virtualenv -p /usr/local/bin/python env
 source env/bin/activate
 
 # install the required modules
-pip install --ignore-installed --upgrade -r requirements.txt
+#pip install --ignore-installed --upgrade -r requirements.txt
+pip install --ignore-installed -r requirements.txt
 

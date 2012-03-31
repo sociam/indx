@@ -57,17 +57,17 @@ class SecureStoreWSGI:
                 # wow. so apparently we have to do this now. hm
                 if hasattr(e, "code"):
                     logging.debug("sending code")
-                    self.start_response(str(e.code), [("Content-Type", ctype)])
+                    self.start_response(str(e.code)+" ", [("Content-Type", ctype)])
                 elif hasattr(e, "status"):
                     logging.debug("sending status")
-                    self.start_response(str(e.status), [("Content-Type", ctype)])
+                    self.start_response(str(e.status)+" ", [("Content-Type", ctype)])
 
                 # TODO figure out how to get the REAL error back.
                 return "Error."
         except Exception as e:
             """ Global error handling, something very bad happened. """
             logging.error("GLOBAL ERROR: " + str(e))
-            self.start_response("500", [('Content-Type','text/plain')])
+            self.start_response("500 Internal Server Error", [('Content-Type','text/plain')])
             return "Unknown Error."
 
 
@@ -86,7 +86,7 @@ class SecureStoreWSGI:
         if latest_hash['previous'] is not None:
             self.headers.append( ('X-ETag-Previous', "W/\"%s\""%latest_hash['previous']) ) # 'W/' means a Weak ETag
 
-        self.start_response(self.code, self.headers)
+        self.start_response(self.code+" Status", self.headers)
 
         return response2
 

@@ -1,5 +1,3 @@
-#!/bin/bash
-
 #    This file is part of WebBox.
 #
 #    Copyright 2011-2012 Daniel Alexander Smith
@@ -19,19 +17,11 @@
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
 
-export CRYPT_KEY="test"
-export URI_SCHEME="https"
+# A simple standalone HTTP and WebSockets server to relay and broadcast update messages to subscribers
 
-echo "PUTing RDF file:"
-curl -v -k -T 'testdata/410c9baf-5469-44f6-9852-826524b80c61.rdf' "$URI_SCHEME://127.0.0.1:8211/autechre.rdf?key=$CRYPT_KEY"
+from wsupdateserver import WSUpdateServer
 
-echo "GETing and decrypting an RDF file:"
-curl -v -k "$URI_SCHEME://127.0.0.1:8211/autechre.rdf?key=$CRYPT_KEY"
-
-echo "QUERYing and NOT decrypting:"
-curl -v -k "$URI_SCHEME://127.0.0.1:8211/query/?query=SELECT+*+WHERE+%7B+%3Fs+%3Fp+%3Fo+%7D+LIMIT+10&"
-
-echo "QUERYing and decrypting:"
-curl -v -k "$URI_SCHEME://127.0.0.1:8211/query/?query=SELECT+*+WHERE+%7B+%3Fs+%3Fp+%3Fo+%7D+LIMIT+10&key=$CRYPT_KEY"
+wsupdate = WSUpdateServer()
+wsupdate.run()
 
 

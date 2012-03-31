@@ -126,9 +126,13 @@ class SecureStoreRequestHandler:
 #        self.template_data['vaults'] = self.vaults.get_all()
         self.web_prefix = "/web"
 
-        url = urlparse(self.environment['REQUEST_URI'])
-        self.path = url.path
-        self.req_qs = parse_qs(url.query)
+        if "REQUEST_URI" in self.environment:
+            url = urlparse(self.environment['REQUEST_URI'])
+            self.path = url.path
+            self.req_qs = parse_qs(url.query)
+        else:
+            self.path = self.environment['PATH_INFO']
+            self.req_qs = parse_qs(self.environment['QUERY_STRING'])
 
         # these get overridden by the send_response and send_header methods, and sent by end_headers
         self.response_headers = []

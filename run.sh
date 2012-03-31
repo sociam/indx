@@ -35,6 +35,8 @@ bashtrap()
     kill "$PID_4S_HTTPD"
     echo "Killing 4s-backend, pid: $PID_4S_BACKEND"
     kill "$PID_4S_BACKEND"
+    echo "Killing websockets server, pid: $PID_WSUPDATE"
+    kill "$PID_WSUPDATE"
     echo "done."
 }
 
@@ -64,12 +66,15 @@ cd "$SSDIR"
 # run 4store, output to log
 . scripts/run_4store.sh
 
+# run websockets server
+cd "$SSDIR"
+. run_ws.sh
+
 cd "$SSDIR"
 
 # run securestore, output to log
 source env/bin/activate
 . scripts/config.sh
-#valgrind python run.py >> "${LOG_SECURESTORE}" 2>> "${LOG_SECURESTORE}" &
 python run.py >> "${LOG_SECURESTORE}" 2>> "${LOG_SECURESTORE}" &
 export PID_SECURESTORE=$!
 

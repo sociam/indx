@@ -26,7 +26,7 @@ from urlparse import urlparse
 from webboxhandler import WebBoxHandler
 from subscriptions import Subscriptions
 from journal import Journal
-
+from websocketclient import WebSocketClient
 
 class WebBox:
     # to use like WebBox.to_predicate
@@ -70,6 +70,7 @@ class WebBox:
 
         #self.journal = Journal(self.uri2path(server_url))
         self.journal = Journal(os.path.join(config['webbox_dir'],config['webbox']['data_dir'],config['webbox']['journal_dir']), config['webbox']['journalid'])
+        self.websocket = WebSocketClient(host="localhost",port=8214) #TODO from config file
             
 
     def response(self, rfile):
@@ -85,6 +86,34 @@ class WebBox:
 
         repository_hash = uuid.uuid1().hex # TODO in future, make this a hash instead of a uuid
         self.journal.add(repository_hash, [graphuri])
+
+        self.update_websocket_clients()
+
+    def update_websocket_clients(self):
+        """ There has been an update to the webbox store, so send the changes to the clients connected via websocket. """
+        logging.debug("Updating websocket clients...")
+
+        hashes = self.journal.get_version_hashes()
+        if "previous" in hashes:
+            previous = hashes["previous"]
+            
+            uris_changed = self.journal.since(previous)
+            logging.debug("URIs changed: %s" % str(uris_changed))
+
+            if len(uris_changed) > 0:
+
+                ntrips = ""
+                for uri in uris_changed:
+                    query = "CONSTRUCT {?s ?p ?o} WHERE { GRAPH <%s> {?s ?p ?o}}" % uri
+                    logging.debug("Sending query for triples as: %s " % query)
+
+                    result = self.proxy.query_store.query(query, {"Accept": "text/plain"})
+                    # graceful fail per U
+
+                    rdf = result['data']
+                    ntrips += rdf + "\n"
+
+                self.websocket.sendMessage(ntrips, False)
 
 
     def updated_resource(self, uri, type):

@@ -30,14 +30,13 @@ webbox_config = webbox_dir + os.sep + "webbox.json"
 
 if __name__ == "__main__":
 
-    # cherrypy http server modules
-    import cherrypy
-    import cherrypy.wsgiserver
-    import cherrypy.wsgiserver.ssl_builtin
-
-    # websockets modules
-#    import ws4py.server.cherrypyserver
-#    from ws4py.server.handler.threadedhandler import EchoWebSocketHandler
+    # twisted wsgi server modules
+    from twisted.internet import reactor
+    from twisted.web.server import Site
+    from twisted.web.static import File
+    from twisted.web.wsgi import WSGIResource
+    from twisted.internet import reactor, ssl
+    from twisted.internet.defer import Deferred
 
     # read the config file
     conf_fh = open(webbox_config, "r")
@@ -91,17 +90,14 @@ if __name__ == "__main__":
     #from cwm import CwmStore
     #ss.setQueryStore(CwmStore)
 
+    # WSGI application
     def securestore_wsgi(environ, start_response):
         global ss
         global config
-    #    def ws(self):
-    #        logging.debug("ws (websockets function) called in securestore_wsgi") 
         ssw = SecureStoreWSGI(environ, start_response, config, ss)
         return [ssw.respond()]
 
-
-
-    # get values to pass to cherrypy
+    # get values to pass to web server
     server_address = config['webbox']['address']
     if server_address == "":
         server_address = "0.0.0.0"
@@ -110,32 +106,11 @@ if __name__ == "__main__":
     server_cert = os.path.join(webbox_dir,config['webbox']['data_dir'],config['webbox']['ssl_cert'])
     server_private_key =  os.path.join(webbox_dir,config['webbox']['data_dir'],config['webbox']['ssl_private_key'])
 
-    # set cherrypy to use gzip compression
-    cherrypy.config.update({'gzipfilter.mime_types': ['text/html','text/plain','application/javascript','text/css']})
-    cherrypy.config.update({'gzipfilter.on': True})
+    # TODO set up twisted to use gzip compression
 
-    # set up cherrypy logging
-    access_file = os.path.join(logdir, 'access.log')
-    error_file = os.path.join(logdir, 'error.log')
-    cherrypy.config.update({"log.access_file": access_file,
-                            "log.error_file" : error_file,
-                           })
-    cherrypy.config.update({'log.screen': False})
-    cherrypy.log.access_file = access_file
-    cherrypy.log.error_file = error_file
-
-    # enable websocket support
-#    ws4py.server.cherrypyserver.WebSocketPlugin(cherrypy.engine).subscribe()
-#    cherrypy.tools.websocket = ws4py.server.cherrypyserver.WebSocketTool()
-
-#    cherrypy.config.update({'tools.websocket.on': True,
-#                            'tools.websocket.handler_cls': EchoWebSocketHandler})
-
-
-    # create a cherrypy server
-    server = cherrypy.wsgiserver.CherryPyWSGIServer(
-        (server_address, server_port), securestore_wsgi, server_name=server_hostname, numthreads=20)
-
+    # create a twisted web and WSGI server
+    resource = WSGIResource(reactor, reactor.getThreadPool(), securestore_wsgi)
+    factory = Site(resource)
 
     # enable ssl (or not)
     try:
@@ -146,18 +121,25 @@ if __name__ == "__main__":
 
     if ssl_off == "true":
         logging.debug("SSL is OFF, connections to this SecureStore are not encrypted.")
+        reactor.listenTCP(server_port, factory)
     else:
         logging.debug("SSL ON.")
-        server.ssl_adapter = cherrypy.wsgiserver.ssl_builtin.BuiltinSSLAdapter(server_cert,server_private_key,None)
+        sslContext = ssl.DefaultOpenSSLContextFactory(server_private_key, server_cert)
+        reactor.listenSSL(server_port, factory, contextFactory=sslContext)
 
-    # run the server
-    def on_start(*args, **kwargs):
+    # load a web browser once the server has started
+    def on_start(arg):
+        print "on_start: "+str(arg)
         import webbrowser
         webbrowser.open(config['webbox']['url'])
+    def start_failed(arg):
+        print "start_failed: "+str(arg)
 
-    s1 = cherrypy.process.servers.ServerAdapter(cherrypy.engine, server)
-    s1.subscribe()
-    cherrypy.engine.start_with_callback(on_start)
+    # calls the web browser opening function above when the reactor has finished starting up
+    d = Deferred()
+    d.addCallbacks(on_start, start_failed)
+    reactor.callWhenRunning(d.callback, "WebBox HTTP startup")
 
-#    server.start()
+    # run the twisted server
+    reactor.run()
 
