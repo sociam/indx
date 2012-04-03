@@ -1,0 +1,26 @@
+<html>
+   <head>
+      <script type="text/javascript">
+         window.onload = function() {
+ 
+            var ws_uri = "ws://localhost:8214";
+ 
+            if ("WebSocket" in window) {
+               webSocket = new WebSocket(ws_uri);
+            }
+            else {
+               // Firefox 7-10 prefixed the WebSocket object
+               webSocket = new MozWebSocket(ws_uri);
+            }
+ 
+            webSocket.onmessage = function(e) {
+               console.log("Got echo: " + e.data);
+            }
+         }
+      </script>
+   </head>
+   <body>
+      <h1>Autobahn WebSockets Echo Test</h1>
+      <button onclick='webSocket.send("Hello, world!");'>Send Hello</button>
+   </body>
+</html>
