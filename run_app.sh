@@ -41,6 +41,8 @@ bashtrap()
     kill "$PID_4S_HTTPD"
     echo "Killing 4s-backend, pid: $PID_4S_BACKEND"
     kill "$PID_4S_BACKEND"
+    echo "Killing websockets server, pid: $PID_WSUPDATE"
+    kill "$PID_WSUPDATE"
     echo "done."
 }
 
@@ -64,6 +66,10 @@ cd "$SSDIR"
 cd "$SSDIR"
 # run 4store, output to log
 . scripts/run_4store.sh
+
+# run websockets server
+cd "$SSDIR"
+. run_ws.sh
 
 cd "$SSDIR"
 # run securestore, output to log
