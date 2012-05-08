@@ -86,7 +86,21 @@ class SecureStoreWSGI:
         if latest_hash['previous'] is not None:
             self.headers.append( ('X-ETag-Previous', "W/\"%s\""%latest_hash['previous']) ) # 'W/' means a Weak ETag
 
-        self.start_response(self.code+" Status", self.headers)
+        status_txt = "Status"
+
+        self.code = str(self.code)
+        if self.code == "200":
+            status_txt = "OK"
+        elif self.code == "201":
+            status_txt = "Created"
+        elif self.code == "500":
+            status_txt = "Internal Server Error"
+        elif self.code == "404":
+            status_txt = "Not Found"
+        elif self.code == "301" or self.code == "302":
+            status_txt = "Redirect"
+
+        self.start_response(self.code+" "+status_txt, self.headers)
 
         return response2
 
