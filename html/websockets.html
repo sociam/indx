@@ -1,7 +1,19 @@
 <html>
    <head>
+      <link rel="stylesheet" href="css/style.css">
+      <title>WebBox WebSockets Update Test</title>
+      <style>
+        #output {
+            min-height: 75%;
+            height: 75%;
+            max-height: 75%;
+            overflow: auto;
+            border: 1px solid #000;
+        }
+      </style>
+      <script type="text/javascript" src="js/libs/jquery-1.6.2.min.js"></script>
       <script type="text/javascript">
-         window.onload = function() {
+         $(document).ready(function() {
  
             var ws_uri = "ws://localhost:8214";
  
@@ -13,14 +25,21 @@
                webSocket = new MozWebSocket(ws_uri);
             }
  
+            $("#status").html("Listening. Put something in your WebBox to see the update here.");
+
             webSocket.onmessage = function(e) {
-               console.log("Got echo: " + e.data);
+                var data = e.data;
+                data = data.replace(/&/g, "&amp;");
+                data = data.replace(/</g, "&lt;");
+                data = data.replace(/>/g, "&gt;");
+                $("#output").append(data);
             }
-         }
+         });
       </script>
    </head>
    <body>
-      <h1>Autobahn WebSockets Echo Test</h1>
-      <button onclick='webSocket.send("Hello, world!");'>Send Hello</button>
+      <h1>WebBox WebSockets Update Test</h1>
+      <h2 id="status"></h2>
+      <pre id="output"></pre>
    </body>
 </html>

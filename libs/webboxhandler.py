@@ -20,6 +20,8 @@
 import rdflib, logging, traceback, uuid
 
 import webbox
+from httputils import resolve_uri
+
 from rdflib.graph import Graph
 from time import strftime
 
@@ -33,9 +35,6 @@ class WebBoxHandler:
     """ functions to return things from the webbox, do not use self.webbox directly. """
     def _webbox_url(self):
         return self.webbox.webbox_url
-
-    def _webbox_proxy(self):
-        return self.webbox.proxy
 
     def _uri2path(self, uri):
         return self.webbox.uri2path(uri)
@@ -77,7 +76,7 @@ class WebBoxHandler:
         """ Return an array of the URIs of all of the owners of this store (typically only one). """
 
         query = "SELECT DISTINCT ?owner WHERE { ?owner <%s> <%s> } " % (webbox.WebBox.address_predicate, self._webbox_url())
-        response = self._webbox_proxy().query_store.query(query)
+        response = self.webbox.query_store.query(query)
         if response['status'] >= 200 and response['status'] <= 299:
             results = response['data']
             logging.debug(str(results))
@@ -166,7 +165,7 @@ class WebBoxHandler:
 
                     # resolve URI of the message
                     try:
-                        rdf = self._webbox_proxy().resolve_uri(message_uri)
+                        rdf = resolve_uri(message_uri)
                         # FIXME error handling
 
                         logging.debug("resolved it.")
@@ -175,7 +174,7 @@ class WebBoxHandler:
                         # put resolved URI into the store
                         # put into its own graph URI in 4store
                         # TODO is uri2path the best thing here? or GUID it maybe?
-                        status = self._webbox_proxy().SPARQLPut(message_uri, self._uri2path(message_uri), rdf, "application/rdf+xml")
+                        status = self.webbox.SPARQLPut(message_uri, self._uri2path(message_uri), rdf, "application/rdf+xml")
                         logging.debug("Put it in the store: "+str(status))
 
                         if status > 299:
@@ -184,7 +183,7 @@ class WebBoxHandler:
 
                         # store a copy as a sioc:Post in the SIOC graph
                         sioc_post = self._new_sioc_post(message_uri, recipient_uri)
-                        status = self._webbox_proxy().SPARQLPut(webbox.WebBox.sioc_graph, self._uri2path(sioc_post['uri']), sioc_post['rdf'], "application/rdf+xml")
+                        status = self.webbox.SPARQLPut(webbox.WebBox.sioc_graph, self._uri2path(sioc_post['uri']), sioc_post['rdf'], "application/rdf+xml")
 
                         logging.debug("Put a sioc:Post in the store: "+str(status))
 

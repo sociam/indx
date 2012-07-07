@@ -20,7 +20,6 @@
 import logging, re, urllib2, uuid, rdflib, os, os.path, traceback
 
 from rdflib.graph import Graph
-from cStringIO import StringIO
 from time import strftime
 from urlparse import urlparse
 from webboxhandler import WebBoxHandler
@@ -28,7 +27,11 @@ from subscriptions import Subscriptions
 from journal import Journal
 from websocketclient import WebSocketClient
 from mimeparse import best_match
+from httputils import resolve_uri, http_get, http_put, http_post
+from sparqlresults import SparqlResults
+from sparqlparse import SparqlParse
 
+from urlparse import urlparse, parse_qs
 from rdflib.serializer import Serializer
 from rdflib.plugin import register
 import rdflib.plugins.serializers.jsonld
@@ -43,32 +46,37 @@ class WebBox:
     sioc_graph = webbox_ns + "ReceivedSIOCGraph" # the graph for received messages as sioc:Posts
     subscribe_predicate = webbox_ns + "subscribe_to" # uri for subscribing to a resource
     unsubscribe_predicate = webbox_ns + "unsubscribe_from" # uri for unsubscribing from a resource
-    
-    def __init__(self, server_url, path, req_type, req_path, req_qs, environ, proxy, file_dir, config):
-        self.graph = "http://webbox.ecs.soton.ac.uk/ns#ReceivedGraph" # the default graph URI for 4store
+    graph = webbox_ns + "ReceivedGraph" # default URI for 4store inbox
 
-        self.subscriptions = Subscriptions(server_url, config)
+    def __init__(self, path, environ, query_store, config):
 
-        self.server_url = server_url # base url of the server, e.g. http://localhost:8212
-        self.path = path # the path this module is associated with, e.g. /webbox
-        self.proxy = proxy # a configured SecureStoreProxy instance
-        self.file_dir = os.path.realpath(file_dir) # where to store PUT files
+        self.path = path # path of this webbox e.g. /webbox
+        self.environ = environ # the environment (from WSGI) of the request (i.e., as in apache)
+        self.query_store = query_store # 4store usually
         self.config = config # configuration from server
 
+        self.server_url = config["webbox"]["url"] # base url of the server, e.g. http://localhost:8212
         self.webbox_url = self.server_url + self.path # e.g. http://localhost:8212/webbox - used to ref in the RDF
+        self.file_dir = os.path.join(config['webbox_dir'],config['webbox']['data_dir'],config['webbox']['file_dir'])
+        self.file_dir = os.path.realpath(self.file_dir) # where to store PUT files
 
         logging.debug("Started new WebBox at URL: " + self.webbox_url)
 
-        self.environ = environ # the environment (from WSGI) of the request (i.e., as in apache)
-        self.req_path = req_path # the path of the request e.g. /webbox/file.rdf
-        self.req_qs = req_qs # the query string of the request as a dict with array elements, e.g. {'q': ['foo']} is ?q=foo
-        self.req_type = req_type # the type of query, e.g. the HTTP operation, GET/PUT/POST
+        if "REQUEST_URI" in self.environ:
+            url = urlparse(self.environ['REQUEST_URI'])
+            self.req_path = url.path
+            self.req_qs = parse_qs(url.query)
+        else:
+            self.req_path = self.environ['PATH_INFO']
+            self.req_qs = parse_qs(self.environ['QUERY_STRING'])
 
-        logging.debug("new instance of webbox with path %s, query string %s and type %s" % (self.req_path, str(self.req_qs), self.req_type))
+        # add the module path onto the req_path
+        self.req_path = self.path + self.req_path
 
         # config rdflib first
         register("json-ld", Serializer, "rdflib.plugins.serializers.jsonld", "JsonLDSerializer")
 
+        # mime type to rdflib formats (for serializing)
         self.rdf_formats = {
             "application/rdf+xml": "xml",
             "application/n3": "n3",
@@ -78,15 +86,18 @@ class WebBox:
             "text/json": "json-ld",
         }
 
-        #self.journal = Journal(self.uri2path(server_url))
+        self.subscriptions = Subscriptions(self.server_url, config)
         self.journal = Journal(os.path.join(config['webbox_dir'],config['webbox']['data_dir'],config['webbox']['journal_dir']), config['webbox']['journalid'])
         self.websocket = WebSocketClient(host="localhost",port=8214) #TODO from config file
             
 
-    def response(self, rfile):
-        if self.req_type == "POST":
+    def response(self):
+        req_type = self.environ['REQUEST_METHOD']
+        rfile = self.environ['wsgi.input']
+
+        if req_type == "POST":
             return self.do_POST(rfile)
-        elif self.req_type == "PUT":
+        elif req_type == "PUT":
             return self.do_PUT(rfile)
         else:
             return self.do_GET()
@@ -117,7 +128,7 @@ class WebBox:
                     query = "CONSTRUCT {?s ?p ?o} WHERE { GRAPH <%s> {?s ?p ?o}}" % uri
                     logging.debug("Sending query for triples as: %s " % query)
 
-                    result = self.proxy.query_store.query(query, {"Accept": "text/plain"})
+                    result = self.query_store.query(query, {"Accept": "text/plain"})
                     # graceful fail per U
 
                     rdf = result['data']
@@ -157,7 +168,7 @@ class WebBox:
 
         # TODO check for hackery properly, i.e. os.chroot
         if ".." in self.req_path:
-            return {"data": ".. not allowed in path", "status": 500}
+            return {"data": ".. not allowed in path", "status": 500, "reason": "Internal Server Error"}
 
         file_path = self.file_dir + os.sep +self.req_path
 
@@ -185,7 +196,7 @@ class WebBox:
             
             # deserialise rdf into triples
             graph = Graph()
-            graph.parse(StringIO(file), format=rdf_format) # format = xml, n3 etc
+            graph.parse(data=file, format=rdf_format) # format = xml, n3 etc
 
             # check for webbox specific messages
             handle_response = self._handle_webbox_rdf(graph) # check if rdf contains webbox-specific rdf, i.e. to_address, subscribe etc
@@ -204,34 +215,33 @@ class WebBox:
             # do SPARQL PUT
             logging.debug("WebBox SPARQL POST to graph (%s)" % (graph) )
 
-            status = self.proxy.SPARQLPost(graph, path, file, content_type)
-            if status > 299:
-                return {"data": "Unsuccessful.", "status": status}
+            response1 = self.SPARQLPost(graph, path, file, content_type)
+            if response1['status'] > 299:
+                return {"data": "Unsuccessful.", "status": response1['status'], "reason": response1['reason']}
 
 
             self.updated_resource(post_uri, "rdf") # notify subscribers
             self.add_to_journal(graph)
-            return {"data": "Successful.", "status": 200}
+            return {"data": "Successful.", "status": 200, "reason": "OK"}
 
         else:
             logging.debug("a POST of a file")
             # Not RDF content type, so lets treat as a file upload
             exists = os.path.exists(file_path)
 
-            if not exists:
-                return {"data": "File does not exist, use PUT to create a new file.", "status": 404}
-
             logging.debug("file existed, so we're removing it, and then calling a PUT internally")
             os.remove(file_path)
             put_response = self.do_PUT(rfile)
             if put_response['status'] == 201:
                 self.updated_resource(post_uri, "file") # notify subscribers
-                return {"data": "Updated", "status": 200}
+                return {"data": "Updated", "status": 200, "reason": "OK"}
             else:
                 return put_response
         # never reach here
 
     def handle_update(self):
+        """ Handle calls to the Journal update URL. """
+
         if "since" in self.req_qs:
             # get the triples of all changed URIs since this repository URI version
             since_repository_hash = self.req_qs['since'][0]
@@ -249,7 +259,7 @@ class WebBox:
                 query = "CONSTRUCT {?s ?p ?o} WHERE { GRAPH <%s> {?s ?p ?o}}" % uri
                 logging.debug("Sending query for triples as: %s " % query)
 
-                result = self.proxy.query_store.query(query, {"Accept": "text/plain"})
+                result = self.query_store.query(query, {"Accept": "text/plain"})
                 # graceful fail per U
 
                 rdf = result['data']
@@ -258,35 +268,43 @@ class WebBox:
             # TODO conneg
             rdf_type = "text/plain" # text/plain is n-triples (really)
 
-            return {"data": ntrips, "status": 200, "type": rdf_type}
+            return {"data": ntrips, "status": 200, "reason": "OK", "type": rdf_type}
 
         else:
             # no update
             logging.debug("Client is up to date")
-            return {"data": "", "status": 204}
+            return {"data": "", "status": 204, "reason": "No Content"}
 
 
 
     def do_GET(self):
-
         logging.debug("path: %s req_path: %s" % (self.path, self.req_path))
 
         # journal update called
         if self.req_path == self.path + "/update":
             return self.handle_update()
 
-
         if self.req_qs.has_key("query"):
             # SPARQL query because ?query= is present
-            args = {'query': self.req_qs['query'][0]} # TODO support more? 
+            query = self.req_qs['query'][0]
+            response = self.query_store.query(query)
 
-            logging.debug("sparql query, arg out is: "+str(args))
-            response = self.proxy.SPARQLQuery(args)
+            sp = SparqlParse(query)
+            verb = sp.get_verb()
+
+            if verb == "SELECT":
+                # convert back from a data structure
+                sr = SparqlResults()
+                results_xml = sr.sparql_results_to_xml(response['data'])
+                response['data'] = results_xml
+                response['type'] = "application/sparql-results+xml"
+
+            return response
         else:
             # is this a plain file that exists?
             # TODO check for hackery properly, i.e. os.chroot
             if ".." in self.req_path:
-                return {"data": ".. not allowed in path", "status": 500}
+                return {"data": ".. not allowed in path", "status": 403, "reason": "Forbidden"}
 
             file_path = self.file_dir + os.sep + self.req_path
             if os.path.exists(file_path):
@@ -294,22 +312,36 @@ class WebBox:
                 f = open(file_path, "r")
                 filedata = f.read()
                 f.close()
-                return {"data": filedata, "status": 200}
+                return {"data": filedata, "status": 200, "reason": "OK"}
             else:
                 # GET from RWW instead
-                response = self.proxy.SPARQLGet(self.req_path)
+                response = self.SPARQLGet(self.req_path)
+                # convert based on headers
+                response = self._convert_response(response)
+                return response
 
-        # convert based on headers
-        response = self._convert_response(response)
 
-        return response
+    def _convert(self, data, from_type, to_type):
+        """ Convert rdf from one mime-type to another. """
+        old_format = self.rdf_formats[from_type]
+        new_format = self.rdf_formats[to_type]
+
+        graph = Graph()
+        graph.parse(data=data, format=old_format) # format = xml, n3 etc
+
+        # reserialise into new format
+        new_data = graph.serialize(format=new_format) # format = xml, n3, nt, turtle etc
+        return new_data
 
     def _convert_response(self, response):
+        logging.debug("convert_response, response: "+str(response))
+
         if not (response['status'] == 200 or response['status'] == "200 OK"):
             logging.debug("Not converting data, status is not 200.")
             return response # only convert 200 OK responses
 
         status = response['status']
+        reason = response['reason']
         type = response['type'].lower()
         data = response['data']
 
@@ -322,15 +354,9 @@ class WebBox:
         # data
         new_mime = best_match(self.rdf_formats.keys(), accept)
         if new_mime in self.rdf_formats:
-            old_format = self.rdf_formats[type]
-            new_format = self.rdf_formats[new_mime]
-
-            graph = Graph()
-            graph.parse(StringIO(data), format=old_format) # format = xml, n3 etc
-
-            # reserialise into new format
-            new_data = graph.serialize(format=new_format) # format = xml, n3, nt, turtle etc
+            new_data = self._convert(data, type, new_mime)
             new_response = {"status": status,
+                            "reason": reason,
                             "type": new_mime,
                             "data": new_data}
 
@@ -345,7 +371,7 @@ class WebBox:
     def _get_webbox(self, person_uri):
 
         query = "SELECT DISTINCT ?webbox WHERE { <%s> <%s> ?webbox } " % (person_uri, WebBox.address_predicate)
-        response = self.proxy.query_store.query(query)
+        response = self.query_store.query(query)
         if response['status'] >= 200 and response['status'] <= 299:
             results = response['data']
             for row in results:
@@ -368,7 +394,7 @@ class WebBox:
         
         # did not have it in the local store, resolve it instead:
         try:
-            rdf = self.proxy.resolve_uri(person_uri)
+            rdf = resolve_uri(person_uri)
         except Exception as e:
             logging.debug("Did not resolve webbox from the person's (FOAF) URI: "+person_uri)
             return None
@@ -379,10 +405,10 @@ class WebBox:
         # put resolved URI into the store
         # put into its own graph URI in 4store
         # TODO is uri2path the best thing here? or GUID it maybe?
-        status = self.proxy.SPARQLPut(person_uri, self.uri2path(person_uri), rdf, "application/rdf+xml")
+        response1 = self.SPARQLPut(person_uri, self.uri2path(person_uri), rdf, "application/rdf+xml")
         logging.debug("Put it in the store: "+str(status))
 
-        if status > 299:
+        if response1['status'] > 299:
             logging.debug("! error putting person uri into local store. status is: %s " % str(status))
             return None
 
@@ -474,12 +500,6 @@ class WebBox:
         if self.environ.has_key("CONTENT_TYPE"):
             content_type = self.environ['CONTENT_TYPE']
 
-#        for header in self.headers:
-#            if header.lower() == 'content-length':
-#                size = int(self.headers[header])
-#            elif header.lower() == 'content-type':
-#                content_type = self.headers[header]
-#
 
         file = ""
         if size > 0:
@@ -494,7 +514,7 @@ class WebBox:
             
             # deserialise rdf into triples
             graph = Graph()
-            graph.parse(StringIO(file), format=rdf_format) # format = xml, n3 etc
+            graph.parse(data=file, format=rdf_format) # format = xml, n3 etc
 
             # check for webbox specific messages
             handle_response = self._handle_webbox_rdf(graph) # check if rdf contains webbox-specific rdf, i.e. to_address, subscribe etc
@@ -515,19 +535,19 @@ class WebBox:
             # do SPARQL PUT
             logging.debug("WebBox SPARQL PUT to graph (%s)" % (graph) )
 
-            status = self.proxy.SPARQLPut(graph, path, file, content_type, graph_replace=graph_replace)
-            if status > 299:
-                return {"data": "Unsuccessful.", "status": status}
+            response1 = self.SPARQLPut(graph, path, file, content_type, graph_replace=graph_replace)
+            if response1['status'] > 299:
+                return {"data": "Unsuccessful.", "status": response1['status'], "reason": response1['reason']}
 
             self.add_to_journal(graph)
-            return {"data": "Successful.", "status": 200}
+            return {"data": "Successful.", "status": 200, "reason": "OK"}
 
         else:
             # this is a FILE upload
             
             # TODO check for hackery properly, i.e. os.chroot
             if ".." in self.req_path:
-                return {"data": ".. not allowed in path", "status": 500}
+                return {"data": ".. not allowed in path", "status": 500, "reason": "Internal Server Error"}
 
             file_path = self.file_dir + os.sep +self.req_path
 
@@ -536,28 +556,102 @@ class WebBox:
 
             exists = os.path.exists(file_path)
 
-            if not exists:
-                try:
-                    # check if path exists first
-                    path = os.path.split(file_path)[0] # folder path without filename
-                    if not os.path.exists(path):
-                        os.makedirs(path)
+            try:
+                # check if path exists first
+                path = os.path.split(file_path)[0] # folder path without filename
+                if not os.path.exists(path):
+                    os.makedirs(path)
 
-                    f = open(file_path, "w")
-                    f.write(file)
-                    f.close()
-                except Exception as e:
-                    return {"data": "Error writing to file: %s" % file_path, "status": 500}
+                f = open(file_path, "w")
+                f.write(file)
+                f.close()
+            except Exception as e:
+                return {"data": "Error writing to file: %s" % file_path, "status": 500, "reason": "Internal Server Error"}
 
-                # no adding to journal here, because it's a file
-                return {"data": "Created.", "status": 201}
-            else:
-                return {"data": "Already exists, can't PUT to this resource, use POST to update instead.", "status": 405}
+            # no adding to journal here, because it's a file
+            return {"data": "Created.", "status": 201, "reason": "Created"}
             
 
         # TODO send something meaningful!
         # NB: we never get here
         #return {"data": "Successful.", "status": 200}
+
+    def SPARQLGet(self, path):
+        """ Handle a SPARQL GET request - send on to RWW """
+
+        #TODO send the HTTP headers to the sub-servers
+
+        # send file to rww
+        rww_host = self.config["rww"]["host"] + ":" + self.config["rww"]["port"]
+        response = http_get(rww_host, path)
+        return response
+
+    def SPARQLPut(self, graph, filename, file, content_type, graph_replace=True):
+        """ Handle a SPARQL PUT request. 'graph' is for 4store, 'filename' is for RWW. """
+
+        # send file to query store
+        if graph_replace: # force a replace? usually yes, e.g. where graph is a file, otherwise dont, e.g. ReceivedGraph
+            logging.debug("replacing graph %s with rdf" % graph)
+            response1 = self.query_store.put_rdf(file, content_type, graph)
+        else:
+            logging.debug("appending to graph %s with rdf" % graph)
+            response1 = self.query_store.post_rdf(file, content_type, graph)
+
+        # send file to rww
+        rww_host = self.config["rww"]["host"] + ":" + self.config["rww"]["port"]
+       
+        # avoid double slashes
+        if filename[0] == "/":
+            filename = filename[1:]
+
+        rww_path = self.config["rww"]["put_path"] + filename
+
+        # RWW prefers rdf/xml sometimes, so let's convert
+        file_xml = self._convert(file, content_type, "application/rdf+xml")
+        response2 = http_put(rww_host, rww_path, file_xml, "application/rdf+xml")
+
+        if response1['status'] == 201 and response2['status'] == 201:
+            logging.debug("SPARQLPut both 201 statuses")
+            return {"status": 201, "reason": "Created"}
+        elif response1['status'] != 201:
+            logging.debug("SPARQLPut 4store returned %s" % str(respose1) )
+            return response1
+        elif response2['status'] != 201:
+            logging.debug("SPARQLPut RWW returned %s" % str(response2) )
+            return response2
+        else:
+            return {"status": 201, "reason": "Created"}
+
+
+    def SPARQLPost(self, graph, filename, file, content_type):
+        """ Handle a SPARQL POST (append) request. 'graph' is for 4store, 'filename' is for RWW. """
+
+        # send file to query store (4store)
+        logging.debug("POST to query store.")
+        response1 = self.query_store.post_rdf(file, content_type, graph)
+
+        # send file to rww
+        rww_host = self.config["rww"]["host"] + ":" + self.config["rww"]["port"]
+        rww_path = self.config["rww"]["put_path"] + filename
+        logging.debug("POST to "+rww_host+rww_path)
+
+        # RWW prefers rdf/xml sometimes, so let's convert
+        file_xml = self._convert(file, content_type, "application/rdf+xml")
+        response2 = http_post(rww_host, rww_path, file_xml, {"Content-type": "application/rdf+xml"})
+
+        if response2['status'] == 404:
+            # Not found, need to PUT it instead to RWW
+            logging.debug("Not found, PUTting instead.")
+            response2 = http_put(rww_host, rww_path, file_xml, "application/rdf+xml")
+
+        if response1['status'] == 201 and response2['status'] == 201:
+            return {"status": 201, "reason": "Created"}
+        elif response1['status'] != 201:
+            return response1
+        elif response2['status'] != 201:
+            return response2
+        else:
+            return {"status": 201, "reason": "Created"}
 
 
 

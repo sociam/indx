@@ -19,7 +19,9 @@
 
 # import core modules
 import sys, os, logging, json
+from urlparse import urlparse, parse_qs
 import ConfigParser
+
 
 # add ./libs/ to the python path
 sys.path.append(os.path.join(os.path.dirname(__file__), "libs")) 
@@ -32,7 +34,9 @@ if __name__ == "__main__":
 
     # twisted wsgi server modules
     from twisted.internet import reactor
+    from twisted.web import resource
     from twisted.web.server import Site
+    from twisted.web.util import Redirect
     from twisted.web.static import File
     from twisted.web.wsgi import WSGIResource
     from twisted.internet import reactor, ssl
@@ -59,43 +63,44 @@ if __name__ == "__main__":
     logger.debug("Logger initialised")
     logger.setLevel(logging.DEBUG)
 
-    # securestore wsgi app
-    from securestorewsgi import SecureStoreWSGI 
-
-
-    # import SecureStore module
-    from securestore import SecureStore
-    ss = SecureStore(config)
-
-    # register the WebBox module under the name "webbox" - this name is then used in the config file to define paths
-    from webbox import WebBox
-    ss.enable_module(WebBox, "webbox")
-    ss.register_module("webbox", "/webbox")
-
-    # register the certificate generation JSON module
-    from certificates import Certificates
-    ss.enable_module(Certificates, "certificates")
-    ss.register_module("certificates", "/certificates")
-
-    # register the journal update module
-    from journalmodule import JournalModule
-    ss.enable_module(JournalModule, "journal")
-    ss.register_module("journal", "/update")
-
-    # register and set the query store to 4store
+    # use 4store query_store
     from fourstore import FourStore
-    ss.set_query_store(FourStore)
+    query_store = FourStore(config)
 
-    # register and set the query store to the in-memory pure python CwmStore
-    #from cwm import CwmStore
-    #ss.setQueryStore(CwmStore)
+    webbox_path = "webbox"
 
-    # WSGI application
-    def securestore_wsgi(environ, start_response):
-        global ss
+    # WebBox WSGI handler
+    def webbox_wsgi(environ, start_response):
+        logging.debug("WEBBOX call")
+        global query_store
         global config
-        ssw = SecureStoreWSGI(environ, start_response, config, ss)
-        return [ssw.respond()]
+        global webbox_path
+
+        from webbox import WebBox
+        wb = WebBox("/"+webbox_path, environ, query_store, config)
+        response = wb.response()
+
+        headers = []
+        if "type" in response:
+            headers.append( ("Content-type", response['type']) )
+        else:
+            headers.append( ("Content-type", "text/plain") )
+
+        from journal import Journal
+        # put repository version weak ETag header
+        # journal to load the original repository version
+        j = Journal(os.path.join(config['webbox_dir'],config['webbox']['data_dir'],config['webbox']['journal_dir']), config['webbox']['journalid'])
+        
+        latest_hash = j.get_version_hashes() # current and previous
+        
+        if latest_hash['current'] is not None:
+            headers.append( ('ETag', "W/\"%s\""%latest_hash['current'] ) ) # 'W/' means a Weak ETag
+        if latest_hash['previous'] is not None:
+            headers.append( ('X-ETag-Previous', "W/\"%s\""%latest_hash['previous']) ) # 'W/' means a Weak ETag
+
+        start_response(str(response['status']) + " " + response['reason'], headers)
+        return response['data']
+
 
     # get values to pass to web server
     server_address = config['webbox']['address']
@@ -109,21 +114,27 @@ if __name__ == "__main__":
     # TODO set up twisted to use gzip compression
 
     # create a twisted web and WSGI server
-    resource = WSGIResource(reactor, reactor.getThreadPool(), securestore_wsgi)
+    # root handler is a static web server
+    resource = File(os.path.join(os.path.dirname(__file__), "html"))
+
+    # set up path handlers e.g. /webbox
+    reactor.suggestThreadPoolSize(30)
+    resource.putChild(webbox_path, WSGIResource(reactor, reactor.getThreadPool(), webbox_wsgi))
     factory = Site(resource)
 
     # enable ssl (or not)
     try:
         ssl_off = config['webbox']['ssl_off']
+        ssl_off = (ssl_off == "true")
     except Exception as e:
-        # not found
         ssl_off = False
 
-    if ssl_off == "true":
+    if ssl_off:
         logging.debug("SSL is OFF, connections to this SecureStore are not encrypted.")
         reactor.listenTCP(server_port, factory)
     else:
         logging.debug("SSL ON.")
+        # pass certificate and private key into server
         sslContext = ssl.DefaultOpenSSLContextFactory(server_private_key, server_cert)
         reactor.listenSSL(server_port, factory, contextFactory=sslContext)
 

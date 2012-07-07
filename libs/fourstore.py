@@ -47,13 +47,13 @@ class FourStore:
         ctype = response['type']
         if verb == "SELECT":
             data = sr.parse_sparql_xml(response['data'])
-            ctype = "application/rdf+xml"
+#            ctype = "application/rdf+xml"
+            ctype = "python/data" # FIXME not used anywhere
         elif verb == "CONSTRUCT":
             data = response['data']
             # ctype is as above.
 
-
-        response = {"status": response['status'], "data": data, "type": ctype}
+        response = {"status": response['status'], "reason": response['reason'], "data": data, "type": ctype}
 
         return response
 
@@ -78,5 +78,5 @@ class FourStore:
         request.get_method = lambda: "POST"
         url = opener.open(request)
 
-        return 201 # TODO error handling
+        return {"status": 201, "reason": "Created"} # TODO error handling
 

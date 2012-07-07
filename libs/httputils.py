@@ -38,7 +38,7 @@ def http_get(host, path, headers={}):
         logging.debug("Status: ("+str(result.status)+") Not successful, reason: " + result.reason)
 
     """ status is a HTTP status code as an integer, e.g. 200, and data is a string of data to return. """
-    response =  {'status': result.status, 'data': data}
+    response =  {'status': result.status, "reason": result.reason, 'data': data}
 
     ctype = result.getheader("Content-type", None) 
     if ctype is not None:
@@ -56,7 +56,7 @@ def http_put(host, path, data, content_type):
     connection.request('PUT', path, data, {"Content-type": content_type})
     result = connection.getresponse()
     # Now result.status and result.reason contains interesting stuff
-    logging.debug("PUT file to: "+host+", at path: "+path)
+    logging.debug("PUT file to: "+host+", at path: "+path+", content-type: "+content_type+", contents: "+str(data))
 
     if result.status >= 200 and result.status <= 299:
         logging.debug("Status: Successful")
@@ -64,6 +64,35 @@ def http_put(host, path, data, content_type):
         logging.debug("Status: Not successful (%s), reason: " % (str(result.status)) + result.reason)
 
     """ status is a HTTP status code as an integer, e.g. 200 """
-    return result.status
+    return {"status": result.status, "reason": result.reason}
 
+
+def http_post(host, path, data, args):
+    """ Perform a POST to the URL with the data """
+
+    # TODO put ACL authentication etc here ?
+
+    connection = httplib.HTTPConnection(host)
+    connection.request('POST', path, data, args)
+    result = connection.getresponse()
+    # Now result.status and result.reason contains interesting stuff
+    logging.debug("POST file to: "+host+", at path: "+path)
+
+    if result.status >= 200 and result.status <= 299:
+        logging.debug("Status: Successful")
+    else:
+        logging.debug("Status: Not successful (%s), reason: " % (str(result.status)) + result.reason)
+
+    return {"status": result.status, "reason": result.reason}
+
+def resolve_uri(self, uri):
+    """ Resolve an RDF URI and return the RDF/XML. """
+
+    opener = urllib2.build_opener(urllib2.HTTPHandler)
+    request = urllib2.Request(uri)
+    request.add_header('Accept', 'application/rdf+xml')
+    request.get_method = lambda: 'GET'
+    url = opener.open(request)
+    data = url.read()
+    return data
 
