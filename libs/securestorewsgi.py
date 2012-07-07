@@ -55,7 +55,10 @@ class SecureStoreWSGI:
                 ctype = "text/plain"
 
                 # wow. so apparently we have to do this now. hm
-                if hasattr(e, "code"):
+                if hasattr(e, "code") and hasattr(e, "status"):
+                    logging.debug("sending code and status")
+                    self.start_response(str(e.code)+" "+str(e.status), [("Content-Type", ctype)])
+                elif hasattr(e, "code"):
                     logging.debug("sending code")
                     self.start_response(str(e.code)+" ", [("Content-Type", ctype)])
                 elif hasattr(e, "status"):
