@@ -20,17 +20,25 @@
 """ This file contains http helper functions, and can be used by any module. """
 import httplib, logging
 
+from twisted.internet import reactor, threads
+
 def http_get(host, path, headers={}):
     """ Send a GET request to a sub-server, i.e., RWW or 4store """
 
     connection = httplib.HTTPConnection(host)
-    body = ""
-    connection.request('GET', path, body, headers)
-    result = connection.getresponse()
-    # Now result.status and result.reason contains interesting stuff
-    logging.debug("GET file from: "+host+", at path: "+path)
+    connection.request('GET', path, "", headers)
 
-    data = result.read()
+    try:
+        #result = connection.getresponse()
+        result = threads.blockingCallFromThread(reactor, connection.getresponse)
+
+        # Now result.status and result.reason contains interesting stuff
+        logging.debug("GET file from: "+host+", at path: "+path)
+
+#        data = result.read()
+        data = threads.blockingCallFromThread(reactor, result.read)
+    except Error as e:
+        print e
 
     if result.status >= 200 and result.status <= 299:
         logging.debug("Status: Successful")
@@ -54,7 +62,13 @@ def http_put(host, path, data, content_type):
 
     connection = httplib.HTTPConnection(host)
     connection.request('PUT', path, data, {"Content-type": content_type})
-    result = connection.getresponse()
+
+    try:
+        #result = connection.getresponse()
+        result = threads.blockingCallFromThread(reactor, connection.getresponse)
+    except Error as e:
+        print e
+
     # Now result.status and result.reason contains interesting stuff
     logging.debug("PUT file to: "+host+", at path: "+path+", content-type: "+content_type+", contents: "+str(data))
 
@@ -74,7 +88,13 @@ def http_post(host, path, data, args):
 
     connection = httplib.HTTPConnection(host)
     connection.request('POST', path, data, args)
-    result = connection.getresponse()
+
+    try:
+        #result = connection.getresponse()
+        result = threads.blockingCallFromThread(reactor, connection.getresponse)
+    except Error as e:
+        print e
+
     # Now result.status and result.reason contains interesting stuff
     logging.debug("POST file to: "+host+", at path: "+path)
 
@@ -87,12 +107,19 @@ def http_post(host, path, data, args):
 
 def resolve_uri(self, uri):
     """ Resolve an RDF URI and return the RDF/XML. """
+    logging.debug("resolve uri: "+uri)
 
     opener = urllib2.build_opener(urllib2.HTTPHandler)
     request = urllib2.Request(uri)
     request.add_header('Accept', 'application/rdf+xml')
     request.get_method = lambda: 'GET'
     url = opener.open(request)
-    data = url.read()
+
+    try:
+        #data = url.read()
+        data = threads.blockingCallFromThread(reactor, url.read)
+    except Error as e:
+        print e
+
     return data
 
