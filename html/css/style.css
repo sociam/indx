@@ -305,6 +305,7 @@ SecureStore styles
 
 h1 {
     font-family: SecurestoreFont;
+    margin-top: 0px;
 }
 
 div.forminput > div > label {
@@ -323,5 +324,9 @@ div.forminput > div > button {
     display:block;
     float:left;
     margin-left: 200px;
+}
+
+body {
+    padding: 10px;
 }
 
