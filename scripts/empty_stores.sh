@@ -19,7 +19,9 @@
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
 
-./new_4store_kb.sh
+#./new_4store_kb.sh
+. config.sh
+rm -r "/var/lib/4store/$KBNAME"
 rm ../data/hashstore.db
 rm ../data/hashstore
 rm ../data/query_cache
