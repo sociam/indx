@@ -10,3 +10,4 @@ pyopenssl
 #https://github.com/Lawouach/WebSocket-for-Python/zipball/v0.1.5
 autobahn
 twisted
+mimeparse
