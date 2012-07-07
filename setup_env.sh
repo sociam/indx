@@ -27,3 +27,6 @@ source env/bin/activate
 #pip install --ignore-installed --upgrade -r requirements.txt
 pip install --ignore-installed -r requirements.txt
 
+# copy lib-ext into env 
+cp -R lib-ext/* env/lib/python2.7/site-packages/
+
