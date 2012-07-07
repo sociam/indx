@@ -27,6 +27,11 @@ from webboxhandler import WebBoxHandler
 from subscriptions import Subscriptions
 from journal import Journal
 from websocketclient import WebSocketClient
+from mimeparse import best_match
+
+from rdflib.serializer import Serializer
+from rdflib.plugin import register
+import rdflib.plugins.serializers.jsonld
 
 class WebBox:
     # to use like WebBox.to_predicate
@@ -61,11 +66,16 @@ class WebBox:
 
         logging.debug("new instance of webbox with path %s, query string %s and type %s" % (self.req_path, str(self.req_qs), self.req_type))
 
+        # config rdflib first
+        register("json-ld", Serializer, "rdflib.plugins.serializers.jsonld", "JsonLDSerializer")
+
         self.rdf_formats = {
             "application/rdf+xml": "xml",
             "application/n3": "n3",
             "text/turtle": "n3", # no turtle-specific parser in rdflib ATM, using N3 one because N3 is a superset of turtle
-            "text/plain": "ntriples",
+            "text/plain": "nt",
+            "application/json": "json-ld",
+            "text/json": "json-ld",
         }
 
         #self.journal = Journal(self.uri2path(server_url))
@@ -289,7 +299,48 @@ class WebBox:
                 # GET from RWW instead
                 response = self.proxy.SPARQLGet(self.req_path)
 
+        # convert based on headers
+        response = self._convert_response(response)
+
         return response
+
+    def _convert_response(self, response):
+        if not (response['status'] == 200 or response['status'] == "200 OK"):
+            logging.debug("Not converting data, status is not 200.")
+            return response # only convert 200 OK responses
+
+        status = response['status']
+        type = response['type'].lower()
+        data = response['data']
+
+        accept = self.environ['HTTP_ACCEPT'].lower()
+
+        if accept == type:
+            logging.debug("Not converting data, type is identical to that requested.")
+            return response
+
+        # data
+        new_mime = best_match(self.rdf_formats.keys(), accept)
+        if new_mime in self.rdf_formats:
+            old_format = self.rdf_formats[type]
+            new_format = self.rdf_formats[new_mime]
+
+            graph = Graph()
+            graph.parse(StringIO(data), format=old_format) # format = xml, n3 etc
+
+            # reserialise into new format
+            new_data = graph.serialize(format=new_format) # format = xml, n3, nt, turtle etc
+            new_response = {"status": status,
+                            "type": new_mime,
+                            "data": new_data}
+
+            logging.debug("Returning converted response from "+type+" to "+accept+".")
+            return new_response
+
+        else:
+            logging.debug("Can't understand Accept header of "+accept+", so returning data as-is.")
+            return response
+        
 
     def _get_webbox(self, person_uri):
 
