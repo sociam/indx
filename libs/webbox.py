@@ -298,6 +298,10 @@ class WebBox:
                 results_xml = sr.sparql_results_to_xml(response['data'])
                 response['data'] = results_xml
                 response['type'] = "application/sparql-results+xml"
+            elif verb == "CONSTRUCT":
+                # rdf, so allow conversion of type
+                # convert based on headers
+                response = self._convert_response(response)
 
             return response
         else:
@@ -320,9 +324,19 @@ class WebBox:
                 response = self._convert_response(response)
                 return response
 
+    def _strip_charset(self, mime):
+        """ Strip the charset from a mime-type. """
+
+        if ";" in mime:
+            return mime[:mime.index(";")]
+
+        return mime
 
     def _convert(self, data, from_type, to_type):
         """ Convert rdf from one mime-type to another. """
+        from_type = self._strip_charset(from_type)
+        to_type = self._strip_charset(to_type)
+
         old_format = self.rdf_formats[from_type]
         new_format = self.rdf_formats[to_type]
 
@@ -346,6 +360,10 @@ class WebBox:
         data = response['data']
 
         accept = self.environ['HTTP_ACCEPT'].lower()
+
+        if accept == "*/*":
+            logging.debug("Not converting, client accepts anything.") # for performance and compatiblity
+            return response
 
         if accept == type:
             logging.debug("Not converting data, type is identical to that requested.")
