@@ -75,10 +75,11 @@ cd "$SSDIR"
 # run securestore, output to log
 source env/bin/activate
 . scripts/config.sh
+
+#python -m cProfile run.py &
 python run.py >> "${LOG_SECURESTORE}" 2>> "${LOG_SECURESTORE}" &
 export PID_SECURESTORE=$!
 
 # wait..
 cat
-
 
