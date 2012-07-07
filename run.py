@@ -18,7 +18,11 @@
 
 
 # import core modules
-import sys, os, logging, json
+import sys
+import os
+import logging
+import json
+
 from urlparse import urlparse, parse_qs
 import ConfigParser
 
@@ -33,7 +37,10 @@ webbox_config = webbox_dir + os.sep + "webbox.json"
 if __name__ == "__main__":
 
     # twisted wsgi server modules
+
     from twisted.internet import reactor
+    reactor.suggestThreadPoolSize(30)
+
     from twisted.web import resource
     from twisted.web.server import Site
     from twisted.web.util import Redirect
@@ -50,18 +57,21 @@ if __name__ == "__main__":
     # add the webbox path to the config
     config['webbox_dir'] = webbox_dir
 
-    # set up logging to a file
-    logdir = os.path.join(webbox_dir,config['webbox']['data_dir'],config['webbox']['log_dir'])
-    logfile = os.path.join(logdir, config['webbox']['log'])
+    skip_logging = False # skip logging for improved performance
 
-    # show debug messages in log
-    log_handler = logging.FileHandler(logfile, "a")
-    log_handler.setLevel(logging.DEBUG)
+    if not skip_logging:
+        # set up logging to a file
+        logdir = os.path.join(webbox_dir,config['webbox']['data_dir'],config['webbox']['log_dir'])
+        logfile = os.path.join(logdir, config['webbox']['log'])
 
-    logger = logging.getLogger() # root logger
-    logger.addHandler(log_handler)
-    logger.debug("Logger initialised")
-    logger.setLevel(logging.DEBUG)
+        # show debug messages in log
+        log_handler = logging.FileHandler(logfile, "a")
+        log_handler.setLevel(logging.DEBUG)
+
+        logger = logging.getLogger() # root logger
+        logger.addHandler(log_handler)
+        logger.debug("Logger initialised")
+        logger.setLevel(logging.DEBUG)
 
     # use 4store query_store
     from fourstore import FourStore
@@ -114,11 +124,11 @@ if __name__ == "__main__":
     # TODO set up twisted to use gzip compression
 
     # create a twisted web and WSGI server
+
     # root handler is a static web server
     resource = File(os.path.join(os.path.dirname(__file__), "html"))
 
     # set up path handlers e.g. /webbox
-    reactor.suggestThreadPoolSize(30)
     resource.putChild(webbox_path, WSGIResource(reactor, reactor.getThreadPool(), webbox_wsgi))
     factory = Site(resource)
 
@@ -138,11 +148,17 @@ if __name__ == "__main__":
         sslContext = ssl.DefaultOpenSSLContextFactory(server_private_key, server_cert)
         reactor.listenSSL(server_port, factory, contextFactory=sslContext)
 
+    scheme = "https"
+    if ssl_off:
+        scheme = "http"
+    webbox_url = scheme+"://"+config['webbox']['hostname']+":"+config['webbox']['port']+"/"
+
     # load a web browser once the server has started
     def on_start(arg):
         print "on_start: "+str(arg)
         import webbrowser
-        webbrowser.open(config['webbox']['url'])
+        #webbrowser.open(config['webbox']['url'])
+        webbrowser.open(webbox_url)
     def start_failed(arg):
         print "start_failed: "+str(arg)
 
