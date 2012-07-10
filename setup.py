@@ -10,11 +10,9 @@ from setuptools import setup
 APP = ['run.py']
 DATA_FILES = [
  '4store',
- 'config2env.py',
  'COPYING',
  'data',
  'html',
- 'initial_setup.py',
  'lib-ext',
  'libs',
  'README.md',
@@ -34,7 +32,7 @@ OPTIONS = {
     'iconfile': 'webbox.icns',
     'argv_emulation': True,
     'includes': # all external modules, taken from generate_includes.py
-        ['cStringIO', 'traceback', 'getpass', 'twisted.web.server', 'webbox', 'shutil', 'hashlib', 'lxml.builder', 'lxml', 'uuid', 'webboxhandler', 'websocketclient', 'urllib', 're', 'json', 'rdflib', 'fourstore', 'time', 'sqlite3', 'twisted.web.wsgi', 'rdflib.plugin', 'httputils', 'subscriptions', 'journal', 'diskstore', 'rdflib.serializer', 'urllib2', 'sys', 'cElementTree', 'webbrowser', 'sparqlresults', 'twisted.internet.defer', 'os.path', 'ConfigParser', 'httplib', 'logging', 'rdflib.plugins.serializers.jsonld', 'twisted.web.static', 'twisted.web.util', 'sparqlparse', 'mimeparse', 'pkg_resources', 'urlparse', 'autobahn.websocket', 'setuptools', 'rdflib.graph', 'twisted.web', 'os', 'twisted.internet']
+        ['cStringIO', 'traceback', 'getpass', 'twisted.web.server', 'webbox', 'shutil', 'hashlib', 'lxml.builder', 'lxml', 'uuid', 'webboxhandler', 'websocketclient', 'urllib', 're', 'json', 'rdflib', 'fourstore', 'time', 'sqlite3', 'twisted.web.wsgi', 'rdflib.plugin', 'httputils', 'subscriptions', 'journal', 'diskstore', 'rdflib.serializer', 'urllib2', 'sys', 'cElementTree', 'webbrowser', 'sparqlresults', 'twisted.internet.defer', 'os.path', 'ConfigParser', 'httplib', 'logging', 'rdflib.plugins.serializers.jsonld', 'twisted.web.static', 'twisted.web.util', 'sparqlparse', 'mimeparse', 'pkg_resources', 'urlparse', 'autobahn.websocket', 'setuptools', 'rdflib.graph', 'twisted.web', 'os', 'twisted.internet', 'OpenSSL', 'xml.etree', 'lxml._elementpath']
     }
 
 setup(

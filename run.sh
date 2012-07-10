@@ -49,9 +49,6 @@ trap bashtrap INT
 
 # do initial per-user set up
 cd "$SSDIR"
-python initial_setup.py # create ~/.webbox/ and set up configuration script (non-destructive)
-python config2env.py # set up bash configuration (config.sh) (important to run after the initial set up)
-
 ./scripts/setup_4store.sh # create /var/lib/4store (prompts for admin password)
 ./scripts/new_4store_kb.sh # create webbox kb (if not exists)
 
