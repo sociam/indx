@@ -22,16 +22,105 @@ import sys
 import os
 import logging
 import json
+import shutil
+import getpass
+import re
 
 from urlparse import urlparse, parse_qs
 import ConfigParser
 
-
 # add ./libs/ to the python path
 sys.path.append(os.path.join(os.path.dirname(__file__), "libs")) 
 
-# per user webbox configuration and data
+######
+# Initial Setup
 webbox_dir = os.path.expanduser('~'+os.sep+".webbox")
+
+if not os.path.exists(webbox_dir):
+    # no config for this user, set them up
+    os.makedirs(webbox_dir)
+
+    data_dir = webbox_dir + os.sep + "data" # default data directory
+    os.makedirs(data_dir)
+
+    sub_dirs = ["logs", "rww", "files", "journals"] # subdirectories to data to make
+    for sub_dir in sub_dirs:
+        sub_dir_path = data_dir + os.sep + sub_dir
+        os.makedirs(sub_dir_path)
+
+    # copy default config
+    webbox_config = webbox_dir + os.sep + "webbox.json"
+    shutil.copyfile('webbox.json.default', webbox_config)
+
+    # copy default localhost certificates
+    shutil.copyfile('data'+os.sep+'server.crt', data_dir+os.sep+'server.crt')
+    shutil.copyfile('data'+os.sep+'server.key', data_dir+os.sep+'server.key')
+
+    # set up per user options in config
+    conf_fh = open(webbox_config, "r")
+
+    # load the json, parsing out comments manually
+    comment_re = re.compile(r'#.*$')
+    config_lines = ""
+    for line in conf_fh.readlines():
+        line = re.sub(comment_re, '', line)
+        config_lines += line
+    conf_fh.close()
+
+    config = json.loads(config_lines)
+
+    # 4store kb based on username
+    config['4store']['kbname'] = "webbox_" + getpass.getuser() # per user knowledge base
+
+    # write updated config
+    conf_fh = open(webbox_config, "w")
+    json.dump(config, conf_fh)
+    conf_fh.close()
+
+#####
+# config2env:
+
+# load configuration into 'config' variable
+webbox_dir = os.path.expanduser('~'+os.sep+".webbox")
+webbox_config = webbox_dir + os.sep + "webbox.json"
+conf_fh = open(webbox_config, "r")
+
+# load the json, parsing out comments manually
+comment_re = re.compile(r'#.*$')
+config_lines = ""
+for line in conf_fh.readlines():
+    line = re.sub(comment_re, '', line)
+    config_lines += line
+conf_fh.close()
+
+config = json.loads(config_lines)
+
+# get values
+values = {
+    "PORT": config['4store']['port'],
+    "KBNAME": config['4store']['kbname'],
+    "RWW_PORT": config['rww']['port'],
+    "RWW_LD": os.path.join(webbox_dir,config['webbox']['data_dir'],config['rww']['ld']),
+    "RWW_JAR": "${SECURESTORE_HOME}" + os.sep + config['rww']['jar'],
+    "LOG_RWW": os.path.join(webbox_dir,config['webbox']['data_dir'],config['webbox']['log_dir'],config['rww']['log']),
+    "LOG_4S": os.path.join(webbox_dir,config['webbox']['data_dir'],config['webbox']['log_dir'],config['4store']['log']),
+    "LOG_SECURESTORE": os.path.join(webbox_dir,config['webbox']['data_dir'],config['webbox']['log_dir'],config['webbox']['log']),
+}
+
+
+# write output
+out = open("scripts/config.sh", "w")
+out.write('#!/bin/bash\n')
+out.write('export PATH="${SECURESTORE_HOME}/4store:$PATH"\n\n')
+
+# output vars
+for key in values:
+    out.write("export %s=\"%s\"\n" % (key, values[key]))
+
+
+#####
+
+# per user webbox configuration and data
 webbox_config = webbox_dir + os.sep + "webbox.json"
 
 if __name__ == "__main__":

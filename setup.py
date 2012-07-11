@@ -9,28 +9,30 @@ from setuptools import setup
 
 APP = ['run.py']
 DATA_FILES = [
-# 'webbox.icns', # assigned as icon of app in options
- 'html',
- 'data',
- 'rww',
  '4store',
- 'initial_setup.py',
- 'config2env.py',
- 'webbox.json.default',
- 'scripts',
-
- # don't really need these to run, but nice to include them
- 'setup_env.sh',
  'COPYING',
- 'tests',
+ 'data',
+ 'html',
+ 'lib-ext',
+ 'libs',
  'README.md',
+ 'requirements.txt',
+ 'run_app.sh',
+ 'run_ws.sh',
+ 'rww',
+ 'scripts',
+ 'setup_env.sh',
+ 'tests',
+ 'webbox.json.default',
+ 'webbox.icns',
+ 'wsupdate',
  ]
 
 OPTIONS = {
     'iconfile': 'webbox.icns',
     'argv_emulation': True,
     'includes': # all external modules, taken from generate_includes.py
-        ['cStringIO', 'traceback', 'SimpleHTTPServer', 'subscriptions', 'webbox', 'BaseHTTPServer', 'shutil', 'hashlib', 'lxml.builder', 'lxml', 'uuid', 'webboxhandler', 'base64', 'OpenSSL', 'urllib', 'securestore', 're', 'json', 'rdflib', 'fourstore', 'time', 'sqlite3', 'ConfigParser', 'SocketServer', 'glob', 'mimetypes', 'setuptools', 'httputils', 'journal', 'diskstore', 'urllib2', 'sys', 'certificates', 'M2Crypto', 'sparqlresults', 'webboxx509', 'pickle', 'Crypto.Cipher', 'os.path', 'posixpath', 'hashstorage', 'httplib', 'logging', 'socket', 'cElementTree', 'vaults', 'journalmodule', 'sparqlparse', 'urlparse', 'securestorewsgi', 'shelve', 'securestoreproxy', 'os', 'rdflib.graph', 'lxml._elementpath', 'autobahn', 'twisted'],
+        ['cStringIO', 'traceback', 'getpass', 'twisted.web.server', 'webbox', 'shutil', 'hashlib', 'lxml.builder', 'lxml', 'uuid', 'webboxhandler', 'websocketclient', 'urllib', 're', 'json', 'rdflib', 'fourstore', 'time', 'sqlite3', 'twisted.web.wsgi', 'rdflib.plugin', 'httputils', 'subscriptions', 'journal', 'diskstore', 'rdflib.serializer', 'urllib2', 'sys', 'cElementTree', 'webbrowser', 'sparqlresults', 'twisted.internet.defer', 'os.path', 'ConfigParser', 'httplib', 'logging', 'rdflib.plugins.serializers.jsonld', 'twisted.web.static', 'twisted.web.util', 'sparqlparse', 'mimeparse', 'pkg_resources', 'urlparse', 'autobahn.websocket', 'setuptools', 'rdflib.graph', 'twisted.web', 'os', 'twisted.internet', 'OpenSSL', 'xml.etree', 'lxml._elementpath']
     }
 
 setup(

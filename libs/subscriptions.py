@@ -17,7 +17,7 @@
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import shelve, hashlib, logging, os
+import hashlib, logging, os
 from diskstore import DiskStore
 
 
