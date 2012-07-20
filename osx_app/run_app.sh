@@ -41,8 +41,6 @@ bashtrap()
     kill "$PID_4S_HTTPD"
     echo "Killing 4s-backend, pid: $PID_4S_BACKEND"
     kill "$PID_4S_BACKEND"
-    echo "Killing websockets server, pid: $PID_WSUPDATE"
-    kill "$PID_WSUPDATE"
     echo "done."
 }
 
@@ -64,17 +62,10 @@ cd "$SSDIR"
 # run 4store, output to log
 . scripts/run_4store.sh
 
-# run websockets server
 cd "$SSDIR"
-. run_ws.sh
-
-cd "$SSDIR"
-# run securestore, output to log
-
-# TODO pop up a browser after "run" has started - put in run.py ?
-
+. scripts/config.sh # get LOG_ variables for below
 # run the py2app runner and pass arguments along
-../MacOS/run "$@"
+../MacOS/run "$@" >> "${LOG_SECURESTORE}" 2>> "${LOG_SECURESTORE}"
 export PID_SECURESTORE=$!
 
 # terminate subprocesses of 4store and RWW
