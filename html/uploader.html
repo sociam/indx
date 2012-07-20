@@ -7,12 +7,13 @@
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
 
-	<title>WebBox</title>
+	<title>WebBox: Uploader</title>
 	<meta name="description" content="">
 	<meta name="author" content="">
 
 	<meta name="viewport" content="width=device-width,initial-scale=1">
 
+	<link rel="stylesheet" href="css/fileuploader.css">
 	<link rel="stylesheet" href="css/style.css">
 
 	<script src="js/libs/modernizr-2.0.6.min.js"></script>
@@ -24,20 +25,21 @@
         <h1>WebBox</h1>
 
         <p>This is a WebBox, see <a href="http://github.com/danielsmith-eu/webbox/wiki/">the WebBox Wiki</a> for more information.</p>
+        <p>Part of the <a href="http://webbox.ecs.soton.ac.uk">WebBox project</a> from the University of Southampton, and MIT.</p>
 	</header>
 	<div id="main" role="main">
 
-        <p>Part of the <a href="http://webbox.ecs.soton.ac.uk">WebBox project</a> from the University of Southampton, and MIT.</p>
+        <h2>File Uploader</h2>
 
-        <h2>Browser</h2>
-        <p>Explore what is in your WebBox: <a href="browser.html">Browser</a></p>
+        <p>This form allows files to be uploaded directly to a WebBox.</p>
 
-        <h2>Uploader</h2>
-        <p>Add individual files to your WebBox: <a href="uploader.html">Uploader</a></p>
+        <form method="POST" id="upload_form">
 
-        <h2>WebSockets</h2>
-        <p>WebBox updates in real-time using WebSockets on port 8214.</p>
-        <p><a href="websockets.html">Watch WebSockets update from your WebBox now.</a>.<p/>
+        <div id="file-uploader"></div>
+
+        </form>
+
+
 
 
 	</div>
@@ -51,8 +53,29 @@
 
 <!-- scripts concatenated and minified via ant build script-->
 <script src="js/plugins.js"></script>
+<script src="js/libs/fileuploader.js"></script>
 <script src="js/script.js"></script>
 <!-- end scripts-->
+
+<script>
+$(document).ready(function(){
+    var prfx = "/webbox/";
+
+    var uploader = new qq.FileUploader({
+        element: $("#file-uploader")[0],
+        action: prfx,
+//        debug: true,
+        onComplete: function(id, name, response){
+            var filename = prfx + name;
+            var div = $("#file-uploader").html("");
+            div.append("Your file is now available at: ");
+            div.append($("<a target='_blank' href='"+filename+"'>"+filename+"</a>"));
+            div.append(".");
+        },
+    });
+
+});
+</script>
 
 <!--[if lt IE 7 ]>
 	<script src="//ajax.googleapis.com/ajax/libs/chrome-frame/1.0.2/CFInstall.min.js"></script>
@@ -61,3 +84,4 @@
 
 </body>
 </html>
+
