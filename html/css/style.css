@@ -330,3 +330,7 @@ body {
     padding: 10px;
 }
 
+h1 > a{
+    text-decoration: none;
+}
+
