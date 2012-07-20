@@ -116,6 +116,8 @@ class WebBox:
     def add_to_journal(self, graphuri):
         """ This Graph URI was added or changed, add to the journal. """
 
+        logging.debug("Journal updating on graph: "+graphuri)
+
         repository_hash = uuid.uuid1().hex # TODO in future, make this a hash instead of a uuid
         self.journal.add(repository_hash, [graphuri])
 
@@ -556,8 +558,11 @@ class WebBox:
 
         logging.debug("Put a webbox:File in the store: "+str(status))
 
-        if status > 299:
+        if status['status'] > 299:
+            logging.debug("Put failed: "+str(status))
             return False
+
+        self.add_to_journal(self.files_graph)
 
         return True
 
