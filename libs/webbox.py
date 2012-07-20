@@ -189,6 +189,17 @@ class WebBox:
         if self.environ.has_key("CONTENT_TYPE"):
             content_type = self.environ['CONTENT_TYPE']
 
+
+        # if a .rdf is uploaded, set the content-type manually
+        if self.req_path[-4:] == ".rdf":
+            content_type = "application/rdf+xml"
+        elif self.req_path[-3:] == ".n3":
+            content_type = "text/turtle"
+        elif self.req_path[-3:] == ".nt":
+            content_type = "text/plain"
+
+
+
         if content_type in self.rdf_formats:
             logging.debug("content type of PUT is RDF so we send to RWW.")
             # not a file, send to RWW to deal with
@@ -579,6 +590,15 @@ class WebBox:
             file = rfile.read(size)
 
 
+        # if a .rdf is uploaded, set the content-type manually
+        if self.req_path[-4:] == ".rdf":
+            content_type = "application/rdf+xml"
+        elif self.req_path[-3:] == ".n3":
+            content_type = "text/turtle"
+        elif self.req_path[-3:] == ".nt":
+            content_type = "text/plain"
+
+
         if content_type in self.rdf_formats:
             # this is an RDF upload
 
@@ -601,6 +621,7 @@ class WebBox:
                 graph = self.req_qs['graph'][0]
                 path = self.uri2path(graph)
                 graph_replace = True # if they have specified the graph, we replace it, since this is a PUT
+
             else:
                 path = self.req_path
 
