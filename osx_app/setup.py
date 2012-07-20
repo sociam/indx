@@ -23,7 +23,6 @@ DATA_FILES = [
  '../tests',
  '../webbox.json.default',
  'webbox.icns',
- '../wsupdate',
  ]
 
 OPTIONS = {
@@ -69,7 +68,6 @@ OPTIONS = {
         'mimeparse', 
         'pkg_resources', 
         'urlparse', 
-        'autobahn.websocket', 
         'setuptools', 
         'twisted.web', 
         'os', 
