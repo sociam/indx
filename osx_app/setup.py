@@ -97,6 +97,7 @@ OPTIONS = {
         'rdflib.plugins.serializers.xmlwriter',
         'rdflib.plugins.serializers.trix',
         'rdfliblocal.jsonld', 
+        'autobahn.websocket',
         ]
     }
 
