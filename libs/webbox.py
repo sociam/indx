@@ -241,8 +241,10 @@ class WebBox:
             # Not RDF content type, so lets treat as a file upload
             exists = os.path.exists(file_path)
 
-            logging.debug("file existed, so we're removing it, and then calling a PUT internally")
-            os.remove(file_path)
+            if exists:
+                logging.debug("file existed, so we're removing it, and then calling a PUT internally")
+                os.remove(file_path)
+
             put_response = self.do_PUT(rfile)
             if put_response['status'] == 201:
                 self.updated_resource(post_uri, "file") # notify subscribers
@@ -325,9 +327,11 @@ class WebBox:
             file_path = self.file_dir + os.sep + self.req_path
             if os.path.exists(file_path):
                 # return the file
+                logging.debug("Opening file: "+file_path)
                 f = open(file_path, "r")
                 filedata = f.read()
                 f.close()
+                logging.debug("File read complete.")
                 return {"data": filedata, "status": 200, "reason": "OK"}
             else:
                 # GET from RWW instead
