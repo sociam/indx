@@ -41,7 +41,7 @@ class WSUpdateServer:
         self.factory.protocol = UpdateServerProtocol
         listenWS(self.factory)
  
-    def run(self):
-        reactor.run()
+#    def run(self):
+#        reactor.run()
 
 

@@ -251,6 +251,11 @@ if __name__ == "__main__":
     def start_failed(arg):
         print "start_failed: "+str(arg)
 
+    # start websockets server
+    from wsupdateserver import WSUpdateServer
+    wsupdate = WSUpdateServer() # TODO customize port / host
+
+
     # calls the web browser opening function above when the reactor has finished starting up
     d = Deferred()
     d.addCallbacks(on_start, start_failed)
