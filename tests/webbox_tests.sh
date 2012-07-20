@@ -19,7 +19,7 @@
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
 
-export URI_SCHEME="https"
+export URI_SCHEME="http"
 export PORT="8211"
 
 echo "PUTing RDF file:"
