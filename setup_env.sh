@@ -36,9 +36,3 @@ mkdir env/build
 ln -s ../../../4store env/build/4store
 pip install --upgrade git+git://github.com/danielsmith-eu/py4s.git#egg=py4s
 
-
-
-
-# copy lib-ext into env 
-cp -R lib-ext/* env/lib/python2.7/site-packages/
-

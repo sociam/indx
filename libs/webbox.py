@@ -34,7 +34,7 @@ from sparqlparse import SparqlParse
 from urlparse import urlparse, parse_qs
 from rdflib.serializer import Serializer
 from rdflib.plugin import register
-import rdflib.plugins.serializers.jsonld
+import rdfliblocal.jsonld
 
 class WebBox:
     # to use like WebBox.to_predicate
@@ -74,7 +74,7 @@ class WebBox:
         self.req_path = self.path + self.req_path
 
         # config rdflib first
-        register("json-ld", Serializer, "rdflib.plugins.serializers.jsonld", "JsonLDSerializer")
+        register("json-ld", Serializer, "rdfliblocal.jsonld", "JsonLDSerializer")
 
         # mime type to rdflib formats (for serializing)
         self.rdf_formats = {
