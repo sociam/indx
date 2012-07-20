@@ -52,6 +52,7 @@
 
 <!-- scripts concatenated and minified via ant build script-->
 <script src="js/dynamictable.js"></script>
+<script src="js/webbox.js"></script>
 <script src="js/plugins.js"></script>
 <script src="js/script.js"></script>
 <!-- end scripts-->
@@ -98,29 +99,11 @@ $(document).ready(function(){
               "dataType": "json", // also sets the accept header
               "success": function(data, textStatus, jqXHR){
 
-                  var newdata = {};
-                  $.each(data["@graph"], function(){
-                      var item = this;
-                      var newitem = {};
-                      if ("@id" in item){
-                          $.each(item, function(key, val){
-                              if (key == "@type"){
-                                  newitem["rdf:type"] = val;
-                              } else if (key == "@id"){
-                                  // do nothing
-                              } else {
-                                  newitem[key] = val["@value"];
-                              }
-                          });
-                          var id = item["@id"];
-                          newitem["uri"] = id;
-                          newdata[id] = newitem;
-                      }
-                  });
+                  var newdata = wb_json_normalise(data);
 
                   var columns = [
-                      {"uri": "uri", "label": "URI"},
-                      {"uri": "rdf:type", "label": "Type"},
+                      {"uri": "uri", "label": "Item URI"},
+                      {"uri": "rdf:type", "label": "RDF Type"},
                   ];
 
                   $("#status").html("Rendering items...");
