@@ -42,8 +42,7 @@ class WebBox:
 
     to_predicate = "http://rdfs.org/sioc/ns#addressed_to"
     address_predicate = webbox_ns + "address"
-    message_uri_prefix = webbox_ns + "post-" # The URI prefix of the sioc:Post resources we make
-    sioc_graph = webbox_ns + "ReceivedSIOCGraph" # the graph for received messages as sioc:Posts
+    files_graph = webbox_ns + "UploadedFiles" # the graph with metadata about files (non-RDF)
     subscribe_predicate = webbox_ns + "subscribe_to" # uri for subscribing to a resource
     unsubscribe_predicate = webbox_ns + "unsubscribe_from" # uri for unsubscribing from a resource
     graph = webbox_ns + "ReceivedGraph" # default URI for 4store inbox
@@ -512,6 +511,45 @@ class WebBox:
             logging.debug("Couldn't send a message to: " + req_uri)
             return "Couldn't connect to %s" % req_uri
 
+    def add_new_file(self, filename):
+        """ Add a new file to the files graph (it was just updated/uploaded). """
+        logging.debug("Adding a new file metadata to the store for file: "+filename)
+
+        uri = self.webbox_url + os.sep + filename
+
+        # create the RDF
+        graph = Graph()
+        graph.add(
+            (rdflib.URIRef(uri),
+             rdflib.URIRef("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
+             rdflib.URIRef(self.webbox_ns + "File")))
+
+        graph.add(
+            (rdflib.URIRef(uri),
+             rdflib.URIRef(self.webbox_ns+"filename"),
+             rdflib.URIRef(filename)))
+
+        graph.add(
+            (rdflib.URIRef(uri),
+             rdflib.URIRef("http://www.w3.org/2000/01/rdf-schema#label"),
+             rdflib.URIRef(uri)))
+
+        graph.add(
+            (rdflib.URIRef(uri),
+             rdflib.URIRef("http://purl.org/dc/terms/created"),
+             rdflib.Literal(strftime("%Y-%m-%dT%H:%M:%SZ")))) # FIXME forces zulu time, which may be technically incorrect
+        
+        rdf = graph.serialize(format="xml") # rdf/xml
+
+        status = self.SPARQLPost(self.files_graph, uri, rdf, "application/rdf+xml")
+
+        logging.debug("Put a webbox:File in the store: "+str(status))
+
+        if status > 299:
+            return False
+
+        return True
+
 
     def _handle_webbox_rdf(self, graph):
         """ Check if this RDF graph contains any webbox trigger RDF, i.e. sioc:to_address, webbox:subscribe, etc and deal with it. """
@@ -599,8 +637,12 @@ class WebBox:
                 f = open(file_path, "w")
                 f.write(file)
                 f.close()
+    
+                # the [1:] gets rid of the /webbox/ bit of the path, so FIXME be more intelligent?
+                self.add_new_file(os.sep.join(os.path.split(self.req_path)[1:])) # add metadata to store TODO handle error on return false
             except Exception as e:
-                return {"data": "Error writing to file: %s" % file_path, "status": 500, "reason": "Internal Server Error"}
+                logging.debug(str( "Error writing to file: %s, exception is: %s" % (file_path, str(e)) )) 
+                return {"data": "", "status": 500, "reason": "Internal Server Error"}
 
             # no adding to journal here, because it's a file
             return {"data": "Created.", "status": 201, "reason": "Created"}

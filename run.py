@@ -177,7 +177,12 @@ if __name__ == "__main__":
 
         from webbox import WebBox
         wb = WebBox("/"+webbox_path, environ, query_store, config)
-        response = wb.response()
+        try:
+            response = wb.response()
+        except Exception as e:
+            logging.debug("Error! "+str(e))
+            response = {"status": 500, "reason": "Invalid Server Error", "data": ""}
+
 
         # get headers from response if they exist
         headers = []
@@ -212,7 +217,8 @@ if __name__ == "__main__":
 
         start_response(str(response['status']) + " " + response['reason'], headers)
         logging.debug("Sending data of size: "+str(data_length))
-        return [response['data']]
+        logging.debug("First 128 of of data..: "+str(response['data'][0:128]))
+        return [response['data']] # do not remove the outer array, it makes transfer speed very slow
 
 
     # get values to pass to web server

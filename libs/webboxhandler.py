@@ -31,6 +31,8 @@ class WebBoxHandler:
     def __init__(self, graph, webbox):
         self.graph = graph
         self.webbox = webbox
+        self.sioc_graph = webbox.webbox_ns + "ReceivedSIOCGraph" # the graph for received messages as sioc:Posts
+        self.message_uri_prefix = webbox.webbox_ns + "post-" # The URI prefix of the sioc:Post resources we make
 
     """ functions to return things from the webbox, do not use self.webbox directly. """
     def _webbox_url(self):
@@ -51,7 +53,7 @@ class WebBoxHandler:
         """ Create a new rdf/xml sioc:Post based on a topic, and for a given recipient.
             Timestamp is set to now, and sender is taken from WebID authenticated person (TBC). """
 
-        uri = webbox.WebBox.message_uri_prefix + uuid.uuid1().hex
+        uri = self.message_uri_prefix + uuid.uuid1().hex
 
         graph = Graph()
         graph.add(
@@ -183,7 +185,7 @@ class WebBoxHandler:
 
                         # store a copy as a sioc:Post in the SIOC graph
                         sioc_post = self._new_sioc_post(message_uri, recipient_uri)
-                        status = self.webbox.SPARQLPut(webbox.WebBox.sioc_graph, self._uri2path(sioc_post['uri']), sioc_post['rdf'], "application/rdf+xml")
+                        status = self.webbox.SPARQLPut(self.sioc_graph, self._uri2path(sioc_post['uri']), sioc_post['rdf'], "application/rdf+xml")
 
                         logging.debug("Put a sioc:Post in the store: "+str(status))
 
