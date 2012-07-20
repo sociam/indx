@@ -334,3 +334,26 @@ h1 > a{
     text-decoration: none;
 }
 
+div.row {
+    padding: 5px;
+    margin: 20px;
+    background-color: #eee;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    text-align: center;
+}
+
+div.row > span {
+    padding: 5px;
+    margin: 5px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+div.row > span.selected {
+    font-weight: bold;
+    background-color: #ddd;
+    cursor: default;
+}
+
+

@@ -30,6 +30,12 @@
 
         <h2>WebBox Browser</h2>
 
+        <div class="row">
+            <span id="row_everything" class="selected">Everything</span>
+            <span id="row_uploaded_files">Uploaded Files</span>
+            <span id="row_received_posts">Received Posts</span>
+        </div>
+
         <div id="status"></div>
         <div id="browser_table"></div>
 
@@ -54,50 +60,77 @@
 
 $(document).ready(function(){
 
-    $("#status").html("Loading items...");
+
     var prefixes = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ";
+    var queries = {
+        "row_everything": prefixes+"CONSTRUCT {?item rdf:type ?type} WHERE {?item rdf:type ?type}",
+        "row_uploaded_files": prefixes+"CONSTRUCT {?item rdf:type ?type} WHERE {?item rdf:type <http://webbox.ecs.soton.ac.uk/ns#File> . ?item rdf:type ?type}",
+        "row_received_posts": prefixes+"CONSTRUCT {?item rdf:type ?type} WHERE {?item rdf:type <http://rdfs.org/sioc/ns#Post> . ?item rdf:type ?type}",
+    };
 
-    $.ajax(
-        { "url": "/webbox/",
-          "cache": false,
-          "crossDomain": true,
-          "data": {
-              "query": prefixes+"CONSTRUCT {?item rdf:type ?type} WHERE {?item rdf:type ?type}",
-          },
-          "dataType": "json", // also sets the accept header
-          "success": function(data, textStatus, jqXHR){
 
-              var newdata = {};
-              $.each(data["@graph"], function(){
-                  var item = this;
-                  var newitem = {};
-                  if ("@id" in item){
-                      $.each(item, function(key, val){
-                          if (key == "@type"){
-                              newitem["rdf:type"] = val;
-                          } else if (key == "@id"){
-                              // do nothing
-                          } else {
-                              newitem[key] = val["@value"];
-                          }
-                      });
-                      var id = item["@id"];
-                      newitem["uri"] = id;
-                      newdata[id] = newitem;
-                  }
-              });
+    $(".row").children().click(function(evt){
+        var target = $(evt.target);
 
-              var columns = [
-                  {"uri": "uri", "label": "URI"},
-                  {"uri": "rdf:type", "label": "Type"},
-              ];
-
-              $("#status").html("Rendering items...");
-              var dt = new DynamicTable($("#browser_table"), {"data": newdata, "columns": columns });
-              $("#status").html("");
-          },
+        if (target.is(".selected")){
+            return false;
         }
-    );
+
+        $(".row").children().removeClass("selected");
+        target.addClass("selected");
+        var target_id = target.attr("id");
+
+        $("#browser_table").html("");
+        table_from_query(queries[target_id]);
+    });
+
+    var table_from_query = function(query){
+
+        $("#status").html("Loading items...");
+
+        $.ajax(
+            { "url": "/webbox/",
+              "cache": false,
+              "crossDomain": true,
+              "data": {
+                  "query": query,
+              },
+              "dataType": "json", // also sets the accept header
+              "success": function(data, textStatus, jqXHR){
+
+                  var newdata = {};
+                  $.each(data["@graph"], function(){
+                      var item = this;
+                      var newitem = {};
+                      if ("@id" in item){
+                          $.each(item, function(key, val){
+                              if (key == "@type"){
+                                  newitem["rdf:type"] = val;
+                              } else if (key == "@id"){
+                                  // do nothing
+                              } else {
+                                  newitem[key] = val["@value"];
+                              }
+                          });
+                          var id = item["@id"];
+                          newitem["uri"] = id;
+                          newdata[id] = newitem;
+                      }
+                  });
+
+                  var columns = [
+                      {"uri": "uri", "label": "URI"},
+                      {"uri": "rdf:type", "label": "Type"},
+                  ];
+
+                  $("#status").html("Rendering items...");
+                  var dt = new DynamicTable($("#browser_table"), {"data": newdata, "columns": columns });
+                  $("#status").html("");
+              },
+            }
+        );
+    }
+    table_from_query(queries["row_everything"]);
 
 });
 
