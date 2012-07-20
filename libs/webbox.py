@@ -99,8 +99,20 @@ class WebBox:
             return self.do_POST(rfile)
         elif req_type == "PUT":
             return self.do_PUT(rfile)
+        elif req_type == "OPTIONS":
+            return self.do_OPTIONS()
         else:
             return self.do_GET()
+
+    def do_OPTIONS(self):
+        logging.debug("Sending 200 response to OPTIONS")
+        return {"status": 200, "reason": "OK", "data": "", "headers":
+            [ ("Allow", "PUT"),
+              ("Allow", "GET"),
+              ("Allow", "POST"),
+              ("Allow", "OPTIONS"),
+            ]
+        } 
 
     def add_to_journal(self, graphuri):
         """ This Graph URI was added or changed, add to the journal. """

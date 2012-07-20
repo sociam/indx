@@ -179,11 +179,21 @@ if __name__ == "__main__":
         wb = WebBox("/"+webbox_path, environ, query_store, config)
         response = wb.response()
 
+        # get headers from response if they exist
         headers = []
+        if "headers" in response:
+            headers = response['headers']
+
+        # set a content-type
         if "type" in response:
             headers.append( ("Content-type", response['type']) )
         else:
             headers.append( ("Content-type", "text/plain") )
+
+        # add CORS headers (blanket allow, for now)
+        headers.append( ("Access-Control-Allow-Origin", "*") )
+        headers.append( ("Access-Control-Allow-Methods", "POST, GET, PUT, OPTIONS") )
+
 
         from journal import Journal
         # put repository version weak ETag header
