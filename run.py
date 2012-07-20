@@ -207,8 +207,12 @@ if __name__ == "__main__":
         if latest_hash['previous'] is not None:
             headers.append( ('X-ETag-Previous', "W/\"%s\""%latest_hash['previous']) ) # 'W/' means a Weak ETag
 
+        data_length = len(response['data'])
+        headers.append( ("Content-length", data_length) )
+
         start_response(str(response['status']) + " " + response['reason'], headers)
-        return response['data']
+        logging.debug("Sending data of size: "+str(data_length))
+        return [response['data']]
 
 
     # get values to pass to web server
