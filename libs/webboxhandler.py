@@ -32,6 +32,7 @@ class WebBoxHandler:
         self.graph = graph
         self.webbox = webbox
         self.sioc_graph = webbox.webbox_ns + "ReceivedSIOCGraph" # the graph for received messages as sioc:Posts
+        self.sioc_ns = "http://rdfs.org/sioc/ns#"; # SIOC namespace
         self.message_uri_prefix = webbox.webbox_ns + "post-" # The URI prefix of the sioc:Post resources we make
 
     """ functions to return things from the webbox, do not use self.webbox directly. """
@@ -65,6 +66,11 @@ class WebBoxHandler:
             (rdflib.URIRef(uri),
              rdflib.URIRef("http://rdfs.org/sioc/ns#addressed_to"),
              rdflib.URIRef(recipient_uri)))
+
+        graph.add(
+            (rdflib.URIRef(uri),
+             rdflib.URIRef("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
+             rdflib.URIRef(self.sioc_ns+"Post")))
 
         graph.add(
             (rdflib.URIRef(uri),
