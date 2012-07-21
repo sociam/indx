@@ -38,9 +38,6 @@ bashtrap()
     echo "done."
 }
 
-
-
-
 # set up bash trap, will exec bashtrap() function on ctrl-c
 trap bashtrap INT
 
@@ -51,25 +48,26 @@ cd "$SSDIR"
 ./scripts/new_4store_kb.sh # create webbox kb (if not exists)
 
 
-
-# run rww, output to log
-cd "$SSDIR"
-. scripts/run_rww.sh
-
-cd "$SSDIR"
-
-# run 4store, output to log
-. scripts/run_4store.sh
-
-cd "$SSDIR"
-
 # run securestore, output to log
+cd "$SSDIR"
 source env/bin/activate
 . scripts/config.sh
 
 #python -m cProfile run.py &
 python run.py >> "${LOG_SECURESTORE}" 2>> "${LOG_SECURESTORE}" &
 export PID_SECURESTORE=$!
+
+
+# run servers AFTER so that config.sh is made
+
+# run rww, output to log
+cd "$SSDIR"
+. scripts/run_rww.sh
+
+# run 4store, output to log
+cd "$SSDIR"
+. scripts/run_4store.sh
+
 
 # wait..
 cat
