@@ -24,7 +24,7 @@ virtualenv -p /usr/local/bin/python env
 source env/bin/activate
 
 # install cython separately (doesn't work in requirements.txt for me)
-pip install- --upgrade cython
+pip install --upgrade cython
 
 # install the required modules
 #pip install --ignore-installed --upgrade -r requirements.txt
