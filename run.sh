@@ -57,6 +57,7 @@ source env/bin/activate
 python run.py >> "${LOG_SECURESTORE}" 2>> "${LOG_SECURESTORE}" &
 export PID_SECURESTORE=$!
 
+sleep 2
 
 # run servers AFTER so that config.sh is made
 

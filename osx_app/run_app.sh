@@ -54,19 +54,23 @@ cd "$SSDIR"
 ./scripts/new_4store_kb.sh # create webbox kb (if not exists)
 
 
-# run rww, output to log
-cd "$SSDIR"
-. scripts/run_rww.sh
-
-cd "$SSDIR"
-# run 4store, output to log
-. scripts/run_4store.sh
 
 cd "$SSDIR"
 . scripts/config.sh # get LOG_ variables for below
 # run the py2app runner and pass arguments along
 ../MacOS/run "$@" >> "${LOG_SECURESTORE}" 2>> "${LOG_SECURESTORE}"
 export PID_SECURESTORE=$!
+
+sleep 2 # make sure that config.sh is created first
+
+# run rww, output to log
+cd "$SSDIR"
+. scripts/run_rww.sh
+
+# run 4store, output to log
+cd "$SSDIR"
+. scripts/run_4store.sh
+
 
 # terminate subprocesses of 4store and RWW
 echo "WebBox terminated, calling bashtrap..."
