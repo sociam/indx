@@ -22,9 +22,8 @@
 #./new_4store_kb.sh
 . config.sh
 rm -r "/var/lib/4store/$KBNAME"
-rm ../data/hashstore.db
-rm ../data/hashstore
-rm ../data/query_cache
-rm ../data/query_cache.db
-rm -r ../data/rww/*
+rm -r ~/.webbox/data/rww/*
+rm -r ~/.webbox/data/journals/*
+rm -r ~/.webbox/data/subscriptions/*
+rm -r ~/.webbox/data/files/*
 
