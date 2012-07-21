@@ -1,9 +1,12 @@
 
+
 var wb_json_normalise = function(data){
     var newdata = {};
 
-    $.each(data["@graph"], function(){
-        var item = this;
+    console.debug("data", data);
+
+
+    var item_map = function(item){
         var newitem = {};
         if ("@id" in item){
             $.each(item, function(key, val){
@@ -15,11 +18,30 @@ var wb_json_normalise = function(data){
                     newitem[key] = val["@value"];
                 }
             });
+        }
+        return newitem;
+    };
+
+    if ("@graph" in data){
+        $.each(data["@graph"], function(){
+            var item = this;
+            var newitem = item_map(item);
             var id = item["@id"];
             newitem["uri"] = id;
             newdata[id] = newitem;
+        });
+    } else {
+        var item = data;
+
+        if ("@context" in item){
+            delete item["@context"];
         }
-    });
+
+        var newitem = item_map(item);
+        var id = item["@id"];
+        newitem["uri"] = id;
+        newdata[id] = newitem;
+    }
 
     return newdata;
 }
