@@ -117,7 +117,7 @@ out.write('export PATH="${SECURESTORE_HOME}/4store:$PATH"\n\n')
 for key in values:
     out.write("export %s=\"%s\"\n" % (key, values[key]))
 
-
+out.close()
 #####
 
 # per user webbox configuration and data
@@ -131,6 +131,7 @@ if __name__ == "__main__":
     reactor.suggestThreadPoolSize(30)
 
     from twisted.web import resource
+    from twisted.web.resource import ForbiddenResource
     from twisted.web.server import Site
     from twisted.web.util import Redirect
     from twisted.web.static import File
@@ -234,8 +235,15 @@ if __name__ == "__main__":
 
     # create a twisted web and WSGI server
 
+    # Disable directory listings
+    class FileNoDirectoryListings(File):
+        def directoryListing(self):
+            return ForbiddenResource()
+
+
     # root handler is a static web server
-    resource = File(os.path.join(os.path.dirname(__file__), "html"))
+    resource = FileNoDirectoryListings(os.path.join(os.path.dirname(__file__), "html"))
+    resource.directoryListing = None
 
     # set up path handlers e.g. /webbox
     resource.putChild(webbox_path, WSGIResource(reactor, reactor.getThreadPool(), webbox_wsgi))
