@@ -243,7 +243,6 @@ if __name__ == "__main__":
 
     # root handler is a static web server
     resource = FileNoDirectoryListings(os.path.join(os.path.dirname(__file__), "html"))
-    resource.directoryListing = None
 
     # set up path handlers e.g. /webbox
     resource.putChild(webbox_path, WSGIResource(reactor, reactor.getThreadPool(), webbox_wsgi))
