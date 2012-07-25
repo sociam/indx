@@ -7,3 +7,5 @@ autobahn
 twisted
 mimeparse
 pyopenssl
+pystache
+psutils
