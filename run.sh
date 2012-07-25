@@ -29,8 +29,6 @@ bashtrap()
 
     echo "Killing SecureStore, pid: $PID_SECURESTORE"
     kill "$PID_SECURESTORE"
-    echo "Killing RWW, pid: $PID_RWW"
-    kill "$PID_RWW"
     echo "Killing 4s-httpd, pid: $PID_4S_HTTPD"
     kill "$PID_4S_HTTPD"
     echo "Killing 4s-backend, pid: $PID_4S_BACKEND"
@@ -60,10 +58,6 @@ export PID_SECURESTORE=$!
 sleep 2
 
 # run servers AFTER so that config.sh is made
-
-# run rww, output to log
-cd "$SSDIR"
-. scripts/run_rww.sh
 
 # run 4store, output to log
 cd "$SSDIR"

@@ -203,9 +203,7 @@ class WebBox:
 
 
         if content_type in self.rdf_formats:
-            logging.debug("content type of PUT is RDF so we send to RWW.")
-            # not a file, send to RWW to deal with
-            # TODO remove redundancy from here (this code is copied from do_PUT)
+            logging.debug("content type of PUT is RDF so we also send to 4store.")
 
             rdf_format = self.rdf_formats[content_type]
 
@@ -346,11 +344,7 @@ class WebBox:
                 logging.debug("File read complete.")
                 return {"data": filedata, "status": 200, "reason": "OK"}
             else:
-                # GET from RWW instead
-                response = self.SPARQLGet(self.req_path)
-                # convert based on headers
-                response = self._convert_response(response)
-                return response
+                return {"data": "", "status": 404, "reason": "Not Found"}
 
     def _strip_charset(self, mime):
         """ Strip the charset from a mime-type. """
@@ -447,7 +441,7 @@ class WebBox:
 
         logging.debug("resolved it.")
 
-        # put into 4store and RWW
+        # put into 4store 
         # put resolved URI into the store
         # put into its own graph URI in 4store
         # TODO is uri2path the best thing here? or GUID it maybe?
@@ -678,16 +672,6 @@ class WebBox:
         # NB: we never get here
         #return {"data": "Successful.", "status": 200}
 
-    def SPARQLGet(self, path):
-        """ Handle a SPARQL GET request - send on to RWW """
-
-        #TODO send the HTTP headers to the sub-servers
-
-        # send file to rww
-        rww_host = self.config["rww"]["host"] + ":" + self.config["rww"]["port"]
-        response = http_get(rww_host, path)
-        return response
-
     def SPARQLPut(self, graph, filename, file, content_type, graph_replace=True):
         """ Handle a SPARQL PUT request. 'graph' is for 4store, 'filename' is for RWW. """
 
@@ -699,30 +683,7 @@ class WebBox:
             logging.debug("appending to graph %s with rdf" % graph)
             response1 = self.query_store.post_rdf(file, content_type, graph)
 
-        # send file to rww
-        rww_host = self.config["rww"]["host"] + ":" + self.config["rww"]["port"]
-       
-        # avoid double slashes
-        if filename[0] == "/":
-            filename = filename[1:]
-
-        rww_path = self.config["rww"]["put_path"] + filename
-
-        # RWW prefers rdf/xml sometimes, so let's convert
-        file_xml = self._convert(file, content_type, "application/rdf+xml")
-        response2 = http_put(rww_host, rww_path, file_xml, "application/rdf+xml")
-
-        if response1['status'] == 201 and response2['status'] == 201:
-            logging.debug("SPARQLPut both 201 statuses")
-            return {"status": 201, "reason": "Created"}
-        elif response1['status'] != 201:
-            logging.debug("SPARQLPut 4store returned %s" % str(respose1) )
-            return response1
-        elif response2['status'] != 201:
-            logging.debug("SPARQLPut RWW returned %s" % str(response2) )
-            return response2
-        else:
-            return {"status": 201, "reason": "Created"}
+        return response1
 
 
     def SPARQLPost(self, graph, filename, file, content_type):
@@ -732,28 +693,5 @@ class WebBox:
         logging.debug("POST to query store.")
         response1 = self.query_store.post_rdf(file, content_type, graph)
 
-        # send file to rww
-        rww_host = self.config["rww"]["host"] + ":" + self.config["rww"]["port"]
-        rww_path = self.config["rww"]["put_path"] + filename
-        logging.debug("POST to "+rww_host+rww_path)
-
-        # RWW prefers rdf/xml sometimes, so let's convert
-        file_xml = self._convert(file, content_type, "application/rdf+xml")
-        response2 = http_post(rww_host, rww_path, file_xml, {"Content-type": "application/rdf+xml"})
-
-        if response2['status'] == 404:
-            # Not found, need to PUT it instead to RWW
-            logging.debug("Not found, PUTting instead.")
-            response2 = http_put(rww_host, rww_path, file_xml, "application/rdf+xml")
-
-        if response1['status'] == 201 and response2['status'] == 201:
-            return {"status": 201, "reason": "Created"}
-        elif response1['status'] != 201:
-            return response1
-        elif response2['status'] != 201:
-            return response2
-        else:
-            return {"status": 201, "reason": "Created"}
-
-
+        return response1
 

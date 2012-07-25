@@ -39,15 +39,5 @@
         "kbname": "webbox_", # replaced with webbox_USERNAME by initial_setup.py
         "put_path": "/data/",
         "log": "4store.log" # relative to webbox:logdir
-    },
-
-    # rww configuration
-    "rww": {
-        "host": "localhost",
-        "port": "8213",
-        "put_path": "/",
-        "ld": "rww", # relative to webbox data dir
-        "jar": "rww/read-write-web.jar", # in app bundle
-        "log": "rww.log" # relative to webbox:logdir
     }
 }

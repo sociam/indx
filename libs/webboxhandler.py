@@ -178,7 +178,7 @@ class WebBoxHandler:
 
                         logging.debug("resolved it.")
 
-                        # put into 4store and RWW
+                        # put into 4store
                         # put resolved URI into the store
                         # put into its own graph URI in 4store
                         # TODO is uri2path the best thing here? or GUID it maybe?
