@@ -43,7 +43,7 @@ if not os.path.exists(webbox_dir):
     data_dir = webbox_dir + os.sep + "data" # default data directory
     os.makedirs(data_dir)
 
-    sub_dirs = ["logs", "rww", "files", "journals"] # subdirectories to data to make
+    sub_dirs = ["logs", "files", "journals"] # subdirectories to data to make
     for sub_dir in sub_dirs:
         sub_dir_path = data_dir + os.sep + sub_dir
         os.makedirs(sub_dir_path)
@@ -99,10 +99,6 @@ config = json.loads(config_lines)
 values = {
     "PORT": config['4store']['port'],
     "KBNAME": config['4store']['kbname'],
-    "RWW_PORT": config['rww']['port'],
-    "RWW_LD": os.path.join(webbox_dir,config['webbox']['data_dir'],config['rww']['ld']),
-    "RWW_JAR": "${SECURESTORE_HOME}" + os.sep + config['rww']['jar'],
-    "LOG_RWW": os.path.join(webbox_dir,config['webbox']['data_dir'],config['webbox']['log_dir'],config['rww']['log']),
     "LOG_4S": os.path.join(webbox_dir,config['webbox']['data_dir'],config['webbox']['log_dir'],config['4store']['log']),
     "LOG_SECURESTORE": os.path.join(webbox_dir,config['webbox']['data_dir'],config['webbox']['log_dir'],config['webbox']['log']),
 }

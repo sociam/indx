@@ -17,7 +17,6 @@ DATA_FILES = [
  '../README.md',
  '../requirements.txt',
  'run_app.sh',
- '../rww',
  '../scripts',
  '../setup_env.sh',
  '../tests',
