@@ -18,9 +18,12 @@
 #    You should have received a copy of the GNU General Public License
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
+export DIR="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$DIR"
+
+export PATH="$DIR/../4store:$PATH"
 
 #./new_4store_kb.sh
-. config.sh
 rm -r "/var/lib/4store/$KBNAME"
 rm -r ~/.webbox/data/rww/*
 rm -r ~/.webbox/data/journals/*

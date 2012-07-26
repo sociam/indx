@@ -25,53 +25,17 @@ cd "$MACOSDIR/../Resources"
 
 export PATH="$MACOSDIR:$PATH" # make sure our supplied python is run
 
-export SSDIR=`pwd`
-export SECURESTORE_HOME="$SSDIR"
-
-
-bashtrap()
-{
-    echo "Exiting..."
-
-    echo "Killing SecureStore, pid: $PID_SECURESTORE"
-    kill "$PID_SECURESTORE"
-    echo "Killing RWW, pid: $PID_RWW"
-    kill "$PID_RWW"
-    echo "Killing 4s-httpd, pid: $PID_4S_HTTPD"
-    kill "$PID_4S_HTTPD"
-    echo "Killing 4s-backend, pid: $PID_4S_BACKEND"
-    kill "$PID_4S_BACKEND"
-    echo "done."
-}
-
-# set up bash trap, will exec bashtrap() function on ctrl-c
-trap bashtrap INT
-
+# to change back to current dir
+export WBDIR="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+export PATH="$WBDIR/4store:$PATH" # add supplied 4store binaries to the path
 
 # do initial per-user set up
-cd "$SSDIR"
+cd "$WBDIR"
 ./scripts/setup_4store.sh # create /var/lib/4store (prompts for admin password)
+cd "$WBDIR"
 ./scripts/new_4store_kb.sh # create webbox kb (if not exists)
 
-
-# run rww, output to log
-cd "$SSDIR"
-. scripts/run_rww.sh
-
-# run 4store, output to log
-cd "$SSDIR"
-. scripts/run_4store.sh
-
-
-cd "$SSDIR"
-. scripts/config.sh # get LOG_ variables for below
-# run the py2app runner and pass arguments along
-../MacOS/run "$@" >> "${LOG_SECURESTORE}" 2>> "${LOG_SECURESTORE}"
-export PID_SECURESTORE=$!
-
-
-# terminate subprocesses of 4store and RWW
-echo "WebBox terminated, calling bashtrap..."
-bashtrap
-
+cd "$WBDIR"
+# send the 4store bin directory (subprocess.pyc fails otherwise)
+../MacOS/run "$@" > /tmp/webbox.log   2>&1
 

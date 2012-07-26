@@ -18,9 +18,10 @@
 #    You should have received a copy of the GNU General Public License
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
-DIR="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+export DIR="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$DIR"
-. config.sh # PATH etc
+
+export PATH="$DIR/../4store:$PATH"
 
 if [ -d /var/lib/4store/$KBNAME ]
 then

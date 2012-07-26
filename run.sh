@@ -19,51 +19,21 @@
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
 # to change back to current dir
-export SSDIR="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-export SECURESTORE_HOME="$SSDIR"
-
-
-bashtrap()
-{
-    echo "Exiting..."
-
-    echo "Killing SecureStore, pid: $PID_SECURESTORE"
-    kill "$PID_SECURESTORE"
-    echo "Killing 4s-httpd, pid: $PID_4S_HTTPD"
-    kill "$PID_4S_HTTPD"
-    echo "Killing 4s-backend, pid: $PID_4S_BACKEND"
-    kill "$PID_4S_BACKEND"
-    echo "done."
-}
-
-# set up bash trap, will exec bashtrap() function on ctrl-c
-trap bashtrap INT
-
+export WBDIR="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # do initial per-user set up
-cd "$SSDIR"
+cd "$WBDIR"
 ./scripts/setup_4store.sh # create /var/lib/4store (prompts for admin password)
+cd "$WBDIR"
 ./scripts/new_4store_kb.sh # create webbox kb (if not exists)
 
-
-# run securestore, output to log
-cd "$SSDIR"
+# run webbox, output to log
+cd "$WBDIR"
 source env/bin/activate
-. scripts/config.sh
+
+# add libs to path
+export PYTHONPATH="$WBDIR/libs:$PYTHONPATH"
 
 #python -m cProfile run.py &
-python run.py >> "${LOG_SECURESTORE}" 2>> "${LOG_SECURESTORE}" &
-export PID_SECURESTORE=$!
-
-sleep 2
-
-# run servers AFTER so that config.sh is made
-
-# run 4store, output to log
-cd "$SSDIR"
-. scripts/run_4store.sh
-
-
-# wait..
-cat
+python run.py
 

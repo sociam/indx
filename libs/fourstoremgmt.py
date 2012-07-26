@@ -16,7 +16,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
-import psutil
+import psutil, os
 
 class FourStoreMgmt:
     """ Manages 4store processes. """
