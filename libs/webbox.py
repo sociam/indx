@@ -583,12 +583,6 @@ class WebBox:
             content_type = self.environ['CONTENT_TYPE']
 
 
-        file = ""
-        if size > 0:
-            # read into file
-            file = rfile.read(size)
-
-
         # if a .rdf is uploaded, set the content-type manually
         if self.req_path[-4:] == ".rdf":
             content_type = "application/rdf+xml"
@@ -600,6 +594,12 @@ class WebBox:
 
         if content_type in self.rdf_formats:
             # this is an RDF upload
+            file = ""
+            if size > 0:
+                # read into file
+                file = rfile.read(size)
+
+
 
             rdf_format = self.rdf_formats[content_type]
             
@@ -631,6 +631,8 @@ class WebBox:
             if response1['status'] > 299:
                 return {"data": "Unsuccessful.", "status": response1['status'], "reason": response1['reason']}
 
+            # TODO save to a file also?
+
             self.add_to_journal(graph)
             return {"data": "Successful.", "status": 200, "reason": "OK"}
 
@@ -655,7 +657,8 @@ class WebBox:
                     os.makedirs(path)
 
                 f = open(file_path, "w")
-                f.write(file)
+                if size > 0:
+                    f.write(rfile.read(size)) # TODO can this be more efficient?
                 f.close()
     
                 # the [1:] gets rid of the /webbox/ bit of the path, so FIXME be more intelligent?
