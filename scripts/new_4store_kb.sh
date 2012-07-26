@@ -21,6 +21,9 @@
 export DIR="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$DIR"
 
+export ME=`whoami`
+export KBNAME="webbox_$ME"
+
 export PATH="$DIR/../4store:$PATH"
 
 if [ -d /var/lib/4store/$KBNAME ]

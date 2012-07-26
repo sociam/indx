@@ -23,6 +23,9 @@ cd "$DIR"
 
 export PATH="$DIR/../4store:$PATH"
 
+export ME=`whoami`
+export KBNAME="webbox_$ME"
+
 #./new_4store_kb.sh
 rm -r "/var/lib/4store/$KBNAME"
 rm -r ~/.webbox/data/rww/*
