@@ -18,15 +18,12 @@
 #    You should have received a copy of the GNU General Public License
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
-
 # to change back to current dir
 export MACOSDIR="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-cd "$MACOSDIR/../Resources"
-
 export PATH="$MACOSDIR:$PATH" # make sure our supplied python is run
 
-# to change back to current dir
-export WBDIR="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$MACOSDIR/../Resources"
+export WBDIR=`pwd`
 export PATH="$WBDIR/4store:$PATH" # add supplied 4store binaries to the path
 
 # do initial per-user set up
