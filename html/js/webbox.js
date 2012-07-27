@@ -15,7 +15,11 @@ var wb_json_normalise = function(data){
                 } else if (key == "@id"){
                     // do nothing
                 } else {
-                    newitem[key] = val["@value"];
+                    if (typeof val == "string"){
+                        newitem[key] = val;
+                    } else {
+                        newitem[key] = val["@value"];
+                    }
                 }
             });
         }
@@ -42,6 +46,8 @@ var wb_json_normalise = function(data){
         newitem["uri"] = id;
         newdata[id] = newitem;
     }
+
+    console.debug("newdata", newdata);
 
     return newdata;
 }

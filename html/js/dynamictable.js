@@ -104,6 +104,83 @@ DynamicTable.prototype = {
 
 
     },
+    make_sizer: function(thisCssclass, prevCssclass, cell){
+        var dt = this;
+        var sizer = dt.makediv(["sizer"]);
+
+        var sizer_width = sizer.width();
+        cell.css("width", cell.width() - sizer_width);
+
+        // FIXME duped below
+        var row_height = sizer.parent().height();
+        sizer.css("height", row_height);
+        sizer.css("min-height", row_height);
+
+        // TODO add draggable/resize operation
+        var mouseDown = false;
+        var origX = 0;
+        var origY = 0;
+        sizer.mousedown(function(evt){
+            origX = evt.clientX;
+            origY = evt.clientY;
+
+            $(prevCssclass).each(function(){
+                $(this).data("origWidth", $(this).width());
+            });
+            $(thisCssclass).each(function(){
+                $(this).data("origWidth", $(this).width());
+            });
+
+            // disable text selection while dragging
+            document.onselectstart = function(){ return false; }
+
+            mouseDown = true;
+        });
+        $(document).mouseup(function(evt){
+            // re-enable text selection while dragging
+            document.onselectstart = function(){ return true; }
+
+            mouseDown = false;
+        });
+        $(document).mousemove(function(evt){
+            if (mouseDown){
+                var xDiff = evt.clientX - origX;
+                var yDiff = evt.clientY - origY;
+               
+                // check for minimum width
+                var minWidth = null;
+                $(prevCssclass).each(function(){
+                    var newWidth = $(this).data("origWidth") + xDiff;
+                    if (minWidth == null || newWidth < minWidth){
+                        minWidth = newWidth;
+                    }
+                });
+                $(thisCssclass).each(function(){
+                    var newWidth = $(this).data("origWidth") - xDiff;
+                    if (minWidth == null || newWidth < minWidth){
+                        minWidth = newWidth;
+                    }
+                });
+
+                if (minWidth >= dt.min_col_width){
+                    // if we won't make a column less than the minimum
+                
+                    $(prevCssclass).each(function(){
+                        $(this).css("width", $(this).data("origWidth") + xDiff); // more wider
+                    });
+                    // TODO make this so that all cells to the right move right, rather than just the neighbouring getting smaller
+                    $(thisCssclass).each(function(){
+                        $(this).css("width", $(this).data("origWidth") - xDiff); // less wide
+                    });
+                }
+
+                dt.ensure_div_sizing();
+            }
+        });
+        sizer.insertAfter(cell);
+        cell.data("sizer", sizer);
+        return sizer;
+    },
     uri_to_cssclass: function(uri){
         var dt = this;
         var prefix = "uri_"; // TODO allow customisable, move to object?
@@ -131,92 +208,17 @@ DynamicTable.prototype = {
 
             var column = this;
 
-            if ('resizer' in column && column['resizer']){
-                prevColumn = column;
-                return true; // this column already has a resizer, ignore
-            }
-
             var thisCssclass = "."+dt.cls(dt.uri_to_cssclass(column['uri']));
             var prevCssclass = "."+dt.cls(dt.uri_to_cssclass(prevColumn['uri']));
             $(prevCssclass).each(function(){
                 var cell = $(this);
-                var sizer = dt.makediv(["sizer"]);
-                sizer.insertAfter(cell);
-
-                var sizer_width = sizer.width();
-                cell.css("width", cell.width() - sizer_width);
-
-                // FIXME duped below
-                var row_height = sizer.parent().height();
-                sizer.css("height", row_height);
-                sizer.css("min-height", row_height);
-
-                // TODO add draggable/resize operation
-                var mouseDown = false;
-                var origX = 0;
-                var origY = 0;
-                sizer.mousedown(function(evt){
-                    origX = evt.clientX;
-                    origY = evt.clientY;
-
-                    $(prevCssclass).each(function(){
-                        $(this).data("origWidth", $(this).width());
-                    });
-                    $(thisCssclass).each(function(){
-                        $(this).data("origWidth", $(this).width());
-                    });
-
-                    // disable text selection while dragging
-                    document.onselectstart = function(){ return false; }
-
-                    mouseDown = true;
-                });
-                $(document).mouseup(function(evt){
-                    // re-enable text selection while dragging
-                    document.onselectstart = function(){ return true; }
-
-                    mouseDown = false;
-                });
-                $(document).mousemove(function(evt){
-                    if (mouseDown){
-                        var xDiff = evt.clientX - origX;
-                        var yDiff = evt.clientY - origY;
-                       
-                        // check for minimum width
-                        var minWidth = null;
-                        $(prevCssclass).each(function(){
-                            var newWidth = $(this).data("origWidth") + xDiff;
-                            if (minWidth == null || newWidth < minWidth){
-                                minWidth = newWidth;
-                            }
-                        });
-                        $(thisCssclass).each(function(){
-                            var newWidth = $(this).data("origWidth") - xDiff;
-                            if (minWidth == null || newWidth < minWidth){
-                                minWidth = newWidth;
-                            }
-                        });
-
-                        if (minWidth >= dt.min_col_width){
-                            // if we won't make a column less than the minimum
-                        
-                            $(prevCssclass).each(function(){
-                                $(this).css("width", $(this).data("origWidth") + xDiff); // more wider
-                            });
-                            // TODO make this so that all cells to the right move right, rather than just the neighbouring getting smaller
-                            $(thisCssclass).each(function(){
-                                $(this).css("width", $(this).data("origWidth") - xDiff); // less wide
-                            });
-                        }
-
-                        dt.ensure_div_sizing();
-                    }
-                });
+                if (cell.data("sizer") == null){
+                    var sizer = dt.make_sizer(thisCssclass, prevCssclass, cell);
+                }
             });
-            column['resizer'] = true;
             prevColumn = column;
         });
-
+        dt.ensure_div_sizing();
     },
     ensure_div_sizing: function(){
         var dt = this;
@@ -271,6 +273,8 @@ DynamicTable.prototype = {
     },
     add_data_to_row: function(rowuri, rows){
         // renders data in rows if not already there, and adds to dt.data
+
+        console.debug("rows", rowuri, rows);
 
         var dt = this;
         var rowdiv = dt.row_divs_by_uri[rowuri][0]; // TODO enable multiple rows
@@ -364,6 +368,8 @@ DynamicTable.prototype = {
     add_data: function(data){
         var dt = this;
 
+        console.debug("add data", data);
+
         // combine into dt.data
         $.each(data, function(uri, data){
             if (!(uri in dt.data)){
@@ -455,7 +461,6 @@ DynamicTable.prototype = {
             // re-add the clear div
             row_div.append(dt.makediv(["clear"]));
         });
-
     },
     render: function(){
         var dt = this;
