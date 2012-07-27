@@ -65,7 +65,7 @@ $(document).ready(function(){
     var prefixes = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ";
     var queries = {
         "row_everything": prefixes+"CONSTRUCT {?item rdf:type ?type} WHERE {?item rdf:type ?type}",
-        "row_uploaded_files": prefixes+"CONSTRUCT {?item rdf:type ?type} WHERE {?item rdf:type <http://webbox.ecs.soton.ac.uk/ns#File> . ?item rdf:type ?type}",
+        "row_uploaded_files": prefixes+"CONSTRUCT {?item rdf:type ?type . ?item <http://www.semanticdesktop.org/ontologies/nie/#mimeType> ?mimeType} WHERE {?item rdf:type <http://webbox.ecs.soton.ac.uk/ns#File> . ?item rdf:type ?type . OPTIONAL{?item <http://www.semanticdesktop.org/ontologies/nie/#mimeType> ?mimeType}}",
         "row_received_posts": prefixes+"CONSTRUCT {?item rdf:type ?type} WHERE {?item rdf:type <http://rdfs.org/sioc/ns#Post> . ?item rdf:type ?type}",
     };
 

@@ -17,7 +17,7 @@
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import logging, re, urllib2, uuid, rdflib, os, os.path, traceback
+import logging, re, urllib2, uuid, rdflib, os, os.path, traceback, mimetypes
 
 from rdflib.graph import Graph
 from time import strftime
@@ -534,7 +534,15 @@ class WebBox:
         graph.add(
             (rdflib.URIRef(uri),
              rdflib.URIRef(self.webbox_ns+"filename"),
-             rdflib.URIRef(filename)))
+             rdflib.Literal(filename)))
+
+        mimetype = mimetypes.guess_type(filename)[0]
+
+        if mimetype is not None:
+            graph.add(
+                (rdflib.URIRef(uri),
+                 rdflib.URIRef("http://www.semanticdesktop.org/ontologies/nie/#mimeType"),
+                 rdflib.Literal(mimetype)))
 
         graph.add(
             (rdflib.URIRef(uri),
