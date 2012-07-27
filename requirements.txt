@@ -8,4 +8,4 @@ twisted
 mimeparse
 pyopenssl
 pystache
-psutils
+psutil
