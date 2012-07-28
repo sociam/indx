@@ -138,57 +138,19 @@ query_store = FourStore(config)
 
 webbox_path = "webbox"
 
+from webbox import WebBox
+wb = WebBox("/"+webbox_path, query_store, config)
+
 # WebBox WSGI handler
 def webbox_wsgi(environ, start_response):
-    logging.debug("WEBBOX call")
-    global query_store
-    global config
-    global webbox_path
+    logging.debug("WebBox WSGI response.")
 
-    from webbox import WebBox
-    wb = WebBox("/"+webbox_path, environ, query_store, config)
     try:
-        response = wb.response()
+        return [wb.response(environ, start_response)] # do not remove outer array [], it degrades transfer speed
     except Exception as e:
-        logging.debug("Error! "+str(e))
-        response = {"status": 500, "reason": "Invalid Server Error", "data": ""}
-
-
-    # get headers from response if they exist
-    headers = []
-    if "headers" in response:
-        headers = response['headers']
-
-    # set a content-type
-    if "type" in response:
-        headers.append( ("Content-type", response['type']) )
-    else:
-        headers.append( ("Content-type", "text/plain") )
-
-    # add CORS headers (blanket allow, for now)
-    headers.append( ("Access-Control-Allow-Origin", "*") )
-    headers.append( ("Access-Control-Allow-Methods", "POST, GET, PUT, OPTIONS") )
-
-
-    from journal import Journal
-    # put repository version weak ETag header
-    # journal to load the original repository version
-    j = Journal(os.path.join(config['webbox_dir'],config['webbox']['data_dir'],config['webbox']['journal_dir']), config['webbox']['journalid'])
-    
-    latest_hash = j.get_version_hashes() # current and previous
-    
-    if latest_hash['current'] is not None:
-        headers.append( ('ETag', "W/\"%s\""%latest_hash['current'] ) ) # 'W/' means a Weak ETag
-    if latest_hash['previous'] is not None:
-        headers.append( ('X-ETag-Previous', "W/\"%s\""%latest_hash['previous']) ) # 'W/' means a Weak ETag
-
-    data_length = len(response['data'])
-    headers.append( ("Content-length", data_length) )
-
-    start_response(str(response['status']) + " " + response['reason'], headers)
-    logging.debug("Sending data of size: "+str(data_length))
-    logging.debug("First 128 of of data..: "+str(response['data'][0:128]))
-    return [response['data']] # do not remove the outer array, it makes transfer speed very slow
+        logging.debug("Errorm returning 500: "+str(e))
+        start_response("500 Internal Server Error", ())
+        return []
 
 
 # get values to pass to web server

@@ -47,10 +47,9 @@ class WebBox:
     unsubscribe_predicate = webbox_ns + "unsubscribe_from" # uri for unsubscribing from a resource
     graph = webbox_ns + "ReceivedGraph" # default URI for 4store inbox
 
-    def __init__(self, path, environ, query_store, config):
+    def __init__(self, path, query_store, config):
 
         self.path = path # path of this webbox e.g. /webbox
-        self.environ = environ # the environment (from WSGI) of the request (i.e., as in apache)
         self.query_store = query_store # 4store usually
         self.config = config # configuration from server
 
@@ -61,16 +60,6 @@ class WebBox:
 
         logging.debug("Started new WebBox at URL: " + self.webbox_url)
 
-        if "REQUEST_URI" in self.environ:
-            url = urlparse(self.environ['REQUEST_URI'])
-            self.req_path = url.path
-            self.req_qs = parse_qs(url.query)
-        else:
-            self.req_path = self.environ['PATH_INFO']
-            self.req_qs = parse_qs(self.environ['QUERY_STRING'])
-
-        # add the module path onto the req_path
-        self.req_path = self.path + self.req_path
 
         # config rdflib first
         register("json-ld", Serializer, "rdfliblocal.jsonld", "JsonLDSerializer")
@@ -90,18 +79,68 @@ class WebBox:
         self.websocket = WebSocketClient(host="localhost",port=8214) #TODO from config file
             
 
-    def response(self):
-        req_type = self.environ['REQUEST_METHOD']
-        rfile = self.environ['wsgi.input']
+    def response(self, environ, start_response):
+        req_type = environ['REQUEST_METHOD']
+        rfile = environ['wsgi.input']
+
+
+        if "REQUEST_URI" in environ:
+            url = urlparse(environ['REQUEST_URI'])
+            self.req_path = url.path
+            self.req_qs = parse_qs(url.query)
+        else:
+            self.req_path = environ['PATH_INFO']
+            self.req_qs = parse_qs(environ['QUERY_STRING'])
+
+        # add the module path onto the req_path
+        self.req_path = self.path + self.req_path
+
 
         if req_type == "POST":
-            return self.do_POST(rfile)
+            response = self.do_POST(rfile, environ)
         elif req_type == "PUT":
-            return self.do_PUT(rfile)
+            response = self.do_PUT(rfile, environ)
         elif req_type == "OPTIONS":
-            return self.do_OPTIONS()
+            reponse = self.do_OPTIONS()
         else:
-            return self.do_GET()
+            response = self.do_GET(environ)
+
+        # get headers from response if they exist
+        headers = []
+        if "headers" in response:
+            headers = response['headers']
+
+        # set a content-type
+        if "type" in response:
+            headers.append( ("Content-type", response['type']) )
+        else:
+            headers.append( ("Content-type", "text/plain") )
+
+        # add CORS headers (blanket allow, for now)
+        headers.append( ("Access-Control-Allow-Origin", "*") )
+        headers.append( ("Access-Control-Allow-Methods", "POST, GET, PUT, OPTIONS") )
+
+
+        # put repository version weak ETag header
+        # journal to load the original repository version
+
+        # NOTE have to re-load journal here (instead of using self.journal) because different threads can't share the same sqlite object
+        j = Journal(os.path.join(self.config['webbox_dir'],self.config['webbox']['data_dir'],self.config['webbox']['journal_dir']), self.config['webbox']['journalid'])
+        
+        latest_hash = j.get_version_hashes() # current and previous
+        
+        if latest_hash['current'] is not None:
+            headers.append( ('ETag', "W/\"%s\""%latest_hash['current'] ) ) # 'W/' means a Weak ETag
+        if latest_hash['previous'] is not None:
+            headers.append( ('X-ETag-Previous', "W/\"%s\""%latest_hash['previous']) ) # 'W/' means a Weak ETag
+
+        data_length = len(response['data'])
+        headers.append( ("Content-length", data_length) )
+
+        start_response(str(response['status']) + " " + response['reason'], headers)
+        logging.debug("Sending data of size: "+str(data_length))
+        return response['data']
+
 
     def do_OPTIONS(self):
         logging.debug("Sending 200 response to OPTIONS")
@@ -172,7 +211,7 @@ class WebBox:
 
         return None # success
 
-    def do_POST(self, rfile):
+    def do_POST(self, rfile, environ):
         """ Handle a POST (update). """
 
         post_uri = self.server_url + self.req_path
@@ -188,8 +227,8 @@ class WebBox:
         logging.debug("self.file_dir: %s, self.req_path: %s" % (self.file_dir, self.req_path))
         logging.debug("file path is: %s" % file_path)
 
-        if self.environ.has_key("CONTENT_TYPE"):
-            content_type = self.environ['CONTENT_TYPE']
+        if environ.has_key("CONTENT_TYPE"):
+            content_type = environ['CONTENT_TYPE']
 
 
         # if a .rdf is uploaded, set the content-type manually
@@ -208,8 +247,8 @@ class WebBox:
             rdf_format = self.rdf_formats[content_type]
 
             size = 0
-            if self.environ.has_key("CONTENT_LENGTH"):
-                size = int(self.environ['CONTENT_LENGTH'])
+            if environ.has_key("CONTENT_LENGTH"):
+                size = int(environ['CONTENT_LENGTH'])
 
             file = ""
             if size > 0:
@@ -255,7 +294,7 @@ class WebBox:
                 logging.debug("file existed, so we're removing it, and then calling a PUT internally")
                 os.remove(file_path)
 
-            put_response = self.do_PUT(rfile)
+            put_response = self.do_PUT(rfile, environ)
             if put_response['status'] == 201:
                 self.updated_resource(post_uri, "file") # notify subscribers
                 return {"data": "Updated", "status": 200, "reason": "OK"}
@@ -301,7 +340,7 @@ class WebBox:
 
 
 
-    def do_GET(self):
+    def do_GET(self, environ):
         logging.debug("path: %s req_path: %s" % (self.path, self.req_path))
 
         # journal update called
@@ -325,7 +364,7 @@ class WebBox:
             elif verb == "CONSTRUCT":
                 # rdf, so allow conversion of type
                 # convert based on headers
-                response = self._convert_response(response)
+                response = self._convert_response(response, environ)
 
             return response
         else:
@@ -369,7 +408,7 @@ class WebBox:
         new_data = graph.serialize(format=new_format) # format = xml, n3, nt, turtle etc
         return new_data
 
-    def _convert_response(self, response):
+    def _convert_response(self, response, environ):
         logging.debug("convert_response, response: "+str(response))
 
         if not (response['status'] == 200 or response['status'] == "200 OK"):
@@ -381,7 +420,7 @@ class WebBox:
         type = response['type'].lower()
         data = response['data']
 
-        accept = self.environ['HTTP_ACCEPT'].lower()
+        accept = environ['HTTP_ACCEPT'].lower()
 
         if accept == "*/*":
             logging.debug("Not converting, client accepts anything.") # for performance and compatiblity
@@ -576,7 +615,7 @@ class WebBox:
         return handler.handle_all()
 
 
-    def do_PUT(self, rfile):
+    def do_PUT(self, rfile, environ):
         content_type = "application/rdf+xml"
 
         put_uri = self.server_url + self.req_path
@@ -584,11 +623,11 @@ class WebBox:
 
 
         size = 0
-        if self.environ.has_key("CONTENT_LENGTH"):
-            size = int(self.environ['CONTENT_LENGTH'])
+        if environ.has_key("CONTENT_LENGTH"):
+            size = int(environ['CONTENT_LENGTH'])
 
-        if self.environ.has_key("CONTENT_TYPE"):
-            content_type = self.environ['CONTENT_TYPE']
+        if environ.has_key("CONTENT_TYPE"):
+            content_type = environ['CONTENT_TYPE']
 
 
         # if a .rdf is uploaded, set the content-type manually
