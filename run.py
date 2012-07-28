@@ -49,6 +49,9 @@ conf_fh.close()
 
 # add the webbox path to the config (at runtime only)
 config['webbox']['webbox_dir'] = webbox_dir
+# add websockets server details (at runtime only)
+config['webbox']['ws_hostname'] = config['server']['ws_hostname']
+config['webbox']['ws_port'] = config['server']['ws_port']
 
 # add additional binary paths to the PATH
 for bindir in config['server']['bindirs']:
@@ -84,7 +87,6 @@ server_hostname = config['server']['hostname']
 server_cert = os.path.join(os.path.dirname(__file__),config['server']['ssl_cert'])
 server_private_key = os.path.join(os.path.dirname(__file__),config['server']['ssl_private_key'])
 
-# TODO set up twisted to use gzip compression
 
 # create a twisted web and WSGI server
 
@@ -98,6 +100,7 @@ resource = FileNoDirectoryListings(os.path.join(os.path.dirname(__file__), "html
 
 # set up path handlers e.g. /webbox
 resource.putChild(webbox_path, WSGIResource(reactor, reactor.getThreadPool(), wb.response))
+# TODO set up twisted to use gzip compression
 factory = Site(resource)
 
 # enable ssl (or not)
@@ -131,7 +134,7 @@ def start_failed(arg):
     logging.debug("start_failed: "+str(arg))
 
 # start websockets server
-wsupdate = WSUpdateServer(port=8214, host="localhost") # TODO customize port / host
+wsupdate = WSUpdateServer(port=config['server']['ws_port'], host=config['server']['ws_hostname']) # TODO customize port / host
 
 
 # calls the web browser opening function above when the reactor has finished starting up

@@ -74,7 +74,7 @@ class WebBox:
             "text/json": "json-ld",
         }
 
-        self.websocket = WebSocketClient(host="localhost",port=8214) #TODO from config file
+        self.websocket = WebSocketClient(host=config['ws_hostname'],port=['ws_port']) #TODO from config file
 
 
     def response(self, environ, start_response):

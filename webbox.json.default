@@ -3,8 +3,12 @@
     "server": {
         # HTTP server configuration
         "address": "", # empty is default bind, specify an IP to bind to a specific interface
-        "port": "8211", # port to listen on
+        "port": 8211, # port to listen on
         "hostname": "localhost", # hostname the server will use
+
+        # web sockets server
+        "ws_hostname": "localhost",
+        "ws_port": 8214,
 
         # TLS/SSL configuration
         "ssl_off": "false", # force SSL off/on
