@@ -19,7 +19,6 @@
 # import core modules
 import sys, os, logging, json, shutil, getpass, re
 from webboxsetup import WebBoxSetup
-from fourstore import FourStore
 from webbox import WebBox
 from webserver import WebServer
 
@@ -54,11 +53,8 @@ logger.addHandler(log_handler)
 logger.debug("Logger initialised")
 logger.setLevel(logging.DEBUG)
 
-# use 4store query_store
-query_store = FourStore(config['4store']['host'], config['4store']['port'])
-
 webbox_path = "webbox" # e.g. /webbox
-wb = WebBox("/"+webbox_path, query_store, config['webbox'], config['4store'])
+wb = WebBox("/"+webbox_path, config['webbox'])
 
 server = WebServer(config['server'], os.path.dirname(__file__))
 server.add_webbox(wb, webbox_path)

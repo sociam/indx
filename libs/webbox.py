@@ -31,6 +31,7 @@ from httputils import resolve_uri, http_get, http_put, http_post
 from sparqlresults import SparqlResults
 from sparqlparse import SparqlParse
 from fourstoremgmt import FourStoreMgmt
+from fourstore import FourStore
 
 from urlparse import urlparse, parse_qs
 from rdflib.serializer import Serializer
@@ -48,10 +49,12 @@ class WebBox:
     unsubscribe_predicate = webbox_ns + "unsubscribe_from" # uri for unsubscribing from a resource
     graph = webbox_ns + "ReceivedGraph" # default URI for 4store inbox
 
-    def __init__(self, path, query_store, config, config_4s):
+    def __init__(self, path, config):
 
         self.path = path # path of this webbox e.g. /webbox
-        self.query_store = query_store # 4store usually
+        # use 4store query_store
+        self.query_store = FourStore(config['4store']['host'], config['4store']['port'])
+
         self.config = config # configuration from server
 
         self.server_url = config["url"] # base url of the server, e.g. http://localhost:8212
@@ -78,7 +81,7 @@ class WebBox:
         self.websocket = WebSocketClient(host=config['ws_hostname'],port=['ws_port']) #TODO from config file
 
         # run 4store 
-        self.fourstore = FourStoreMgmt(config_4s['kbname'], http_port=config_4s['port']) 
+        self.fourstore = FourStoreMgmt(config['4store']['kbname'], http_port=config['4store']['port']) 
         self.fourstore.start()
 
 
