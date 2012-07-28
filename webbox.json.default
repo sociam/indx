@@ -11,7 +11,7 @@
         "ws_port": 8214,
 
         # TLS/SSL configuration
-        "ssl_off": "false", # force SSL off/on
+        "ssl_off": false, # force SSL off/on
         "ssl_cert": "data/server.crt", # relative to run.py
         "ssl_private_key": "data/server.key", # relative to run.py
         

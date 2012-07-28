@@ -19,22 +19,11 @@
 # import core modules
 import sys, os, logging, json, shutil, getpass, re
 from webboxsetup import WebBoxSetup
-from twisted.internet import reactor
-from twisted.web import resource
-from twisted.web.resource import ForbiddenResource
-from twisted.web.server import Site
-from twisted.web.util import Redirect
-from twisted.web.static import File
-from twisted.web.wsgi import WSGIResource
-from twisted.internet import reactor, ssl
-from twisted.internet.defer import Deferred
-from fourstoremgmt import FourStoreMgmt
 from fourstore import FourStore
 from webbox import WebBox
-from wsupdateserver import WSUpdateServer
+from webserver import WebServer
 
-
-# Initial Setup
+# Initial Setup of ~/.webbox
 kbname = "webbox_" + getpass.getuser() # per user knowledge base
 webbox_dir = os.path.expanduser('~'+os.sep+".webbox")
 setup = WebBoxSetup()
@@ -57,7 +46,6 @@ config['webbox']['ws_port'] = config['server']['ws_port']
 for bindir in config['server']['bindirs']:
     os.environ['PATH'] = os.path.join(os.path.dirname(__file__), bindir) + ":" + os.environ['PATH']
 
-
 # show debug messages in log file
 log_handler = logging.FileHandler(config['server']['log'], "a")
 log_handler.setLevel(logging.DEBUG)
@@ -66,89 +54,13 @@ logger.addHandler(log_handler)
 logger.debug("Logger initialised")
 logger.setLevel(logging.DEBUG)
 
-# run 4store 
-fourstore = FourStoreMgmt(config['4store']['kbname'], http_port=config['4store']['port']) 
-fourstore.start()
-
-
 # use 4store query_store
 query_store = FourStore(config['4store']['host'], config['4store']['port'])
 
 webbox_path = "webbox" # e.g. /webbox
-wb = WebBox("/"+webbox_path, query_store, config['webbox'])
+wb = WebBox("/"+webbox_path, query_store, config['webbox'], config['4store'])
 
-
-# get values to pass to web server
-server_address = config['server']['address']
-if server_address == "":
-    server_address = "0.0.0.0"
-server_port = int(config['server']['port'])
-server_hostname = config['server']['hostname']
-server_cert = os.path.join(os.path.dirname(__file__),config['server']['ssl_cert'])
-server_private_key = os.path.join(os.path.dirname(__file__),config['server']['ssl_private_key'])
-
-
-# create a twisted web and WSGI server
-
-# Disable directory listings
-class FileNoDirectoryListings(File):
-    def directoryListing(self):
-        return ForbiddenResource()
-
-# root handler is a static web server
-resource = FileNoDirectoryListings(os.path.join(os.path.dirname(__file__), "html"))
-
-# set up path handlers e.g. /webbox
-resource.putChild(webbox_path, WSGIResource(reactor, reactor.getThreadPool(), wb.response))
-# TODO set up twisted to use gzip compression
-factory = Site(resource)
-
-# enable ssl (or not)
-try:
-    ssl_off = config['server']['ssl_off']
-    ssl_off = (ssl_off == "true")
-except Exception as e:
-    ssl_off = False
-
-if ssl_off:
-    logging.debug("SSL is OFF, connections to this SecureStore are not encrypted.")
-    reactor.listenTCP(server_port, factory)
-else:
-    logging.debug("SSL ON.")
-    # pass certificate and private key into server
-    sslContext = ssl.DefaultOpenSSLContextFactory(server_private_key, server_cert)
-    reactor.listenSSL(server_port, factory, contextFactory=sslContext)
-
-scheme = "https"
-if ssl_off:
-    scheme = "http"
-server_url = scheme+"://"+server_hostname+":"+str(server_port)+"/"
-
-# load a web browser once the server has started
-def on_start(arg):
-    logging.debug("Server started successfully.")
-    if config['server']['load_browser']:
-        import webbrowser
-        webbrowser.open(server_url)
-def start_failed(arg):
-    logging.debug("start_failed: "+str(arg))
-
-# start websockets server
-wsupdate = WSUpdateServer(port=config['server']['ws_port'], host=config['server']['ws_hostname']) # TODO customize port / host
-
-
-# calls the web browser opening function above when the reactor has finished starting up
-d = Deferred()
-d.addCallbacks(on_start, start_failed)
-reactor.callWhenRunning(d.callback, "WebBox HTTP startup")
-
-# setup triggers on quit
-def onShutDown():
-    logging.debug("Got reactor quit trigger, so closing down fourstore.")
-    fourstore.stop()
-
-reactor.addSystemEventTrigger("during", "shutdown", onShutDown)
-
-# run the twisted server
-reactor.run()
+server = WebServer(config['server'], os.path.dirname(__file__))
+server.add_webbox(wb, webbox_path)
+server.run()
 
