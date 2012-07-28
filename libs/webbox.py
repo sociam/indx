@@ -49,20 +49,18 @@ class WebBox:
     unsubscribe_predicate = webbox_ns + "unsubscribe_from" # uri for unsubscribing from a resource
     graph = webbox_ns + "ReceivedGraph" # default URI for 4store inbox
 
-    def __init__(self, path, config):
+    def __init__(self, config):
 
-        self.path = path # path of this webbox e.g. /webbox
         # use 4store query_store
         self.query_store = FourStore(config['4store']['host'], config['4store']['port'])
 
         self.config = config # configuration from server
 
         self.server_url = config["url"] # base url of the server, e.g. http://localhost:8212
-        self.webbox_url = self.server_url + self.path # e.g. http://localhost:8212/webbox - used to ref in the RDF
         self.file_dir = os.path.join(config['webbox_dir'],config['file_dir'])
         self.file_dir = os.path.realpath(self.file_dir) # where to store PUT files
 
-        logging.debug("Started new WebBox at URL: " + self.webbox_url)
+        logging.debug("Started new WebBox at URL: " + self.server_url)
 
 
         # config rdflib first
@@ -105,9 +103,6 @@ class WebBox:
             else:
                 req_path = environ['PATH_INFO']
                 req_qs = parse_qs(environ['QUERY_STRING'])
-
-            # add the module path onto the req_path
-            req_path = self.path + req_path
 
             if req_type == "POST":
                 response = self.do_POST(rfile, environ, req_path, req_qs)
@@ -295,14 +290,11 @@ class WebBox:
             graph = self.graph
             if req_qs.has_key('graph'):
                 graph = req_qs['graph'][0]
-                path = self.uri2path(graph)
-            else:
-                path = req_path
 
             # do SPARQL PUT
             logging.debug("WebBox SPARQL POST to graph (%s)" % (graph) )
 
-            response1 = self.SPARQLPost(graph, path, file, content_type)
+            response1 = self.SPARQLPost(graph, file, content_type)
             if response1['status'] > 299:
                 return {"data": "Unsuccessful.", "status": response1['status'], "reason": response1['reason']}
 
@@ -361,10 +353,10 @@ class WebBox:
 
 
     def do_GET(self, environ, req_path, req_qs):
-        logging.debug("path: %s req_path: %s" % (self.path, req_path))
+        logging.debug("req_path: %s" % (req_path))
 
         # journal update called
-        if req_path == self.path + "/update":
+        if req_path == "/update":
             since = None
             if "since" in req_qs:
                 since = req_qs['since'][0]
@@ -506,8 +498,7 @@ class WebBox:
         # put into 4store 
         # put resolved URI into the store
         # put into its own graph URI in 4store
-        # TODO is uri2path the best thing here? or GUID it maybe?
-        response1 = self.SPARQLPut(person_uri, self.uri2path(person_uri), rdf, "application/rdf+xml")
+        response1 = self.SPARQLPut(person_uri, rdf, "application/rdf+xml")
         logging.debug("Put it in the store: "+str(status))
 
         if response1['status'] > 299:
@@ -528,20 +519,6 @@ class WebBox:
         logging.debug("did not find webbox uri.")
         return None
 
-
-    def uri2path(self, uri):
-        """ Convert a URI to a path, so that we can store a URI in a file without a path etc. """
-
-        # first do something special - if this URL is in our webbox, then store it natively so we can GET it later
-        if uri.startswith(self.webbox_url):
-            parsed = urlparse(uri)
-            uri_path = parsed.path
-            logging.debug("Uri2path of webbox uri: " + uri_path)
-            # already includes the /webbox/ path
-            return uri_path
-
-        # add the /webbox/ path
-        return self.path + os.sep + re.sub(r'[^A-Za-z0-9_-]','.',uri)
 
     def send_message(self, recipient_uri, message_resource_uri):
         """ Send an external message to a recipient. """
@@ -584,7 +561,7 @@ class WebBox:
         """ Add a new file to the files graph (it was just updated/uploaded). """
         logging.debug("Adding a new file metadata to the store for file: "+filename)
 
-        uri = self.webbox_url + os.sep + filename
+        uri = self.server_url + os.sep + filename
 
         # create the RDF
         graph = Graph()
@@ -618,7 +595,7 @@ class WebBox:
         
         rdf = graph.serialize(format="xml") # rdf/xml
 
-        status = self.SPARQLPost(self.files_graph, uri, rdf, "application/rdf+xml")
+        status = self.SPARQLPost(self.files_graph, rdf, "application/rdf+xml")
 
         logging.debug("Put a webbox:File in the store: "+str(status))
 
@@ -688,16 +665,12 @@ class WebBox:
             graph = self.graph
             if req_qs.has_key('graph'):
                 graph = req_qs['graph'][0]
-                path = self.uri2path(graph)
                 graph_replace = True # if they have specified the graph, we replace it, since this is a PUT
-
-            else:
-                path = req_path
 
             # do SPARQL PUT
             logging.debug("WebBox SPARQL PUT to graph (%s)" % (graph) )
 
-            response1 = self.SPARQLPut(graph, path, file, content_type, graph_replace=graph_replace)
+            response1 = self.SPARQLPut(graph, file, content_type, graph_replace=graph_replace)
             if response1['status'] > 299:
                 return {"data": "Unsuccessful.", "status": response1['status'], "reason": response1['reason']}
 
@@ -745,7 +718,7 @@ class WebBox:
         # NB: we never get here
         #return {"data": "Successful.", "status": 200}
 
-    def SPARQLPut(self, graph, filename, file, content_type, graph_replace=True):
+    def SPARQLPut(self, graph, file, content_type, graph_replace=True):
         """ Handle a SPARQL PUT request. 'graph' is for 4store, 'filename' is for RWW. """
 
         # send file to query store
@@ -759,7 +732,7 @@ class WebBox:
         return response1
 
 
-    def SPARQLPost(self, graph, filename, file, content_type):
+    def SPARQLPost(self, graph, file, content_type):
         """ Handle a SPARQL POST (append) request. 'graph' is for 4store, 'filename' is for RWW. """
 
         # send file to query store (4store)

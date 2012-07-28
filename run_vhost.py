@@ -50,7 +50,7 @@ config = {
                 # subdirectories
                 "file_dir": "files", # relative to webbox dir
 
-                "url": "http://localhost.dancak.es:8210", # how the webbox sees itself (used to check owner in RDF)
+                "url": "http://localhost.dancak.es:8210/webbox", # how the webbox sees itself (used to check owner in RDF)
 
                 # 4store configuration
                 "4store": {
