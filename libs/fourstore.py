@@ -26,9 +26,9 @@ from sparqlparse import SparqlParse
 class FourStore:
     """ Interface to a 4store SPARQL server. """
 
-    def __init__(self, config):
-        self.host = config["4store"]["host"] + ":" + config["4store"]["port"] # specified in config
-        self.put_path = config["4store"]["put_path"]
+    def __init__(self, host, port):
+        self.host = host + ":" + str(port)
+        self.put_path =  "/data/" # same on all 4stores
         self.path = "/sparql/" # 4store query url prefix
 
     def query(self, sparql_query, headers={}):

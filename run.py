@@ -33,11 +33,6 @@ from fourstore import FourStore
 from webbox import WebBox
 from wsupdateserver import WSUpdateServer
 
-# setup the path for running sub processes
-os.environ['PATH'] = os.path.join(os.path.dirname(__file__), "4store") + ":" + os.environ['PATH']
-# the same for osx app version
-os.environ['PATH'] = os.path.join(os.path.dirname(__file__), "..", "Resources", "4store") + ":" + os.environ['PATH']
-
 
 # Initial Setup
 kbname = "webbox_" + getpass.getuser() # per user knowledge base
@@ -53,17 +48,15 @@ config = json.loads(conf_fh.read())
 conf_fh.close()
 
 # add the webbox path to the config (at runtime only)
-config['webbox_dir'] = webbox_dir
+config['webbox']['webbox_dir'] = webbox_dir
 
-# twisted web server
-reactor.suggestThreadPoolSize(30)
+# add additional binary paths to the PATH
+for bindir in config['server']['bindirs']:
+    os.environ['PATH'] = os.path.join(os.path.dirname(__file__), bindir) + ":" + os.environ['PATH']
 
-# set up logging to a file
-logdir = os.path.join(webbox_dir,config['webbox']['data_dir'],config['webbox']['log_dir'])
-logfile = os.path.join(logdir, config['webbox']['log'])
 
-# show debug messages in log
-log_handler = logging.FileHandler(logfile, "a")
+# show debug messages in log file
+log_handler = logging.FileHandler(config['server']['log'], "a")
 log_handler.setLevel(logging.DEBUG)
 logger = logging.getLogger() # root logger
 logger.addHandler(log_handler)
@@ -74,11 +67,12 @@ logger.setLevel(logging.DEBUG)
 fourstore = FourStoreMgmt(config['4store']['kbname'], http_port=config['4store']['port']) 
 fourstore.start()
 
+
 # use 4store query_store
-query_store = FourStore(config)
+query_store = FourStore(config['4store']['host'], config['4store']['port'])
 
 webbox_path = "webbox" # e.g. /webbox
-wb = WebBox("/"+webbox_path, query_store, config)
+wb = WebBox("/"+webbox_path, query_store, config['webbox'])
 
 # WebBox WSGI handler
 def webbox_wsgi(environ, start_response):
@@ -86,18 +80,18 @@ def webbox_wsgi(environ, start_response):
     try:
         return [wb.response(environ, start_response)] # do not remove outer array [], it degrades transfer speed
     except Exception as e:
-        logging.debug("Errorm returning 500: "+str(e))
+        logging.debug("Error, returning 500: "+str(e))
         start_response("500 Internal Server Error", ())
         return [""]
 
 # get values to pass to web server
-server_address = config['webbox']['address']
+server_address = config['server']['address']
 if server_address == "":
     server_address = "0.0.0.0"
-server_port = int(config['webbox']['port'])
-server_hostname = config['webbox']['hostname']
-server_cert = os.path.join(webbox_dir,config['webbox']['data_dir'],config['webbox']['ssl_cert'])
-server_private_key = os.path.join(webbox_dir,config['webbox']['data_dir'],config['webbox']['ssl_private_key'])
+server_port = int(config['server']['port'])
+server_hostname = config['server']['hostname']
+server_cert = os.path.join(os.path.dirname(__file__),config['server']['ssl_cert'])
+server_private_key = os.path.join(os.path.dirname(__file__),config['server']['ssl_private_key'])
 
 # TODO set up twisted to use gzip compression
 
@@ -117,7 +111,7 @@ factory = Site(resource)
 
 # enable ssl (or not)
 try:
-    ssl_off = config['webbox']['ssl_off']
+    ssl_off = config['server']['ssl_off']
     ssl_off = (ssl_off == "true")
 except Exception as e:
     ssl_off = False
@@ -134,13 +128,14 @@ else:
 scheme = "https"
 if ssl_off:
     scheme = "http"
-webbox_url = scheme+"://"+config['webbox']['hostname']+":"+config['webbox']['port']+"/"
+server_url = scheme+"://"+server_hostname+":"+str(server_port)+"/"
 
 # load a web browser once the server has started
 def on_start(arg):
-    import webbrowser
-    #webbrowser.open(config['webbox']['url'])
-    webbrowser.open(webbox_url)
+    logging.debug("Server started successfully.")
+    if config['server']['load_browser']:
+        import webbrowser
+        webbrowser.open(server_url)
 def start_failed(arg):
     logging.debug("start_failed: "+str(arg))
 

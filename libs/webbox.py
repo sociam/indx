@@ -53,9 +53,9 @@ class WebBox:
         self.query_store = query_store # 4store usually
         self.config = config # configuration from server
 
-        self.server_url = config["webbox"]["url"] # base url of the server, e.g. http://localhost:8212
+        self.server_url = config["url"] # base url of the server, e.g. http://localhost:8212
         self.webbox_url = self.server_url + self.path # e.g. http://localhost:8212/webbox - used to ref in the RDF
-        self.file_dir = os.path.join(config['webbox_dir'],config['webbox']['data_dir'],config['webbox']['file_dir'])
+        self.file_dir = os.path.join(config['webbox_dir'],config['file_dir'])
         self.file_dir = os.path.realpath(self.file_dir) # where to store PUT files
 
         logging.debug("Started new WebBox at URL: " + self.webbox_url)
@@ -123,7 +123,7 @@ class WebBox:
         # journal to load the original repository version
 
         # NOTE have to re-load journal here (instead of using self.journal) because different threads can't share the same sqlite object
-        j = Journal(os.path.join(self.config['webbox_dir'],self.config['webbox']['data_dir'],self.config['webbox']['journal_dir']), self.config['webbox']['journalid'])
+        j = Journal(os.path.join(self.config['webbox_dir'], self.config['journal']))
         
         latest_hash = j.get_version_hashes() # current and previous
         
@@ -157,7 +157,7 @@ class WebBox:
 
         repository_hash = uuid.uuid1().hex # TODO in future, make this a hash instead of a uuid
 
-        journal = Journal(os.path.join(self.config['webbox_dir'],self.config['webbox']['data_dir'],self.config['webbox']['journal_dir']), self.config['webbox']['journalid'])
+        journal = Journal(os.path.join(self.config['webbox_dir'], self.config['journal']))
         journal.add(repository_hash, [graphuri])
 
         self.update_websocket_clients()
@@ -166,7 +166,7 @@ class WebBox:
         """ There has been an update to the webbox store, so send the changes to the clients connected via websocket. """
         logging.debug("Updating websocket clients...")
 
-        journal = Journal(os.path.join(self.config['webbox_dir'],self.config['webbox']['data_dir'],self.config['webbox']['journal_dir']), self.config['webbox']['journalid'])
+        journal = Journal(os.path.join(self.config['webbox_dir'], self.config['journal']))
         hashes = journal.get_version_hashes()
         if "previous" in hashes:
             previous = hashes["previous"]
@@ -190,6 +190,11 @@ class WebBox:
                 self.websocket.sendMessage(ntrips, False)
 
 
+    def get_subscriptions(self):
+        """ Get a new subscriptions object, used by this class and also the webbox handler. """
+        filename = os.path.join(self.config['webbox_dir'],self.config['subscriptions'])
+        return Subscriptions(filename)
+
     def updated_resource(self, uri, type):
         """ Handle an update to a resource and send out updates to subcribers. """
 
@@ -197,7 +202,7 @@ class WebBox:
 
         logging.debug("resource [%s] updated, notify subscribers" % uri)
 
-        subscriptions = Subscriptions(self.server_url, self.config)
+        subscriptions = self.get_subscriptions()
         subscribers = subscriptions.get_subscribers(uri)
         logging.debug("subscribers are: %s" % str(subscribers))
 
@@ -307,7 +312,7 @@ class WebBox:
     def handle_update(self, since_repository_hash):
         """ Handle calls to the Journal update URL. """
 
-        journal = Journal(os.path.join(self.config['webbox_dir'],self.config['webbox']['data_dir'],self.config['webbox']['journal_dir']), self.config['webbox']['journalid'])
+        journal = Journal(os.path.join(self.config['webbox_dir'], self.config['journal']))
         uris_changed = journal.since(since_repository_hash)
         logging.debug("URIs changed: %s" % str(uris_changed))
 

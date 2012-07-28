@@ -46,7 +46,7 @@ class WebBoxHandler:
         return self.webbox.send_message(recipient, message)
 
     def _subscriptions(self):
-        return self.webbox.subscriptions
+        return self.webbox.get_subscriptions()
 
 
 

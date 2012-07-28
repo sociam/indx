@@ -23,9 +23,9 @@ from diskstore import DiskStore
 
 class Subscriptions:
 
-    def __init__(self, webbox_uri, config):
+    def __init__(self, subscriptions_file):
         """ Open/create a subscriptions list for the named webbox URI. """
-        self.store = DiskStore(os.path.join(config['webbox_dir'],config['webbox']['data_dir'],config['webbox']['subscriptions']))
+        self.store = DiskStore(subscriptions_file)
 
     def _safe_hash(self, key):
         """ Turn a rdflib (or whatever) object into an ascii string to use as a DBM/Shelve key, ignore unicode errors. """
