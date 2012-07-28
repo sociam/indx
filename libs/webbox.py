@@ -78,66 +78,70 @@ class WebBox:
 
 
     def response(self, environ, start_response):
-        req_type = environ['REQUEST_METHOD']
-        rfile = environ['wsgi.input']
+        logging.debug("Calling WebBox response().")
+        try:
+            req_type = environ['REQUEST_METHOD']
+            rfile = environ['wsgi.input']
 
+            if "REQUEST_URI" in environ:
+                url = urlparse(environ['REQUEST_URI'])
+                req_path = url.path
+                req_qs = parse_qs(url.query)
+            else:
+                req_path = environ['PATH_INFO']
+                req_qs = parse_qs(environ['QUERY_STRING'])
 
-        if "REQUEST_URI" in environ:
-            url = urlparse(environ['REQUEST_URI'])
-            req_path = url.path
-            req_qs = parse_qs(url.query)
-        else:
-            req_path = environ['PATH_INFO']
-            req_qs = parse_qs(environ['QUERY_STRING'])
+            # add the module path onto the req_path
+            req_path = self.path + req_path
 
-        # add the module path onto the req_path
-        req_path = self.path + req_path
+            if req_type == "POST":
+                response = self.do_POST(rfile, environ, req_path, req_qs)
+            elif req_type == "PUT":
+                response = self.do_PUT(rfile, environ, req_path, req_qs)
+            elif req_type == "OPTIONS":
+                reponse = self.do_OPTIONS()
+            else:
+                response = self.do_GET(environ, req_path, req_qs)
 
+            # get headers from response if they exist
+            headers = []
+            if "headers" in response:
+                headers = response['headers']
 
-        if req_type == "POST":
-            response = self.do_POST(rfile, environ, req_path, req_qs)
-        elif req_type == "PUT":
-            response = self.do_PUT(rfile, environ, req_path, req_qs)
-        elif req_type == "OPTIONS":
-            reponse = self.do_OPTIONS()
-        else:
-            response = self.do_GET(environ, req_path, req_qs)
+            # set a content-type
+            if "type" in response:
+                headers.append( ("Content-type", response['type']) )
+            else:
+                headers.append( ("Content-type", "text/plain") )
 
-        # get headers from response if they exist
-        headers = []
-        if "headers" in response:
-            headers = response['headers']
+            # add CORS headers (blanket allow, for now)
+            headers.append( ("Access-Control-Allow-Origin", "*") )
+            headers.append( ("Access-Control-Allow-Methods", "POST, GET, PUT, OPTIONS") )
 
-        # set a content-type
-        if "type" in response:
-            headers.append( ("Content-type", response['type']) )
-        else:
-            headers.append( ("Content-type", "text/plain") )
+            # put repository version weak ETag header
+            # journal to load the original repository version
 
-        # add CORS headers (blanket allow, for now)
-        headers.append( ("Access-Control-Allow-Origin", "*") )
-        headers.append( ("Access-Control-Allow-Methods", "POST, GET, PUT, OPTIONS") )
+            # NOTE have to re-load journal here (instead of using self.journal) because different threads can't share the same sqlite object
+            j = Journal(os.path.join(self.config['webbox_dir'], self.config['journal']))
+            
+            latest_hash = j.get_version_hashes() # current and previous
+            
+            if latest_hash['current'] is not None:
+                headers.append( ('ETag', "W/\"%s\""%latest_hash['current'] ) ) # 'W/' means a Weak ETag
+            if latest_hash['previous'] is not None:
+                headers.append( ('X-ETag-Previous', "W/\"%s\""%latest_hash['previous']) ) # 'W/' means a Weak ETag
 
+            data_length = len(response['data'])
+            headers.append( ("Content-length", data_length) )
 
-        # put repository version weak ETag header
-        # journal to load the original repository version
+            start_response(str(response['status']) + " " + response['reason'], headers)
+            logging.debug("Sending data of size: "+str(data_length))
+            return [response['data']]
 
-        # NOTE have to re-load journal here (instead of using self.journal) because different threads can't share the same sqlite object
-        j = Journal(os.path.join(self.config['webbox_dir'], self.config['journal']))
-        
-        latest_hash = j.get_version_hashes() # current and previous
-        
-        if latest_hash['current'] is not None:
-            headers.append( ('ETag', "W/\"%s\""%latest_hash['current'] ) ) # 'W/' means a Weak ETag
-        if latest_hash['previous'] is not None:
-            headers.append( ('X-ETag-Previous', "W/\"%s\""%latest_hash['previous']) ) # 'W/' means a Weak ETag
-
-        data_length = len(response['data'])
-        headers.append( ("Content-length", data_length) )
-
-        start_response(str(response['status']) + " " + response['reason'], headers)
-        logging.debug("Sending data of size: "+str(data_length))
-        return response['data']
+        except Exception as e:
+            logging.debug("Error in WebBox.response(), returning 500: "+str(e))
+            start_response("500 Internal Server Error", ())
+            return [""]
 
 
     def do_OPTIONS(self):

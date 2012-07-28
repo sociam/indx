@@ -74,15 +74,6 @@ query_store = FourStore(config['4store']['host'], config['4store']['port'])
 webbox_path = "webbox" # e.g. /webbox
 wb = WebBox("/"+webbox_path, query_store, config['webbox'])
 
-# WebBox WSGI handler
-def webbox_wsgi(environ, start_response):
-    logging.debug("WebBox WSGI response.")
-    try:
-        return [wb.response(environ, start_response)] # do not remove outer array [], it degrades transfer speed
-    except Exception as e:
-        logging.debug("Error, returning 500: "+str(e))
-        start_response("500 Internal Server Error", ())
-        return [""]
 
 # get values to pass to web server
 server_address = config['server']['address']
@@ -106,7 +97,7 @@ class FileNoDirectoryListings(File):
 resource = FileNoDirectoryListings(os.path.join(os.path.dirname(__file__), "html"))
 
 # set up path handlers e.g. /webbox
-resource.putChild(webbox_path, WSGIResource(reactor, reactor.getThreadPool(), webbox_wsgi))
+resource.putChild(webbox_path, WSGIResource(reactor, reactor.getThreadPool(), wb.response))
 factory = Site(resource)
 
 # enable ssl (or not)
