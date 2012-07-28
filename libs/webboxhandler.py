@@ -37,7 +37,7 @@ class WebBoxHandler:
 
     """ functions to return things from the webbox, do not use self.webbox directly. """
     def _webbox_url(self):
-        return self.webbox.webbox_url
+        return self.webbox.server_url
 
     def _uri2path(self, uri):
         return self.webbox.uri2path(uri)
