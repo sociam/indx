@@ -55,7 +55,7 @@ class WebBoxSetup:
             config = json.loads(config_lines)
 
             # add 4store kb based on username
-            config['4store']['kbname'] = kbname
+            config['webbox']['4store']['kbname'] = kbname
 
             # write updated config
             conf_fh = open(webbox_config, "w")
