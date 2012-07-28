@@ -24,7 +24,7 @@ class WebBoxSetup:
     def __init__(self):
         pass
 
-    def setup(self, webbox_dir, webbox_default_config_file, cert_dir, kbname):
+    def setup(self, webbox_dir, webbox_default_config_file, kbname):
         """ Setup a webbox directory from defaults if it doesn't exist. """
 
         if not os.path.exists(webbox_dir): # no config for this user, set them up

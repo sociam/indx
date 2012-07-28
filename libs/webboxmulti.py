@@ -92,6 +92,8 @@ class WebBoxMulti:
 
         path = "webbox"
 
+        wb['config']['url'] = self.config['url_scheme'] + "://" + self.config['management']['host'] + ":" + self.config['management']['port'] + "/" + wb['directory'] + "/" + path
+
         webbox = WebBox(wb['config'])
 
         resource = FileNoDirectoryListings(os.path.join(self.config['management']['basedir'], "html"))

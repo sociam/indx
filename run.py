@@ -26,7 +26,7 @@ from webserver import WebServer
 kbname = "webbox_" + getpass.getuser() # per user knowledge base
 webbox_dir = os.path.expanduser('~'+os.sep+".webbox")
 setup = WebBoxSetup()
-setup.setup(webbox_dir, "webbox.json.default", "data", kbname) # directory, default config, default certification dir, kbname
+setup.setup(webbox_dir, "webbox.json.default", kbname) # directory, default config, kbname
 
 
 # load configuration into 'config' variable

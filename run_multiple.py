@@ -52,7 +52,8 @@ config = {
                 # subdirectories
                 "file_dir": "files", # relative to webbox dir
 
-                "url": "https://localhost:8210/daniel/webbox", # how the webbox sees itself (used to check owner in RDF)
+                # now generated on the fly
+                #"url": "https://localhost:8210/daniel/webbox", # how the webbox sees itself (used to check owner in RDF)
 
                 # 4store configuration
                 "4store": {
