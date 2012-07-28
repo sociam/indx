@@ -9,3 +9,4 @@ mimeparse
 pyopenssl
 pystache
 psutil
+webbrowser
