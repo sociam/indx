@@ -38,7 +38,7 @@ def http_get(host, path, headers={}):
 #        data = result.read()
         data = threads.blockingCallFromThread(reactor, result.read)
     except Error as e:
-        print e
+        logging.debug("Error in http_get: "+str(e))
 
     if result.status >= 200 and result.status <= 299:
         logging.debug("Status: Successful")
@@ -67,7 +67,7 @@ def http_put(host, path, data, content_type):
         #result = connection.getresponse()
         result = threads.blockingCallFromThread(reactor, connection.getresponse)
     except Error as e:
-        print e
+        logging.debug("Error in http_put: "+str(e))
 
     # Now result.status and result.reason contains interesting stuff
     logging.debug("PUT file to: "+host+", at path: "+path+", content-type: "+content_type+", contents: "+str(data))
@@ -93,7 +93,7 @@ def http_post(host, path, data, args):
         #result = connection.getresponse()
         result = threads.blockingCallFromThread(reactor, connection.getresponse)
     except Error as e:
-        print e
+        logging.debug("Error in http_post: "+str(e))
 
     # Now result.status and result.reason contains interesting stuff
     logging.debug("POST file to: "+host+", at path: "+path)
@@ -119,7 +119,7 @@ def resolve_uri(self, uri):
         #data = url.read()
         data = threads.blockingCallFromThread(reactor, url.read)
     except Error as e:
-        print e
+        logging.debug("Error in resolve_uri: "+str(e))
 
     return data
 

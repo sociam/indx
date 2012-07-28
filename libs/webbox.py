@@ -74,10 +74,8 @@ class WebBox:
             "text/json": "json-ld",
         }
 
-        self.subscriptions = Subscriptions(self.server_url, config)
-        self.journal = Journal(os.path.join(config['webbox_dir'],config['webbox']['data_dir'],config['webbox']['journal_dir']), config['webbox']['journalid'])
         self.websocket = WebSocketClient(host="localhost",port=8214) #TODO from config file
-            
+
 
     def response(self, environ, start_response):
         req_type = environ['REQUEST_METHOD']
@@ -86,24 +84,24 @@ class WebBox:
 
         if "REQUEST_URI" in environ:
             url = urlparse(environ['REQUEST_URI'])
-            self.req_path = url.path
-            self.req_qs = parse_qs(url.query)
+            req_path = url.path
+            req_qs = parse_qs(url.query)
         else:
-            self.req_path = environ['PATH_INFO']
-            self.req_qs = parse_qs(environ['QUERY_STRING'])
+            req_path = environ['PATH_INFO']
+            req_qs = parse_qs(environ['QUERY_STRING'])
 
         # add the module path onto the req_path
-        self.req_path = self.path + self.req_path
+        req_path = self.path + req_path
 
 
         if req_type == "POST":
-            response = self.do_POST(rfile, environ)
+            response = self.do_POST(rfile, environ, req_path, req_qs)
         elif req_type == "PUT":
-            response = self.do_PUT(rfile, environ)
+            response = self.do_PUT(rfile, environ, req_path, req_qs)
         elif req_type == "OPTIONS":
             reponse = self.do_OPTIONS()
         else:
-            response = self.do_GET(environ)
+            response = self.do_GET(environ, req_path, req_qs)
 
         # get headers from response if they exist
         headers = []
@@ -158,7 +156,9 @@ class WebBox:
         logging.debug("Journal updating on graph: "+graphuri)
 
         repository_hash = uuid.uuid1().hex # TODO in future, make this a hash instead of a uuid
-        self.journal.add(repository_hash, [graphuri])
+
+        journal = Journal(os.path.join(self.config['webbox_dir'],self.config['webbox']['data_dir'],self.config['webbox']['journal_dir']), self.config['webbox']['journalid'])
+        journal.add(repository_hash, [graphuri])
 
         self.update_websocket_clients()
 
@@ -166,11 +166,12 @@ class WebBox:
         """ There has been an update to the webbox store, so send the changes to the clients connected via websocket. """
         logging.debug("Updating websocket clients...")
 
-        hashes = self.journal.get_version_hashes()
+        journal = Journal(os.path.join(self.config['webbox_dir'],self.config['webbox']['data_dir'],self.config['webbox']['journal_dir']), self.config['webbox']['journalid'])
+        hashes = journal.get_version_hashes()
         if "previous" in hashes:
             previous = hashes["previous"]
             
-            uris_changed = self.journal.since(previous)
+            uris_changed = journal.since(previous)
             logging.debug("URIs changed: %s" % str(uris_changed))
 
             if len(uris_changed) > 0:
@@ -196,7 +197,8 @@ class WebBox:
 
         logging.debug("resource [%s] updated, notify subscribers" % uri)
 
-        subscribers = self.subscriptions.get_subscribers(uri)
+        subscriptions = Subscriptions(self.server_url, self.config)
+        subscribers = subscriptions.get_subscribers(uri)
         logging.debug("subscribers are: %s" % str(subscribers))
 
         for subscriber in subscribers:
@@ -211,20 +213,20 @@ class WebBox:
 
         return None # success
 
-    def do_POST(self, rfile, environ):
+    def do_POST(self, rfile, environ, req_path, req_qs):
         """ Handle a POST (update). """
 
-        post_uri = self.server_url + self.req_path
+        post_uri = self.server_url + req_path
         logging.debug("POST of uri: %s" % post_uri)
 
 
         # TODO check for hackery properly, i.e. os.chroot
-        if ".." in self.req_path:
+        if ".." in req_path:
             return {"data": ".. not allowed in path", "status": 500, "reason": "Internal Server Error"}
 
-        file_path = self.file_dir + os.sep +self.req_path
+        file_path = self.file_dir + os.sep + req_path
 
-        logging.debug("self.file_dir: %s, self.req_path: %s" % (self.file_dir, self.req_path))
+        logging.debug("self.file_dir: %s, req_path: %s" % (self.file_dir, req_path))
         logging.debug("file path is: %s" % file_path)
 
         if environ.has_key("CONTENT_TYPE"):
@@ -232,11 +234,11 @@ class WebBox:
 
 
         # if a .rdf is uploaded, set the content-type manually
-        if self.req_path[-4:] == ".rdf":
+        if req_path[-4:] == ".rdf":
             content_type = "application/rdf+xml"
-        elif self.req_path[-3:] == ".n3":
+        elif req_path[-3:] == ".n3":
             content_type = "text/turtle"
-        elif self.req_path[-3:] == ".nt":
+        elif req_path[-3:] == ".nt":
             content_type = "text/plain"
 
 
@@ -267,11 +269,11 @@ class WebBox:
 
             # prepare the arguments for local PUTing of this data
             graph = self.graph
-            if self.req_qs.has_key('graph'):
-                graph = self.req_qs['graph'][0]
+            if req_qs.has_key('graph'):
+                graph = req_qs['graph'][0]
                 path = self.uri2path(graph)
             else:
-                path = self.req_path
+                path = req_path
 
             # do SPARQL PUT
             logging.debug("WebBox SPARQL POST to graph (%s)" % (graph) )
@@ -294,7 +296,7 @@ class WebBox:
                 logging.debug("file existed, so we're removing it, and then calling a PUT internally")
                 os.remove(file_path)
 
-            put_response = self.do_PUT(rfile, environ)
+            put_response = self.do_PUT(rfile, environ, req_path, req_qs)
             if put_response['status'] == 201:
                 self.updated_resource(post_uri, "file") # notify subscribers
                 return {"data": "Updated", "status": 200, "reason": "OK"}
@@ -302,17 +304,11 @@ class WebBox:
                 return put_response
         # never reach here
 
-    def handle_update(self):
+    def handle_update(self, since_repository_hash):
         """ Handle calls to the Journal update URL. """
 
-        if "since" in self.req_qs:
-            # get the triples of all changed URIs since this repository URI version
-            since_repository_hash = self.req_qs['since'][0]
-        else:
-            since_repository_hash = None
-
-
-        uris_changed = self.journal.since(since_repository_hash)
+        journal = Journal(os.path.join(self.config['webbox_dir'],self.config['webbox']['data_dir'],self.config['webbox']['journal_dir']), self.config['webbox']['journalid'])
+        uris_changed = journal.since(since_repository_hash)
         logging.debug("URIs changed: %s" % str(uris_changed))
 
         if len(uris_changed) > 0:
@@ -340,16 +336,19 @@ class WebBox:
 
 
 
-    def do_GET(self, environ):
-        logging.debug("path: %s req_path: %s" % (self.path, self.req_path))
+    def do_GET(self, environ, req_path, req_qs):
+        logging.debug("path: %s req_path: %s" % (self.path, req_path))
 
         # journal update called
-        if self.req_path == self.path + "/update":
-            return self.handle_update()
+        if req_path == self.path + "/update":
+            since = None
+            if "since" in req_qs:
+                since = req_qs['since'][0]
+            return self.handle_update(since)
 
-        if self.req_qs.has_key("query"):
+        if req_qs.has_key("query"):
             # SPARQL query because ?query= is present
-            query = self.req_qs['query'][0]
+            query = req_qs['query'][0]
             response = self.query_store.query(query)
 
             sp = SparqlParse(query)
@@ -370,10 +369,10 @@ class WebBox:
         else:
             # is this a plain file that exists?
             # TODO check for hackery properly, i.e. os.chroot
-            if ".." in self.req_path:
+            if ".." in req_path:
                 return {"data": ".. not allowed in path", "status": 403, "reason": "Forbidden"}
 
-            file_path = self.file_dir + os.sep + self.req_path
+            file_path = self.file_dir + os.sep + req_path
             if os.path.exists(file_path):
                 # return the file
                 logging.debug("Opening file: "+file_path)
@@ -615,10 +614,10 @@ class WebBox:
         return handler.handle_all()
 
 
-    def do_PUT(self, rfile, environ):
+    def do_PUT(self, rfile, environ, req_path, req_qs):
         content_type = "application/rdf+xml"
 
-        put_uri = self.server_url + self.req_path
+        put_uri = self.server_url + req_path
         logging.debug("PUT of uri: %s" % put_uri)
 
 
@@ -631,11 +630,11 @@ class WebBox:
 
 
         # if a .rdf is uploaded, set the content-type manually
-        if self.req_path[-4:] == ".rdf":
+        if req_path[-4:] == ".rdf":
             content_type = "application/rdf+xml"
-        elif self.req_path[-3:] == ".n3":
+        elif req_path[-3:] == ".n3":
             content_type = "text/turtle"
-        elif self.req_path[-3:] == ".nt":
+        elif req_path[-3:] == ".nt":
             content_type = "text/plain"
 
 
@@ -663,13 +662,13 @@ class WebBox:
             # prepare the arguments for local PUTing of this data
             graph_replace = False # default to not replaceing the graph, because we put it in the ReceivedGraph
             graph = self.graph
-            if self.req_qs.has_key('graph'):
-                graph = self.req_qs['graph'][0]
+            if req_qs.has_key('graph'):
+                graph = req_qs['graph'][0]
                 path = self.uri2path(graph)
                 graph_replace = True # if they have specified the graph, we replace it, since this is a PUT
 
             else:
-                path = self.req_path
+                path = req_path
 
             # do SPARQL PUT
             logging.debug("WebBox SPARQL PUT to graph (%s)" % (graph) )
@@ -687,12 +686,12 @@ class WebBox:
             # this is a FILE upload
             
             # TODO check for hackery properly, i.e. os.chroot
-            if ".." in self.req_path:
+            if ".." in req_path:
                 return {"data": ".. not allowed in path", "status": 500, "reason": "Internal Server Error"}
 
-            file_path = self.file_dir + os.sep +self.req_path
+            file_path = self.file_dir + os.sep + req_path
 
-            logging.debug("self.file_dir: %s, self.req_path: %s" % (self.file_dir, self.req_path))
+            logging.debug("self.file_dir: %s, req_path: %s" % (self.file_dir, req_path))
             logging.debug("file path is: %s" % file_path)
 
             exists = os.path.exists(file_path)
@@ -709,7 +708,7 @@ class WebBox:
                 f.close()
     
                 # the [1:] gets rid of the /webbox/ bit of the path, so FIXME be more intelligent?
-                self.add_new_file(os.sep.join(os.path.split(self.req_path)[1:])) # add metadata to store TODO handle error on return false
+                self.add_new_file(os.sep.join(os.path.split(req_path)[1:])) # add metadata to store TODO handle error on return false
             except Exception as e:
                 logging.debug(str( "Error writing to file: %s, exception is: %s" % (file_path, str(e)) )) 
                 return {"data": "", "status": 500, "reason": "Internal Server Error"}

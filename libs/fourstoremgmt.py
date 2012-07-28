@@ -16,7 +16,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
-import psutil, os
+import psutil, os, logging
 
 class FourStoreMgmt:
     """ Manages 4store processes. """
@@ -27,7 +27,7 @@ class FourStoreMgmt:
         self.pid_list = None
 
     def killall(self, process):
-        print "killing process: "+str(process.pid)+" : "+str(process)
+        logging.debug("Killing process: "+str(process.pid)+" : "+str(process))
         children = process.get_children(recursive=True)
         process.kill()
         # kill children too, sometimes they stick around
@@ -42,7 +42,6 @@ class FourStoreMgmt:
                 try:
                     if pid.name == "4s-backend" or pid.name == "4s-httpd":
                         attrs = pid.as_dict()
-                        print str(attrs['cmdline'])
                         if self.kbname in attrs['cmdline']: # FIXME pretty rough
                             self.killall(pid)
 

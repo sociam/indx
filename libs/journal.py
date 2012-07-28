@@ -116,15 +116,15 @@ class Journal:
 #        """ Replay the journal from the start into the store. """
 #        pass
 
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG)
-
-    j = Journal("testjournal")
-    j.add("deadb33f", ["http://danielsmith.eu/me#dan"])
-    j.add("deadb33f2", ["http://danielsmith.eu/me#dan", "http://hip.cat"])
-    j.add("deadb33f3", ["http://hip.cat"])
-
-    print str(j.since("deadb33f"))
-    print str(j.since("deadb33f2"))
-    print str(j.since("deadb33f3"))
+#if __name__ == "__main__":
+#    logging.basicConfig(level=logging.DEBUG)
+#
+#    j = Journal("testjournal")
+#    j.add("deadb33f", ["http://danielsmith.eu/me#dan"])
+#    j.add("deadb33f2", ["http://danielsmith.eu/me#dan", "http://hip.cat"])
+#    j.add("deadb33f3", ["http://hip.cat"])
+#
+#    print str(j.since("deadb33f"))
+#    print str(j.since("deadb33f2"))
+#    print str(j.since("deadb33f3"))
 

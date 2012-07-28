@@ -16,6 +16,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
+import logging
 from twisted.internet import reactor
 from autobahn.websocket import WebSocketServerFactory, WebSocketServerProtocol, listenWS
 
@@ -29,7 +30,7 @@ class UpdateServerProtocol(WebSocketServerProtocol):
 
     def onMessage(self, msg, binary):
         """ Binary is true/false, msg is the string of the message. """
-        print "msg: [%s] binary: [%s]" % (msg, binary)
+        logging.debug("WebSocket Msg: [%s] binary: [%s]" % (msg, binary))
 #        self.sendMessage(msg, binary)
         for sub in subscribers:
             sub.sendMessage(msg, binary)
