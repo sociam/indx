@@ -78,6 +78,8 @@ class WebBox:
 
 
     def response(self, environ, start_response):
+        """ WSGI response handler."""
+
         logging.debug("Calling WebBox response().")
         try:
             req_type = environ['REQUEST_METHOD']
