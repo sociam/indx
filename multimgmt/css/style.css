@@ -302,3 +302,46 @@ h1 {
 body {
     padding: 10px;
 }
+
+.wb_add {
+    margin-bottom: 10px;
+}
+
+.wb_add_form {
+    margin-bottom: 10px;
+}
+
+#wb_name {
+    border-top: 0px;
+    border-left: 0px;
+    border-right: 0px;
+    margin: 1px;
+    border-bottom: 1px solid #000;
+}
+
+.wb_list {
+    padding: 5px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    max-width: 400px;
+}
+
+.wb_inlist {
+    background-color: #eef;
+    margin: 5px;
+    padding: 5px;
+    text-align: center;
+}
+
+.wb_status {
+    padding-left: 10px;
+    padding-right: 10px;
+    font-weight: bold;
+}
+
+.wb_modify > a{
+    background-color: #fff;
+    border-radius: 5px;
+    padding: 3px 10px;
+}
+

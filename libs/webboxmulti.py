@@ -92,7 +92,7 @@ class WebBoxMulti:
 
         path = "webbox"
 
-        wb['config']['url'] = self.config['url_scheme'] + "://" + self.config['management']['host'] + ":" + self.config['management']['port'] + "/" + wb['directory'] + "/" + path
+        wb['config']['url'] = self.config['url_scheme'] + "://" + self.config['management']['host'] + ":" + str(self.config['management']['port']) + "/" + wb['directory'] + "/" + path
 
         webbox = WebBox(wb['config'])
 

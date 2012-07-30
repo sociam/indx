@@ -1,0 +1,38 @@
+{
+    "bindirs": [
+        "4store",
+        "../Resources/4store"
+    ],
+    "log": "/tmp/webbox_multi.log",
+    "htdigest": "htpasswd",
+    "management": {
+        "host": "localhost",
+        "port": 8210,
+        "srcdir": "multimgmt",
+        "ssl_cert": "data/server.crt",
+        "ssl_key": "data/server.key"
+    },
+    "url_scheme": "https",
+    "webboxes": [
+        {
+            "directory": "daniel",
+            "status": "stopped",
+            "config": {
+                "webbox_dir": "/Users/das05r/.webbox",
+                "ws_hostname": "localhost",
+                "ws_port": 8214,
+
+                "subscriptions": "subscriptions.sqlite",
+                "journal": "journal.sqlite",
+
+                "file_dir": "files",
+
+                "4store": {
+                    "host": "localhost",
+                    "port": 8212,
+                    "kbname": "webbox_das05r"
+                } 
+            }
+        }
+    ]
+}

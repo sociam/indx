@@ -19,52 +19,15 @@
 import sys, os, logging, json
 from webboxmulti import WebBoxMulti
 
-config = {
-    "bindirs": [
-        "4store", # add the 4store/ directory to the environment path (remove this under linux)
-        "../Resources/4store" # for the OSX .app
-    ],
-    "log": "/tmp/webbox_multi.log",
-    "htdigest": "htpasswd", # file with global htdigest authentication for server
-    "management": {
-        "host": "localhost",
-        "port": 8210,
-        "srcdir": "multimgmt",
-        "basedir": os.path.dirname(__file__),
-        "ssl_cert": "data/server.crt",
-        "ssl_key": "data/server.key",
-    },
-    "url_scheme": "https",
-    "webboxes": [
-        {
-            "directory": "daniel",
-            "status": "stopped",
-            "config": {
-                # webbox configuration
-                "webbox_dir": "/Users/das05r/.webbox",
-                "ws_hostname": "localhost",
-                "ws_port": 8214,
 
-                # sqlite dbs
-                "subscriptions": "subscriptions.sqlite", # subscription filename
-                "journal": "journal.sqlite", # journal filename
+# load configuration into 'config' variable
+config_filename = "multi_config.json"
+conf_fh = open(config_filename, "r")
+config = json.loads(conf_fh.read())
+conf_fh.close()
 
-                # subdirectories
-                "file_dir": "files", # relative to webbox dir
-
-                # now generated on the fly
-                #"url": "https://localhost:8210/daniel/webbox", # how the webbox sees itself (used to check owner in RDF)
-
-                # 4store configuration
-                "4store": {
-                    "host": "localhost",
-                    "port": 8212,
-                    "kbname": "webbox_das05r",
-                }, 
-            },
-        },
-    ],
-}
+config['config_filename'] = config_filename
+config['management']['basedir'] = os.path.dirname(__file__)
 
 # show debug messages in the log
 log_handler = logging.FileHandler(config['log'], "a")

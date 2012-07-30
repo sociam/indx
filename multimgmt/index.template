@@ -45,10 +45,17 @@
 
     <div class="wbs">
         <h2>WebBoxes</h2>
+        <div class="wb_add"><a href="#" id="wb_add_link">Add new WebBox</a></div>
+        <div class="wb_add_form" style="display: none;">
+            <form method="GET" action="/new">
+                <label for="wb_name">Webbox name: /</label><input name="name" id="wb_name" value="" />
+                <input id="wb_submit" type="submit" value="Create" />
+            </form>
+        </div>
         <div class="wb_list">
             {{#wbs}}
-                <div>
-                    <span class="wb_host"><a href="{{url_scheme}}://{{host}}:{{port}}/{{directory}}" target="_blank">{{directory}}</a></span>
+                <div class="wb_inlist">
+                    <span class="wb_host"><a href="{{url_scheme}}://{{host}}:{{port}}/{{directory}}" target="_blank">/{{directory}}/</a></span>
                     <span class="wb_status">{{status}}</span>
                     <span class="wb_modify"><a href="/{{modify_action}}/{{directory}}">{{modify}}</a></span>
                 </div>
@@ -72,6 +79,14 @@
   <script src="js/plugins.js"></script>
   <script src="js/script.js"></script>
   <!-- end scripts -->
+
+  <script>
+    $("#wb_add_link").click(function(){
+        $(".wb_add_form").slideDown();
+        $("#wb_name").focus();
+        return false; // don't follow the link
+    });
+  </script>
 
   <!-- Asynchronous Google Analytics snippet. Change UA-XXXXX-X to be your site's ID.
        mathiasbynens.be/notes/async-analytics-snippet -->
