@@ -17,7 +17,9 @@
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import logging, re, urllib2, uuid, rdflib, os, os.path, traceback, mimetypes
+import logging, re, urllib2, uuid, rdflib, os, os.path, traceback, mimetypes, time
+
+from lxml import objectify
 
 from rdflib.graph import Graph
 from time import strftime
@@ -91,7 +93,7 @@ class WebBox:
     def response(self, environ, start_response):
         """ WSGI response handler."""
 
-        logging.debug("Calling WebBox response().")
+        logging.debug("Calling WebBox response(): " + str(environ))
         try:
             req_type = environ['REQUEST_METHOD']
             rfile = environ['wsgi.input']
@@ -108,10 +110,20 @@ class WebBox:
                 response = self.do_POST(rfile, environ, req_path, req_qs)
             elif req_type == "PUT":
                 response = self.do_PUT(rfile, environ, req_path, req_qs)
-            elif req_type == "OPTIONS":
-                reponse = self.do_OPTIONS()
-            else:
+            elif req_type == "GET":
                 response = self.do_GET(environ, req_path, req_qs)
+            elif req_type == "OPTIONS":
+                response = self.do_OPTIONS()
+            elif req_type == "PROPFIND":
+                response = self.do_PROPFIND(rfile, environ, req_path, req_qs)
+            elif req_type == "LOCK":
+                response = self.do_LOCK(rfile, environ, req_path, req_qs)
+            elif req_type == "UNLOCK":
+                response = self.do_UNLOCK(rfile, environ, req_path, req_qs)
+            elif req_type == "DELETE":
+                response = self.do_DELETE(rfile, environ, req_path, req_qs)
+            else:
+                response = {"status": 405, "reason": "Method Not Allowed", "data": ""}
 
             # get headers from response if they exist
             headers = []
@@ -123,6 +135,8 @@ class WebBox:
                 headers.append( ("Content-type", response['type']) )
             else:
                 headers.append( ("Content-type", "text/plain") )
+
+            headers.append( ("DAV", "1, 2") )
 
             # add CORS headers (blanket allow, for now)
             headers.append( ("Access-Control-Allow-Origin", "*") )
@@ -153,6 +167,173 @@ class WebBox:
             start_response("500 Internal Server Error", ())
             return [""]
 
+    def get_prop_xml(self, url, path, directory=False, displayname=None):
+        """ Get the property XML (for WebDAV) for this file. """
+
+        stat = os.stat(path)
+        creation = time.strftime("%Y-%m-%dT%H:%M:%S%z", time.gmtime(stat.st_ctime) )
+        length = str(stat.st_size)
+        modified = time.strftime("%A, %d-%b-%y %H:%M:%S GMT", time.gmtime(stat.st_mtime) )
+
+        if directory:
+            resourcetype = "<D:resourcetype><D:collection/></D:resourcetype>"
+        else:
+            resourcetype = "<D:resourcetype/>"
+
+        if displayname is not None:
+            displayname = "<D:displayname>%s</D:displayname>" % displayname
+        else:
+            displayname = ""
+
+        return """
+<D:response>
+ <D:href>%s</D:href>
+ <D:propstat>
+  <D:prop>
+   <D:quota-available-bytes/>
+   <D:quota-used-bytes/>
+   <D:quota/>
+   <D:quotaused/>
+   <D:creationdate>
+    %s
+   </D:creationdate>
+   <D:getcontentlength>
+    %s
+   </D:getcontentlength>
+   <D:getlastmodified>
+    %s
+   </D:getlastmodified>
+   %s
+   %s
+                    <D:supportedlock>
+                         <D:lockentry>
+                              <D:lockscope><D:exclusive/></D:lockscope>
+                              <D:locktype><D:write/></D:locktype>
+                         </D:lockentry>
+                         <D:lockentry>
+                              <D:lockscope><D:shared/></D:lockscope>
+                              <D:locktype><D:write/></D:locktype>
+                         </D:lockentry>
+                    </D:supportedlock>
+  </D:prop>
+ </D:propstat>
+</D:response>
+""" % (url, creation, length, modified, displayname, resourcetype)
+
+    def do_DELETE(self, rfile, environ, req_path, req_qs):
+        return {"status": 204, "reason": "No Content", "data": ""}
+
+    def do_PROPFIND(self, rfile, environ, req_path, req_qs):
+        logging.debug("WebDAV PROPFIND")
+
+        size = 0
+        if environ.has_key("CONTENT_LENGTH"):
+            size = int(environ['CONTENT_LENGTH'])
+
+        file = ""
+        if size > 0:
+            # read into file
+            file = rfile.read(size)
+
+        if file != "":
+            logging.debug("got request: " + file)
+
+        # FIXME we ignore the specifics of the request and just give what Finder wants: getlastmodified, getcontentlength, creationdate and resourcetype
+        xmlout = ""
+
+        file_path = self.file_dir + req_path
+        if os.path.exists(file_path):
+            if os.path.isdir(file_path):
+                # do an LS
+                displyname = None
+                if req_path == "/":
+                    displayname = "WebBox"
+                xmlout += self.get_prop_xml(self.server_url + req_path, file_path, directory=True, displayname=displayname)
+                for filename in os.listdir(file_path):
+                    fname = filename
+                    if req_path[-1:] != "/":
+                        fname = "/" + filename
+
+                    xmlout += self.get_prop_xml(self.server_url + req_path + filename, file_path + filename)
+            else:
+                # return the properties for a single file
+                xmlout += self.get_prop_xml(self.server_url + req_path, file_path)
+        else:
+            return {"status": 404, "reason": "Not Found", "data": ""}
+
+        # surround in xml
+        xmlout = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n<D:multistatus xmlns:D=\"DAV:\">" + xmlout + "\n</D:multistatus>"
+
+        logging.debug(xmlout)
+
+        return {"status": 207, "reason": "Multi-Status", "data": xmlout, "type": "text/xml; charset=\"utf-8\""}
+
+        
+    def do_LOCK(self, rfile, environ, req_path, req_qs):
+        logging.debug("WebDAV Lock on file: "+req_path)
+
+        try:
+            size = 0
+            if environ.has_key("CONTENT_LENGTH"):
+                size = int(environ['CONTENT_LENGTH'])
+
+            file = ""
+            if size > 0:
+                # read into file
+                file = rfile.read(size)
+
+            fileroot = self.server_url + req_path
+
+            x = objectify.fromstring(file)
+
+            owner = x.owner.href.text
+            lockscope = str([ el.tag for el in x.lockscope.iterchildren() ][0])[6:] # 6: gets rid of {DAV:}
+            locktype = str([ el.tag for el in x.locktype.iterchildren() ][0])[6:]
+            
+
+            token = "urn:uuid:%s" % (str(uuid.uuid1()))
+
+            lock = """
+           <D:locktype><D:%s/></D:locktype>
+           <D:lockscope><D:%s/></D:lockscope>
+           <D:depth>infinity</D:depth>
+           <D:owner>
+             <D:href>%s</D:href>
+           </D:owner>
+           <D:timeout>Second-604800</D:timeout>
+           <D:locktoken>
+             <D:href
+             >%s</D:href>
+           </D:locktoken>
+           <D:lockroot>
+             <D:href
+             >%s</D:href>
+           </D:lockroot>
+""" % (locktype, lockscope, owner, token, fileroot)
+
+            lock = """
+<?xml version="1.0" encoding="utf-8" ?> 
+  <D:prop xmlns:D="DAV:"> 
+    <D:lockdiscovery> 
+      <D:activelock>
+""" + lock + """
+      </D:activelock>
+    </D:lockdiscovery>
+  </D:prop>
+"""
+            return {"status": 200, "reason": "OK", "data": lock, type: "application/xml; charset=\"utf-8\"", "headers": [("Lock-Token", "<"+token+">")]}
+
+        except Exception as e:
+            return {"status": 400, "reason": "Bad Request", "data": ""}
+
+
+
+    def do_UNLOCK(self, rfile, environ, req_path, req_qs):
+        logging.debug("WebDAV Unlock on file: "+req_path)
+        # FIXME always succeeds
+        return {"status": 204, "reason": "No Content", "data": ""}
+
+
 
     def do_OPTIONS(self):
         logging.debug("Sending 200 response to OPTIONS")
@@ -160,7 +341,20 @@ class WebBox:
             [ ("Allow", "PUT"),
               ("Allow", "GET"),
               ("Allow", "POST"),
+              #("Allow", "HEAD"),
               ("Allow", "OPTIONS"),
+
+              # WebDAV methods
+              ("Allow", "PROPFIND"),
+              ("Allow", "PROPPATCH"),
+              #("Allow", "TRACE"),
+              #("Allow", "ORDERPATCH"),
+              #("Allow", "MKCOL"),
+              ("Allow", "DELETE"),
+              #("Allow", "COPY"),
+              #("Allow", "MOVE"),
+              ("Allow", "LOCK"),
+              ("Allow", "UNLOCK"),
             ]
         } 
 
@@ -301,7 +495,7 @@ class WebBox:
 
             self.updated_resource(post_uri, "rdf") # notify subscribers
             self.add_to_journal(graph)
-            return {"data": "Successful.", "status": 200, "reason": "OK"}
+            return {"data": "", "status": 204, "reason": "No Content"}
 
         else:
             logging.debug("a POST of a file")
@@ -313,9 +507,9 @@ class WebBox:
                 os.remove(file_path)
 
             put_response = self.do_PUT(rfile, environ, req_path, req_qs)
-            if put_response['status'] == 201:
+            if put_response['status'] == 201 or put_response['status'] == 200 or put_response['status'] == 204:
                 self.updated_resource(post_uri, "file") # notify subscribers
-                return {"data": "Updated", "status": 200, "reason": "OK"}
+                return {"data": "", "status": 204, "reason": "No Content"}
             else:
                 return put_response
         # never reach here
@@ -564,7 +758,13 @@ class WebBox:
         uri = self.server_url + os.sep + filename
 
         # create the RDF
-        graph = Graph()
+        graph = None
+        while graph is None:
+            try:
+                graph = Graph()
+            except Exception as e:
+                logging.debug("Got error making graph, trying again.")
+
         graph.add(
             (rdflib.URIRef(uri),
              rdflib.URIRef("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
@@ -622,12 +822,19 @@ class WebBox:
         logging.debug("PUT of uri: %s" % put_uri)
 
 
-        size = 0
-        if environ.has_key("CONTENT_LENGTH"):
-            size = int(environ['CONTENT_LENGTH'])
+        if environ.has_key("HTTP_TRANSFER_ENCODING") and environ['HTTP_TRANSFER_ENCODING'].lower() == "chunked":
+            # part-file is being uploaded, deal with this slightly differently
+            size = int(environ['HTTP_X_EXPECTED_ENTITY_LENGTH'])
+            content_type = ""
 
-        if environ.has_key("CONTENT_TYPE"):
-            content_type = environ['CONTENT_TYPE']
+        else:
+
+            size = 0
+            if environ.has_key("CONTENT_LENGTH"):
+                size = int(environ['CONTENT_LENGTH'])
+
+            if environ.has_key("CONTENT_TYPE"):
+                content_type = environ['CONTENT_TYPE']
 
 
         # if a .rdf is uploaded, set the content-type manually
@@ -707,11 +914,11 @@ class WebBox:
                 # the [1:] gets rid of the /webbox/ bit of the path, so FIXME be more intelligent?
                 self.add_new_file(os.sep.join(os.path.split(req_path)[1:])) # add metadata to store TODO handle error on return false
             except Exception as e:
-                logging.debug(str( "Error writing to file: %s, exception is: %s" % (file_path, str(e)) )) 
+                logging.debug(str( "Error writing to file: %s, exception is: %s" % (file_path, str(e)) ) + traceback.format_exc())
                 return {"data": "", "status": 500, "reason": "Internal Server Error"}
 
             # no adding to journal here, because it's a file
-            return {"data": "Created.", "status": 201, "reason": "Created"}
+            return {"data": "", "status": 204, "reason": "No Content"}
             
 
         # TODO send something meaningful!

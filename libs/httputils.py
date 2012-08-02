@@ -37,7 +37,7 @@ def http_get(host, path, headers={}):
 
 #        data = result.read()
         data = threads.blockingCallFromThread(reactor, result.read)
-    except Error as e:
+    except Exception as e:
         logging.debug("Error in http_get: "+str(e))
 
     if result.status >= 200 and result.status <= 299:
@@ -66,7 +66,7 @@ def http_put(host, path, data, content_type):
     try:
         #result = connection.getresponse()
         result = threads.blockingCallFromThread(reactor, connection.getresponse)
-    except Error as e:
+    except Exception as e:
         logging.debug("Error in http_put: "+str(e))
 
     # Now result.status and result.reason contains interesting stuff
@@ -92,7 +92,7 @@ def http_post(host, path, data, args):
     try:
         #result = connection.getresponse()
         result = threads.blockingCallFromThread(reactor, connection.getresponse)
-    except Error as e:
+    except Exception as e:
         logging.debug("Error in http_post: "+str(e))
 
     # Now result.status and result.reason contains interesting stuff
@@ -118,7 +118,7 @@ def resolve_uri(self, uri):
     try:
         #data = url.read()
         data = threads.blockingCallFromThread(reactor, url.read)
-    except Error as e:
+    except Exception as e:
         logging.debug("Error in resolve_uri: "+str(e))
 
     return data
