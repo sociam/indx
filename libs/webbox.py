@@ -78,7 +78,7 @@ class WebBox:
             "text/json": "json-ld",
         }
 
-        self.websocket = WebSocketClient(host=config['ws_hostname'],port=['ws_port']) #TODO from config file
+        self.websocket = WebSocketClient(host=config['ws_hostname'],port=config['ws_port'])
 
         # run 4store 
         self.fourstore = FourStoreMgmt(config['4store']['kbname'], http_port=config['4store']['port']) 
