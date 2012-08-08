@@ -93,7 +93,6 @@ class WebBox:
         """ Shut down the web box. """
         self.fourstore.stop()
 
-
     def response(self, environ, start_response):
         """ WSGI response handler."""
 
@@ -436,12 +435,10 @@ class WebBox:
         post_uri = self.server_url + req_path
         logging.debug("POST of uri: %s" % post_uri)
 
-
-        # TODO check for hackery properly, i.e. os.chroot
-        if ".." in req_path:
-            return {"data": ".. not allowed in path", "status": 500, "reason": "Internal Server Error"}
-
-        file_path = self.file_dir + os.sep + req_path
+        file_path = os.path.abspath(self.file_dir + os.sep + req_path)
+        if not self.check_file_path(file_path):
+            return {"data": "", "status": 403, "reason": "Permission Denied"}
+            
 
         logging.debug("self.file_dir: %s, req_path: %s" % (self.file_dir, req_path))
         logging.debug("file path is: %s" % file_path)
@@ -582,11 +579,11 @@ class WebBox:
             return response
         else:
             # is this a plain file that exists?
-            # TODO check for hackery properly, i.e. os.chroot
-            if ".." in req_path:
-                return {"data": ".. not allowed in path", "status": 403, "reason": "Forbidden"}
 
-            file_path = self.file_dir + os.sep + req_path
+            file_path = os.path.abspath(self.file_dir + os.sep + req_path)
+            if not self.check_file_path(file_path):
+                return {"data": "", "status": 403, "reason": "Permission Denied"}
+
             if os.path.exists(file_path):
                 # return the file
                 logging.debug("Opening file: "+file_path)
@@ -893,11 +890,9 @@ class WebBox:
         else:
             # this is a FILE upload
             
-            # TODO check for hackery properly, i.e. os.chroot
-            if ".." in req_path:
-                return {"data": ".. not allowed in path", "status": 500, "reason": "Internal Server Error"}
-
-            file_path = self.file_dir + os.sep + req_path
+            file_path = os.path.abspath(self.file_dir + os.sep + req_path)
+            if not self.check_file_path(file_path):
+                return {"data": "", "status": 403, "reason": "Permission Denied"}
 
             logging.debug("self.file_dir: %s, req_path: %s" % (self.file_dir, req_path))
             logging.debug("file path is: %s" % file_path)
@@ -951,4 +946,13 @@ class WebBox:
         response1 = self.query_store.post_rdf(file, content_type, graph)
 
         return response1
+
+    def check_file_path(self, path):
+        """ Check that a path doesn't contain any references to parent path. """
+
+        # check that the path is within our file directory
+        abs_file_path = os.path.abspath(self.file_dir)
+        abs_this_path = os.path.abspath(path)
+
+        return abs_this_path.startswith(abs_file_path)
 
