@@ -24,8 +24,6 @@ export WBDIR="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # do initial per-user set up
 cd "$WBDIR"
 ./scripts/setup_4store.sh # create /var/lib/4store (prompts for admin password)
-cd "$WBDIR"
-./scripts/new_4store_kb.sh # create webbox kb (if not exists)
 
 # run webbox, output to log
 cd "$WBDIR"
