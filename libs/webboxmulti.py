@@ -90,9 +90,9 @@ class WebBoxMulti:
 
         reactor.run()
 
-    def safe_name(self, name):
+    def invalid_name(self, name):
         """ Check if this name is safe (only contains a-z0-9_-). """ 
-        return not re.match("[^a-z0-9_-]*$", name)
+        return re.match("^[a-z0-9_-]*$", name) is None
 
 
     def new_wb(self, name):
@@ -100,7 +100,7 @@ class WebBoxMulti:
 
         name = name.lower()
 
-        if not self.safe_name(name):
+        if self.invalid_name(name):
             raise Exception("WebBox name contains illegal characters.")
 
         webbox_dir = os.path.abspath(self.config['wbs_dir'] + os.sep + name)
