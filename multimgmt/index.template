@@ -47,10 +47,13 @@
         <h2>WebBoxes</h2>
         <div class="wb_add"><a href="#" id="wb_add_link">Add new WebBox</a></div>
         <div class="wb_add_form" style="display: none;">
-            <form method="GET" action="/new">
+            <form id="wb_new_form" method="GET" action="/new">
                 <label for="wb_name">Webbox name: /</label><input name="name" id="wb_name" value="" />
                 <input id="wb_submit" type="submit" value="Create" />
             </form>
+        </div>
+        <div class="errorbox" id="wb_err" style="display: none">
+            Error: The name can only contain letters, numbers, - and _
         </div>
         <div class="wb_list">
             {{#wbs}}
@@ -84,6 +87,14 @@
         $(".wb_add_form").slideDown();
         $("#wb_name").focus();
         return false; // don't follow the link
+    });
+    $("#wb_new_form").submit(function(){
+        var value = $("#wb_name").val();
+        if (value.match(/^[a-zA-Z0-9-_]*$/)){
+            return true;
+        }
+        $("#wb_err").slideDown();
+        return false;
     });
   </script>
 

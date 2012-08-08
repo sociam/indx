@@ -345,3 +345,11 @@ body {
     padding: 3px 10px;
 }
 
+.errorbox {
+    border: 1px solid red;
+    border-radius: 5px;
+    max-width: 400px;
+    padding: 5px;
+    background-color: #ffe5e4;
+}
+
