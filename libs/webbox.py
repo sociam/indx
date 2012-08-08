@@ -215,16 +215,16 @@ class WebBox:
    </D:getlastmodified>
    %s
    %s
-                    <D:supportedlock>
-                         <D:lockentry>
-                              <D:lockscope><D:exclusive/></D:lockscope>
-                              <D:locktype><D:write/></D:locktype>
-                         </D:lockentry>
-                         <D:lockentry>
-                              <D:lockscope><D:shared/></D:lockscope>
-                              <D:locktype><D:write/></D:locktype>
-                         </D:lockentry>
-                    </D:supportedlock>
+   <D:supportedlock>
+    <D:lockentry>
+     <D:lockscope><D:exclusive/></D:lockscope>
+     <D:locktype><D:write/></D:locktype>
+    </D:lockentry>
+    <D:lockentry>
+     <D:lockscope><D:shared/></D:lockscope>
+     <D:locktype><D:write/></D:locktype>
+    </D:lockentry>
+   </D:supportedlock>
   </D:prop>
  </D:propstat>
 </D:response>
