@@ -126,6 +126,8 @@ class WebBox:
                 response = self.do_UNLOCK(rfile, environ, req_path, req_qs)
             elif req_type == "DELETE":
                 response = self.do_DELETE(rfile, environ, req_path, req_qs)
+            elif req_type == "MKCOL":
+                response = self.do_MKCOL(rfile, environ, req_path, req_qs)
             else:
                 response = {"status": 405, "reason": "Method Not Allowed", "data": ""}
 
@@ -231,12 +233,30 @@ class WebBox:
 """ % (url, creation, length, modified, displayname, resourcetype)
 
     def do_DELETE(self, rfile, environ, req_path, req_qs):
+        """ Delete a file / dir, used by WebDAV. """
+
         file_path = self.get_file_path(req_path)
         logging.debug("Deleting %s" % file_path)
         if os.path.isdir(file_path):
             os.rmdir(file_path)
         else:
             os.remove(file_path)
+
+        return {"status": 204, "reason": "No Content", "data": ""}
+
+    def do_MKCOL(self, rfile, environ, req_path, req_qs):
+        """ WebDAV command to make a collection (i.e., a directory). """
+
+        file_path = self.get_file_path(req_path)
+        logging.debug("Making new folder %s" % file_path)
+        if os.path.exists(file_path):
+            raise ResponseOverride(409, "Conflict")
+
+        try:
+            os.mkdir(file_path)
+        except Exception as e:
+            logging.error("Couldn't make directory: " + str(file_path))
+            raise ResponseOverride(500, "Internal Server Error")
 
         return {"status": 204, "reason": "No Content", "data": ""}
 
@@ -263,7 +283,7 @@ class WebBox:
         if os.path.exists(file_path):
             if os.path.isdir(file_path):
                 # do an LS
-                displyname = None
+                displayname = None
                 if req_path == "/":
                     displayname = "WebBox"
                 xmlout += self.get_prop_xml(self.server_url + req_path, file_path, directory=True, displayname=displayname)
@@ -367,7 +387,7 @@ class WebBox:
               ("Allow", "PROPPATCH"),
               #("Allow", "TRACE"),
               #("Allow", "ORDERPATCH"),
-              #("Allow", "MKCOL"),
+              ("Allow", "MKCOL"),
               ("Allow", "DELETE"),
               #("Allow", "COPY"),
               #("Allow", "MOVE"),
