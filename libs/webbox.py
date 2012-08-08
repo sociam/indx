@@ -81,7 +81,11 @@ class WebBox:
         self.websocket = WebSocketClient(host=config['ws_hostname'],port=config['ws_port'])
 
         # run 4store 
-        self.fourstore = FourStoreMgmt(config['4store']['kbname'], http_port=config['4store']['port']) 
+        if 'delay' in config['4store']:
+            delay = config['4store']['delay'] # delay (in seconds) between running the backend and https
+        else:
+            delay = 0
+        self.fourstore = FourStoreMgmt(config['4store']['kbname'], http_port=config['4store']['port'], delay=delay) 
         self.fourstore.start()
 
 

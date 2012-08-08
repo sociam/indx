@@ -38,6 +38,7 @@
         "4store": {
             "host": "localhost",
             "port": 8212
+            "delay": 0
         }
     }
 

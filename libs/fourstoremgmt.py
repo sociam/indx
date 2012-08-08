@@ -16,15 +16,16 @@
 #    You should have received a copy of the GNU General Public License
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
-import psutil, os, logging
+import psutil, os, logging, time
 
 class FourStoreMgmt:
     """ Manages 4store processes. """
 
-    def __init__(self, kbname, http_port=None):
+    def __init__(self, kbname, http_port=None, delay=0):
         self.kbname = kbname
         self.http_port = http_port
         self.pid_list = None
+        self.delay = delay
 
     def killall(self, process):
         logging.debug("Killing process: "+str(process.pid)+" : "+str(process))
@@ -58,6 +59,9 @@ class FourStoreMgmt:
 
         backend_pid = psutil.Popen(["4s-backend","-D",self.kbname])
         self.pid_list.append(backend_pid)
+
+        if self.delay > 0:
+            time.sleep(self.delay)
 
         if self.http_port is not None:
             httpd_pid = psutil.Popen(["4s-httpd","-D","-p",str(self.http_port),self.kbname])
