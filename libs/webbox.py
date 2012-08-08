@@ -35,6 +35,7 @@ from sparqlparse import SparqlParse
 from fourstoremgmt import FourStoreMgmt
 from fourstore import FourStore
 from exception import ResponseOverride
+from wsupdateserver import WSUpdateServer
 
 from urlparse import urlparse, parse_qs
 from rdflib.serializer import Serializer
@@ -78,6 +79,10 @@ class WebBox:
             "application/json": "json-ld",
             "text/json": "json-ld",
         }
+
+
+        # start websockets server
+        self.wsupdate = WSUpdateServer(port=config['ws_port'], host=config['ws_hostname'])
 
         self.websocket = WebSocketClient(host=config['ws_hostname'],port=config['ws_port'])
 

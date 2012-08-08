@@ -84,9 +84,6 @@ class WebServer:
         def start_failed(arg):
             logging.debug("start_failed: "+str(arg))
 
-        # start websockets server
-        wsupdate = WSUpdateServer(port=config['ws_port'], host=config['ws_hostname']) # TODO customize port / host
-
         # calls the web browser opening function above when the reactor has finished starting up
         d = Deferred()
         d.addCallbacks(on_start, start_failed)
