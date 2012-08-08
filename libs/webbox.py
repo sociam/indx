@@ -137,6 +137,8 @@ class WebBox:
                 response = self.do_MOVE(rfile, environ, req_path, req_qs)
             elif req_type == "COPY":
                 response = self.do_COPY(rfile, environ, req_path, req_qs)
+            elif req_type == "HEAD":
+                response = self.do_GET(rfile, environ, req_path, req_qs)
             else:
                 response = {"status": 405, "reason": "Method Not Allowed", "data": ""}
 
@@ -155,7 +157,7 @@ class WebBox:
 
             # add CORS headers (blanket allow, for now)
             headers.append( ("Access-Control-Allow-Origin", "*") )
-            headers.append( ("Access-Control-Allow-Methods", "POST, GET, PUT, OPTIONS") )
+            headers.append( ("Access-Control-Allow-Methods", "POST, GET, PUT, HEAD, OPTIONS") )
 
             # put repository version weak ETag header
             # journal to load the original repository version
@@ -182,6 +184,13 @@ class WebBox:
            
             res_type = type(response['data'])
             logging.debug("Response type is: "+str(res_type))
+
+            if req_type == "HEAD": # GET was called, so let's not return the body
+                return []
+
+
+            if res_type is unicode:
+                response['data'] = response['data'].encode('utf8')
 
             if res_type is str or res_type is unicode:
                 logging.debug("Returning a string")
@@ -448,7 +457,7 @@ class WebBox:
             [ ("Allow", "PUT"),
               ("Allow", "GET"),
               ("Allow", "POST"),
-              #("Allow", "HEAD"),
+              ("Allow", "HEAD"),
               ("Allow", "OPTIONS"),
 
               # WebDAV methods
@@ -688,10 +697,27 @@ class WebBox:
                 size = os.path.getsize(file_path)
                 #filedata = f.read()
                 #f.close()
-                logging.debug("File read into file object started.")
-                return {"data": f, "status": 200, "reason": "OK", "size": size}
+
+                if "HTTP_RANGE" in environ:
+                    logging.debug("Byte range requested, returning as a string")
+                    return {"data": self.get_byte_range(f, environ['HTTP_RANGE']), "status": 200, "reason": "OK"}
+                else:
+                    logging.debug("File read into file object started.")
+                    return {"data": f, "status": 200, "reason": "OK", "size": size}
             else:
                 return {"data": "", "status": 404, "reason": "Not Found"}
+
+    def get_byte_range(self, file, byterange):
+        """ Return a range of bytes as specified by the HTTP_RANGE header. """
+
+        # byterange is like: bytes=1380533830-1380533837
+        (offset, end) = byterange.split("bytes=")[1].split("-")
+        length = int(end) - int(offset)
+
+        file.seek(int(offset))
+        data = file.read(length)
+        file.close()
+        return data
 
     def _strip_charset(self, mime):
         """ Strip the charset from a mime-type. """
