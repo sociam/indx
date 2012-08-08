@@ -305,7 +305,10 @@ class WebBox:
         dest_file_path = self.get_file_path(self.strip_server_url(environ['HTTP_DESTINATION']))
         logging.debug("Copying to file %s" % dest_file_path)
 
-        shutil.copyfile(file_path, dest_file_path)
+        if os.path.isdir(file_path):
+            shutil.copytree(file_path, dest_file_path)
+        else:
+            shutil.copyfile(file_path, dest_file_path)
 
         return {"status": 204, "reason": "No Content", "data": ""}
 
