@@ -185,7 +185,7 @@ class WebBox:
         length = str(stat.st_size)
         modified = time.strftime("%A, %d-%b-%y %H:%M:%S GMT", time.gmtime(stat.st_mtime) )
 
-        if directory:
+        if directory or os.path.isdir(path):
             resourcetype = "<D:resourcetype><D:collection/></D:resourcetype>"
         else:
             resourcetype = "<D:resourcetype/>"
@@ -231,6 +231,13 @@ class WebBox:
 """ % (url, creation, length, modified, displayname, resourcetype)
 
     def do_DELETE(self, rfile, environ, req_path, req_qs):
+        file_path = self.get_file_path(req_path)
+        logging.debug("Deleting %s" % file_path)
+        if os.path.isdir(file_path):
+            os.rmdir(file_path)
+        else:
+            os.remove(file_path)
+
         return {"status": 204, "reason": "No Content", "data": ""}
 
     def do_PROPFIND(self, rfile, environ, req_path, req_qs):
@@ -265,7 +272,7 @@ class WebBox:
                     if req_path[-1:] != "/":
                         fname = "/" + filename
 
-                    xmlout += self.get_prop_xml(self.server_url + req_path + filename, file_path + filename)
+                    xmlout += self.get_prop_xml(self.server_url + req_path + filename, file_path + os.sep + filename)
             else:
                 # return the properties for a single file
                 xmlout += self.get_prop_xml(self.server_url + req_path, file_path)
