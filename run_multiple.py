@@ -19,12 +19,22 @@
 import sys, os, logging, json
 from webboxmulti import WebBoxMulti
 
-
 # load configuration into 'config' variable
 config_filename = "multi_config.json"
-conf_fh = open(config_filename, "r")
-config = json.loads(conf_fh.read())
-conf_fh.close()
+
+if not os.path.exists(config_filename): 
+    default_config = "multi_config.json.default"
+    conf_fh = open(default_config, "r")
+    config = json.loads(conf_fh.read())
+    conf_fh.close()
+
+    conf_fh = open(config_filename, "w")
+    json.dump(config, conf_fh, indent=4)
+    conf_fh.close()
+else:
+    conf_fh = open(config_filename, "r")
+    config = json.loads(conf_fh.read())
+    conf_fh.close()
 
 config['config_filename'] = config_filename
 config['management']['basedir'] = os.path.dirname(__file__)

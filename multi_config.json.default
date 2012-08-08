@@ -1,0 +1,21 @@
+{
+    "management": {
+        "ssl_key": "data/server.key", 
+        "ssl_cert": "data/server.crt", 
+        "basedir": "", 
+        "host": "localhost", 
+        "srcdir": "multimgmt", 
+        "port": 443
+    }, 
+    "log": "/tmp/webbox_multi.log", 
+    "bindirs": [
+        "4store",
+        "../Resources/4store"
+    ], 
+    "url_scheme": "https", 
+    "wbs_dir": "multi_wbs", 
+    "webboxes": [
+    ], 
+    "htdigest": "htpasswd", 
+    "next_port": 10000
+}
