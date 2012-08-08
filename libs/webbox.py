@@ -128,6 +128,10 @@ class WebBox:
                 response = self.do_DELETE(rfile, environ, req_path, req_qs)
             elif req_type == "MKCOL":
                 response = self.do_MKCOL(rfile, environ, req_path, req_qs)
+            elif req_type == "MOVE":
+                response = self.do_MOVE(rfile, environ, req_path, req_qs)
+            elif req_type == "COPY":
+                response = self.do_COPY(rfile, environ, req_path, req_qs)
             else:
                 response = {"status": 405, "reason": "Method Not Allowed", "data": ""}
 
@@ -260,6 +264,37 @@ class WebBox:
 
         return {"status": 204, "reason": "No Content", "data": ""}
 
+    def strip_server_url(self, url):
+        """ Return the path with the webbox server URL stripped off. """
+
+        wb_url = urlparse(self.server_url)
+        fixed_path = wb_url.path # e.g. /webbox
+        
+        new_url = urlparse(url)
+        if not new_url.path.startswith(fixed_path):
+            logging.error("Requested URL (%s) does not start with our webbox path (%s)" % (url, fixed_path))
+            raise ResponseOverride(500, "Internal Server Error")
+
+        # strip off fixed_path
+        return new_url.path[len(fixed_path):]
+
+
+    def do_MOVE(self, rfile, environ, req_path, req_qs):
+        """ WebDAV command to move (rename) a file. """
+
+        file_path = self.get_file_path(req_path)
+        logging.debug("Moving from file %s" % file_path)
+        if not os.path.exists(file_path):
+            raise ResponseOverride(404, "Not Found")
+
+        dest_file_path = self.get_file_path(self.strip_server_url(environ['HTTP_DESTINATION']))
+        logging.debug("Moving to file %s" % dest_file_path)
+
+        os.rename(file_path, dest_file_path)
+
+        return {"status": 204, "reason": "No Content", "data": ""}
+
+
     def do_PROPFIND(self, rfile, environ, req_path, req_qs):
         logging.debug("WebDAV PROPFIND")
 
@@ -301,8 +336,6 @@ class WebBox:
 
         # surround in xml
         xmlout = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n<D:multistatus xmlns:D=\"DAV:\">" + xmlout + "\n</D:multistatus>"
-
-        logging.debug(xmlout)
 
         return {"status": 207, "reason": "Multi-Status", "data": xmlout, "type": "text/xml; charset=\"utf-8\""}
 
@@ -389,8 +422,8 @@ class WebBox:
               #("Allow", "ORDERPATCH"),
               ("Allow", "MKCOL"),
               ("Allow", "DELETE"),
-              #("Allow", "COPY"),
-              #("Allow", "MOVE"),
+              ("Allow", "COPY"),
+              ("Allow", "MOVE"),
               ("Allow", "LOCK"),
               ("Allow", "UNLOCK"),
             ]
