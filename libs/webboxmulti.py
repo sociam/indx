@@ -93,7 +93,7 @@ class WebBoxMulti:
         def on_start(arg):
             import webbrowser
             logging.debug("Listening on: "+self.url)
-            webbrowser.open(self.url)
+            #webbrowser.open(self.url)
         def start_failed(arg):
             logging.debug("Startup failed: "+str(arg))
 
@@ -164,6 +164,7 @@ class WebBoxMulti:
 
         config['webbox']['url'] = self.config['url_scheme'] + "://" + self.config['management']['host'] + ":" + str(self.config['management']['port']) + "/" + wb['directory'] + "/" + path
         config['webbox']['webbox_dir'] = wb['location']
+        config['webbox']['4store']['delay'] = 2 # force a delay
 
         webbox = WebBox(config['webbox'])
 
