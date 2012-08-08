@@ -34,6 +34,7 @@ from sparqlresults import SparqlResults
 from sparqlparse import SparqlParse
 from fourstoremgmt import FourStoreMgmt
 from fourstore import FourStore
+from exception import ResponseOverride
 
 from urlparse import urlparse, parse_qs
 from rdflib.serializer import Serializer
@@ -165,6 +166,12 @@ class WebBox:
             logging.debug("Sending data of size: "+str(data_length))
             return [response['data']]
 
+        except ResponseOverride as e:
+            response = e.get_response()
+            logging.debug("Response override raised, sending: %s" % str(response))
+            start_response(str(response['status']) + " " + response['reason'], [])
+            return [response['data']]
+
         except Exception as e:
             logging.debug("Error in WebBox.response(), returning 500: "+str(e))
             start_response("500 Internal Server Error", ())
@@ -244,7 +251,8 @@ class WebBox:
         # FIXME we ignore the specifics of the request and just give what Finder wants: getlastmodified, getcontentlength, creationdate and resourcetype
         xmlout = ""
 
-        file_path = self.file_dir + req_path
+        file_path = self.get_file_path(req_path)
+
         if os.path.exists(file_path):
             if os.path.isdir(file_path):
                 # do an LS
@@ -435,12 +443,7 @@ class WebBox:
         post_uri = self.server_url + req_path
         logging.debug("POST of uri: %s" % post_uri)
 
-        file_path = os.path.abspath(self.file_dir + os.sep + req_path)
-        if not self.check_file_path(file_path):
-            return {"data": "", "status": 403, "reason": "Permission Denied"}
-            
-
-        logging.debug("self.file_dir: %s, req_path: %s" % (self.file_dir, req_path))
+        file_path = self.get_file_path(req_path)
         logging.debug("file path is: %s" % file_path)
 
         if environ.has_key("CONTENT_TYPE"):
@@ -580,9 +583,7 @@ class WebBox:
         else:
             # is this a plain file that exists?
 
-            file_path = os.path.abspath(self.file_dir + os.sep + req_path)
-            if not self.check_file_path(file_path):
-                return {"data": "", "status": 403, "reason": "Permission Denied"}
+            file_path = self.get_file_path(req_path)
 
             if os.path.exists(file_path):
                 # return the file
@@ -890,11 +891,7 @@ class WebBox:
         else:
             # this is a FILE upload
             
-            file_path = os.path.abspath(self.file_dir + os.sep + req_path)
-            if not self.check_file_path(file_path):
-                return {"data": "", "status": 403, "reason": "Permission Denied"}
-
-            logging.debug("self.file_dir: %s, req_path: %s" % (self.file_dir, req_path))
+            file_path = self.get_file_path(req_path)
             logging.debug("file path is: %s" % file_path)
 
             exists = os.path.exists(file_path)
@@ -946,6 +943,17 @@ class WebBox:
         response1 = self.query_store.post_rdf(file, content_type, graph)
 
         return response1
+
+    def get_file_path(self, req_path):
+        """ Get the file path on disk specified by the request path, or exception if there has been a (security etc.) issue. """
+
+        file_path = os.path.abspath(self.file_dir + os.sep + req_path)
+
+        if not self.check_file_path(file_path):
+            raise ResponseOverride(403, "Forbidden")
+
+        return file_path
+
 
     def check_file_path(self, path):
         """ Check that a path doesn't contain any references to parent path. """
