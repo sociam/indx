@@ -17,7 +17,7 @@
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import logging, re, urllib2, uuid, rdflib, os, os.path, traceback, mimetypes, time
+import logging, re, urllib2, uuid, rdflib, os, os.path, traceback, mimetypes, time, shutil
 
 from lxml import objectify
 
@@ -291,6 +291,21 @@ class WebBox:
         logging.debug("Moving to file %s" % dest_file_path)
 
         os.rename(file_path, dest_file_path)
+
+        return {"status": 204, "reason": "No Content", "data": ""}
+
+    def do_COPY(self, rfile, environ, req_path, req_qs):
+        """ WebDAV command to copy a file. """
+
+        file_path = self.get_file_path(req_path)
+        logging.debug("Copying from file %s" % file_path)
+        if not os.path.exists(file_path):
+            raise ResponseOverride(404, "Not Found")
+
+        dest_file_path = self.get_file_path(self.strip_server_url(environ['HTTP_DESTINATION']))
+        logging.debug("Copying to file %s" % dest_file_path)
+
+        shutil.copyfile(file_path, dest_file_path)
 
         return {"status": 204, "reason": "No Content", "data": ""}
 
