@@ -24,7 +24,7 @@ class WebBoxSetup:
     def __init__(self):
         pass
 
-    def setup(self, webbox_dir, webbox_default_config_file, kbname):
+    def setup(self, webbox_dir, webbox_default_config_file, kbname, fs_port=8212, ws_port=8214):
         """ Setup a webbox directory from defaults if it doesn't exist. """
 
         if not os.path.exists(webbox_dir): # no config for this user, set them up
@@ -56,6 +56,10 @@ class WebBoxSetup:
 
             # add 4store kb based on username
             config['webbox']['4store']['kbname'] = kbname
+
+            # set ports
+            config['webbox']['4store']['port'] = fs_port
+            config['webbox']['ws_port'] = ws_port
 
             # write updated config
             conf_fh = open(webbox_config, "w")

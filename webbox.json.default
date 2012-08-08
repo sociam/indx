@@ -6,10 +6,6 @@
         "port": 8211, # port to listen on
         "hostname": "localhost", # hostname the server will use
 
-        # web sockets server
-        "ws_hostname": "localhost",
-        "ws_port": 8214,
-
         # TLS/SSL configuration
         "ssl_off": false, # force SSL off/on
         "ssl_cert": "data/server.crt", # relative to run.py
@@ -37,9 +33,14 @@
         # 4store configuration
         "4store": {
             "host": "localhost",
-            "port": 8212
+            "port": 8212,
             "delay": 0
-        }
+        },
+
+        # web sockets server
+        "ws_hostname": "localhost",
+        "ws_port": 8214
+
     }
 
 }

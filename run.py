@@ -37,9 +37,6 @@ conf_fh.close()
 
 # add the webbox path to the config (at runtime only)
 config['webbox']['webbox_dir'] = webbox_dir
-# add websockets server details (at runtime only)
-config['webbox']['ws_hostname'] = config['server']['ws_hostname']
-config['webbox']['ws_port'] = config['server']['ws_port']
 
 # add additional binary paths to the PATH
 for bindir in config['server']['bindirs']:

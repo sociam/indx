@@ -16,7 +16,8 @@
 #    You should have received a copy of the GNU General Public License
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging, os
+import logging, os, json, re
+from urlparse import parse_qs
 
 from twisted.web import script
 from twisted.web.static import File, Registry
@@ -32,12 +33,14 @@ from twisted.web.resource import IResource
 from zope.interface import implements
 
 from webbox import WebBox
+from webboxsetup import WebBoxSetup
 
 class WebBoxMulti:
     """ Class to manage and spawn subfolders with different WebBoxes. """
 
     def __init__(self, config):
         self.config = config
+        self.config_file = config['config_filename']
        
         self.host = config['management']['host'] # hostname of the management interface
         self.port = config['management']['port'] # port to listen on
@@ -58,6 +61,7 @@ class WebBoxMulti:
         # hook in the controller urls to /start /stop etc.
         self.root.putChild("start", WSGIResource(reactor, reactor.getThreadPool(), self.do_start))
         self.root.putChild("stop", WSGIResource(reactor, reactor.getThreadPool(), self.do_stop))
+        self.root.putChild("new", WSGIResource(reactor, reactor.getThreadPool(), self.do_new))
 
         self.site = Site(self.root)
         sslContext = ssl.DefaultOpenSSLContextFactory(server_private_key, server_cert)
@@ -86,15 +90,61 @@ class WebBoxMulti:
 
         reactor.run()
 
+    def safe_name(self, name):
+        """ Check if this name is safe (only contains a-z0-9_-). """ 
+        return not re.match("[^a-z0-9_-]*$", name)
+
+
+    def new_wb(self, name):
+        """ Create a new webbox with this name. """
+
+        name = name.lower()
+
+        if not self.safe_name(name):
+            raise Exception("WebBox name contains illegal characters.")
+
+        webbox_dir = os.path.abspath(self.config['wbs_dir'] + os.sep + name)
+        if os.path.exists(webbox_dir):
+            raise Exception("WebBox already exists")
+
+        kbname = "webboxmulti_"+name
+
+        next_port = self.config['next_port']
+        self.config['next_port'] += 2
+
+        fs_port = next_port
+        ws_port = next_port + 1
+
+        setup = WebBoxSetup()
+        setup.setup(webbox_dir, "webbox.json.default", kbname, fs_port = fs_port, ws_port = ws_port) # directory, default config, kbname
+
+        self.config['webboxes'].append( {"directory": name, "status": "stopped", "location": webbox_dir } )
+        self.save_config()
+
+    def save_config(self):
+        """ Save the current configuration to disk. """
+        conf_fh = open(self.config_file, "w")
+        json.dump(self.config, conf_fh, indent=4)
+        conf_fh.close()
+
+
     def start_wb(self, wb):
         """ Start the webbox with the definition 'wb'. """
         wb['status'] = "running"
 
         path = "webbox"
 
-        wb['config']['url'] = self.config['url_scheme'] + "://" + self.config['management']['host'] + ":" + str(self.config['management']['port']) + "/" + wb['directory'] + "/" + path
+        # load configuration into 'config' variable
+        webbox_config = wb['location'] + os.sep + "webbox.json"
+        logging.debug("Loading configuration from: %s" % webbox_config)
+        conf_fh = open(webbox_config, "r")
+        config = json.loads(conf_fh.read())
+        conf_fh.close()
 
-        webbox = WebBox(wb['config'])
+        config['webbox']['url'] = self.config['url_scheme'] + "://" + self.config['management']['host'] + ":" + str(self.config['management']['port']) + "/" + wb['directory'] + "/" + path
+        config['webbox']['webbox_dir'] = wb['location']
+
+        webbox = WebBox(config['webbox'])
 
         resource = FileNoDirectoryListings(os.path.join(self.config['management']['basedir'], "html"))
         resource.putChild(path, WSGIResource(reactor, reactor.getThreadPool(), webbox.response))
@@ -151,6 +201,20 @@ class WebBoxMulti:
 
         start_response("404 Not Found", [("Content-type", "text/html")] )
         return ["That webbox was not found."]
+
+    def do_new(self, environment, start_response):
+        """ WSGI call to create a new WebBox. """
+
+        try:
+            name = parse_qs(environment['QUERY_STRING'])['name'][0]
+            logging.debug("Creating new webbox with name: "+name)
+            self.new_wb(name)
+            start_response("302 Found", [("Content-type", "text/html"), ("Location", "/")] )
+            return []
+        except Exception as e:
+            logging.error("Error in do_new: " + str(e))
+            start_response("500 Internal Server Error", [])
+            return [""]
 
 
 # Disable directory listings

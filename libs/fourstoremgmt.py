@@ -26,6 +26,19 @@ class FourStoreMgmt:
         self.http_port = http_port
         self.pid_list = None
         self.delay = delay
+        self.new()
+
+    def new(self, fs_base="/var/lib/4store"):
+        """ Create a new store. """
+        loc = fs_base + os.sep + self.kbname
+
+        if os.path.exists(loc):
+            return # already exists
+        else:
+            logging.debug("Creating new 4store: "+self.kbname)
+            os.mkdir(loc)
+            psutil.Popen(["4s-backend-setup", self.kbname])
+            time.sleep(5)
 
     def killall(self, process):
         logging.debug("Killing process: "+str(process.pid)+" : "+str(process))
