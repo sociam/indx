@@ -57,7 +57,6 @@
                 <div class="wb_inlist">
                     <span class="wb_host"><a href="{{url_scheme}}://{{host}}:{{port}}/{{directory}}" target="_blank">/{{directory}}/</a></span>
                     <span class="wb_status">{{status}}</span>
-                    <span class="wb_modify"><a href="/{{modify_action}}/{{directory}}">{{modify}}</a></span>
                 </div>
             {{/wbs}}
         </div>

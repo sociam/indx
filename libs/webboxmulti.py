@@ -59,9 +59,29 @@ class WebBoxMulti:
         self.root.ignoreExt('.rpy')
 
         # hook in the controller urls to /start /stop etc.
-        self.root.putChild("start", WSGIResource(reactor, reactor.getThreadPool(), self.do_start))
-        self.root.putChild("stop", WSGIResource(reactor, reactor.getThreadPool(), self.do_stop))
         self.root.putChild("new", WSGIResource(reactor, reactor.getThreadPool(), self.do_new))
+
+        admin = FileNoDirectoryListings(self.srcdir + os.sep + "admin", registry=registry)
+        self.admin = admin
+        # make .rpy python cgi
+        self.admin.processors = {'.rpy': script.ResourceScript}
+        self.admin.ignoreExt('.rpy')
+        self.admin.putChild("start", WSGIResource(reactor, reactor.getThreadPool(), self.do_start))
+        self.admin.putChild("stop", WSGIResource(reactor, reactor.getThreadPool(), self.do_stop))
+
+        class MgmtRealm(object):
+            implements(IRealm)
+            def requestAvatar(self, avatarId, mind, *interfaces):
+                if IResource in interfaces:
+                    return (IResource, admin, lambda: None)
+                logging.debug("Error in requestAvatar.")
+
+        realm = MgmtRealm()
+        portal = Portal(realm, [FilePasswordDB(self.config['htdigest'])]) #FIXME insecure passwords
+        credentialFactory = DigestCredentialFactory("md5", "webbox") # webbox is the "realm" of the htdigest
+        adminAuth = HTTPAuthSessionWrapper(portal, [credentialFactory])
+
+        self.root.putChild("admin", adminAuth)
 
         self.site = Site(self.root)
         sslContext = ssl.DefaultOpenSSLContextFactory(server_private_key, server_cert)
@@ -121,6 +141,7 @@ class WebBoxMulti:
         self.config['webboxes'].append( {"directory": name, "status": "stopped", "location": webbox_dir } )
         self.save_config()
 
+
     def save_config(self):
         """ Save the current configuration to disk. """
         conf_fh = open(self.config_file, "w")
@@ -152,7 +173,6 @@ class WebBoxMulti:
         self.root.putChild(wb['directory'], resource)
         self.webboxes[ wb['directory'] ] = webbox
 
-
     def stop_wb(self, wb):
         """ Stop the webbox with the defintion 'wb'. """
         wb['status'] = "stopped"
@@ -167,6 +187,7 @@ class WebBoxMulti:
             self.start_wb(wb)
 
     def get_config(self):
+        """ Make sure the webbox configs have the current host config details correctly. """
         for wb in self.config['webboxes']:
             wb['url_scheme'] = self.config['url_scheme']
             wb['port'] = self.config['management']['port'] 
@@ -185,7 +206,7 @@ class WebBoxMulti:
         for wb in self.config['webboxes']:
             if directory == wb['directory']:
                 self.start_wb(wb)
-                start_response("302 Found", [("Content-type", "text/html"), ("Location", "/")] )
+                start_response("302 Found", [("Content-type", "text/html"), ("Location", "/admin/")] )
                 return []
 
         start_response("404 Not Found", [("Content-type", "text/html")] )
@@ -196,7 +217,7 @@ class WebBoxMulti:
         for wb in self.config['webboxes']:
             if directory == wb['directory']:
                 self.stop_wb(wb)
-                start_response("302 Found", [("Content-type", "text/html"), ("Location", "/")] )
+                start_response("302 Found", [("Content-type", "text/html"), ("Location", "/admin/")] )
                 return []
 
         start_response("404 Not Found", [("Content-type", "text/html")] )
@@ -208,10 +229,17 @@ class WebBoxMulti:
         try:
             name = parse_qs(environment['QUERY_STRING'])['name'][0]
             logging.debug("Creating new webbox with name: "+name)
+            # create
             self.new_wb(name)
+            # and run
+            for wb in self.config['webboxes']:
+                if name == wb['directory']:
+                    self.start_wb(wb)
+
             start_response("302 Found", [("Content-type", "text/html"), ("Location", "/")] )
             return []
         except Exception as e:
+            # TODO show the user something nice here / redirect them to an error page
             logging.error("Error in do_new: " + str(e))
             start_response("500 Internal Server Error", [])
             return [""]
