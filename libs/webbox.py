@@ -170,12 +170,25 @@ class WebBox:
             if latest_hash['previous'] is not None:
                 headers.append( ('X-ETag-Previous', "W/\"%s\""%latest_hash['previous']) ) # 'W/' means a Weak ETag
 
-            data_length = len(response['data'])
+            if "size" in response:
+                data_length = response['size']
+            else:
+                data_length = len(response['data'])
+            
             headers.append( ("Content-length", data_length) )
 
             start_response(str(response['status']) + " " + response['reason'], headers)
             logging.debug("Sending data of size: "+str(data_length))
-            return [response['data']]
+           
+            res_type = type(response['data'])
+            logging.debug("Response type is: "+str(res_type))
+
+            if res_type is str or res_type is unicode:
+                logging.debug("Returning a string")
+                return [response['data']]
+            else:
+                logging.debug("Returning an iter")
+                return response['data']
 
         except ResponseOverride as e:
             response = e.get_response()
@@ -672,10 +685,11 @@ class WebBox:
                 # return the file
                 logging.debug("Opening file: "+file_path)
                 f = open(file_path, "r")
-                filedata = f.read()
-                f.close()
-                logging.debug("File read complete.")
-                return {"data": filedata, "status": 200, "reason": "OK"}
+                size = os.path.getsize(file_path)
+                #filedata = f.read()
+                #f.close()
+                logging.debug("File read into file object started.")
+                return {"data": f, "status": 200, "reason": "OK", "size": size}
             else:
                 return {"data": "", "status": 404, "reason": "Not Found"}
 
@@ -987,7 +1001,7 @@ class WebBox:
 
                 f = open(file_path, "w")
                 if size > 0:
-                    f.write(rfile.read(size)) # TODO can this be more efficient?
+                    shutil.copyfileobj(rfile, f, size)
                 f.close()
     
                 # the [1:] gets rid of the /webbox/ bit of the path, so FIXME be more intelligent?
