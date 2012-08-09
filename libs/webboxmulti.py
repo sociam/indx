@@ -162,7 +162,15 @@ class WebBoxMulti:
         config = json.loads(conf_fh.read())
         conf_fh.close()
 
-        config['webbox']['url'] = self.config['url_scheme'] + "://" + self.config['management']['host'] + ":" + str(self.config['management']['port']) + "/" + wb['directory'] + "/" + path
+        port = ":" + str(self.config['management']['port'])
+
+        # dont put the port in the webbox URL if it is 443 and SSL or if it is 80 and clear
+        if self.config['url_scheme'] == "https" and port = ":443":
+            port = ""
+        elif self.config['url_scheme'] == "http" and port = ":80":
+            port = ""
+
+        config['webbox']['url'] = self.config['url_scheme'] + "://" + self.config['management']['host'] + port + "/" + wb['directory'] + "/" + path
         config['webbox']['webbox_dir'] = wb['location']
         config['webbox']['4store']['delay'] = 2 # force a delay
 
