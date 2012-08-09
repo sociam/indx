@@ -19,6 +19,8 @@
 
 import logging, re, urllib2, uuid, rdflib, os, os.path, traceback, mimetypes, time, shutil
 
+from cStringIO import StringIO
+
 from twisted.web import script
 from twisted.web.static import File, Registry
 from twisted.web.wsgi import WSGIResource
@@ -295,6 +297,10 @@ class WebBox:
 
         file_path = self.get_file_path(req_path)
         logging.debug("Deleting %s" % file_path)
+
+        if not os.path.exists(file_path):
+            return{"status": 404, "reason": "Not Found", "data": ""}
+
         if os.path.isdir(file_path):
             os.rmdir(file_path)
         else:
@@ -386,6 +392,7 @@ class WebBox:
         xmlout = ""
 
         file_path = self.get_file_path(req_path)
+        logging.debug("For PROPFIND file is: "+file_path)
 
         if os.path.exists(file_path):
             if os.path.isdir(file_path):
@@ -404,10 +411,15 @@ class WebBox:
                 # return the properties for a single file
                 xmlout += self.get_prop_xml(self.server_url + req_path, file_path)
         else:
+            logging.debug("Not found for PROPFIND")
             return {"status": 404, "reason": "Not Found", "data": ""}
 
         # surround in xml
         xmlout = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n<D:multistatus xmlns:D=\"DAV:\">" + xmlout + "\n</D:multistatus>"
+
+        xmlout = xmlout.encode("utf8")
+
+        logging.debug("Sending propfind: " + xmlout)
 
         return {"status": 207, "reason": "Multi-Status", "data": xmlout, "type": "text/xml; charset=\"utf-8\""}
 
@@ -590,9 +602,14 @@ class WebBox:
         elif req_path[-3:] == ".nt":
             content_type = "text/plain"
 
+        path_parts = req_path.split("/")
+        hidden_file = False
+        if path_parts[ len(path_parts) - 1 ][0] == ".":
+            hidden_file = True
 
 
-        if content_type in self.rdf_formats:
+        file = ""
+        if content_type in self.rdf_formats and not hidden_file:
             logging.debug("content type of PUT is RDF so we also send to 4store.")
 
             rdf_format = self.rdf_formats[content_type]
@@ -601,7 +618,6 @@ class WebBox:
             if environ.has_key("CONTENT_LENGTH"):
                 size = int(environ['CONTENT_LENGTH'])
 
-            file = ""
             if size > 0:
                 # read into file
                 file = rfile.read(size)
@@ -631,24 +647,28 @@ class WebBox:
 
             self.updated_resource(post_uri, "rdf") # notify subscribers
             self.add_to_journal(graph)
+#            return {"data": "", "status": 204, "reason": "No Content"}
+
+
+
+        logging.debug("a POST of a file")
+        # Not RDF content type, so lets treat as a file upload
+        exists = os.path.exists(file_path)
+
+        if exists:
+            logging.debug("file existed, so we're removing it, and then calling a PUT internally")
+            os.remove(file_path)
+
+        if file != "":
+            rfile = StringIO(file)
+
+        put_response = self.do_PUT(rfile, environ, req_path, req_qs)
+        if put_response['status'] == 201 or put_response['status'] == 200 or put_response['status'] == 204:
+            self.updated_resource(post_uri, "file") # notify subscribers
             return {"data": "", "status": 204, "reason": "No Content"}
-
         else:
-            logging.debug("a POST of a file")
-            # Not RDF content type, so lets treat as a file upload
-            exists = os.path.exists(file_path)
-
-            if exists:
-                logging.debug("file existed, so we're removing it, and then calling a PUT internally")
-                os.remove(file_path)
-
-            put_response = self.do_PUT(rfile, environ, req_path, req_qs)
-            if put_response['status'] == 201 or put_response['status'] == 200 or put_response['status'] == 204:
-                self.updated_resource(post_uri, "file") # notify subscribers
-                return {"data": "", "status": 204, "reason": "No Content"}
-            else:
-                return put_response
-        # never reach here
+            return put_response
+    # never reach here
 
     def handle_update(self, since_repository_hash):
         """ Handle calls to the Journal update URL. """
@@ -989,6 +1009,11 @@ class WebBox:
                 content_type = environ['CONTENT_TYPE']
 
 
+        path_parts = req_path.split("/")
+        hidden_file = False
+        if path_parts[ len(path_parts) - 1 ][0] == ".":
+            hidden_file = True
+
         # if a .rdf is uploaded, set the content-type manually
         if req_path[-4:] == ".rdf":
             content_type = "application/rdf+xml"
@@ -998,9 +1023,11 @@ class WebBox:
             content_type = "text/plain"
 
 
-        if content_type in self.rdf_formats:
+        file = ""
+        # parse RDF, but not if it's hidden (hidden is usually a small file from Finder's WebDAV)
+        if content_type in self.rdf_formats and not hidden_file:
             # this is an RDF upload
-            file = ""
+
             if size > 0:
                 # read into file
                 file = rfile.read(size)
@@ -1018,6 +1045,7 @@ class WebBox:
             # check for webbox specific messages
             handle_response = self._handle_webbox_rdf(graph) # check if rdf contains webbox-specific rdf, i.e. to_address, subscribe etc
             if handle_response is not None:
+                logging.debug("Error: handling WebBox rdf")
                 return handle_response # i.e., there is an error, so return it
 
 
@@ -1038,35 +1066,41 @@ class WebBox:
             # TODO save to a file also?
 
             self.add_to_journal(graph)
-            return {"data": "", "status": 204, "reason": "No Content"}
+#            return {"data": "", "status": 204, "reason": "No Content"}
 
-        else:
-            # this is a FILE upload
-            
-            file_path = self.get_file_path(req_path)
-            logging.debug("file path is: %s" % file_path)
 
-            exists = os.path.exists(file_path)
 
-            try:
-                # check if path exists first
-                path = os.path.split(file_path)[0] # folder path without filename
-                if not os.path.exists(path):
-                    os.makedirs(path)
+        # this is a FILE upload
+        
+        file_path = self.get_file_path(req_path)
+        logging.debug("file path is: %s" % file_path)
 
-                f = open(file_path, "w")
-                if size > 0:
+        exists = os.path.exists(file_path)
+
+        try:
+            # check if path exists first
+            path = os.path.split(file_path)[0] # folder path without filename
+            if not os.path.exists(path):
+                os.makedirs(path)
+
+            f = open(file_path, "w")
+            if size > 0:
+                if file == "":
+                    # copy straight from rfile
                     shutil.copyfileobj(rfile, f, size)
-                f.close()
-    
-                # the [1:] gets rid of the /webbox/ bit of the path, so FIXME be more intelligent?
-                self.add_new_file(os.sep.join(os.path.split(req_path)[1:])) # add metadata to store TODO handle error on return false
-            except Exception as e:
-                logging.debug(str( "Error writing to file: %s, exception is: %s" % (file_path, str(e)) ) + traceback.format_exc())
-                return {"data": "", "status": 500, "reason": "Internal Server Error"}
+                else:
+                    # already loaded (by RDF handler, above), write directly
+                    f.write(file)
+            f.close()
 
-            # no adding to journal here, because it's a file
-            return {"data": "", "status": 204, "reason": "No Content"}
+            # the [1:] gets rid of the /webbox/ bit of the path, so FIXME be more intelligent?
+            self.add_new_file(os.sep.join(os.path.split(req_path)[1:])) # add metadata to store TODO handle error on return false
+        except Exception as e:
+            logging.debug(str( "Error writing to file: %s, exception is: %s" % (file_path, str(e)) ) + traceback.format_exc())
+            return {"data": "", "status": 500, "reason": "Internal Server Error"}
+
+        # no adding to journal here, because it's a file
+        return {"data": "", "status": 204, "reason": "No Content"}
             
 
         # TODO send something meaningful!
