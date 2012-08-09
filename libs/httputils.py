@@ -29,14 +29,14 @@ def http_get(host, path, headers={}):
     connection.request('GET', path, "", headers)
 
     try:
-        #result = connection.getresponse()
-        result = threads.blockingCallFromThread(reactor, connection.getresponse)
+        result = connection.getresponse()
+        #result = threads.blockingCallFromThread(reactor, connection.getresponse)
 
         # Now result.status and result.reason contains interesting stuff
         logging.debug("GET file from: "+host+", at path: "+path)
 
-#        data = result.read()
-        data = threads.blockingCallFromThread(reactor, result.read)
+        data = result.read()
+        #data = threads.blockingCallFromThread(reactor, result.read)
     except Exception as e:
         logging.debug("Error in http_get: "+str(e))
 
@@ -64,8 +64,8 @@ def http_put(host, path, data, content_type):
     connection.request('PUT', path, data, {"Content-type": content_type})
 
     try:
-        #result = connection.getresponse()
-        result = threads.blockingCallFromThread(reactor, connection.getresponse)
+        result = connection.getresponse()
+        #result = threads.blockingCallFromThread(reactor, connection.getresponse)
     except Exception as e:
         logging.debug("Error in http_put: "+str(e))
 
@@ -90,8 +90,8 @@ def http_post(host, path, data, args):
     connection.request('POST', path, data, args)
 
     try:
-        #result = connection.getresponse()
-        result = threads.blockingCallFromThread(reactor, connection.getresponse)
+        result = connection.getresponse()
+        #result = threads.blockingCallFromThread(reactor, connection.getresponse)
     except Exception as e:
         logging.debug("Error in http_post: "+str(e))
 
@@ -116,8 +116,8 @@ def resolve_uri(self, uri):
     url = opener.open(request)
 
     try:
-        #data = url.read()
-        data = threads.blockingCallFromThread(reactor, url.read)
+        data = url.read()
+        #data = threads.blockingCallFromThread(reactor, url.read)
     except Exception as e:
         logging.debug("Error in resolve_uri: "+str(e))
 
