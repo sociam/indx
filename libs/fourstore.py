@@ -33,8 +33,10 @@ class FourStore:
 
     def query(self, sparql_query, headers={}):
         """ Public method to query this store."""
+
         path = self.path + "?" + urllib.urlencode({"query": sparql_query, "soft-limit": "-1"}) 
 
+        logging.debug("4store query: "+sparql_query+", host: "+self.host+", path is: "+path)
         response = http_get(self.host, path, headers)
 
         logging.debug("query raw results: %s" % str(response))
