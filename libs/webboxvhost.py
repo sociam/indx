@@ -107,9 +107,7 @@ class WebBoxVHost:
         path = "webbox"
 
         webbox = WebBox(vhost['config'])
-
-        resource = FileNoDirectoryListings(os.path.join(self.config['management']['basedir'], "html"))
-        resource.putChild(path, WSGIResource(reactor, reactor.getThreadPool(), webbox.response))
+        resource = webbox.get_resource()
 
         self.vhost.addHost(vhost['host'], resource)
         self.webboxes[ vhost['host'] ] = webbox

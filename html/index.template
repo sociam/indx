@@ -30,7 +30,6 @@
         <div class="twelve columns">
           <h1>Welcome to WebBox</h1>
             <p>This is a WebBox, see <a target="_blank" href="http://github.com/danielsmith-eu/webbox/wiki/">the WebBox Wiki</a> for more information.</p>
-          <hr />
         </div>
       </div>
 
@@ -42,11 +41,11 @@
         <p>Part of the <a href="http://webbox.ecs.soton.ac.uk">WebBox project</a> from the University of Southampton, and MIT.</p>
        </div>
        <div class="six columns">
-        <h2>Browser</h2>
+        <h3>Browser</h3>
         <p>Explore what is in your WebBox: <a href="browser.html">Browser</a></p>
        </div>
        <div class="six columns">
-        <h2>Uploader</h2>
+        <h3>Uploader</h3>
         <p>Add individual files to your WebBox: <a href="uploader.html">Uploader</a></p>
        </div>
        <!--
@@ -54,9 +53,24 @@
         <p>WebBox updates in real-time using WebSockets on port 8214.</p>
         <p><a href="websockets.html">Watch WebSockets update from your WebBox now.</a>.<p/>
        -->
-
       </div>
 
+        <div class="row">
+
+            <div class="eight columns">
+                <div class="row">
+                    <div class="twelve columns">
+                        <h3>Personalise Your WebBox</h3>
+                        <div class="panel">
+                            {{{ personalise_panel }}}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="four columns">
+                <h4>Useful Information</h4>
+                <span class="bold">WebBox URL:</span> {{ server_url }}
+            </div>
 	</div>
 	<footer>
 

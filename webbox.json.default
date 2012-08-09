@@ -28,6 +28,8 @@
         # subdirectories
         "file_dir": "files", # relative to webbox dir
 
+        "html_dir": "html", # relative to cwd
+
         "url": "https://localhost:8211/webbox", # how the webbox sees itself (used to check owner in RDF)
 
         # 4store configuration

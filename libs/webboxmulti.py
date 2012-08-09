@@ -167,9 +167,7 @@ class WebBoxMulti:
         config['webbox']['4store']['delay'] = 2 # force a delay
 
         webbox = WebBox(config['webbox'])
-
-        resource = FileNoDirectoryListings(os.path.join(self.config['management']['basedir'], "html"))
-        resource.putChild(path, WSGIResource(reactor, reactor.getThreadPool(), webbox.response))
+        resource = webbox.get_resource()
 
         self.root.putChild(wb['directory'], resource)
         self.webboxes[ wb['directory'] ] = webbox

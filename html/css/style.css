@@ -356,4 +356,8 @@ div.browser_row > span.selected {
     cursor: default;
 }
 
+.bold {
+    font-weight: bold;
+}
+
 

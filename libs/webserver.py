@@ -18,6 +18,7 @@
 
 import os, logging
 from wsupdateserver import WSUpdateServer
+from twisted.web import script
 from twisted.internet import reactor
 from twisted.web.resource import ForbiddenResource
 from twisted.web.server import Site
@@ -30,11 +31,12 @@ from twisted.internet.defer import Deferred
 class WebServer:
     """ Twisted web server for running a single WebBox. """
 
-    def __init__(self, config, base_dir):
-        """ Set up the server. """
+    def __init__(self, config, base_dir, webbox):
+        """ Set up the server with a webbox. """
 
         self.webboxes = []
-    
+        self.webboxes.append(webbox)
+ 
         # get values to pass to web server
         server_address = config['address']
         if server_address == "":
@@ -44,16 +46,8 @@ class WebServer:
         server_cert = os.path.join(base_dir,config['ssl_cert'])
         server_private_key = os.path.join(base_dir,config['ssl_private_key'])
 
-        # Disable directory listings
-        class FileNoDirectoryListings(File):
-            def directoryListing(self):
-                return ForbiddenResource()
-
-        # root handler is a static web server
-        self.resource = FileNoDirectoryListings(os.path.join(base_dir, "html"))
-
         # TODO set up twisted to use gzip compression
-        factory = Site(self.resource)
+        factory = Site(webbox.get_resource())
 
         # enable ssl (or not)
         try:
@@ -97,12 +91,6 @@ class WebServer:
 
         reactor.addSystemEventTrigger("during", "shutdown", onShutDown)
 
-
-    def add_webbox(self, webbox, path):
-        # set up path handlers e.g. /webbox
-        self.webboxes.append(webbox)
-        self.resource.putChild(path, WSGIResource(reactor, reactor.getThreadPool(), webbox.response))
-        
 
     def run(self):
         """ Run the server. """

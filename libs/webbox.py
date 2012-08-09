@@ -19,6 +19,10 @@
 
 import logging, re, urllib2, uuid, rdflib, os, os.path, traceback, mimetypes, time, shutil
 
+from twisted.web import script
+from twisted.web.static import File, Registry
+from twisted.web.wsgi import WSGIResource
+from twisted.internet import reactor
 from lxml import objectify
 
 from rdflib.graph import Graph
@@ -93,6 +97,29 @@ class WebBox:
             delay = 0
         self.fourstore = FourStoreMgmt(config['4store']['kbname'], http_port=config['4store']['port'], delay=delay) 
         self.fourstore.start()
+
+        # set up the twisted web resource object
+
+        # Disable directory listings
+        class FileNoDirectoryListings(File):
+            def directoryListing(self):
+                return ForbiddenResource()
+
+        # allow the config to be readable by .rpy files
+        self.registry = Registry()
+        self.registry.setComponent(WebBox, self)
+
+        # root handler is a static web server
+        self.resource = FileNoDirectoryListings(os.path.abspath(config["html_dir"]), registry=self.registry)
+        self.resource.processors = {'.rpy': script.ResourceScript}
+        self.resource.ignoreExt('.rpy')
+
+        # add the webbox handler as a subdir
+        self.resource.putChild("webbox", WSGIResource(reactor, reactor.getThreadPool(), self.response))
+
+    def get_resource(self):
+        """ Get the twisted web resource. """
+        return self.resource
 
 
     def stop(self):
