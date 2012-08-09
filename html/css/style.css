@@ -334,7 +334,7 @@ h1 > a{
     text-decoration: none;
 }
 
-div.row {
+div.browser_row {
     padding: 5px;
     margin: 20px;
     background-color: #eee;
@@ -343,14 +343,14 @@ div.row {
     text-align: center;
 }
 
-div.row > span {
+div.browser_row > span {
     padding: 5px;
     margin: 5px;
     cursor: pointer;
     border-radius: 5px;
 }
 
-div.row > span.selected {
+div.browser_row > span.selected {
     font-weight: bold;
     background-color: #ddd;
     cursor: default;
