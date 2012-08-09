@@ -16,7 +16,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
-import os, logging
+import os, logging, time
 from wsupdateserver import WSUpdateServer
 from twisted.web import script
 from twisted.internet import reactor
@@ -73,6 +73,7 @@ class WebServer:
         def on_start(arg):
             logging.debug("Server started successfully.")
             if config['load_browser']:
+                time.sleep(2)
                 import webbrowser
                 webbrowser.open(server_url)
         def start_failed(arg):
