@@ -1004,8 +1004,10 @@ class WebBox:
             if size > 0:
                 # read into file
                 file = rfile.read(size)
-
-
+            else:
+                # Sometimes WebDAV PUTs files of zero length, dont parse them!
+                return {"data": "", "status": 204, "reason": "No Content"}
+                
 
             rdf_format = self.rdf_formats[content_type]
             
@@ -1031,12 +1033,12 @@ class WebBox:
 
             response1 = self.SPARQLPut(graph, file, content_type, graph_replace=graph_replace)
             if response1['status'] > 299:
-                return {"data": "Unsuccessful.", "status": response1['status'], "reason": response1['reason']}
+                return {"data": "", "status": response1['status'], "reason": response1['reason']}
 
             # TODO save to a file also?
 
             self.add_to_journal(graph)
-            return {"data": "Successful.", "status": 200, "reason": "OK"}
+            return {"data": "", "status": 204, "reason": "No Content"}
 
         else:
             # this is a FILE upload
