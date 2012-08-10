@@ -1,0 +1,48 @@
+
+<p>Let's set up your WebBox!</p>
+
+<form id="form_setup">
+<div class="row">
+    <div class="two mobile-one columns">
+        <label class="right inline">Name:</label>
+    </div>
+    <div class="ten mobile-three columns">
+        <input id="input_name" type="text" />
+    </div>
+</div>
+<div class="row">
+    <div class="three columns">
+        <div style="cursor:pointer; height: 40px;">
+            <p for="flyout-setup-adv" class="flyoutsrc flyoutsrc-in" style="height: 40px;">Advanced</p>
+        </div>
+    </div>
+</div>
+<div id="flyout-setup-adv" class="row" style="display: none">
+    <div class="twelve columns">
+        <div class="panel">
+            <div class="row">
+                <div class="two mobile-one columns">
+                    <label class="right inline">URI:</label>
+                </div>
+                <div class="ten mobile-three columns">
+
+                    <div class="row collapse">
+                        <div class="six mobile-two columns">
+                            <span class="prefix" id="input_uri_prefix">{{server_url}}/</span>
+                        </div>
+                        <div class="six mobile-two columns">
+                            <input id="input_uri" type="text" value="owner#me" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="twelve columns">
+        <input type="submit" class="twelve button" value="Start" />
+    </div>
+</div>
+</form>
+

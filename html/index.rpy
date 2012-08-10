@@ -16,27 +16,46 @@
 #    You should have received a copy of the GNU General Public License
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
-import os, pystache
+import os, pystache, logging
 from twisted.web.resource import Resource
 from webbox import WebBox
 
 class Idx(Resource):
     def render_GET(self, request):
-        filename = os.path.join(os.path.dirname(__file__), "index.template")
+
+        self.wb = registry.getComponent(WebBox)
+
+        template_vars = {
+            "personalise_panel": self.get_personalise_panel(),
+            "server_url": self.wb.server_url,
+        }
+
+        return self.mustache("index", template_vars)
+
+    def mustache(self, fn, tmpl_vars):
+
+        filename = os.path.join(os.path.dirname(__file__), fn+".mustache")
         file = open(filename)
         idx = file.read()
         file.close
 
-        wb = registry.getComponent(WebBox)
-        # do some querying here
+        rendered = pystache.render(idx, tmpl_vars)
+        return rendered.encode("utf8")
 
-        personalise_panel = "<p>Let's set up your WebBox!</p>"
+    def get_personalise_panel(self):
 
-        template_vars = {
-            "personalise_panel": personalise_panel,
-            "server_url": wb.server_url,
-        }
+        q = "PREFIX webbox: <http://webbox.ecs.soton.ac.uk/ns#> SELECT DISTINCT ?owner WHERE { ?owner webbox:address <%s> }" % self.wb.server_url
+        results = self.wb.query_store.query(q)
+        
+        if len(results['data']) == 0:
+            rendered = self.mustache("templates/setup_webbox", {"server_url": self.wb.server_url})
+            
+        else:
+            owner = results['data'][0]['owner']['value']
+            rendered = "<span class='bold'>Your URI:</span> "+owner
 
-        return str(pystache.render(idx, template_vars))
+
+        return rendered
+
 
 resource = Idx()

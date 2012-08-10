@@ -360,4 +360,50 @@ div.browser_row > span.selected {
     font-weight: bold;
 }
 
+.flyoutsrc {
+/*    background: #4D4D4D;
+*/
+    height: 40px;
+    position: relative;
+    padding: 8px;
+    display: block;
+    text-decoration: none;
+    font-size: 14px;
+/*    color: #E6E6E6;
+*/
+    transition: background-color 0.15s ease-in-out;
+    -webkit-transition: background-color 0.15s ease-in-out;
+}
+
+.flyoutsrc:hover {
+    background-color: #e0e0e0;
+    transition: background-color 0.15s ease-in-out;
+    -webkit-transition: background-color 0.15s ease-in-out;
+}
+
+.flyoutsrc-in::after {
+    content: "";
+    display: block;
+    width: 0;
+    height: 0;
+    border: solid 4px;
+    border-color: #4D4D4D transparent transparent transparent;
+    position: absolute;
+    right: 20px;
+    top: 17px;
+}
+
+.flyoutsrc-out::after {
+    content: "";
+    display: block;
+    width: 0;
+    height: 0;
+    border: solid 4px;
+    border-color: transparent transparent #4D4D4D transparent;
+    position: absolute;
+    right: 20px;
+    bottom: 20px;
+}
+
+
 
