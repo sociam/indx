@@ -169,7 +169,26 @@ class WebBox:
             elif req_type == "HEAD":
                 response = self.do_GET(environ, req_path, req_qs)
             else:
-                response = {"status": 405, "reason": "Method Not Allowed", "data": ""}
+                # When you sent 405 Method Not Allowed, you must specify which methods are allowed
+                response = {"status": 405, "reason": "Method Not Allowed", "data": "", headers = [ 
+                  ("Allow", "PUT"),
+                  ("Allow", "GET"),
+                  ("Allow", "POST"),
+                  ("Allow", "HEAD"),
+                  ("Allow", "OPTIONS"),
+
+                  # WebDAV methods
+                  ("Allow", "PROPFIND"),
+                  #not impl#("Allow", "PROPPATCH"),
+                  #not impl#("Allow", "TRACE"),
+                  #not impl#("Allow", "ORDERPATCH"),
+                  ("Allow", "MKCOL"),
+                  ("Allow", "DELETE"),
+                  ("Allow", "COPY"),
+                  ("Allow", "MOVE"),
+                  ("Allow", "LOCK"),
+                  ("Allow", "UNLOCK"),
+                ]}
 
             # get headers from response if they exist
             headers = []
@@ -501,9 +520,9 @@ class WebBox:
 
               # WebDAV methods
               ("Allow", "PROPFIND"),
-              ("Allow", "PROPPATCH"),
-              #("Allow", "TRACE"),
-              #("Allow", "ORDERPATCH"),
+              #not impl#("Allow", "PROPPATCH"),
+              #not impl#("Allow", "TRACE"),
+              #not impl#("Allow", "ORDERPATCH"),
               ("Allow", "MKCOL"),
               ("Allow", "DELETE"),
               ("Allow", "COPY"),
@@ -687,7 +706,7 @@ class WebBox:
             
             logging.debug("a POST to an existing non-rdf static file (non-sensical): sending a not allowed response")
 
-            # When you send a 405 Not Allowed you have to send Allow headers saying which methods ARE allowed.
+            # When you send a 405 Method Not Allowed you have to send Allow headers saying which methods ARE allowed.
             headers = [ 
               ("Allow", "PUT"),
               ("Allow", "GET"),
@@ -697,7 +716,7 @@ class WebBox:
 
               # WebDAV methods
               ("Allow", "PROPFIND"),
-              ("Allow", "PROPPATCH"),
+              #not impl#("Allow", "PROPPATCH"),
               #not impl#("Allow", "TRACE"),
               #not impl#("Allow", "ORDERPATCH"),
               #invalid for a file#("Allow", "MKCOL"),
@@ -708,7 +727,7 @@ class WebBox:
               ("Allow", "UNLOCK"),
             ]
 
-            return {"data": "", "status": 405, "reason": "Not Allowed", "headers": headers}
+            return {"data": "", "status": 405, "reason": "Method Not Allowed", "headers": headers}
 
 
     def handle_update(self, since_repository_hash):
@@ -1070,6 +1089,32 @@ class WebBox:
         """ Handle a PUT. """
         # PUT of RDF is to REPLACE the graph
         content_type = "application/rdf+xml"
+
+        if req_path = "" or req_path == "/":
+            # PUT to / isn't valid, they can only POST to these (it's the spool incoming)
+
+            # When you send a 405 Method Not Allowed you have to send Allow headers saying which methods ARE allowed.
+            headers = [ 
+              #invalid for here#("Allow", "PUT"),
+              ("Allow", "GET"),
+              ("Allow", "POST"),
+              ("Allow", "HEAD"),
+              ("Allow", "OPTIONS"),
+
+              # WebDAV methods
+              ("Allow", "PROPFIND"),
+              #not impl#("Allow", "PROPPATCH"),
+              #not impl#("Allow", "TRACE"),
+              #not impl#("Allow", "ORDERPATCH"),
+              #invalid for here#("Allow", "MKCOL"),
+              #invalid for here#("Allow", "DELETE"),
+              #invalid for here#("Allow", "COPY"),
+              #invalid for here#("Allow", "MOVE"),
+              #invalid for here#("Allow", "LOCK"),
+              #invalid for here#("Allow", "UNLOCK"),
+            ]
+            return {"data": "", "status": 405, "reason": "Method Not Allowed", "headers": headers}
+
 
         put_uri = self.server_url + req_path
         logging.debug("PUT of uri: %s" % put_uri)
