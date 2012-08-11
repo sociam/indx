@@ -1090,7 +1090,7 @@ class WebBox:
         # PUT of RDF is to REPLACE the graph
         content_type = "application/rdf+xml"
 
-        if req_path = "" or req_path == "/":
+        if req_path == "" or req_path == "/":
             # PUT to / isn't valid, they can only POST to these (it's the spool incoming)
 
             # When you send a 405 Method Not Allowed you have to send Allow headers saying which methods ARE allowed.
