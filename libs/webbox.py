@@ -1102,24 +1102,26 @@ class WebBox:
                 # read into file
                 file = rfile.read(size)
                 
-            # prepare the arguments for local PUTing of this data
-            graph = put_uri
-            if req_qs.has_key('graph'):
-                graph = req_qs['graph'][0]
+                # prepare the arguments for local PUTing of this data
+                graph = put_uri
+                if req_qs.has_key('graph'):
+                    graph = req_qs['graph'][0]
 
-            # do SPARQL PUT
-            logging.debug("WebBox SPARQL PUT to graph (%s)" % (graph) )
+                # do SPARQL PUT
+                logging.debug("WebBox SPARQL PUT to graph (%s)" % (graph) )
 
-            response = self.SPARQLPut(graph, file, content_type)
-            if response['status'] > 299:
-                return {"data": "", "status": response['status'], "reason": response['reason']}
+                response = self.SPARQLPut(graph, file, content_type)
+                if response['status'] > 299:
+                    return {"data": "", "status": response['status'], "reason": response['reason']}
 
-            self.add_to_journal(graph)
+                self.add_to_journal(graph)
 
-            # replace the file with RDF/XML (the default format for resolving URIs), so convert if we have to
-            query = "CONSTRUCT {?s ?p ?o} WHERE { GRAPH <%s> {?s ?p ?o}}" % graph
-            result = self.query_store.query(query, {"Accept": "application/rdf+xml"})
-            rdf = result['data']
+                # replace the file with RDF/XML (the default format for resolving URIs), so convert if we have to
+                query = "CONSTRUCT {?s ?p ?o} WHERE { GRAPH <%s> {?s ?p ?o}}" % graph
+                result = self.query_store.query(query, {"Accept": "application/rdf+xml"})
+                rdf = result['data']
+            else:
+                rdf = ""
 
             # write the RDF/XML to the file
             f = open(file_path, "w")
