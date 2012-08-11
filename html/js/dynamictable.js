@@ -12,7 +12,10 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 */
 
 var DynamicTable = function(surface, data){
+
     var dt = this;
+    dt.debugOn = true;
+
     if (!("dynamictables" in window)){
         window.dynamictables = [];
     }
@@ -36,6 +39,12 @@ var DynamicTable = function(surface, data){
 };
 
 DynamicTable.prototype = {
+    debug: function() {
+        var dt = this;
+        if (dt.debugOn && "console" in window){
+            console.debug(arguments);
+        }
+    },
     get_scrollbar_width: function(){
         var dt = this;
 
@@ -108,9 +117,6 @@ DynamicTable.prototype = {
         var dt = this;
         var sizer = dt.makediv(["sizer"]);
 
-        var sizer_width = sizer.width();
-        cell.css("width", cell.width() - sizer_width);
-
         // FIXME duped below
         var row_height = sizer.parent().height();
         sizer.css("height", row_height);
@@ -123,6 +129,10 @@ DynamicTable.prototype = {
         sizer.mousedown(function(evt){
             origX = evt.clientX;
             origY = evt.clientY;
+
+            //dt.header.data("origWidth", dt.header.width());
+            //dt.row_container.data("origWidth", dt.row_container.width());
+            dt.container.data("origWidth", dt.container.width());
 
             $(prevCssclass).each(function(){
                 $(this).data("origWidth", $(this).width());
@@ -170,15 +180,24 @@ DynamicTable.prototype = {
                     });
                     // TODO make this so that all cells to the right move right, rather than just the neighbouring getting smaller
                     $(thisCssclass).each(function(){
-                        $(this).css("width", $(this).data("origWidth") - xDiff); // less wide
+                        //$(this).css("width", $(this).data("origWidth") - xDiff); // less wide
                     });
                 }
+
+                //dt.header.css("width", dt.header.data("origWidth") + xDiff);
+                //dt.row_container.css("width", dt.row_container.data("origWidth") + xDiff);
+                //dt.container.css("width", dt.container.data("origWidth") + xDiff);
+                dt.ensure_container_width();
 
                 dt.ensure_div_sizing();
             }
         });
         sizer.insertAfter(cell);
         cell.data("sizer", sizer);
+
+        var sizer_width = sizer.width();
+        cell.css("width", cell.width() - sizer_width);
+
         return sizer;
     },
     uri_to_cssclass: function(uri){
@@ -271,12 +290,29 @@ DynamicTable.prototype = {
         return parseInt(div.css("padding-left"),10) + parseInt(div.css("padding-right"),10) + parseInt(div.css("border-left-width"),10) + parseInt(div.css("border-right-width"),10) + parseInt(div.css("margin-left"),10) + parseInt(div.css("margin-right"),10);
 
     },
+    ensure_container_width: function(){
+        // when the cells are widened or thinned we need to expand/contract the row container so the scrollbar is accurate
+        var dt = this;
+        var totalWidth = dt.get_scrollbar_width();
+        dt.header.children().each(function(){
+            var thisWidth = $(this).width() + dt.get_extras($(this));
+            if (!$(this).is(".dyntab_clear")){
+                totalWidth += thisWidth;
+            }
+        });
+
+        if (totalWidth < dt.surface.width()){
+            dt.container.css("width", dt.surface.width());
+        } else {
+            dt.container.css("width", totalWidth);
+        }
+    },
     add_data_to_row: function(rowuri, rows){
         // renders data in rows if not already there, and adds to dt.data
-
-        console.debug("rows", rowuri, rows);
-
         var dt = this;
+
+        dt.debug("rows", rowuri, rows);
+
         var rowdiv = dt.row_divs_by_uri[rowuri][0]; // TODO enable multiple rows
 
         var column_counter = 0;
@@ -368,7 +404,7 @@ DynamicTable.prototype = {
     add_data: function(data){
         var dt = this;
 
-        console.debug("add data", data);
+        dt.debug("add data", data);
 
         // combine into dt.data
         $.each(data, function(uri, data){
@@ -414,7 +450,7 @@ DynamicTable.prototype = {
         // create new div
         var header_cell = dt.makediv(["cell","column"+col_counter,dt.uri_to_cssclass(predicate_uri)]);
         header_cell.css("width", col_width);
-        dt.header.css("width", dt.header.width() + dt.get_extras(dt.header) + col_width);
+        //dt.header.css("width", dt.header.width() + dt.get_extras(dt.header) + col_width);
         dt.header.append(header_cell);
 
 
@@ -423,8 +459,8 @@ DynamicTable.prototype = {
 
         // clear at each
         dt.header.append(dt.makediv(["clear"]));
-        
-        dt.container.css("width", dt.header.width() + dt.get_extras(dt.header));
+       
+        dt.ensure_container_width();
 
         // we dont modify surface, because surface might scroll to the size of container
 //        dt.surface.css("width", dt.header.width() + dt.get_extras(dt.header));
@@ -433,7 +469,7 @@ DynamicTable.prototype = {
         dt.columns.push(column);
 
         // add a resizer
-        dt.add_resizers();
+//        dt.add_resizers();
 
         // add to existing rows
         dt.row_container.children().each(function(){
