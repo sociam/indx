@@ -405,5 +405,10 @@ div.browser_row > span.selected {
     bottom: 20px;
 }
 
-
+/* For: browser.html */
+.browser_item {
+    text-decoration: underline;
+    cursor: pointer;
+    color: #1010ff;
+}
 

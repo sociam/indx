@@ -31,8 +31,8 @@
         <h2>WebBox Browser</h2>
 
         <div class="browser_row">
-            <span id="row_everything" class="selected">Everything</span>
-            <span id="row_uploaded_files">Uploaded Files</span>
+            <span id="row_everything">Everything</span>
+            <span id="row_uploaded_files" class="selected">Uploaded Files</span>
             <span id="row_received_posts">Received Posts</span>
             <span id="graphs">Named Graphs</span>
         </div>
@@ -87,6 +87,10 @@ $(document).ready(function(){
         table_from_query(queries[target_id]);
     });
 
+    function browseTo(uri){
+        alert(uri);
+    }
+
     var table_from_query = function(query){
 
         $("#status").html("Loading items...");
@@ -104,7 +108,7 @@ $(document).ready(function(){
                   var newdata = wb_json_normalise(data);
 
                   var columns = [
-                      {"uri": "uri", "label": "Item URI"},
+                      {"uri": "uri", "label": "Item URI", "class": "browser_item", "click": function(uri){ browseTo(uri); }},
                       {"uri": "rdf:type", "label": "RDF Type"},
                   ];
 
@@ -115,7 +119,7 @@ $(document).ready(function(){
             }
         );
     }
-    table_from_query(queries["row_everything"]);
+    table_from_query(queries["row_uploaded_files"]);
 
 });
 

@@ -14,7 +14,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 var DynamicTable = function(surface, data){
 
     var dt = this;
-    dt.debugOn = true;
+    dt.debugOn = false;
 
     if (!("dynamictables" in window)){
         window.dynamictables = [];
@@ -320,6 +320,8 @@ DynamicTable.prototype = {
             var cell = $(this);
             var property_uri = dt.get_column_uris()[column_counter];
 
+            var column = dt.columns[column_counter];
+
             if (property_uri in rows && rows[property_uri] !== undefined){
                 var rowdata = rows[property_uri];
 
@@ -338,6 +340,14 @@ DynamicTable.prototype = {
                         dt.data[rowuri][property_uri].push(value);
 
                         var innercell = dt.makediv(["innercell"]);
+                        if ("class" in column) {
+                            innercell.addClass(column['class']);
+                        }
+                        if ("click" in column) {
+                            innercell.click( function(){
+                                column['click'](value);
+                            });
+                        }
                         if (cell.html() == "&nbsp;"){
                             cell.html("");
                         }
