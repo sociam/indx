@@ -3,8 +3,7 @@
 var wb_json_normalise = function(data){
     var newdata = {};
 
-    console.debug("data", data);
-
+//    console.debug("data", data);
 
     var item_map = function(item){
         var newitem = {};
@@ -47,7 +46,7 @@ var wb_json_normalise = function(data){
         newdata[id] = newitem;
     }
 
-    console.debug("newdata", newdata);
+//    console.debug("newdata", newdata);
 
     return newdata;
 }
