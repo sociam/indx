@@ -52,7 +52,7 @@ $(document).ready(function(){
             var rdf =   "<"+uri+"> <http://webbox.ecs.soton.ac.uk/ns#address> <"+window.webbox_vars.server_url+"> .\n"+
                         "<"+uri+"> <http://xmlns.com/foaf/0.1/name> \""+addslashes(name_input.val())+"\" .\n"+
                         "<"+uri+"> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://xmlns.com/foaf/0.1/Person> . \n"+
-                        "<"+uri+"> <http://www.w3.org/2000/01/rdf-schema#> \""+addslashes(name_input.val())+"\" .\n";
+                        "<"+uri+"> <http://www.w3.org/2000/01/rdf-schema#label> \""+addslashes(name_input.val())+"\" .\n";
 
             $.ajax({
                 "url": uri,
