@@ -170,7 +170,7 @@ class WebBox:
                 response = self.do_GET(environ, req_path, req_qs)
             else:
                 # When you sent 405 Method Not Allowed, you must specify which methods are allowed
-                response = {"status": 405, "reason": "Method Not Allowed", "data": "", headers = [ 
+                response = {"status": 405, "reason": "Method Not Allowed", "data": "", headers: [ 
                   ("Allow", "PUT"),
                   ("Allow", "GET"),
                   ("Allow", "POST"),
