@@ -654,6 +654,27 @@ class WebBox:
             self.add_to_journal(graph) # update journal
 
             # TODO remake the file on disk (assuming graph is relative to our file) according to the new 4store status
+            if not req_qs.has_key('graph'):
+                # only make a file if it is a local URI
+                file_path = self.get_file_path(req_path)
+                logging.debug("file path is: %s" % file_path)
+                exists = os.path.exists(file_path)
+
+                # replace the file with RDF/XML (the default format for resolving URIs), so convert if we have to
+                query = "CONSTRUCT {?s ?p ?o} WHERE { GRAPH <%s> {?s ?p ?o}}" % graph
+                result = self.query_store.query(query, {"Accept": "application/rdf+xml"})
+                rdf = result['data']
+
+                # write the RDF/XML to the file
+                f = open(file_path, "w")
+                f.write(rdf)
+                f.close()
+
+                if exists:
+                    return {"data": "", "status": 204, "reason": "No Content"}
+                else:
+                    return {"data": "", "status": 201, "reason": "Created"}
+                    
 
             # Return 204
             return {"data": "", "status": 204, "reason": "No Content"}
@@ -1031,6 +1052,10 @@ class WebBox:
         elif req_path[-3:] == ".nt":
             content_type = "text/plain"
 
+        file_path = self.get_file_path(req_path)
+        logging.debug("file path is: %s" % file_path)
+        exists = os.path.exists(file_path)
+
         file = ""
         # parse RDF, but not if it's hidden (hidden is usually a small file from Finder's WebDAV)
         if content_type in self.rdf_formats and not hidden_file:
@@ -1048,41 +1073,44 @@ class WebBox:
             # do SPARQL PUT
             logging.debug("WebBox SPARQL PUT to graph (%s)" % (graph) )
 
-            response1 = self.SPARQLPut(graph, file, content_type)
-            if response1['status'] > 299:
-                return {"data": "", "status": response1['status'], "reason": response1['reason']}
+            response = self.SPARQLPut(graph, file, content_type)
+            if response['status'] > 299:
+                return {"data": "", "status": response['status'], "reason": response['reason']}
 
             self.add_to_journal(graph)
-            # replace the RDF file directly, below            
 
-        # this is a FILE upload
-        
-        file_path = self.get_file_path(req_path)
-        logging.debug("file path is: %s" % file_path)
+            # replace the file with RDF/XML (the default format for resolving URIs), so convert if we have to
+            query = "CONSTRUCT {?s ?p ?o} WHERE { GRAPH <%s> {?s ?p ?o}}" % graph
+            result = self.query_store.query(query, {"Accept": "application/rdf+xml"})
+            rdf = result['data']
 
-        exists = os.path.exists(file_path)
-
-        try:
-            # check if path exists first
-            path = os.path.split(file_path)[0] # folder path without filename
-            if not os.path.exists(path):
-                os.makedirs(path)
-
+            # write the RDF/XML to the file
             f = open(file_path, "w")
-            if size > 0:
-                if file == "":
-                    # copy straight from rfile
-                    shutil.copyfileobj(rfile, f, size)
-                else:
-                    # already loaded (by RDF handler, above), write directly
-                    f.write(file)
+            f.write(rdf)
             f.close()
+        else:
+            # Handle a static file PUT
+            try:
+                # check if path exists first
+                path = os.path.split(file_path)[0] # folder path without filename
+                if not os.path.exists(path):
+                    os.makedirs(path)
 
-            # the [1:] gets rid of the /webbox/ bit of the path, so FIXME be more intelligent?
-            self.add_new_file(os.sep.join(os.path.split(req_path)[1:])) # add metadata to store TODO handle error on return false
-        except Exception as e:
-            logging.debug(str( "Error writing to file: %s, exception is: %s" % (file_path, str(e)) ) + traceback.format_exc())
-            return {"data": "", "status": 500, "reason": "Internal Server Error"}
+                f = open(file_path, "w")
+                if size > 0:
+                    if file == "":
+                        # copy straight from rfile
+                        shutil.copyfileobj(rfile, f, size)
+                    else:
+                        # already loaded (by RDF handler, above), write directly
+                        f.write(file)
+                f.close()
+
+                # the [1:] gets rid of the /webbox/ bit of the path, so FIXME be more intelligent?
+                self.add_new_file(os.sep.join(os.path.split(req_path)[1:])) # add metadata to store TODO handle error on return false
+            except Exception as e:
+                logging.debug(str( "Error writing to file: %s, exception is: %s" % (file_path, str(e)) ) + traceback.format_exc())
+                return {"data": "", "status": 500, "reason": "Internal Server Error"}
 
         # no adding to journal here, because it's a file
         if exists:
@@ -1128,5 +1156,5 @@ class WebBox:
         abs_file_path = os.path.abspath(self.file_dir)
         abs_this_path = os.path.abspath(path)
 
-        return abs_this_path.startswith(abs_file_path)
+        return abs_this_path.startswith(abs_file_path) and len(abs_this_path) > len(abs_file_path)
 
