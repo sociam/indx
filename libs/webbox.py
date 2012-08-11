@@ -670,6 +670,9 @@ class WebBox:
                 f.write(rdf)
                 f.close()
 
+                # the [1:] gets rid of the /webbox/ bit of the path, so FIXME be more intelligent?
+                self.add_new_file(os.sep.join(os.path.split(req_path)[1:]), mimetype="application/rdf+xml") # add metadata to store TODO handle error on return false
+
                 if exists:
                     return {"data": "", "status": 204, "reason": "No Content"}
                 else:
@@ -787,9 +790,28 @@ class WebBox:
                     return {"data": self.get_byte_range(f, environ['HTTP_RANGE']), "status": 200, "reason": "OK"}
                 else:
                     logging.debug("File read into file object started.")
-                    return {"data": f, "status": 200, "reason": "OK", "size": size}
+                    mimetype = self.get_file_mime_type(self.server_url + req_path)
+                    response = {"data": f, "status": 200, "reason": "OK", "size": size, "type": mimetype}
+
+                    # If the file is RDF/XML that we've written, then we can convert on the fly according to the request's Accept: header
+                    if mimetype == "application/rdf+xml":
+                        filedata = f.read()
+                        f.close()
+                        response['data'] = filedata
+                        response = self._convert_response(response, environ)
+
+                    return response
             else:
                 return {"data": "", "status": 404, "reason": "Not Found"}
+
+    def get_file_mime_type(self, url):
+        """ Get the mimetype of a file from the store. """
+        results = self.query_store.query("SELECT DISTINCT ?type WHERE {<%s> <http://www.semanticdesktop.org/ontologies/nie/#mimeType> ?type}" % url)
+        try:
+            mimetype = results['data'][0]['type']['value']
+            return mimetype
+        except Exception as e:
+            return ""
 
     def get_byte_range(self, file, byterange):
         """ Return a range of bytes as specified by the HTTP_RANGE header. """
@@ -955,7 +977,7 @@ class WebBox:
             logging.debug("Couldn't send a message to: " + req_uri)
             return "Couldn't connect to %s" % req_uri
 
-    def add_new_file(self, filename):
+    def add_new_file(self, filename, mimetype=None):
         """ Add a new file to the files graph (it was just updated/uploaded). """
         logging.debug("Adding a new file metadata to the store for file: "+filename)
 
@@ -979,7 +1001,8 @@ class WebBox:
              rdflib.URIRef(self.webbox_ns+"filename"),
              rdflib.Literal(filename)))
 
-        mimetype = mimetypes.guess_type(filename)[0]
+        if mimetype is None:
+            mimetype = mimetypes.guess_type(filename)[0]
 
         if mimetype is not None:
             graph.add(
@@ -1088,6 +1111,9 @@ class WebBox:
             f = open(file_path, "w")
             f.write(rdf)
             f.close()
+
+            # the [1:] gets rid of the /webbox/ bit of the path, so FIXME be more intelligent?
+            self.add_new_file(os.sep.join(os.path.split(req_path)[1:]), mimetype="application/rdf+xml") # add metadata to store TODO handle error on return false
         else:
             # Handle a static file PUT
             try:
