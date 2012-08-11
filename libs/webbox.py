@@ -167,7 +167,7 @@ class WebBox:
             elif req_type == "COPY":
                 response = self.do_COPY(rfile, environ, req_path, req_qs)
             elif req_type == "HEAD":
-                response = self.do_GET(rfile, environ, req_path, req_qs)
+                response = self.do_GET(environ, req_path, req_qs)
             else:
                 response = {"status": 405, "reason": "Method Not Allowed", "data": ""}
 
