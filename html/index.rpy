@@ -52,8 +52,7 @@ class Idx(Resource):
             
         else:
             owner = results['data'][0]['owner']['value']
-            rendered = "<span class='bold'>Your URI:</span> "+owner
-
+            rendered = self.mustache("templates/personalise_webbox", {"server_url": self.wb.server_url, "owner": owner});
 
         return rendered
 
