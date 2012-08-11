@@ -775,45 +775,54 @@ class WebBox:
             return response
         else:
             # is this a plain file that exists?
+    
+            # if they specify a graph, then that overrides the uri
+            graph = None
+            if "graph" in req_qs:
+                graph = req_qs['graph'][0]
 
-            file_path = self.get_file_path(req_path)
+            if graph is None:
+                file_path = self.get_file_path(req_path)
 
-            if os.path.exists(file_path) and (not os.path.isdir(file_path)):
-                # return the file
-                logging.debug("Opening file: "+file_path)
-                f = open(file_path, "r")
-                size = os.path.getsize(file_path)
-                #filedata = f.read()
-                #f.close()
+                if os.path.exists(file_path) and (not os.path.isdir(file_path)):
+                    # return the file
+                    logging.debug("Opening file: "+file_path)
+                    f = open(file_path, "r")
+                    size = os.path.getsize(file_path)
+                    #filedata = f.read()
+                    #f.close()
 
-                if "HTTP_RANGE" in environ:
-                    logging.debug("Byte range requested, returning as a string")
-                    return {"data": self.get_byte_range(f, environ['HTTP_RANGE']), "status": 200, "reason": "OK"}
-                else:
-                    logging.debug("File read into file object started.")
-                    mimetype = self.get_file_mime_type(self.server_url + req_path)
-                    response = {"data": f, "status": 200, "reason": "OK", "size": size, "type": mimetype}
+                    if "HTTP_RANGE" in environ:
+                        logging.debug("Byte range requested, returning as a string")
+                        return {"data": self.get_byte_range(f, environ['HTTP_RANGE']), "status": 200, "reason": "OK"}
+                    else:
+                        logging.debug("File read into file object started.")
+                        mimetype = self.get_file_mime_type(self.server_url + req_path)
+                        response = {"data": f, "status": 200, "reason": "OK", "size": size, "type": mimetype}
 
-                    # If the file is RDF/XML that we've written, then we can convert on the fly according to the request's Accept: header
-                    if mimetype == "application/rdf+xml":
-                        filedata = f.read()
-                        f.close()
-                        response['data'] = filedata
-                        response = self._convert_response(response, environ)
+                        # If the file is RDF/XML that we've written, then we can convert on the fly according to the request's Accept: header
+                        if mimetype == "application/rdf+xml":
+                            filedata = f.read()
+                            f.close()
+                            response['data'] = filedata
+                            response = self._convert_response(response, environ)
 
-                    return response
-            else:
-                try:
-                    # Look for this URI or any URI that start with this URI+# and return them all as concise bounded graphs S,P,O of all of those uris
-                    uri = self.server_url + req_path
-                    results = self.query_store.query("CONSTRUCT{?uri ?p ?o} WHERE {?uri ?p ?o . FILTER(?uri = <%s> || strStarts(str(?uri), \"%s#\") || ?o = <%s> || strStarts(str(?o), \"%s#\"))}" % (uri,uri,uri,uri), {"Accept": "text/plain"})
-                    rdf = results['data']
-                    if len(rdf) > 0:
-                        response = {"data": rdf, "status": 200, "reason": "OK", "type": "text/plain"}
-                        response = self._convert_response(response, environ)
                         return response
-                except Exception as e:
-                    return {"data": "", "status": 500, "reason": "Internal Server Error"}
+
+            try:
+                # Look for this URI or any URI that start with this URI+# and return them all as concise bounded graphs S,P,O of all of those uris
+                uri = self.server_url + req_path
+                if graph is not None:
+                    uri = graph
+
+                results = self.query_store.query("CONSTRUCT{?uri ?p ?o} WHERE {?uri ?p ?o . FILTER(?uri = <%s> || strStarts(str(?uri), \"%s#\") || ?o = <%s> || strStarts(str(?o), \"%s#\"))}" % (uri,uri,uri,uri), {"Accept": "text/plain"})
+                rdf = results['data']
+                if len(rdf) > 0:
+                    response = {"data": rdf, "status": 200, "reason": "OK", "type": "text/plain"}
+                    response = self._convert_response(response, environ)
+                    return response
+            except Exception as e:
+                return {"data": "", "status": 500, "reason": "Internal Server Error"}
 
 
             # no URIs, no files, return 404 Not Found
