@@ -929,7 +929,7 @@ class WebBox:
         try:
             rdf = resolve_uri(person_uri)
         except Exception as e:
-            logging.debug("Did not resolve webbox from the person's (FOAF) URI: "+person_uri)
+            logging.debug("Did not resolve webbox from the person's (FOAF) URI: "+person_uri+", exception e: "+str(e)+", trace: "+traceback.format_exc())
             return None
 
         logging.debug("resolved it.")
@@ -937,11 +937,11 @@ class WebBox:
         # put into 4store 
         # put resolved URI into the store
         # put into its own graph URI in 4store
-        response1 = self.SPARQLPut(person_uri, rdf, "application/rdf+xml")
-        logging.debug("Put it in the store: "+str(status))
+        response = self.SPARQLPut(person_uri, rdf, "application/rdf+xml")
+        logging.debug("Put it in the store: "+str(response))
 
-        if response1['status'] > 299:
-            logging.debug("! error putting person uri into local store. status is: %s " % str(status))
+        if response['status'] > 299:
+            logging.debug("! error putting person uri into local store. status is: %s " % str(response))
             return None
 
         # TODO notify apps etc.
@@ -1123,10 +1123,12 @@ class WebBox:
             else:
                 rdf = ""
 
-            # write the RDF/XML to the file
-            f = open(file_path, "w")
-            f.write(rdf)
-            f.close()
+            
+            if not os.path.isdir(file_path):
+                # write the RDF/XML to the file
+                f = open(file_path, "w")
+                f.write(rdf)
+                f.close()
 
             # the [1:] gets rid of the /webbox/ bit of the path, so FIXME be more intelligent?
             self.add_new_file(os.sep.join(os.path.split(req_path)[1:]), mimetype="application/rdf+xml") # add metadata to store TODO handle error on return false

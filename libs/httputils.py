@@ -18,7 +18,7 @@
 
 
 """ This file contains http helper functions, and can be used by any module. """
-import httplib, logging
+import httplib, logging, urllib2
 
 from twisted.internet import reactor, threads
 
