@@ -20,7 +20,8 @@
 import rdflib, logging, traceback, uuid
 
 import webbox
-from httputils import resolve_uri
+from httputils import resolve_uri, http_get
+from urlparse import urlparse
 
 from rdflib.graph import Graph
 from time import strftime
@@ -33,7 +34,7 @@ class WebBoxHandler:
         self.webbox = webbox
         self.sioc_graph = webbox.webbox_ns + "ReceivedSIOCGraph" # the graph for received messages as sioc:Posts
         self.sioc_ns = "http://rdfs.org/sioc/ns#"; # SIOC namespace
-        self.message_uri_prefix = webbox.webbox_ns + "post-" # The URI prefix of the sioc:Post resources we make
+        self.message_uri_prefix = self._webbox_url() + "/post-" # The URI prefix of the sioc:Post resources we make
 
     """ functions to return things from the webbox, do not use self.webbox directly. """
     def _webbox_url(self):
@@ -173,27 +174,44 @@ class WebBoxHandler:
 
                     # resolve URI of the message
                     try:
-                        rdf = resolve_uri(message_uri)
-                        # FIXME error handling
+                        response = resolve_uri(message_uri, accept="*/*", include_info=True) # might not be rdf
+                        rdf = response['data']
+                        headers = response['headers']
 
+                        ctype = ""
+                        if "Content-type" in headers:
+                            ctype = headers['Content-type']
+
+                        logging.debug("resolved, headers are: "+str(headers))
                         logging.debug("resolved it.")
 
-                        # put into 4store
-                        # put resolved URI into the store
-                        # put into its own graph URI in 4store
-                        # TODO is uri2path the best thing here? or GUID it maybe?
-                        response = self.webbox.SPARQLPost(message_uri, rdf, "application/rdf+xml")
-                        logging.debug("Put it in the store: "+str(status))
+                        if ctype in self.webbox.rdf_formats:
+                            # This is RDF, parse it etc
 
-                        if response['status'] > 299:
-                            return response
+                            # TODO handle this properly by calling a method in WebBox
+
+                            # put into 4store
+                            # put resolved URI into the store
+                            # put into its own graph URI in 4store
+                            response = self.webbox.SPARQLPost(message_uri, rdf, ctype)
+                            logging.debug("Put it in the store: "+str(response))
+
+                            # TODO save to a file using a webbox method, as above
+
+                            if response['status'] > 299:
+                                return response
+                        else:
+                            # It's non-RDF, let's just save it
+                            # TODO save to a file
+                            # TODO add metadata to the store, by calling a method in webbox
+                            pass
 
 
                         # store a copy as a sioc:Post in the SIOC graph
                         sioc_post = self._new_sioc_post(message_uri, recipient_uri)
                         response = self.webbox.SPARQLPost(self.sioc_graph, sioc_post['rdf'], "application/rdf+xml")
 
-                        logging.debug("Put a sioc:Post in the store: "+str(status))
+                        logging.debug("Put a sioc:Post in the store: "+str(response))
 
                         if response['status'] > 299:
                             return response

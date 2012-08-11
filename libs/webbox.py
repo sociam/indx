@@ -666,9 +666,10 @@ class WebBox:
                 rdf = result['data']
 
                 # write the RDF/XML to the file
-                f = open(file_path, "w")
-                f.write(rdf)
-                f.close()
+                if not os.path.isdir(file_path):
+                    f = open(file_path, "w")
+                    f.write(rdf)
+                    f.close()
 
                 # the [1:] gets rid of the /webbox/ bit of the path, so FIXME be more intelligent?
                 self.add_new_file(os.sep.join(os.path.split(req_path)[1:]), mimetype="application/rdf+xml") # add metadata to store TODO handle error on return false

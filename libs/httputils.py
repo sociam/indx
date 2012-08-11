@@ -19,6 +19,8 @@
 
 """ This file contains http helper functions, and can be used by any module. """
 import httplib, logging, urllib2
+from mimetools import Message
+from cStringIO import StringIO
 
 from twisted.internet import reactor, threads
 
@@ -105,13 +107,17 @@ def http_post(host, path, data, args):
 
     return {"status": result.status, "reason": result.reason}
 
-def resolve_uri(uri):
+def resolve_uri(uri, accept="application/rdf+xml", include_info=False):
     """ Resolve an RDF URI and return the RDF/XML. """
     logging.debug("resolve uri: "+uri)
 
-    opener = urllib2.build_opener(urllib2.HTTPHandler)
+    if uri.startswith("http:"):
+        opener = urllib2.build_opener(urllib2.HTTPHandler)
+    elif uri.startswith("https:"):
+        opener = urllib2.build_opener(urllib2.HTTPSHandler)
+
     request = urllib2.Request(uri)
-    request.add_header('Accept', 'application/rdf+xml')
+    request.add_header('Accept', accept)
     request.get_method = lambda: 'GET'
     url = opener.open(request)
 
@@ -121,5 +127,9 @@ def resolve_uri(uri):
     except Exception as e:
         logging.debug("Error in resolve_uri: "+str(e))
 
-    return data
+    if include_info:
+        headers = Message(StringIO("".join(url.info().headers)))
+        return {"data": data, "info": url.info(), "headers": headers}
+    else:
+        return data
 
