@@ -302,7 +302,7 @@ class WebBox:
             return{"status": 404, "reason": "Not Found", "data": ""}
 
         if os.path.isdir(file_path):
-            os.rmdir(file_path)
+            os.rmdir(file_path) # only works on empty dirs
         else:
             os.remove(file_path)
 
@@ -777,7 +777,7 @@ class WebBox:
 
             file_path = self.get_file_path(req_path)
 
-            if os.path.exists(file_path):
+            if os.path.exists(file_path) and (not os.path.isdir(file_path)):
                 # return the file
                 logging.debug("Opening file: "+file_path)
                 f = open(file_path, "r")
@@ -802,7 +802,21 @@ class WebBox:
 
                     return response
             else:
-                return {"data": "", "status": 404, "reason": "Not Found"}
+                try:
+                    # Look for this URI or any URI that start with this URI+# and return them all as concise bounded graphs S,P,O of all of those uris
+                    uri = self.server_url + req_path
+                    results = self.query_store.query("CONSTRUCT{?uri ?p ?o} WHERE {?uri ?p ?o . FILTER(?uri = <%s> || strStarts(str(?uri), \"%s#\") || ?o = <%s> || strStarts(str(?o), \"%s#\"))}" % (uri,uri,uri,uri), {"Accept": "text/plain"})
+                    rdf = results['data']
+                    if len(rdf) > 0:
+                        response = {"data": rdf, "status": 200, "reason": "OK", "type": "text/plain"}
+                        response = self._convert_response(response, environ)
+                        return response
+                except Exception as e:
+                    return {"data": "", "status": 500, "reason": "Internal Server Error"}
+
+
+            # no URIs, no files, return 404 Not Found
+            return {"data": "", "status": 404, "reason": "Not Found"}
 
     def get_file_mime_type(self, url):
         """ Get the mimetype of a file from the store. """
@@ -1182,5 +1196,5 @@ class WebBox:
         abs_file_path = os.path.abspath(self.file_dir)
         abs_this_path = os.path.abspath(path)
 
-        return abs_this_path.startswith(abs_file_path) and len(abs_this_path) > len(abs_file_path)
+        return abs_this_path.startswith(abs_file_path)
 
