@@ -28,8 +28,7 @@ export KBNAME="webbox_$ME"
 
 #./new_4store_kb.sh
 rm -r "/var/lib/4store/$KBNAME"
-rm -r ~/.webbox/data/rww/*
-rm -r ~/.webbox/data/journals/*
-rm -r ~/.webbox/data/subscriptions/*
-rm -r ~/.webbox/data/files/*
+rm ~/.webbox/journal.sqlite
+rm ~/.webbox/subscriptions.sqlite
+rm -r ~/.webbox/files/*
 

@@ -182,21 +182,21 @@ class WebBoxHandler:
                         # put resolved URI into the store
                         # put into its own graph URI in 4store
                         # TODO is uri2path the best thing here? or GUID it maybe?
-                        status = self.webbox.SPARQLPut(message_uri, self._uri2path(message_uri), rdf, "application/rdf+xml")
+                        response = self.webbox.SPARQLPost(message_uri, rdf, "application/rdf+xml")
                         logging.debug("Put it in the store: "+str(status))
 
-                        if status > 299:
-                            return {"data": "Unsuccessful.", "status": status}
+                        if response['status'] > 299:
+                            return response
 
 
                         # store a copy as a sioc:Post in the SIOC graph
                         sioc_post = self._new_sioc_post(message_uri, recipient_uri)
-                        status = self.webbox.SPARQLPut(self.sioc_graph, self._uri2path(sioc_post['uri']), sioc_post['rdf'], "application/rdf+xml")
+                        response = self.webbox.SPARQLPost(self.sioc_graph, sioc_post['rdf'], "application/rdf+xml")
 
                         logging.debug("Put a sioc:Post in the store: "+str(status))
 
-                        if status > 299:
-                            return {"data": "Unsuccessful.", "status": status} 
+                        if response['status'] > 299:
+                            return response
 
 
                         # TODO notify apps etc.
@@ -204,7 +204,7 @@ class WebBoxHandler:
                     except Exception as e:
                         logging.debug("Error with message received: " + str(e))
                         logging.debug(traceback.format_exc())
-                        return {"data": "Error receiving message: "+message_uri, "status": 500}
+                        return {"data": "Error receiving message: "+message_uri, "status": 500, "reason": "Internal Server Error"}
 
                 else:
                     """ This message is for other people. - we will send it. """
@@ -217,7 +217,7 @@ class WebBoxHandler:
                         pass
                     else:
                         # oh dear, didn't work, success is the error message
-                        return {"data": "Unsuccessful: %s" % success, "status": 502} # 502 Bad Gateway, i.e. we couldn't send to their webbox
+                        return {"data": "", "status": 502, "reason": "Bad Gateway"}
 
         return None # none means successful.
         

@@ -47,8 +47,8 @@ echo
 echo
 echo
 
-echo "PUTing a message to the local store:"
-curl -v -k --header 'content-type:text/turtle' -T 'testdata/example_msg.n3' "$URI_SCHEME://127.0.0.1:$PORT/webbox/example_msg.n3"
+echo "POSTing a message to the local store:"
+curl -v -k -X"POST" --header 'content-type:text/turtle' -T 'testdata/example_msg.n3' "$URI_SCHEME://127.0.0.1:$PORT/webbox"
 echo
 echo
 echo
@@ -56,15 +56,15 @@ echo
 echo
 
 echo "POSTing a message to the local store:"
-curl -v -k -X"POST" --header 'content-type:text/turtle' -T 'testdata/example_msg.n3' "$URI_SCHEME://127.0.0.1:$PORT/webbox/example_msg.n3"
+curl -v -k -X"POST" --header 'content-type:text/turtle' -T 'testdata/example_msg.n3' "$URI_SCHEME://127.0.0.1:$PORT/webbox"
 echo
 echo
 echo
 echo
 echo
 
-echo "PUTing a message to an external store:"
-curl -v -k --header 'content-type:text/turtle' -T 'testdata/example_msg_external.n3' "$URI_SCHEME://127.0.0.1:$PORT/webbox/example_msg_external.n3"
+echo "POSTing a message to an external store:"
+curl -v -k -X"POST" --header 'content-type:text/turtle' -T 'testdata/example_msg_external.n3' "$URI_SCHEME://127.0.0.1:$PORT/webbox"
 echo
 echo
 echo
@@ -80,7 +80,7 @@ echo
 echo
 
 echo "Subscribing to a resource:"
-curl -v -k --header 'content-type:text/turtle' -T 'testdata/example_msg_sub.n3' "$URI_SCHEME://127.0.0.1:$PORT/webbox/example_msg_sub.n3"
+curl -v -k -X"POST" --header 'content-type:text/turtle' -T 'testdata/example_msg_sub.n3' "$URI_SCHEME://127.0.0.1:$PORT/webbox"
 echo
 echo
 echo
@@ -96,7 +96,7 @@ echo
 echo
 
 echo "Unsubscribing from a resource:"
-curl -v -k --header 'content-type:text/turtle' -T 'testdata/example_msg_unsub.n3' "$URI_SCHEME://127.0.0.1:$PORT/webbox/example_msg_unsub.n3"
+curl -v -k -X"POST" --header 'content-type:text/turtle' -T 'testdata/example_msg_unsub.n3' "$URI_SCHEME://127.0.0.1:$PORT/webbox"
 echo
 echo
 echo
@@ -127,8 +127,8 @@ echo
 echo
 echo
 
-echo "POSTting a file to replace it:"
-curl -v -k -X"POST" --header "content-type:image/png" -T 'files/godfather.png' "$URI_SCHEME://127.0.0.1:$PORT/webbox/godfather.png"
+echo "PUTting a file to replace it:"
+curl -v -k -X"PUT" --header "content-type:image/png" -T 'files/godfather.png' "$URI_SCHEME://127.0.0.1:$PORT/webbox/godfather.png"
 echo
 echo
 echo

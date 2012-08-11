@@ -1099,7 +1099,7 @@ qq.extend(qq.UploadHandlerForm.prototype, {
         // form.setAttribute('method', 'post');
         // form.setAttribute('enctype', 'multipart/form-data');
         // Because in this case file won't be attached to request
-        var form = qq.toElement('<form method="post" enctype="multipart/form-data"></form>');
+        var form = qq.toElement('<form method="put" enctype="multipart/form-data"></form>');
 
         var queryString = qq.obj2url(params, this._options.action);
 
@@ -1200,7 +1200,7 @@ qq.extend(qq.UploadHandlerXhr.prototype, {
         //var queryString = qq.obj2url(params, this._options.action);
         var queryString = this._options.action + name;
 
-        xhr.open("POST", queryString, true);
+        xhr.open("PUT", queryString, true);
         xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
         xhr.setRequestHeader("X-File-Name", encodeURIComponent(name));
         xhr.setRequestHeader("Content-Type", "application/octet-stream");

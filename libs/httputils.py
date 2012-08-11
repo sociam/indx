@@ -105,7 +105,7 @@ def http_post(host, path, data, args):
 
     return {"status": result.status, "reason": result.reason}
 
-def resolve_uri(self, uri):
+def resolve_uri(uri):
     """ Resolve an RDF URI and return the RDF/XML. """
     logging.debug("resolve uri: "+uri)
 

@@ -57,7 +57,7 @@ class WebBox:
     files_graph = webbox_ns + "UploadedFiles" # the graph with metadata about files (non-RDF)
     subscribe_predicate = webbox_ns + "subscribe_to" # uri for subscribing to a resource
     unsubscribe_predicate = webbox_ns + "unsubscribe_from" # uri for unsubscribing from a resource
-    graph = webbox_ns + "ReceivedGraph" # default URI for 4store inbox
+    received_graph = webbox_ns + "ReceivedGraph" # default URI for 4store inbox
 
     def __init__(self, config):
 
@@ -235,7 +235,7 @@ class WebBox:
             return [response['data']]
 
         except Exception as e:
-            logging.debug("Error in WebBox.response(), returning 500: "+str(e))
+            logging.debug("Error in WebBox.response(), returning 500: %s, exception is: %s" % (str(e), traceback.format_exc()))
             start_response("500 Internal Server Error", ())
             return [""]
 
@@ -560,7 +560,6 @@ class WebBox:
 
     def updated_resource(self, uri, type):
         """ Handle an update to a resource and send out updates to subcribers. """
-
         # type is "rdf" or "file"
 
         logging.debug("resource [%s] updated, notify subscribers" % uri)
@@ -583,16 +582,13 @@ class WebBox:
 
     def do_POST(self, rfile, environ, req_path, req_qs):
         """ Handle a POST (update). """
+        # POST of RDF is a merge.
 
         post_uri = self.server_url + req_path
         logging.debug("POST of uri: %s" % post_uri)
 
-        file_path = self.get_file_path(req_path)
-        logging.debug("file path is: %s" % file_path)
-
         if environ.has_key("CONTENT_TYPE"):
             content_type = environ['CONTENT_TYPE']
-
 
         # if a .rdf is uploaded, set the content-type manually
         if req_path[-4:] == ".rdf":
@@ -602,13 +598,12 @@ class WebBox:
         elif req_path[-3:] == ".nt":
             content_type = "text/plain"
 
+        # determine if this is a hidden file
         path_parts = req_path.split("/")
         hidden_file = False
-        if path_parts[ len(path_parts) - 1 ][0] == ".":
+        if len(path_parts) > 0 and len( path_parts[ len(path_parts) - 1 ]) > 0 and path_parts[ len(path_parts) - 1 ][0] == ".":
             hidden_file = True
 
-
-        file = ""
         if content_type in self.rdf_formats and not hidden_file:
             logging.debug("content type of PUT is RDF so we also send to 4store.")
 
@@ -618,57 +613,78 @@ class WebBox:
             if environ.has_key("CONTENT_LENGTH"):
                 size = int(environ['CONTENT_LENGTH'])
 
+            # read RDF content into file
+            file = ""
             if size > 0:
-                # read into file
                 file = rfile.read(size)
-            
-            # deserialise rdf into triples
-            graph = Graph()
-            graph.parse(data=file, format=rdf_format) # format = xml, n3 etc
+          
+            # strip off the last slash if it is to /webbox/
+            if post_uri == self.server_url + "/":
+                post_uri = post_uri[:-1]
 
-            # check for webbox specific messages
-            handle_response = self._handle_webbox_rdf(graph) # check if rdf contains webbox-specific rdf, i.e. to_address, subscribe etc
-            if handle_response is not None:
-                return handle_response # i.e., there is an error, so return it
-
-
-            # prepare the arguments for local PUTing of this data
-            graph = self.graph
+            # set the graph to PUT to. the URI itself, or ?graph= if set (compatibility with SPARQL1.1)
+            graph = post_uri
             if req_qs.has_key('graph'):
                 graph = req_qs['graph'][0]
 
+            # if they have put to /webbox then we handle it any messages (this is the only URI that we handle messages on)
+            if graph == self.server_url:
+                graph = self.received_graph # save (append) into the received graph, not into the server url
+
+                # deserialise rdf into triples so we can use them in python
+                rdfgraph = Graph()
+                rdfgraph.parse(data=file, format=rdf_format) # format = xml, n3 etc
+
+                # check for webbox specific messages using the handler class
+                handle_response = self._handle_webbox_rdf(rdfgraph) # check if rdf contains webbox-specific rdf, i.e. to_address, subscribe etc
+                if handle_response is not None:
+                    # TODO replace this with raising a ResponseOverride in the handler
+                    return handle_response # i.e., there is an error, so return it
+
+
             # do SPARQL PUT
             logging.debug("WebBox SPARQL POST to graph (%s)" % (graph) )
-
-            response1 = self.SPARQLPost(graph, file, content_type)
-            if response1['status'] > 299:
-                return {"data": "Unsuccessful.", "status": response1['status'], "reason": response1['reason']}
+            response = self.SPARQLPost(graph, file, content_type)
+            if response['status'] > 299:
+                # Return the store error if there is one.
+                return {"data": "", "status": response['status'], "reason": response['reason']}
 
 
             self.updated_resource(post_uri, "rdf") # notify subscribers
-            self.add_to_journal(graph)
-#            return {"data": "", "status": 204, "reason": "No Content"}
+            self.add_to_journal(graph) # update journal
 
+            # TODO remake the file on disk (assuming graph is relative to our file) according to the new 4store status
 
-
-        logging.debug("a POST of a file")
-        # Not RDF content type, so lets treat as a file upload
-        exists = os.path.exists(file_path)
-
-        if exists:
-            logging.debug("file existed, so we're removing it, and then calling a PUT internally")
-            os.remove(file_path)
-
-        if file != "":
-            rfile = StringIO(file)
-
-        put_response = self.do_PUT(rfile, environ, req_path, req_qs)
-        if put_response['status'] == 201 or put_response['status'] == 200 or put_response['status'] == 204:
-            self.updated_resource(post_uri, "file") # notify subscribers
+            # Return 204
             return {"data": "", "status": 204, "reason": "No Content"}
+
         else:
-            return put_response
-    # never reach here
+            
+            logging.debug("a POST to an existing non-rdf static file (non-sensical): sending a not allowed response")
+
+            # When you send a 405 Not Allowed you have to send Allow headers saying which methods ARE allowed.
+            headers = [ 
+              ("Allow", "PUT"),
+              ("Allow", "GET"),
+              #invalid for a file#("Allow", "POST"),
+              ("Allow", "HEAD"),
+              ("Allow", "OPTIONS"),
+
+              # WebDAV methods
+              ("Allow", "PROPFIND"),
+              ("Allow", "PROPPATCH"),
+              #not impl#("Allow", "TRACE"),
+              #not impl#("Allow", "ORDERPATCH"),
+              #invalid for a file#("Allow", "MKCOL"),
+              ("Allow", "DELETE"),
+              ("Allow", "COPY"),
+              ("Allow", "MOVE"),
+              ("Allow", "LOCK"),
+              ("Allow", "UNLOCK"),
+            ]
+
+            return {"data": "", "status": 405, "reason": "Not Allowed", "headers": headers}
+
 
     def handle_update(self, since_repository_hash):
         """ Handle calls to the Journal update URL. """
@@ -889,13 +905,13 @@ class WebBox:
     def send_message(self, recipient_uri, message_resource_uri):
         """ Send an external message to a recipient. """
 
-        # URI to HTTP PUT to
+        # URI to HTTP POST to
         webbox_uri = self.get_webbox(recipient_uri)
         if webbox_uri is None:
             logging.debug("Could not get webbox of " + recipient_uri)
             return "Couldn't get webbox of: " + recipient_uri
 
-        # generate our RDF message to "PUT"
+        # generate our RDF message to "POST"
         graph = Graph()
         graph.add(
             (rdflib.URIRef(message_resource_uri),
@@ -904,18 +920,13 @@ class WebBox:
         
         rdf = graph.serialize(format="xml") # rdf/xml
 
-        # generate our filename as a GUID
-        filename = uuid.uuid1().hex
-
-        logging.debug("type of webbox_uri %s, os.sep %s, filename %s" % (str(type(webbox_uri)), str(type(os.sep)), str(type(filename))))
-        logging.debug("webbox_uri %s, os.sep %s, filename %s" % (str(webbox_uri), str(os.sep), str(filename)))
-        req_uri = webbox_uri + os.sep + filename
+        req_uri = webbox_uri
         try:
-            # HTTP PUT to their webbox
+            # HTTP POST to their webbox
             opener = urllib2.build_opener(urllib2.HTTPHandler)
             request = urllib2.Request(req_uri, data=rdf)
             request.add_header('Content-Type', 'application/rdf+xml') # because format="xml" above
-            request.get_method = lambda: 'PUT'
+            request.get_method = lambda: 'POST'
             url = opener.open(request)
             return True
         except Exception as e:
@@ -988,30 +999,28 @@ class WebBox:
 
 
     def do_PUT(self, rfile, environ, req_path, req_qs):
+        """ Handle a PUT. """
+        # PUT of RDF is to REPLACE the graph
         content_type = "application/rdf+xml"
 
         put_uri = self.server_url + req_path
         logging.debug("PUT of uri: %s" % put_uri)
 
-
         if environ.has_key("HTTP_TRANSFER_ENCODING") and environ['HTTP_TRANSFER_ENCODING'].lower() == "chunked":
             # part-file is being uploaded, deal with this slightly differently
             size = int(environ['HTTP_X_EXPECTED_ENTITY_LENGTH'])
             content_type = ""
-
         else:
-
             size = 0
             if environ.has_key("CONTENT_LENGTH"):
                 size = int(environ['CONTENT_LENGTH'])
-
             if environ.has_key("CONTENT_TYPE"):
                 content_type = environ['CONTENT_TYPE']
 
-
+        # check for a hidden file
         path_parts = req_path.split("/")
         hidden_file = False
-        if path_parts[ len(path_parts) - 1 ][0] == ".":
+        if len(path_parts) > 0 and len( path_parts[ len(path_parts) - 1 ]) > 0 and path_parts[ len(path_parts) - 1 ][0] == ".":
             hidden_file = True
 
         # if a .rdf is uploaded, set the content-type manually
@@ -1022,7 +1031,6 @@ class WebBox:
         elif req_path[-3:] == ".nt":
             content_type = "text/plain"
 
-
         file = ""
         # parse RDF, but not if it's hidden (hidden is usually a small file from Finder's WebDAV)
         if content_type in self.rdf_formats and not hidden_file:
@@ -1031,44 +1039,21 @@ class WebBox:
             if size > 0:
                 # read into file
                 file = rfile.read(size)
-            else:
-                # Sometimes WebDAV PUTs files of zero length, dont parse them!
-                return {"data": "", "status": 204, "reason": "No Content"}
                 
-
-            rdf_format = self.rdf_formats[content_type]
-            
-            # deserialise rdf into triples
-            graph = Graph()
-            graph.parse(data=file, format=rdf_format) # format = xml, n3 etc
-
-            # check for webbox specific messages
-            handle_response = self._handle_webbox_rdf(graph) # check if rdf contains webbox-specific rdf, i.e. to_address, subscribe etc
-            if handle_response is not None:
-                logging.debug("Error: handling WebBox rdf")
-                return handle_response # i.e., there is an error, so return it
-
-
             # prepare the arguments for local PUTing of this data
-            graph_replace = False # default to not replaceing the graph, because we put it in the ReceivedGraph
-            graph = self.graph
+            graph = put_uri
             if req_qs.has_key('graph'):
                 graph = req_qs['graph'][0]
-                graph_replace = True # if they have specified the graph, we replace it, since this is a PUT
 
             # do SPARQL PUT
             logging.debug("WebBox SPARQL PUT to graph (%s)" % (graph) )
 
-            response1 = self.SPARQLPut(graph, file, content_type, graph_replace=graph_replace)
+            response1 = self.SPARQLPut(graph, file, content_type)
             if response1['status'] > 299:
                 return {"data": "", "status": response1['status'], "reason": response1['reason']}
 
-            # TODO save to a file also?
-
             self.add_to_journal(graph)
-#            return {"data": "", "status": 204, "reason": "No Content"}
-
-
+            # replace the RDF file directly, below            
 
         # this is a FILE upload
         
@@ -1100,23 +1085,18 @@ class WebBox:
             return {"data": "", "status": 500, "reason": "Internal Server Error"}
 
         # no adding to journal here, because it's a file
-        return {"data": "", "status": 204, "reason": "No Content"}
+        if exists:
+            return {"data": "", "status": 204, "reason": "No Content"}
+        else:
+            return {"data": "", "status": 201, "reason": "Created"}
             
 
-        # TODO send something meaningful!
-        # NB: we never get here
-        #return {"data": "Successful.", "status": 200}
-
-    def SPARQLPut(self, graph, file, content_type, graph_replace=True):
+    def SPARQLPut(self, graph, file, content_type):
         """ Handle a SPARQL PUT request. 'graph' is for 4store, 'filename' is for RWW. """
 
         # send file to query store
-        if graph_replace: # force a replace? usually yes, e.g. where graph is a file, otherwise dont, e.g. ReceivedGraph
-            logging.debug("replacing graph %s with rdf" % graph)
-            response1 = self.query_store.put_rdf(file, content_type, graph)
-        else:
-            logging.debug("appending to graph %s with rdf" % graph)
-            response1 = self.query_store.post_rdf(file, content_type, graph)
+        logging.debug("replacing graph %s with rdf" % graph)
+        response1 = self.query_store.put_rdf(file, content_type, graph)
 
         return response1
 
