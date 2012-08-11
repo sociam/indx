@@ -27,7 +27,18 @@ div.dyntab_innercell {
     -moz-box-sizing: content-box;
     box-sizing: content-box;
 }
+div.dyntab_innercell > input {
 
+    font-family: "Lucida Grande", "Helvetica", "Arial", sans-serif;
+    font-size: 8pt;
+    -webkit-box-sizing: content-box;
+    -moz-box-sizing: content-box;
+    box-sizing: content-box;
+
+    padding: 0px;
+    height: auto;
+    margin: auto;
+}
 
 
 

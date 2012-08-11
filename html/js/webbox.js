@@ -18,8 +18,33 @@
     along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+function get_type_of_string(str){
+    // if string is <str> then return "uri", if str is "str" then return literal otherwise return "plain"
+    var char0 = str.substr(0,1);
+    var charend = str.substr(str.length -1, str.length);
 
-var wb_json_normalise = function(data){
+    if (str.match(/^([A-Za-z0-9]+)[:]([A-Za-z0-9]+)$/) !== null){
+        return "plain";
+    }
+    if (char0 === "<" && charend === ">"){
+        return "uri";
+    }
+    if (char0 === "\"" && charend === "\""){
+        return "literal";
+    }
+    return "plain";
+}
+
+function strip_type_of_string(str){
+    // if string is <str> or "str", then strip the surrounding characters
+    var type = get_type_of_string(str);
+    if (type != "plain"){
+        return str.substr(1,str.length-2);
+    }
+    return str;
+}
+
+function wb_json_normalise(data){
     var newdata = {};
 
 //    console.debug("data", data);
@@ -29,14 +54,24 @@ var wb_json_normalise = function(data){
         if ("@id" in item){
             $.each(item, function(key, val){
                 if (key == "@type"){
-                    newitem["rdf:type"] = val;
-                } else if (key == "@id"){
+                    if (typeof val === "string"){
+                        newitem["rdf:type"] = "<"+val+">";
+                    } else {
+                        if (!("rdf:type" in newitem)){
+                            newitem["rdf:type"] = [];
+                        }
+                        $.each(val, function(){
+                            newitem["rdf:type"].push("<"+this+">");
+                        });
+                    }
+
+                } else if (key === "@id"){
                     // do nothing
                 } else {
-                    if (typeof val == "string"){
-                        newitem[key] = val;
+                    if (typeof val === "string"){
+                        newitem[key] = "\""+val+"\"";
                     } else {
-                        newitem[key] = val["@value"];
+                        newitem[key] = "<"+val["@value"]+">";
                     }
                 }
             });
@@ -49,7 +84,7 @@ var wb_json_normalise = function(data){
             var item = this;
             var newitem = item_map(item);
             var id = item["@id"];
-            newitem["uri"] = id;
+            newitem["uri"] = "<"+id+">";
             newdata[id] = newitem;
         });
     } else {
@@ -61,7 +96,7 @@ var wb_json_normalise = function(data){
 
         var newitem = item_map(item);
         var id = item["@id"];
-        newitem["uri"] = id;
+        newitem["uri"] = "<"+id+">";
         newdata[id] = newitem;
     }
 

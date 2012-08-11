@@ -617,20 +617,47 @@ class WebBox:
         elif req_path[-3:] == ".nt":
             content_type = "text/plain"
 
+
+        size = 0
+        if environ.has_key("CONTENT_LENGTH") and environ['CONTENT_LENGTH'] != "":
+            size = int(environ['CONTENT_LENGTH'])
+
+
         # determine if this is a hidden file
         path_parts = req_path.split("/")
         hidden_file = False
         if len(path_parts) > 0 and len( path_parts[ len(path_parts) - 1 ]) > 0 and path_parts[ len(path_parts) - 1 ][0] == ".":
             hidden_file = True
 
-        if content_type in self.rdf_formats and not hidden_file:
+        if content_type == "application/x-www-form-urlencoded":
+            # SPARQL Query
+            if size > 0:
+                file = rfile.read(size)
+            else:
+                raise ResponseOverride(400, "Bad Request")
+
+            req_qs_post = parse_qs(file)
+            query = req_qs_post['query'][0]
+
+
+            # strip off the last slash if it is to /webbox/
+            if post_uri == self.server_url + "/":
+                post_uri = post_uri[:-1]
+
+            # send to 4store
+            response = self.query_store.update_query(query)
+            if response['status'] > 299:
+                # Return the store error if there is one.
+                return {"data": "", "status": response['status'], "reason": response['reason']}
+
+            # TODO parse the GRAPH <> out of the query, and on success above, re-create those data files using CONSTRUCT if they are local NS graphs
+
+            return {"data": "", "status": 200, "reason": "OK"}
+
+        elif content_type in self.rdf_formats and not hidden_file:
             logging.debug("content type of PUT is RDF so we also send to 4store.")
 
             rdf_format = self.rdf_formats[content_type]
-
-            size = 0
-            if environ.has_key("CONTENT_LENGTH"):
-                size = int(environ['CONTENT_LENGTH'])
 
             # read RDF content into file
             file = ""
@@ -641,7 +668,7 @@ class WebBox:
             if post_uri == self.server_url + "/":
                 post_uri = post_uri[:-1]
 
-            # set the graph to PUT to. the URI itself, or ?graph= if set (compatibility with SPARQL1.1)
+            # set the graph to POST to. the URI itself, or ?graph= if set (compatibility with SPARQL1.1)
             graph = post_uri
             if req_qs.has_key('graph'):
                 graph = req_qs['graph'][0]
@@ -900,7 +927,9 @@ class WebBox:
 
         status = response['status']
         reason = response['reason']
-        type = response['type'].lower()
+        type = None
+        if "type" in response:
+            type = response['type'].lower()
         data = response['data']
 
         accept = environ['HTTP_ACCEPT'].lower()
@@ -909,13 +938,13 @@ class WebBox:
             logging.debug("Not converting, client accepts anything.") # for performance and compatiblity
             return response
 
-        if accept == type:
+        if type is not None and accept == type:
             logging.debug("Not converting data, type is identical to that requested.")
             return response
 
         # data
         new_mime = best_match(self.rdf_formats.keys(), accept)
-        if new_mime in self.rdf_formats:
+        if new_mime in self.rdf_formats and type is not None:
             new_data = self._convert(data, type, new_mime)
             new_response = {"status": status,
                             "reason": reason,
@@ -926,7 +955,7 @@ class WebBox:
             return new_response
 
         else:
-            logging.debug("Can't understand Accept header of "+accept+", so returning data as-is.")
+            logging.debug("Can't understand Accept header of "+accept+", or content type is None, so returning data as-is.")
             return response
         
 

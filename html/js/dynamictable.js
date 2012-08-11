@@ -45,6 +45,12 @@ DynamicTable.prototype = {
             console.debug(arguments);
         }
     },
+    change_val: function(callback){
+        var dt = this;
+        // set a callback when a user has changed a triple.
+        // send the from and to triples back (with types)
+        dt['change_callback'] = callback;
+    },
     get_scrollbar_width: function(){
         var dt = this;
 
@@ -352,6 +358,76 @@ DynamicTable.prototype = {
                             cell.html("");
                         }
                         cell.append(innercell);
+
+                        // webbox specific calls
+                        if ("get_type_of_string" in window){
+                            var type = get_type_of_string(value);
+                            value = strip_type_of_string(value);
+                            innercell.data("type", type);
+                            innercell.data("origvalue", value);
+                            innercell.data("predicate", property_uri);
+                            innercell.data("subject", rowuri);
+                        }
+
+                        // TODO call this once to optimise rather than in this loop
+                        innercell.bind("dblclick", function(evt){
+                            if ("change_callback" in dt){
+                                var icell = $(evt.target);
+                                var origvalue = icell.data("origvalue");
+                                var type = icell.data("type");
+                                var subject = icell.data("subject");
+                                var predicate = icell.data("predicate");
+
+                                var input = $("<input type='text' value='"+origvalue+"' />");
+                                input.bind("keydown", function(evt){
+                                    if (evt.which == 13){
+                                        var target = $(evt.target);
+                                        var newval = target.val();
+
+                                        var icel = target.parent();
+                                        target.remove();
+                                        icel.html(newval);
+                                        dt.ensure_div_sizing();
+
+                                        if (newval == origvalue){
+                                            return;
+                                        };
+
+                                        // call the callback
+                                        var from_obj = origvalue;
+                                        if (type === "uri"){
+                                            from_obj = "<"+from_obj+">";
+                                        } else if (type === "literal"){
+                                            from_obj = "\""+from_obj+"\"";
+                                        }
+                                        var to_obj = newval;
+                                        if (type === "uri"){
+                                            to_obj = "<"+to_obj+">";
+                                        } else if (type === "literal"){
+                                            to_obj = "\""+to_obj+"\"";
+                                        }
+
+                                        var pred_type = get_type_of_string(predicate);
+                                        if (pred_type === "uri"){
+                                            // do not do this to qNames (this is a horrible hack)
+                                            predicate = "<"+predicate+">";
+                                        }
+
+                                        var from = {subject: "<"+subject+">", predicate: predicate, object: from_obj};
+                                        var to = {subject: "<"+subject+">", predicate: predicate, object: to_obj};
+                                        dt.change_callback(from, to);
+
+                                        // assume successful, so reset the original value to the new one
+                                        origvalue = newval;
+                                        icel.data("origvalue", newval);
+                                    }
+                                });
+                                icell.html("");
+                                icell.append(input);
+                                dt.ensure_div_sizing();
+                            }
+                        });
+
                         innercell.html(value);
                     }
                 });

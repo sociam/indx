@@ -131,9 +131,9 @@
 $(document).ready(function(){
 
 
-    var prefixes = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ";
+    var prefixes = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> ";
     var queries = {
-        "row_everything": prefixes+"CONSTRUCT {?item rdf:type ?type} WHERE {?item rdf:type ?type}",
+        "row_everything": prefixes+"CONSTRUCT {?item rdf:type ?type . ?item rdfs:label ?label} WHERE {?item rdf:type ?type . OPTIONAL{?item rdfs:label ?label}}",
         "row_uploaded_files": prefixes+"CONSTRUCT {?item rdf:type ?type . ?item <http://www.semanticdesktop.org/ontologies/nie/#mimeType> ?mimeType} WHERE {?item rdf:type <http://webbox.ecs.soton.ac.uk/ns#File> . ?item rdf:type ?type . OPTIONAL{?item <http://www.semanticdesktop.org/ontologies/nie/#mimeType> ?mimeType}}",
         "row_received_posts": prefixes+"CONSTRUCT {?item rdf:type ?type} WHERE {?item rdf:type <http://rdfs.org/sioc/ns#Post> . ?item rdf:type ?type}",
         "graphs": prefixes+"CONSTRUCT {?item rdf:type \"Named Graph\" } WHERE { GRAPH ?item { ?s ?p ?o }}",
@@ -162,7 +162,7 @@ $(document).ready(function(){
         browseOne(uri, window.webbox_vars.server_url, $("#browse_one"));
     }
 
-    var table_from_query = function(query){
+    function table_from_query(query){
 
         $("#status").html("Loading items...");
 
@@ -186,11 +186,51 @@ $(document).ready(function(){
                   $("#status").html("Rendering items...");
                   var dt = new DynamicTable($("#browser_table"), {"data": newdata, "columns": columns });
                   $("#status").html("");
+                  dt.change_val(function(from, to){
+                      replace_triple(from, to);
+                  });
               },
             }
         );
     }
     table_from_query(queries["row_uploaded_files"]);
+
+    function replace_triple(from, to){
+        // replace a triple {from.subject from.predicate from.obj} with triple {to.subject to.predicate to.obj}
+        var from_triple = "{"+from.subject+" "+from.predicate+" "+from.object+"}";
+        var to_triple = "{"+to.subject+" "+to.predicate+" "+to.object+"}";
+
+        // first, determine the graph to manipulate
+        var query = prefixes+"SELECT DISTINCT ?graph WHERE { GRAPH ?graph "+from_triple+"}"
+        $.ajax({
+            url: window.webbox_vars.server_url,
+            data: {query: query},
+            type: "GET",
+            dataType: "xml",
+            success: function(data){
+                // TODO do much better sparql results parsing here
+                $(data).find("binding").find("uri").each(function(){
+                    var graph = this.textContent;
+                    var deleteQuery = prefixes+"DELETE DATA { GRAPH <"+graph+"> "+from_triple+"}";
+                    var insertQuery = prefixes+"INSERT DATA { GRAPH <"+graph+"> "+to_triple+"}";
+                    var queries = [deleteQuery, insertQuery];
+                    $.each(queries, function(){
+                        var q = this;
+                        $.ajax({
+                            url: window.webbox_vars.server_url,
+                            headers: {"Content-type": "application/x-www-form-urlencoded"},
+                            data: {query: q},
+                            type: "POST",
+                            success: function(data){
+
+                            },
+                        });
+                    });
+
+                });
+            },
+        });
+    }
 
 });
 

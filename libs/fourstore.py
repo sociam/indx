@@ -29,7 +29,19 @@ class FourStore:
     def __init__(self, host, port):
         self.host = host + ":" + str(port)
         self.put_path =  "/data/" # same on all 4stores
+        self.update_path = "/update/"
         self.path = "/sparql/" # 4store query url prefix
+
+    def update_query(self, sparql_query):
+        """ Public method to update this store."""
+
+        logging.debug("4store update query: "+sparql_query+", host: "+self.host+", path is: "+self.update_path)
+        response = self._send_post_4s(self.host, self.update_path, {"update": sparql_query, "content-type": "application/x-www-form-urlencoded"})
+
+        logging.debug("update query raw results: %s" % str(response))
+
+        response = {"status": response['status'], "reason": response['reason'], "data": ""}
+        return response
 
     def query(self, sparql_query, headers={}):
         """ Public method to query this store."""
@@ -46,7 +58,10 @@ class FourStore:
         s = SparqlParse(sparql_query)
         verb = s.get_verb() # SELECT, CONSTRUCT, DESCRIBE, ASK
 
-        ctype = response['type']
+        ctype = ""
+        if "type" in response:
+            ctype = response['type']
+
         if verb == "SELECT":
             data = sr.parse_sparql_xml(response['data'])
 #            ctype = "application/rdf+xml"
@@ -55,7 +70,9 @@ class FourStore:
             data = response['data']
             # ctype is as above.
 
-        response = {"status": response['status'], "reason": response['reason'], "data": data, "type": ctype}
+        response = {"status": response['status'], "reason": response['reason'], "data": data}
+        if ctype != "":
+            response['type'] = ctype
 
         return response
 
@@ -67,7 +84,10 @@ class FourStore:
     def post_rdf(self, rdf, content_type, graph):
         """ Public method to POST RDF into the store - where POST appends to a graph. """
         path = self.put_path
-        return self._send_post_4s(self.host, path, {"graph": graph, "mime-type": content_type, "data": rdf})
+        payload = {"mime-type": content_type, "data": rdf}
+        if graph is not None and graph != "":
+            payload['graph'] = graph
+        return self._send_post_4s(self.host, path, payload)
 
     def _send_post_4s(self, host, path, args):
         """ Private method to perform a POST to the URL with the data."""
