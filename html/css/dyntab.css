@@ -10,6 +10,27 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 */
 
+/* force these things, they are required and need override other sheets, e.g Foundation */
+div.dyntab_cell {
+
+    font-family: "Lucida Grande", "Helvetica", "Arial", sans-serif;
+    font-size: 8pt;
+    -webkit-box-sizing: content-box;
+    -moz-box-sizing: content-box;
+    box-sizing: content-box;
+}
+div.dyntab_innercell {
+
+    font-family: "Lucida Grande", "Helvetica", "Arial", sans-serif;
+    font-size: 8pt;
+    -webkit-box-sizing: content-box;
+    -moz-box-sizing: content-box;
+    box-sizing: content-box;
+}
+
+
+
+
 .dyntab_table {
     border: 1px solid #ddd;
 /*    border-radius: 5px;

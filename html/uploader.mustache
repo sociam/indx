@@ -13,6 +13,10 @@
 
 	<meta name="viewport" content="width=device-width,initial-scale=1">
 
+
+  <link rel="stylesheet" href="css/foundation.css">
+  <link rel="stylesheet" href="css/app.css">
+
 	<link rel="stylesheet" href="css/fileuploader.css">
 	<link rel="stylesheet" href="css/style.css">
 
@@ -22,14 +26,19 @@
 
 <div id="container">
 	<header>
-        <h1><a href="/">WebBox</a></h1>
-
-        <p>This is a WebBox, see <a href="http://github.com/danielsmith-eu/webbox/wiki/">the WebBox Wiki</a> for more information.</p>
-        <p>Part of the <a href="http://webbox.ecs.soton.ac.uk">WebBox project</a> from the University of Southampton, and MIT.</p>
+      <div class="row">
+        <div class="twelve columns">
+          <h1>Welcome to WebBox</h1>
+            <p>This is a WebBox, see <a target="_blank" href="http://github.com/danielsmith-eu/webbox/wiki/">the WebBox Wiki</a> for more information.</p>
+        </div>
+      </div>
 	</header>
 	<div id="main" role="main">
 
-        <h2>File Uploader</h2>
+        <div class="row">
+         <div class="twelve columns">
+
+           <h2>File Uploader</h2>
 
         <p>This form allows files to be uploaded directly to a WebBox.</p>
 
@@ -39,7 +48,8 @@
 
         </form>
 
-
+         </div>
+        </div>
 
 
 	</div>
@@ -50,6 +60,52 @@
 
 <script src="//ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
 <script>window.jQuery || document.write('<script src="js/libs/jquery-1.6.2.min.js"><\/script>')</script>
+
+
+
+    <script>
+        /* some useful values */
+        window.webbox_vars = {};
+        window.webbox_vars.server_url = "{{ server_url }}";
+    </script>
+
+  <!-- Included JS Files (Uncompressed) -->
+  <!--
+  
+  
+  <script src="js/jquery.foundation.reveal.js"></script>
+  
+  <script src="js/jquery.foundation.orbit.js"></script>
+  
+  <script src="js/jquery.foundation.navigation.js"></script>
+  
+  <script src="js/jquery.foundation.buttons.js"></script>
+  
+  <script src="js/jquery.foundation.tabs.js"></script>
+  
+  <script src="js/jquery.foundation.forms.js"></script>
+  
+  <script src="js/jquery.foundation.tooltips.js"></script>
+  
+  <script src="js/jquery.foundation.accordion.js"></script>
+  
+  <script src="js/jquery.placeholder.js"></script>
+  
+  <script src="js/jquery.foundation.alerts.js"></script>
+  
+  -->
+  
+  <!-- Included JS Files (Compressed) -->
+  <script src="js/foundation.js"></script>
+  
+  <!-- Initialize JS Plugins -->
+  <script src="js/app.js"></script>
+
+
+
+
+
+
 
 <!-- scripts concatenated and minified via ant build script-->
 <script src="js/plugins.js"></script>

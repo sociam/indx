@@ -303,8 +303,11 @@ SecureStore styles
          url('SecurestoreFont.woff') format('woff'), url('SecurestoreFont.ttf') format('truetype');
 }
 
-h1 {
+h1, h2, h3, h4, h5, h6 {
     font-family: SecurestoreFont;
+}
+
+h1 {
     margin-top: 0px;
 }
 

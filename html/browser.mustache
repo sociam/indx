@@ -13,8 +13,12 @@
 
 	<meta name="viewport" content="width=device-width,initial-scale=1">
 
+  <link rel="stylesheet" href="css/foundation.css">
+  <link rel="stylesheet" href="css/app.css">
+
 	<link rel="stylesheet" href="css/style.css">
 	<link rel="stylesheet" href="css/dyntab.css">
+
 
 	<script src="js/libs/modernizr-2.0.6.min.js"></script>
 </head>
@@ -22,23 +26,32 @@
 
 <div id="container">
 	<header>
-        <h1><a href="/">WebBox</a></h1>
-
-        <p>This is a WebBox, see <a href="http://github.com/danielsmith-eu/webbox/wiki/">the WebBox Wiki</a> for more information.</p>
+      <div class="row">
+        <div class="twelve columns">
+          <h1>Welcome to WebBox</h1>
+            <p>This is a WebBox, see <a target="_blank" href="http://github.com/danielsmith-eu/webbox/wiki/">the WebBox Wiki</a> for more information.</p>
+        </div>
+      </div>
 	</header>
 	<div id="main" role="main">
 
+
+      <div class="row">
+       <div class="twelve columns">
         <h2>WebBox Browser</h2>
 
-        <div class="browser_row">
-            <span id="row_everything">Everything</span>
-            <span id="row_uploaded_files" class="selected">Uploaded Files</span>
-            <span id="row_received_posts">Received Posts</span>
-            <span id="graphs">Named Graphs</span>
-        </div>
+        <dl id="browser-row" class="sub-nav">
+            <dt>Browse:</dt>
+            <dd id="row_everything"><a href="#">Everything</a></dd>
+            <dd id="row_uploaded_files" class="active"><a href="#">Uploaded Files</a></dd>
+            <dd id="row_received_posts"><a href="#">Received Posts</a></dd>
+            <dd id="graphs"><a href="#">Named Graphs</a></dd>
+        </dl>
 
         <div id="status"></div>
         <div id="browser_table"></div>
+       </div>
+      </div>
 
 	</div>
 	<footer>
@@ -50,6 +63,53 @@
 <script>window.jQuery || document.write('<script src="js/libs/jquery-1.6.2.min.js"><\/script>')</script>
 -->
 <script src="js/jquery-1.7.2.js"></script>
+
+
+    <script>
+        /* some useful values */
+        window.webbox_vars = {};
+        window.webbox_vars.server_url = "{{ server_url }}";
+    </script>
+
+  <!-- Included JS Files (Uncompressed) -->
+  <!--
+  
+  
+  <script src="js/jquery.foundation.reveal.js"></script>
+  
+  <script src="js/jquery.foundation.orbit.js"></script>
+  
+  <script src="js/jquery.foundation.navigation.js"></script>
+  
+  <script src="js/jquery.foundation.buttons.js"></script>
+  
+  <script src="js/jquery.foundation.tabs.js"></script>
+  
+  <script src="js/jquery.foundation.forms.js"></script>
+  
+  <script src="js/jquery.foundation.tooltips.js"></script>
+  
+  <script src="js/jquery.foundation.accordion.js"></script>
+  
+  <script src="js/jquery.placeholder.js"></script>
+  
+  <script src="js/jquery.foundation.alerts.js"></script>
+  
+  -->
+  
+  <!-- Included JS Files (Compressed) -->
+  <script src="js/foundation.js"></script>
+  
+  <!-- Initialize JS Plugins -->
+  <script src="js/app.js"></script>
+
+
+
+
+
+
+
+
 
 <!-- scripts concatenated and minified via ant build script-->
 <script src="js/dynamictable.js"></script>
@@ -72,19 +132,21 @@ $(document).ready(function(){
     };
 
 
-    $(".browser_row").children().click(function(evt){
+    $("#browser-row").find("a").click(function(evt){
         var target = $(evt.target);
 
-        if (target.is(".selected")){
+        if (target.is(".active")){
             return false;
         }
 
-        $(".browser_row").children().removeClass("selected");
-        target.addClass("selected");
-        var target_id = target.attr("id");
+        $("#browser-row").children().removeClass("active");
+        target.parent().addClass("active");
+        var target_id = target.parent().attr("id");
 
         $("#browser_table").html("");
         table_from_query(queries[target_id]);
+
+        return false;
     });
 
     function browseTo(uri){
@@ -96,7 +158,7 @@ $(document).ready(function(){
         $("#status").html("Loading items...");
 
         $.ajax(
-            { "url": "webbox/",
+            { "url": window.webbox_vars.server_url,
               "cache": false,
               "crossDomain": true,
               "data": {
