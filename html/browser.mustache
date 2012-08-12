@@ -133,10 +133,10 @@ $(document).ready(function(){
 
     var prefixes = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> ";
     var queries = {
-        "row_everything": prefixes+"CONSTRUCT {?item rdf:type ?type . ?item rdfs:label ?label} WHERE {?item rdf:type ?type . OPTIONAL{?item rdfs:label ?label}}",
-        "row_uploaded_files": prefixes+"CONSTRUCT {?item rdf:type ?type . ?item <http://www.semanticdesktop.org/ontologies/nie/#mimeType> ?mimeType} WHERE {?item rdf:type <http://webbox.ecs.soton.ac.uk/ns#File> . ?item rdf:type ?type . OPTIONAL{?item <http://www.semanticdesktop.org/ontologies/nie/#mimeType> ?mimeType}}",
-        "row_received_posts": prefixes+"CONSTRUCT {?item rdf:type ?type} WHERE {?item rdf:type <http://rdfs.org/sioc/ns#Post> . ?item rdf:type ?type}",
-        "graphs": prefixes+"CONSTRUCT {?item rdf:type \"Named Graph\" } WHERE { GRAPH ?item { ?s ?p ?o }}",
+        "row_everything": prefixes+"SELECT DISTINCT ?item ?type ?label WHERE {?item rdf:type ?type . OPTIONAL{?item rdfs:label ?label}}",
+        "row_uploaded_files": prefixes+"SELECT DISTINCT ?item ?type ?mimeType WHERE {?item rdf:type <http://webbox.ecs.soton.ac.uk/ns#File> . ?item rdf:type ?type . OPTIONAL{?item <http://www.semanticdesktop.org/ontologies/nie/#mimeType> ?mimeType}}",
+        "row_received_posts": prefixes+"SELECT DISTINCT ?item ?type WHERE {?item rdf:type <http://rdfs.org/sioc/ns#Post> . ?item rdf:type ?type}",
+        "graphs": prefixes+"SELECT DISTINCT ?item WHERE { GRAPH ?item { ?s ?p ?o }}",
     };
 
 
@@ -173,14 +173,21 @@ $(document).ready(function(){
               "data": {
                   "query": query,
               },
+              "headers": {"Accept": "application/sparql-results+json"},
               "dataType": "json", // also sets the accept header
               "success": function(data, textStatus, jqXHR){
 
-                  var newdata = wb_json_normalise(data);
+                  console.debug("data", data);
+                  // convert SELECT results to data
+                  var newdata = wb_results_to_data(data, {"item": "uri", "type": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", "label": "http://www.w3.org/2000/01/rdf-schema#label", "mimeType": "http://www.semanticdesktop.org/ontologies/nie/#mimeType"});
+                  console.debug("newdata", newdata);
+    
+                  // convert CONSTRUCT to data
+                  //var newdata = wb_json_normalise(data);
 
                   var columns = [
                       {"uri": "uri", "label": "Item URI", "class": "browser_item", "click": function(uri){ browseTo(uri); }},
-                      {"uri": "rdf:type", "label": "RDF Type"},
+                      {"uri": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", "label": "RDF Type"},
                   ];
 
                   $("#status").html("Rendering items...");
@@ -205,12 +212,19 @@ $(document).ready(function(){
         $.ajax({
             url: window.webbox_vars.server_url,
             data: {query: query},
+            headers: {"Accept": "application/sparql-results+json"},
             type: "GET",
-            dataType: "xml",
+            dataType: "json",
             success: function(data){
                 // TODO do much better sparql results parsing here
-                $(data).find("binding").find("uri").each(function(){
-                    var graph = this.textContent;
+                $.each(data['results']['bindings'], function(){
+                    var result = this;
+                    var graph = result['graph']['value'];
+
+                      // single query doesn't work in 4store :(
+//                    var unifiedQuery = prefixes+"INSERT DATA { GRAPH <"+graph+"> "+to_triple+"} DELETE DATA { GRAPH <"+graph+"> "+from_triple+"}";
+//                    var queries = [unifiedQuery];
+
                     var deleteQuery = prefixes+"DELETE DATA { GRAPH <"+graph+"> "+from_triple+"}";
                     var insertQuery = prefixes+"INSERT DATA { GRAPH <"+graph+"> "+to_triple+"}";
                     var queries = [deleteQuery, insertQuery];

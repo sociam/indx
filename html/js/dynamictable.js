@@ -319,7 +319,10 @@ DynamicTable.prototype = {
 
         dt.debug("rows", rowuri, rows);
 
+        rows = rows[0]; // TODO enable multiple rows;
         var rowdiv = dt.row_divs_by_uri[rowuri][0]; // TODO enable multiple rows
+
+        dt.debug("rowdiv", rowdiv);
 
         var column_counter = 0;
         rowdiv.children("."+dt.cls("cell")).each(function(){
@@ -331,16 +334,21 @@ DynamicTable.prototype = {
             if (property_uri in rows && rows[property_uri] !== undefined){
                 var rowdata = rows[property_uri];
 
+                dt.debug("rowdata", rowdata);
+
                 if (!(property_uri in dt.data[rowuri])){
                     dt.data[rowuri][property_uri] = [];
                 }
 
-                if (typeof(rowdata) == "string"){
+                if (typeof(rowdata) === "string"){
                     rowdata = [rowdata];
                 }
 
+                dt.debug("rowdata2", rowdata);
                 $.each(rowdata, function(){
-                    var value = ""+this;
+
+                    var value = this['value'];
+                    var type = this['type']; // uri, literal
 
                     if ($.inArray(value, dt.data[rowuri][property_uri]) === -1){
                         dt.data[rowuri][property_uri].push(value);
@@ -359,15 +367,10 @@ DynamicTable.prototype = {
                         }
                         cell.append(innercell);
 
-                        // webbox specific calls
-                        if ("get_type_of_string" in window){
-                            var type = get_type_of_string(value);
-                            value = strip_type_of_string(value);
-                            innercell.data("type", type);
-                            innercell.data("origvalue", value);
-                            innercell.data("predicate", property_uri);
-                            innercell.data("subject", rowuri);
-                        }
+                        innercell.data("type", type);
+                        innercell.data("origvalue", value);
+                        innercell.data("predicate", property_uri);
+                        innercell.data("subject", rowuri);
 
                         // TODO call this once to optimise rather than in this loop
                         innercell.bind("dblclick", function(evt){
@@ -385,6 +388,7 @@ DynamicTable.prototype = {
                                         var newval = target.val();
 
                                         var icel = target.parent();
+                                        icel.css("padding", 5);
                                         target.remove();
                                         icel.html(newval);
                                         dt.ensure_div_sizing();
@@ -407,14 +411,8 @@ DynamicTable.prototype = {
                                             to_obj = "\""+to_obj+"\"";
                                         }
 
-                                        var pred_type = get_type_of_string(predicate);
-                                        if (pred_type === "uri"){
-                                            // do not do this to qNames (this is a horrible hack)
-                                            predicate = "<"+predicate+">";
-                                        }
-
-                                        var from = {subject: "<"+subject+">", predicate: predicate, object: from_obj};
-                                        var to = {subject: "<"+subject+">", predicate: predicate, object: to_obj};
+                                        var from = {subject: "<"+subject+">", predicate: "<"+predicate+">", object: from_obj};
+                                        var to = {subject: "<"+subject+">", predicate: "<"+predicate+">", object: to_obj};
                                         dt.change_callback(from, to);
 
                                         // assume successful, so reset the original value to the new one
@@ -423,6 +421,7 @@ DynamicTable.prototype = {
                                     }
                                 });
                                 icell.html("");
+                                icell.css("padding", 4);
                                 icell.append(input);
                                 dt.ensure_div_sizing();
                             }
@@ -493,22 +492,28 @@ DynamicTable.prototype = {
         dt.debug("add data", data);
 
         // combine into dt.data
-        $.each(data, function(uri, data){
+        $.each(data, function(uri, subdata){
+            dt.debug("uri",uri,"subdata",subdata);
             if (!(uri in dt.data)){
                 dt.data[uri] = {};
                 dt.add_new_row(uri);
             }
 
             // check all columns exist
-            $.each(data, function(predicate_uri, vals){
-                var column = dt.get_column(predicate_uri);
-                if (column == null){
-                    dt.add_column(predicate_uri, dt.basic_label(predicate_uri)); // TODO figure out the real label somehow
-                }
+            $.each(subdata, function(){
+                    var item = this;
+                    dt.debug("item", item);
+                    $.each(item, function(predicate_uri, vals){
+                        dt.debug("predicate_uri",predicate_uri,"vals",vals);
+                        var column = dt.get_column(predicate_uri);
+                        if (column == null){
+                            dt.add_column(predicate_uri, dt.basic_label(predicate_uri)); // TODO figure out the real label somehow
+                        }
+                    });
             });
 
             // add new data to row
-            dt.add_data_to_row(uri, data);
+            dt.add_data_to_row(uri, subdata);
         });
     },
     cls: function(name){

@@ -18,30 +18,34 @@
     along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-function get_type_of_string(str){
-    // if string is <str> then return "uri", if str is "str" then return literal otherwise return "plain"
-    var char0 = str.substr(0,1);
-    var charend = str.substr(str.length -1, str.length);
-
-    if (str.match(/^([A-Za-z0-9]+)[:]([A-Za-z0-9]+)$/) !== null){
-        return "plain";
-    }
-    if (char0 === "<" && charend === ">"){
-        return "uri";
-    }
-    if (char0 === "\"" && charend === "\""){
-        return "literal";
-    }
-    return "plain";
-}
-
-function strip_type_of_string(str){
-    // if string is <str> or "str", then strip the surrounding characters
-    var type = get_type_of_string(str);
-    if (type != "plain"){
-        return str.substr(1,str.length-2);
-    }
-    return str;
+// convert sparql results format into a format that DynamicTable can read
+function wb_results_to_data(results, pred_map){
+    // pred_map is {"result_var": "pred_uri"}
+    var results_out = {};
+    $.each(results['results']['bindings'], function(){
+        var result = this
+        var new_result = {};
+        var uri = null;
+        $.each(result, function(key, val_hsh){
+            var val = val_hsh['value'];
+            var typ = val_hsh['type'];
+            var pred = key;
+            if (key in pred_map){
+                pred = pred_map[key];
+            }
+            if (pred == "uri"){
+                uri = val;
+            }
+            new_result[pred] = [val_hsh]; // in an array because DynamicTable support multiple values per predicate
+        });
+        if (uri != null){
+            if (!(uri in results_out)){
+                results_out[uri] = [];
+            }
+            results_out[uri].push(new_result);
+        }
+    });
+    return results_out;
 }
 
 function wb_json_normalise(data){
