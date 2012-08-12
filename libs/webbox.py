@@ -810,9 +810,28 @@ class WebBox:
             if verb == "SELECT":
                 # convert back from a data structure
                 sr = SparqlResults()
-                results_xml = sr.sparql_results_to_xml(response['data'])
-                response['data'] = results_xml
-                response['type'] = "application/sparql-results+xml"
+
+                accept = environ['HTTP_ACCEPT'].lower()
+
+                xml_type = "application/sparql-results+xml"
+                json_type = "application/sparql-results+json"
+
+                if accept == "*/*":
+                    # default is XML
+                    new_mime = xml_type
+                else:
+                    # otherwise parse the Accept: header
+                    new_mime = best_match([xml_type, json_type], accept)
+                
+                if new_mime == xml_type:
+                    results_xml = sr.sparql_results_to_xml(response['data'])
+                    response['data'] = results_xml
+                    response['type'] = xml_type
+                else:
+                    results_json = sr.sparql_results_to_json(response['data'])
+                    response['data'] = results_json
+                    response['type'] = json_type
+                    
             elif verb == "CONSTRUCT":
                 # rdf, so allow conversion of type
                 # convert based on headers

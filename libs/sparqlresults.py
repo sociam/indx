@@ -19,6 +19,7 @@
 
 import logging
 import cElementTree
+import json
 
 from cStringIO import StringIO
 from lxml.builder import E
@@ -102,4 +103,37 @@ class SparqlResults:
             {"xmlns": "http://www.w3.org/2005/sparql-results#"})
 
         return etree.tostring(sparql, pretty_print=True)
+
+    def sparql_results_to_json(self, results):
+        """ Convert sparql results dict to JSON, using json module. """
+
+        vars_dict = {}
+        results_out = []
+
+        for result in results:
+            result_json = {}
+            for var in result:
+                vars_dict[var] = True
+
+                value = result[var]
+                typ = value['type']
+                val = unicode(value['value'])
+                
+                result_json[ var ] = { "type": typ, "value": val }
+
+            results_out.append(result_json)
+
+        vars_out = []
+        for var in vars_dict:
+            vars_out.append(var)
+
+        out = {
+            "head": {
+                "vars": vars_out,
+            },
+            "results": {
+                "bindings": results_out,
+            },
+        }
+        return json.dumps(out, indent=2)
 
