@@ -302,7 +302,7 @@ class WebBox:
                     headers.append( ("Content-Type", "application/xrd+xml; charset=UTF-8") )
 
                     subject = ""
-                    if response is not None:
+                    if resource is not None:
                         subject = "<Subject>%s</Subject>" % (resource)
 
                     response = """<?xml version='1.0' encoding='UTF-8'?>
@@ -315,8 +315,14 @@ class WebBox:
         template='%s/lrdd?uri={uri}'>
     <Title>Resource Descriptor</Title>
   </Link>
+  <Link rel='remoteStorage'
+        href='%s'
+        type='https://www.w3.org/community/rww/wiki/read-write-web-00#simple'>
+        <Property type='auth-endpoint'>%s/openid</Property>
+        <Property type='auth-method'>https://tools.ietf.org/html/draft-ietf-oauth-v2-26#section-4.2</Property>
+  </Link>
 </XRD>
-""" % (subject, self.get_base_url())
+""" % (subject, self.get_base_url(), self.server_url, self.get_base_url())
 
 
                 elif req_path == "host-meta.json":
@@ -325,6 +331,15 @@ class WebBox:
                     response_json = {"links": [
                         { "rel": "lrdd",
                           "template": "%s/lrdd?uri={uri}" % (self.get_base_url()),
+                        },
+                        {
+                          "rel": "remoteStorage",
+                          "href": self.server_url,
+                          "type": "https://www.w3.org/community/rww/wiki/read-write-web-00#simple",
+                          "properties": {
+                              'auth-method': "https://tools.ietf.org/html/draft-ietf-oauth-v2-26#section-4.2",
+                              'auth-endpoint': self.get_base_url() + "/openid",
+                          }
                         }
                     ]}
 
