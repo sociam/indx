@@ -17,7 +17,7 @@
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import logging, re, urllib2, uuid, rdflib, os, os.path, traceback, mimetypes, time, shutil
+import logging, re, urllib2, uuid, rdflib, os, os.path, traceback, mimetypes, time, shutil, json
 
 from cStringIO import StringIO
 
@@ -66,7 +66,7 @@ class WebBox:
 
         self.config = config # configuration from server
 
-        self.server_url = config["url"] # base url of the server, e.g. http://localhost:8212
+        self.server_url = config["url"] # full webbox url of the server, e.g. http://localhost:8212/webbox
         self.file_dir = os.path.join(config['webbox_dir'],config['file_dir'])
         self.file_dir = os.path.realpath(self.file_dir) # where to store PUT files
 
@@ -118,6 +118,244 @@ class WebBox:
 
         # add the webbox handler as a subdir
         self.resource.putChild("webbox", WSGIResource(reactor, reactor.getThreadPool(), self.response))
+
+        # add the .well-known handler as a subdir
+        self.resource.putChild(".well-known", WSGIResource(reactor, reactor.getThreadPool(), self.response_well_known))
+
+        # add the lrdd handler as a subdir
+        self.resource.putChild("lrdd", WSGIResource(reactor, reactor.getThreadPool(), self.response_lrdd))
+
+        # add the openid provider as a subdir
+        self.resource.putChild("openid", WSGIResource(reactor, reactor.getThreadPool(), self.response_openid))
+
+
+    def get_base_url(self):
+        """ Get the server URL without the /webbox suffix. """
+        suffix = "webbox"
+        base_url = self.server_url[:-len(suffix)]
+
+        if base_url[-1:] == "/": # strip / from the end
+            base_url = base_url[:-1]
+
+        return base_url
+
+    def response_openid(self, environ, start_response):
+        """ WSGI response handler for /openid/ ."""
+        logging.debug("Calling WebBox openid response(): " + str(environ))
+
+        try:
+            req_type = environ['REQUEST_METHOD']
+            rfile = environ['wsgi.input']
+
+            if "REQUEST_URI" in environ:
+                url = urlparse(environ['REQUEST_URI'])
+                req_path = url.path
+                req_qs = parse_qs(url.query)
+            else:
+                req_path = environ['PATH_INFO']
+                req_qs = parse_qs(environ['QUERY_STRING'])
+
+            headers = []
+            response = ""
+
+            if req_type == "GET":
+                # handle the /openid/ call
+
+                if len(req_path) > 0 and req_path[0] == "/":
+                    req_path = req_path[1:] # strip / from start of path
+
+                response = """ Not implemented. """
+
+            else:
+                # When you sent 405 Method Not Allowed, you must specify which methods are allowed
+                start_response("405 Method Not Allowed", [("Allow", "GET"), ("Allow", "OPTIONS")])
+                return [""]
+
+
+            # add CORS headers (blanket allow, for now)
+            headers.append( ("Access-Control-Allow-Origin", "*") )
+            headers.append( ("Access-Control-Allow-Methods", "POST, GET, PUT, HEAD, OPTIONS") )
+
+            response = response.encode("utf8")
+            headers.append( ("Content-length", len(response)) )
+            start_response("200 OK", headers)
+            return [response]
+
+        except Exception as e:
+            logging.debug("Error in WebBox.response_well_known(), returning 500: %s, exception is: %s" % (str(e), traceback.format_exc()))
+            start_response("500 Internal Server Error", [])
+            return [""]
+
+
+
+
+    def response_lrdd(self, environ, start_response):
+        """ WSGI response handler for /lrdd/ ."""
+        logging.debug("Calling WebBox lrdd response(): " + str(environ))
+
+        try:
+            req_type = environ['REQUEST_METHOD']
+            rfile = environ['wsgi.input']
+
+            if "REQUEST_URI" in environ:
+                url = urlparse(environ['REQUEST_URI'])
+                req_path = url.path
+                req_qs = parse_qs(url.query)
+            else:
+                req_path = environ['PATH_INFO']
+                req_qs = parse_qs(environ['QUERY_STRING'])
+
+            headers = []
+            response = ""
+
+            if req_type == "GET":
+                # handle the /lrdd/ call
+
+                if len(req_path) > 0 and req_path[0] == "/":
+                    req_path = req_path[1:] # strip / from start of path
+
+                
+                if "uri" in req_qs:
+                    lrdd_uri = req_qs['uri'][0]
+
+
+                accept = environ['HTTP_ACCEPT'].lower()
+                if "json" in accept: # FIXME do proper content negotiation
+
+                    # response with json (JRD)
+
+                    headers.append( ("Content-Type", "application/json; charset=UTF-8") )
+
+                    response_json = {"subject": lrdd_uri, "links": [
+                        { "rel": "http://specs.openid.net/auth/2.0/provider",
+                          "href": "%s/openid" % (self.get_base_url()),
+                        }
+                    ]}
+                    response = json.dumps(response_json, indent=2)
+
+
+                if response == "":
+                    # respond with XML
+                    headers.append( ("Content-Type", "application/xrd+xml; charset=UTF-8") )
+
+                    response = """<?xml version='1.0' encoding='UTF-8'?>
+<XRD xmlns='http://docs.oasis-open.org/ns/xri/xrd-1.0' 
+     xmlns:hm='http://host-meta.net/xrd/1.0'>
+
+  <Subject>%s</Subject>
+  <Link rel='http://specs.openid.net/auth/2.0/provider' 
+        href='%s/openid'>
+  </Link>
+</XRD>
+""" % (lrdd_uri, self.get_base_url())
+
+
+            else:
+                # When you sent 405 Method Not Allowed, you must specify which methods are allowed
+                start_response("405 Method Not Allowed", [("Allow", "GET"), ("Allow", "OPTIONS")])
+                return [""]
+
+            # add CORS headers (blanket allow, for now)
+            headers.append( ("Access-Control-Allow-Origin", "*") )
+            headers.append( ("Access-Control-Allow-Methods", "POST, GET, PUT, HEAD, OPTIONS") )
+
+            response = response.encode("utf8")
+            headers.append( ("Content-length", len(response)) )
+            start_response("200 OK", headers)
+            return [response]
+
+        except Exception as e:
+            logging.debug("Error in WebBox.response_well_known(), returning 500: %s, exception is: %s" % (str(e), traceback.format_exc()))
+            start_response("500 Internal Server Error", [])
+            return [""]
+
+
+
+    def response_well_known(self, environ, start_response):
+        """ WSGI response handler for /.well-known/ ."""
+        logging.debug("Calling WebBox .well-known response(): " + str(environ))
+        try:
+            req_type = environ['REQUEST_METHOD']
+            rfile = environ['wsgi.input']
+
+            if "REQUEST_URI" in environ:
+                url = urlparse(environ['REQUEST_URI'])
+                req_path = url.path
+                req_qs = parse_qs(url.query)
+            else:
+                req_path = environ['PATH_INFO']
+                req_qs = parse_qs(environ['QUERY_STRING'])
+
+            headers = []
+
+            if req_type == "GET":
+                # handle the /.well-known/ call
+
+                if len(req_path) > 0 and req_path[0] == "/":
+                    req_path = req_path[1:] # strip / from start of path
+
+                resource = None
+                if "resource" in req_qs:
+                    resource = req_qs['resource'][0]
+
+                if req_path == "host-meta":
+                    headers.append( ("Content-Type", "application/xrd+xml; charset=UTF-8") )
+
+                    subject = ""
+                    if response is not None:
+                        subject = "<Subject>%s</Subject>" % (resource)
+
+                    response = """<?xml version='1.0' encoding='UTF-8'?>
+<XRD xmlns='http://docs.oasis-open.org/ns/xri/xrd-1.0' 
+     xmlns:hm='http://host-meta.net/xrd/1.0'>
+
+  %s
+
+  <Link rel='lrdd' 
+        template='%s/lrdd?uri={uri}'>
+    <Title>Resource Descriptor</Title>
+  </Link>
+</XRD>
+""" % (subject, self.get_base_url())
+
+
+                elif req_path == "host-meta.json":
+                    headers.append( ("Content-Type", "application/json; charset=UTF-8") )
+
+                    response_json = {"links": [
+                        { "rel": "lrdd",
+                          "template": "%s/lrdd?uri={uri}" % (self.get_base_url()),
+                        }
+                    ]}
+
+                    if resource is not None:
+                        response_json['subject'] = resource
+
+                    response = json.dumps(response_json, indent=2)
+
+                else:
+                    start_response("404 Not Found", [])
+                    return [""]
+
+            else:
+                # When you sent 405 Method Not Allowed, you must specify which methods are allowed
+                start_response("405 Method Not Allowed", [("Allow", "GET"), ("Allow", "OPTIONS")])
+                return [""]
+        
+            # add CORS headers (blanket allow, for now)
+            headers.append( ("Access-Control-Allow-Origin", "*") )
+            headers.append( ("Access-Control-Allow-Methods", "POST, GET, PUT, HEAD, OPTIONS") )
+
+            response = response.encode("utf8")
+            headers.append( ("Content-length", len(response)) )
+            start_response("200 OK", headers)
+            return [response]
+
+        except Exception as e:
+            logging.debug("Error in WebBox.response_well_known(), returning 500: %s, exception is: %s" % (str(e), traceback.format_exc()))
+            start_response("500 Internal Server Error", [])
+            return [""]
+
 
     def get_resource(self):
         """ Get the twisted web resource. """
@@ -255,7 +493,7 @@ class WebBox:
 
         except Exception as e:
             logging.debug("Error in WebBox.response(), returning 500: %s, exception is: %s" % (str(e), traceback.format_exc()))
-            start_response("500 Internal Server Error", ())
+            start_response("500 Internal Server Error", [])
             return [""]
 
     def get_prop_xml(self, url, path, directory=False, displayname=None):
