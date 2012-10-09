@@ -79,6 +79,7 @@ class ObjectStore:
 
         # TODO FIXME XXX lock the table(s) as appropriate inside a transaction (PL/pgspl?) here
 
+        out_versions = []
         for obj in objs:
             if "@id" in obj:
                 uri = obj["@id"]
@@ -94,7 +95,11 @@ class ObjectStore:
             del obj["@id"]
             del obj["@prev_ver"]
 
-            self.add(uri, obj, prev_ver)
+            new_version_info = self.add(uri, obj, prev_ver)
+            out_versions.append(new_version_info)
+
+        return out_versions
+
 
 
     def add(self, uri, obj, specified_prev_version):
@@ -103,6 +108,8 @@ class ObjectStore:
             uri of the object,
             obj, json expanded notation of the object,
             specified_prev_version of the objec (must match max(version) of the object, or zero if the object doesn't exist, or the store will return a IncorrectPreviousVersionException
+
+            returns information about the new version
         """
 
         # TODO FIXME XXX lock the table(s) as appropriate inside a transaction (PL/pgspl?) here
@@ -138,6 +145,8 @@ class ObjectStore:
                 cur.execute("INSERT INTO wb_data (subject, predicate, object, object_order, version) VALUES (%s, %s, %s, %s, %s)", [uri, predicate, id, obj_order, new_version])
                 obj_order += 1
     
+        return {"@version": new_version, "@id": uri}
+
 
 
     def get_obj_ids(self, obj):

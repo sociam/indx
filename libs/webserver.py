@@ -215,7 +215,7 @@ class ObjectWebServer:
             from objectstore import ObjectStore
 
             objectstore = ObjectStore(self.config['connection'])
-            objectstore.add_multi(obj)
+            new_version_info = objectstore.add_multi(obj)
        
 
         else:
@@ -235,10 +235,9 @@ class ObjectWebServer:
             from objectstore import ObjectStore
 
             objectstore = ObjectStore(self.config['connection'])
-            objectstore.add(uri, obj, int(previous_version))
+            new_version_info = objectstore.add(uri, obj, int(previous_version))
 
-
-        return {"data": "Added.\n", "status": 201, "reason": "Created"}
+        return {"data": json.dumps(new_version_info), "status": 201, "reason": "Created", "type": "application/json"}
 
     def resource(self):
         """ Make a WSGI resource. """
