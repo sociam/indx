@@ -35,22 +35,17 @@ class ObjectStore:
         
         cur = self.conn.cursor()
 
-        cur.execute("SELECT MAX(wb_data.version) FROM wb_data WHERE wb_data.subject = %s", [uri])
-        item = cur.fetchone()
-        latest_version = item[0]
-
-        if latest_version is None:
-            # FIXME throw an exception here instead?
-            return None
-
-        cur.execute("SELECT wb_data.predicate, wb_data.object_order, wb_objects.obj_type, wb_objects.obj_value, wb_objects.obj_lang, wb_objects.obj_datatype FROM wb_data JOIN wb_objects ON (wb_data.object = wb_objects.id_object) WHERE wb_data.subject = %s AND wb_data.version = %s ORDER BY wb_data.predicate, wb_data.object_order", [uri, latest_version])
+        cur.execute("SELECT version, predicate, object_order, obj_type, obj_value, obj_lang, obj_datatype FROM wb_v_latest_triples WHERE subject = %s ORDER BY predicate, object_order", [uri])
         rows = cur.fetchall()
 
-        obj_out = {"@version": latest_version}
+        obj_out = {}
         for row in rows:
-            (predicate, obj_order, obj_type, obj_value, obj_lang, obj_datatype) = row
+            (latest_version, predicate, obj_order, obj_type, obj_value, obj_lang, obj_datatype) = row
             if predicate not in obj_out:
                 obj_out[predicate] = []
+
+            if "@version" not in obj_out:
+                obj_out["@version"] = latest_version
 
             if obj_type == "resource":
                 obj_key = "@id"
