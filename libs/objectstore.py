@@ -74,6 +74,29 @@ class ObjectStore:
         return obj_out
 
 
+    def add_multi(self, objs):
+        """ Add multiple objects, where the URIs and previous versions are included in the structure. """
+
+        # TODO FIXME XXX lock the table(s) as appropriate inside a transaction (PL/pgspl?) here
+
+        for obj in objs:
+            if "@id" in obj:
+                uri = obj["@id"]
+            else:
+                raise Exception("No @id in object")
+
+            if "@prev_ver" in obj:
+                prev_ver = int(obj["@prev_ver"])
+            else:
+                raise Exception("No @prev_ver in object")
+
+            # remove these from the object, and keep the rest as the object we will insert/update
+            del obj["@id"]
+            del obj["@prev_ver"]
+
+            self.add(uri, obj, prev_ver)
+
+
     def add(self, uri, obj, specified_prev_version):
         """ Add a new object, or new version of an object, to the database.
 
@@ -115,7 +138,6 @@ class ObjectStore:
                 cur.execute("INSERT INTO wb_data (subject, predicate, object, object_order, version) VALUES (%s, %s, %s, %s, %s)", [uri, predicate, id, obj_order, new_version])
                 obj_order += 1
     
-
 
 
     def get_obj_ids(self, obj):

@@ -200,23 +200,43 @@ class ObjectWebServer:
         return {"data": jsondata, "status": 200, "reason": "OK"}
 
     def do_PUT(self, rfile, environ, req_path, req_qs):
-        if "uri" in req_qs:
-            uri = req_qs["uri"][0]
-        else:
-            return {"data": "Specify a URI with ?uri=http://encoded.uri/", "status": 404, "reason": "Not Found"}
-
-        if "previous_version" in req_qs:
-            previous_version = req_qs["previous_version"][0]
-        else:
-            return {"data": "Specify a previous version with ?previous_version=1", "status": 404, "reason": "Not Found"}
 
         jsondata = rfile.read()
         obj = json.loads(jsondata)
 
-        from objectstore import ObjectStore
+        if type(obj) == type([]):
+            # multi object put
+        
+            if "uri" in req_qs:
+                return {"data": "Do not specify a URI when presenting multiple objects.", "status": 404, "reason": "Not Found"}
+            if "previous_version" in req_qs:
+                return {"data": "Do not specify a previous version when presenting multiple objects.", "status": 404, "reason": "Not Found"}
 
-        objectstore = ObjectStore(self.config['connection'])
-        objectstore.add(uri, obj, int(previous_version))
+            from objectstore import ObjectStore
+
+            objectstore = ObjectStore(self.config['connection'])
+            objectstore.add_multi(obj)
+       
+
+        else:
+            # single object put
+
+            if "uri" in req_qs:
+                uri = req_qs["uri"][0]
+            else:
+                return {"data": "Specify a URI with ?uri=http://encoded.uri/", "status": 404, "reason": "Not Found"}
+
+            if "previous_version" in req_qs:
+                previous_version = req_qs["previous_version"][0]
+            else:
+                return {"data": "Specify a previous version with ?previous_version=1", "status": 404, "reason": "Not Found"}
+
+
+            from objectstore import ObjectStore
+
+            objectstore = ObjectStore(self.config['connection'])
+            objectstore.add(uri, obj, int(previous_version))
+
 
         return {"data": "Added.\n", "status": 201, "reason": "Created"}
 
