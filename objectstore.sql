@@ -1,11 +1,11 @@
 
-CREATE ROLE webbox_daniel LOGIN
-  ENCRYPTED PASSWORD 'md56d67968901226b8b11bd3d41547a0dcd'
+CREATE ROLE webbox LOGIN
+  PASSWORD 'foobar'
   NOSUPERUSER INHERIT NOCREATEDB NOCREATEROLE NOREPLICATION;
 
-CREATE DATABASE webbox_daniel
+CREATE DATABASE webbox
   WITH ENCODING='UTF8'
-       OWNER=webbox_daniel
+       OWNER=webbox
        CONNECTION LIMIT=-1;
 
 CREATE EXTENSION pgcrypto;
@@ -22,7 +22,7 @@ WITH (
   OIDS=FALSE
 );
 ALTER TABLE wb_users
-  OWNER TO webbox_daniel;
+  OWNER TO webbox;
 
 
 -- from: http://www.postgresql.org/docs/9.2/static/pgcrypto.html
@@ -55,7 +55,7 @@ WITH (
   OIDS=FALSE
 );
 ALTER TABLE wb_objects
-  OWNER TO webbox_daniel;
+  OWNER TO webbox;
 
 -- Index: idx_otv
 
@@ -98,7 +98,7 @@ WITH (
   OIDS=FALSE
 );
 ALTER TABLE wb_data
-  OWNER TO webbox_daniel;
+  OWNER TO webbox;
 
 -- Index: idx_po
 
@@ -165,7 +165,7 @@ CREATE OR REPLACE VIEW wb_v_latest_triples AS
   ORDER BY wb_data.subject, wb_data.version, wb_data.predicate, wb_data.object_order;
 
 ALTER TABLE wb_v_latest_triples
-  OWNER TO webbox_daniel;
+  OWNER TO webbox;
 
 
 
@@ -183,7 +183,7 @@ CREATE OR REPLACE VIEW wb_v_triples AS
   ORDER BY wb_data.subject, wb_data.version, wb_data.predicate, wb_data.object_order;
 
 ALTER TABLE wb_v_triples
-  OWNER TO webbox_daniel;
+  OWNER TO webbox;
 
 
 
