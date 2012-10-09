@@ -146,3 +146,56 @@ CREATE INDEX idx_vspo
 -- X-WebBox-Predecessor-Set VERSION
 -- has to be the current max version to succeed
 
+
+
+-- View: wb_v_latest_triples
+
+-- DROP VIEW wb_v_latest_triples;
+
+CREATE OR REPLACE VIEW wb_v_latest_triples AS 
+ SELECT wb_data.subject, wb_data.version, wb_data.predicate, 
+    wb_data.object_order, wb_objects.obj_type, wb_objects.obj_value, 
+    wb_objects.obj_lang, wb_objects.obj_datatype
+   FROM wb_data
+   JOIN ( SELECT wb_data.subject AS inner_subject, 
+            max(wb_data.version) AS inner_version_max
+           FROM wb_data
+          GROUP BY wb_data.subject) data2 ON wb_data.subject::text = data2.inner_subject::text AND wb_data.version = data2.inner_version_max
+   JOIN wb_objects ON wb_data.object = wb_objects.id_object
+  ORDER BY wb_data.subject, wb_data.version, wb_data.predicate, wb_data.object_order;
+
+ALTER TABLE wb_v_latest_triples
+  OWNER TO webbox_daniel;
+
+
+
+
+-- View: wb_v_triples
+
+-- DROP VIEW wb_v_triples;
+
+CREATE OR REPLACE VIEW wb_v_triples AS 
+ SELECT wb_data.subject, wb_data.version, wb_data.predicate, 
+    wb_data.object_order, wb_objects.obj_type, wb_objects.obj_value, 
+    wb_objects.obj_lang, wb_objects.obj_datatype
+   FROM wb_data
+   JOIN wb_objects ON wb_data.object = wb_objects.id_object
+  ORDER BY wb_data.subject, wb_data.version, wb_data.predicate, wb_data.object_order;
+
+ALTER TABLE wb_v_triples
+  OWNER TO webbox_daniel;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
