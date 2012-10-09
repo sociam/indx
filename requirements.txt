@@ -10,3 +10,4 @@ pyopenssl
 pystache
 psutil
 webbrowser
+psycopg2

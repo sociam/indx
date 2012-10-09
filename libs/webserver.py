@@ -16,7 +16,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
-import os, logging, time
+import os, logging, time, traceback, json
 from wsupdateserver import WSUpdateServer
 from twisted.web import script
 from twisted.internet import reactor
@@ -27,6 +27,8 @@ from twisted.web.static import File
 from twisted.web.wsgi import WSGIResource
 from twisted.internet import reactor, ssl
 from twisted.internet.defer import Deferred
+
+from urlparse import urlparse, parse_qs
 
 class WebServer:
     """ Twisted web server for running a single WebBox. """
@@ -97,3 +99,128 @@ class WebServer:
         """ Run the server. """
         reactor.run()
 
+
+class ObjectWebServer:
+    """ Twisted web server for running a test object server. """
+
+    def __init__(self, config):
+        """ Set up the server with an object server. """
+
+
+        self.config = config
+        factory = Site(self.resource())
+        server_port = int(config['port'])
+        reactor.listenTCP(server_port, factory)
+
+    def response(self, environ, start_response):
+        """ Respond to a WSGI call. """
+        logging.debug("Calling ObjectStore response(): " + str(environ))
+        try:
+            req_type = environ['REQUEST_METHOD']
+            rfile = environ['wsgi.input']
+
+            if "REQUEST_URI" in environ:
+                url = urlparse(environ['REQUEST_URI'])
+                req_path = url.path
+                req_qs = parse_qs(url.query)
+            else:
+                req_path = environ['PATH_INFO']
+                req_qs = parse_qs(environ['QUERY_STRING'])
+
+            if req_type == "PUT":
+                response = self.do_PUT(rfile, environ, req_path, req_qs)
+            elif req_type == "GET":
+                response = self.do_GET(environ, req_path, req_qs)
+            else:
+                # When you sent 405 Method Not Allowed, you must specify which methods are allowed
+                response = {"status": 405, "reason": "Method Not Allowed", "data": "", headers: [ 
+                  ("Allow", "PUT"),
+                  ("Allow", "GET"),
+                ]}
+
+            # get headers from response if they exist
+            headers = []
+            if "headers" in response:
+                headers = response['headers']
+
+            # set a content-type
+            if "type" in response:
+                headers.append( ("Content-type", response['type']) )
+            else:
+                headers.append( ("Content-type", "text/plain") )
+
+            # add CORS headers (blanket allow, for now)
+            headers.append( ("Access-Control-Allow-Origin", "*") )
+            headers.append( ("Access-Control-Allow-Methods", "POST, GET, PUT, HEAD, OPTIONS") )
+
+            if "size" in response:
+                data_length = response['size']
+            else:
+                data_length = len(response['data'])
+            
+            headers.append( ("Content-length", data_length) )
+
+            start_response(str(response['status']) + " " + response['reason'], headers)
+            logging.debug("Sending data of size: "+str(data_length))
+           
+            res_type = type(response['data'])
+            logging.debug("Response type is: "+str(res_type))
+
+            if res_type is unicode:
+                response['data'] = response['data'].encode('utf8')
+
+            if res_type is str or res_type is unicode:
+                logging.debug("Returning a string")
+                return [response['data']]
+            else:
+                logging.debug("Returning an iter")
+                return response['data']
+
+        except Exception as e:
+            logging.debug("Error in WebBox.response(), returning 500: %s, exception is: %s" % (str(e), traceback.format_exc()))
+            start_response("500 Internal Server Error", [])
+            return [""]
+
+    def do_GET(self, environ, req_path, req_qs):
+        if "uri" in req_qs:
+            uri = req_qs["uri"][0]
+        else:
+            return {"data": "Specify a URI with ?uri=http://encoded.uri/", "status": 404, "reason": "Not Found"}
+
+        from objectstore import ObjectStore
+
+        objectstore = ObjectStore(self.config['connection'])
+        
+        obj = objectstore.get_latest(uri)
+        jsondata = json.dumps(obj, indent=2)
+        
+        return {"data": jsondata, "status": 200, "reason": "OK"}
+
+    def do_PUT(self, rfile, environ, req_path, req_qs):
+        if "uri" in req_qs:
+            uri = req_qs["uri"][0]
+        else:
+            return {"data": "Specify a URI with ?uri=http://encoded.uri/", "status": 404, "reason": "Not Found"}
+
+        if "previous_version" in req_qs:
+            previous_version = req_qs["previous_version"][0]
+        else:
+            return {"data": "Specify a previous version with ?previous_version=1", "status": 404, "reason": "Not Found"}
+
+        jsondata = rfile.read()
+        obj = json.loads(jsondata)
+
+        from objectstore import ObjectStore
+
+        objectstore = ObjectStore(self.config['connection'])
+        objectstore.add(uri, obj, int(previous_version))
+
+        return {"data": "Added.\n", "status": 201, "reason": "Created"}
+
+    def resource(self):
+        """ Make a WSGI resource. """
+        return WSGIResource(reactor, reactor.getThreadPool(), self.response)
+
+    def run(self):
+        """ Run the server. """
+        reactor.run()
