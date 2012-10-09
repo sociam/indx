@@ -76,8 +76,11 @@ class WebServer:
             logging.debug("Server started successfully.")
             if config['load_browser']:
                 time.sleep(2)
-                import webbrowser
-                webbrowser.open(server_url)
+                try:
+                    import webbrowser
+                    webbrowser.open(server_url)
+                except Exception as e:
+                    pass # no web browser? no problem.
         def start_failed(arg):
             logging.debug("start_failed: "+str(arg))
 

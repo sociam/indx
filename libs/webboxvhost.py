@@ -81,9 +81,12 @@ class WebBoxVHost:
 
         # load a web browser once the server has started
         def on_start(arg):
-            import webbrowser
             logging.debug("Listening on: "+self.url)
-            webbrowser.open(self.url)
+            try:
+                import webbrowser
+                webbrowser.open(server_url)
+            except Exception as e:
+                pass # no web browser? no problem.
         def start_failed(arg):
             logging.debug("Startup failed: "+str(arg))
 
