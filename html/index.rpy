@@ -35,7 +35,7 @@ class Idx(Resource):
     def mustache(self, fn, tmpl_vars):
 
         filename = os.path.join(os.path.dirname(__file__), fn+".mustache")
-        file = open(filename)
+        file = open(filename, "r")
         idx = file.read()
         file.close
 
@@ -52,6 +52,11 @@ class Idx(Resource):
             
         else:
             owner = results['data'][0]['owner']['value']
+
+            # handle weird chars from 4store, FIXME in the 4s library
+            owner = owner.encode("latin1")
+            owner = owner.decode("utf8", errors="ignore")
+
             rendered = self.mustache("templates/personalise_webbox", {"server_url": self.wb.server_url, "owner": owner});
 
         return rendered
