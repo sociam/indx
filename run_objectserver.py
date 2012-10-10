@@ -21,7 +21,7 @@ import sys, os, logging, json, shutil, getpass, re
 from webserver import ObjectWebServer
 import psycopg2
 
-conn= psycopg2.connect(database="webbox_daniel", user="webbox_daniel")
+conn= psycopg2.connect(database="webbox", user="webbox", password='foobar')
 
 config = {
     "port": 8215,
