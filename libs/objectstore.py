@@ -16,6 +16,8 @@
 #    You should have received a copy of the GNU General Public License
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
+import logging
+
 class ObjectStore:
     """ Stores objects in a database, handling import, export and versioning. """
 
@@ -74,13 +76,15 @@ class ObjectStore:
 
         # TODO FIXME XXX lock the table(s) as appropriate inside a transaction (PL/pgspl?) here
 
+        logging.debug("objs is " + repr(objs))        
+
         out_versions = []
         for obj in objs:
             if "@id" in obj:
                 uri = obj["@id"]
             else:
                 raise Exception("No @id in object")
-
+            logging.debug("obj is " + repr(obj))
             if "@prev_ver" in obj:
                 prev_ver = int(obj["@prev_ver"])
             else:
@@ -158,6 +162,7 @@ class ObjectStore:
             pred_objs = []
             objs = obj[predicate]
             for object in objs:
+                # logging.debug('object is ' +  repr(object))
                 if "@value" in object:
                     type = "literal"
                     value = object["@value"]
