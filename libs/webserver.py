@@ -199,45 +199,32 @@ class ObjectWebServer:
         
         return {"data": jsondata, "status": 200, "reason": "OK"}
 
+
     def do_PUT(self, rfile, environ, req_path, req_qs):
 
         jsondata = rfile.read()
-        obj = json.loads(jsondata)
+        objs = json.loads(jsondata)
 
-        if type(obj) == type([]):
+        if type(objs) == type([]):
             # multi object put
         
-            if "uri" in req_qs:
-                return {"data": "Do not specify a URI when presenting multiple objects.", "status": 404, "reason": "Not Found"}
-            if "previous_version" in req_qs:
-                return {"data": "Do not specify a previous version when presenting multiple objects.", "status": 404, "reason": "Not Found"}
+            if "uri" not in req_qs:
+                return {"data": "Specify a graph URI with &uri=", "status": 404, "reason": "Not Found"}
+            graph_uri = req_qs['uri'][0]
+
+            if "previous_version" not in req_qs:
+                return {"data": "Specify a previous version with &previous_version=", "status": 404, "reason": "Not Found"}
+            prev_version = int(req_qs['previous_version'][0])
 
             from objectstore import ObjectStore
 
             objectstore = ObjectStore(self.config['connection'])
-            new_version_info = objectstore.add_multi(obj)
-       
+            new_version_info = objectstore.add(graph_uri, objs, prev_version)
 
+            return {"data": json.dumps(new_version_info), "status": 201, "reason": "Created", "type": "application/json"}
         else:
             # single object put
-
-            if "uri" in req_qs:
-                uri = req_qs["uri"][0]
-            else:
-                return {"data": "Specify a URI with ?uri=http://encoded.uri/", "status": 404, "reason": "Not Found"}
-
-            if "previous_version" in req_qs:
-                previous_version = req_qs["previous_version"][0]
-            else:
-                return {"data": "Specify a previous version with ?previous_version=1", "status": 404, "reason": "Not Found"}
-
-
-            from objectstore import ObjectStore
-
-            objectstore = ObjectStore(self.config['connection'])
-            new_version_info = objectstore.add(uri, obj, int(previous_version))
-
-        return {"data": json.dumps(new_version_info), "status": 201, "reason": "Created", "type": "application/json"}
+            return {"data": "Single object PUT not supported, PUT an array to create/replace a named graph instead.", "status": 404, "reason": "Not Found"}
 
     def resource(self):
         """ Make a WSGI resource. """

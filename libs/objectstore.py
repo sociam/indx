@@ -66,43 +66,16 @@ class ObjectStore:
 
             obj_out[predicate].append(obj_struct)
     
+        cur.close()
         return obj_out
 
 
-    def add_multi(self, objs):
-        """ Add multiple objects, where the URIs and previous versions are included in the structure. """
+    def add(self, graph_uri, objs, specified_prev_version):
+        """ Add new objects, or new versions of objects, to a graph in the database.
 
-        # TODO FIXME XXX lock the table(s) as appropriate inside a transaction (PL/pgspl?) here
-
-        out_versions = []
-        for obj in objs:
-            if "@id" in obj:
-                uri = obj["@id"]
-            else:
-                raise Exception("No @id in object")
-
-            if "@prev_ver" in obj:
-                prev_ver = int(obj["@prev_ver"])
-            else:
-                raise Exception("No @prev_ver in object")
-
-            # remove these from the object, and keep the rest as the object we will insert/update
-            del obj["@id"]
-            del obj["@prev_ver"]
-
-            new_version_info = self.add(uri, obj, prev_ver)
-            out_versions.append(new_version_info)
-
-        return out_versions
-
-
-
-    def add(self, uri, obj, specified_prev_version):
-        """ Add a new object, or new version of an object, to the database.
-
-            uri of the object,
-            obj, json expanded notation of the object,
-            specified_prev_version of the objec (must match max(version) of the object, or zero if the object doesn't exist, or the store will return a IncorrectPreviousVersionException
+            graph_uri of the named graph,
+            objs, json expanded notation of objects in the graph,
+            specified_prev_version of the named graph (must match max(version) of the graph, or zero if the object doesn't exist, or the store will return a IncorrectPreviousVersionException
 
             returns information about the new version
         """
@@ -111,83 +84,134 @@ class ObjectStore:
 
         cur = self.conn.cursor()
 
-        cur.execute("SELECT MAX(wb_data.version) FROM wb_data WHERE wb_data.subject = %s", [uri])
+        cur.execute("SELECT latest_version FROM wb_v_latest_graphvers WHERE graph_uri = %s", [graph_uri])
         row = cur.fetchone()
-        actual_prev_version = row[0]
 
-        version_correct = False
-        if actual_prev_version is None and specified_prev_version == 0:
-            version_correct = True
-        elif actual_prev_version == specified_prev_version:
-            version_correct = True
+        if row is None:
+            actual_prev_version = 0
+        else:
+            actual_prev_version = row[0]
 
-        if not version_correct:
+        if actual_prev_version != specified_prev_version:
             raise IncorrectPreviousVersionException("Actual previous version is {0}, specified previous version is: {1}".format(actual_prev_version, specified_prev_version))
 
+        new_version = actual_prev_version + 1
 
-        if actual_prev_version is None:
-            new_version = 1
-        else:
-            new_version = actual_prev_version + 1
+        self.add_graph_version(graph_uri, objs, new_version)
 
-        # version is correct, update it
-        obj_ids = self.get_obj_ids(obj)
-
-        for predicate in obj_ids:
-            ids = obj_ids[predicate]
-            obj_order = 0
-            for id in ids:
-                cur.execute("INSERT INTO wb_data (subject, predicate, object, object_order, version) VALUES (%s, %s, %s, %s, %s)", [uri, predicate, id, obj_order, new_version])
-                obj_order += 1
-    
-        return {"@version": new_version, "@id": uri}
+        cur.close()
+        return {"@version": new_version, "@graph": graph_uri}
 
 
+    def get_string_id(self, string):
+        """ Get the foreign key ID of a string from the wb_strings table. Create one if necessary. """
+        cur = self.conn.cursor()
 
-    def get_obj_ids(self, obj):
-        """ Get the foreign key IDs of all of the objects, adding them if necessary, and return a structure with FK IDs instead of uris.
-            obj is the object structure in JSON expanded notation.
+        # FIXME write a PL/pgsql function for this with table locking
+        cur.execute("SELECT wb_strings.id_string FROM wb_strings WHERE wb_strings.string = %s", [string])
+        existing_id = cur.fetchone()
+
+        if existing_id is None:
+            cur.execute("INSERT INTO wb_strings (string) VALUES (%s) RETURNING id_string", [string])
+            existing_id = cur.fetchone()
+            self.conn.commit()
+
+        cur.close()
+        return existing_id
+
+    def get_object_id(self, type, value, language, datatype):
+        """ Get the foreign key ID of an object from the wb_objects table. Create one if necessary. """
+        cur = self.conn.cursor()
+
+        # FIXME write a PL/pgsql function for this with table locking
+        cur.execute("SELECT id_object FROM wb_objects WHERE obj_type = %s AND obj_value = %s AND obj_lang "+("IS" if language is None else "=")+" %s AND obj_datatype "+("IS" if language is None else "=")+" %s", [type, value, language, datatype])
+        existing_id = cur.fetchone()
+
+        if existing_id is None:
+            cur.execute("INSERT INTO wb_objects (obj_type, obj_value, obj_lang, obj_datatype) VALUES (%s, %s, %s, %s) RETURNING id_object", [type, value, language, datatype])
+            existing_id = cur.fetchone()
+            self.conn.commit()
+
+        cur.close()
+        return existing_id
+
+
+    def get_triple_id(self, subject, predicate, object):
+        """ Get the foreign key ID of a triple from the wb_triples table. Create one if necessary. """
+        cur = self.conn.cursor()
+
+        # FIXME write a PL/pgsql function for this with table locking
+        cur.execute("SELECT id_triple FROM wb_triples WHERE subject = %s AND predicate = %s AND object = %s", [subject, predicate, object])
+        existing_id = cur.fetchone()
+
+        if existing_id is None:
+            cur.execute("INSERT INTO wb_triples (subject, predicate, object) VALUES (%s, %s, %s) RETURNING id_triple", [subject, predicate, object])
+            existing_id = cur.fetchone()
+            self.conn.commit()
+
+        cur.close()
+        return existing_id
+
+
+    def add_graph_version(self, graph_uri, objs, version):
+        """ Add new version of a graph.
         """
 
         # TODO FIXME XXX lock the table(s) as appropriate inside a transaction (PL/pgspl?) here
-
         cur = self.conn.cursor()
 
-        obj_ids = {}
-        for predicate in obj:
-            pred_objs = []
-            objs = obj[predicate]
-            for object in objs:
-                if "@value" in object:
-                    type = "literal"
-                    value = object["@value"]
-                elif "@id" in object:
-                    type = "resource"
-                    value = object["@id"]
+        id_graph_uri = self.get_string_id(graph_uri)
 
-                language = None
-                if "@language" in object:
-                    language = object["@language"]
+        # TODO add this
+        id_user = 1
 
-                datatype = None
-                if "@type" in object:
-                    datatype = object["@type"]
+        cur.execute("INSERT INTO wb_graphvers (graph_version, graph_uri, change_user, change_timestamp) VALUES (%s, %s, %s, CURRENT_TIMESTAMP) RETURNING id_graphver", [version, id_graph_uri, id_user])
+        id_graphver = cur.fetchone()
 
-                cur.execute("SELECT wb_objects.id_object FROM wb_objects WHERE wb_objects.obj_type = %s AND wb_objects.obj_value = %s AND wb_objects.obj_lang "+("IS" if language is None else "=")+" %s AND wb_objects.obj_datatype "+("IS" if language is None else "=")+" %s", [type, value, language, datatype])
-                existing_id = cur.fetchone()
+        for obj in objs:
+            
+            if "@id" in obj:
+                uri = obj["@id"]
+            else:
+                raise Exception("@id required in all objects")
 
-                if existing_id is None:
-                    # INSERT new version
-                    cur.execute("INSERT INTO wb_objects (obj_type, obj_value, obj_lang, obj_datatype) VALUES (%s, %s, %s, %s) RETURNING id_object", [type, value, language, datatype])
-                    existing_id = cur.fetchone()
-                    self.conn.commit()
+            id_subject = self.get_string_id(uri)
 
-                # Put the ID into the data structure 
-                pred_objs.append(existing_id)
+            triple_order = 0
 
-            obj_ids[predicate] = pred_objs
+            for predicate in obj:
+                if predicate[0] == "@":
+                    continue # skip over json_ld predicates
 
-        return obj_ids
+                id_predicate = self.get_string_id(predicate)
+
+                sub_objs = obj[predicate]
+                for object in sub_objs:
+                    if "@value" in object:
+                        type = "literal"
+                        value = object["@value"]
+                    elif "@id" in object:
+                        type = "resource"
+                        value = object["@id"]
+
+                    language = None
+                    if "@language" in object:
+                        language = object["@language"]
+
+                    datatype = None
+                    if "@type" in object:
+                        datatype = object["@type"]
+
+                    id_value = self.get_string_id(value)
+                    id_object = self.get_object_id(type, id_value, language, datatype)
+                    
+                    id_triple = self.get_triple_id(id_subject, id_predicate, id_object)
+
+                    triple_order += 1
+
+                    cur.execute("INSERT INTO wb_graphver_triples (graphver, triple, triple_order) VALUES (%s, %s, %s)", [id_graphver, id_triple, triple_order])
+
+        cur.close()
 
 class IncorrectPreviousVersionException(BaseException):
     """ The specified previous version did not match the actual previous version. """
