@@ -1,12 +1,5 @@
 
-CREATE ROLE webbox LOGIN
-  PASSWORD 'foobar'
-  NOSUPERUSER INHERIT NOCREATEDB NOCREATEROLE NOREPLICATION;
-
-CREATE DATABASE webbox
-  WITH ENCODING='UTF8'
-       OWNER=webbox
-       CONNECTION LIMIT=-1;
+-- run this script as user webbox (e.g., psql -U webbox)
 
 CREATE EXTENSION pgcrypto;
 
