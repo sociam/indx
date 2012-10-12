@@ -1,6 +1,6 @@
 
 CREATE ROLE webbox LOGIN
-  ENCRYPTED PASSWORD 'md56d67968901226b8b11bd3d41547a0dcd'
+  PASSWORD 'foobar'
   NOSUPERUSER INHERIT NOCREATEDB NOCREATEROLE NOREPLICATION;
 
 CREATE DATABASE webbox
@@ -161,30 +161,12 @@ ALTER TABLE wb_graphvers
 
 
 
-
-CREATE TABLE wb_graphver_triples
-(
-  graphver integer NOT NULL,
-  triple integer NOT NULL,
-  triple_order integer NOT NULL,
-  CONSTRAINT pk_graphver_triple_order PRIMARY KEY (graphver, triple, triple_order),
-  CONSTRAINT fk_graphver FOREIGN KEY (graphver)
-      REFERENCES wb_graphvers (id_graphver) MATCH SIMPLE
-      ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT fk_triple FOREIGN KEY (triple)
-      REFERENCES wb_triples (id_triple) MATCH SIMPLE
-      ON UPDATE NO ACTION ON DELETE NO ACTION
-
-)
-
-
-
-
-
 -- uri for each version of the object, so people can DELETE each if necessary
 -- http://webbox/timemachine/obj/version/1
 -- X-WebBox-Predecessor-Set VERSION
 -- has to be the current max version to succeed
+ALTER TABLE wb_v_triples
+  OWNER TO webbox;
 
 
 -- View: wb_v_all_triples

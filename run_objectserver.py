@@ -18,21 +18,20 @@
 
 # import core modules
 import sys, os, logging, json, shutil, getpass, re
-from webserver import ObjectWebServer
+from libs.webserver import ObjectWebServer
 import psycopg2
 
-conn = psycopg2.connect(database="webbox", user="webbox", password="foobar")
+def run():
+    conn = psycopg2.connect(database="webbox", user="webbox", password='foobar')
+    config = { "port": 8215,  "connection": conn }
 
-config = {
-    "port": 8215,
-    "connection": conn,
-}
+    # show debug messages in log file
+    logger = logging.getLogger() # root logger
+    logger.debug("Logger initialised")
+    logger.setLevel(logging.DEBUG)
 
-# show debug messages in log file
-logger = logging.getLogger() # root logger
-logger.debug("Logger initialised")
-logger.setLevel(logging.DEBUG)
+    server = ObjectWebServer(config)
+    server.run()
 
-server = ObjectWebServer(config)
-server.run()
-
+if __name__ == '__main__':
+    run()

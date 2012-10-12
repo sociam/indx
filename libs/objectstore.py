@@ -16,6 +16,8 @@
 #    You should have received a copy of the GNU General Public License
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
+import logging
+
 class ObjectStore:
     """ Stores objects in a database, handling import, export and versioning. """
 
