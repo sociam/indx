@@ -195,9 +195,9 @@ class ObjectWebServer:
         if type(objs) == type([]):
             # multi object put
         
-            if "uri" not in req_qs:
-                return {"data": "Specify a graph URI with &uri=", "status": 404, "reason": "Not Found"}
-            graph_uri = req_qs['uri'][0]
+            if "graph" not in req_qs:
+                return {"data": "Specify a graph URI with &graph=", "status": 404, "reason": "Not Found"}
+            graph_uri = req_qs['graph'][0]
 
             if "previous_version" not in req_qs:
                 return {"data": "Specify a previous version with &previous_version=", "status": 404, "reason": "Not Found"}
