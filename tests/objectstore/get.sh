@@ -1,4 +1,4 @@
 #!/bin/bash
 
-curl 'http://localhost:8215/?uri=http://example.com/foo'
+curl 'http://localhost:8215/?graph=http://example.com/foo'
 

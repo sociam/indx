@@ -2,7 +2,7 @@ from objectstore import ObjectStore
 import psycopg2
 import json
 
-pg = psycopg2.connect(database="webbox_daniel", user="webbox_daniel")
+pg = psycopg2.connect(database="daniel", user="daniel", password="foobar")
 
 store = ObjectStore(pg)
 
