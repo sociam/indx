@@ -192,18 +192,16 @@ class ObjectWebServer:
         obj = json.loads(jsondata)
 
         if type(obj) == type([]):
-            # multi object put
-        
+            # multi object put        
             if "uri" in req_qs:
                 return {"data": "Do not specify a URI when presenting multiple objects.", "status": 404, "reason": "Not Found"}
             if "previous_version" in req_qs:
                 return {"data": "Do not specify a previous version when presenting multiple objects.", "status": 404, "reason": "Not Found"}
-
             objs = objectstore.ObjectStore(self.config['connection'])
             new_version_info = objs.add_multi(obj)
+            
         else:
             # single object put
-
             if "uri" in req_qs:
                 uri = req_qs["uri"][0]
             else:
@@ -213,7 +211,6 @@ class ObjectWebServer:
                 previous_version = req_qs["previous_version"][0]
             else:
                 return {"data": "Specify a previous version with ?previous_version=1", "status": 404, "reason": "Not Found"}
-
 
             objs = objectstore.ObjectStore(self.config['connection'])
             new_version_info = objs.add(uri, obj, int(previous_version))
