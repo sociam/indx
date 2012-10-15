@@ -43,6 +43,9 @@ from fourstore import FourStore
 from exception import ResponseOverride
 from wsupdateserver import WSUpdateServer
 
+from objectstore import ObjectStore
+import psycopg2
+
 from urlparse import urlparse, parse_qs
 from rdflib.serializer import Serializer
 from rdflib.plugin import register
@@ -60,11 +63,10 @@ class WebBox:
     received_graph = webbox_ns + "ReceivedGraph" # default URI for 4store inbox
 
     def __init__(self, config):
-
-        # use 4store query_store
-        self.query_store = FourStore(config['4store']['host'], config['4store']['port'])
-
         self.config = config # configuration from server
+
+        # connect to the object store
+        self.reconnect_object_store()
 
         self.server_url = config["url"] # full webbox url of the server, e.g. http://localhost:8212/webbox
         self.file_dir = os.path.join(config['webbox_dir'],config['file_dir'])
@@ -89,16 +91,8 @@ class WebBox:
 
         # start websockets server
         self.wsupdate = WSUpdateServer(port=config['ws_port'], host=config['ws_hostname'])
-
         self.websocket = WebSocketClient(host=config['ws_hostname'],port=config['ws_port'])
 
-        # run 4store 
-        if 'delay' in config['4store']:
-            delay = config['4store']['delay'] # delay (in seconds) between running the backend and https
-        else:
-            delay = 0
-        self.fourstore = FourStoreMgmt(config['4store']['kbname'], http_port=config['4store']['port'], delay=delay) 
-        self.fourstore.start()
 
         # set up the twisted web resource object
 
@@ -127,6 +121,98 @@ class WebBox:
 
         # add the openid provider as a subdir
         self.resource.putChild("openid", WSGIResource(reactor, reactor.getThreadPool(), self.response_openid))
+
+
+    def get_html_index(self):
+        """ Which mustache template to use for the webbox root index. Changes from 'index' when there is a critical configuration issue to resolve. """
+        
+        if self.object_store is None:
+            return "init_object_store"
+
+        return "index"
+
+    def initialise_object_store(self, root_user, root_pass):
+        """ Attempt to create a webbox user and a database using the credentials passed in. """
+
+        if self.object_store is not None:
+            # don't do anything here
+            return
+
+        # try to connect
+        try:
+            conn = psycopg2.connect(database = self.config['db']['name'],
+                                    user = self.config['db']['user'],
+                                    password = self.config['db']['password'])
+            conn.close()
+            # worked fine, so do not need to reconnect object store
+            return
+        except Exception as e:
+            # failed, make sure user exists:
+            root_conn = psycopg2.connect(user = root_user, password = root_pass)
+            root_cur = root_conn.cursor()
+
+            root_cur.execute("SELECT 1 FROM pg_roles WHERE rolname = %s", [self.config['db']['user']])
+            role_exists = root_cur.fetchone()
+
+            if role_exists is None:
+                # need to create role
+                root_cur.execute("CREATE ROLE %s LOGIN ENCRYPTED PASSWORD '%s' NOSUPERUSER INHERIT NOCREATEDB NOCREATEROLE NOREPLICATION" % (self.config['db']['user'], self.config['db']['password']))
+                root_conn.commit()
+
+            root_cur.close()
+            root_conn.close()
+
+        # try to connect again
+        try:
+            conn = psycopg2.connect(database = self.config['db']['name'],
+                                    user = self.config['db']['user'],
+                                    password = self.config['db']['password'])
+            conn.close()
+            self.reconnect_object_store()
+            return
+        except Exception as e:
+            # failed, make sure db exists:
+            root_conn = psycopg2.connect(user = root_user, password = root_pass)
+            root_conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
+            root_cur = root_conn.cursor()
+            root_cur.execute("CREATE DATABASE %s WITH ENCODING='UTF8' OWNER=%s CONNECTION LIMIT=-1" % (self.config['db']['name'], self.config['db']['user']))
+            root_conn.commit()
+            root_cur.close()
+            root_conn.close()
+            
+
+            # load in definition from data/objectstore.sql
+            fh_objsql = open(os.path.join(os.path.dirname(__file__),"..","data","objectstore.sql")) # FIXME put into config
+            objsql = fh_objsql.read()
+            fh_objsql.close()
+
+            root_conn = psycopg2.connect(database = self.config['db']['name'], user = root_user, password = root_pass) # reconnect to this new db, and without the isolation level set
+            root_cur = root_conn.cursor()
+            root_cur.execute(objsql)
+            root_conn.commit()
+            root_cur.close()
+            root_conn.close()
+
+
+        # now it's all set up, we can reconnect it
+
+        if self.object_store is None:
+            self.reconnect_object_store()
+
+
+    def reconnect_object_store(self):
+        """ Try to reconnect to the object store using the username/password/db in self.config['webbox']['db'].
+            This is done when the configuration has changed at runtime (e.g. when the user has given the database details when they first init their webbox.
+        """
+
+        try:
+            # create postgres connection
+            conn = psycopg2.connect(database = self.config['db']['name'],
+                                    user = self.config['db']['user'],
+                                    password = self.config['db']['password'])
+            self.object_store = ObjectStore(conn)
+        except Exception as e:
+            self.object_store = None
 
 
     def get_base_url(self):

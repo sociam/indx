@@ -25,12 +25,14 @@ class Idx(Resource):
 
         self.wb = registry.getComponent(WebBox)
 
+        index = self.wb.get_html_index()
+
         template_vars = {
-            "personalise_panel": self.get_personalise_panel(),
+#            "personalise_panel": self.get_personalise_panel(),
             "server_url": self.wb.server_url,
         }
 
-        return self.mustache("index", template_vars)
+        return self.mustache(index, template_vars)
 
     def mustache(self, fn, tmpl_vars):
 
@@ -42,24 +44,24 @@ class Idx(Resource):
         rendered = pystache.render(idx, tmpl_vars)
         return rendered.encode("utf8")
 
-    def get_personalise_panel(self):
-
-        q = "PREFIX webbox: <http://webbox.ecs.soton.ac.uk/ns#> SELECT DISTINCT ?owner WHERE { ?owner webbox:address <%s> }" % self.wb.server_url
-        results = self.wb.query_store.query(q)
-        
-        if len(results['data']) == 0:
-            rendered = self.mustache("templates/setup_webbox", {"server_url": self.wb.server_url})
-            
-        else:
-            owner = results['data'][0]['owner']['value']
-
-            # handle weird chars from 4store, FIXME in the 4s library
-            owner = owner.encode("latin1")
-            owner = owner.decode("utf8", errors="ignore")
-
-            rendered = self.mustache("templates/personalise_webbox", {"server_url": self.wb.server_url, "owner": owner});
-
-        return rendered
+#    def get_personalise_panel(self):
+#
+#        q = "PREFIX webbox: <http://webbox.ecs.soton.ac.uk/ns#> SELECT DISTINCT ?owner WHERE { ?owner webbox:address <%s> }" % self.wb.server_url
+#        results = self.wb.query_store.query(q)
+#        
+#        if len(results['data']) == 0:
+#            rendered = self.mustache("templates/setup_webbox", {"server_url": self.wb.server_url})
+#            
+#        else:
+#            owner = results['data'][0]['owner']['value']
+#
+#            # handle weird chars from 4store, FIXME in the 4s library
+#            owner = owner.encode("latin1")
+#            owner = owner.decode("utf8", errors="ignore")
+#
+#            rendered = self.mustache("templates/personalise_webbox", {"server_url": self.wb.server_url, "owner": owner});
+#
+#        return rendered
 
 
 resource = Idx()

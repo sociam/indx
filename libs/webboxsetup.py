@@ -36,23 +36,33 @@ class WebBoxSetup:
             if not os.path.exists(sub_dir_path):
                 os.makedirs(sub_dir_path)
 
-        # copy default config
         webbox_config = webbox_dir + os.sep + "webbox.json"
+
+        init_config = False # initialise config from defaults?
         if not os.path.exists(webbox_config):
+            init_config = True
+        else:
+            # config exists, but is it non-versioned?
+            conf_fh = open(webbox_config, "r")
+            config = json.load(conf_fh)
+            conf_fh.close()
+
+            if "version" not in config:
+                init_config = True
+
+
+        # copy default config
+        if init_config:
             shutil.copyfile(webbox_default_config_file, webbox_config)
 
             # set up per user options in config
             conf_fh = open(webbox_config, "r")
-
-            # load the json, parsing out comments manually
-            comment_re = re.compile(r'#.*$')
-            config_lines = ""
-            for line in conf_fh.readlines():
-                line = re.sub(comment_re, '', line)
-                config_lines += line
+            # load the json
+            config = json.load(conf_fh)
             conf_fh.close()
 
-            config = json.loads(config_lines)
+            # set webbox db based on username
+            config['webbox']['db']['name'] = kbname
 
             # add 4store kb based on username
             config['webbox']['4store']['kbname'] = kbname
@@ -61,8 +71,18 @@ class WebBoxSetup:
             config['webbox']['4store']['port'] = fs_port
             config['webbox']['ws_port'] = ws_port
 
-            # write updated config
+        # add additions (defaults) to config here, so configs are automatically upgraded when new additions are made
+        change_config = False
+        version = config['version']
+        if version == 1:
+            # set change_config to True to save the changes
+            pass
+
+        # write updated config
+        if init_config or change_config:
             conf_fh = open(webbox_config, "w")
             json.dump(config, conf_fh, indent=4)
             conf_fh.close()
+
+    
 
