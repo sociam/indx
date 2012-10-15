@@ -43,7 +43,7 @@ from fourstore import FourStore
 from exception import ResponseOverride
 from wsupdateserver import WSUpdateServer
 
-from objectstore import ObjectStore
+from objectstore import ObjectStore, RDFObjectStore
 import psycopg2
 
 from urlparse import urlparse, parse_qs
@@ -211,6 +211,7 @@ class WebBox:
                                     user = self.config['db']['user'],
                                     password = self.config['db']['password'])
             self.object_store = ObjectStore(conn)
+            self.query_store = RDFObjectStore(self.object_store) # handles RDF to object conversion
         except Exception as e:
             self.object_store = None
 
@@ -515,7 +516,7 @@ class WebBox:
 
     def stop(self):
         """ Shut down the web box. """
-        self.fourstore.stop()
+        pass
 
     def response(self, environ, start_response):
         """ WSGI response handler."""

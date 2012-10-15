@@ -123,6 +123,7 @@ ALTER TABLE wb_users
   OWNER TO webbox;
 
 
+INSERT INTO wb_users (username, pw_salted_hash) VALUES ('anonymous', 'temporary');
 
 
 

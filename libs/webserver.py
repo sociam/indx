@@ -75,7 +75,7 @@ class WebServer:
         def on_start(arg):
             logging.debug("Server started successfully.")
             if config['load_browser']:
-                time.sleep(2)
+                #time.sleep(2)
                 try:
                     import webbrowser
                     webbrowser.open(server_url)
