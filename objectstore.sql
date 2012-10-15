@@ -202,4 +202,23 @@ ALTER TABLE wb_v_latest_graphvers
   OWNER TO webbox;
 
 
+-- View: wb_v_latest_triples
+
+-- DROP VIEW wb_v_latest_triples;
+
+CREATE OR REPLACE VIEW wb_v_latest_triples AS 
+ SELECT wb_v_latest_graphvers.graph_uri, wb_v_all_triples.graph_version, 
+    wb_v_all_triples.triple_order, wb_v_all_triples.subject, 
+    wb_v_all_triples.predicate, wb_v_all_triples.obj_value, 
+    wb_v_all_triples.obj_type, wb_v_all_triples.obj_lang, 
+    wb_v_all_triples.obj_datatype
+   FROM wb_v_latest_graphvers
+   JOIN wb_v_all_triples ON wb_v_all_triples.graph_uri = wb_v_latest_graphvers.graph_uri AND wb_v_all_triples.graph_version = wb_v_latest_graphvers.latest_version
+  ORDER BY wb_v_latest_graphvers.graph_uri, wb_v_all_triples.graph_version, wb_v_all_triples.subject, wb_v_all_triples.triple_order;
+
+ALTER TABLE wb_v_latest_triples
+  OWNER TO webbox;
+
+
+
 
