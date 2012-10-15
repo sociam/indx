@@ -177,13 +177,13 @@ class ObjectWebServer:
         return headers
 
     def do_GET(self, environ, req_path, req_qs):
-        if "uri" in req_qs:
-            uri = req_qs["uri"][0]
+        if "graph" in req_qs:
+            graph_uri = req_qs["graph"][0]
         else:
-            return {"data": "Specify a URI with ?uri=http://encoded.uri/", "status": 404, "reason": "Not Found"}
+            return {"data": "Specify a GRAPH URI with ?graph=http://encoded.uri/", "status": 404, "reason": "Not Found"}
 
         objs = objectstore.ObjectStore(self.config['connection'])
-        obj = objs.get_latest(uri)
+        obj = objs.get_latest(graph_uri)
         jsondata = json.dumps(obj, indent=2)        
         return {"data": jsondata, "status": 200, "reason": "OK"}
 

@@ -30,24 +30,28 @@ class ObjectStore:
         # TODO FIXME determine if autocommit has to be off for PL/pgsql support
         self.conn.autocommit = True
 
-    def get_latest(self, uri):
-        """ Get the latest version of an object, as expanded JSON-LD notation.
-            uri of the object
+    def get_latest(self, graph_uri):
+        """ Get the latest version of a graph, as expanded JSON-LD notation.
+            uri of the named graph
         """
         
         cur = self.conn.cursor()
 
-        cur.execute("SELECT version, predicate, object_order, obj_type, obj_value, obj_lang, obj_datatype FROM wb_v_latest_triples WHERE subject = %s ORDER BY predicate, object_order", [uri])
+        cur.execute("SELECT graph_uri, graph_version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples WHERE graph_uri = %s", [graph_uri]) # order is implicit, defined by the view, so no need to override it here
         rows = cur.fetchall()
 
         obj_out = {}
         for row in rows:
-            (latest_version, predicate, obj_order, obj_type, obj_value, obj_lang, obj_datatype) = row
-            if predicate not in obj_out:
-                obj_out[predicate] = []
+            (graph_uri_sel, graph_version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype) = row
 
             if "@version" not in obj_out:
-                obj_out["@version"] = latest_version
+                obj_out["@version"] = graph_version
+
+            if subject not in obj_out:
+                obj_out[subject] = {}
+
+            if predicate not in obj_out[subject]:
+                obj_out[subject][predicate] = []
 
             if obj_type == "resource":
                 obj_key = "@id"
@@ -65,8 +69,7 @@ class ObjectStore:
             if obj_datatype is not None:
                 obj_struct["@type"] = obj_datatype
 
-
-            obj_out[predicate].append(obj_struct)
+            obj_out[subject][predicate].append(obj_struct)
     
         cur.close()
         return obj_out
