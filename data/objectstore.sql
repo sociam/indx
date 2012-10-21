@@ -1,7 +1,7 @@
 
 -- run this script as user webbox (e.g., psql -U webbox)
 
-CREATE EXTENSION pgcrypto;
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- from: http://www.postgresql.org/docs/9.2/static/pgcrypto.html
 -- Example of setting a new password:
@@ -14,8 +14,6 @@ CREATE EXTENSION pgcrypto;
 
 
 CREATE TYPE object_type AS ENUM ('resource', 'literal');
-
-
 
 
 
@@ -125,6 +123,7 @@ ALTER TABLE wb_users
   OWNER TO webbox;
 
 
+INSERT INTO wb_users (username, pw_salted_hash) VALUES ('anonymous', 'temporary');
 
 
 
@@ -151,6 +150,26 @@ ALTER TABLE wb_graphvers
 
 
 
+CREATE TABLE wb_graphver_triples
+(
+  graphver integer NOT NULL,
+  triple integer NOT NULL,
+  triple_order integer NOT NULL,
+  CONSTRAINT pk_graphver_triple_order PRIMARY KEY (graphver, triple, triple_order),
+  CONSTRAINT fk_graphver FOREIGN KEY (graphver)
+      REFERENCES wb_graphvers (id_graphver) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE NO ACTION,
+  CONSTRAINT fk_triple FOREIGN KEY (triple)
+      REFERENCES wb_triples (id_triple) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE NO ACTION
+)
+WITH (
+  OIDS=FALSE
+);
+ALTER TABLE wb_graphver_triples
+  OWNER TO webbox;
+
+
 
 
 
@@ -158,8 +177,6 @@ ALTER TABLE wb_graphvers
 -- http://webbox/timemachine/obj/version/1
 -- X-WebBox-Predecessor-Set VERSION
 -- has to be the current max version to succeed
-ALTER TABLE wb_v_triples
-  OWNER TO webbox;
 
 
 -- View: wb_v_all_triples
@@ -182,7 +199,7 @@ CREATE OR REPLACE VIEW wb_v_all_triples AS
   ORDER BY wb_graphvers.graph_uri, wb_graphvers.graph_version, j_subject.string, wb_graphver_triples.triple_order;
 
 ALTER TABLE wb_v_all_triples
-  OWNER TO postgres;
+  OWNER TO webbox;
 
 
 

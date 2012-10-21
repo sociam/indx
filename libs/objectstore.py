@@ -40,7 +40,7 @@ class ObjectStore:
         cur.execute("SELECT graph_uri, graph_version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples WHERE graph_uri = %s", [graph_uri]) # order is implicit, defined by the view, so no need to override it here
         rows = cur.fetchall()
 
-        obj_out = {}
+        obj_out = {"@graph": graph_uri}
         for row in rows:
             (graph_uri_sel, graph_version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype) = row
 
@@ -129,7 +129,7 @@ class ObjectStore:
         cur = self.conn.cursor()
 
         # FIXME write a PL/pgsql function for this with table locking
-        cur.execute("SELECT id_object FROM wb_objects WHERE obj_type = %s AND obj_value = %s AND obj_lang "+("IS" if language is None else "=")+" %s AND obj_datatype "+("IS" if language is None else "=")+" %s", [type, value, language, datatype])
+        cur.execute("SELECT id_object FROM wb_objects WHERE obj_type = %s AND obj_value = %s AND obj_lang "+("IS" if language is None else "=")+" %s AND obj_datatype "+("IS" if datatype is None else "=")+" %s", [type, value, language, datatype])
         existing_id = cur.fetchone()
 
         if existing_id is None:
@@ -221,4 +221,90 @@ class ObjectStore:
 class IncorrectPreviousVersionException(BaseException):
     """ The specified previous version did not match the actual previous version. """
     pass
+
+
+from rdflib import Graph, URIRef, Literal
+
+class RDFObjectStore:
+    """ Uses the query store interface (e.g. as a drop-in replacement for fourstore).
+        but asserts/reads data from the objectstore.
+    """
+
+    def __init__(self, objectstore):
+        self.objectstore = objectstore
+
+        # mime type to rdflib formats
+        self.rdf_formats = {
+            "application/rdf+xml": "xml",
+            "application/n3": "n3",
+            "text/turtle": "n3", # no turtle-specific parser in rdflib ATM, using N3 one because N3 is a superset of turtle
+            "text/plain": "nt",
+            "application/json": "json-ld",
+            "text/json": "json-ld",
+        }
+
+    def put_rdf(self, rdf, content_type, graph):
+        """ Public method to PUT RDF into the store - where PUT replaces a graph. """
+
+        version = 0 # FIXME XXX
+        objs = self.rdf_to_objs(rdf, content_type)
+        self.objectstore.add(graph, objs, version)
+
+        return {"data": "", "status": 200, "reason": "OK"} 
+        
+
+
+    def rdf_to_objs(self, rdf, content_type):
+        """ Convert rdf string of a content_type to an array of objects in JSON-LD expanded format as used in objectstore. """
+
+        rdf_type = self.rdf_formats[content_type]
+        rdfgraph = Graph()
+        rdfgraph.parse(data=rdf, format=rdf_type) # format = xml, n3 etc
+
+        all_obj = {}
+        for (s, p, o) in rdfgraph:
+            subject = unicode(s)
+            predicate = unicode(p)
+
+            if subject not in all_obj:
+                all_obj[subject] = {}
+            if predicate not in all_obj[subject]:
+                all_obj[subject][predicate] = []
+
+            object_value = unicode(o)
+            object = {}
+
+            if type(o) is type(Literal("")):
+                typekey = "@value"
+
+                if o.language is not None:
+                    object["@language"] = o.language
+                if o.datatype is not None:
+                    object["@type"] = o.datatype
+            else:
+                typekey = "@id"
+            
+            object[typekey] = object_value
+
+
+            all_obj[subject][predicate].append(object)
+       
+        objs = []
+        for subject in all_obj:
+            obj = all_obj[subject]
+            obj["@id"] = subject
+            objs.append(obj)
+
+        return objs
+
+
+    def post_rdf(self, rdf, content_type, graph):
+        """ Public method to POST RDF into the store - where POST appends to a graph. """
+
+        version = 0 # FIXME XXX
+        objs = self.rdf_to_objs(rdf, content_type)
+        self.objectstore.add(graph, objs, version)
+
+        return {"data": "", "status": 200, "reason": "OK"} 
+
 
