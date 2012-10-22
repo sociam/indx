@@ -237,5 +237,141 @@ ALTER TABLE wb_v_latest_triples
   OWNER TO webbox;
 
 
+-- Functions
+
+
+CREATE OR REPLACE FUNCTION wb_add_triple_to_graphvers(input_graphvers_id integer, input_subject text, input_predicate text, input_object_value text, input_object_type object_type, input_object_language character varying, input_object_datatype character varying, input_triple_order integer)
+  RETURNS boolean AS
+$BODY$DECLARE
+    triple_result integer;
+BEGIN
+    SELECT * INTO triple_result FROM wb_get_triple_id(input_subject, input_predicate, input_object_value, input_object_type, input_object_language, input_object_datatype);
+
+    INSERT INTO wb_graphver_triples (graphver, triple, triple_order) VALUES (input_graphvers_id, triple_result, input_triple_order);
+    RETURN true;
+END;$BODY$
+  LANGUAGE plpgsql VOLATILE
+  COST 100;
+ALTER FUNCTION wb_add_triple_to_graphvers(integer, text, text, text, object_type, character varying, character varying, integer)
+  OWNER TO webbox;
+
+CREATE OR REPLACE FUNCTION wb_get_graphvers_id(input_graph_version integer, input_graph_uri text, input_user_id integer)
+  RETURNS integer AS
+$BODY$DECLARE
+    graph_uri_value_id integer;
+    graphvers_result integer;
+    graphvers_new_ver integer;
+    graph_prev_ver integer;
+BEGIN
+    SELECT * INTO graph_uri_value_id FROM wb_get_string_id(input_graph_uri);
+
+    SELECT MAX(wb_graphvers.graph_version) INTO graph_prev_ver FROM wb_graphvers WHERE
+        (wb_graphvers.graph_uri = graph_uri_value_id) GROUP BY wb_graphvers.graph_uri;
+
+    IF NOT FOUND THEN
+        graph_prev_ver = 0;
+    END IF;
+
+    IF input_graph_version != graph_prev_ver THEN
+        RETURN NULL;
+    END IF;
+
+    graphvers_new_ver = input_graph_version + 1;
+
+    INSERT INTO wb_graphvers (graph_version, graph_uri, change_timestamp, change_user) VALUES (graphvers_new_ver, graph_uri_value_id, CURRENT_TIMESTAMP, input_user_id) RETURNING id_graphver INTO graphvers_result;
+
+    RETURN graphvers_result;
+END;$BODY$
+  LANGUAGE plpgsql VOLATILE
+  COST 100;
+ALTER FUNCTION wb_get_graphvers_id(integer, text, integer)
+  OWNER TO webbox;
+
+
+CREATE OR REPLACE FUNCTION wb_get_object_id(input_obj_type object_type, input_obj_value text, input_obj_lang character varying, input_obj_datatype character varying)
+  RETURNS integer AS
+$BODY$DECLARE
+    value_id integer;
+    object_result integer;
+BEGIN
+    SELECT * INTO value_id FROM wb_get_string_id(input_obj_value);
+
+    SELECT wb_objects.id_object INTO object_result FROM wb_objects WHERE (wb_objects.obj_type = input_obj_type AND wb_objects.obj_value = value_id AND wb_objects.obj_lang = input_obj_lang AND wb_objects.obj_datatype = input_obj_datatype);
+    IF NOT FOUND THEN
+        INSERT INTO wb_objects (obj_type, obj_value, obj_lang, obj_datatype) VALUES (input_obj_type, value_id, input_obj_lang, input_obj_datatype) RETURNING wb_objects.id_object INTO object_result;
+    END IF;
+    RETURN object_result;
+END;$BODY$
+  LANGUAGE plpgsql VOLATILE
+  COST 100;
+ALTER FUNCTION wb_get_object_id(object_type, text, character varying, character varying)
+  OWNER TO webbox;
+
+
+CREATE OR REPLACE FUNCTION wb_get_string_id(input_string text)
+  RETURNS integer AS
+$BODY$DECLARE
+    string_result integer;
+BEGIN
+    SELECT wb_strings.id_string INTO string_result FROM wb_strings WHERE (wb_strings.string = input_string);
+    IF NOT FOUND THEN
+        INSERT INTO wb_strings (string) VALUES (input_string) RETURNING wb_strings.id_string INTO string_result;
+    END IF;
+    RETURN string_result;
+END;$BODY$
+  LANGUAGE plpgsql VOLATILE
+  COST 100;
+ALTER FUNCTION wb_get_string_id(text)
+  OWNER TO webbox;
+
+
+CREATE OR REPLACE FUNCTION wb_get_triple_id(input_subject text, input_predicate text, input_object_value text, input_object_type object_type, input_object_language character varying, input_object_datatype character varying)
+  RETURNS integer AS
+$BODY$DECLARE
+    subject_value_id integer;
+    predicate_value_id integer;
+    object_result integer;
+    triple_result integer;
+BEGIN
+    SELECT * INTO subject_value_id FROM wb_get_string_id(input_subject);
+    SELECT * INTO predicate_value_id FROM wb_get_string_id(input_predicate);
+    SELECT * INTO object_result FROM wb_get_object_id(input_object_type, input_object_value, input_object_language, input_object_datatype);
+
+    SELECT wb_triples.id_triple INTO triple_result FROM wb_triples WHERE
+        (wb_triples.subject = subject_value_id AND
+         wb_triples.predicate = predicate_value_id AND
+         wb_triples.object = object_result);
+    IF NOT FOUND THEN
+        INSERT INTO wb_triples (subject, predicate, object) VALUES (subject_value_id, predicate_value_id, object_result) RETURNING wb_triples.id_triple INTO triple_result;
+    END IF;
+    RETURN triple_result;
+END;$BODY$
+  LANGUAGE plpgsql VOLATILE
+  COST 100;
+ALTER FUNCTION wb_get_triple_id(text, text, text, object_type, character varying, character varying)
+  OWNER TO webbox;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 

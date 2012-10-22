@@ -100,67 +100,11 @@ class ObjectStore:
         if actual_prev_version != specified_prev_version:
             raise IncorrectPreviousVersionException("Actual previous version is {0}, specified previous version is: {1}".format(actual_prev_version, specified_prev_version))
 
-        new_version = actual_prev_version + 1
-
-        self.add_graph_version(graph_uri, objs, new_version)
+        self.add_graph_version(graph_uri, objs, actual_prev_version)
 
         cur.close()
-        return {"@version": new_version, "@graph": graph_uri}
+        return {"@version": actual_prev_version+1, "@graph": graph_uri}
 
-
-    def get_string_id(self, string):
-        """ Get the foreign key ID of a string from the wb_strings table. Create one if necessary. """
-        cur = self.conn.cursor()
-
-        # FIXME write a PL/pgsql function for this with table locking
-        cur.execute("SELECT wb_strings.id_string FROM wb_strings WHERE wb_strings.string = %s", [string])
-        existing_id = cur.fetchone()
-
-        if existing_id is None:
-            cur.execute("INSERT INTO wb_strings (string) VALUES (%s) RETURNING id_string", [string])
-            existing_id = cur.fetchone()
-            self.conn.commit()
-
-        cur.close()
-        return existing_id
-
-    def get_object_id(self, type, value, language, datatype):
-        """ Get the foreign key ID of an object from the wb_objects table. Create one if necessary. """
-        cur = self.conn.cursor()
-
-        if language is None:
-            language = "" # we don't use NULL here because we want the unique index to work
-        if datatype is None:
-            datatype = ""
-
-        # FIXME write a PL/pgsql function for this with table locking
-        cur.execute("SELECT id_object FROM wb_objects WHERE obj_type = %s AND obj_value = %s AND obj_lang = %s AND obj_datatype = %s", [type, value, language, datatype])
-        existing_id = cur.fetchone()
-
-        if existing_id is None:
-            cur.execute("INSERT INTO wb_objects (obj_type, obj_value, obj_lang, obj_datatype) VALUES (%s, %s, %s, %s) RETURNING id_object", [type, value, language, datatype])
-            existing_id = cur.fetchone()
-            self.conn.commit()
-
-        cur.close()
-        return existing_id
-
-
-    def get_triple_id(self, subject, predicate, object):
-        """ Get the foreign key ID of a triple from the wb_triples table. Create one if necessary. """
-        cur = self.conn.cursor()
-
-        # FIXME write a PL/pgsql function for this with table locking
-        cur.execute("SELECT id_triple FROM wb_triples WHERE subject = %s AND predicate = %s AND object = %s", [subject, predicate, object])
-        existing_id = cur.fetchone()
-
-        if existing_id is None:
-            cur.execute("INSERT INTO wb_triples (subject, predicate, object) VALUES (%s, %s, %s) RETURNING id_triple", [subject, predicate, object])
-            existing_id = cur.fetchone()
-            self.conn.commit()
-
-        cur.close()
-        return existing_id
 
 
     def add_graph_version(self, graph_uri, objs, version):
@@ -170,12 +114,10 @@ class ObjectStore:
         # TODO FIXME XXX lock the table(s) as appropriate inside a transaction (PL/pgspl?) here
         cur = self.conn.cursor()
 
-        id_graph_uri = self.get_string_id(graph_uri)
-
         # TODO add this
         id_user = 1
 
-        cur.execute("INSERT INTO wb_graphvers (graph_version, graph_uri, change_user, change_timestamp) VALUES (%s, %s, %s, CURRENT_TIMESTAMP) RETURNING id_graphver", [version, id_graph_uri, id_user])
+        cur.execute("SELECT * FROM wb_get_graphvers_id(%s, %s, %s) " , [version, graph_uri, id_user])
         id_graphver = cur.fetchone()
 
         for obj in objs:
@@ -185,15 +127,10 @@ class ObjectStore:
             else:
                 raise Exception("@id required in all objects")
 
-            id_subject = self.get_string_id(uri)
-
             triple_order = 0
-
             for predicate in obj:
                 if predicate[0] == "@":
                     continue # skip over json_ld predicates
-
-                id_predicate = self.get_string_id(predicate)
 
                 sub_objs = obj[predicate]
                 for object in sub_objs:
@@ -204,22 +141,16 @@ class ObjectStore:
                         type = "resource"
                         value = object["@id"]
 
-                    language = None
+                    language = ''
                     if "@language" in object:
                         language = object["@language"]
 
-                    datatype = None
+                    datatype = ''
                     if "@type" in object:
                         datatype = object["@type"]
 
-                    id_value = self.get_string_id(value)
-                    id_object = self.get_object_id(type, id_value, language, datatype)
-                    
-                    id_triple = self.get_triple_id(id_subject, id_predicate, id_object)
-
                     triple_order += 1
-
-                    cur.execute("INSERT INTO wb_graphver_triples (graphver, triple, triple_order) VALUES (%s, %s, %s)", [id_graphver, id_triple, triple_order])
+                    cur.execute("SELECT * FROM wb_add_triple_to_graphvers(%s, %s, %s, %s, %s, %s, %s, %s)", [id_graphver, uri, predicate, value, type, language, datatype, triple_order])
 
         cur.close()
 
