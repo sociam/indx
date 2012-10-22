@@ -16,10 +16,69 @@
 #    You should have received a copy of the GNU General Public License
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging
+import logging, psycopg2, os
 
 class ObjectStore:
     """ Stores objects in a database, handling import, export and versioning. """
+
+    @staticmethod
+    def initialise(db_name, root_user, root_pass, db_user, db_pass):
+        """ Create the user, database, tables, view and functions. """
+
+        # try to connect
+        try:
+            conn = psycopg2.connect(database = db_name,
+                                    user = db_user,
+                                    password = db_pass)
+            conn.close()
+            # worked fine, so do not need to reconnect object store
+            return
+        except Exception as e:
+            # failed, make sure user exists:
+            root_conn = psycopg2.connect(user = root_user, password = root_pass)
+            root_cur = root_conn.cursor()
+
+            root_cur.execute("SELECT 1 FROM pg_roles WHERE rolname = %s", [db_user])
+            role_exists = root_cur.fetchone()
+
+            if role_exists is None:
+                # need to create role
+                root_cur.execute("CREATE ROLE %s LOGIN ENCRYPTED PASSWORD '%s' NOSUPERUSER INHERIT NOCREATEDB NOCREATEROLE NOREPLICATION" % (db_user, db_pass))
+                root_conn.commit()
+
+            root_cur.close()
+            root_conn.close()
+
+        # try to connect again
+        try:
+            conn = psycopg2.connect(database = db_name,
+                                    user = db_user,
+                                    password = db_pass)
+            conn.close()
+            return
+        except Exception as e:
+            # failed, make sure db exists:
+            root_conn = psycopg2.connect(user = root_user, password = root_pass)
+            root_conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
+            root_cur = root_conn.cursor()
+            root_cur.execute("CREATE DATABASE %s WITH ENCODING='UTF8' OWNER=%s CONNECTION LIMIT=-1" % (db_name, db_user))
+            root_conn.commit()
+            root_cur.close()
+            root_conn.close()
+            
+
+            # load in definition from data/objectstore.sql
+            fh_objsql = open(os.path.join(os.path.dirname(__file__),"..","data","objectstore.sql")) # FIXME put into config
+            objsql = fh_objsql.read()
+            fh_objsql.close()
+
+            root_conn = psycopg2.connect(database = db_name, user = root_user, password = root_pass) # reconnect to this new db, and without the isolation level set
+            root_cur = root_conn.cursor()
+            root_cur.execute(objsql)
+            root_conn.commit()
+            root_cur.close()
+            root_conn.close()
+
 
     def __init__(self, conn):
         """

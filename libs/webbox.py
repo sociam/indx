@@ -138,64 +138,9 @@ class WebBox:
             # don't do anything here
             return
 
-        # try to connect
-        try:
-            conn = psycopg2.connect(database = self.config['db']['name'],
-                                    user = self.config['db']['user'],
-                                    password = self.config['db']['password'])
-            conn.close()
-            # worked fine, so do not need to reconnect object store
-            return
-        except Exception as e:
-            # failed, make sure user exists:
-            root_conn = psycopg2.connect(user = root_user, password = root_pass)
-            root_cur = root_conn.cursor()
-
-            root_cur.execute("SELECT 1 FROM pg_roles WHERE rolname = %s", [self.config['db']['user']])
-            role_exists = root_cur.fetchone()
-
-            if role_exists is None:
-                # need to create role
-                root_cur.execute("CREATE ROLE %s LOGIN ENCRYPTED PASSWORD '%s' NOSUPERUSER INHERIT NOCREATEDB NOCREATEROLE NOREPLICATION" % (self.config['db']['user'], self.config['db']['password']))
-                root_conn.commit()
-
-            root_cur.close()
-            root_conn.close()
-
-        # try to connect again
-        try:
-            conn = psycopg2.connect(database = self.config['db']['name'],
-                                    user = self.config['db']['user'],
-                                    password = self.config['db']['password'])
-            conn.close()
-            self.reconnect_object_store()
-            return
-        except Exception as e:
-            # failed, make sure db exists:
-            root_conn = psycopg2.connect(user = root_user, password = root_pass)
-            root_conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
-            root_cur = root_conn.cursor()
-            root_cur.execute("CREATE DATABASE %s WITH ENCODING='UTF8' OWNER=%s CONNECTION LIMIT=-1" % (self.config['db']['name'], self.config['db']['user']))
-            root_conn.commit()
-            root_cur.close()
-            root_conn.close()
-            
-
-            # load in definition from data/objectstore.sql
-            fh_objsql = open(os.path.join(os.path.dirname(__file__),"..","data","objectstore.sql")) # FIXME put into config
-            objsql = fh_objsql.read()
-            fh_objsql.close()
-
-            root_conn = psycopg2.connect(database = self.config['db']['name'], user = root_user, password = root_pass) # reconnect to this new db, and without the isolation level set
-            root_cur = root_conn.cursor()
-            root_cur.execute(objsql)
-            root_conn.commit()
-            root_cur.close()
-            root_conn.close()
-
+        ObjectStore.initialise(self.config['db']['name'], root_user, root_pass, self.config['db']['user'], self.config['db']['password'])
 
         # now it's all set up, we can reconnect it
-
         if self.object_store is None:
             self.reconnect_object_store()
 
