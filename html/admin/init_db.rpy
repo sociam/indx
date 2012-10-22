@@ -35,7 +35,7 @@ class Idx(Resource):
         self.wb.initialise_object_store(root_user, root_password)
 
         # send them back to the webbox start page
-        request.redirect(self.wb.get_base_url())
-        return ""
+        request.redirect(str(self.wb.get_base_url()))
+        return ''
 
 resource = Idx()
