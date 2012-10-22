@@ -42,8 +42,8 @@ CREATE TABLE wb_objects
   id_object serial NOT NULL,
   obj_type object_type NOT NULL,
   obj_value INTEGER NOT NULL,
-  obj_lang character varying(128),
-  obj_datatype character varying(2048),
+  obj_lang character varying(128) NOT NULL,
+  obj_datatype character varying(2048) NOT NULL,
   CONSTRAINT pk_object PRIMARY KEY (id_object),
   CONSTRAINT uidx_obj UNIQUE (obj_type, obj_value, obj_lang, obj_datatype),
   CONSTRAINT fk_obj_value FOREIGN KEY (obj_value)

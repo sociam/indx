@@ -128,8 +128,13 @@ class ObjectStore:
         """ Get the foreign key ID of an object from the wb_objects table. Create one if necessary. """
         cur = self.conn.cursor()
 
+        if language is None:
+            language = "" # we don't use NULL here because we want the unique index to work
+        if datatype is None:
+            datatype = ""
+
         # FIXME write a PL/pgsql function for this with table locking
-        cur.execute("SELECT id_object FROM wb_objects WHERE obj_type = %s AND obj_value = %s AND obj_lang "+("IS" if language is None else "=")+" %s AND obj_datatype "+("IS" if datatype is None else "=")+" %s", [type, value, language, datatype])
+        cur.execute("SELECT id_object FROM wb_objects WHERE obj_type = %s AND obj_value = %s AND obj_lang = %s AND obj_datatype = %s", [type, value, language, datatype])
         existing_id = cur.fetchone()
 
         if existing_id is None:
