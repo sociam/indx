@@ -43,7 +43,7 @@ class ObjectStore:
 
             if role_exists is None:
                 # need to create role
-                root_cur.execute("CREATE ROLE %s LOGIN ENCRYPTED PASSWORD '%s' NOSUPERUSER INHERIT NOCREATEDB NOCREATEROLE NOREPLICATION" % (db_user, db_pass))
+                root_cur.execute("CREATE ROLE %s LOGIN ENCRYPTED PASSWORD '%s' NOSUPERUSER INHERIT NOCREATEDB NOCREATEROLE" % (db_user, db_pass))
                 root_conn.commit()
 
             root_cur.close()
@@ -88,6 +88,15 @@ class ObjectStore:
 
         # TODO FIXME determine if autocommit has to be off for PL/pgsql support
         self.conn.autocommit = True
+
+    def autocommit(self, value):
+        """ Set autocommit on/off, for speeding up large INSERTs. """
+
+        if self.conn.autocommit is False and value is True:
+            # if we were in a transaction and now are not, then commit first
+            self.conn.commit()
+
+        self.conn.autocommit = value
 
     def get_latest(self, graph_uri):
         """ Get the latest version of a graph, as expanded JSON-LD notation.
