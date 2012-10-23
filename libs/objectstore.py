@@ -85,6 +85,7 @@ class ObjectStore:
             conn is a postgresql psycopg2 database connection
         """
         self.conn = conn
+        self.cur = conn.cursor()
 
         # TODO FIXME determine if autocommit has to be off for PL/pgsql support
         self.conn.autocommit = True
@@ -103,7 +104,7 @@ class ObjectStore:
             uri of the named graph
         """
         
-        cur = self.conn.cursor()
+        cur = self.cur
 
         cur.execute("SELECT graph_uri, graph_version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples WHERE graph_uri = %s", [graph_uri]) # order is implicit, defined by the view, so no need to override it here
         rows = cur.fetchall()
@@ -139,7 +140,6 @@ class ObjectStore:
 
             obj_out[subject][predicate].append(obj_struct)
     
-        cur.close()
         return obj_out
 
 
@@ -155,7 +155,7 @@ class ObjectStore:
 
         # TODO FIXME XXX lock the table(s) as appropriate inside a transaction (PL/pgspl?) here
 
-        cur = self.conn.cursor()
+        cur = self.cur
 
         cur.execute("SELECT latest_version FROM wb_v_latest_graphvers WHERE graph_uri = %s", [graph_uri])
         row = cur.fetchone()
@@ -170,7 +170,6 @@ class ObjectStore:
 
         self.add_graph_version(graph_uri, objs, actual_prev_version)
 
-        cur.close()
         return {"@version": actual_prev_version+1, "@graph": graph_uri}
 
 
@@ -180,7 +179,7 @@ class ObjectStore:
         """
 
         # TODO FIXME XXX lock the table(s) as appropriate inside a transaction (PL/pgspl?) here
-        cur = self.conn.cursor()
+        cur = self.cur
 
         # TODO add this
         id_user = 1
@@ -220,7 +219,6 @@ class ObjectStore:
                     triple_order += 1
                     cur.execute("SELECT * FROM wb_add_triple_to_graphvers(%s, %s, %s, %s, %s, %s, %s, %s)", [id_graphver, uri, predicate, value, type, language, datatype, triple_order])
 
-        cur.close()
 
 class IncorrectPreviousVersionException(BaseException):
     """ The specified previous version did not match the actual previous version. """
