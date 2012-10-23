@@ -99,6 +99,50 @@ class ObjectStore:
 
         self.conn.autocommit = value
 
+    def get_latest_obj(self, graph_uri, object_uri):
+        """ Get the latest version of an object in agraph, as expanded JSON-LD notation.
+            graph_uri of the named graph
+            object_uri of the object
+        """
+        cur = self.cur
+
+        cur.execute("SELECT graph_uri, graph_version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples WHERE graph_uri = %s AND subject = %s", [graph_uri, object_uri]) # order is implicit, defined by the view, so no need to override it here
+        rows = cur.fetchall()
+
+        obj_out = {"@graph": graph_uri}
+        for row in rows:
+            (graph_uri_sel, graph_version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype) = row
+
+            if "@version" not in obj_out:
+                obj_out["@version"] = graph_version
+
+            if subject not in obj_out:
+                obj_out[subject] = {}
+
+            if predicate not in obj_out[subject]:
+                obj_out[subject][predicate] = []
+
+            if obj_type == "resource":
+                obj_key = "@id"
+            elif obj_type == "literal":
+                obj_key = "@value"
+            else:
+                raise Exception("Unknown object type from database {0}".format(obj_type)) # TODO create a custom exception to throw
+
+            obj_struct = {}
+            obj_struct[obj_key] = obj_value
+
+            if obj_lang is not None:
+                obj_struct["@language"] = obj_lang
+
+            if obj_datatype is not None:
+                obj_struct["@type"] = obj_datatype
+
+            obj_out[subject][predicate].append(obj_struct)
+    
+        return obj_out
+    
+
     def get_latest(self, graph_uri):
         """ Get the latest version of a graph, as expanded JSON-LD notation.
             uri of the named graph
