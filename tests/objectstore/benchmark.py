@@ -13,21 +13,33 @@ obj_count = 100 # how many objects to create
 prop_count = 100 # how many properties per object
 
 # double check
-print "This benchmark script creates its own database, but DROPs it first, type 'yes' if you know what you are doing, check the source if you do not."
-check = raw_input("Type 'yes' to continue: ")
-if check != "yes":
-    sys.exit(0)
+drop_db = None
+while drop_db is None:
+    print "Drop the benchmark database? (NB: You must do this if this is the first time running the benchmark."
+    drop_db = raw_input("[yes/no] ")
+    if drop_db == "yes":
+        drop_db = True
+    elif drop_db == "no":
+        drop_db = False
+    else:
+        drop_db = None
+        print "Please type 'yes' or 'no'"
 
-# drop the existing benchmark database (to reset version numbers, or if schema changes etc.)
-root_conn = psycopg2.connect(user=root_user, password=root_pass)
-root_conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
-root_cur = root_conn.cursor()
-root_cur.execute("DROP DATABASE IF EXISTS %s" % db_name)
-root_cur.close()
-root_conn.close()
+if drop_db:
+    # drop the existing benchmark database (to reset version numbers, or if schema changes etc.)
+    root_conn = psycopg2.connect(user=root_user, password=root_pass)
+    root_conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
+    root_cur = root_conn.cursor()
+    root_cur.execute("DROP DATABASE IF EXISTS %s" % db_name)
+    root_cur.close()
+    root_conn.close()
 
-# create schema
-ObjectStore.initialise(db_name, root_user, root_pass, db_user, db_pass)
+    # create schema
+    ObjectStore.initialise(db_name, root_user, root_pass, db_user, db_pass)
+
+
+version = int(raw_input("Previous version (e.g. '0')? "))
+
 
 # connect as new user
 conn = psycopg2.connect(database=db_name, user=db_user, password=db_pass)
@@ -57,7 +69,7 @@ def insert_all():
     print "Inserting objects..."
     start_time = time.time()
     for i in to_insert:
-        store.add(i['graph_uri'], i['objs'], 0);
+        store.add(i['graph_uri'], i['objs'], version);
     end_time = time.time()
     total_time = end_time - start_time
 
