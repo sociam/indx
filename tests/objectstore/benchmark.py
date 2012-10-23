@@ -33,6 +33,8 @@ ObjectStore.initialise(db_name, root_user, root_pass, db_user, db_pass)
 conn = psycopg2.connect(database=db_name, user=db_user, password=db_pass)
 store = ObjectStore(conn)
 
+store.autocommit(False)
+
 print "Preparing {0} benchmark objects with {1} properties each.".format(obj_count, prop_count)
 to_insert = []
 for i in range(obj_count):
@@ -58,8 +60,12 @@ def insert_all():
         store.add(i['graph_uri'], i['objs'], 0);
     end_time = time.time()
     total_time = end_time - start_time
+
+    store.autocommit(True) # commits
+
     print "Time taken: {0} seconds ({1} triples/second).".format(total_time, float(obj_count * prop_count) / float(total_time))
     
+
 import cProfile
 cProfile.run('insert_all()')
 
