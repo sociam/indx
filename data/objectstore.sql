@@ -35,6 +35,11 @@ CREATE INDEX idx_id_string
   USING btree
   (id_string, string);
 
+CREATE INDEX idx_string_id
+  ON wb_strings
+  USING btree
+  (string, id_string);
+
 
 
 CREATE TABLE wb_objects
@@ -64,6 +69,12 @@ CREATE INDEX idx_otv
   ON wb_objects
   USING btree
   (id_object, obj_type, obj_value);
+
+CREATE INDEX idx_o_all
+  ON wb_objects
+  USING btree
+  (obj_type, obj_value, obj_lang, obj_datatype, id_object);
+
 
 -- Index: idx_vo
 
@@ -97,7 +108,8 @@ CREATE TABLE wb_triples
       ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT fk_object FOREIGN KEY (object)
       REFERENCES wb_objects (id_object) MATCH SIMPLE
-      ON UPDATE NO ACTION ON DELETE NO ACTION
+      ON UPDATE NO ACTION ON DELETE NO ACTION,
+  CONSTRAINT uq_spo UNIQUE (subject, predicate, object)
 )
 WITH (
   OIDS=FALSE
@@ -140,7 +152,8 @@ CREATE TABLE wb_graphvers
       ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT fk_graph_uri FOREIGN KEY (graph_uri)
       REFERENCES wb_strings (id_string) MATCH SIMPLE
-      ON UPDATE NO ACTION ON DELETE NO ACTION
+      ON UPDATE NO ACTION ON DELETE NO ACTION,
+  CONSTRAINT uq_ver_uri UNIQUE (graph_version, graph_uri)
 )
 WITH (
   OIDS=FALSE
