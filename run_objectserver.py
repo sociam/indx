@@ -22,7 +22,7 @@ from libs.webserver import ObjectWebServer
 import psycopg2
 
 def run():
-    conn = psycopg2.connect(database="webbox", user="webbox", password='foobar')
+    conn = psycopg2.connect(database="webbox_daniel", user="webbox", password='foobar')
     config = { "port": 8215,  "connection": conn }
 
     # show debug messages in log file
@@ -34,4 +34,6 @@ def run():
     server.run()
 
 if __name__ == '__main__':
-    run()
+
+    import cProfile
+    cProfile.run('run()')

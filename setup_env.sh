@@ -20,19 +20,9 @@
 
 
 # set up the virtualenv
-virtualenv -p /usr/local/bin/python env
+virtualenv env
 source env/bin/activate
 
-# install cython separately (doesn't work in requirements.txt for me)
-pip install --upgrade cython
-
 # install the required modules
-#pip install --ignore-installed --upgrade -r requirements.txt
-pip install --ignore-installed -r requirements.txt
-
-# for the py4s setup.py, it requires 4store sources here
-# assume you have 4store in webbox/../
-mkdir env/build
-ln -s ../../../4store env/build/4store
-pip install --upgrade git+git://github.com/danielsmith-eu/py4s.git#egg=py4s
+pip install --ignore-installed --upgrade -r requirements.txt
 
