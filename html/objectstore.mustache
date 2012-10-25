@@ -36,41 +36,13 @@
 	</header>
 	<div id="main" role="main">
 
-      <div class="row">
-       <div class="twelve columns">
-        <p>Part of the <a href="http://webbox.ecs.soton.ac.uk">WebBox project</a> from the University of Southampton, and MIT.</p>
-       </div>
-       <div class="six columns">
-        <h3>Browser</h3>
-        <p>Explore what is in your WebBox: <a href="browser">Browser</a></p>
-       </div>
-       <div class="six columns">
-        <h3>Uploader</h3>
-        <p>Add individual files to your WebBox: <a href="uploader">Uploader</a></p>
-       </div>
-       <!--
-        <h2>WebSockets</h2>
-        <p>WebBox updates in real-time using WebSockets on port 8214.</p>
-        <p><a href="websockets.html">Watch WebSockets update from your WebBox now.</a>.<p/>
-       -->
-      </div>
-
         <div class="row">
+            <div class="twelve columns">
+                Backbone Examples.
 
-            <div class="eight columns">
-                <div class="row">
-                    <div class="twelve columns">
-                        <h3>Personalise Your WebBox</h3>
-                        <div class="panel">
-                            {{{ personalise_panel }}}
-                        </div>
-                    </div>
-                </div>
             </div>
-            <div class="four columns">
-                <h4>Useful Information</h4>
-                <span class="bold">WebBox URL:</span> {{ server_url }}
-            </div>
+        </div>
+
 	</div>
 	<footer>
 
@@ -130,20 +102,27 @@
 
 <script>
 $(document).ready(function(){
-    // 
-    //var store = ObjectStore.Store([], {server_url: window.webbox_vars.server_url});
+
     var store = new ObjectStore.Store();
     store.server_url = "http://localhost:8215/";
+
     var graph = store.get("http://example.com/graph"); // a graph uri from tests/objectstore/put_multi.sh 
+    
+    // called when the graph updates from server
     graph.on("change", function(){
         var graph_collection = graph.get("objects");
         console.debug("Graph collection updated:", graph_collection);
         $.each(graph_collection.models, function(){
             var obj = this;
             console.debug("Object in graph:",obj.toJSON());
-        });
 
+            // override all rdfs:label entries with a new one
+            obj.set("http://www.w3.org/2000/01/rdf-schema#label", ["My object"]);  
+        });
+        graph.save();
     });
+
+    // fetch the latest version of the graph
     graph.fetch();
 });
 </script>
