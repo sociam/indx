@@ -106,9 +106,24 @@ $(document).ready(function(){
     var store = new ObjectStore.Store();
     store.server_url = "http://localhost:8215/";
 
+    // get a list of graphs in the store, and fetch them individually
+    store.on("reset", function(){
+        $.each(store.models, function(){
+            var graph = this;
+
+            graph.on("change", function(){
+                var graph_collection = graph.get("objects");
+                console.debug("graph: ", graph, " objects:", graph_collection.models);
+            });
+
+            graph.fetch();
+        });
+    });
+    store.fetch();
+
+
+    // get a single graph from the store by name
     var graph = store.get("http://example.com/graph"); // a graph uri from tests/objectstore/put_multi.sh 
-    
-    // called when the graph updates from server
     graph.on("change", function(){
         var graph_collection = graph.get("objects");
         console.debug("Graph collection updated:", graph_collection);
@@ -119,6 +134,7 @@ $(document).ready(function(){
             // override all rdfs:label entries with a new one
             obj.set("http://www.w3.org/2000/01/rdf-schema#label", ["My object"]);  
         });
+        // save the graph back to the server
         graph.save();
     });
 

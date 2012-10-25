@@ -141,6 +141,22 @@ class ObjectStore:
 
         return obj_out
 
+    def get_graphs(self):
+        """ Get a list of the graph URIs.
+        """
+
+        cur = self.cur
+
+        cur.execute("SELECT DISTINCT graph_uri FROM wb_v_latest_triples")
+        rows = cur.fetchall()
+
+        objs_out = []
+        for row in rows:
+            graph_uri = row[0]
+            objs_out.append(graph_uri)
+
+        return objs_out
+
 
     def get_latest_obj(self, graph_uri, object_uri):
         """ Get the latest version of an object in agraph, as expanded JSON-LD notation.

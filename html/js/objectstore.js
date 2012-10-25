@@ -52,6 +52,28 @@
         get: function(uri){
             // get a graph of uri
             return new Graph({"_store": this, "@id": uri});
+        },
+        sync: function(method, model, options){
+            switch(method){
+                case "create":
+                    break;
+                case "read":
+                    var store = model;
+                    ObjectStore.list_graphs(store, function(objects){
+                        store.reset(objects);
+                    });
+                    break;
+                case "update":
+                    /*
+                    console.debug("Update graph called on graph:",model);
+                    ObjectStore.update_graph(model);
+                    */
+                    break;
+                case "delete":
+                    break;
+                default:
+                    break;
+            }
         }
     });
 
@@ -131,6 +153,28 @@
 
 
     // Functions to communicate with the ObjectStore server
+    ObjectStore.list_graphs = function(store, callback){
+        // return a list of named graphs (each of type ObjectStore.Graph) to populate a GraphCollection
+        $.ajax({
+            url: store.server_url,
+            data: {},
+            dataType: "json",
+            type: "GET",
+            success: function(data){
+
+                var graph_uris = data;
+                var graphs = [];
+                $.each(graph_uris, function(){
+                    var graph_uri = this;
+                    var graph = new ObjectStore.Graph({"@id": graph_uri, "_store": store});
+                    graphs.push(graph);
+                });
+
+                callback(graphs);
+            }
+        });
+    };
+
     ObjectStore.update_graph = function(graph){
         var graph_objs = [ // object to PUT to the server
         ]

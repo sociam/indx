@@ -178,15 +178,21 @@ class ObjectWebServer:
         return headers
 
     def do_GET(self, environ, req_path, req_qs):
-        if "graph" in req_qs:
-            graph_uri = req_qs["graph"][0]
-        else:
-            return {"data": "Specify a GRAPH URI with ?graph=http://encoded.uri/", "status": 404, "reason": "Not Found"}
-
         objs = objectstore.ObjectStore(self.config['connection'])
-        obj = objs.get_latest(graph_uri)
-        jsondata = json.dumps(obj, indent=2)        
-        return {"data": jsondata, "status": 200, "reason": "OK"}
+
+        if "graph" in req_qs:
+            # graph URI specified, so return the objects in that graph
+            graph_uri = req_qs["graph"][0]
+
+            obj = objs.get_latest(graph_uri)
+            jsondata = json.dumps(obj, indent=2)        
+            return {"data": jsondata, "status": 200, "reason": "OK"}
+        else:
+            # no graph URI specified, so return the list of graph URIs
+            uris = objs.get_graphs()
+            jsondata = json.dumps(uris, indent=2)
+
+            return {"data": jsondata, "status": 200, "reason": "OK"}
 
 
     def do_PUT(self, rfile, environ, req_path, req_qs):
