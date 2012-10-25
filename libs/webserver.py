@@ -132,7 +132,8 @@ class ObjectWebServer:
             elif req_type == "GET":
                 response = self.do_GET(environ, req_path, req_qs)
             elif req_type == 'OPTIONS':
-                response =  {"data": "WebBox Server", "status": 200, "reason": "OK", "headers":[("Allow", "GET,PUT,OPTIONS")]}
+                #response =  {"data": "", "status": 200, "reason": "OK", "headers":[("Allow", "GET, PUT, OPTIONS")]}
+                response =  {"data": "", "status": 200, "reason": "OK", "headers":[("Allow", "GET"),("Allow", "PUT"),("Allow", "OPTIONS")]}
             else:
                 # When you sent 405 Method Not Allowed, you must specify which methods are allowed
                 response = {"status": 405, "reason": "Method Not Allowed", "data": "", "headers": [ 
@@ -172,7 +173,7 @@ class ObjectWebServer:
         # add CORS headers (blanket allow, for now)
         headers.append( ("Access-Control-Allow-Origin", "*") )
         headers.append( ("Access-Control-Allow-Methods", "GET, PUT, OPTIONS") )
-        headers.append( ("Access-Control-Allow-Headers", "Content-Type") )
+        headers.append( ("Access-Control-Allow-Headers", "Content-Type, origin, accept, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control") )
         headers.append( ("Content-length", response['size'] if "size" in response else len(response['data'] )))
         return headers
 
