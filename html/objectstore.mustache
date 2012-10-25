@@ -134,12 +134,13 @@ $(document).ready(function(){
     //var store = ObjectStore.Store([], {server_url: window.webbox_vars.server_url});
     var store = new ObjectStore.Store();
     store.server_url = "http://localhost:8215/";
-    var graph = store.get("http://localhost:8211/webbox/object-0"); // a graph uri from benchmark.py
-    graph.on("reset", function(){
+    var graph = store.get("http://example.com/graph"); // a graph uri from tests/objectstore/put_multi.sh 
+    graph.on("change", function(){
         var graph_collection = graph.get("objects");
+        console.debug("Graph collection updated:", graph_collection);
         $.each(graph_collection.models, function(){
             var obj = this;
-            console.debug(obj.toJSON());
+            console.debug("Object in graph:",obj.toJSON());
         });
 
     });

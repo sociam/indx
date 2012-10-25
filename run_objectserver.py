@@ -22,7 +22,7 @@ from libs.webserver import ObjectWebServer
 import psycopg2
 
 def run():
-    conn = psycopg2.connect(database="webbox_daniel", user="webbox", password='foobar')
+    conn = psycopg2.connect(database="webbox_das05r", user="webbox", password='foobar')
     config = { "port": 8215,  "connection": conn }
 
     # show debug messages in log file

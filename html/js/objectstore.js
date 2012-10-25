@@ -34,22 +34,12 @@
         ObjectStore = root.ObjectStore = {};
     }
 
-    // Functions to communicate with the ObjectStore server
-    ObjectStore.fetch_graph = function(graph, store, uri, callback){
-        // return a list of models (each of type ObjectStore.Object) to populate a GraphCollection
-        $.ajax({
-            url: store.server_url,
-            data: {"graph": uri},
-            success: function(data){
-                callback(new ObjectStore.GraphCollection(data));
-            }
-        });
-    }
 
     // ObjectStore.Store represents the store, and returns ObjectStore.Graphs
     var Store = ObjectStore.Store = Backbone.Collection.extend({
         server_url: "http://localhost:8211/webbox/objectstore",
         model: ObjectStore.Graph,
+        objectstore_type: "store",
         initialize: function(){
             console.debug("Init store.");
 
@@ -66,6 +56,7 @@
     // ObjectStore.Graph is a named graph, which contains a ObjectStore.GraphCollection of ObjectStore.Objs
     var Graph = ObjectStore.Graph = Backbone.Model.extend({
         idAttribute: "@id", // the URI attribute is '@id' in JSON-LD
+        objectstore_type: "graph",
         initialize: function(attributes){
         },
         fetch: function(){
@@ -75,41 +66,49 @@
                 graph.set("objects", objects);
             });
         }
-/*
-        get: function(attribute){
-
-        },
-        set: function(attributes, options){
-
-        }
-*/
-    });
-
-    // ObjectStore.GraphCollection is the list of ObjectStore.Objs in a ObjectStore.Graph
-    var GraphCollection = ObjectStore.GraphCollection = Backbone.Collection.extend({
-        model: ObjectStore.Obj,
-        initialize: function(models, options){
-
-        },
-        get: function(uri){
-            // get an Obj by uri
-            
-        }
     });
 
 
     // ObjectStore.Obj are individual objects that are part of a ObjectStore.GraphCollection
     var Obj = ObjectStore.Obj = Backbone.Model.extend({
         idAttribute: "@id", // the URI attribute is '@id' in JSON-LD
-        initialize: function(attributes){
-
-        },
-        get: function(attribute){
-
-        },
-        set: function(attributes, options){
-
-        }
+        objectstore_type: "obj",
     });
+
+    // ObjectStore.GraphCollection is the list of ObjectStore.Objs in a ObjectStore.Graph
+    var GraphCollection = ObjectStore.GraphCollection = Backbone.Collection.extend({
+        model: ObjectStore.Obj,
+        objectstore_type: "graphcollection",
+    });
+
+
+    // Functions to communicate with the ObjectStore server
+    ObjectStore.fetch_graph = function(graph, store, uri, callback){
+        // return a list of models (each of type ObjectStore.Object) to populate a GraphCollection
+        $.ajax({
+            url: store.server_url,
+            data: {"graph": uri},
+            dataType: "json",
+            success: function(data){
+
+                var objs = [];
+                $.each(data, function(uri, obj){
+                    if (uri[0] == "@"){
+                        // ignore @graph etc.
+                        return;
+                    }
+                    if (!("@id" in obj)){
+                        obj["@id"] = uri;
+                    }
+                    obj["_graph"] = graph;
+                    objs.push(obj);
+                });
+
+                var graph_collection = new ObjectStore.GraphCollection(objs);
+                graph_collection._store = store;
+                callback(graph_collection);
+            }
+        });
+    }
 
 }).call(this);

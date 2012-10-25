@@ -813,8 +813,6 @@
         var attrs = model;
         options.collection = this;
 
-        console.debug("model",model,"options",options,"this",this, typeof this);
-
         model = new this.model(attrs, options);
         if (!model._validate(model.attributes, options)) model = false;
       } else if (!model.collection) {
