@@ -206,9 +206,9 @@ class ObjectWebServer:
                 return {"data": "Specify a graph URI with &graph=", "status": 404, "reason": "Not Found"}
             graph_uri = req_qs['graph'][0]
 
-            if "previous_version" not in req_qs:
-                return {"data": "Specify a previous version with &previous_version=", "status": 404, "reason": "Not Found"}
-            prev_version = int(req_qs['previous_version'][0])
+            if "version" not in req_qs:
+                return {"data": "Specify a previous version with &version=", "status": 404, "reason": "Not Found"}
+            prev_version = int(req_qs['version'][0])
 
             from objectstore import ObjectStore
 

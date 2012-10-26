@@ -194,7 +194,7 @@
         });
 
         var store = graph.attributes._store;
-        var url = store.server_url+"?graph="+escape(graph.id)+"&previous_version="+escape(graph._version);
+        var url = store.server_url+"?graph="+escape(graph.id)+"&version="+escape(graph._version);
 
         console.debug("Sending PUT.");
 
