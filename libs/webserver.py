@@ -156,11 +156,12 @@ class ObjectWebServer:
             else:
                 logging.debug("Returning an iter")
                 return response['data']
-        except objectstore.IncorrectPreviousVersionException as ipve:
-            logging.debug("Incorrect previous version")
-            start_response("409 Obsolete", [])
-            return ["Document obsolete. Please update before putting."]
+#        except objectstore.IncorrectPreviousVersionException as ipve:
+#            logging.debug("Incorrect previous version")
+#            start_response("409 Obsolete", [])
+#            return ["Document obsolete. Please update before putting."]
         except Exception as e:
+
             logging.debug("Error in WebBox.response(), returning 500: %s, exception is: %s" % (str(e), traceback.format_exc()))
             start_response("500 Internal Server Error", [])
             return [""]
