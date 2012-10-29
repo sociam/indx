@@ -59,7 +59,7 @@
                     break;
                 case "read":
                     var store = model;
-                    ObjectStore.list_graphs(store, function(objects){
+                    return ObjectStore.list_graphs(store, function(objects){
                         store.reset(objects);
                     });
                     break;
@@ -98,13 +98,13 @@
                     break;
                 case "read":
                     var graph = model;
-                    ObjectStore.fetch_graph(model, model.get("_store"), model.get("@id"), function(objects){
+                    return ObjectStore.fetch_graph(model, model.get("_store"), model.get("@id"), function(objects){
                         graph.set("objects", objects);
                     });
                     break;
                 case "update":
                     console.debug("Update graph called on graph:",model);
-                    ObjectStore.update_graph(model);
+                    return ObjectStore.update_graph(model);
                     break;
                 case "delete":
                     break;
@@ -135,7 +135,7 @@
                 case "update":
                     // delegate to the graph
                     console.debug("Update to Obj: ",model);
-                    model.attributes._graph.sync("update", model.attributes._graph, options);
+                    return model.attributes._graph.sync("update", model.attributes._graph, options);
                     break;
                 case "delete":
                     break;
@@ -155,7 +155,7 @@
     // Functions to communicate with the ObjectStore server
     ObjectStore.list_graphs = function(store, callback){
         // return a list of named graphs (each of type ObjectStore.Graph) to populate a GraphCollection
-        $.ajax({
+        return $.ajax({
             url: store.server_url,
             data: {},
             dataType: "json",
@@ -198,7 +198,7 @@
 
         console.debug("Sending PUT.");
 
-        $.ajax({
+        return $.ajax({
             url: url,
             processData: false,
             contentType: "application/json",
@@ -215,7 +215,7 @@
 
     ObjectStore.fetch_graph = function(graph, store, uri, callback){
         // return a list of models (each of type ObjectStore.Object) to populate a GraphCollection
-        $.ajax({
+        return $.ajax({
             url: store.server_url,
             data: {"graph": uri},
             dataType: "json",
