@@ -88,7 +88,6 @@ class ObjectStore:
             conn is a postgresql psycopg2 database connection
         """
         self.conn = conn
-        self.cur = conn.cursor()
 
         # TODO FIXME determine if autocommit has to be off for PL/pgsql support
         self.conn.autocommit = True
@@ -145,7 +144,7 @@ class ObjectStore:
         """ Get a list of the graph URIs.
         """
 
-        cur = self.cur
+        cur = self.conn.cursor()
 
         cur.execute("SELECT DISTINCT graph_uri FROM wb_v_latest_triples")
         rows = cur.fetchall()
@@ -163,7 +162,7 @@ class ObjectStore:
             graph_uri of the named graph
             object_uri of the object
         """
-        cur = self.cur
+        cur = self.conn.cursor()
 
         cur.execute("SELECT graph_uri, graph_version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples WHERE graph_uri = %s AND subject = %s", [graph_uri, object_uri]) # order is implicit, defined by the view, so no need to override it here
         rows = cur.fetchall()
@@ -179,7 +178,7 @@ class ObjectStore:
             uri of the named graph
         """
         
-        cur = self.cur
+        cur = self.conn.cursor()
 
         cur.execute("SELECT latest_version FROM wb_v_latest_graphvers WHERE graph_uri = %s", [graph_uri])
         rows = cur.fetchone()
@@ -207,7 +206,7 @@ class ObjectStore:
 
         # TODO FIXME XXX lock the table(s) as appropriate inside a transaction (PL/pgspl?) here
 
-        cur = self.cur
+        cur = self.conn.cursor()
 
         cur.execute("SELECT latest_version FROM wb_v_latest_graphvers WHERE graph_uri = %s", [graph_uri])
         row = cur.fetchone()
@@ -231,7 +230,7 @@ class ObjectStore:
         """
 
         # TODO FIXME XXX lock the table(s) as appropriate inside a transaction (PL/pgspl?) here
-        cur = self.cur
+        cur = self.conn.cursor()
 
         # TODO add this
         id_user = 1
