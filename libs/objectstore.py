@@ -182,12 +182,17 @@ class ObjectStore:
 
         cur.execute("SELECT latest_version FROM wb_v_latest_graphvers WHERE graph_uri = %s", [graph_uri])
         rows = cur.fetchone()
-        version = rows[0]
+        if rows is None:
+            version = 0
+            obj_out = {}
+        else:
+            version = rows[0]
 
-        cur.execute("SELECT graph_uri, graph_version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples WHERE graph_uri = %s", [graph_uri]) # order is implicit, defined by the view, so no need to override it here
-        rows = cur.fetchall()
+            cur.execute("SELECT graph_uri, graph_version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples WHERE graph_uri = %s", [graph_uri]) # order is implicit, defined by the view, so no need to override it here
+            rows = cur.fetchall()
 
-        obj_out = self.rows_to_json(rows)
+            obj_out = self.rows_to_json(rows)
+
         obj_out["@graph"] = graph_uri
         obj_out["@version"] = version
     
