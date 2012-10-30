@@ -152,10 +152,10 @@ class WebBox:
 
         try:
             # create postgres connection
-            conn = psycopg2.connect(database = self.config['db']['name'],
-                                    user = self.config['db']['user'],
-                                    password = self.config['db']['password'])
-            self.object_store = ObjectStore(conn)
+            self.objectstore_db_conn = psycopg2.connect(database = self.config['db']['name'],
+                                         user = self.config['db']['user'],
+                                         password = self.config['db']['password'])
+            self.object_store = ObjectStore(self.objectstore_db_conn)
             self.query_store = RDFObjectStore(self.object_store) # handles RDF to object conversion
         except Exception as e:
             self.object_store = None
@@ -257,6 +257,8 @@ class WebBox:
             # add CORS headers (blanket allow, for now)
             headers.append( ("Access-Control-Allow-Origin", "*") )
             headers.append( ("Access-Control-Allow-Methods", "POST, GET, HEAD, OPTIONS") )
+            headers.append( ("Access-Control-Allow-Headers", "Content-Type, origin, accept, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control") )
+
 
             response = response.encode("utf8")
             headers.append( ("Content-length", len(response)) )
@@ -340,6 +342,7 @@ class WebBox:
             # add CORS headers (blanket allow, for now)
             headers.append( ("Access-Control-Allow-Origin", "*") )
             headers.append( ("Access-Control-Allow-Methods", "POST, GET, HEAD, OPTIONS") )
+            headers.append( ("Access-Control-Allow-Headers", "Content-Type, origin, accept, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control") )
 
             response = response.encode("utf8")
             headers.append( ("Content-length", len(response)) )
@@ -442,6 +445,7 @@ class WebBox:
             # add CORS headers (blanket allow, for now)
             headers.append( ("Access-Control-Allow-Origin", "*") )
             headers.append( ("Access-Control-Allow-Methods", "POST, GET, PUT, HEAD, OPTIONS") )
+            headers.append( ("Access-Control-Allow-Headers", "Content-Type, origin, accept, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control") )
 
             response = response.encode("utf8")
             headers.append( ("Content-length", len(response)) )
@@ -541,6 +545,7 @@ class WebBox:
             # add CORS headers (blanket allow, for now)
             headers.append( ("Access-Control-Allow-Origin", "*") )
             headers.append( ("Access-Control-Allow-Methods", "POST, GET, PUT, HEAD, OPTIONS") )
+            headers.append( ("Access-Control-Allow-Headers", "Content-Type, origin, accept, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control") )
 
             # put repository version weak ETag header
             # journal to load the original repository version
@@ -1134,6 +1139,27 @@ class WebBox:
                 since = req_qs['since'][0]
             return self.handle_update(since)
 
+
+        accept = environ['HTTP_ACCEPT'].lower()
+
+        # ObjectStore GET
+        if "json" in accept: #FIXME do this better
+            if "graph" in req_qs:
+                # graph URI specified, so return the objects in that graph
+                graph_uri = req_qs["graph"][0]
+
+                obj = self.object_store.get_latest(graph_uri)
+                jsondata = json.dumps(obj, indent=2)        
+                return {"data": jsondata, "status": 200, "reason": "OK"}
+            else:
+                # no graph URI specified, so return the list of graph URIs
+                uris = self.object_store.get_graphs()
+                jsondata = json.dumps(uris, indent=2)
+
+                return {"data": jsondata, "status": 200, "reason": "OK"}
+
+
+
         if req_qs.has_key("query"):
             # SPARQL query because ?query= is present
             query = req_qs['query'][0]
@@ -1470,33 +1496,9 @@ class WebBox:
 
     def do_PUT(self, rfile, environ, req_path, req_qs):
         """ Handle a PUT. """
+
         # PUT of RDF is to REPLACE the graph
         content_type = "application/rdf+xml"
-
-        if req_path == "" or req_path == "/":
-            # PUT to / isn't valid, they can only POST to these (it's the spool incoming)
-
-            # When you send a 405 Method Not Allowed you have to send Allow headers saying which methods ARE allowed.
-            headers = [ 
-              #invalid for here#("Allow", "PUT"),
-              ("Allow", "GET"),
-              ("Allow", "POST"),
-              ("Allow", "HEAD"),
-              ("Allow", "OPTIONS"),
-
-              # WebDAV methods
-              ("Allow", "PROPFIND"),
-              #not impl#("Allow", "PROPPATCH"),
-              #not impl#("Allow", "TRACE"),
-              #not impl#("Allow", "ORDERPATCH"),
-              #invalid for here#("Allow", "MKCOL"),
-              #invalid for here#("Allow", "DELETE"),
-              #invalid for here#("Allow", "COPY"),
-              #invalid for here#("Allow", "MOVE"),
-              #invalid for here#("Allow", "LOCK"),
-              #invalid for here#("Allow", "UNLOCK"),
-            ]
-            return {"data": "", "status": 405, "reason": "Method Not Allowed", "headers": headers}
 
 
         put_uri = self.server_url + req_path
@@ -1533,7 +1535,68 @@ class WebBox:
 
         file = ""
         # parse RDF, but not if it's hidden (hidden is usually a small file from Finder's WebDAV)
-        if content_type in self.rdf_formats and not hidden_file:
+
+        json_content_types = [
+            "application/json",
+            "text/json",
+        ]
+
+        is_objectstore = content_type and content_type in json_content_types
+
+
+        if (not is_objectstore) and (req_path == "" or req_path == "/"):
+            # PUT to / isn't valid (unless objectstore), they can only POST to these (it's the spool incoming)
+
+            # When you send a 405 Method Not Allowed you have to send Allow headers saying which methods ARE allowed.
+            headers = [ 
+              #invalid for here#("Allow", "PUT"),
+              ("Allow", "GET"),
+              ("Allow", "POST"),
+              ("Allow", "HEAD"),
+              ("Allow", "OPTIONS"),
+
+              # WebDAV methods
+              ("Allow", "PROPFIND"),
+              #not impl#("Allow", "PROPPATCH"),
+              #not impl#("Allow", "TRACE"),
+              #not impl#("Allow", "ORDERPATCH"),
+              #invalid for here#("Allow", "MKCOL"),
+              #invalid for here#("Allow", "DELETE"),
+              #invalid for here#("Allow", "COPY"),
+              #invalid for here#("Allow", "MOVE"),
+              #invalid for here#("Allow", "LOCK"),
+              #invalid for here#("Allow", "UNLOCK"),
+            ]
+            return {"data": "", "status": 405, "reason": "Method Not Allowed", "headers": headers}
+
+
+        if is_objectstore:
+            # objectstore PUT
+
+            jsondata = rfile.read()
+            objs = json.loads(jsondata)
+
+            if type(objs) == type([]):
+                # multi object put
+            
+                if "graph" not in req_qs:
+                    return {"data": "Specify a graph URI with &graph=", "status": 404, "reason": "Not Found"}
+                graph_uri = req_qs['graph'][0]
+
+                if "version" not in req_qs:
+                    return {"data": "Specify a previous version with &version=", "status": 404, "reason": "Not Found"}
+                prev_version = int(req_qs['version'][0])
+
+                new_version_info = self.object_store.add(graph_uri, objs, prev_version)
+
+                return {"data": json.dumps(new_version_info), "status": 201, "reason": "Created", "type": "application/json"}
+            else:
+                # single object put
+                return {"data": "Single object PUT not supported, PUT an array to create/replace a named graph instead.", "status": 404, "reason": "Not Found"}
+
+
+
+        elif content_type in self.rdf_formats and not hidden_file:
             # this is an RDF upload
 
             if size > 0:
