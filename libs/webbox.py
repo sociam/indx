@@ -41,7 +41,7 @@ from sparqlparse import SparqlParse
 from exception import ResponseOverride
 from wsupdateserver import WSUpdateServer
 
-from objectstore import ObjectStore, RDFObjectStore
+from objectstore import ObjectStore, RDFObjectStore, IncorrectPreviousVersionException
 import psycopg2
 
 from urlparse import urlparse, parse_qs
@@ -1585,7 +1585,12 @@ class WebBox:
                     return {"data": "Specify a previous version with &version=", "status": 404, "reason": "Not Found"}
                 prev_version = int(req_qs['version'][0])
 
-                new_version_info = self.object_store.add(graph_uri, objs, prev_version)
+                try:
+                    new_version_info = self.object_store.add(graph_uri, objs, prev_version)
+                except IncorrectPreviousVersionException as ipve:
+                    logging.debug("Incorrect previous version")
+                    actual_version = ipve.version
+                    return {"data": "{\"error\": \"Document obsolete. Please update before putting\", \"@version\": %s}\n" % actual_version, "status": 409, "reason": "Obsolete"}
 
                 return {"data": json.dumps(new_version_info), "status": 201, "reason": "Created", "type": "application/json"}
             else:

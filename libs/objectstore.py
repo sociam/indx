@@ -222,7 +222,9 @@ class ObjectStore:
             actual_prev_version = row[0]
 
         if actual_prev_version != specified_prev_version:
-            raise IncorrectPreviousVersionException("Actual previous version is {0}, specified previous version is: {1}".format(actual_prev_version, specified_prev_version))
+            ipve = IncorrectPreviousVersionException("Actual previous version is {0}, specified previous version is: {1}".format(actual_prev_version, specified_prev_version))
+            ipve.version = actual_prev_version
+            raise ipve
 
         self.add_graph_version(graph_uri, objs, actual_prev_version)
 
