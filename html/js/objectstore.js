@@ -78,7 +78,12 @@
         },
         create: function(object_attrs){
             // add a new object to this graph (ObjectStore.GraphCollection will create an Obj from this)
-            if (typeof(object_attrs) == 'string') {  object_attrs = { "@id":object_attrs }; }
+
+            // pad string into an object with a URI
+            if (typeof(object_attrs) == 'string'){
+                object_attrs = {"@id": object_attrs};
+            }
+
             var clone = _.clone(object_attrs);
             clone['_graph'] = this;
 
