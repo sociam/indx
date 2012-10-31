@@ -91,7 +91,7 @@ class WebServer:
 
         # setup triggers on quit
         def onShutDown():
-            logging.debug("Got reactor quit trigger, so closing down fourstore.")
+            logging.debug("Got reactor quit trigger, so closing down webbox.")
             for webbox in self.webboxes:
                 webbox.stop()
 

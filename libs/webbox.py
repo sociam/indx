@@ -38,8 +38,6 @@ from mimeparse import best_match
 from httputils import resolve_uri, http_get, http_put, http_post
 from sparqlresults import SparqlResults
 from sparqlparse import SparqlParse
-from fourstoremgmt import FourStoreMgmt
-from fourstore import FourStore
 from exception import ResponseOverride
 from wsupdateserver import WSUpdateServer
 
@@ -60,7 +58,7 @@ class WebBox:
     files_graph = webbox_ns + "UploadedFiles" # the graph with metadata about files (non-RDF)
     subscribe_predicate = webbox_ns + "subscribe_to" # uri for subscribing to a resource
     unsubscribe_predicate = webbox_ns + "unsubscribe_from" # uri for unsubscribing from a resource
-    received_graph = webbox_ns + "ReceivedGraph" # default URI for 4store inbox
+    received_graph = webbox_ns + "ReceivedGraph" # default URI for store inbox
 
     def __init__(self, config):
         self.config = config # configuration from server
@@ -984,7 +982,7 @@ class WebBox:
             if post_uri == self.server_url + "/":
                 post_uri = post_uri[:-1]
 
-            # send to 4store
+            # send to store
             response = self.query_store.update_query(query)
             if response['status'] > 299:
                 # Return the store error if there is one.
@@ -995,7 +993,7 @@ class WebBox:
             return {"data": "", "status": 200, "reason": "OK"}
 
         elif content_type in self.rdf_formats and not hidden_file:
-            logging.debug("content type of PUT is RDF so we also send to 4store.")
+            logging.debug("content type of PUT is RDF so we also send to store.")
 
             rdf_format = self.rdf_formats[content_type]
 
@@ -1039,7 +1037,7 @@ class WebBox:
             self.updated_resource(post_uri, "rdf") # notify subscribers
             self.add_to_journal(graph) # update journal
 
-            # TODO remake the file on disk (assuming graph is relative to our file) according to the new 4store status
+            # TODO remake the file on disk (assuming graph is relative to our file) according to the new store status
             if not req_qs.has_key('graph'):
                 # only make a file if it is a local URI
                 file_path = self.get_file_path(req_path)
@@ -1372,9 +1370,9 @@ class WebBox:
 
         logging.debug("resolved it.")
 
-        # put into 4store 
+        # put into store 
         # put resolved URI into the store
-        # put into its own graph URI in 4store
+        # put into its own graph URI in store
         response = self.SPARQLPut(person_uri, rdf, "application/rdf+xml")
         logging.debug("Put it in the store: "+str(response))
 
@@ -1665,7 +1663,7 @@ class WebBox:
             
 
     def SPARQLPut(self, graph, file, content_type):
-        """ Handle a SPARQL PUT request. 'graph' is for 4store, 'filename' is for RWW. """
+        """ Handle a SPARQL PUT request. 'graph' is for store, 'filename' is for RWW. """
 
         # send file to query store
         logging.debug("replacing graph %s with rdf" % graph)
@@ -1675,9 +1673,9 @@ class WebBox:
 
 
     def SPARQLPost(self, graph, file, content_type):
-        """ Handle a SPARQL POST (append) request. 'graph' is for 4store, 'filename' is for RWW. """
+        """ Handle a SPARQL POST (append) request. 'graph' is for store, 'filename' is for RWW. """
 
-        # send file to query store (4store)
+        # send file to query store (store)
         logging.debug("POST to query store.")
         response1 = self.query_store.post_rdf(file, content_type, graph)
 
