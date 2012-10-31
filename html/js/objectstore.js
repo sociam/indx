@@ -78,6 +78,7 @@
         },
         create: function(object_attrs){
             // add a new object to this graph (ObjectStore.GraphCollection will create an Obj from this)
+			if (typeof(object_attrs) == 'string') {  object_attrs = { "@id":object_attrs }; }
             var clone = _.clone(object_attrs);
             clone['_graph'] = this;
 
@@ -116,20 +117,24 @@
             }
         },
         sync: function(method, model, options){
+			var d = new $.Deferred();
             switch(method){
                 case "create":
+				    console.log("CREATE ", model.id);
                     break;
                 case "read":
+				    d.resolve();
                     break;
                 case "update":
                     // delegate to the graph
-                    console.debug("Update to Obj: ",model);
+                    console.debug("SAVE -- Update to Obj: ",model.id);
                     return model.attributes._graph.sync("update", model.attributes._graph, options);
                 case "delete":
                     break;
                 default:
                     break;
             }
+			return d.promise();
         },
     });
 
