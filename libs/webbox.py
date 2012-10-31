@@ -594,12 +594,12 @@ class WebBox(Resource):
             response = e.get_response()
             logging.debug("Response override raised, sending: %s" % str(response))
             request.setResponseCode(response['status'], message=response['reason'])
-            return [response['data']]
+            return response['data']
 
         except Exception as e:
             logging.debug("Error in WebBox.response(), returning 500: %s, exception is: %s" % (str(e), traceback.format_exc()))
             request.setResponseCode(500, message="Internal Server Error")
-            return [""]
+            return ""
 
     def get_prop_xml(self, url, path, directory=False, displayname=None):
         """ Get the property XML (for WebDAV) for this file. """
