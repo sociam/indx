@@ -34,6 +34,8 @@
         ObjectStore = root.ObjectStore = {};
     }
 
+	var isInteger = function(n) { return n % 1 === 0; };
+
 
     // ObjectStore.Store represents the store, and returns ObjectStore.Graphs
     var Store = ObjectStore.Store = Backbone.Collection.extend({
@@ -198,13 +200,25 @@
                 }
                 $.each(vals, function(){
                     var val = this;
-                    if (typeof val === "string" || val instanceof String){
-                        obj_vals.push({"@value": val});
-                    } else if (val instanceof ObjectStore.Obj) {
+					if (val instanceof ObjectStore.Obj) {
                         obj_vals.push({"@id": val.id });
-                    } else {
-                        obj_vals.push(val); // val is a fully expanded string, e.g. {"@value": "foo", "@language": "en" ... }
-                    }
+                    } else if (typeof(val) == "object" && ("@value" in val || "@id" in val)) {
+						// not a ObjectStore.Obj, but a plan JS Obj
+                        obj_vals.push(val); // fully expanded string, e.g. {"@value": "foo", "@language": "en" ... }
+                    } else if (typeof val === "string" || val instanceof String ){
+                        obj_vals.push({"@value": val});
+                    } else if (_.isDate(val)) {
+						obj_vals.push({"@value": val.toISOString(), "@type":"http://www.w3.org/2001/XMLSchema#dateTime"});
+					} else if (_.isNumber(val) && isInteger(val)) {
+						obj_vals.push({"@value": val.toString(), "@type":"http://www.w3.org/2001/XMLSchema#integer"});
+					} else if (_.isNumber(val)) {
+						obj_vals.push({"@value": val.toString(), "@type":"http://www.w3.org/2001/XMLSchema#float"});
+					} else if (_.isBoolean(val)) {
+						obj_vals.push({"@value": val.toString(), "@type":"http://www.w3.org/2001/XMLSchema#boolean"});
+					} else {
+						console.warn("Could not determine type of val ", val);
+						obj_vals.push({"@value": val.toString()});
+					}
                 });
 
                 out_obj[pred] = obj_vals;
@@ -226,6 +240,7 @@
             type: "PUT",
             success: function(data){
                 // TODO check that it worked
+				console.log("UPDATING VERSION OF GRAPH >> ", data["@version"]);
                 graph._version = data["@version"];
             }
         });
