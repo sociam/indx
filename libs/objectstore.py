@@ -245,6 +245,7 @@ class ObjectStore:
         cur.execute("SELECT * FROM wb_get_graphvers_id(%s, %s, %s) " , [version, graph_uri, id_user])
         id_graphver = cur.fetchone()
 
+        triple_order = 0 # for the whole graph
         for obj in objs:
             
             if "@id" in obj:
@@ -252,7 +253,6 @@ class ObjectStore:
             else:
                 raise Exception("@id required in all objects")
 
-            triple_order = 0
             for predicate in obj:
                 if predicate[0] == "@":
                     continue # skip over json_ld predicates
@@ -361,8 +361,18 @@ class RDFObjectStore:
     def post_rdf(self, rdf, content_type, graph):
         """ Public method to POST RDF into the store - where POST appends to a graph. """
 
-        version = 0 # FIXME XXX
+        latest = self.objectstore.get_latest(graph)
+        version = latest["@version"] # FIXME ok?
+
         objs = self.rdf_to_objs(rdf, content_type)
+
+        # include existing objs
+        for key in latest:
+            if key[0] != "@":
+                obj = latest[key]
+                obj["@id"] = key
+                objs.append(obj)
+
         self.objectstore.add(graph, objs, version)
 
         return {"data": "", "status": 200, "reason": "OK"} 

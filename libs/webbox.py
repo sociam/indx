@@ -25,6 +25,7 @@ from twisted.web import script
 from twisted.web.static import File, Registry
 from twisted.web.wsgi import WSGIResource
 from twisted.internet import reactor
+from twisted.web.resource import Resource
 from lxml import objectify
 
 from rdflib.graph import Graph
@@ -49,7 +50,7 @@ from rdflib.serializer import Serializer
 from rdflib.plugin import register
 import rdfliblocal.jsonld
 
-class WebBox:
+class WebBox(Resource):
     # to use like WebBox.to_predicate
     webbox_ns = "http://webbox.ecs.soton.ac.uk/ns#"
 
@@ -109,7 +110,9 @@ class WebBox:
         self.resource.ignoreExt('.rpy')
 
         # add the webbox handler as a subdir
-        self.resource.putChild("webbox", WSGIResource(reactor, reactor.getThreadPool(), self.response))
+        #self.resource.putChild("webbox", WSGIResource(reactor, reactor.getThreadPool(), self.response))
+        self.isLeaf = True # stops twisted from seeking children from me
+        self.resource.putChild("webbox", self);
 
         # add the .well-known handler as a subdir
         self.resource.putChild(".well-known", WSGIResource(reactor, reactor.getThreadPool(), self.response_well_known))
@@ -465,46 +468,44 @@ class WebBox:
         """ Shut down the web box. """
         pass
 
-    def response(self, environ, start_response):
-        """ WSGI response handler."""
 
-        logging.debug("Calling WebBox response(): " + str(environ))
+
+    # Twisted Resource handler
+    def render(self, request):
+
+        logging.debug("Calling WebBox render()")
         try:
-            req_type = environ['REQUEST_METHOD']
-            rfile = environ['wsgi.input']
+            req_type = request.method
+            rfile = request.content
 
-            if "REQUEST_URI" in environ:
-                url = urlparse(environ['REQUEST_URI'])
-                req_path = url.path
-                req_qs = parse_qs(url.query)
-            else:
-                req_path = environ['PATH_INFO']
-                req_qs = parse_qs(environ['QUERY_STRING'])
+            url = request.uri
+            req_path = request.path
+            req_qs = request.args
 
             if req_type == "POST":
-                response = self.do_POST(rfile, environ, req_path, req_qs)
+                response = self.do_POST(request)
             elif req_type == "PUT":
-                response = self.do_PUT(rfile, environ, req_path, req_qs)
+                response = self.do_PUT(request)
             elif req_type == "GET":
-                response = self.do_GET(environ, req_path, req_qs)
+                response = self.do_GET(request)
             elif req_type == "OPTIONS":
                 response = self.do_OPTIONS()
             elif req_type == "PROPFIND":
-                response = self.do_PROPFIND(rfile, environ, req_path, req_qs)
+                response = self.do_PROPFIND(request)
             elif req_type == "LOCK":
-                response = self.do_LOCK(rfile, environ, req_path, req_qs)
+                response = self.do_LOCK(request)
             elif req_type == "UNLOCK":
-                response = self.do_UNLOCK(rfile, environ, req_path, req_qs)
+                response = self.do_UNLOCK(request)
             elif req_type == "DELETE":
-                response = self.do_DELETE(rfile, environ, req_path, req_qs)
+                response = self.do_DELETE(request)
             elif req_type == "MKCOL":
-                response = self.do_MKCOL(rfile, environ, req_path, req_qs)
+                response = self.do_MKCOL(request)
             elif req_type == "MOVE":
-                response = self.do_MOVE(rfile, environ, req_path, req_qs)
+                response = self.do_MOVE(request)
             elif req_type == "COPY":
-                response = self.do_COPY(rfile, environ, req_path, req_qs)
+                response = self.do_COPY(request)
             elif req_type == "HEAD":
-                response = self.do_GET(environ, req_path, req_qs)
+                response = self.do_GET(request)
             else:
                 # When you sent 405 Method Not Allowed, you must specify which methods are allowed
                 response = {"status": 405, "reason": "Method Not Allowed", "data": "", headers: [ 
@@ -565,35 +566,39 @@ class WebBox:
             
             headers.append( ("Content-length", data_length) )
 
-            start_response(str(response['status']) + " " + response['reason'], headers)
+            # start sending the response
+            request.setResponseCode(response['status'], message=response['reason'])
+            for header in headers:
+                (header_name, header_value) = header
+                request.setHeader(header_name, header_value)
+
             logging.debug("Sending data of size: "+str(data_length))
            
             res_type = type(response['data'])
             logging.debug("Response type is: "+str(res_type))
 
             if req_type == "HEAD": # GET was called, so let's not return the body
-                return []
-
+                return ""
 
             if res_type is unicode:
                 response['data'] = response['data'].encode('utf8')
 
             if res_type is str or res_type is unicode:
                 logging.debug("Returning a string")
-                return [response['data']]
+                return response['data']
             else:
                 logging.debug("Returning an iter")
-                return response['data']
+                return response['data'].read()
 
         except ResponseOverride as e:
             response = e.get_response()
             logging.debug("Response override raised, sending: %s" % str(response))
-            start_response(str(response['status']) + " " + response['reason'], [])
+            request.setResponseCode(response['status'], message=response['reason'])
             return [response['data']]
 
         except Exception as e:
             logging.debug("Error in WebBox.response(), returning 500: %s, exception is: %s" % (str(e), traceback.format_exc()))
-            start_response("500 Internal Server Error", [])
+            request.setResponseCode(500, message="Internal Server Error")
             return [""]
 
     def get_prop_xml(self, url, path, directory=False, displayname=None):
@@ -649,10 +654,10 @@ class WebBox:
 </D:response>
 """ % (url, creation, length, modified, displayname, resourcetype)
 
-    def do_DELETE(self, rfile, environ, req_path, req_qs):
+    def do_DELETE(self, request):
         """ Delete a file / dir, used by WebDAV. """
 
-        file_path = self.get_file_path(req_path)
+        file_path = self.get_file_path(request.path)
         logging.debug("Deleting %s" % file_path)
 
         if not os.path.exists(file_path):
@@ -665,10 +670,10 @@ class WebBox:
 
         return {"status": 204, "reason": "No Content", "data": ""}
 
-    def do_MKCOL(self, rfile, environ, req_path, req_qs):
+    def do_MKCOL(self, request):
         """ WebDAV command to make a collection (i.e., a directory). """
 
-        file_path = self.get_file_path(req_path)
+        file_path = self.get_file_path(request.path)
         logging.debug("Making new folder %s" % file_path)
         if os.path.exists(file_path):
             raise ResponseOverride(409, "Conflict")
@@ -696,30 +701,34 @@ class WebBox:
         return new_url.path[len(fixed_path):]
 
 
-    def do_MOVE(self, rfile, environ, req_path, req_qs):
+    def do_MOVE(self, request):
         """ WebDAV command to move (rename) a file. """
 
-        file_path = self.get_file_path(req_path)
+        file_path = self.get_file_path(request.path)
         logging.debug("Moving from file %s" % file_path)
         if not os.path.exists(file_path):
             raise ResponseOverride(404, "Not Found")
 
-        dest_file_path = self.get_file_path(self.strip_server_url(environ['HTTP_DESTINATION']))
+        destination = request.getHeader("Destination")
+
+        dest_file_path = self.get_file_path(destination)
         logging.debug("Moving to file %s" % dest_file_path)
 
         os.rename(file_path, dest_file_path)
 
         return {"status": 204, "reason": "No Content", "data": ""}
 
-    def do_COPY(self, rfile, environ, req_path, req_qs):
+    def do_COPY(self, request):
         """ WebDAV command to copy a file. """
 
-        file_path = self.get_file_path(req_path)
+        file_path = self.get_file_path(request.path)
         logging.debug("Copying from file %s" % file_path)
         if not os.path.exists(file_path):
             raise ResponseOverride(404, "Not Found")
 
-        dest_file_path = self.get_file_path(self.strip_server_url(environ['HTTP_DESTINATION']))
+        destination = request.getHeader("Destination")
+
+        dest_file_path = self.get_file_path(destination)
         logging.debug("Copying to file %s" % dest_file_path)
 
         if os.path.isdir(file_path):
@@ -730,17 +739,17 @@ class WebBox:
         return {"status": 204, "reason": "No Content", "data": ""}
 
 
-    def do_PROPFIND(self, rfile, environ, req_path, req_qs):
+    def do_PROPFIND(self, request):
         logging.debug("WebDAV PROPFIND")
 
         size = 0
-        if environ.has_key("CONTENT_LENGTH"):
-            size = int(environ['CONTENT_LENGTH'])
+        if request.getHeader("Content-length") is not None:
+            size = int(request.getHeader("Content-length"))
 
         file = ""
         if size > 0:
             # read into file
-            file = rfile.read(size)
+            file = request.content.read(size)
 
         if file != "":
             logging.debug("got request: " + file)
@@ -748,25 +757,25 @@ class WebBox:
         # FIXME we ignore the specifics of the request and just give what Finder wants: getlastmodified, getcontentlength, creationdate and resourcetype
         xmlout = ""
 
-        file_path = self.get_file_path(req_path)
+        file_path = self.get_file_path(request.path)
         logging.debug("For PROPFIND file is: "+file_path)
 
         if os.path.exists(file_path):
             if os.path.isdir(file_path):
                 # do an LS
                 displayname = None
-                if req_path == "/":
+                if request.path == "/":
                     displayname = "WebBox"
-                xmlout += self.get_prop_xml(self.server_url + req_path, file_path, directory=True, displayname=displayname)
+                xmlout += self.get_prop_xml(self.server_url + request.path, file_path, directory=True, displayname=displayname)
                 for filename in os.listdir(file_path):
                     fname = filename
-                    if req_path[-1:] != "/":
+                    if request.path[-1:] != "/":
                         fname = "/" + filename
 
-                    xmlout += self.get_prop_xml(self.server_url + req_path + filename, file_path + os.sep + filename)
+                    xmlout += self.get_prop_xml(self.server_url + request.path + filename, file_path + os.sep + filename)
             else:
                 # return the properties for a single file
-                xmlout += self.get_prop_xml(self.server_url + req_path, file_path)
+                xmlout += self.get_prop_xml(self.server_url + request.path, file_path)
         else:
             logging.debug("Not found for PROPFIND")
             return {"status": 404, "reason": "Not Found", "data": ""}
@@ -781,20 +790,20 @@ class WebBox:
         return {"status": 207, "reason": "Multi-Status", "data": xmlout, "type": "text/xml; charset=\"utf-8\""}
 
         
-    def do_LOCK(self, rfile, environ, req_path, req_qs):
-        logging.debug("WebDAV Lock on file: "+req_path)
+    def do_LOCK(self, request):
+        logging.debug("WebDAV Lock on file: "+request.path)
 
         try:
             size = 0
-            if environ.has_key("CONTENT_LENGTH"):
-                size = int(environ['CONTENT_LENGTH'])
+            if request.getHeader("Content-length") is not None:
+                size = int(request.getHeader("Content-length"))
 
             file = ""
             if size > 0:
                 # read into file
-                file = rfile.read(size)
+                file = request.content.read(size)
 
-            fileroot = self.server_url + req_path
+            fileroot = self.server_url + request.path
 
             x = objectify.fromstring(file)
 
@@ -840,8 +849,8 @@ class WebBox:
 
 
 
-    def do_UNLOCK(self, rfile, environ, req_path, req_qs):
-        logging.debug("WebDAV Unlock on file: "+req_path)
+    def do_UNLOCK(self, request):
+        logging.debug("WebDAV Unlock on file: "+request.path)
         # FIXME always succeeds
         return {"status": 204, "reason": "No Content", "data": ""}
 
@@ -886,28 +895,32 @@ class WebBox:
         """ There has been an update to the webbox store, so send the changes to the clients connected via websocket. """
         logging.debug("Updating websocket clients...")
 
-        journal = Journal(os.path.join(self.config['webbox_dir'], self.config['journal']))
-        hashes = journal.get_version_hashes()
-        if "previous" in hashes:
-            previous = hashes["previous"]
-            
-            uris_changed = journal.since(previous)
-            logging.debug("URIs changed: %s" % str(uris_changed))
+        try:
 
-            if len(uris_changed) > 0:
+            journal = Journal(os.path.join(self.config['webbox_dir'], self.config['journal']))
+            hashes = journal.get_version_hashes()
+            if "previous" in hashes:
+                previous = hashes["previous"]
+                
+                uris_changed = journal.since(previous)
+                logging.debug("URIs changed: %s" % str(uris_changed))
 
-                ntrips = ""
-                for uri in uris_changed:
-                    query = "CONSTRUCT {?s ?p ?o} WHERE { GRAPH <%s> {?s ?p ?o}}" % uri
-                    logging.debug("Sending query for triples as: %s " % query)
+                if len(uris_changed) > 0:
 
-                    result = self.query_store.query(query, {"Accept": "text/plain"})
-                    # graceful fail per U
+                    ntrips = ""
+                    for uri in uris_changed:
+                        query = "CONSTRUCT {?s ?p ?o} WHERE { GRAPH <%s> {?s ?p ?o}}" % uri
+                        logging.debug("Sending query for triples as: %s " % query)
 
-                    rdf = result['data']
-                    ntrips += rdf + "\n"
+                        result = self.query_store.query(query, {"Accept": "text/plain"})
+                        # graceful fail per U
 
-                self.websocket.sendMessage(ntrips, False)
+                        rdf = result['data']
+                        ntrips += rdf + "\n"
+
+                    self.websocket.sendMessage(ntrips, False)
+        except Exception as e:
+            logging.error("Problem updating websocket clients.")
 
 
     def get_subscriptions(self):
@@ -937,32 +950,32 @@ class WebBox:
 
         return None # success
 
-    def do_POST(self, rfile, environ, req_path, req_qs):
+    def do_POST(self, request):
         """ Handle a POST (update). """
         # POST of RDF is a merge.
 
-        post_uri = self.server_url + req_path
+        post_uri = self.server_url + request.path
         logging.debug("POST of uri: %s" % post_uri)
 
-        if environ.has_key("CONTENT_TYPE"):
-            content_type = environ['CONTENT_TYPE']
+        if request.getHeader("Content-Type") is not None:
+            content_type = request.getHeader("Content-Type")
 
         # if a .rdf is uploaded, set the content-type manually
-        if req_path[-4:] == ".rdf":
+        if request.path[-4:] == ".rdf":
             content_type = "application/rdf+xml"
-        elif req_path[-3:] == ".n3":
+        elif request.path[-3:] == ".n3":
             content_type = "text/turtle"
-        elif req_path[-3:] == ".nt":
+        elif request.path[-3:] == ".nt":
             content_type = "text/plain"
 
 
         size = 0
-        if environ.has_key("CONTENT_LENGTH") and environ['CONTENT_LENGTH'] != "":
-            size = int(environ['CONTENT_LENGTH'])
+        if request.getHeader("Content-Length") is not None and request.getHeader("Content-Length") != "":
+            size = int(request.getHeader("Content-Length"))
 
 
         # determine if this is a hidden file
-        path_parts = req_path.split("/")
+        path_parts = request.path.split("/")
         hidden_file = False
         if len(path_parts) > 0 and len( path_parts[ len(path_parts) - 1 ]) > 0 and path_parts[ len(path_parts) - 1 ][0] == ".":
             hidden_file = True
@@ -970,7 +983,7 @@ class WebBox:
         if content_type == "application/x-www-form-urlencoded":
             # SPARQL Query
             if size > 0:
-                file = rfile.read(size)
+                file = request.content.read(size)
             else:
                 raise ResponseOverride(400, "Bad Request")
 
@@ -1000,7 +1013,7 @@ class WebBox:
             # read RDF content into file
             file = ""
             if size > 0:
-                file = rfile.read(size)
+                file = request.content.read(size)
           
             # strip off the last slash if it is to /webbox/
             if post_uri == self.server_url + "/":
@@ -1008,8 +1021,8 @@ class WebBox:
 
             # set the graph to POST to. the URI itself, or ?graph= if set (compatibility with SPARQL1.1)
             graph = post_uri
-            if req_qs.has_key('graph'):
-                graph = req_qs['graph'][0]
+            if request.args.has_key('graph'):
+                graph = request.args['graph'][0]
 
             # if they have put to /webbox then we handle it any messages (this is the only URI that we handle messages on)
             if graph == self.server_url:
@@ -1038,9 +1051,9 @@ class WebBox:
             self.add_to_journal(graph) # update journal
 
             # TODO remake the file on disk (assuming graph is relative to our file) according to the new store status
-            if not req_qs.has_key('graph'):
+            if not request.args.has_key('graph'):
                 # only make a file if it is a local URI
-                file_path = self.get_file_path(req_path)
+                file_path = self.get_file_path(request.path)
                 logging.debug("file path is: %s" % file_path)
                 exists = os.path.exists(file_path)
 
@@ -1056,7 +1069,7 @@ class WebBox:
                     f.close()
 
                 # the [1:] gets rid of the /webbox/ bit of the path, so FIXME be more intelligent?
-                self.add_new_file(os.sep.join(os.path.split(req_path)[1:]), mimetype="application/rdf+xml") # add metadata to store TODO handle error on return false
+                self.add_new_file(os.sep.join(os.path.split(request.path)[1:]), mimetype="application/rdf+xml") # add metadata to store TODO handle error on return false
 
                 if exists:
                     return {"data": "", "status": 204, "reason": "No Content"}
@@ -1127,24 +1140,27 @@ class WebBox:
 
 
 
-    def do_GET(self, environ, req_path, req_qs):
-        logging.debug("req_path: %s" % (req_path))
+    def do_GET(self, request):
+        logging.debug("req_path: %s" % (request.path))
 
         # journal update called
-        if req_path == "/update":
+        if request.path == "/update":
             since = None
-            if "since" in req_qs:
-                since = req_qs['since'][0]
+            if "since" in request.args:
+                since = request.args['since'][0]
             return self.handle_update(since)
 
 
-        accept = environ['HTTP_ACCEPT'].lower()
+        if request.getHeader("Accept") is not None:
+            accept = request.getHeader("Accept").lower()
+        else:
+            accept = "*/*" # TODO sensible default?
 
         # ObjectStore GET
         if "json" in accept: #FIXME do this better
-            if "graph" in req_qs:
+            if "graph" in request.args:
                 # graph URI specified, so return the objects in that graph
-                graph_uri = req_qs["graph"][0]
+                graph_uri = request.args["graph"][0]
 
                 obj = self.object_store.get_latest(graph_uri)
                 jsondata = json.dumps(obj, indent=2)        
@@ -1158,9 +1174,9 @@ class WebBox:
 
 
 
-        if req_qs.has_key("query"):
+        if request.args.has_key("query"):
             # SPARQL query because ?query= is present
-            query = req_qs['query'][0]
+            query = request.args['query'][0]
             response = self.query_store.query(query)
 
             sp = SparqlParse(query)
@@ -1169,8 +1185,6 @@ class WebBox:
             if verb == "SELECT":
                 # convert back from a data structure
                 sr = SparqlResults()
-
-                accept = environ['HTTP_ACCEPT'].lower()
 
                 xml_type = "application/sparql-results+xml"
                 json_type = "application/sparql-results+json"
@@ -1194,7 +1208,7 @@ class WebBox:
             elif verb == "CONSTRUCT":
                 # rdf, so allow conversion of type
                 # convert based on headers
-                response = self._convert_response(response, environ)
+                response = self._convert_response(response, request)
 
             return response
         else:
@@ -1202,11 +1216,13 @@ class WebBox:
     
             # if they specify a graph, then that overrides the uri
             graph = None
-            if "graph" in req_qs:
-                graph = req_qs['graph'][0]
+            if "graph" in request.args:
+                graph = request.args['graph'][0]
 
             if graph is None:
-                file_path = self.get_file_path(req_path)
+                file_path = self.get_file_path(request.path)
+
+                logging.debug("file_path {0}".format(file_path))
 
                 if os.path.exists(file_path) and (not os.path.isdir(file_path)):
                     # return the file
@@ -1216,12 +1232,12 @@ class WebBox:
                     #filedata = f.read()
                     #f.close()
 
-                    if "HTTP_RANGE" in environ:
+                    if request.getHeader("Range") is not None:
                         logging.debug("Byte range requested, returning as a string")
-                        return {"data": self.get_byte_range(f, environ['HTTP_RANGE']), "status": 200, "reason": "OK"}
+                        return {"data": self.get_byte_range(f, request.getHeader("Range")), "status": 200, "reason": "OK"}
                     else:
                         logging.debug("File read into file object started.")
-                        mimetype = self.get_file_mime_type(self.server_url + req_path)
+                        mimetype = self.get_file_mime_type(file_path)
                         response = {"data": f, "status": 200, "reason": "OK", "size": size, "type": mimetype}
 
                         # If the file is RDF/XML that we've written, then we can convert on the fly according to the request's Accept: header
@@ -1229,13 +1245,13 @@ class WebBox:
                             filedata = f.read()
                             f.close()
                             response['data'] = filedata
-                            response = self._convert_response(response, environ)
+                            response = self._convert_response(response, request)
 
                         return response
 
             try:
                 # Look for this URI or any URI that start with this URI+# and return them all as concise bounded graphs S,P,O of all of those uris
-                uri = self.server_url + req_path
+                uri = self.server_url + request.path
                 if graph is not None:
                     uri = graph
 
@@ -1243,23 +1259,22 @@ class WebBox:
                 rdf = results['data']
                 if len(rdf) > 0:
                     response = {"data": rdf, "status": 200, "reason": "OK", "type": "text/plain"}
-                    response = self._convert_response(response, environ)
+                    response = self._convert_response(response, request)
                     return response
             except Exception as e:
+                logging.debug("Exception finding CBG of uris.")
                 return {"data": "", "status": 500, "reason": "Internal Server Error"}
 
 
             # no URIs, no files, return 404 Not Found
             return {"data": "", "status": 404, "reason": "Not Found"}
 
-    def get_file_mime_type(self, url):
-        """ Get the mimetype of a file from the store. """
-        results = self.query_store.query("SELECT DISTINCT ?type WHERE {<%s> <http://www.semanticdesktop.org/ontologies/nie/#mimeType> ?type}" % url)
-        try:
-            mimetype = results['data'][0]['type']['value']
-            return mimetype
-        except Exception as e:
-            return ""
+    def get_file_mime_type(self, file_path):
+        """ Get the mimetype of a file on disk. """
+
+        fileName, fileExtension = os.path.splitext(file_path)
+        return mimetypes.guess_type(file_path)[0] 
+
 
     def get_byte_range(self, file, byterange):
         """ Return a range of bytes as specified by the HTTP_RANGE header. """
@@ -1296,7 +1311,7 @@ class WebBox:
         new_data = graph.serialize(format=new_format) # format = xml, n3, nt, turtle etc
         return new_data
 
-    def _convert_response(self, response, environ):
+    def _convert_response(self, response, request):
         logging.debug("convert_response, response: "+str(response))
 
         if not (response['status'] == 200 or response['status'] == "200 OK"):
@@ -1310,7 +1325,10 @@ class WebBox:
             type = response['type'].lower()
         data = response['data']
 
-        accept = environ['HTTP_ACCEPT'].lower()
+        if request.getHeader("Accept") is not None:
+            accept = request.getHeader("Accept").lower()
+        else:
+            accept = "*/*" # TODO sensible default?
 
         if accept == "*/*":
             logging.debug("Not converting, client accepts anything.") # for performance and compatiblity
@@ -1492,42 +1510,44 @@ class WebBox:
         return handler.handle_all()
 
 
-    def do_PUT(self, rfile, environ, req_path, req_qs):
+    def do_PUT(self, request):
         """ Handle a PUT. """
+        logging.debug("PUT, headers: " + str(request.requestHeaders))
 
         # PUT of RDF is to REPLACE the graph
         content_type = "application/rdf+xml"
 
 
-        put_uri = self.server_url + req_path
+        put_uri = self.server_url + request.path
         logging.debug("PUT of uri: %s" % put_uri)
 
-        if environ.has_key("HTTP_TRANSFER_ENCODING") and environ['HTTP_TRANSFER_ENCODING'].lower() == "chunked":
+        if request.getHeader("Transfer-Encoding") is not None and request.getHeader("Transfer-Encoding").lower() == "chunked":
             # part-file is being uploaded, deal with this slightly differently
-            size = int(environ['HTTP_X_EXPECTED_ENTITY_LENGTH'])
+            
+            size = int(request.getHeader("X-Expected-Entity-Length"))
             content_type = ""
         else:
             size = 0
-            if environ.has_key("CONTENT_LENGTH"):
-                size = int(environ['CONTENT_LENGTH'])
-            if environ.has_key("CONTENT_TYPE"):
-                content_type = environ['CONTENT_TYPE']
+            if request.getHeader("Content-Length") is not None:
+                size = int(request.getHeader("Content-Length"))
+            if request.getHeader("Content-Type") is not None:
+                content_type = request.getHeader("Content-Type")
 
         # check for a hidden file
-        path_parts = req_path.split("/")
+        path_parts = request.path.split("/")
         hidden_file = False
         if len(path_parts) > 0 and len( path_parts[ len(path_parts) - 1 ]) > 0 and path_parts[ len(path_parts) - 1 ][0] == ".":
             hidden_file = True
 
         # if a .rdf is uploaded, set the content-type manually
-        if req_path[-4:] == ".rdf":
+        if request.path[-4:] == ".rdf":
             content_type = "application/rdf+xml"
-        elif req_path[-3:] == ".n3":
+        elif request.path[-3:] == ".n3":
             content_type = "text/turtle"
-        elif req_path[-3:] == ".nt":
+        elif request.path[-3:] == ".nt":
             content_type = "text/plain"
 
-        file_path = self.get_file_path(req_path)
+        file_path = self.get_file_path(request.path)
         logging.debug("file path is: %s" % file_path)
         exists = os.path.exists(file_path)
 
@@ -1542,7 +1562,7 @@ class WebBox:
         is_objectstore = content_type and content_type in json_content_types
 
 
-        if (not is_objectstore) and (req_path == "" or req_path == "/"):
+        if (not is_objectstore) and (request.path == "" or request.path == "/"):
             # PUT to / isn't valid (unless objectstore), they can only POST to these (it's the spool incoming)
 
             # When you send a 405 Method Not Allowed you have to send Allow headers saying which methods ARE allowed.
@@ -1571,19 +1591,19 @@ class WebBox:
         if is_objectstore:
             # objectstore PUT
 
-            jsondata = rfile.read()
+            jsondata = request.content.read()
             objs = json.loads(jsondata)
 
             if type(objs) == type([]):
                 # multi object put
             
-                if "graph" not in req_qs:
+                if "graph" not in request.args:
                     return {"data": "Specify a graph URI with &graph=", "status": 404, "reason": "Not Found"}
-                graph_uri = req_qs['graph'][0]
+                graph_uri = request.args['graph'][0]
 
-                if "version" not in req_qs:
+                if "version" not in request.args:
                     return {"data": "Specify a previous version with &version=", "status": 404, "reason": "Not Found"}
-                prev_version = int(req_qs['version'][0])
+                prev_version = int(request.args['version'][0])
 
                 try:
                     new_version_info = self.object_store.add(graph_uri, objs, prev_version)
@@ -1604,12 +1624,12 @@ class WebBox:
 
             if size > 0:
                 # read into file
-                file = rfile.read(size)
+                file = request.content.read(size)
                 
                 # prepare the arguments for local PUTing of this data
                 graph = put_uri
-                if req_qs.has_key('graph'):
-                    graph = req_qs['graph'][0]
+                if request.args.has_key('graph'):
+                    graph = request.args['graph'][0]
 
                 # do SPARQL PUT
                 logging.debug("WebBox SPARQL PUT to graph (%s)" % (graph) )
@@ -1635,7 +1655,7 @@ class WebBox:
                 f.close()
 
             # the [1:] gets rid of the /webbox/ bit of the path, so FIXME be more intelligent?
-            self.add_new_file(os.sep.join(os.path.split(req_path)[1:]), mimetype="application/rdf+xml") # add metadata to store TODO handle error on return false
+            self.add_new_file(os.sep.join(os.path.split(request.path)[1:]), mimetype="application/rdf+xml") # add metadata to store TODO handle error on return false
         else:
             # Handle a static file PUT
             try:
@@ -1648,14 +1668,14 @@ class WebBox:
                 if size > 0:
                     if file == "":
                         # copy straight from rfile
-                        shutil.copyfileobj(rfile, f, size)
+                        shutil.copyfileobj(request.content, f, size)
                     else:
                         # already loaded (by RDF handler, above), write directly
                         f.write(file)
                 f.close()
 
                 # the [1:] gets rid of the /webbox/ bit of the path, so FIXME be more intelligent?
-                self.add_new_file(os.sep.join(os.path.split(req_path)[1:])) # add metadata to store TODO handle error on return false
+                self.add_new_file(os.sep.join(os.path.split(request.path)[1:])) # add metadata to store TODO handle error on return false
             except Exception as e:
                 logging.debug(str( "Error writing to file: %s, exception is: %s" % (file_path, str(e)) ) + traceback.format_exc())
                 return {"data": "", "status": 500, "reason": "Internal Server Error"}
@@ -1689,7 +1709,7 @@ class WebBox:
     def get_file_path(self, req_path):
         """ Get the file path on disk specified by the request path, or exception if there has been a (security etc.) issue. """
 
-        file_path = os.path.abspath(self.file_dir + os.sep + req_path)
+        file_path = os.path.abspath(self.file_dir + os.sep + self.strip_server_url(req_path))
 
         if not self.check_file_path(file_path):
             raise ResponseOverride(403, "Forbidden")
