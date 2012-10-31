@@ -95,5 +95,8 @@ class WebBoxSetup:
             json.dump(config, conf_fh, indent=4)
             conf_fh.close()
 
-    
+        # add the webbox path to the config (at runtime only)
+        config['webbox']['webbox_dir'] = webbox_dir
+
+        return config 
 

@@ -26,17 +26,8 @@ from webserver import WebServer
 kbname = "webbox_" + getpass.getuser() # per user knowledge base
 webbox_dir = os.path.expanduser('~'+os.sep+".webbox")
 setup = WebBoxSetup()
-setup.setup(webbox_dir, "webbox.json.default", kbname) # directory, default config, kbname
+config = setup.setup(webbox_dir, "webbox.json.default", kbname) # directory, default config, kbname
 
-
-# load configuration into 'config' variable
-webbox_config = webbox_dir + os.sep + "webbox.json"
-conf_fh = open(webbox_config, "r")
-config = json.loads(conf_fh.read())
-conf_fh.close()
-
-# add the webbox path to the config (at runtime only)
-config['webbox']['webbox_dir'] = webbox_dir
 
 # add additional binary paths to the PATH
 for bindir in config['server']['bindirs']:
