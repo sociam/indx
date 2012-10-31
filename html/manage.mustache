@@ -19,7 +19,6 @@
         </style>
         <link rel="stylesheet" href="css/bootstrap-responsive.min.css">
 
-	    <link rel="stylesheet" href="css/fileuploader.css">
         <script src="js/vendor/modernizr-2.6.1-respond-1.1.0.min.js"></script>
     </head>
     <body>
@@ -40,8 +39,8 @@
                     <a class="brand" href="#">WebBox</a>
                     <div class="nav-collapse collapse">
                         <ul class="nav">
-                            <li class="active"><a href="#">Home</a></li>
-                            <li><a href="manage">Manage</a></li>
+                            <li><a href="index">Home</a></li>
+                            <li class="active"><a href="#">Manage</a></li>
                         </ul>
                         <form class="navbar-form pull-right">
                             <input class="span2" type="text" placeholder="Username">
@@ -62,13 +61,17 @@
             </div>
 
             <div class="row">
-                <div class="span12">
-                    <h2>File Uploader</h2>
-                    <p>This form allows files to be uploaded directly to a WebBox.</p>
-
-                    <form method="PUT" id="upload_form">
-                        <div id="file-uploader"></div>
-                    </form>
+                <div class="span4">
+                    <h3>Browser</h3>
+                    <p>Explore what is in your WebBox: <a href="browser">Browser</a></p>
+                </div>
+                <div class="span4">
+                    <h3>Uploader</h3>
+                    <p>Add individual files to your WebBox: <a href="uploader">Uploader</a></p>
+                </div>
+                <div class="span4">
+                    <h3>Useful Information</h3>
+                    <p><strong>WebBox URL:</strong> {{ server_url }}</p>
                 </div>
             </div>
 
@@ -91,28 +94,6 @@
             window.webbox_vars.server_url = "{{ server_url }}";
         </script>
 
-        <script src="js/libs/fileuploader.js"></script>
         <script src="js/script.js"></script>
-
-        <script>
-        $(document).ready(function(){
-            var prfx = "webbox/";
-
-            var uploader = new qq.FileUploader({
-                element: $("#file-uploader")[0],
-                action: prfx,
-        //        debug: true,
-                onComplete: function(id, name, response){
-                    var filename = prfx + name;
-                    var div = $("#file-uploader").html("");
-                    div.append("Your file is now available at: ");
-                    div.append($("<a target='_blank' href='"+filename+"'>"+filename+"</a>"));
-                    div.append(".");
-                },
-            });
-
-        });
-        </script>
-        
     </body>
 </html>
