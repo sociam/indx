@@ -475,36 +475,38 @@ class WebBox(Resource):
 
         logging.debug("Calling WebBox render()")
         try:
-            req_type = request.method
-            rfile = request.content
+            session = request.getSession()
 
-            url = request.uri
-            req_path = request.path
-            req_qs = request.args
+            # persists across sessions (based on the cookie set by the above)
+            sessionDict = session.getComponent(dict)
+            if not sessionDict:
+                sessionDict = {}
+                session.setComponent(dict, sessionDict)
 
-            if req_type == "POST":
+
+            if request.method == "POST":
                 response = self.do_POST(request)
-            elif req_type == "PUT":
+            elif request.method == "PUT":
                 response = self.do_PUT(request)
-            elif req_type == "GET":
+            elif request.method == "GET":
                 response = self.do_GET(request)
-            elif req_type == "OPTIONS":
+            elif request.method == "OPTIONS":
                 response = self.do_OPTIONS()
-            elif req_type == "PROPFIND":
+            elif request.method == "PROPFIND":
                 response = self.do_PROPFIND(request)
-            elif req_type == "LOCK":
+            elif request.method == "LOCK":
                 response = self.do_LOCK(request)
-            elif req_type == "UNLOCK":
+            elif request.method == "UNLOCK":
                 response = self.do_UNLOCK(request)
-            elif req_type == "DELETE":
+            elif request.method == "DELETE":
                 response = self.do_DELETE(request)
-            elif req_type == "MKCOL":
+            elif request.method == "MKCOL":
                 response = self.do_MKCOL(request)
-            elif req_type == "MOVE":
+            elif request.method == "MOVE":
                 response = self.do_MOVE(request)
-            elif req_type == "COPY":
+            elif request.method == "COPY":
                 response = self.do_COPY(request)
-            elif req_type == "HEAD":
+            elif request.method == "HEAD":
                 response = self.do_GET(request)
             else:
                 # When you sent 405 Method Not Allowed, you must specify which methods are allowed
@@ -577,7 +579,7 @@ class WebBox(Resource):
             res_type = type(response['data'])
             logging.debug("Response type is: "+str(res_type))
 
-            if req_type == "HEAD": # GET was called, so let's not return the body
+            if request.method == "HEAD": # GET was called, so let's not return the body
                 return ""
 
             if res_type is unicode:
