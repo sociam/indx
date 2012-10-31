@@ -125,8 +125,11 @@ CREATE TABLE wb_users
   id_user serial NOT NULL,
   username character varying(128) NOT NULL,
   pw_salted_hash text NOT NULL,
+  email character varying(1024) NOT NULL,
+  name character varying(1024) NOT NULL,
   CONSTRAINT pk_user PRIMARY KEY (id_user),
-  CONSTRAINT u UNIQUE (username)
+  CONSTRAINT u_user UNIQUE (username),
+  CONSTRAINT u_email UNIQUE (email)
 )
 WITH (
   OIDS=FALSE
@@ -135,7 +138,7 @@ ALTER TABLE wb_users
   OWNER TO webbox;
 
 
-INSERT INTO wb_users (username, pw_salted_hash) VALUES ('anonymous', 'temporary');
+INSERT INTO wb_users (username, pw_salted_hash, email, name) VALUES ('anonymous', 'temporary', 'anonymous@localhost', 'Anonymous User');
 
 
 
