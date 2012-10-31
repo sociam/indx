@@ -78,6 +78,17 @@ class WebBoxSetup:
             # set change_config to True to save the changes
             pass
 
+        # make sure http/https is correct in server url
+        config_ssl = (config['webbox']['url'][:5].lower() == 'https')
+        if config_ssl != (not config['server']['ssl_off']):
+            # correct URL
+            change_config = True
+            if config_ssl:
+               config['webbox']['url'] = "http"  + config['webbox']['url'][5:]
+            else:
+               config['webbox']['url'] = "https" + config['webbox']['url'][4:]
+
+
         # write updated config
         if init_config or change_config:
             conf_fh = open(webbox_config, "w")
