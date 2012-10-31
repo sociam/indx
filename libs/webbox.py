@@ -477,7 +477,7 @@ class WebBox(Resource):
         try:
             session = request.getSession()
 
-            # persists across sessions (based on the cookie set by the above)
+            # persists for life of a session (based on the cookie set by the above)
             sessionDict = session.getComponent(dict)
             if not sessionDict:
                 sessionDict = {}
