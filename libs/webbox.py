@@ -21,6 +21,7 @@ import logging, re, urllib2, uuid, rdflib, os, os.path, traceback, mimetypes, ti
 
 from cStringIO import StringIO
 
+from zope.interface import Interface, Attribute, implements
 from twisted.web import script
 from twisted.web.static import File, Registry
 from twisted.web.wsgi import WSGIResource
@@ -478,11 +479,12 @@ class WebBox(Resource):
             session = request.getSession()
 
             # persists for life of a session (based on the cookie set by the above)
-            sessionDict = session.getComponent(dict)
-            if not sessionDict:
-                sessionDict = {}
-                session.setComponent(dict, sessionDict)
+            wbSession = session.getComponent(ISession)
+            if not wbSession:
+                wbSession = WebBoxSession(session)
+                session.setComponent(ISession, wbSession)
 
+            logging.debug("Is user authenticated? {0}".format(wbSession.is_authenticated))
 
             if request.method == "POST":
                 response = self.do_POST(request)
@@ -1727,4 +1729,26 @@ class WebBox(Resource):
         abs_this_path = os.path.abspath(path)
 
         return abs_this_path.startswith(abs_file_path)
+
+class ISession(Interface):
+    is_authenticated = Attribute("A bool which registers if a user has successfully authenticated.")
+    userid = Attribute("User ID (from the DB) of the authenticated user.")
+    username = Attribute("Username of the authenticated user.")
+
+class WebBoxSession(object):
+    """ Stored per user session to record if the user is authenticated etc. """
+    implements(ISession)
+
+    def __init__(self, session):
+        self.is_authenticated = False
+        self.userid = None
+        self.username = None
+
+    def setAuthenticated(self, val):
+        self.is_authenticated = val
+   
+    def setUser(self, userid, username):
+        self.userid = userid
+        self.username = username
+
 
