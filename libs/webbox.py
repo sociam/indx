@@ -127,6 +127,8 @@ class WebBox(Resource):
     # authentication
     def auth_login(self, request):
         """ User logged in (POST) """
+        logging.debug("Login request, origin: {0}".format(request.getHeader("Origin")))
+
         session = request.getSession()
         wbSession = session.getComponent(ISession)
         wbSession.setAuthenticated(True)
@@ -136,6 +138,8 @@ class WebBox(Resource):
 
     def auth_logout(self, request):
         """ User logged out (GET, POST) """
+        logging.debug("Logout request, origin: {0}".format(request.getHeader("Origin")))
+
         session = request.getSession()
         wbSession = session.getComponent(ISession)
         wbSession.setAuthenticated(False)

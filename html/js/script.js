@@ -24,10 +24,14 @@
 
 $(document).ready(function(){
 
-    $(".login_form").submit(function(){
+    $("#login_form").submit(function(){
+        var username = $("#login_username").val();
+        var password = $("#login_password").val();
+
         console.debug("Calling login.");
         $.ajax({
             url: "/webbox/login",
+            data: {"username": username, "password": password},
             type: "POST",
             success: function(data){
                 console.debug("Logged in.");
