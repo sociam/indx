@@ -24,6 +24,19 @@
 
 $(document).ready(function(){
 
+    $(".login_form").submit(function(){
+        console.debug("Calling login.");
+        $.ajax({
+            url: "/webbox/login",
+            type: "POST",
+            success: function(data){
+                console.debug("Logged in.");
+            }
+        });
+        return false;
+    });
+    
+
     /* for: setup_webbox */
     function validURIPath(path){
         // check if a uri path contains all valid characters

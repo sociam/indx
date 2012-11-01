@@ -124,6 +124,25 @@ class WebBox(Resource):
         # add the openid provider as a subdir
         self.resource.putChild("openid", WSGIResource(reactor, reactor.getThreadPool(), self.response_openid))
 
+    # authentication
+    def auth_login(self, request):
+        """ User logged in (POST) """
+        session = request.getSession()
+        wbSession = session.getComponent(ISession)
+        wbSession.setAuthenticated(True)
+        wbSession.setUser(0, "anonymous")
+
+        return {"data": "", "status": 200, "reason": "OK"}
+
+    def auth_logout(self, request):
+        """ User logged out (GET, POST) """
+        session = request.getSession()
+        wbSession = session.getComponent(ISession)
+        wbSession.setAuthenticated(False)
+        wbSession.setUser(None, None)
+
+        return {"data": "", "status": 200, "reason": "OK"}
+
 
     def get_html_index(self):
         """ Which mustache template to use for the webbox root index. Changes from 'index' when there is a critical configuration issue to resolve. """
@@ -693,6 +712,7 @@ class WebBox(Resource):
     def strip_server_url(self, url):
         """ Return the path with the webbox server URL stripped off. """
 
+
         wb_url = urlparse(self.server_url)
         fixed_path = wb_url.path # e.g. /webbox
         
@@ -702,8 +722,9 @@ class WebBox(Resource):
             raise ResponseOverride(500, "Internal Server Error")
 
         # strip off fixed_path
-        return new_url.path[len(fixed_path):]
-
+        out = new_url.path[len(fixed_path):]
+        logging.debug("Stripping server url from {0}, now {1}".format(url, out))
+        return out
 
     def do_MOVE(self, request):
         """ WebDAV command to move (rename) a file. """
@@ -958,9 +979,21 @@ class WebBox(Resource):
         """ Handle a POST (update). """
         # POST of RDF is a merge.
 
+        # login called
+        if self.strip_server_url(request.path) == "/login":
+            logging.debug("Login request")
+            return self.auth_login(request)
+
+        # logout called
+        if self.strip_server_url(request.path) == "/logout":
+            logging.debug("Logout request")
+            return self.auth_logout(request)
+
+
         post_uri = self.server_url + request.path
         logging.debug("POST of uri: %s" % post_uri)
 
+        content_type = ""
         if request.getHeader("Content-Type") is not None:
             content_type = request.getHeader("Content-Type")
 
@@ -1148,11 +1181,16 @@ class WebBox(Resource):
         logging.debug("req_path: %s" % (request.path))
 
         # journal update called
-        if request.path == "/update":
+        if self.strip_server_url(request.path) == "/update":
             since = None
             if "since" in request.args:
                 since = request.args['since'][0]
             return self.handle_update(since)
+
+        # logout called
+        if self.strip_server_url(request.path) == "/logout":
+            logging.debug("Logout request")
+            return self.auth_logout(request)
 
 
         if request.getHeader("Accept") is not None:
