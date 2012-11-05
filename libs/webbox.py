@@ -17,9 +17,7 @@
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import logging, re, urllib2, uuid, rdflib, os, os.path, traceback, mimetypes, time, shutil, json
-
-from cStringIO import StringIO
+import logging, urllib2, uuid, rdflib, os, traceback, mimetypes, time, shutil, json
 
 from zope.interface import Interface, Attribute, implements
 from twisted.web import script
@@ -32,13 +30,12 @@ from lxml import objectify
 
 from rdflib.graph import Graph
 from time import strftime
-from urlparse import urlparse
 from webboxhandler import WebBoxHandler
 from subscriptions import Subscriptions
 from journal import Journal
 from websocketclient import WebSocketClient
 from mimeparse import best_match
-from httputils import resolve_uri, http_get, http_put, http_post
+from httputils import resolve_uri
 from sparqlresults import SparqlResults
 from sparqlparse import SparqlParse
 from exception import ResponseOverride
