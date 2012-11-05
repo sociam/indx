@@ -59,15 +59,15 @@ class WebBoxMulti:
         self.root.ignoreExt('.rpy')
 
         # hook in the controller urls to /start /stop etc.
-        self.root.putChild("new", WSGIResource(reactor, reactor.getThreadPool(), self.do_new))
+        self.root.putChild("new", WSGIResource(reactor, reactor.getThreadPool(), self.do_new)) #@UndefinedVariable
 
         admin = FileNoDirectoryListings(self.srcdir + os.sep + "admin", registry=registry)
         self.admin = admin
         # make .rpy python cgi
         self.admin.processors = {'.rpy': script.ResourceScript}
         self.admin.ignoreExt('.rpy')
-        self.admin.putChild("start", WSGIResource(reactor, reactor.getThreadPool(), self.do_start))
-        self.admin.putChild("stop", WSGIResource(reactor, reactor.getThreadPool(), self.do_stop))
+        self.admin.putChild("start", WSGIResource(reactor, reactor.getThreadPool(), self.do_start)) #@UndefinedVariable
+        self.admin.putChild("stop", WSGIResource(reactor, reactor.getThreadPool(), self.do_stop)) #@UndefinedVariable
 
         class MgmtRealm(object):
             implements(IRealm)
@@ -85,7 +85,7 @@ class WebBoxMulti:
 
         self.site = Site(self.root)
         sslContext = ssl.DefaultOpenSSLContextFactory(server_private_key, server_cert)
-        reactor.listenSSL(self.port, self.site, contextFactory=sslContext)
+        reactor.listenSSL(self.port, self.site, contextFactory=sslContext) #@UndefinedVariable
 
         self.url = "https://"+self.host+":"+str(self.port)
 
@@ -103,7 +103,7 @@ class WebBoxMulti:
         # calls the web browser opening function above when the reactor has finished starting up
         d = Deferred()
         d.addCallbacks(on_start, start_failed)
-        reactor.callWhenRunning(d.callback, "Server startup")
+        reactor.callWhenRunning(d.callback, "Server startup") #@UndefinedVariable
 
         logging.debug("Starting WebBox management interface on: "+self.url)
 
@@ -111,7 +111,7 @@ class WebBoxMulti:
         self.webboxes = {}
         self.add_webboxes()
 
-        reactor.run()
+        reactor.run() #@UndefinedVariable
 
     def invalid_name(self, name):
         """ Check if this name is safe (only contains a-z0-9_-). """ 

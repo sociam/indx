@@ -117,14 +117,14 @@ class WebBox(Resource):
         self.resource.putChild("webbox", self);
 
         # add the .well-known handler as a subdir
-        self.resource.putChild(".well-known", WSGIResource(reactor, reactor.getThreadPool(), self.response_well_known))
+        self.resource.putChild(".well-known", WSGIResource(reactor, reactor.getThreadPool(), self.response_well_known)) #@UndefinedVariable
 
         # add the lrdd handler as a subdir
-        self.resource.putChild("lrdd", WSGIResource(reactor, reactor.getThreadPool(), self.response_lrdd))
+        self.resource.putChild("lrdd", WSGIResource(reactor, reactor.getThreadPool(), self.response_lrdd)) #@UndefinedVariable
 
         # add the openid provider as a subdir
-        self.resource.putChild("openid", WSGIResource(reactor, reactor.getThreadPool(), self.response_openid))
-
+        self.resource.putChild("openid", WSGIResource(reactor, reactor.getThreadPool(), self.response_openid)) #@UndefinedVariable
+ 
     # authentication
     def auth_login(self, request):
         """ User logged in (POST) """

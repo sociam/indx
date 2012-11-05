@@ -59,12 +59,12 @@ class WebServer:
 
         if ssl_off:
             logging.debug("SSL is OFF, connections to this SecureStore are not encrypted.")
-            reactor.listenTCP(server_port, factory)
+            reactor.listenTCP(server_port, factory) #@UndefinedVariable
         else:
             logging.debug("SSL ON.")
             # pass certificate and private key into server
             sslContext = ssl.DefaultOpenSSLContextFactory(server_private_key, server_cert)
-            reactor.listenSSL(server_port, factory, contextFactory=sslContext)
+            reactor.listenSSL(server_port, factory, contextFactory=sslContext) #@UndefinedVariable
 
         scheme = "https"
         if ssl_off:
@@ -87,7 +87,7 @@ class WebServer:
         # calls the web browser opening function above when the reactor has finished starting up
         d = Deferred()
         d.addCallbacks(on_start, start_failed)
-        reactor.callWhenRunning(d.callback, "WebBox HTTP startup")
+        reactor.callWhenRunning(d.callback, "WebBox HTTP startup") #@UndefinedVariable
 
         # setup triggers on quit
         def onShutDown():
@@ -95,12 +95,12 @@ class WebServer:
             for webbox in self.webboxes:
                 webbox.stop()
 
-        reactor.addSystemEventTrigger("during", "shutdown", onShutDown)
+        reactor.addSystemEventTrigger("during", "shutdown", onShutDown) #@UndefinedVariable
 
 
     def run(self):
         """ Run the server. """
-        reactor.run()
+        reactor.run() #@UndefinedVariable
 
 
 class ObjectWebServer:
@@ -111,7 +111,7 @@ class ObjectWebServer:
         self.config = config
         factory = Site(self.resource())
         server_port = int(config['port'])
-        reactor.listenTCP(server_port, factory)
+        reactor.listenTCP(server_port, factory) #@UndefinedVariable
 
     def response(self, environ, start_response):
         """ Respond to a WSGI call. """
@@ -223,8 +223,8 @@ class ObjectWebServer:
 
     def resource(self):
         """ Make a WSGI resource. """
-        return WSGIResource(reactor, reactor.getThreadPool(), self.response)
+        return WSGIResource(reactor, reactor.getThreadPool(), self.response) #@UndefinedVariable
 
     def run(self):
         """ Run the server. """
-        reactor.run()
+        reactor.run() #@UndefinedVariable
