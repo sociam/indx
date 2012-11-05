@@ -602,20 +602,16 @@ class WebBox(Resource):
 
             logging.debug("Sending data of size: "+str(data_length))
            
-            res_type = type(response['data'])
-            logging.debug("Response type is: "+str(res_type))
-
-            if request.method == "HEAD": # GET was called, so let's not return the body
+            if request.method == "HEAD": # HEAD was called, so let's not return the body
                 return ""
-
-            if res_type is unicode:
-                response['data'] = response['data'].encode('utf8')
-
-            if res_type is str or res_type is unicode:
+            elif type(response['data']) is unicode:
+                logging.debug("Returning unicode")
+                return response['data'].encode('utf8')
+            elif type(response['data']) is str:
                 logging.debug("Returning a string")
                 return response['data']
             else:
-                logging.debug("Returning an iter")
+                logging.debug("Returning an file-like iter (using .read())")
                 return response['data'].read()
 
         except ResponseOverride as e:
