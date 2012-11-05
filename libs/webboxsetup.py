@@ -84,9 +84,9 @@ class WebBoxSetup:
             # correct URL
             change_config = True
             if config_ssl:
-               config['webbox']['url'] = "http"  + config['webbox']['url'][5:]
+                config['webbox']['url'] = "http"  + config['webbox']['url'][5:]
             else:
-               config['webbox']['url'] = "https" + config['webbox']['url'][4:]
+                config['webbox']['url'] = "https" + config['webbox']['url'][4:]
 
 
         # write updated config
