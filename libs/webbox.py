@@ -27,6 +27,7 @@ from twisted.web.static import File, Registry
 from twisted.web.wsgi import WSGIResource
 from twisted.internet import reactor
 from twisted.web.resource import Resource
+from twisted.web.resource import ForbiddenResource
 from lxml import objectify
 
 from rdflib.graph import Graph
@@ -535,7 +536,7 @@ class WebBox(Resource):
                 response = self.do_GET(request)
             else:
                 # When you sent 405 Method Not Allowed, you must specify which methods are allowed
-                response = {"status": 405, "reason": "Method Not Allowed", "data": "", headers: [ 
+                response = {"status": 405, "reason": "Method Not Allowed", "data": "", "headers": [ 
                   ("Allow", "PUT"),
                   ("Allow", "GET"),
                   ("Allow", "POST"),
