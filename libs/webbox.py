@@ -181,6 +181,7 @@ class WebBox(Resource):
             self.object_store = ObjectStore(self.objectstore_db_conn)
             self.query_store = RDFObjectStore(self.object_store) # handles RDF to object conversion
         except Exception as e:
+            logging.debug("Exception reconnecting object store, setitng to None. Exception: {0}".format(str(e)))
             self.object_store = None
 
 
@@ -302,7 +303,6 @@ class WebBox(Resource):
 
         try:
             req_type = environ['REQUEST_METHOD']
-            rfile = environ['wsgi.input']
 
             if "REQUEST_URI" in environ:
                 url = urlparse(environ['REQUEST_URI'])
@@ -384,7 +384,6 @@ class WebBox(Resource):
         logging.debug("Calling WebBox .well-known response(): " + str(environ))
         try:
             req_type = environ['REQUEST_METHOD']
-            rfile = environ['wsgi.input']
 
             if "REQUEST_URI" in environ:
                 url = urlparse(environ['REQUEST_URI'])
@@ -702,7 +701,7 @@ class WebBox(Resource):
         try:
             os.mkdir(file_path)
         except Exception as e:
-            logging.error("Couldn't make directory: " + str(file_path))
+            logging.error("Couldn't make directory ({0}): {1}".format(str(e),str(file_path)))
             raise ResponseOverride(500, "Internal Server Error")
 
         return {"status": 204, "reason": "No Content", "data": ""}
@@ -769,19 +768,19 @@ class WebBox(Resource):
         if request.getHeader("Content-length") is not None:
             size = int(request.getHeader("Content-length"))
 
-        file = ""
+        rfile = ""
         if size > 0:
-            # read into file
-            file = request.content.read(size)
+            # read into rfile
+            rfile = request.content.read(size)
 
-        if file != "":
-            logging.debug("got request: " + file)
+        if rfile != "":
+            logging.debug("got request: " + rfile)
 
         # FIXME we ignore the specifics of the request and just give what Finder wants: getlastmodified, getcontentlength, creationdate and resourcetype
         xmlout = ""
 
         file_path = self.get_file_path(request.path)
-        logging.debug("For PROPFIND file is: "+file_path)
+        logging.debug("For PROPFIND rfile is: "+file_path)
 
         if os.path.exists(file_path):
             if os.path.isdir(file_path):
@@ -795,9 +794,9 @@ class WebBox(Resource):
                     if request.path[-1:] != "/":
                         fname = "/" + filename
 
-                    xmlout += self.get_prop_xml(self.server_url + request.path + filename, file_path + os.sep + filename)
+                    xmlout += self.get_prop_xml(self.server_url + request.path + fname, file_path + os.sep + filename)
             else:
-                # return the properties for a single file
+                # return the properties for a single rfile
                 xmlout += self.get_prop_xml(self.server_url + request.path, file_path)
         else:
             logging.debug("Not found for PROPFIND")
@@ -817,15 +816,6 @@ class WebBox(Resource):
         logging.debug("WebDAV Lock on file: "+request.path)
 
         try:
-            size = 0
-            if request.getHeader("Content-length") is not None:
-                size = int(request.getHeader("Content-length"))
-
-            file = ""
-            if size > 0:
-                # read into file
-                file = request.content.read(size)
-
             fileroot = self.server_url + request.path
 
             x = objectify.fromstring(file)
@@ -868,6 +858,7 @@ class WebBox(Resource):
             return {"status": 200, "reason": "OK", "data": lock, type: "application/xml; charset=\"utf-8\"", "headers": [("Lock-Token", "<"+token+">")]}
 
         except Exception as e:
+            logging.debug("Error in LOCK, {0}".format(str(e)))
             return {"status": 400, "reason": "Bad Request", "data": ""}
 
 
@@ -943,7 +934,7 @@ class WebBox(Resource):
 
                     self.websocket.sendMessage(ntrips, False)
         except Exception as e:
-            logging.error("Problem updating websocket clients.")
+            logging.error("Problem updating websocket clients: {0}".format(str(e)))
 
 
     def get_subscriptions(self):
@@ -969,7 +960,7 @@ class WebBox(Resource):
                 else:
                     logging.debug("could not notify %s about %s: error was: %s" % (subscriber, uri, status))
             except Exception as e:
-                logging.debug("error notifying subscriber: %s, moving on." % subscriber)
+                logging.debug("error notifying subscriber (%s): %s, moving on." % (str(e), subscriber))
 
         return None # success
 
@@ -1302,7 +1293,7 @@ class WebBox(Resource):
                     response = self._convert_response(response, request)
                     return response
             except Exception as e:
-                logging.debug("Exception finding CBG of uris.")
+                logging.debug("Exception finding CBG of uris ({0})".format(str(e)))
                 return {"data": "", "status": 500, "reason": "Internal Server Error"}
 
 
@@ -1311,8 +1302,6 @@ class WebBox(Resource):
 
     def get_file_mime_type(self, file_path):
         """ Get the mimetype of a file on disk. """
-
-        fileName, fileExtension = os.path.splitext(file_path)
         return mimetypes.guess_type(file_path)[0] 
 
 
@@ -1497,7 +1486,7 @@ class WebBox(Resource):
             try:
                 graph = Graph()
             except Exception as e:
-                logging.debug("Got error making graph, trying again.")
+                logging.debug("Got error making graph ({0}), trying again.".format(str(e)))
 
         graph.add(
             (rdflib.URIRef(uri),
