@@ -22,7 +22,11 @@ class WebBoxSetup:
     """ Class to set up webbox directories/configurations. """
 
     def __init__(self):
-        pass
+        self.config_filename = None
+
+    def get_config_filename(self):
+        """ Return the filename of the last setup config. """
+        return self.config_filename
 
     def setup(self, webbox_dir, webbox_default_config_file, kbname, fs_port=8212, ws_port=8214):
         """ Setup a webbox directory from defaults if it doesn't exist. """
@@ -70,17 +74,25 @@ class WebBoxSetup:
         
         if config['version'] == 1:
             change_config = True
+            config['version'] = 2
+
             config['server']['html_dir'] = config['webbox']['html_dir']
             del config['webbox']['html_dir']
-            config['version'] = 2
         
         if config['version'] == 2:
             change_config = True
+            config['version'] = 3
+
             del config['webbox']['url']
             del config['webbox']['4store']
-            config['version'] = 3
         
         if config['version'] == 3:
+            change_config = True
+            config['version'] = 4
+
+            config['webboxes'] = ['webbox']
+        
+        if config['version'] == 4:
             pass
 
 
@@ -89,6 +101,8 @@ class WebBoxSetup:
             conf_fh = open(webbox_config, "w")
             json.dump(config, conf_fh, indent=4)
             conf_fh.close()
+
+        self.config_filename = webbox_config
 
         # add the webbox path to the config (at runtime only)
         config['webbox']['webbox_dir'] = webbox_dir

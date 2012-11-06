@@ -41,6 +41,6 @@ logger.addHandler(log_handler)
 logger.debug("Logger initialised")
 logger.setLevel(logging.DEBUG)
 
-server = WebServer(config, os.path.dirname(__file__))
+server = WebServer(config, setup.get_config_filename(), os.path.dirname(__file__))
 server.run()
 

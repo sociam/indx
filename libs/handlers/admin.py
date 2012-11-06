@@ -23,7 +23,8 @@ from session import WebBoxSession, ISession
 class AdminHandler(Resource):
     """ Add/remove boxes, add/remove users, change config. """
 
-    def __init__(self, webbox):
+    def __init__(self, webbox, webserver):
+        self.webserver = webserver
         self.webbox = webbox
         self.isLeaf = True # stops twisted from seeking children resources from me
 
@@ -42,15 +43,11 @@ class AdminHandler(Resource):
 
             logging.debug("Is user authenticated? {0}".format(wbSession.is_authenticated))
 
-#            if not wbSession.is_authenticated:
-#                response = {"status": 403, "reason": "Forbidden", "data": ""}
-#            else:
-
             # common HTTP methods
             if request.method == "GET":
-                response = self.do_GET(request)
+                response = self.do_GET(request, wbSession)
             elif request.method == "POST":
-                response = self.do_POST(request)
+                response = self.do_POST(request, wbSession)
             elif request.method == "OPTIONS":
                 response = {"status": 200, "reason": "OK", "data": "", "headers": self.get_supported_method_headers() }
 
@@ -89,15 +86,29 @@ class AdminHandler(Resource):
             return ""
 
         
-    def do_POST(self, request):
+    def do_POST(self, request, wbSession):
 
+        # anyone can do this, and it has no effect if the db is already set up.
         if request.path == "/admin/init_db":
             logging.debug("Init db request")
             return self.init_db(request)
 
+        # everything else requires the user to be logged in
+        if not wbSession.is_authenticated:
+            return {"status": 403, "reason": "Forbidden", "data": ""}
+
+
+        if request.path == "/admin/create_box":
+            logging.debug("Create box request")
+            return self.create_box(request)
+
         return {"data": "", "status": 404, "reason": "Not Found"}
 
-    def do_GET(self, request):
+
+    def do_GET(self, request, wbSession):
+
+        if not wbSession.is_authenticated:
+            return {"status": 403, "reason": "Forbidden", "data": ""}
 
         return {"data": "", "status": 404, "reason": "Not Found"}
 
@@ -109,6 +120,16 @@ class AdminHandler(Resource):
         root_password = request.args['input_password'][0]
 
         self.webbox.initialise_object_store(root_user, root_password)
+
+        # send them back to the webbox start page
+        request.redirect(str(self.webbox.get_base_url()))
+        return {"data": "", "status": 302, "reason": "Found"}
+        
+    def create_box(self, request):
+        """ Create a new box. """
+
+        name = request.args['name'][0]
+        self.webserver.create_box(name)
 
         # send them back to the webbox start page
         request.redirect(str(self.webbox.get_base_url()))

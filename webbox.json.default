@@ -1,5 +1,5 @@
 {
-    "version": 2,
+    "version": 4,
     "server": {
         "address": "",
         "port": 8211,
@@ -19,6 +19,7 @@
             "../Resources/4store"
         ]
     },
+    "webboxes": ['webbox'],
     "webbox": {
         "db": {
             "name": "webbox",
@@ -30,13 +31,6 @@
         "journal": "journal.sqlite",
 
         "file_dir": "files",
-        "url": "https://localhost:8211/webbox",
-
-        "4store": {
-            "host": "localhost",
-            "port": 8212,
-            "delay": 0
-        },
 
         "ws_hostname": "localhost",
         "ws_port": 8214

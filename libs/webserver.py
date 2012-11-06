@@ -16,7 +16,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
-import os, logging, time, traceback, json
+import os, logging, time, traceback, json, re
 from urlparse import urlparse, parse_qs
 from twisted.web import script
 from twisted.internet import reactor
@@ -40,9 +40,11 @@ from handlers.box import BoxHandler
 class WebServer:
     """ Twisted web server for running WebBox. """
 
-    def __init__(self, config, base_dir):
+    def __init__(self, config, config_filename, base_dir):
         """ Set up the server with a webbox. """
 
+        self.config = config
+        self.config_filename = config_filename
 
         # enable ssl (or not)
         try:
@@ -62,11 +64,8 @@ class WebServer:
                 self.server_url = self.server_url + ":" + str(config['server']['port'])
 
 
-        webbox = WebBox(config['webbox'], self.server_url)
+        self.webbox = WebBox(config['webbox'], self.server_url)
 
-        self.webboxes = []
-        self.webboxes.append(webbox)
- 
         # get values to pass to web server
         server_address = config['server']['address']
         if server_address == "":
@@ -83,7 +82,7 @@ class WebServer:
 
         # allow the config to be readable by .rpy files
         registry = Registry()
-        registry.setComponent(WebBox, webbox)
+        registry.setComponent(WebBox, self.webbox)
 
         # Disable directory listings
         class FileNoDirectoryListings(File):
@@ -97,13 +96,11 @@ class WebServer:
 
         factory = Site(root)
 
-        # default box handler
-        box = BoxHandler("webbox", webbox) # /webbox
-        root.putChild("webbox", box); # /webbox
-        # TODO load additional boxes from config file
+        self.root = root
+        self.start_boxes()
 
         # add the .well-known handler as a subdir
-        wellknown = WellKnownHandler(webbox.server_url)
+        wellknown = WellKnownHandler(self.server_url)
         root.putChild(".well-known", WSGIResource(reactor, reactor.getThreadPool(), wellknown.response_well_known)) #@UndefinedVariable
 
         # add the lrdd handler as a subdir
@@ -119,9 +116,8 @@ class WebServer:
         root.putChild("auth", auth) #@UndefinedVariable
 
         # add the admin handler as /admin/
-        admin = AdminHandler(webbox)
+        admin = AdminHandler(self.webbox, self)
         root.putChild("admin", admin) #@UndefinedVariable
-
 
 
         if ssl_off:
@@ -154,15 +150,62 @@ class WebServer:
         # setup triggers on quit
         def onShutDown():
             logging.debug("Got reactor quit trigger, so closing down webbox.")
-            for webbox in self.webboxes:
-                webbox.stop()
+            self.webbox.stop()
 
         reactor.addSystemEventTrigger("during", "shutdown", onShutDown) #@UndefinedVariable
 
+    def start_boxes(self):
+        """ Add the webboxes to the server. """
+
+        for name in self.config['webboxes']:
+            self.start_box(name)
+
+    def start_box(self, name):
+        """ Add a single webbox to the server. """
+        box = BoxHandler(name, self.webbox) # e.g. /webbox
+        self.root.putChild(name, box); # e.g. /webbox
 
     def run(self):
         """ Run the server. """
         reactor.run() #@UndefinedVariable
 
- 
+    def invalid_name(self, name):
+        """ Check if this name is safe (only contains a-z0-9_-). """ 
+        return re.match("^[a-z0-9_-]*$", name) is None
+
+    def create_box(self, name):
+        """ Create a new box, listening on /name. """
+
+        # check name is valid        
+        if self.invalid_name(name):
+            raise ForbiddenResource()
+    
+        # can't be any of these, we already use them for things
+        blacklist = [
+            "admin",
+            "html",
+            "static",
+            "lrdd",
+            "webbox",
+            ".well-known",
+            "openid",
+            "auth"
+        ]
+        if name in blacklist:
+            raise ForbiddenResource()
+        
+        # already exists?
+        if name in self.config['webboxes']:
+            raise ForbiddenResource()
+
+        self.config['webboxes'].append(name)
+        self.save_config()
+
+        self.start_box(name)
+
+    def save_config(self):
+        """ Save the current configuration to disk. """
+        conf_fh = open(self.config_filename, "w")
+        json.dump(self.config, conf_fh, indent=4)
+        conf_fh.close()
 
