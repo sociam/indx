@@ -88,6 +88,7 @@ class WebBox:
             # don't do anything here
             return
 
+        # create the new database
         ObjectStore.initialise(self.config['db']['name'], root_user, root_pass, self.config['db']['user'], self.config['db']['password'])
 
         # now it's all set up, we can reconnect it
@@ -108,19 +109,13 @@ class WebBox:
             self.object_store = ObjectStore(self.objectstore_db_conn)
             self.query_store = RDFObjectStore(self.object_store) # handles RDF to object conversion
         except Exception as e:
-            logging.debug("Exception reconnecting object store, setitng to None. Exception: {0}".format(str(e)))
+            logging.debug("Exception reconnecting object store, setting to None. Exception: {0}".format(str(e)))
             self.object_store = None
 
 
     def get_base_url(self):
         """ Get the server URL without the /webbox suffix. """
-        suffix = "webbox"
-        base_url = self.server_url[:-len(suffix)]
-
-        if base_url[-1:] == "/": # strip / from the end
-            base_url = base_url[:-1]
-
-        return base_url
+        return self.server_url
 
 
     def stop(self):
