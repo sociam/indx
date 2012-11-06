@@ -1,9 +1,11 @@
 {
-    "version": 1,
+    "version": 2,
     "server": {
         "address": "",
         "port": 8211,
         "hostname": "localhost",
+
+        "html_dir": "html",
 
         "ssl_off": false,
         "ssl_cert": "data/server.crt",
@@ -28,7 +30,6 @@
         "journal": "journal.sqlite",
 
         "file_dir": "files",
-        "html_dir": "html",
         "url": "https://localhost:8211/webbox",
 
         "4store": {

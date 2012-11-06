@@ -73,9 +73,13 @@ class WebBoxSetup:
 
         # add additions (defaults) to config here, so configs are automatically upgraded when new additions are made
         change_config = False
-        version = config['version']
-        if version == 1:
-            # set change_config to True to save the changes
+        if config['version'] == 1:
+            change_config = True
+            config['server']['html_dir'] = config['webbox']['html_dir']
+            del config['webbox']['html_dir']
+            config['version'] = 2
+        
+        if config['version'] == 2:
             pass
 
         # make sure http/https is correct in server url

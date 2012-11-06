@@ -17,16 +17,9 @@
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import logging, urllib2, uuid, rdflib, os, traceback, mimetypes, time, shutil, json
+import logging, urllib2, uuid, rdflib, os, traceback, mimetypes, shutil, json
 
-from zope.interface import Interface, Attribute, implements
-from twisted.web import script
-from twisted.web.static import File, Registry
-from twisted.web.wsgi import WSGIResource
-from twisted.internet import reactor
 from twisted.web.resource import Resource
-from twisted.web.resource import ForbiddenResource
-from lxml import objectify
 
 from rdflib.graph import Graph
 from time import strftime
@@ -40,6 +33,8 @@ from sparqlresults import SparqlResults
 from sparqlparse import SparqlParse
 from exception import ResponseOverride
 from wsupdateserver import WSUpdateServer
+from webdav import WebDAV
+from session import WebBoxSession, ISession
 
 from objectstore import ObjectStore, RDFObjectStore, IncorrectPreviousVersionException
 import psycopg2
@@ -92,35 +87,11 @@ class WebBox(Resource):
         self.websocket = WebSocketClient(host=config['ws_hostname'],port=config['ws_port'])
 
 
-        # set up the twisted web resource object
-
-        # Disable directory listings
-        class FileNoDirectoryListings(File):
-            def directoryListing(self):
-                return ForbiddenResource()
-
-        # allow the config to be readable by .rpy files
-        self.registry = Registry()
-        self.registry.setComponent(WebBox, self)
-
-        # root handler is a static web server
-        self.resource = FileNoDirectoryListings(os.path.abspath(config["html_dir"]), registry=self.registry)
-        self.resource.processors = {'.rpy': script.ResourceScript}
-        self.resource.ignoreExt('.rpy')
 
         # add the webbox handler as a subdir
         #self.resource.putChild("webbox", WSGIResource(reactor, reactor.getThreadPool(), self.response))
         self.isLeaf = True # stops twisted from seeking children from me
-        self.resource.putChild("webbox", self);
 
-        # add the .well-known handler as a subdir
-        self.resource.putChild(".well-known", WSGIResource(reactor, reactor.getThreadPool(), self.response_well_known)) #@UndefinedVariable
-
-        # add the lrdd handler as a subdir
-        self.resource.putChild("lrdd", WSGIResource(reactor, reactor.getThreadPool(), self.response_lrdd)) #@UndefinedVariable
-
-        # add the openid provider as a subdir
-        self.resource.putChild("openid", WSGIResource(reactor, reactor.getThreadPool(), self.response_openid)) #@UndefinedVariable
  
     # authentication
     def auth_login(self, request):
@@ -195,289 +166,6 @@ class WebBox(Resource):
 
         return base_url
 
-    def response_openid(self, environ, start_response):
-        """ WSGI response handler for /openid/ ."""
-        logging.debug("Calling WebBox openid response(): " + str(environ))
-
-        try:
-            req_type = environ['REQUEST_METHOD']
-            rfile = environ['wsgi.input']
-
-            if "REQUEST_URI" in environ:
-                url = urlparse(environ['REQUEST_URI'])
-                req_path = url.path
-                req_qs = parse_qs(url.query)
-            else:
-                req_path = environ['PATH_INFO']
-                req_qs = parse_qs(environ['QUERY_STRING'])
-
-            headers = []
-            response = ""
-
-            if len(req_path) > 0 and req_path[0] == "/":
-                req_path = req_path[1:] # strip / from start of path
-
-            if req_type == "GET":
-                # handle the /openid/ call using GET
-                response_type = req_qs['response_type'][0]
-                client_id = req_qs['client_id'][0]
-
-                redirect_uri = None
-                if "redirect_uri" in req_qs:
-                    redirect_uri = req_qs['redirect_uri'][0]
-
-                scope = None
-                if "scope" in req_qs:
-                    scope = req_qs['scope'][0]
-
-                state = None
-                if "state" in req_qs:
-                    state = req_qs['state'][0]
-
-                
-            elif req_type == "POST":
-                # handle the /openid/ call using POST
-
-                size = 0
-                if environ.has_key("CONTENT_LENGTH"):
-                    size = int(environ['CONTENT_LENGTH'])
-
-                body = ""
-                if size > 0:
-                    # read into file
-                    body = rfile.read(size)
-
-                req_qs_post = parse_qs(body)
-
-                response_type = req_qs_post['response_type'][0]
-                client_id = req_qs_post['client_id'][0]
-
-                redirect_uri = None
-                if "redirect_uri" in req_qs_post:
-                    redirect_uri = req_qs_post['redirect_uri'][0]
-
-                scope = None
-                if "scope" in req_qs_post:
-                    scope = req_qs_post['scope'][0]
-
-                state = None
-                if "state" in req_qs_post:
-                    state = req_qs_post['state'][0]
-
-            else:
-                # When you sent 405 Method Not Allowed, you must specify which methods are allowed
-                start_response("405 Method Not Allowed", [("Allow", "GET"), ("Allow", "POST"), ("Allow", "OPTIONS")])
-                return [""]
-
-            # we have response_type, client_id, redirect_uri, scope and state
-            if response_type == "code":
-                # Stage 1 of openid2 auth, the client is requesting a code
-                # as per http://tools.ietf.org/html/draft-ietf-oauth-v2-31#section-2
-                # we expire the auth code after 10 minutes and after one use.
-                code = str(uuid.uuid1())
-
-
-
-            # add CORS headers (blanket allow, for now)
-            headers.append( ("Access-Control-Allow-Origin", "*") )
-            headers.append( ("Access-Control-Allow-Methods", "POST, GET, HEAD, OPTIONS") )
-            headers.append( ("Access-Control-Allow-Headers", "Content-Type, origin, accept, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control") )
-
-
-            response = response.encode("utf8")
-            headers.append( ("Content-length", len(response)) )
-            start_response("200 OK", headers)
-            return [response]
-
-        except Exception as e:
-            logging.debug("Error in WebBox.response_openid(), returning 500: %s, exception is: %s" % (str(e), traceback.format_exc()))
-            start_response("500 Internal Server Error", [])
-            return [""]
-
-
-
-
-    def response_lrdd(self, environ, start_response):
-        """ WSGI response handler for /lrdd/ ."""
-        logging.debug("Calling WebBox lrdd response(): " + str(environ))
-
-        try:
-            req_type = environ['REQUEST_METHOD']
-
-            if "REQUEST_URI" in environ:
-                url = urlparse(environ['REQUEST_URI'])
-                req_path = url.path
-                req_qs = parse_qs(url.query)
-            else:
-                req_path = environ['PATH_INFO']
-                req_qs = parse_qs(environ['QUERY_STRING'])
-
-            headers = []
-            response = ""
-
-            if req_type == "GET":
-                # handle the /lrdd/ call
-
-                if len(req_path) > 0 and req_path[0] == "/":
-                    req_path = req_path[1:] # strip / from start of path
-
-                
-                if "uri" in req_qs:
-                    lrdd_uri = req_qs['uri'][0]
-
-
-                accept = environ['HTTP_ACCEPT'].lower()
-                if "json" in accept: # FIXME do proper content negotiation
-
-                    # response with json (JRD)
-
-                    headers.append( ("Content-Type", "application/json; charset=UTF-8") )
-
-                    response_json = {"subject": lrdd_uri, "links": [
-                        { "rel": "http://specs.openid.net/auth/2.0/provider",
-                          "href": "%s/openid" % (self.get_base_url()),
-                        }
-                    ]}
-                    response = json.dumps(response_json, indent=2)
-
-
-                if response == "":
-                    # respond with XML
-                    headers.append( ("Content-Type", "application/xrd+xml; charset=UTF-8") )
-
-                    response = """<?xml version='1.0' encoding='UTF-8'?>
-<XRD xmlns='http://docs.oasis-open.org/ns/xri/xrd-1.0' 
-     xmlns:hm='http://host-meta.net/xrd/1.0'>
-
-  <Subject>%s</Subject>
-  <Link rel='http://specs.openid.net/auth/2.0/provider' 
-        href='%s/openid'>
-  </Link>
-</XRD>
-""" % (lrdd_uri, self.get_base_url())
-
-
-            else:
-                # When you sent 405 Method Not Allowed, you must specify which methods are allowed
-                start_response("405 Method Not Allowed", [("Allow", "GET"), ("Allow", "OPTIONS")])
-                return [""]
-
-            # add CORS headers (blanket allow, for now)
-            headers.append( ("Access-Control-Allow-Origin", "*") )
-            headers.append( ("Access-Control-Allow-Methods", "POST, GET, HEAD, OPTIONS") )
-            headers.append( ("Access-Control-Allow-Headers", "Content-Type, origin, accept, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control") )
-
-            response = response.encode("utf8")
-            headers.append( ("Content-length", len(response)) )
-            start_response("200 OK", headers)
-            return [response]
-
-        except Exception as e:
-            logging.debug("Error in WebBox.response_lrdd(), returning 500: %s, exception is: %s" % (str(e), traceback.format_exc()))
-            start_response("500 Internal Server Error", [])
-            return [""]
-
-
-
-    def response_well_known(self, environ, start_response):
-        """ WSGI response handler for /.well-known/ ."""
-        logging.debug("Calling WebBox .well-known response(): " + str(environ))
-        try:
-            req_type = environ['REQUEST_METHOD']
-
-            if "REQUEST_URI" in environ:
-                url = urlparse(environ['REQUEST_URI'])
-                req_path = url.path
-                req_qs = parse_qs(url.query)
-            else:
-                req_path = environ['PATH_INFO']
-                req_qs = parse_qs(environ['QUERY_STRING'])
-
-            headers = []
-
-            if req_type == "GET":
-                # handle the /.well-known/ call
-
-                if len(req_path) > 0 and req_path[0] == "/":
-                    req_path = req_path[1:] # strip / from start of path
-
-                resource = None
-                if "resource" in req_qs:
-                    resource = req_qs['resource'][0]
-
-                if req_path == "host-meta":
-                    headers.append( ("Content-Type", "application/xrd+xml; charset=UTF-8") )
-
-                    subject = ""
-                    if resource is not None:
-                        subject = "<Subject>%s</Subject>" % (resource)
-
-                    response = """<?xml version='1.0' encoding='UTF-8'?>
-<XRD xmlns='http://docs.oasis-open.org/ns/xri/xrd-1.0' 
-     xmlns:hm='http://host-meta.net/xrd/1.0'>
-
-  %s
-
-  <Link rel='lrdd' 
-        template='%s/lrdd?uri={uri}'>
-    <Title>Resource Descriptor</Title>
-  </Link>
-  <Link rel='remoteStorage'
-        href='%s'
-        type='https://www.w3.org/community/rww/wiki/read-write-web-00#simple'>
-        <Property type='auth-endpoint'>%s/openid</Property>
-        <Property type='auth-method'>https://tools.ietf.org/html/draft-ietf-oauth-v2-26#section-4.2</Property>
-  </Link>
-</XRD>
-""" % (subject, self.get_base_url(), self.server_url, self.get_base_url())
-
-
-                elif req_path == "host-meta.json":
-                    headers.append( ("Content-Type", "application/json; charset=UTF-8") )
-
-                    response_json = {"links": [
-                        { "rel": "lrdd",
-                          "template": "%s/lrdd?uri={uri}" % (self.get_base_url()),
-                        },
-                        {
-                          "rel": "remoteStorage",
-                          "href": self.server_url,
-                          "type": "https://www.w3.org/community/rww/wiki/read-write-web-00#simple",
-                          "properties": {
-                              'auth-method': "https://tools.ietf.org/html/draft-ietf-oauth-v2-26#section-4.2",
-                              'auth-endpoint': self.get_base_url() + "/openid",
-                          }
-                        }
-                    ]}
-
-                    if resource is not None:
-                        response_json['subject'] = resource
-
-                    response = json.dumps(response_json, indent=2)
-
-                else:
-                    start_response("404 Not Found", [])
-                    return [""]
-
-            else:
-                # When you sent 405 Method Not Allowed, you must specify which methods are allowed
-                start_response("405 Method Not Allowed", [("Allow", "GET"), ("Allow", "OPTIONS")])
-                return [""]
-        
-            # add CORS headers (blanket allow, for now)
-            headers.append( ("Access-Control-Allow-Origin", "*") )
-            headers.append( ("Access-Control-Allow-Methods", "POST, GET, PUT, HEAD, OPTIONS") )
-            headers.append( ("Access-Control-Allow-Headers", "Content-Type, origin, accept, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control") )
-
-            response = response.encode("utf8")
-            headers.append( ("Content-length", len(response)) )
-            start_response("200 OK", headers)
-            return [response]
-
-        except Exception as e:
-            logging.debug("Error in WebBox.response_well_known(), returning 500: %s, exception is: %s" % (str(e), traceback.format_exc()))
-            start_response("500 Internal Server Error", [])
-            return [""]
 
 
     def get_resource(self):
@@ -506,51 +194,41 @@ class WebBox(Resource):
 
             logging.debug("Is user authenticated? {0}".format(wbSession.is_authenticated))
 
-            if request.method == "POST":
-                response = self.do_POST(request)
-            elif request.method == "PUT":
-                response = self.do_PUT(request)
-            elif request.method == "GET":
+            # handler for requests that require WebDAV
+            webdav = WebDAV()
+
+            # common HTTP methods
+            if request.method == "GET":
                 response = self.do_GET(request)
-            elif request.method == "OPTIONS":
-                response = self.do_OPTIONS()
-            elif request.method == "PROPFIND":
-                response = self.do_PROPFIND(request)
-            elif request.method == "LOCK":
-                response = self.do_LOCK(request)
-            elif request.method == "UNLOCK":
-                response = self.do_UNLOCK(request)
-            elif request.method == "DELETE":
-                response = self.do_DELETE(request)
-            elif request.method == "MKCOL":
-                response = self.do_MKCOL(request)
-            elif request.method == "MOVE":
-                response = self.do_MOVE(request)
-            elif request.method == "COPY":
-                response = self.do_COPY(request)
             elif request.method == "HEAD":
                 response = self.do_GET(request)
+            elif request.method == "PUT":
+                response = self.do_PUT(request)
+            elif request.method == "POST":
+                response = self.do_POST(request)
+            elif request.method == "OPTIONS":
+                response = {"status": 200, "reason": "OK", "data": "", "headers": self.get_supported_method_headers() }
+
+            # WebDAV-only methods
+            elif request.method == "PROPFIND":
+                response = webdav.do_PROPFIND(request)
+            elif request.method == "LOCK":
+                response = webdav.do_LOCK(request)
+            elif request.method == "UNLOCK":
+                response = webdav.do_UNLOCK(request)
+            elif request.method == "DELETE":
+                response = webdav.do_DELETE(request)
+            elif request.method == "MKCOL":
+                response = webdav.do_MKCOL(request)
+            elif request.method == "MOVE":
+                response = webdav.do_MOVE(request)
+            elif request.method == "COPY":
+                response = webdav.do_COPY(request)
+
+            # Another unsupported method
             else:
                 # When you sent 405 Method Not Allowed, you must specify which methods are allowed
-                response = {"status": 405, "reason": "Method Not Allowed", "data": "", "headers": [ 
-                  ("Allow", "PUT"),
-                  ("Allow", "GET"),
-                  ("Allow", "POST"),
-                  ("Allow", "HEAD"),
-                  ("Allow", "OPTIONS"),
-
-                  # WebDAV methods
-                  ("Allow", "PROPFIND"),
-                  #not impl#("Allow", "PROPPATCH"),
-                  #not impl#("Allow", "TRACE"),
-                  #not impl#("Allow", "ORDERPATCH"),
-                  ("Allow", "MKCOL"),
-                  ("Allow", "DELETE"),
-                  ("Allow", "COPY"),
-                  ("Allow", "MOVE"),
-                  ("Allow", "LOCK"),
-                  ("Allow", "UNLOCK"),
-                ]}
+                response = {"status": 405, "reason": "Method Not Allowed", "data": "", "headers": self.get_supported_method_headers() }
 
             # get headers from response if they exist
             headers = []
@@ -621,90 +299,27 @@ class WebBox(Resource):
             request.setResponseCode(500, message="Internal Server Error")
             return ""
 
-    def get_prop_xml(self, url, path, directory=False, displayname=None):
-        """ Get the property XML (for WebDAV) for this file. """
+    def get_supported_method_headers(self):
+        """ Return an array of "Allow" method tuples. """
+        return [  ("Allow", "PUT"),
+                  ("Allow", "GET"),
+                  ("Allow", "POST"),
+                  ("Allow", "HEAD"),
+                  ("Allow", "OPTIONS"),
 
-        stat = os.stat(path)
-        creation = time.strftime("%Y-%m-%dT%H:%M:%S%z", time.gmtime(stat.st_ctime) )
-        length = str(stat.st_size)
-        modified = time.strftime("%A, %d-%b-%y %H:%M:%S GMT", time.gmtime(stat.st_mtime) )
-
-        if directory or os.path.isdir(path):
-            resourcetype = "<D:resourcetype><D:collection/></D:resourcetype>"
-        else:
-            resourcetype = "<D:resourcetype/>"
-
-        if displayname is not None:
-            displayname = "<D:displayname>%s</D:displayname>" % displayname
-        else:
-            displayname = ""
-
-        return """
-<D:response>
- <D:href>%s</D:href>
- <D:propstat>
-  <D:prop>
-   <D:quota-available-bytes/>
-   <D:quota-used-bytes/>
-   <D:quota/>
-   <D:quotaused/>
-   <D:creationdate>
-    %s
-   </D:creationdate>
-   <D:getcontentlength>
-    %s
-   </D:getcontentlength>
-   <D:getlastmodified>
-    %s
-   </D:getlastmodified>
-   %s
-   %s
-   <D:supportedlock>
-    <D:lockentry>
-     <D:lockscope><D:exclusive/></D:lockscope>
-     <D:locktype><D:write/></D:locktype>
-    </D:lockentry>
-    <D:lockentry>
-     <D:lockscope><D:shared/></D:lockscope>
-     <D:locktype><D:write/></D:locktype>
-    </D:lockentry>
-   </D:supportedlock>
-  </D:prop>
- </D:propstat>
-</D:response>
-""" % (url, creation, length, modified, displayname, resourcetype)
-
-    def do_DELETE(self, request):
-        """ Delete a file / dir, used by WebDAV. """
-
-        file_path = self.get_file_path(request.path)
-        logging.debug("Deleting %s" % file_path)
-
-        if not os.path.exists(file_path):
-            return{"status": 404, "reason": "Not Found", "data": ""}
-
-        if os.path.isdir(file_path):
-            os.rmdir(file_path) # only works on empty dirs
-        else:
-            os.remove(file_path)
-
-        return {"status": 204, "reason": "No Content", "data": ""}
-
-    def do_MKCOL(self, request):
-        """ WebDAV command to make a collection (i.e., a directory). """
-
-        file_path = self.get_file_path(request.path)
-        logging.debug("Making new folder %s" % file_path)
-        if os.path.exists(file_path):
-            raise ResponseOverride(409, "Conflict")
-
-        try:
-            os.mkdir(file_path)
-        except Exception as e:
-            logging.error("Couldn't make directory ({0}): {1}".format(str(e),str(file_path)))
-            raise ResponseOverride(500, "Internal Server Error")
-
-        return {"status": 204, "reason": "No Content", "data": ""}
+                  # WebDAV methods
+                  ("Allow", "PROPFIND"),
+                  #not impl#("Allow", "PROPPATCH"),
+                  #not impl#("Allow", "TRACE"),
+                  #not impl#("Allow", "ORDERPATCH"),
+                  ("Allow", "MKCOL"),
+                  ("Allow", "DELETE"),
+                  ("Allow", "COPY"),
+                  ("Allow", "MOVE"),
+                  ("Allow", "LOCK"),
+                  ("Allow", "UNLOCK"),
+                ]
+        
 
     def strip_server_url(self, url):
         """ Return the path with the webbox server URL stripped off. """
@@ -723,175 +338,6 @@ class WebBox(Resource):
         logging.debug("Stripping server url from {0}, now {1}".format(url, out))
         return out
 
-    def do_MOVE(self, request):
-        """ WebDAV command to move (rename) a file. """
-
-        file_path = self.get_file_path(request.path)
-        logging.debug("Moving from file %s" % file_path)
-        if not os.path.exists(file_path):
-            raise ResponseOverride(404, "Not Found")
-
-        destination = request.getHeader("Destination")
-
-        dest_file_path = self.get_file_path(destination)
-        logging.debug("Moving to file %s" % dest_file_path)
-
-        os.rename(file_path, dest_file_path)
-
-        return {"status": 204, "reason": "No Content", "data": ""}
-
-    def do_COPY(self, request):
-        """ WebDAV command to copy a file. """
-
-        file_path = self.get_file_path(request.path)
-        logging.debug("Copying from file %s" % file_path)
-        if not os.path.exists(file_path):
-            raise ResponseOverride(404, "Not Found")
-
-        destination = request.getHeader("Destination")
-
-        dest_file_path = self.get_file_path(destination)
-        logging.debug("Copying to file %s" % dest_file_path)
-
-        if os.path.isdir(file_path):
-            shutil.copytree(file_path, dest_file_path)
-        else:
-            shutil.copyfile(file_path, dest_file_path)
-
-        return {"status": 204, "reason": "No Content", "data": ""}
-
-
-    def do_PROPFIND(self, request):
-        logging.debug("WebDAV PROPFIND")
-
-        size = 0
-        if request.getHeader("Content-length") is not None:
-            size = int(request.getHeader("Content-length"))
-
-        rfile = ""
-        if size > 0:
-            # read into rfile
-            rfile = request.content.read(size)
-
-        if rfile != "":
-            logging.debug("got request: " + rfile)
-
-        # FIXME we ignore the specifics of the request and just give what Finder wants: getlastmodified, getcontentlength, creationdate and resourcetype
-        xmlout = ""
-
-        file_path = self.get_file_path(request.path)
-        logging.debug("For PROPFIND rfile is: "+file_path)
-
-        if os.path.exists(file_path):
-            if os.path.isdir(file_path):
-                # do an LS
-                displayname = None
-                if request.path == "/":
-                    displayname = "WebBox"
-                xmlout += self.get_prop_xml(self.server_url + request.path, file_path, directory=True, displayname=displayname)
-                for filename in os.listdir(file_path):
-                    fname = filename
-                    if request.path[-1:] != "/":
-                        fname = "/" + filename
-
-                    xmlout += self.get_prop_xml(self.server_url + request.path + fname, file_path + os.sep + filename)
-            else:
-                # return the properties for a single rfile
-                xmlout += self.get_prop_xml(self.server_url + request.path, file_path)
-        else:
-            logging.debug("Not found for PROPFIND")
-            return {"status": 404, "reason": "Not Found", "data": ""}
-
-        # surround in xml
-        xmlout = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n<D:multistatus xmlns:D=\"DAV:\">" + xmlout + "\n</D:multistatus>"
-
-        xmlout = xmlout.encode("utf8")
-
-        logging.debug("Sending propfind: " + xmlout)
-
-        return {"status": 207, "reason": "Multi-Status", "data": xmlout, "type": "text/xml; charset=\"utf-8\""}
-
-        
-    def do_LOCK(self, request):
-        logging.debug("WebDAV Lock on file: "+request.path)
-
-        try:
-            fileroot = self.server_url + request.path
-
-            x = objectify.fromstring(file)
-
-            owner = x.owner.href.text
-            lockscope = str([ el.tag for el in x.lockscope.iterchildren() ][0])[6:] # 6: gets rid of {DAV:}
-            locktype = str([ el.tag for el in x.locktype.iterchildren() ][0])[6:]
-            
-
-            token = "urn:uuid:%s" % (str(uuid.uuid1()))
-
-            lock = """
-           <D:locktype><D:%s/></D:locktype>
-           <D:lockscope><D:%s/></D:lockscope>
-           <D:depth>infinity</D:depth>
-           <D:owner>
-             <D:href>%s</D:href>
-           </D:owner>
-           <D:timeout>Second-604800</D:timeout>
-           <D:locktoken>
-             <D:href
-             >%s</D:href>
-           </D:locktoken>
-           <D:lockroot>
-             <D:href
-             >%s</D:href>
-           </D:lockroot>
-""" % (locktype, lockscope, owner, token, fileroot)
-
-            lock = """
-<?xml version="1.0" encoding="utf-8" ?> 
-  <D:prop xmlns:D="DAV:"> 
-    <D:lockdiscovery> 
-      <D:activelock>
-""" + lock + """
-      </D:activelock>
-    </D:lockdiscovery>
-  </D:prop>
-"""
-            return {"status": 200, "reason": "OK", "data": lock, type: "application/xml; charset=\"utf-8\"", "headers": [("Lock-Token", "<"+token+">")]}
-
-        except Exception as e:
-            logging.debug("Error in LOCK, {0}".format(str(e)))
-            return {"status": 400, "reason": "Bad Request", "data": ""}
-
-
-
-    def do_UNLOCK(self, request):
-        logging.debug("WebDAV Unlock on file: "+request.path)
-        # FIXME always succeeds
-        return {"status": 204, "reason": "No Content", "data": ""}
-
-
-
-    def do_OPTIONS(self):
-        logging.debug("Sending 200 response to OPTIONS")
-        return {"status": 200, "reason": "OK", "data": "", "headers":
-            [ ("Allow", "PUT"),
-              ("Allow", "GET"),
-              ("Allow", "POST"),
-              ("Allow", "HEAD"),
-              ("Allow", "OPTIONS"),
-
-              # WebDAV methods
-              ("Allow", "PROPFIND"),
-              #not impl#("Allow", "PROPPATCH"),
-              #not impl#("Allow", "TRACE"),
-              #not impl#("Allow", "ORDERPATCH"),
-              ("Allow", "MKCOL"),
-              ("Allow", "DELETE"),
-              ("Allow", "COPY"),
-              ("Allow", "MOVE"),
-              ("Allow", "LOCK"),
-              ("Allow", "UNLOCK"),
-            ]
-        } 
 
     def add_to_journal(self, graphuri):
         """ This Graph URI was added or changed, add to the journal. """
@@ -1107,31 +553,10 @@ class WebBox(Resource):
             return {"data": "", "status": 204, "reason": "No Content"}
 
         else:
-            
             logging.debug("a POST to an existing non-rdf static file (non-sensical): sending a not allowed response")
 
             # When you send a 405 Method Not Allowed you have to send Allow headers saying which methods ARE allowed.
-            headers = [ 
-              ("Allow", "PUT"),
-              ("Allow", "GET"),
-              #invalid for a file#("Allow", "POST"),
-              ("Allow", "HEAD"),
-              ("Allow", "OPTIONS"),
-
-              # WebDAV methods
-              ("Allow", "PROPFIND"),
-              #not impl#("Allow", "PROPPATCH"),
-              #not impl#("Allow", "TRACE"),
-              #not impl#("Allow", "ORDERPATCH"),
-              #invalid for a file#("Allow", "MKCOL"),
-              ("Allow", "DELETE"),
-              ("Allow", "COPY"),
-              ("Allow", "MOVE"),
-              ("Allow", "LOCK"),
-              ("Allow", "UNLOCK"),
-            ]
-
-            return {"data": "", "status": 405, "reason": "Method Not Allowed", "headers": headers}
+            return {"data": "", "status": 405, "reason": "Method Not Allowed", "headers": self.get_supported_method_headers() }
 
 
     def handle_update(self, since_repository_hash):
@@ -1754,26 +1179,4 @@ class WebBox(Resource):
         abs_this_path = os.path.abspath(path)
 
         return abs_this_path.startswith(abs_file_path)
-
-class ISession(Interface):
-    is_authenticated = Attribute("A bool which registers if a user has successfully authenticated.")
-    userid = Attribute("User ID (from the DB) of the authenticated user.")
-    username = Attribute("Username of the authenticated user.")
-
-class WebBoxSession(object):
-    """ Stored per user session to record if the user is authenticated etc. """
-    implements(ISession)
-
-    def __init__(self, session):
-        self.is_authenticated = False
-        self.userid = None
-        self.username = None
-
-    def setAuthenticated(self, val):
-        self.is_authenticated = val
-   
-    def setUser(self, userid, username):
-        self.userid = userid
-        self.username = username
-
 
