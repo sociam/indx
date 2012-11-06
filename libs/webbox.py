@@ -491,8 +491,8 @@ class WebBox(Resource):
 
 
 
-    # Twisted Resource handler
     def render(self, request):
+        """ Twisted resource handler. """
 
         logging.debug("Calling WebBox render()")
         try:
