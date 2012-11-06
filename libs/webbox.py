@@ -58,15 +58,14 @@ class WebBox(Resource):
     def __init__(self, config):
         self.config = config # configuration from server
 
-        # connect to the object store
+        logging.debug("Started new WebBox at URL: " + self.server_url)
+
+        # connect to the object store (database)
         self.reconnect_object_store()
 
         self.server_url = config["url"] # full webbox url of the server, e.g. http://localhost:8212/webbox
         self.file_dir = os.path.join(config['webbox_dir'],config['file_dir'])
         self.file_dir = os.path.realpath(self.file_dir) # where to store PUT files
-
-        logging.debug("Started new WebBox at URL: " + self.server_url)
-
 
         # config rdflib first
         register("json-ld", Serializer, "rdfliblocal.jsonld", "JsonLDSerializer")
@@ -81,16 +80,11 @@ class WebBox(Resource):
             "text/json": "json-ld",
         }
 
-
         # start websockets server
         self.wsupdate = WSUpdateServer(port=config['ws_port'], host=config['ws_hostname'])
         self.websocket = WebSocketClient(host=config['ws_hostname'],port=config['ws_port'])
 
-
-
-        # add the webbox handler as a subdir
-        #self.resource.putChild("webbox", WSGIResource(reactor, reactor.getThreadPool(), self.response))
-        self.isLeaf = True # stops twisted from seeking children from me
+        self.isLeaf = True # stops twisted from seeking children resources from me
 
  
     # authentication
@@ -167,17 +161,9 @@ class WebBox(Resource):
         return base_url
 
 
-
-    def get_resource(self):
-        """ Get the twisted web resource. """
-        return self.resource
-
-
     def stop(self):
         """ Shut down the web box. """
         pass
-
-
 
     def render(self, request):
         """ Twisted resource handler. """
