@@ -20,13 +20,12 @@
 import rdflib, logging, traceback, uuid
 
 import webbox
-from httputils import resolve_uri, http_get
-from urlparse import urlparse
+from httputils import resolve_uri
 
 from rdflib.graph import Graph
 from time import strftime
 
-class WebBoxHandler:
+class WebBoxMessages:
     """ A class that handles webbox messages, by looking at received RDF. """
 
     def __init__(self, graph, webbox):

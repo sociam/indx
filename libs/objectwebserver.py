@@ -29,9 +29,8 @@ from twisted.internet import reactor, ssl
 from twisted.internet.defer import Deferred
 import objectstore
 
-
 class ObjectWebServer:
-    """ Twisted web server for running a test object server. """
+    """ Twisted web server for running a TEST object server. """
 
     def __init__(self, config):
         """ Set up the server with an object server. """

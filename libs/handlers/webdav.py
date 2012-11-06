@@ -20,7 +20,7 @@ import time, os, logging, shutil, uuid
 from exception import ResponseOverride
 from lxml import objectify
 
-class WebDAV:
+class WebDAVHandler:
     """ WebBox WebDAV module. """
     
     def __init__(self):

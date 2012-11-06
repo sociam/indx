@@ -33,6 +33,7 @@ from webbox import WebBox
 from handlers.wellknown import WellKnownHandler
 from handlers.lrdd import LRDDHandler
 from handlers.openid import OpenIDHandler
+from handlers.auth import AuthHandler
 
 class WebServer:
     """ Twisted web server for running WebBox. """
@@ -75,17 +76,20 @@ class WebServer:
         factory = Site(root)
 
         # add the .well-known handler as a subdir
-        wellknown = WellKnownHandler(webbox.get_base_url())
+        wellknown = WellKnownHandler(webbox.server_url)
         root.putChild(".well-known", WSGIResource(reactor, reactor.getThreadPool(), wellknown.response_well_known)) #@UndefinedVariable
 
         # add the lrdd handler as a subdir
-        lrdd = LRDDHandler(webbox.get_base_url())
+        lrdd = LRDDHandler()
         root.putChild("lrdd", WSGIResource(reactor, reactor.getThreadPool(), lrdd.response_lrdd)) #@UndefinedVariable
 
         # add the openid provider as a subdir
-        openid = OpenIDHandler(webbox.get_base_url())
+        openid = OpenIDHandler()
         root.putChild("openid", WSGIResource(reactor, reactor.getThreadPool(), openid.response_openid)) #@UndefinedVariable
 
+        # add the authentication handler as a subdir of /auth/
+        auth = AuthHandler()
+        root.putChild("auth", auth) #@UndefinedVariable
 
 
         # enable ssl (or not)
@@ -139,4 +143,5 @@ class WebServer:
         """ Run the server. """
         reactor.run() #@UndefinedVariable
 
+ 
 

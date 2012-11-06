@@ -30,7 +30,7 @@ $(document).ready(function(){
 
         console.debug("Calling login.");
         $.ajax({
-            url: "/webbox/login",
+            url: "/auth/login",
             data: {"username": username, "password": password},
             type: "POST",
             success: function(data){

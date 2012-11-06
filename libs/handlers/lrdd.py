@@ -21,12 +21,9 @@ from urlparse import urlparse, parse_qs
 
 class LRDDHandler:
 
-    def __init__(self, base_url):
-        self.base_url = base_url
+    def __init__(self):
+        pass
         
-    def get_back_url(self):
-        return self.base_url
-
     def response_lrdd(self, environ, start_response):
         """ WSGI response handler for /lrdd/ ."""
         logging.debug("Calling WebBox lrdd response(): " + str(environ))
@@ -65,7 +62,7 @@ class LRDDHandler:
 
                     response_json = {"subject": lrdd_uri, "links": [
                         { "rel": "http://specs.openid.net/auth/2.0/provider",
-                          "href": "%s/openid" % (self.get_base_url()),
+                          "href": "/openid",
                         }
                     ]}
                     response = json.dumps(response_json, indent=2)
@@ -81,10 +78,10 @@ class LRDDHandler:
 
   <Subject>%s</Subject>
   <Link rel='http://specs.openid.net/auth/2.0/provider' 
-        href='%s/openid'>
+        href='/openid'>
   </Link>
 </XRD>
-""" % (lrdd_uri, self.get_base_url())
+""" % (lrdd_uri)
 
 
             else:

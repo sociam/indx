@@ -21,12 +21,8 @@ from urlparse import urlparse, parse_qs
 
 class OpenIDHandler:
 
-    def __init__(self, base_url):
-        self.base_url = base_url
-        
-    def get_back_url(self):
-        return self.base_url
-
+    def __init__(self):
+        pass
 
     def response_openid(self, environ, start_response):
         """ WSGI response handler for /openid/ ."""

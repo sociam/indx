@@ -23,7 +23,7 @@ from twisted.web.resource import Resource
 
 from rdflib.graph import Graph
 from time import strftime
-from webboxhandler import WebBoxHandler
+from webboxmessages import WebBoxMessages
 from subscriptions import Subscriptions
 from journal import Journal
 from websocketclient import WebSocketClient
@@ -33,7 +33,6 @@ from sparqlresults import SparqlResults
 from sparqlparse import SparqlParse
 from exception import ResponseOverride
 from wsupdateserver import WSUpdateServer
-from webdav import WebDAV
 from session import WebBoxSession, ISession
 
 from objectstore import ObjectStore, RDFObjectStore, IncorrectPreviousVersionException
@@ -43,6 +42,8 @@ from urlparse import urlparse, parse_qs
 from rdflib.serializer import Serializer
 from rdflib.plugin import register
 import rdfliblocal.jsonld
+
+from handlers.webdav import WebDAVHandler
 
 class WebBox(Resource):
     # to use like WebBox.to_predicate
@@ -58,12 +59,14 @@ class WebBox(Resource):
     def __init__(self, config):
         self.config = config # configuration from server
 
-        logging.debug("Started new WebBox at URL: " + self.server_url)
 
         # connect to the object store (database)
         self.reconnect_object_store()
 
         self.server_url = config["url"] # full webbox url of the server, e.g. http://localhost:8212/webbox
+        logging.debug("Started new WebBox at URL: " + self.server_url)
+
+        
         self.file_dir = os.path.join(config['webbox_dir'],config['file_dir'])
         self.file_dir = os.path.realpath(self.file_dir) # where to store PUT files
 
@@ -85,30 +88,6 @@ class WebBox(Resource):
         self.websocket = WebSocketClient(host=config['ws_hostname'],port=config['ws_port'])
 
         self.isLeaf = True # stops twisted from seeking children resources from me
-
- 
-    # authentication
-    def auth_login(self, request):
-        """ User logged in (POST) """
-        logging.debug("Login request, origin: {0}".format(request.getHeader("Origin")))
-
-        session = request.getSession()
-        wbSession = session.getComponent(ISession)
-        wbSession.setAuthenticated(True)
-        wbSession.setUser(0, "anonymous")
-
-        return {"data": "", "status": 200, "reason": "OK"}
-
-    def auth_logout(self, request):
-        """ User logged out (GET, POST) """
-        logging.debug("Logout request, origin: {0}".format(request.getHeader("Origin")))
-
-        session = request.getSession()
-        wbSession = session.getComponent(ISession)
-        wbSession.setAuthenticated(False)
-        wbSession.setUser(None, None)
-
-        return {"data": "", "status": 200, "reason": "OK"}
 
 
     def get_html_index(self):
@@ -181,7 +160,7 @@ class WebBox(Resource):
             logging.debug("Is user authenticated? {0}".format(wbSession.is_authenticated))
 
             # handler for requests that require WebDAV
-            webdav = WebDAV()
+            webdav = WebDAVHandler()
 
             # common HTTP methods
             if request.method == "GET":
@@ -400,17 +379,6 @@ class WebBox(Resource):
         """ Handle a POST (update). """
         # POST of RDF is a merge.
 
-        # login called
-        if self.strip_server_url(request.path) == "/login":
-            logging.debug("Login request")
-            return self.auth_login(request)
-
-        # logout called
-        if self.strip_server_url(request.path) == "/logout":
-            logging.debug("Logout request")
-            return self.auth_logout(request)
-
-
         post_uri = self.server_url + request.path
         logging.debug("POST of uri: %s" % post_uri)
 
@@ -586,11 +554,6 @@ class WebBox(Resource):
             if "since" in request.args:
                 since = request.args['since'][0]
             return self.handle_update(since)
-
-        # logout called
-        if self.strip_server_url(request.path) == "/logout":
-            logging.debug("Logout request")
-            return self.auth_logout(request)
 
 
         if request.getHeader("Accept") is not None:
@@ -946,8 +909,8 @@ class WebBox(Resource):
     def _handle_webbox_rdf(self, graph):
         """ Check if this RDF graph contains any webbox trigger RDF, i.e. sioc:to_address, webbox:subscribe, etc and deal with it. """
 
-        handler = WebBoxHandler(graph, self)
-        return handler.handle_all()
+        msgs = WebBoxMessages(graph, self)
+        return msgs.handle_all()
 
 
     def do_PUT(self, request):

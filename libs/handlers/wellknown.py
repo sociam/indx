@@ -21,12 +21,8 @@ from urlparse import urlparse, parse_qs
 
 class WellKnownHandler:
 
-    def __init__(self, base_url):
-        self.base_url = base_url
-        
-    def get_back_url(self):
-        return self.base_url
-
+    def __init__(self, server_url):
+        self.server_url = server_url
 
     def response_well_known(self, environ, start_response):
         """ WSGI response handler for /.well-known/ ."""
@@ -68,17 +64,17 @@ class WellKnownHandler:
   %s
 
   <Link rel='lrdd' 
-        template='%s/lrdd?uri={uri}'>
+        template='/lrdd?uri={uri}'>
     <Title>Resource Descriptor</Title>
   </Link>
   <Link rel='remoteStorage'
         href='%s'
         type='https://www.w3.org/community/rww/wiki/read-write-web-00#simple'>
-        <Property type='auth-endpoint'>%s/openid</Property>
+        <Property type='auth-endpoint'>/openid</Property>
         <Property type='auth-method'>https://tools.ietf.org/html/draft-ietf-oauth-v2-26#section-4.2</Property>
   </Link>
 </XRD>
-""" % (subject, self.get_base_url(), self.server_url, self.get_base_url())
+""" % (subject, self.server_url)
 
 
                 elif req_path == "host-meta.json":
@@ -86,7 +82,7 @@ class WellKnownHandler:
 
                     response_json = {"links": [
                         { "rel": "lrdd",
-                          "template": "%s/lrdd?uri={uri}" % (self.get_base_url()),
+                          "template": "/lrdd?uri={uri}",
                         },
                         {
                           "rel": "remoteStorage",
@@ -94,7 +90,7 @@ class WellKnownHandler:
                           "type": "https://www.w3.org/community/rww/wiki/read-write-web-00#simple",
                           "properties": {
                               'auth-method': "https://tools.ietf.org/html/draft-ietf-oauth-v2-26#section-4.2",
-                              'auth-endpoint': self.get_base_url() + "/openid",
+                              'auth-endpoint': "/openid",
                           }
                         }
                     ]}
