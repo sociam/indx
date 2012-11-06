@@ -23,19 +23,14 @@ from twisted.web.resource import Resource
 from rdflib.graph import Graph
 from time import strftime
 from webboxmessages import WebBoxMessages
-from subscriptions import Subscriptions
 from journal import Journal
-from websocketclient import WebSocketClient
 from mimeparse import best_match
-from httputils import resolve_uri
 from sparqlresults import SparqlResults
 from sparqlparse import SparqlParse
 from exception import ResponseOverride
-from wsupdateserver import WSUpdateServer
 from session import WebBoxSession, ISession
 
 from objectstore import ObjectStore, RDFObjectStore, IncorrectPreviousVersionException
-import psycopg2
 
 from urlparse import urlparse, parse_qs
 from rdflib.serializer import Serializer
