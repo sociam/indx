@@ -34,24 +34,47 @@ from handlers.wellknown import WellKnownHandler
 from handlers.lrdd import LRDDHandler
 from handlers.openid import OpenIDHandler
 from handlers.auth import AuthHandler
+from handlers.admin import AdminHandler
+from handlers.box import BoxHandler
 
 class WebServer:
     """ Twisted web server for running WebBox. """
 
-    def __init__(self, config, base_dir, webbox):
+    def __init__(self, config, base_dir):
         """ Set up the server with a webbox. """
+
+
+        # enable ssl (or not)
+        try:
+            ssl_off = config['server']['ssl_off']
+        except Exception as e:
+            ssl_off = False
+
+        # generate the base URL
+        self.server_url = config['server']['hostname']
+        if ssl_off:
+            self.server_url = "http://" + self.server_url
+            if config['server']['port'] != 80:
+                self.server_url = self.server_url + ":" + str(config['server']['port'])
+        else:
+            self.server_url = "https://" + self.server_url
+            if config['server']['port'] != 443:
+                self.server_url = self.server_url + ":" + str(config['server']['port'])
+
+
+        webbox = WebBox(config['webbox'], self.server_url)
 
         self.webboxes = []
         self.webboxes.append(webbox)
  
         # get values to pass to web server
-        server_address = config['address']
+        server_address = config['server']['address']
         if server_address == "":
             server_address = "0.0.0.0"
-        server_port = int(config['port'])
-        server_hostname = config['hostname']
-        server_cert = os.path.join(base_dir,config['ssl_cert'])
-        server_private_key = os.path.join(base_dir,config['ssl_private_key'])
+        server_port = int(config['server']['port'])
+        server_hostname = config['server']['hostname']
+        server_cert = os.path.join(base_dir,config['server']['ssl_cert'])
+        server_private_key = os.path.join(base_dir,config['server']['ssl_private_key'])
 
         # TODO set up twisted to use gzip compression
 
@@ -68,12 +91,16 @@ class WebServer:
                 return ForbiddenResource()
 
         # root handler is a static web server
-        root = FileNoDirectoryListings(os.path.abspath(config["html_dir"]), registry = registry)
+        root = FileNoDirectoryListings(os.path.abspath(config['server']["html_dir"]), registry = registry)
         root.processors = {'.rpy': script.ResourceScript}
         root.ignoreExt('.rpy')
-        root.putChild("webbox", webbox); # webbox object is also a twisted.web.resource.Resource (i.e., has .render() function)
 
         factory = Site(root)
+
+        # default box handler
+        box = BoxHandler("webbox", webbox) # /webbox
+        root.putChild("webbox", box); # /webbox
+        # TODO load additional boxes from config file
 
         # add the .well-known handler as a subdir
         wellknown = WellKnownHandler(webbox.server_url)
@@ -87,16 +114,15 @@ class WebServer:
         openid = OpenIDHandler()
         root.putChild("openid", WSGIResource(reactor, reactor.getThreadPool(), openid.response_openid)) #@UndefinedVariable
 
-        # add the authentication handler as a subdir of /auth/
+        # add the authentication handler as /auth/
         auth = AuthHandler()
         root.putChild("auth", auth) #@UndefinedVariable
 
+        # add the admin handler as /admin/
+        admin = AdminHandler(webbox)
+        root.putChild("admin", admin) #@UndefinedVariable
 
-        # enable ssl (or not)
-        try:
-            ssl_off = config['ssl_off']
-        except Exception as e:
-            ssl_off = False
+
 
         if ssl_off:
             logging.debug("SSL is OFF, connections to this SecureStore are not encrypted.")
@@ -107,21 +133,16 @@ class WebServer:
             sslContext = ssl.DefaultOpenSSLContextFactory(server_private_key, server_cert)
             reactor.listenSSL(server_port, factory, contextFactory=sslContext) #@UndefinedVariable
 
-        scheme = "https"
-        if ssl_off:
-            scheme = "http"
-        server_url = scheme+"://"+server_hostname+":"+str(server_port)+"/"
-
         # load a web browser once the server has started
         def on_start(arg):
             logging.debug("Server started successfully.")
-            if config['load_browser']:
-                #time.sleep(2)
-                try:
+            try:
+                if config['server']['load_browser']:
                     import webbrowser
-                    webbrowser.open(server_url)
-                except Exception as e:
-                    pass # no web browser? no problem.
+                    webbrowser.open(self.server_url)
+            except Exception as e:
+                logging.debug("Couldnt load webbrowser.")
+                
         def start_failed(arg):
             logging.debug("start_failed: "+str(arg))
 

@@ -41,7 +41,6 @@ logger.addHandler(log_handler)
 logger.debug("Logger initialised")
 logger.setLevel(logging.DEBUG)
 
-wb = WebBox(config['webbox'])
-server = WebServer(config['server'], os.path.dirname(__file__), wb)
+server = WebServer(config, os.path.dirname(__file__))
 server.run()
 

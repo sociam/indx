@@ -64,15 +64,10 @@ class WebBoxSetup:
             # set webbox db based on username
             config['webbox']['db']['name'] = kbname
 
-            # add 4store kb based on username
-            config['webbox']['4store']['kbname'] = kbname
-
-            # set ports
-            config['webbox']['4store']['port'] = fs_port
-            config['webbox']['ws_port'] = ws_port
 
         # add additions (defaults) to config here, so configs are automatically upgraded when new additions are made
         change_config = False
+        
         if config['version'] == 1:
             change_config = True
             config['server']['html_dir'] = config['webbox']['html_dir']
@@ -80,17 +75,13 @@ class WebBoxSetup:
             config['version'] = 2
         
         if config['version'] == 2:
-            pass
-
-        # make sure http/https is correct in server url
-        config_ssl = (config['webbox']['url'][:5].lower() == 'https')
-        if config_ssl != (not config['server']['ssl_off']):
-            # correct URL
             change_config = True
-            if config_ssl:
-                config['webbox']['url'] = "http"  + config['webbox']['url'][5:]
-            else:
-                config['webbox']['url'] = "https" + config['webbox']['url'][4:]
+            del config['webbox']['url']
+            del config['webbox']['4store']
+            config['version'] = 3
+        
+        if config['version'] == 3:
+            pass
 
 
         # write updated config
@@ -101,6 +92,5 @@ class WebBoxSetup:
 
         # add the webbox path to the config (at runtime only)
         config['webbox']['webbox_dir'] = webbox_dir
-
         return config 
 
