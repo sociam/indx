@@ -61,4 +61,5 @@ class AdminHandler(Resource):
 
         # send them back to the webbox start page
         request.redirect(str(self.webbox.get_base_url()))
+        request.finish()
         
