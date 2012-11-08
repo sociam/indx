@@ -63,8 +63,13 @@ class BaseHandler(Resource):
             path_fields = split("/", request.path)
             sub_path = path_fields[1]
 
+            subhandler = None
             if sub_path in self.subhandlers:
                 subhandler = self.subhandlers[sub_path]
+            elif "*" in self.subhandlers:
+                subhandler = self.subhandlers["*"]
+
+            if subhandler is not None:
                 if not request.method in subhandler['methods']:
                     raise UnsupportedMethod()                
                 if subhandler['require_auth'] and not wbSession.is_authenticated:

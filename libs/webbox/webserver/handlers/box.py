@@ -37,10 +37,22 @@ from rdflib.serializer import Serializer
 from rdflib.plugin import register
 import rdfliblocal.jsonld
 
-from handlers.webdav import WebDAVHandler
+from webbox.server.handlers.webdav import WebDAVHandler
 
-class BoxHandler(Resource):
+from webbox.webserver.handlers.base import BaseHandler
+
+class BoxHandler(BaseHandler):
     """ Handles calls to an individual box URI (GET/POST/PUT etc.) """
+
+    base_path = 'webbox' # set by the caller
+    subhandlers = {
+        '*': {
+            'methods': ['GET', 'POST', 'PUT', 'HEAD', 'PROPFIND', 'LOCK', 'UNLOCK', 'DELETE', 'MKCOL', 'MOVE', 'COPY'],
+            'require_auth': False,
+            'require_token': False,
+            'handler': LRDDHandler.lrdd,
+        },
+    }
 
     def __init__(self, name, webbox):
         self.name = name # e.g. for /webbox, the name is 'webbox'
