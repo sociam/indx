@@ -99,6 +99,7 @@ class WebServer:
         self.root = root
         self.start_boxes()
 
+        # @emax todo - move handler registration into the handler base class resource
         # add the .well-known handler as a subdir
         wellknown = WellKnownHandler(self.server_url)
         root.putChild(".well-known", WSGIResource(reactor, reactor.getThreadPool(), wellknown.response_well_known)) #@UndefinedVariable
@@ -118,7 +119,7 @@ class WebServer:
         # add the admin handler as /admin/
         admin = AdminHandler(self.webbox, self)
         root.putChild("admin", admin) #@UndefinedVariable
-
+        # -- end @emax --
 
         if ssl_off:
             logging.debug("SSL is OFF, connections to this SecureStore are not encrypted.")
@@ -173,6 +174,7 @@ class WebServer:
         """ Check if this name is safe (only contains a-z0-9_-). """ 
         return re.match("^[a-z0-9_-]*$", name) is None
 
+    # @emax - how does this method relate to create_box in handlers/admin.py 
     def create_box(self, name):
         """ Create a new box, listening on /name. """
 
@@ -181,6 +183,7 @@ class WebServer:
             raise ForbiddenResource()
     
         # can't be any of these, we already use them for things
+        # @eMax - these should be loaded dynamically from the handlers
         blacklist = [
             "admin",
             "html",
