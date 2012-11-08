@@ -17,62 +17,49 @@
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging, json, traceback
+from webbox.webserver.handlers.base import BaseHandler
 from urlparse import urlparse, parse_qs
 
-class LRDDHandler:
+class LRDDHandler(BaseHandler):
 
-    def __init__(self):
-        pass
+    base_path = 'lrdd'
+    subhandlers = {
+        '': {
+            'methods': ['GET'],
+            'require_auth': False,
+            'require_token': False,
+            'handler': LRDDHandler.lrdd,
+        },
+    }
+
+    def lrdd(self, request):
+        """ Response handler for /lrdd/ """
+
+        # handle the /lrdd/ call
+        if "uri" in request.args:
+            lrdd_uri = request.args['uri'][0]
+
+        accept = reqeust.getHeader("Accept")
+        if "json" in accept: # FIXME do proper content negotiation
+
+            # response with json (JRD)
+            request.setHeader("Content-Type", "application/json; charset=UTF-8")
+
+            response_json = {"subject": lrdd_uri, "links": [
+                { "rel": "http://specs.openid.net/auth/2.0/provider",
+                  "href": "/openid",
+                }
+            ]}
+            response = json.dumps(response_json, indent=2)
+            request.write(response)
+            request.finish()
+
+        else:
         
-    def response_lrdd(self, environ, start_response):
-        """ WSGI response handler for /lrdd/ ."""
-        logging.debug("Calling WebBox lrdd response(): " + str(environ))
+            # respond with XML
+            request.setHeader("Content-Type", "application/xrd+xml; charset=UTF-8")
 
-        try:
-            req_type = environ['REQUEST_METHOD']
-
-            if "REQUEST_URI" in environ:
-                url = urlparse(environ['REQUEST_URI'])
-                req_path = url.path
-                req_qs = parse_qs(url.query)
-            else:
-                req_path = environ['PATH_INFO']
-                req_qs = parse_qs(environ['QUERY_STRING'])
-
-            headers = []
-            response = ""
-
-            if req_type == "GET":
-                # handle the /lrdd/ call
-
-                if len(req_path) > 0 and req_path[0] == "/":
-                    req_path = req_path[1:] # strip / from start of path
-
-                
-                if "uri" in req_qs:
-                    lrdd_uri = req_qs['uri'][0]
-
-
-                accept = environ['HTTP_ACCEPT'].lower()
-                if "json" in accept: # FIXME do proper content negotiation
-
-                    # response with json (JRD)
-
-                    headers.append( ("Content-Type", "application/json; charset=UTF-8") )
-
-                    response_json = {"subject": lrdd_uri, "links": [
-                        { "rel": "http://specs.openid.net/auth/2.0/provider",
-                          "href": "/openid",
-                        }
-                    ]}
-                    response = json.dumps(response_json, indent=2)
-
-
-                if response == "":
-                    # respond with XML
-                    headers.append( ("Content-Type", "application/xrd+xml; charset=UTF-8") )
-
-                    response = """<?xml version='1.0' encoding='UTF-8'?>
+            response = """<?xml version='1.0' encoding='UTF-8'?>
 <XRD xmlns='http://docs.oasis-open.org/ns/xri/xrd-1.0' 
      xmlns:hm='http://host-meta.net/xrd/1.0'>
 
@@ -82,26 +69,6 @@ class LRDDHandler:
   </Link>
 </XRD>
 """ % (lrdd_uri)
-
-
-            else:
-                # When you sent 405 Method Not Allowed, you must specify which methods are allowed
-                start_response("405 Method Not Allowed", [("Allow", "GET"), ("Allow", "OPTIONS")])
-                return [""]
-
-            # add CORS headers (blanket allow, for now)
-            headers.append( ("Access-Control-Allow-Origin", "*") )
-            headers.append( ("Access-Control-Allow-Methods", "POST, GET, HEAD, OPTIONS") )
-            headers.append( ("Access-Control-Allow-Headers", "Content-Type, origin, accept, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control") )
-
-            response = response.encode("utf8")
-            headers.append( ("Content-length", len(response)) )
-            start_response("200 OK", headers)
-            return [response]
-
-        except Exception as e:
-            logging.debug("Error in WebBox.response_lrdd(), returning 500: %s, exception is: %s" % (str(e), traceback.format_exc()))
-            start_response("500 Internal Server Error", [])
-            return [""]
-
+            request.write(response)
+            request.finish()
 
