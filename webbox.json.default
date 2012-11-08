@@ -19,7 +19,7 @@
             "../Resources/4store"
         ]
     },
-    "webboxes": ['webbox'],
+    "webboxes": ["webbox"],
     "webbox": {
         "db": {
             "name": "webbox",
