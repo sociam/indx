@@ -68,6 +68,7 @@ class WebBox:
         self.file_dir = os.path.join(config['webbox_dir'],config['file_dir'])
         self.file_dir = os.path.realpath(self.file_dir) # where to store PUT files
 
+        # @todo move to the webserver ? 
         # start websockets server
         self.wsupdate = WSUpdateServer(port=config['ws_port'], host=config['ws_hostname'])
         self.websocket = WebSocketClient(host=config['ws_hostname'],port=config['ws_port'])
@@ -136,6 +137,9 @@ class WebBox:
 
         self.update_websocket_clients()
 
+    ## @todo - update this to use postgres instead of sqlite, and split out
+    ## websocket logic into webserver (which deals with clients), and
+    ## journal subscriber logic which stays here        
     def update_websocket_clients(self):
         """ There has been an update to the webbox store, so send the changes to the clients connected via websocket. """
         logging.debug("Updating websocket clients...")
@@ -167,12 +171,13 @@ class WebBox:
         except Exception as e:
             logging.error("Problem updating websocket clients: {0}".format(str(e)))
 
-
+    # @todo - this needs to get pushed into postgres
     def get_subscriptions(self):
         """ Get a new subscriptions object, used by this class and also the webbox handler. """
         filename = os.path.join(self.config['webbox_dir'],self.config['subscriptions'])
         return Subscriptions(filename)
 
+    # 
     def updated_resource(self, uri, type):
         """ Handle an update to a resource and send out updates to subcribers. """
         # type is "rdf" or "file"
@@ -198,7 +203,7 @@ class WebBox:
 
 
         
-
+    # @todo - update from SPARQL to querying the store
     def _get_webbox(self, person_uri):
         """ Get the WebBox of a person, based on their URI. """
 
@@ -215,9 +220,12 @@ class WebBox:
         
         return None
 
+    # resolves your URI to get back your FOAF file and would look up
+    # your webbox address if it was in there.    
     def get_webbox(self, person_uri):
         """ Get the webbox URL of a person's URI. """
 
+        # check your store to see we already know your webbox address
         logging.debug("looking up webbox URI of person: "+person_uri)
         response = self._get_webbox(person_uri)
 
@@ -258,6 +266,7 @@ class WebBox:
         return None
 
 
+    # SHARING --
     def send_message(self, recipient_uri, message_resource_uri):
         """ Send an external message to a recipient. """
 

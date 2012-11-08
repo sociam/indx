@@ -27,3 +27,8 @@ class ResponseOverride(Exception):
     def get_response(self):
         return {"status": self.status, "reason": self.reason, "data": self.data}
 
+class AbstractException(Exception):
+    
+    def __init__(self, message=''):
+        super(AbstractException, self).__init__()
+        self.message = message

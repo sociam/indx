@@ -30,12 +30,7 @@ from twisted.internet.defer import Deferred
 
 from webbox import WebBox
 
-from handlers.wellknown import WellKnownHandler
-from handlers.lrdd import LRDDHandler
-from handlers.openid import OpenIDHandler
-from handlers.auth import AuthHandler
-from handlers.admin import AdminHandler
-from handlers.box import BoxHandler
+import webbox.webserver.handlers
 
 class WebServer:
     """ Twisted web server for running WebBox. """

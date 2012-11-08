@@ -25,6 +25,11 @@ from httputils import resolve_uri
 from rdflib.graph import Graph
 from time import strftime
 
+## TODO ----
+## this module handles webbox<->webbox sharing
+## DOES NOT WORK YET
+## module needs to be updated for non-SPARQL thingies
+
 class WebBoxMessages:
     """ A class that handles webbox messages, by looking at received RDF. """
 

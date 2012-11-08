@@ -1,6 +1,6 @@
 #    This file is part of WebBox.
 #
-#    Copyright 2011-2012 Daniel Alexander Smith
+#    Copyright 2011-2012 Daniel Alexander Smith, Max Van Kleek
 #    Copyright 2011-2012 University of Southampton
 #
 #    WebBox is free software: you can redistribute it and/or modify
