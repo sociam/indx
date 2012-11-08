@@ -18,8 +18,9 @@
 
 import logging, json, traceback
 from urlparse import urlparse, parse_qs
+from webbox.webserver.handlers.base import BaseHandler
 
-class WellKnownHandler:
+class WellKnownHandler(BaseHandler):
 
     base_path = '.well-known'
     subhandlers = {

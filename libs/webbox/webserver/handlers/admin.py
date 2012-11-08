@@ -19,6 +19,7 @@
 import logging, traceback
 from twisted.web.resource import Resource
 from session import WebBoxSession, ISession
+from webbox.webserver.handlers.base import BaseHandler
 
 class AdminHandler(BaseHandler):
     """ Add/remove boxes, add/remove users, change config. """
