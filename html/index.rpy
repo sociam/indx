@@ -18,18 +18,20 @@
 
 import os, pystache, logging
 from twisted.web.resource import Resource
-from webbox import WebBox
+from webbox.box import WebBox
 
 class Idx(Resource):
     def render_GET(self, request):
 
-        self.wb = registry.getComponent(WebBox)
+        #self.wb = registry.getComponent(WebBox)
 
-        index = self.wb.get_html_index()
+        #index = self.wb.get_html_index()
+        index = "index"
 
         template_vars = {
 #            "personalise_panel": self.get_personalise_panel(),
-            "server_url": self.wb.server_url,
+            #"server_url": self.wb.server_url,
+            "server_url": "FIXME",
         }
 
         return self.mustache(index, template_vars)

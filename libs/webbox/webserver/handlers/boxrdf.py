@@ -45,14 +45,23 @@ class BoxHandler(BaseHandler):
     """ Handles calls to an individual box URI (GET/POST/PUT etc.) """
 
     base_path = 'webbox' # set by the caller
-    subhandlers = {
-        '*': {
+    subhandlers = [
+        {
+            "prefix": "update",
+            'methods': ['GET'],
+            'require_auth': True,
+            'require_token': True,
+            'handler': BoxHandler.handle_update,
+            'accept':'application/json'
+        },
+        {
+            "prefix": "*",            
             'methods': ['GET', 'POST', 'PUT', 'HEAD', 'PROPFIND', 'LOCK', 'UNLOCK', 'DELETE', 'MKCOL', 'MOVE', 'COPY'],
             'require_auth': False,
             'require_token': False,
             'handler': BoxHandler.render,
         },
-    }
+    ]
 
     # mime type to rdflib formats (for serializing)
     rdf_formats = {
@@ -711,9 +720,11 @@ class BoxHandler(BaseHandler):
             logging.debug("Can't understand Accept header of "+accept+", or content type is None, so returning data as-is.")
             return response
 
-    def handle_update(self, since_repository_hash):
+    def handle_update(self,request):
         """ Handle calls to the Journal update URL. """
-
+        since_repository_hash = None
+        if "since" in request.args:
+           since_repository_hash = request.args['since'][0]                        
         journal = Journal(os.path.join(self.config['webbox_dir'], self.config['journal']))
         uris_changed = journal.since(since_repository_hash)
         logging.debug("URIs changed: %s" % str(uris_changed))

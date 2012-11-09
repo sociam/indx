@@ -18,16 +18,14 @@
 
 # import core modules
 import sys, os, logging, json, shutil, getpass, re
-from webboxsetup import WebBoxSetup
-from webbox import WebBox
-from webserver import WebServer
+from webbox.setup import WebBoxSetup
+from webbox.server import WebServer
 
 # Initial Setup of ~/.webbox
 kbname = "webbox_" + getpass.getuser() # per user knowledge base
 webbox_dir = os.path.expanduser('~'+os.sep+".webbox")
 setup = WebBoxSetup()
 config = setup.setup(webbox_dir, "webbox.json.default", kbname) # directory, default config, kbname
-
 
 # add additional binary paths to the PATH
 for bindir in config['server']['bindirs']:

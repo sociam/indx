@@ -28,9 +28,9 @@ from twisted.web.wsgi import WSGIResource
 from twisted.internet import reactor, ssl
 from twisted.internet.defer import Deferred
 
-from webbox import WebBox
-
-import webbox.webserver.handlers
+from box import WebBox
+import webbox.webserver.handlers as handlers
+from webbox.webserver.handlers.box import BoxHandler
 
 class WebServer:
     """ Twisted web server for running WebBox. """
@@ -58,7 +58,7 @@ class WebServer:
             if config['server']['port'] != 443:
                 self.server_url = self.server_url + ":" + str(config['server']['port'])
 
-
+        # @TODO : move to store webboxes on a instance-per-session pattern
         self.webbox = WebBox(config['webbox'], self.server_url)
 
         # get values to pass to web server
@@ -72,12 +72,10 @@ class WebServer:
 
         # TODO set up twisted to use gzip compression
 
-
         # set up the twisted web resource object
-
         # allow the config to be readable by .rpy files
-        registry = Registry()
-        registry.setComponent(WebBox, self.webbox)
+        # registry = Registry()
+        # registry.setComponent(WebBox, self.webbox)
 
         # Disable directory listings
         class FileNoDirectoryListings(File):
@@ -85,44 +83,24 @@ class WebServer:
                 return ForbiddenResource()
 
         # root handler is a static web server
-        root = FileNoDirectoryListings(os.path.abspath(config['server']["html_dir"]), registry = registry)
+        root = FileNoDirectoryListings(os.path.abspath(config['server']["html_dir"]))
         root.processors = {'.rpy': script.ResourceScript}
         root.ignoreExt('.rpy')
 
         factory = Site(root)
 
         self.root = root
+
+        # TODO: config rdflib first
+        # register("json-ld", Serializer, "rdfliblocal.jsonld", "JsonLDSerializer")
+
+        for handler in handlers.HANDLERS:
+            handler(self.webbox,self)
+
         self.start_boxes()
 
-
-        # config rdflib first
-        register("json-ld", Serializer, "rdfliblocal.jsonld", "JsonLDSerializer")
-
-
-        # @emax todo - move handler registration into the handler base class resource
-        # add the .well-known handler as a subdir
-        wellknown = WellKnownHandler(self.server_url)
-        root.putChild(".well-known", WSGIResource(reactor, reactor.getThreadPool(), wellknown.response_well_known)) #@UndefinedVariable
-
-        # add the lrdd handler as a subdir
-        lrdd = LRDDHandler()
-        root.putChild("lrdd", WSGIResource(reactor, reactor.getThreadPool(), lrdd.response_lrdd)) #@UndefinedVariable
-
-        # add the openid provider as a subdir
-        openid = OpenIDHandler()
-        root.putChild("openid", WSGIResource(reactor, reactor.getThreadPool(), openid.response_openid)) #@UndefinedVariable
-
-        # add the authentication handler as /auth/
-        auth = AuthHandler()
-        root.putChild("auth", auth) #@UndefinedVariable
-
-        # add the admin handler as /admin/
-        admin = AdminHandler(self.webbox, self)
-        root.putChild("admin", admin) #@UndefinedVariable
-        # -- end @emax --
-
         if ssl_off:
-            logging.debug("SSL is OFF, connections to this SecureStore are not encrypted.")
+            logging.debug("SSL is OFF, connections to this WebBox are not encrypted.")
             reactor.listenTCP(server_port, factory) #@UndefinedVariable
         else:
             logging.debug("SSL ON.")
@@ -157,13 +135,12 @@ class WebServer:
 
     def start_boxes(self):
         """ Add the webboxes to the server. """
-
         for name in self.config['webboxes']:
             self.start_box(name)
 
     def start_box(self, name):
         """ Add a single webbox to the server. """
-        box = BoxHandler(name, self.webbox) # e.g. /webbox
+        box = BoxHandler(self.webbox, self, name) # e.g. /webbox
         self.root.putChild(name, box); # e.g. /webbox
 
     def run(self):
@@ -173,6 +150,9 @@ class WebServer:
     def invalid_name(self, name):
         """ Check if this name is safe (only contains a-z0-9_-). """ 
         return re.match("^[a-z0-9_-]*$", name) is None
+
+    def get_boxes(self):
+        return self.config['webboxes']
 
     # @emax - how does this method relate to create_box in handlers/admin.py 
     def create_box(self, name):
@@ -203,7 +183,6 @@ class WebServer:
 
         self.config['webboxes'].append(name)
         self.save_config()
-
         self.start_box(name)
 
     def save_config(self):

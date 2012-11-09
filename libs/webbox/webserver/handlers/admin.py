@@ -18,30 +18,11 @@
 
 import logging, traceback
 from twisted.web.resource import Resource
-from session import WebBoxSession, ISession
 from webbox.webserver.handlers.base import BaseHandler
 
 class AdminHandler(BaseHandler):
     """ Add/remove boxes, add/remove users, change config. """
-
     base_path = 'admin'
-    subhandlers = {
-        'init_db': {
-            'methods': ['POST'],
-            'require_auth': False,
-            'require_token': False,
-            'handler': AdminHandler.init_db,
-            'content-type':'text/plain' # optional
-        },
-        'create_box': {
-            'methods': ['POST'],
-            'require_auth': True,
-            'require_token': False,
-            'handler': AdminHandler.create_box,
-            'content-type':'text/plain' # optional
-        }        
-    }
-
     def init_db(self, request):
         """ Initialise database, with specified postgres root credentials. """
 
@@ -63,4 +44,34 @@ class AdminHandler(BaseHandler):
         # send them back to the webbox start page
         request.redirect(str(self.webbox.get_base_url()))
         request.finish()
+        pass
         
+AdminHandler.subhandlers = [
+    {
+        'prefix': 'init_db',
+        'methods': ['POST'],
+        'require_auth': False,
+        'require_token': False,
+        'handler': AdminHandler.init_db,
+        'content-type':'text/plain', # optional
+        'accept':['application/json']                
+    },
+    {
+        'prefix': 'create_box',
+        'methods': ['POST'],
+        'require_auth': True,
+        'require_token': False,
+        'handler': AdminHandler.create_box,
+        'content-type':'text/plain', # optional
+        'accept':['application/json']
+    },
+    {
+        'prefix': 'create_box',
+        'methods': ['POST'],
+        'require_auth': False,
+        'require_token': False,
+        'handler': BaseHandler.return_forbidden,
+        'content-type':'text/plain', # optional
+        'accept':['application/json']
+    }
+]

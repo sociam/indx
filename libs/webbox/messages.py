@@ -18,10 +18,8 @@
 
 
 import rdflib, logging, traceback, uuid
-
-import webbox
 from httputils import resolve_uri
-
+from webbox.webbox import WebBox
 from rdflib.graph import Graph
 from time import strftime
 
@@ -88,7 +86,7 @@ class WebBoxMessages:
     def get_owners(self):
         """ Return an array of the URIs of all of the owners of this store (typically only one). """
 
-        query = "SELECT DISTINCT ?owner WHERE { ?owner <%s> <%s> } " % (webbox.WebBox.address_predicate, self._webbox_url())
+        query = "SELECT DISTINCT ?owner WHERE { ?owner <%s> <%s> } " % (WebBox.address_predicate, self._webbox_url())
         response = self.webbox.query_store.query(query)
         if response['status'] >= 200 and response['status'] <= 299:
             results = response['data']
@@ -135,7 +133,7 @@ class WebBoxMessages:
         logging.debug("Handling 'subscribe'")
 
         for s, p, o in self.graph:
-            if unicode(p) == unicode(webbox.WebBox.subscribe_predicate):
+            if unicode(p) == unicode(WebBox.subscribe_predicate):
                 logging.debug("got a subscribe message, handling now...")
                 person_uri = unicode(s)
                 resource_uri = unicode(o)
@@ -150,7 +148,7 @@ class WebBoxMessages:
         logging.debug("Handling 'unsubscribe'")
 
         for s, p, o in self.graph:
-            if unicode(p) == unicode(webbox.WebBox.unsubscribe_predicate):
+            if unicode(p) == unicode(WebBox.unsubscribe_predicate):
                 logging.debug("got an unsubscribe message, handling now...")
                 person_uri = unicode(s)
                 resource_uri = unicode(o)
@@ -168,7 +166,7 @@ class WebBoxMessages:
         logging.debug("Handling 'to' messages.")
 
         for s, p, o in self.graph:
-            if unicode(p) == unicode(webbox.WebBox.to_predicate):
+            if unicode(p) == unicode(WebBox.to_predicate):
                 message_uri = unicode(s)
                 recipient_uri = unicode(o)
 

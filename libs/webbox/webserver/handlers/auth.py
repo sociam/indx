@@ -18,49 +18,55 @@
 
 import logging, traceback
 from twisted.web.resource import Resource
-from session import WebBoxSession, ISession
+from webbox.webserver.session import WebBoxSession, ISession
 from webbox.webserver.handlers.base import BaseHandler
 
 class AuthHandler(BaseHandler):
-
     base_path = 'auth'
-    subhandlers = {
-        'login': {
-            'methods': ['POST'],
-            'require_auth': False,
-            'require_token': False,
-            'handler': AuthHandler.auth_login,
-            'content-type':'text/plain' # optional
-        },
-        'logout': {
-            'methods': ['POST', 'GET'],
-            'require_auth': True,
-            'require_token': False,
-            'handler': AuthHandler.auth_logout,
-            'content-type':'text/plain' # optional
-        }        
-    }
-    
     # authentication
     def auth_login(self, request):
         """ User logged in (POST) """
         logging.debug("Login request, origin: {0}".format(request.getHeader("Origin")))
-        session = request.getSession()
-        wbSession = session.getComponent(ISession)
+        wbSession = self.get_session(request)
         wbSession.setAuthenticated(True)
         wbSession.setUser(0, "anonymous")
-        request.setStatusCode(200, reason="OK")
-        request.finish()
+        self.return_ok(request)
 
     def auth_logout(self, request):
         """ User logged out (GET, POST) """
         logging.debug("Logout request, origin: {0}".format(request.getHeader("Origin")))
-        session = request.getSession()
-        wbSession = session.getComponent(ISession)
+        wbSession = self.get_session(request)
         wbSession.setAuthenticated(False)
         wbSession.setUser(None, None)
-        request.setStatusCode(200, reason="OK")
-        request.finish()
+        self.return_ok(request)
 
-
+AuthHandler.subhandlers = [
+    {
+        'prefix':'login',
+        'methods': ['POST'],
+        'require_auth': False,
+        'require_token': False,
+        'handler': AuthHandler.auth_login,
+        'content-type':'text/plain', # optional
+        'accept':['application/json']                
+        },
+    {
+        'prefix':'logout',
+        'methods': ['POST', 'GET'],
+        'require_auth': True,
+        'require_token': False,
+        'handler': AuthHandler.auth_logout,
+        'content-type':'text/plain', # optional
+        'accept':['application/json']        
+        },
+    {
+        'prefix':'logout',
+        'methods': ['POST', 'GET'],
+        'require_auth': False,
+        'require_token': False,
+        'handler': AuthHandler.return_ok, # already logged out
+        'content-type':'text/plain', # optional
+        'accept':['application/json']                
+        }        
+]
 

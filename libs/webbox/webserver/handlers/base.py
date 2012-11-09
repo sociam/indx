@@ -16,12 +16,12 @@
 #    You should have received a copy of the GNU General Public License
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging, traceback
+import logging, traceback, json
 from twisted.web.resource import Resource
-from twisted.web.error import UnsupportedMethod, NoResource, ForbiddenResource
 from twisted.web.server import NOT_DONE_YET
-from webbox.session import WebBoxSession, ISession
+from webbox.webserver.session import WebBoxSession, ISession
 from webbox.exception import AbstractException
+from mimeparse import quality
 from urlparse import urlparse
 
 class BaseHandler(Resource):
@@ -40,57 +40,111 @@ class BaseHandler(Resource):
         # }
     }
     
-    def __init__(self, webbox, webserver):
+    def __init__(self, webbox, webserver, base_path=None):
         self.webserver = webserver
         self.webbox = webbox
+
+        if base_path is not None:
+            self.base_path = base_path
+
         self.isLeaf = True # stops twisted from seeking children resources from me
-        webserver.putChild(self.base_path, self) # register path with webserver
+        logging.debug("Putting child " + self.base_path)
+        webserver.root.putChild(self.base_path, self) # register path with webserver
+
+    def _matches_request(self, request, subhandler):
+        path_fields = request.path.split("/")
+        sub_path = path_fields[2]        
+        
+        # if the subhandler supports content negotiation, then determine the best one
+        assert subhandler['accept'], 'No accept clause in subhandler %s ' % subhandler['prefix']
+        
+        if self._get_best_content_type_match_score(request,subhandler) <= 0:
+            return False
+        if not request.method in subhandler["methods"]:
+            return False
+        if subhandler["prefix"] == sub_path or subhandler["prefix"] == '*':
+            return True
+        return False
+
+    def _get_best_content_type_match_score(self,request,subhandler):
+        request_accept = request.getHeader('Accept') or '*/*'       
+        return max(map(lambda handler_mimetype:quality(handler_mimetype,request_accept), subhandler["accept"]))        
+
+    def _matches_auth_requirements(self, request, subhandler):
+        session = self.get_session(request)
+        if subhandler['require_auth'] and not session.is_authenticated:
+            return False
+        # @TODO
+        # if subhandler['require_token'] and not true:
+        #    raise ForbiddenResource()
+        return True        
+
+    def get_session(self,request):
+        session = request.getSession()
+        # persists for life of a session (based on the cookie set by the above)
+        wbSession = session.getComponent(ISession)
+        if not wbSession:
+            wbSession = WebBoxSession(session)
+            session.setComponent(ISession, wbSession)
+        return wbSession
 
     def render(self, request):
         """ Twisted resource handler."""
-        logging.debug("Calling AdminHandler render()")
+        logging.debug("Calling base render()")
         try:
-            session = request.getSession()
+            self.set_cors_headers(request)            
+            matching_handlers = filter(lambda h: self._matches_request(request,h), self.subhandlers)
+            logging.debug('Matching handlers %d' % len(matching_handlers))
+            matching_handlers.sort(key=lambda h: self._get_best_content_type_match_score(request,h),reverse=True)
 
-            # persists for life of a session (based on the cookie set by the above)
-            wbSession = session.getComponent(ISession)
-            if not wbSession:
-                wbSession = WebBoxSession(session)
-                session.setComponent(ISession, wbSession)
-
-            logging.debug("Is user authenticated? {0}".format(wbSession.is_authenticated))
-
-            path_fields = split("/", request.path)
-            sub_path = path_fields[1]
-
-            subhandler = None
-            if sub_path in self.subhandlers:
-                subhandler = self.subhandlers[sub_path]
-            elif "*" in self.subhandlers:
-                subhandler = self.subhandlers["*"]
-
-            if subhandler is not None:
-                if not request.method in subhandler['methods']:
-                    raise UnsupportedMethod()                
-                if subhandler['require_auth'] and not wbSession.is_authenticated:
-                    raise ForbiddenResource()
+            matching_auth_hs = filter(lambda h: self._matches_auth_requirements(request,h), matching_handlers)
+            logging.debug('Post-auth matching handlers %d' % len(matching_auth_hs))
+            if matching_auth_hs:
+                subhandler = matching_auth_hs[0]
+                logging.debug('Using handler %s' % self.__class__.__name__)
                 if subhandler['content-type']:
                     request.setHeader('Content-Type', subhandler['content-type'])
-                # @TODO
-                # if subhandler['require_token'] and not true:
-                #    raise ForbiddenResource()
-                self.set_cors_headers(request)
-                subhandler.handler(self,request)
-                # done.
-                return NOT_DONE_YET
 
-            raise NoResource()        
+                subhandler['handler'](self,request)
+                return NOT_DONE_YET
+            logging.debug('Returning not found ')
+            self.return_not_found(request)
+            return NOT_DONE_YET
         except Exception as e:
             logging.debug("Error in AdminHandler.render(), returning 500: %s, exception is: %s" % (str(e), traceback.format_exc()))
-            request.setResponseCode(500, message="Internal Server Error")
-            request.finish()
-        
-        return NOT_DONE_YET ## we default to asynchronous mode, which means request.write()/finish() terminates
+            self.return_internal_error(request)
+            return NOT_DONE_YET        
+        # never get here
+        pass
+
+    def _respond(self, request, code, message, additional_data=None):
+        response = {"message": message, "code": code}
+        if additional_data:
+            response.update(additional_data)
+        responsejson = json.dumps(response)
+        request.setResponseCode(code, message=message)
+        request.setHeader("Content-Type", "application/json")
+        request.setHeader("Content-Length", len(responsejson))
+        request.write(responsejson)
+        request.finish()
+        logging.debug(' just called request.finish() with code %d ' % code)
+
+    def return_ok(self,request,data=None):
+        self._respond(request, 200, "OK", data)
+    def return_created(self,request,data=None):
+        self._respond(request, 201, "Created",data)        
+    def return_not_found(self,request):
+        self._respond(request, 404, "Not Found")
+    def return_forbidden(self,request):
+        self._respond(request, 403, "Forbidden")
+    def return_unsupported_method(self,request):
+        self._respond(request, 405, "Method Not Allowed")
+    def return_internal_error(self,request):
+        self._respond(request, 500, "Internal Server Error")
+    def return_bad_request(self,request,description=None):
+        self._respond(request, 400, 'Bad Request', {"description": description} if description else None)
+    def return_obsolete(self,request,data=None):
+        self._respond(request, 409, 'Obsolete', data)
 
     ## allowed for cors
     def get_cors_methods(self, request):
@@ -104,7 +158,7 @@ class BaseHandler(Resource):
         return ("Content-Type", "origin", "accept", "Depth", "User-Agent", "X-File-Size", "X-Requested-With", "If-Modified-Since","X-File-Name", "Cache-Control")
     
     def set_cors_headers(self,request):
-        request.setHeader("Access-Control-Allow-Origin", ' '.join(self.get_cors_methods(request)) )
-        request.setHeader("Access-Control-Allow-Methods", ','.join( self.get_cors_origin(request)))
+        request.setHeader("Access-Control-Allow-Origin", ' '.join(self.get_cors_origin(request)) )
+        request.setHeader("Access-Control-Allow-Methods", ','.join( self.get_cors_methods(request)))
         request.setHeader("Access-Control-Allow-Headers", ','.join( self.get_cors_headers(request)) )
 

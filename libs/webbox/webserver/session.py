@@ -18,7 +18,6 @@
 
 from zope.interface import Interface, Attribute, implements
 
-
 class ISession(Interface):
     is_authenticated = Attribute("A bool which registers if a user has successfully authenticated.")
     userid = Attribute("User ID (from the DB) of the authenticated user.")
