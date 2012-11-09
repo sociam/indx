@@ -152,13 +152,14 @@ class BaseHandler(Resource):
         return ("POST", "GET", "PUT", "HEAD", "OPTIONS")
     def get_cors_origin(self, request):
         # default set of allowed origin hosts
-        return ("*",)
+        return (request.getHeader("origin"),) # ("*",)
     def get_cors_headers(self, request):
         # default set
-        return ("Content-Type", "origin", "accept", "Depth", "User-Agent", "X-File-Size", "X-Requested-With", "If-Modified-Since","X-File-Name", "Cache-Control")
+        return ("Content-Type", "origin", "accept", "Depth", "User-Agent", "X-File-Size", "X-Requested-With", "Cookie", "Set-Cookie", "If-Modified-Since","X-File-Name", "Cache-Control")
     
     def set_cors_headers(self,request):
         request.setHeader("Access-Control-Allow-Origin", ' '.join(self.get_cors_origin(request)) )
-        request.setHeader("Access-Control-Allow-Methods", ','.join( self.get_cors_methods(request)))
-        request.setHeader("Access-Control-Allow-Headers", ','.join( self.get_cors_headers(request)) )
+        request.setHeader("Access-Control-Allow-Methods", ', '.join( self.get_cors_methods(request)))
+        request.setHeader("Access-Control-Allow-Headers", ', '.join( self.get_cors_headers(request)) )
+        request.setHeader("Access-Control-Allow-Credentials", 'true')
 
