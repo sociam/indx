@@ -29,6 +29,7 @@ from twisted.internet import reactor, ssl
 from twisted.internet.defer import Deferred
 
 from box import WebBox
+from webbox.exception import ResponseOverride
 import webbox.webserver.handlers as handlers
 from webbox.webserver.handlers.box import BoxHandler
 
@@ -160,7 +161,7 @@ class WebServer:
 
         # check name is valid        
         if self.invalid_name(name):
-            raise ForbiddenResource()
+            raise ResponseOverride(403, "Forbidden")
     
         # can't be any of these, we already use them for things
         # @eMax - these should be loaded dynamically from the handlers
@@ -175,11 +176,11 @@ class WebServer:
             "auth"
         ]
         if name in blacklist:
-            raise ForbiddenResource()
+            raise ResponseOverride(403, "Forbidden")
         
         # already exists?
         if name in self.config['webboxes']:
-            raise ForbiddenResource()
+            raise ResponseOverride(403, "Forbidden")
 
         self.config['webboxes'].append(name)
         self.save_config()

@@ -32,18 +32,19 @@ class AdminHandler(BaseHandler):
         self.webbox.initialise_object_store(root_user, root_password)
 
         # send them back to the webbox start page
-        request.redirect(str(self.webbox.get_base_url()))
-        request.finish()
+        # request.redirect(str(self.webbox.get_base_url()))
+        # request.finish()
+        self.return_ok(request)
+        pass
         
     def create_box(self, request):
         """ Create a new box. """
-
         name = request.args['name'][0]
         self.webserver.create_box(name)
-
         # send them back to the webbox start page
-        request.redirect(str(self.webbox.get_base_url()))
-        request.finish()
+        # request.redirect(str(self.webbox.get_base_url()))
+        # request.finish()
+        self.return_created(request)
         pass
         
 AdminHandler.subhandlers = [

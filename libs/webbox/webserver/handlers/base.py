@@ -20,7 +20,7 @@ import logging, traceback, json
 from twisted.web.resource import Resource
 from twisted.web.server import NOT_DONE_YET
 from webbox.webserver.session import WebBoxSession, ISession
-from webbox.exception import AbstractException
+from webbox.exception import AbstractException,ResponseOverride
 from mimeparse import quality
 from urlparse import urlparse
 
@@ -110,6 +110,9 @@ class BaseHandler(Resource):
             logging.debug('Returning not found ')
             self.return_not_found(request)
             return NOT_DONE_YET
+        except ResponseOverride as roe:
+            self._respond(request,roe.status,roe.reason)
+            return NOT_DONE_YET        
         except Exception as e:
             logging.debug("Error in AdminHandler.render(), returning 500: %s, exception is: %s" % (str(e), traceback.format_exc()))
             self.return_internal_error(request)
