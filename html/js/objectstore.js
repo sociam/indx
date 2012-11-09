@@ -36,10 +36,11 @@
 
 	var isInteger = function(n) { return n % 1 === 0; };
 
+	// @TODO - put this in here soon . 
 
     // ObjectStore.Store represents the store, and returns ObjectStore.Graphs
     var Store = ObjectStore.Store = Backbone.Collection.extend({
-        server_url: "http://localhost:8211/webbox/objectstore",
+        server_url: "http://localhost:8211/",
         model: ObjectStore.Graph,
         objectstore_type: "store",
         initialize: function(){
@@ -69,7 +70,13 @@
                 default:
                     break;
             }
-        }
+        },
+	    login : function() {
+		    return $.ajax({type:"POST", xhrFields: { withCredentials: true }, url:this.server_url+'auth/login'});
+	    },
+	    logout : function() {
+		    return $.ajax({type:"POST", xhrFields: { withCredentials: true }, url:this.server_url+'auth/logout'});
+	    }
     });
 
     // ObjectStore.Graph is a named graph, which contains a ObjectStore.GraphCollection of ObjectStore.Objs
@@ -160,8 +167,8 @@
             data: {},
             dataType: "json",
             type: "GET",
+            xhrFields: { withCredentials: true },
             success: function(data){
-
                 var graph_uris = data;
                 var graphs = [];
                 $.each(graph_uris, function(){
@@ -238,6 +245,7 @@
             dataType: "json",
             data: JSON.stringify(graph_objs),
             type: "PUT",
+            xhrFields: { withCredentials: true },
             success: function(data){
                 // TODO check that it worked
 				console.log("UPDATING VERSION OF GRAPH >> ", data["@version"]);
@@ -253,6 +261,7 @@
             data: {"graph": uri},
             dataType: "json",
             type: "GET",
+            xhrFields: { withCredentials: true },
             success: function(data){
                 var graph_collection = new ObjectStore.GraphCollection();
                 graph_collection._store = store;
