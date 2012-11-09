@@ -50,31 +50,19 @@ class BoxHandler(BaseHandler):
             'methods': ['GET', 'POST', 'PUT', 'HEAD', 'PROPFIND', 'LOCK', 'UNLOCK', 'DELETE', 'MKCOL', 'MOVE', 'COPY'],
             'require_auth': False,
             'require_token': False,
-            'handler': LRDDHandler.lrdd,
+            'handler': BoxHandler.render,
         },
     }
 
-    def __init__(self, name, webbox):
-        self.name = name # e.g. for /webbox, the name is 'webbox'
-        self.webbox = webbox
-        self.server_url = self.webbox.server_url
-        self.box_url = self.server_url + "/" + self.name
-        self.config = webbox.config
-        self.isLeaf = True # stops twisted from seeking children resources from me
-
-        # config rdflib first
-        register("json-ld", Serializer, "rdfliblocal.jsonld", "JsonLDSerializer")
-
-        # mime type to rdflib formats (for serializing)
-        self.rdf_formats = {
-            "application/rdf+xml": "xml",
-            "application/n3": "n3",
-            "text/turtle": "n3", # no turtle-specific parser in rdflib ATM, using N3 one because N3 is a superset of turtle
-            "text/plain": "nt",
-            "application/json": "json-ld",
-            "text/json": "json-ld",
-        }
-
+    # mime type to rdflib formats (for serializing)
+    rdf_formats = {
+        "application/rdf+xml": "xml",
+        "application/n3": "n3",
+        "text/turtle": "n3", # no turtle-specific parser in rdflib ATM, using N3 one because N3 is a superset of turtle
+        "text/plain": "nt",
+        "application/json": "json-ld",
+        "text/json": "json-ld",
+    }
 
 
     def render(self, request):
@@ -94,6 +82,8 @@ class BoxHandler(BaseHandler):
 
             # handler for requests that require WebDAV
             webdav = WebDAVHandler()
+
+            request.setHeader("DAV", "1, 2")
 
             # common HTTP methods
             if request.method == "GET":
@@ -128,23 +118,6 @@ class BoxHandler(BaseHandler):
                 # When you sent 405 Method Not Allowed, you must specify which methods are allowed
                 response = {"status": 405, "reason": "Method Not Allowed", "data": "", "headers": self.get_supported_method_headers() }
 
-            # get headers from response if they exist
-            headers = []
-            if "headers" in response:
-                headers = response['headers']
-
-            # set a content-type
-            if "type" in response:
-                headers.append( ("Content-type", response['type']) )
-            else:
-                headers.append( ("Content-type", "text/plain") )
-
-            headers.append( ("DAV", "1, 2") )
-
-            # add CORS headers (blanket allow, for now)
-            headers.append( ("Access-Control-Allow-Origin", "*") )
-            headers.append( ("Access-Control-Allow-Methods", "POST, GET, PUT, HEAD, OPTIONS") )
-            headers.append( ("Access-Control-Allow-Headers", "Content-Type, origin, accept, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control") )
 
             # put repository version weak ETag header
             # journal to load the original repository version
@@ -190,12 +163,14 @@ class BoxHandler(BaseHandler):
             response = e.get_response()
             logging.debug("Response override raised, sending: %s" % str(response))
             request.setResponseCode(response['status'], message=response['reason'])
-            return response['data']
+            request.write(response['data']
+            request.finish()
 
         except Exception as e:
             logging.debug("Error in WebBox.response(), returning 500: %s, exception is: %s" % (str(e), traceback.format_exc()))
             request.setResponseCode(500, message="Internal Server Error")
-            return ""
+            request.finish()
+
 
     def get_supported_method_headers(self):
         """ Return an array of "Allow" method tuples. """

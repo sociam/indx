@@ -94,6 +94,11 @@ class WebServer:
         self.root = root
         self.start_boxes()
 
+
+        # config rdflib first
+        register("json-ld", Serializer, "rdfliblocal.jsonld", "JsonLDSerializer")
+
+
         # @emax todo - move handler registration into the handler base class resource
         # add the .well-known handler as a subdir
         wellknown = WellKnownHandler(self.server_url)
