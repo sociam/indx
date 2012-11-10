@@ -16,7 +16,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging, traceback
+import logging, traceback, json
 from twisted.web.resource import Resource
 from webbox.webserver.handlers.base import BaseHandler
 
@@ -25,7 +25,6 @@ class AdminHandler(BaseHandler):
     base_path = 'admin'
     def init_db(self, request):
         """ Initialise database, with specified postgres root credentials. """
-
         root_user = request.args['input_user'][0]
         root_password = request.args['input_password'][0]
 
@@ -46,6 +45,9 @@ class AdminHandler(BaseHandler):
         # request.finish()
         self.return_created(request)
         pass
+
+    def list_boxes(self,request):
+        self.return_ok(request,{boxes:self.webserver.get_boxes()})
         
 AdminHandler.subhandlers = [
     {
@@ -57,6 +59,15 @@ AdminHandler.subhandlers = [
         'content-type':'text/plain', # optional
         'accept':['application/json']                
     },
+    {
+        'prefix': 'list_boxes',
+        'methods': ['GET'],
+        'require_auth': True,
+        'require_token': False,
+        'handler': AdminHandler.list_box,
+        'content-type':'text/plain', # optional
+        'accept':['application/json']
+    },    
     {
         'prefix': 'create_box',
         'methods': ['POST'],

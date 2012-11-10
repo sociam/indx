@@ -43,6 +43,13 @@
 	// utilities -----------------
 	var isInteger = function(n) { return n % 1 === 0; };
 	var assert = function(t,s) { if (!t) { throw new Error(s); } };
+	var deferred = function() { return new $.Deferred(); };
+	var authajax = function(store, path, passed_options) {
+		var url = store.options.server_url + path;
+		var options = { url : url, xhrFields: { withCredentials: true } };
+		options = _(_(options || {}).clone()).extend(passed_options);
+		return $.ajax( options ); // returns a deferred		
+	};
 
 	// MAP OF THIS MODUULE :::::::::::::: -----
 	// 
@@ -160,6 +167,7 @@
         }
     });	
 
+	// Box =================================================
     // ObjectStore.GraphCollection is the list of ObjectStore.Objs in a ObjectStore.Graph
     var GraphCollection = Backbone.Collection.extend({ model: Graph });
 	var Box = ObjectStore.Box = Backbone.Model.extend({
@@ -212,10 +220,17 @@
 		},
 		fetch:function() {
 			// fetches list of boxes
-			// @TODO
-			// var d = deferred();
-			// authajax(this.opptions.store, 'admin/list_boxes').then(
-			// return d.promise();
+			var this_ = this;
+			var store = this.options.store;
+			var d = deferred();			
+			authajax(store, '/admin/list_boxes').then(function(data) {
+				var boxes = data.boxes.map(function(boxname) {
+					return new Box({"@id":boxname, name:boxname}, { store: store });
+				});
+				this_.reset(boxes);
+				d.resolve(boxes);
+			}).fail(function() {  d.reject(e); });
+			return d.promise();
 		}
 	});
 	
