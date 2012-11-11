@@ -36,9 +36,13 @@ class ObjectStoreHandler(BaseHandler):
             return self.return_ok(request, {"data":jsondata})
         else:
             # no graph URI specified, so return the list of graph URIs
-            uris = self.webbox.object_store.get_graphs()
-            jsondata = json.dumps(uris, indent=2)
-            return self.return_ok(request, {"data":jsondata})
+
+            def callback(uris):
+                jsondata = json.dumps(uris, indent=2)
+                return self.return_ok(request, {"data": jsondata})
+                
+            self.webbox.object_store.get_graphs(callback)
+            pass
         pass
 
     def do_PUT(self,request):
