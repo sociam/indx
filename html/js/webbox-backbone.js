@@ -102,7 +102,7 @@
             return d.promise();
         },
 		_value_to_array:function(k,v) {
-			if (k == '_id') { return v; }
+			if (k == '@id') { return v; }
 			if (!_(v).isUndefined() && !_(v).isArray()) {
 				return [v];
 			}
@@ -300,7 +300,7 @@
                 return;
             }
             if (pred[0] == "@"){ // don't expand @id etc.
-                out_obj[pred] = vals;
+                // out_obj[pred] = vals;
                 return;
             }
             var obj_vals = [];
@@ -331,14 +331,17 @@
 			});
             out_obj[pred] = obj_vals;
         });
+		console.log("URI IS ", uri);
+		out_obj['@id'] = uri;
 		return out_obj;
 	};
 
     ObjectStore.update_graph = function(graph){
 		var d = deferred();
-		var graph_objs = graph.objects().map(function(obj){ return serialize_obj(this);	});
+		var graph_objs = graph.objs().map(function(obj){ return serialize_obj(obj);	});
         var store = graph.box.store;
 		var call_url = graph.box.id + "/update?graph="+escape(graph.id)+"&version="+escape(graph.version);
+		console.log('call url ', call_url);
         authajax(store, call_url, {type: "PUT", processData:false, data:JSON.stringify(graph_objs)}).then(function(data) {
 			console.log('update_graph got data on return ', data, " new version ", data["@version"]);
 			graph.version = data["@version"];
@@ -361,17 +364,14 @@
                 $.each(objdata, function(uri, obj){
 					// top level keys
                     if (uri == "@version"){ version = obj; }
-                    if (uri[0] == "@"){
-						// ignore @id, @graph
-                        return;
-                    }
+                    if (uri[0] == "@"){  return; } // ignore "@id" etc
+					
 					// not one of those, so must be a
 					// < uri > : { prop1 .. prop2 ... }
 					var obj_model = graph.get_or_create(uri);
 					console.log('getting ', obj_model.id);
                     $.each(obj, function(key, vals){
-                        var obj_vals = [];
-                        vals.map(function(val) { 
+                        var obj_vals = vals.map(function(val) { 
                             if ("@id" in val){
                                 return graph.get_or_create(val["@id"]);
                             } else if ("@value" in val){
