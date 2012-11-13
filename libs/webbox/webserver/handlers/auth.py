@@ -67,6 +67,16 @@ AuthHandler.subhandlers = [
         'handler': AuthHandler.return_ok, # already logged out
         'content-type':'text/plain', # optional
         'accept':['application/json']                
-        }        
+        },
+     {
+        'prefix':'*',
+        'methods': ['OPTIONS'],
+        'require_auth': False,
+        'require_token': False,
+        'handler': AuthHandler.return_ok, # already logged out
+        'content-type':'text/plain', # optional
+        'accept':['application/json']                
+     }    
 ]
+
 

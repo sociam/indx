@@ -143,7 +143,7 @@
 				}
 			}
 		},
-		objs:function() { return this.attribute.objs; },
+		objs:function() { return this.attributes.objs; },
 		get_or_create:function(uri) {
 			return this.objs().get(uri) || this.create(uri);
 		},
@@ -249,7 +249,8 @@
 		initialize: function(attributes, options){
 			this.options = _(_(this.defaults).clone()).extend(options);
 			// get the boxes list from the server
-			this.attributes.boxes = new BoxCollection(options.boxes || [], {store: this});
+			this.attributes.boxes = new BoxCollection((options && options.boxes) || [], {store: this});
+			console.log('initialized store ', this.options.server_url);
         },
 		fetch_boxes:function() { return this.boxes().fetch(); },
 		boxes:function() { return this.attributes.boxes;  },

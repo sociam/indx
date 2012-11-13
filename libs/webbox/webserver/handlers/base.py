@@ -53,21 +53,25 @@ class BaseHandler(Resource):
 
     def _matches_request(self, request, subhandler):
         path_fields = request.path.split("/")
-        sub_path = path_fields[2]        
-        
+        sub_path = path_fields[2]
+
         # if the subhandler supports content negotiation, then determine the best one
         assert subhandler['accept'], 'No accept clause in subhandler %s ' % subhandler['prefix']
         
         if self._get_best_content_type_match_score(request,subhandler) <= 0:
+            # logging.debug("__NOT content type match " + self._get_best_content_type_match_score(request,subhandler))            
             return False
         if not request.method in subhandler["methods"]:
+            # logging.debug("__NOT in subhandler " + request.method)
             return False
-        if subhandler["prefix"] == sub_path or subhandler["prefix"] == '*':
-            return True
-        return False
+        if not (subhandler["prefix"] == sub_path or subhandler["prefix"] == '*'):
+            # logging.debug("__PREFIX mismatch " + sub_path + "  "  + subhandler["prefix"])            
+            return False
+        # logging.debug("MATCH " + sub_path )
+        return True
 
     def _get_best_content_type_match_score(self,request,subhandler):
-        request_accept = request.getHeader('Accept') or '*/*'       
+        request_accept = request.getHeader('Accept') or '*/*'
         return max(map(lambda handler_mimetype:quality(handler_mimetype,request_accept), subhandler["accept"]))        
 
     def _matches_auth_requirements(self, request, subhandler):
@@ -90,18 +94,17 @@ class BaseHandler(Resource):
 
     def render(self, request):
         """ Twisted resource handler."""
-        logging.debug("Calling base render()")
+        logging.debug("Calling base render() - " + '/'.join(request.path.split("/")) + " " + repr( self.__class__)  )
         try:
             self.set_cors_headers(request)            
             matching_handlers = filter(lambda h: self._matches_request(request,h), self.subhandlers)
             logging.debug('Matching handlers %d' % len(matching_handlers))
             matching_handlers.sort(key=lambda h: self._get_best_content_type_match_score(request,h),reverse=True)
-
             matching_auth_hs = filter(lambda h: self._matches_auth_requirements(request,h), matching_handlers)
             logging.debug('Post-auth matching handlers %d' % len(matching_auth_hs))
             if matching_auth_hs:
                 subhandler = matching_auth_hs[0]
-                logging.debug('Using handler %s' % self.__class__.__name__)
+                logging.debug('Using handler %s' % self.__class__.__name__ + " " + matching_auth_hs[0]["prefix"])
                 if subhandler['content-type']:
                     request.setHeader('Content-Type', subhandler['content-type'])
 

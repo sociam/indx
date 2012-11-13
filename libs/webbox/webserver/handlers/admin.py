@@ -85,5 +85,14 @@ AdminHandler.subhandlers = [
         'handler': BaseHandler.return_forbidden,
         'content-type':'text/plain', # optional
         'accept':['application/json']
-    }
+    },
+    { 
+        'prefix':'*',
+        'methods': ['OPTIONS'],
+        'require_auth': False,
+        'require_token': False,
+        'handler': BaseHandler.return_ok,
+        'content-type':'text/plain', # optional
+        'accept':['application/json']
+   }
 ]

@@ -24,5 +24,21 @@ from webbox.webserver.handlers.objectstore import ObjectStoreHandler
 
 class BoxHandler(BaseHandler):
     base_path = ''
+    def options(self, request):
+        self.return_ok(request)
 
-BoxHandler.subhandlers = ObjectStoreHandler.subhandlers # + RDF.RDFHandler.subhandlers + webdav.WebDavHandler.subhandlers
+OptionsHandlers = [
+    {
+        'prefix':'*',
+        'methods': ['OPTIONS'],
+        'require_auth': False,
+        'require_token': False,
+        'handler': BaseHandler.return_ok,
+        'content-type':'text/plain', # optional
+        'accept':['application/json']                
+        }
+]
+
+        
+
+BoxHandler.subhandlers = ObjectStoreHandler.subhandlers + OptionsHandlers # + RDF.RDFHandler.subhandlers + webdav.WebDavHandler.subhandlers

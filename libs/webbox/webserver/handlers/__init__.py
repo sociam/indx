@@ -3,6 +3,7 @@
 
 from webbox.webserver.handlers.admin import AdminHandler
 from webbox.webserver.handlers.auth import AuthHandler
+
 # from webbox.webserver.handlers.wellknown import WellKnownHandler
 # from webbox.webserver.handlers.lrdd import LRDDHandler
 # from webbox.webserver.handlers.openid import OpenIDHandler
@@ -12,7 +13,7 @@ from webbox.webserver.handlers.auth import AuthHandler
 # leave boxhandler out of here, as it is instantiated on a per-box basis
 HANDLERS = [
     AuthHandler,
-    AdminHandler,
+    AdminHandler
     # ('wellknown', WellKnownHandler),
     # ('lrdd', LRDDHandler),
     # ('openid', OpenIDHandler),
