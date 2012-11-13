@@ -179,6 +179,7 @@
     // ObjectStore.GraphCollection is the list of ObjectStore.Objs in a ObjectStore.Graph
     var GraphCollection = Backbone.Collection.extend({ model: Graph });
 	var Box = ObjectStore.Box = Backbone.Model.extend({
+		idAttribute:"@id",
 		initialize:function(attributes, options) {
 			assert(options.store, "no store provided");
 			this.store = options.store;
@@ -258,6 +259,7 @@
 		create:function(buri) {
 			var box = new Box({"@id" : buri }, { store: this });
 			this.boxes().add(box);
+			console.log("created a box ", box.id );
 			return box;
 		},
 		login : function() {
@@ -355,7 +357,8 @@
 				console.log('fetch_graph got data :: ', data);
                 var graph_collection = graph.objs();
                 var version = 0; // new version FIXME check
-                $.each(data, function(uri, obj){
+				var objdata = JSON.parse(data.data);
+                $.each(objdata, function(uri, obj){
 					// top level keys
                     if (uri == "@version"){ version = obj; }
                     if (uri[0] == "@"){
@@ -365,6 +368,7 @@
 					// not one of those, so must be a
 					// < uri > : { prop1 .. prop2 ... }
 					var obj_model = graph.get_or_create(uri);
+					console.log('getting ', obj_model.id);
                     $.each(obj, function(key, vals){
                         var obj_vals = [];
                         vals.map(function(val) { 

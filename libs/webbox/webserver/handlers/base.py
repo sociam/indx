@@ -53,7 +53,7 @@ class BaseHandler(Resource):
 
     def _matches_request(self, request, subhandler):
         path_fields = request.path.split("/")
-        sub_path = path_fields[2]
+        sub_path = path_fields[2] if len(path_fields) >= 3 else ''
 
         # if the subhandler supports content negotiation, then determine the best one
         assert subhandler['accept'], 'No accept clause in subhandler %s ' % subhandler['prefix']
@@ -107,7 +107,6 @@ class BaseHandler(Resource):
                 logging.debug('Using handler %s' % self.__class__.__name__ + " " + matching_auth_hs[0]["prefix"])
                 if subhandler['content-type']:
                     request.setHeader('Content-Type', subhandler['content-type'])
-
                 subhandler['handler'](self,request)
                 return NOT_DONE_YET
             logging.debug('Returning not found ')
