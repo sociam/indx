@@ -64,7 +64,7 @@ AdminHandler.subhandlers = [
         'methods': ['GET'],
         'require_auth': True,
         'require_token': False,
-        'handler': AdminHandler.list_box,
+        'handler': AdminHandler.list_boxes,
         'content-type':'text/plain', # optional
         'accept':['application/json']
     },    
