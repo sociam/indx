@@ -22,7 +22,7 @@ from twisted.web.server import NOT_DONE_YET
 from webbox.webserver.session import WebBoxSession, ISession
 from webbox.exception import AbstractException,ResponseOverride
 from mimeparse import quality
-from urlparse import urlparse
+from urlparse import urlparse, parse_qs
 
 class BaseHandler(Resource):
     """ Add/remove boxes, add/remove users, change config. """
@@ -142,6 +142,8 @@ class BaseHandler(Resource):
         self._respond(request, 404, "Not Found")
     def return_forbidden(self,request):
         self._respond(request, 403, "Forbidden")
+    def return_unauthorized(self,request):
+        self._respond(request, 401, "Unauthorized")        
     def return_unsupported_method(self,request):
         self._respond(request, 405, "Method Not Allowed")
     def return_internal_error(self,request):
@@ -161,6 +163,9 @@ class BaseHandler(Resource):
     def get_cors_headers(self, request):
         # default set
         return ("Content-Type", "origin", "accept", "Depth", "User-Agent", "X-File-Size", "X-Requested-With", "Cookie", "Set-Cookie", "If-Modified-Since","X-File-Name", "Cache-Control")
+
+    def get_post_args(self,request):
+        return parse_qs(request.content.read())
     
     def set_cors_headers(self,request):
         request.setHeader("Access-Control-Allow-Origin", ' '.join(self.get_cors_origin(request)) )

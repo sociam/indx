@@ -251,7 +251,6 @@
 			this.options = _(_(this.defaults).clone()).extend(options);
 			// get the boxes list from the server
 			this.attributes.boxes = new BoxCollection((options && options.boxes) || [], {store: this});
-			console.log('initialized store ', this.options.server_url);
         },
 		fetch_boxes:function() { return this.boxes().fetch(); },
 		boxes:function() { return this.attributes.boxes;  },
@@ -259,12 +258,18 @@
 		create:function(buri) {
 			var box = new Box({"@id" : buri }, { store: this });
 			this.boxes().add(box);
-			console.log("created a box ", box.id );
 			return box;
 		},
-		login : function() {
-			return authajax(this, 'auth/login', { type: "POST" });
+		login : function(username,password) {
+			return authajax(this, 'auth/login', { data: { username: username, password: password },  type: "POST" });
 	    },
+		get_token : function(boxid,appid) {
+			return authajax(this, 'auth/get_token', { data: { appid: appid, boxid: boxid },  type: "POST" });
+	    },
+		create_box:function(boxid) {
+			// @TODO rename something different to differentiate from create() above ^^
+			return authajax(this, 'admin/create_box', { data: { name: boxid },  type: "POST" });
+		},
 		logout : function() {
 			return authajax(this, 'auth/logout', { type: "POST" });			
 	    }
@@ -331,7 +336,6 @@
 			});
             out_obj[pred] = obj_vals;
         });
-		console.log("URI IS ", uri);
 		out_obj['@id'] = uri;
 		return out_obj;
 	};
@@ -341,9 +345,7 @@
 		var graph_objs = graph.objs().map(function(obj){ return serialize_obj(obj);	});
         var store = graph.box.store;
 		var call_url = graph.box.id + "/update?graph="+escape(graph.id)+"&version="+escape(graph.version);
-		console.log('call url ', call_url);
         authajax(store, call_url, {type: "PUT", processData:false, data:JSON.stringify(graph_objs)}).then(function(data) {
-			console.log('update_graph got data on return ', data, " new version ", data["@version"]);
 			graph.version = data["@version"];
 			d.resolve(graph);
 		}).fail(function(err) {	d.reject(err);});
@@ -357,19 +359,16 @@
         // return a list of models (each of type ObjectStore.Object) to populate a GraphCollection
         authajax(store, graph.box.id, { data: {"graph": uri} })
 			.then(function(data){
-				console.log('fetch_graph got data :: ', data);
                 var graph_collection = graph.objs();
                 var version = 0; // new version FIXME check
 				var objdata = JSON.parse(data.data);
                 $.each(objdata, function(uri, obj){
 					// top level keys
                     if (uri == "@version"){ version = obj; }
-                    if (uri[0] == "@"){  return; } // ignore "@id" etc
-					
+                    if (uri[0] == "@"){  return; } // ignore "@id" etc					
 					// not one of those, so must be a
 					// < uri > : { prop1 .. prop2 ... }
 					var obj_model = graph.get_or_create(uri);
-					console.log('getting ', obj_model.id);
                     $.each(obj, function(key, vals){
                         var obj_vals = vals.map(function(val) { 
                             if ("@id" in val){

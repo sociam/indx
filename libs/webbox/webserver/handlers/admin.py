@@ -19,6 +19,7 @@
 import logging, traceback, json
 from twisted.web.resource import Resource
 from webbox.webserver.handlers.base import BaseHandler
+import webbox.webbox_pg2 as database
 
 class AdminHandler(BaseHandler):
     """ Add/remove boxes, add/remove users, change config. """
@@ -38,13 +39,18 @@ class AdminHandler(BaseHandler):
         
     def create_box(self, request):
         """ Create a new box. """
-        name = request.args['name'][0]
-        self.webserver.create_box(name)
-        # send them back to the webbox start page
-        # request.redirect(str(self.webbox.get_base_url()))
-        # request.finish()
-        self.return_created(request)
-        pass
+        args = self.get_post_args(request)
+        name = args['name'][0]
+        username = self.get_session(request).username
+        password = self.get_session(request).password
+        logging.debug("Creating box {0} for user {1}".format(name,username))
+        try:
+            database.create_box(name,username,password)
+            self.webserver.start_box(name)
+            self.return_created(request)
+        except Exception as e:
+            logging.error('Error creating box {0} {1} '.format(name,e))
+            self.return_internal_error(request)
 
     def list_boxes(self,request):
         self.return_ok(request,{boxes:self.webserver.get_boxes()})

@@ -20,8 +20,8 @@ from zope.interface import Interface, Attribute, implements
 
 class ISession(Interface):
     is_authenticated = Attribute("A bool which registers if a user has successfully authenticated.")
-    userid = Attribute("User ID (from the DB) of the authenticated user.")
     username = Attribute("Username of the authenticated user.")
+    password = Attribute("Password of the authenticated user.")    
 
 class WebBoxSession(object):
     """ Stored per user session to record if the user is authenticated etc. """
@@ -29,12 +29,14 @@ class WebBoxSession(object):
 
     def __init__(self, session):
         self.is_authenticated = False
-        self.userid = None
         self.username = None
+        self.password = None
 
     def setAuthenticated(self, val):
         self.is_authenticated = val
    
-    def setUser(self, userid, username):
-        self.userid = userid
+    def setUser(self, username):
         self.username = username
+
+    def setPassword(self, password):
+        self.password = password

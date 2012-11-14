@@ -32,6 +32,7 @@ from box import WebBox
 from webbox.exception import ResponseOverride
 import webbox.webserver.handlers as handlers
 from webbox.webserver.handlers.box import BoxHandler
+from webbox.webserver import token
 
 class WebServer:
     """ Twisted web server for running WebBox. """
@@ -39,6 +40,7 @@ class WebServer:
     def __init__(self, config, config_filename, base_dir):
         """ Set up the server with a webbox. """
 
+        self.tokens = token.TokenKeeper()
         self.config = config
         self.config_filename = config_filename
 
@@ -153,6 +155,7 @@ class WebServer:
         return re.match("^[a-z0-9_-]*$", name) is None
 
     def get_boxes(self):
+        ## this should query the database "select datname from pg_database where datname like 'wb_%';'
         return self.config['webboxes']
 
     # @emax - how does this method relate to create_box in handlers/admin.py 
