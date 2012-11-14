@@ -1,7 +1,7 @@
 
 -- run this script as user webbox (e.g., psql -U webbox)
 
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
+-- CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- from: http://www.postgresql.org/docs/9.2/static/pgcrypto.html
 -- Example of setting a new password:

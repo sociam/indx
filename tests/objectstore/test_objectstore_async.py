@@ -2,44 +2,29 @@ import psycopg2, time, sys, logging, json
 from twisted.internet import reactor
 from txpostgres import txpostgres
 import cProfile
-from webbox.objectstore_async import ObjectStoreASync
+from webbox.objectstore_async import ObjectStoreAsync
+import webbox.webbox_pg2 as database
 
 logger = logging.getLogger() # root logger
 logger.debug("Logger initialised")
 logger.setLevel(logging.DEBUG)
 
 
-# database variables
-root_user = "postgres"
-root_pass = "foobar"
+boxid = "benchmark"
 
-db_name = "webbox_benchmark" # dropped at first
 db_user = "webbox"
 db_pass = "foobar"
 
+# create a box
+database.create_box(boxid, db_user, db_pass)
+
+def connect_fail():
+    logging.debug("Connection failed.")
 
 
-## drop the existing benchmark database (to reset version numbers, or if schema changes etc.)
-root_conn = psycopg2.connect(user=root_user, password=root_pass)
-root_conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
-root_cur = root_conn.cursor()
-root_cur.execute("DROP DATABASE IF EXISTS %s" % db_name)
-root_cur.close()
-root_conn.close()
-#
-## create schema
-ObjectStoreASync.initialise(db_name, root_user, root_pass, db_user, db_pass)
-
-
-
-
-# connect as new user
-conn = txpostgres.Connection()
-conn_str = ("dbname='{0}' user='{1}' password='{2}'".format(db_name, db_user, db_pass))
-
-
-def cb_connected():
+def cb_connected(conn):
     logging.debug("callback, objectstore connected")
+    store = ObjectStoreAsync(conn)
 
     def get_graphs():
         logging.debug("get_graphs()")
@@ -50,7 +35,7 @@ def cb_connected():
             print jsondata
 
         logging.debug("about to call get_graphs")
-        store.get_graphs(callback)
+        store.get_graphs().addCallback(callback)
         
 
     to_add = [
@@ -67,10 +52,12 @@ def cb_connected():
             return
 
         graph, objs, version = to_add.pop(0)
-        store.add(graph, objs, version, cb)
+        store.add(graph, objs, version).addCallback(cb)
 
     cb(None)
 
-store = ObjectStoreASync(conn, conn_str, cb_connected)
+# connect to box
+database.connect_box(boxid, db_user, db_pass).addCallbacks(cb_connected, connect_fail)
+
 reactor.run()
 

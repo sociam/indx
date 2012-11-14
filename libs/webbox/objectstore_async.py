@@ -162,7 +162,7 @@ class ObjectStoreAsync:
             d.addCallback(lambda _: cur.fetchall())
             d.addCallback(rows_cb)
 
-        self.conn.cursor().addCallback(cursor_cb)
+        cursor_cb(self.conn.cursor())
         return results_d
 
     def get_latest_obj(self, graph_uri, object_uri):
@@ -183,7 +183,7 @@ class ObjectStoreAsync:
             d.addCallback(lambda _: cur.fetchall())
             d.addCallback(rows_cb)
  
-        self.conn.cursor().addCallback(cursor_cb)
+        cursor_cb(self.conn.cursor())
         return result_d
     
 
@@ -212,7 +212,7 @@ class ObjectStoreAsync:
             d.addCallback(lambda _: cur.fetchone())
             d.addCallback(row_cb) 
 
-        self.conn.cursor().addCallback(cursor_cb)
+        cursor_cb(self.conn.cursor())
         return result_d
 
 
@@ -230,7 +230,8 @@ class ObjectStoreAsync:
         result_d = Deferred()
         logging.debug("Objectstore add")
 
-        def added_cb(new_version, graph_uri):
+        def added_cb(info): # self is the deferred
+            new_version, graph_uri = info
             logging.debug("added_cb")
             result_d.callback({"@version": new_version, "@graph": graph_uri})
 
@@ -247,7 +248,8 @@ class ObjectStoreAsync:
                 ipve.version = actual_prev_version
                 raise ipve
 
-            self.add_graph_version(graph_uri, objs, actual_prev_version, added_cb)
+            d = self.add_graph_version(graph_uri, objs, actual_prev_version)
+            d.addCallback(added_cb)
 
         def cursor_cb(cur):
             logging.debug("Objectstore add cursor_cb")
@@ -255,7 +257,7 @@ class ObjectStoreAsync:
             d.addCallback(lambda _: cur.fetchone())
             d.addCallback(row_cb)
 
-        self.conn.cursor().addCallback(cursor_cb)
+        cursor_cb(self.conn.cursor())
         return result_d
 
 
@@ -314,7 +316,7 @@ class ObjectStoreAsync:
                     logging.debug("Objectstore add_graph_version exec_queries")
 
                     if len(queries) < 1:
-                        result_d.callback(version+1, graph_uri)
+                        result_d.callback((version+1, graph_uri))
                         return
                     
                     (query, params) = queries.pop(0)
@@ -327,7 +329,7 @@ class ObjectStoreAsync:
             d.addCallback(lambda _: cur.fetchone())
             d.addCallback(row_cb)
 
-        self.conn.cursor().addCallback(cursor_cb)
+        cursor_cb(self.conn.cursor())
         return result_d
 
 
