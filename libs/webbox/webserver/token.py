@@ -29,15 +29,17 @@ from twisted.internet import reactor, ssl
 from twisted.internet.defer import Deferred
 
 class Token:
-    def __init__(self, username, password, boxid, appid, origin, conn):
+    def __init__(self, username, password, boxid, appid, origin, store):
         self.username = username
         self.password = password
         self.boxid = boxid
         self.appid = appid
         self.origin = origin
-        self.conn = conn
+        self.store = store
         self.id = str(uuid.uuid1())
-
+    def verify(self,boxname,origin):
+        return self.boxid == boxname and self.origin == origin
+        
 class TokenKeeper:
     # handles token garbage collection at some time in the future!
     def __init__(self):
@@ -47,10 +49,11 @@ class TokenKeeper:
     def add(self,token):
         self.tokens[token.id] = token
         return token
-    def new(self,username,password,boxid,appid,origin,conn):
-        token = Token(username,password,boxid,appid,origin,conn)
+    def new(self,username,password,boxid,appid,origin,store):
+        token = Token(username,password,boxid,appid,origin,store)
         self.add(token)
         return token
+    
 
     
     

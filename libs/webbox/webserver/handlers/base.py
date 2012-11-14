@@ -40,9 +40,8 @@ class BaseHandler(Resource):
         # }
     }
     
-    def __init__(self, webbox, webserver, base_path=None):
+    def __init__(self, webserver, base_path=None):
         self.webserver = webserver
-        self.webbox = webbox
 
         if base_path is not None:
             self.base_path = base_path
@@ -81,8 +80,33 @@ class BaseHandler(Resource):
         # @TODO
         # if subhandler['require_token'] and not true:
         #    raise ForbiddenResource()
-        return True        
+        return True
 
+    def get_token(self,request):
+        if request.method == 'GET':
+            try:
+                tid = request.args['token'][0]
+                return self.webserver.tokens.get(tid)
+            except Exception as e:
+                return None
+        if request.method == 'POST':
+            try:
+                tid = self.get_post_args(request)['token'][0]
+                return self.webserver.tokens.get(tid)
+            except Exception as e:
+                return None
+        return None
+
+    def get_origin(self,request):
+        return request.getHeader('origin')        
+    
+    def _matches_token_requirements(self, request, subhandler):
+        if not subhandler['require_token']:
+            return True
+        token = self.get_token(request)
+        boxname = self.base_path
+        return token and token.verify(boxname, self.get_origin(request))
+    
     def get_session(self,request):
         session = request.getSession()
         # persists for life of a session (based on the cookie set by the above)
@@ -102,9 +126,12 @@ class BaseHandler(Resource):
             matching_handlers.sort(key=lambda h: self._get_best_content_type_match_score(request,h),reverse=True)
             matching_auth_hs = filter(lambda h: self._matches_auth_requirements(request,h), matching_handlers)
             logging.debug('Post-auth matching handlers %d' % len(matching_auth_hs))
-            if matching_auth_hs:
-                subhandler = matching_auth_hs[0]
-                logging.debug('Using handler %s' % self.__class__.__name__ + " " + matching_auth_hs[0]["prefix"])
+            matching_token_hs = filter(lambda h: self._matches_token_requirements(request,h), matching_auth_hs)
+            logging.debug('Post-token matching handlers %d' % len(matching_token_hs))
+            
+            if matching_token_hs:
+                subhandler = matching_token_hs[0]
+                logging.debug('Using handler %s' % self.__class__.__name__ + " " + matching_token_hs[0]["prefix"])
                 if subhandler['content-type']:
                     request.setHeader('Content-Type', subhandler['content-type'])
                 subhandler['handler'](self,request)

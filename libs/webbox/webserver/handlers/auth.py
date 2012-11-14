@@ -21,6 +21,7 @@ from urlparse import parse_qs
 from twisted.web.resource import Resource
 from webbox.webserver.session import WebBoxSession, ISession
 from webbox.webserver.handlers.base import BaseHandler
+from webbox.objectstore_async import ObjectStoreAsync
 import webbox.webbox_pg2 as database
 
 class AuthHandler(BaseHandler):
@@ -51,7 +52,7 @@ class AuthHandler(BaseHandler):
             self.return_ok(request)
         
         def fail():
-            logging.debug("Login request fail, origin: {0}".format(request.getHeader("Origin")))
+            logging.debug("Login request fail, origin: {0}".format(self.get_origin(request)))
             wbSession = self.get_session(request)
             wbSession.setAuthenticated(False)
             wbSession.setUser(None)
@@ -62,7 +63,7 @@ class AuthHandler(BaseHandler):
 
     def auth_logout(self, request):
         """ User logged out (GET, POST) """
-        logging.debug("Logout request, origin: {0}".format(request.getHeader("Origin")))
+        logging.debug("Logout request, origin: {0}".format(self.get_origin(request)))
         wbSession = self.get_session(request)
         wbSession.setAuthenticated(False)
         wbSession.setUser(None)
@@ -86,10 +87,10 @@ class AuthHandler(BaseHandler):
 
         username = wbSession.username
         password = wbSession.password
-        origin = request.getHeader("Origin")
+        origin = self.get_origin(request)
 
         def check_app_perms(conn):
-            token = self.webserver.tokens.new(username,password,boxid,appid,origin,conn)
+            token = self.webserver.tokens.new(username,password,boxid,appid,origin,ObjectStoreAsync(conn))
             return self.return_ok(request, {"token":token.id})
 
         database.connect_box(boxid,username,password).addCallbacks(check_app_perms, lambda conn: self.return_forbidden(request))

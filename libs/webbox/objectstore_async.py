@@ -17,13 +17,15 @@
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging, psycopg2, os, txpostgres
+from twisted.internet.defer import Deferred
 
-class ObjectStoreASync:
+class ObjectStoreAsync:
     """ Stores objects in a database, handling import, export and versioning.
 
         Each ObjectStore has single cursor, so create a new ObjectStore object per thread.
     """
 
+    # redundant with webbox_pg2.create_database 
     @staticmethod
     def initialise(db_name, root_user, root_pass, db_user, db_pass):
         """ Create the user, database, tables, view and functions. """
@@ -83,24 +85,13 @@ class ObjectStoreASync:
             root_conn.close()
 
 
-    def __init__(self, conn, connection_string, cb):
+    def __init__(self, conn):
         """
             conn is a postgresql psycopg2 database connection
         """
         self.conn = conn
-        self.connection_string = connection_string
-
         # TODO FIXME determine if autocommit has to be off for PL/pgsql support
         self.conn.autocommit = True
-
-        def connected(conn):
-            logging.debug("ObjectStore connected")
-            cb()
-
-        d = self.conn.connect(self.connection_string)
-        self.deferred = d
-        self.deferred.addErrback(logging.error)
-        d.addCallback(connected)
 
     def autocommit(self, value):
         """ Set autocommit on/off, for speeding up large INSERTs. """
@@ -151,10 +142,10 @@ class ObjectStoreASync:
         return obj_out
 
 
-    def get_graphs(self, callback):
+    def get_graphs(self):
         """ Get a list of the graph URIs.
         """
-
+        results_d = Deferred()
         logging.debug("Objectstore get_graphs")
 
         def rows_cb(rows):
@@ -163,7 +154,7 @@ class ObjectStoreASync:
             for row in rows:
                 graph_uri = row[0]
                 objs_out.append(graph_uri)
-            callback(objs_out)
+            results_d.callback(objs_out)
 
         def cursor_cb(cur):
             logging.debug("Objectstore get_graphs cursor_cb")
@@ -171,54 +162,61 @@ class ObjectStoreASync:
             d.addCallback(lambda _: cur.fetchall())
             d.addCallback(rows_cb)
 
-        d = self.deferred
-        d.addCallback(lambda _: self.conn.cursor())
-        d.addCallback(cursor_cb)
-
+        self.conn.cursor().addCallback(cursor_cb)
+        return results_d
 
     def get_latest_obj(self, graph_uri, object_uri):
         """ Get the latest version of an object in agraph, as expanded JSON-LD notation.
             graph_uri of the named graph
             object_uri of the object
         """
-        cur = self.conn.cursor()
 
-        cur.execute("SELECT graph_uri, graph_version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples WHERE graph_uri = %s AND subject = %s", [graph_uri, object_uri]) # order is implicit, defined by the view, so no need to override it here
-        rows = cur.fetchall()
+        result_d = Deferred()
 
-        obj_out = self.rows_to_json(rows)
-        obj_out["@graph"] = graph_uri
+        def rows_cb(rows):
+            obj_out = self.rows_to_json(rows)
+            obj_out["@graph"] = graph_uri
+            result_d.callback(obj_out)
+        
+        def cursor_cb(cur):
+            d = cur.execute("SELECT graph_uri, graph_version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples WHERE graph_uri = %s AND subject = %s", [graph_uri, object_uri]) # order is implicit, defined by the view, so no need to override it here
+            d.addCallback(lambda _: cur.fetchall())
+            d.addCallback(rows_cb)
  
-        return obj_out
+        self.conn.cursor().addCallback(cursor_cb)
+        return result_d
     
 
     def get_latest(self, graph_uri):
         """ Get the latest version of a graph, as expanded JSON-LD notation.
             uri of the named graph
         """
-        
-        cur = self.conn.cursor()
+        result_d = Deferred()
 
-        cur.execute("SELECT latest_version FROM wb_v_latest_graphvers WHERE graph_uri = %s", [graph_uri])
-        rows = cur.fetchone()
-        if rows is None:
-            version = 0
-            obj_out = {}
-        else:
-            version = rows[0]
-
-            cur.execute("SELECT graph_uri, graph_version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples WHERE graph_uri = %s", [graph_uri]) # order is implicit, defined by the view, so no need to override it here
-            rows = cur.fetchall()
-
+        def row_cb(rows, version):
             obj_out = self.rows_to_json(rows)
+            obj_out["@graph"] = graph_uri
+            obj_out["@version"] = version
+            result_d.callback(obj_out)
 
-        obj_out["@graph"] = graph_uri
-        obj_out["@version"] = version
-    
-        return obj_out
+        def rows_cb(rows):
+            if rows is None:
+                return result_d.callback({"@graph" : graph_uri, "@version": 0 })            
+            version = rows[0]
+            rowd = cur.execute("SELECT graph_uri, graph_version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples WHERE graph_uri = %s", [graph_uri]) # order is implicit, defined by the view, so no need to override it here
+            rowd.addCallback(lambda _: cur.fetchall())
+            rowd.addCallback(lambda rows: row_cb(rows,version))
+
+        def cursor_cb(cur):
+            d = cur.execute("SELECT latest_version FROM wb_v_latest_graphvers WHERE graph_uri = %s", [graph_uri])
+            d.addCallback(lambda _: cur.fetchone())
+            d.addCallback(row_cb) 
+
+        self.conn.cursor().addCallback(cursor_cb)
+        return result_d
 
 
-    def add(self, graph_uri, objs, specified_prev_version, callback):
+    def add(self, graph_uri, objs, specified_prev_version):
         """ Add new objects, or new versions of objects, to a graph in the database.
 
             graph_uri of the named graph,
@@ -229,12 +227,12 @@ class ObjectStoreASync:
         """
 
         # TODO FIXME XXX lock the table(s) as appropriate inside a transaction (PL/pgspl?) here
-
+        result_d = Deferred()
         logging.debug("Objectstore add")
 
         def added_cb(new_version, graph_uri):
             logging.debug("added_cb")
-            callback({"@version": new_version, "@graph": graph_uri})
+            result_d.callback({"@version": new_version, "@graph": graph_uri})
 
         def row_cb(row):
             logging.debug("Objectstore add row_cb, row: " + str(row))
@@ -257,16 +255,15 @@ class ObjectStoreASync:
             d.addCallback(lambda _: cur.fetchone())
             d.addCallback(row_cb)
 
-        d = self.deferred
-        d.addCallback(lambda _: self.conn.cursor())
-        d.addCallback(cursor_cb)
+        self.conn.cursor().addCallback(cursor_cb)
+        return result_d
 
 
-
-    def add_graph_version(self, graph_uri, objs, version, callback):
+    def add_graph_version(self, graph_uri, objs, version):
         """ Add new version of a graph.
         """
 
+        result_d = Deferred()
         logging.debug("Objectstore add_graph_version")
 
         # TODO FIXME XXX lock the table(s) as appropriate inside a transaction (PL/pgspl?) here
@@ -317,7 +314,7 @@ class ObjectStoreASync:
                     logging.debug("Objectstore add_graph_version exec_queries")
 
                     if len(queries) < 1:
-                        callback(version+1, graph_uri)
+                        result_d.callback(version+1, graph_uri)
                         return
                     
                     (query, params) = queries.pop(0)
@@ -330,10 +327,8 @@ class ObjectStoreASync:
             d.addCallback(lambda _: cur.fetchone())
             d.addCallback(row_cb)
 
-        d = self.deferred
-        d.addCallback(lambda _: self.conn.cursor())
-        d.addCallback(cursor_cb)
-
+        self.conn.cursor().addCallback(cursor_cb)
+        return result_d
 
 
 

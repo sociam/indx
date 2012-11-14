@@ -28,7 +28,6 @@ from twisted.web.wsgi import WSGIResource
 from twisted.internet import reactor, ssl
 from twisted.internet.defer import Deferred
 
-from box import WebBox
 from webbox.exception import ResponseOverride
 import webbox.webserver.handlers as handlers
 from webbox.webserver.handlers.box import BoxHandler
@@ -60,9 +59,6 @@ class WebServer:
             self.server_url = "https://" + self.server_url
             if config['server']['port'] != 443:
                 self.server_url = self.server_url + ":" + str(config['server']['port'])
-
-        # @TODO : move to store webboxes on a instance-per-session pattern
-        self.webbox = WebBox(config['webbox'], self.server_url)
 
         # get values to pass to web server
         server_address = config['server']['address']
@@ -98,7 +94,7 @@ class WebServer:
         # register("json-ld", Serializer, "rdfliblocal.jsonld", "JsonLDSerializer")
 
         for handler in handlers.HANDLERS:
-            handler(self.webbox,self)
+            handler(self)
 
         self.start_boxes()
 
@@ -132,7 +128,6 @@ class WebServer:
         # setup triggers on quit
         def onShutDown():
             logging.debug("Got reactor quit trigger, so closing down webbox.")
-            self.webbox.stop()
 
         reactor.addSystemEventTrigger("during", "shutdown", onShutDown) #@UndefinedVariable
 
@@ -143,7 +138,7 @@ class WebServer:
 
     def start_box(self, name):
         """ Add a single webbox to the server. """
-        box = BoxHandler(self.webbox, self, name) # e.g. /webbox
+        box = BoxHandler(self, name) # e.g. /webbox
         self.root.putChild(name, box); # e.g. /webbox
 
     def run(self):
