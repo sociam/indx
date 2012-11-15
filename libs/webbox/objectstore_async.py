@@ -199,7 +199,7 @@ class ObjectStoreAsync:
             obj_out["@version"] = version
             result_d.callback(obj_out)
 
-        def rows_cb(rows):
+        def rows_cb(rows,cur):
             if rows is None:
                 return result_d.callback({"@graph" : graph_uri, "@version": 0 })            
             version = rows[0]
@@ -210,7 +210,7 @@ class ObjectStoreAsync:
         def cursor_cb(cur):
             d = cur.execute("SELECT latest_version FROM wb_v_latest_graphvers WHERE graph_uri = %s", [graph_uri])
             d.addCallback(lambda _: cur.fetchone())
-            d.addCallback(row_cb) 
+            d.addCallback(lambda rows: rows_cb(rows,cur)) 
 
         cursor_cb(self.conn.cursor())
         return result_d

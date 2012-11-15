@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+  <link href="../../css/bootstrap.css" rel="stylesheet">
+  <link href="css/fb.css" rel="stylesheet">  
+  <head><title>save face :: social network profile aggregator</title> </head>
+  <body>
+	<div id="modes">
+	  <div class="box login" style="display:none">
+		<div class="span12 header">save<br>face</div>
+		<div id="login" class="btn">log in to facebook - <i class="icon-play"></i></div>
+	  </div>
+	  <div class="box controls" style="display:none">
+		<div id="buttons">
+		  <div id="me" class="btn" disabled='true'><i class="icon-user"></i> my profile </div>
+		  <div id="statuses" class="btn" disabled='true'><i class="icon-comment"></i> my statuses</div>
+		  <div id="inbox" class="btn" disabled='true'><i class="icon-pencil"></i> my messages</div>
+		  <div id="feed" class="btn" disabled='true'><i class="icon-list"></i> news feed</div>		  
+		  <div id="friends" class="btn" disabled='true'><i class="icon-user"></i> friends</div>
+		  <div id="logoff" class="btn"><i class="icon-eject"></i> - log out of facebook</div>
+		  <div class="mod_container"><div id="last_modified"></div></div>
+		</div>
+		<div id="stats"></div>
+	  </div>
+	  <div class="box denied" style="display:none">
+		Access denied. Did you give save face permission to access your fb?
+	  </div>
+	</div>
+	<div id="counter"></div>	
+	<div id="fb-root"></div>
+  </body>
+  <script src="../../js/vendor/jquery-1.8.2.min.js" type="text/javascript"></script>
+  <script src="../../js/vendor/underscore-min-1.4.2.js" type="text/javascript"></script>
+  <script src="../../js/vendor/backbone-min-0.9.2.js" type="text/javascript"></script>
+  <script src="../../js/vendor/require.min.js"></script>
+  <script type="text/javascript" src="js/index.js"></script>
+</html>
