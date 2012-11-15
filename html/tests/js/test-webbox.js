@@ -27,10 +27,8 @@ $(document).ready(function() {
 	$.getScript('http://'+host+':8211/js/webbox-backbone.js', function() {
 		console.log('get script done');
 	  	var store = new ObjectStore.Store([], { server_url : "http://"+host+":8211/" });
-		window.store = store;
-		test_pasta(store);
-		
-		
+		// window.store = store;
+		// test_pasta(store);
 		$('#login').click(function() {
 			var username = $('#username').val(), pass = $('#password').val()
 			console.log('logging in as user ', username, pass)			
