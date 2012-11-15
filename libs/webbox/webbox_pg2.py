@@ -23,7 +23,7 @@ def connect_box(box_name,db_user,db_pass):
 def auth(db_user,db_pass):
     d = Deferred()
     connect(None,db_user,db_pass).addCallbacks(lambda *x: d.callback(True), lambda *x: d.callback(False))
-    
+    return d
 
 def create_box(box_name, db_user, db_pass):
     db_name = WBPREFIX + box_name 
