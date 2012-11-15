@@ -90,6 +90,5 @@ define(['plugins/js/fb','js/models','js/utils'],function(fb,models,u) {
 		Backbone.history.start({root:document.location.pathname});
 	};
 	
-	return { init : init };
-	
+	return { init : init };	
 });
