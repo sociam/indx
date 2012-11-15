@@ -98,7 +98,7 @@ class BaseHandler(Resource):
         return None
 
     def get_origin(self,request):
-        return request.getHeader('origin')        
+        return request.getHeader('origin')
     
     def _matches_token_requirements(self, request, subhandler):
         if not subhandler['require_token']:
