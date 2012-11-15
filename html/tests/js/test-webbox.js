@@ -13,9 +13,13 @@ $(document).ready(function() {
 			store.load_box('pastas').then(function(box) {
 				console.log("got a box of pastas ", box.id, box);
 				var dinnergraph = box.get_or_create('dinner');
-				var carbonara = dinnergraph.get_or_create('puttanesca');
-				carbonara.set({name:"carbonara", calories:10293, carbs: 92389, fats: 2398, yumminess:2398 });
-				dinnergraph.save();
+				window.dinnergraph = dinnergraph;
+				dinnergraph.fetch().then(function(d) {
+					console.log('fetched dinner ', dinnergraph.objs().length);
+					var carbonara = dinnergraph.get_or_create('puttanesca');
+					carbonara.set({name:"carbonara", calories:10293, carbs: 92389, fats: 2398, yumminess:2398 });
+					dinnergraph.save();
+				});
 			});										  
 		});
 	};

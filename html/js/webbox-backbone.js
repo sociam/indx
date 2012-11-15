@@ -230,7 +230,49 @@
 						d.resolve(graph);
 					}).fail(function(err) {	d.reject(err);});
 			return d.promise();
-		},		
+		},
+		_fetch_graph : function(graph){
+			var store = graph.box.store;
+			var uri = graph.id;
+			var d = deferred();
+			// return a list of models (each of type ObjectStore.Object) to populate a GraphCollection
+			boxajax(graph.box, "/", "GET", {"graph": uri})
+				.then(function(data){
+					var graph_collection = graph.objs();
+					var version = 0; // new version FIXME check
+					var objdata = JSON.parse(data.data);
+					$.each(objdata, function(uri, obj){
+						// top level keys
+						if (uri == "@version"){ version = obj; }
+						if (uri[0] == "@"){  return; } // ignore "@id" etc					
+						// not one of those, so must be a
+						// < uri > : { prop1 .. prop2 ... }
+						var obj_model = graph.get_or_create(uri);
+						$.each(obj, function(key, vals){
+							var obj_vals = vals.map(function(val) { 
+								if ("@id" in val){
+									return graph.get_or_create(val["@id"]);
+								} else if ("@value" in val){
+									// if the string has no language or datatype, compress to just a string.
+									if ("@language" in val && val["@language"] === "" && "@type" in val && val["@type"] === "") {
+										return val["@value"];
+									} else {
+										return val;
+									}
+								}
+								assert(false, "cannot unpack value ", val);
+							});
+							obj_model.set(key,obj_vals,{silent:true});
+						});
+						obj_model.change();
+					});
+					graph.version = version;
+					d.resolve(graph);
+				}).fail(function(data) {
+					d.reject(graph);
+				});
+			return d.promise();
+		},
         sync: function(method, model, options){
             switch(method){
                 case "create":
@@ -388,48 +430,4 @@
 			return authajax(this, 'auth/logout', { type: "POST" });			
 	    }
     });
-
-
-    ObjectStore.fetch_graph = function(graph){
-		var store = graph.box.store;
-		var uri = graph.id;
-		var d = deferred();
-        // return a list of models (each of type ObjectStore.Object) to populate a GraphCollection
-        authajax(store, graph.box.id, { data: {"graph": uri} })
-			.then(function(data){
-                var graph_collection = graph.objs();
-                var version = 0; // new version FIXME check
-				var objdata = JSON.parse(data.data);
-                $.each(objdata, function(uri, obj){
-					// top level keys
-                    if (uri == "@version"){ version = obj; }
-                    if (uri[0] == "@"){  return; } // ignore "@id" etc					
-					// not one of those, so must be a
-					// < uri > : { prop1 .. prop2 ... }
-					var obj_model = graph.get_or_create(uri);
-                    $.each(obj, function(key, vals){
-                        var obj_vals = vals.map(function(val) { 
-                            if ("@id" in val){
-                                return graph.get_or_create(val["@id"]);
-                            } else if ("@value" in val){
-                                // if the string has no language or datatype, compress to just a string.
-                                if ("@language" in val && val["@language"] === "" && "@type" in val && val["@type"] === "") {
-                                    return val["@value"];
-                                } else {
-                                    return val;
-                                }
-                            }
-							assert(false, "cannot unpack value ", val);
-                        });
-                        obj_model.set(key,obj_vals,{silent:true});
-                    });
-					obj_model.change();
-                });
-                graph.version = version;
-				d.resolve(graph);
-            }).fail(function(data) {
-				d.reject(graph);
-			});
-		return d.promise();
-	};
 }).call(this);
