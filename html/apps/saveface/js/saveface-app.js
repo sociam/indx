@@ -74,8 +74,7 @@ define(['plugins/js/fb','js/models','js/utils'],function(fb,models,u) {
 		nav:function(state) {
 			this.navigate(state, {trigger:true});
 		}
-	});
-	
+	});	
 	var init = function(graph) {
 		var _router = (new Router(graph));		
 		$('#login').on('click', function() {
@@ -88,7 +87,6 @@ define(['plugins/js/fb','js/models','js/utils'],function(fb,models,u) {
 			FB.logout(); _router.nav('login');
 		});
 		Backbone.history.start({root:document.location.pathname});
-	};
-	
+	};	
 	return { init : init };	
 });
