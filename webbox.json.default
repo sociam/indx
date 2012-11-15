@@ -1,48 +1,38 @@
 {
-    # configuration of the webbox server and per-user location of data
+    "version": 4,
     "server": {
-        # HTTP server configuration
-        "address": "", # empty is default bind, specify an IP to bind to a specific interface
-        "port": 8211, # port to listen on
-        "hostname": "localhost", # hostname the server will use
+        "address": "",
+        "port": 8211,
+        "hostname": "localhost",
 
-        # TLS/SSL configuration
-        "ssl_off": false, # force SSL off/on
-        "ssl_cert": "data/server.crt", # relative to run.py
-        "ssl_private_key": "data/server.key", # relative to run.py
+        "html_dir": "html",
+
+        "ssl_off": false,
+        "ssl_cert": "data/server.crt",
+        "ssl_private_key": "data/server.key",
         
-        "log": "/tmp/webbox.log", # server log file
+        "log": "/tmp/webbox.log",
 
-        "load_browser": true, # load a browser on server start?
+        "load_browser": true,
         "bindirs": [
-            "4store", # add the 4store/ directory to the environment path (remove this under linux)
-            "../Resources/4store" # for the OSX .app
+            "4store",
+            "../Resources/4store"
         ]
     },
-
+    "webboxes": ["webbox"],
     "webbox": {
-        # sqlite dbs
-        "subscriptions": "subscriptions.sqlite", # subscription filename
-        "journal": "journal.sqlite", # journal filename
-
-        # subdirectories
-        "file_dir": "files", # relative to webbox dir
-
-        "html_dir": "html", # relative to cwd
-
-        "url": "https://localhost:8211/webbox", # how the webbox sees itself (used to check owner in RDF)
-
-        # 4store configuration
-        "4store": {
-            "host": "localhost",
-            "port": 8212,
-            "delay": 0
+        "db": {
+            "name": "webbox",
+            "user": "webbox",
+            "password": "foobar"
         },
 
-        # web sockets server
+        "subscriptions": "subscriptions.sqlite",
+        "journal": "journal.sqlite",
+
+        "file_dir": "files",
+
         "ws_hostname": "localhost",
         "ws_port": 8214
-
     }
-
 }

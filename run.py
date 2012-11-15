@@ -18,25 +18,14 @@
 
 # import core modules
 import sys, os, logging, json, shutil, getpass, re
-from webboxsetup import WebBoxSetup
-from webbox import WebBox
-from webserver import WebServer
+from webbox.setup import WebBoxSetup
+from webbox.server import WebServer
 
 # Initial Setup of ~/.webbox
 kbname = "webbox_" + getpass.getuser() # per user knowledge base
 webbox_dir = os.path.expanduser('~'+os.sep+".webbox")
 setup = WebBoxSetup()
-setup.setup(webbox_dir, "webbox.json.default", kbname) # directory, default config, kbname
-
-
-# load configuration into 'config' variable
-webbox_config = webbox_dir + os.sep + "webbox.json"
-conf_fh = open(webbox_config, "r")
-config = json.loads(conf_fh.read())
-conf_fh.close()
-
-# add the webbox path to the config (at runtime only)
-config['webbox']['webbox_dir'] = webbox_dir
+config = setup.setup(webbox_dir, "webbox.json.default", kbname) # directory, default config, kbname
 
 # add additional binary paths to the PATH
 for bindir in config['server']['bindirs']:
@@ -50,7 +39,6 @@ logger.addHandler(log_handler)
 logger.debug("Logger initialised")
 logger.setLevel(logging.DEBUG)
 
-wb = WebBox(config['webbox'])
-server = WebServer(config['server'], os.path.dirname(__file__), wb)
+server = WebServer(config, setup.get_config_filename(), os.path.dirname(__file__))
 server.run()
 

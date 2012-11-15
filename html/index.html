@@ -19,7 +19,6 @@
         </style>
         <link rel="stylesheet" href="css/bootstrap-responsive.min.css">
 
-	    <link rel="stylesheet" href="css/fileuploader.css">
         <script src="js/vendor/modernizr-2.6.1-respond-1.1.0.min.js"></script>
     </head>
     <body>
@@ -43,9 +42,9 @@
                             <li class="active"><a href="#">Home</a></li>
                             <li><a href="manage">Manage</a></li>
                         </ul>
-                        <form class="navbar-form pull-right">
-                            <input class="span2" type="text" placeholder="Username">
-                            <input class="span2" type="password" placeholder="Password">
+                        <form class="navbar-form pull-right" id="login_form">
+                            <input id="login_username" class="span2" type="text" placeholder="Username">
+                            <input id="login_password" class="span2" type="password" placeholder="Password">
                             <button type="submit" class="btn">Sign in</button>
                         </form>
                     </div><!--/.nav-collapse -->
@@ -56,23 +55,34 @@
         <div class="container">
 
             <!-- Main hero unit for a primary marketing message or call to action -->
-            <div class="hero-unit">
-                <h1>WebBox</h1>
-                <p>This is a WebBox, see <a target="_blank" href="http://github.com/danielsmith-eu/webbox/wiki/">the WebBox Wiki</a> for more information.</p>
-            </div>
-
             <div class="row">
-                <div class="span12">
-                    <h2>File Uploader</h2>
-                    <p>This form allows files to be uploaded directly to a WebBox.</p>
-
-                    <form method="PUT" id="upload_form">
-                        <div id="file-uploader"></div>
-                    </form>
+                <div class="span4">
+                    <img src="img/webbox-icon.png" style="height: 200px;" />
+                </div>
+                <div class="span8">
+                    <h1>WebBox</h1>
+                    <p>This is a WebBox, see <a target="_blank" href="http://github.com/danielsmith-eu/webbox/wiki/">the WebBox Wiki</a> for more information.</p>
                 </div>
             </div>
 
-            <hr>
+            <hr />
+
+            <div class="row">
+                <div class="span4">
+                    <h3>Browser</h3>
+                    <p>Explore what is in your WebBox: <a href="browser">Browser</a></p>
+                </div>
+                <div class="span4">
+                    <h3>Uploader</h3>
+                    <p>Add individual files to your WebBox: <a href="uploader">Uploader</a></p>
+                </div>
+                <div class="span4">
+                    <h3>Useful Information</h3>
+                    <p><strong>WebBox URL:</strong> <span id="index_webbox_uri"></span></p>
+                </div>
+            </div>
+
+            <hr />
 
             <footer>
                 <p>&copy; University of Southampton 2012</p>
@@ -84,35 +94,6 @@
         <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.8.2.min.js"><\/script>')</script>
 
         <script src="js/vendor/bootstrap.min.js"></script>
-
-        <script>
-            /* some useful values */
-            window.webbox_vars = {};
-            window.webbox_vars.server_url = "{{ server_url }}";
-        </script>
-
-        <script src="js/libs/fileuploader.js"></script>
         <script src="js/script.js"></script>
-
-        <script>
-        $(document).ready(function(){
-            var prfx = "webbox/";
-
-            var uploader = new qq.FileUploader({
-                element: $("#file-uploader")[0],
-                action: prfx,
-        //        debug: true,
-                onComplete: function(id, name, response){
-                    var filename = prfx + name;
-                    var div = $("#file-uploader").html("");
-                    div.append("Your file is now available at: ");
-                    div.append($("<a target='_blank' href='"+filename+"'>"+filename+"</a>"));
-                    div.append(".");
-                },
-            });
-
-        });
-        </script>
-        
     </body>
 </html>

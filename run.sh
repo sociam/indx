@@ -21,10 +21,6 @@
 # to change back to current dir
 export WBDIR="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-# do initial per-user set up
-cd "$WBDIR"
-./scripts/setup_4store.sh # create /var/lib/4store (prompts for admin password)
-
 # run webbox, output to log
 cd "$WBDIR"
 source env/bin/activate
@@ -32,6 +28,7 @@ source env/bin/activate
 # add libs to path
 export PYTHONPATH="$WBDIR/libs:$PYTHONPATH"
 
+echo `which python`
 #python -m cProfile run.py &
 python run.py
 

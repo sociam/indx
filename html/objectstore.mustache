@@ -19,7 +19,6 @@
         </style>
         <link rel="stylesheet" href="css/bootstrap-responsive.min.css">
 
-	    <link rel="stylesheet" href="css/fileuploader.css">
         <script src="js/vendor/modernizr-2.6.1-respond-1.1.0.min.js"></script>
     </head>
     <body>
@@ -63,12 +62,7 @@
 
             <div class="row">
                 <div class="span12">
-                    <h2>File Uploader</h2>
-                    <p>This form allows files to be uploaded directly to a WebBox.</p>
-
-                    <form method="PUT" id="upload_form">
-                        <div id="file-uploader"></div>
-                    </form>
+                    Backbone examples.
                 </div>
             </div>
 
@@ -91,28 +85,56 @@
             window.webbox_vars.server_url = "{{ server_url }}";
         </script>
 
-        <script src="js/libs/fileuploader.js"></script>
         <script src="js/script.js"></script>
+
+        <script src="js/libs/underscore-min-1.4.2.js"></script>
+        <script src="js/libs/backbone-dev-0.9.2.js"></script>
+        <script src="js/objectstore.js"></script>
 
         <script>
         $(document).ready(function(){
-            var prfx = "webbox/";
 
-            var uploader = new qq.FileUploader({
-                element: $("#file-uploader")[0],
-                action: prfx,
-        //        debug: true,
-                onComplete: function(id, name, response){
-                    var filename = prfx + name;
-                    var div = $("#file-uploader").html("");
-                    div.append("Your file is now available at: ");
-                    div.append($("<a target='_blank' href='"+filename+"'>"+filename+"</a>"));
-                    div.append(".");
-                },
+            var store = new ObjectStore.Store();
+            store.server_url = "http://localhost:8211/webbox/";
+
+            // get a list of graphs in the store, and fetch them individually
+            store.on("reset", function(){
+                $.each(store.models, function(){
+                    var graph = this;
+
+                    graph.on("change", function(){
+                        var graph_collection = graph.get("objects");
+                        console.debug("graph: ", graph, " objects:", graph_collection.models);
+                    });
+
+                    graph.fetch();
+                });
+            });
+            store.fetch();
+
+
+            // get a single graph from the store by name
+            var graph = store.get("http://example.com/graph"); // a graph uri from tests/objectstore/put_multi.sh 
+            graph.on("change", function(){
+                var graph_collection = graph.get("objects");
+                console.debug("Graph collection updated:", graph_collection);
+                $.each(graph_collection.models, function(){
+                    var obj = this;
+                    console.debug("Object in graph:",obj.toJSON());
+
+                    // override all rdfs:label entries with a new one
+                    obj.set("http://www.w3.org/2000/01/rdf-schema#label", ["My object"]);  
+                });
+                // save the graph back to the server
+                graph.save();
             });
 
+            // fetch the latest version of the graph
+            graph.fetch();
         });
         </script>
-        
+
+
+
     </body>
 </html>

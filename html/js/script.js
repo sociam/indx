@@ -24,6 +24,31 @@
 
 $(document).ready(function(){
 
+    $.ajax({
+        url: "/admin/info",
+        dataType: "json",
+        success: function(data){
+            $("#index_webbox_uri").html(data['webbox_uri']);
+        },
+    });
+
+    $("#login_form").submit(function(){
+        var username = $("#login_username").val();
+        var password = $("#login_password").val();
+
+        console.debug("Calling login.");
+        $.ajax({
+            url: "/auth/login",
+            data: {"username": username, "password": password},
+            type: "POST",
+            success: function(data){
+                console.debug("Logged in.");
+            }
+        });
+        return false;
+    });
+    
+
     /* for: setup_webbox */
     function validURIPath(path){
         // check if a uri path contains all valid characters

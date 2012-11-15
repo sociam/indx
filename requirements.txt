@@ -10,3 +10,4 @@ pyopenssl
 pystache
 psutil
 psycopg2
+txpostgres

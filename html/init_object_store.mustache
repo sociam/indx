@@ -19,7 +19,6 @@
         </style>
         <link rel="stylesheet" href="css/bootstrap-responsive.min.css">
 
-	    <link rel="stylesheet" href="css/fileuploader.css">
         <script src="js/vendor/modernizr-2.6.1-respond-1.1.0.min.js"></script>
     </head>
     <body>
@@ -41,7 +40,7 @@
                     <div class="nav-collapse collapse">
                         <ul class="nav">
                             <li class="active"><a href="#">Home</a></li>
-                            <li><a href="manage">Manage</a></li>
+                            <li><a href="admin">Admin</a></li>
                         </ul>
                         <form class="navbar-form pull-right">
                             <input class="span2" type="text" placeholder="Username">
@@ -62,13 +61,31 @@
             </div>
 
             <div class="row">
-                <div class="span12">
-                    <h2>File Uploader</h2>
-                    <p>This form allows files to be uploaded directly to a WebBox.</p>
+                <div class="span6">
 
-                    <form method="PUT" id="upload_form">
-                        <div id="file-uploader"></div>
-                    </form>
+                    <p><strong>The object store could not be connected using default credentials. Please re-enter the database root credentials to continue:</strong></p>
+
+                    <div class="panel">
+                        <form id="form_db" method="POST" action="admin/init_db" class="form-horizontal">
+                            <div class="control-group">
+                                   <label class="control-label" for="input_user">PostgreSQL Root User:</label>
+                                <div class="controls">
+                                    <input name="input_user" id="input_user" type="text" />
+                                </div>
+                            </div>
+                            <div class="control-group">
+                                <label class="control-label" for="input_password">PostgreSQL Root Password:</label>
+                                <div class="controls">
+                                    <input name="input_password" id="input_password" type="password" />
+                                </div>
+                            </div>
+                            <div class="control-group">
+                                <div class="controls">
+                                    <button type="submit" class="btn">Fix</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
 
@@ -91,28 +108,6 @@
             window.webbox_vars.server_url = "{{ server_url }}";
         </script>
 
-        <script src="js/libs/fileuploader.js"></script>
         <script src="js/script.js"></script>
-
-        <script>
-        $(document).ready(function(){
-            var prfx = "webbox/";
-
-            var uploader = new qq.FileUploader({
-                element: $("#file-uploader")[0],
-                action: prfx,
-        //        debug: true,
-                onComplete: function(id, name, response){
-                    var filename = prfx + name;
-                    var div = $("#file-uploader").html("");
-                    div.append("Your file is now available at: ");
-                    div.append($("<a target='_blank' href='"+filename+"'>"+filename+"</a>"));
-                    div.append(".");
-                },
-            });
-
-        });
-        </script>
-        
     </body>
 </html>
