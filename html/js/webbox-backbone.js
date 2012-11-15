@@ -182,7 +182,7 @@
 		idAttribute:"@id",
 		initialize:function(attributes, options) {
 			assert(options.store, "no store provided");
-			this.store = options.store;
+			this.options = _(options).clone();
 			if (!(attributes.graphs instanceof GraphCollection)) {
 				this.attributes.graphs = new GraphCollection();
 				if (attributes.graphs) {
@@ -257,14 +257,14 @@
 		fetch_boxes:function() { return this.boxes().fetch(); },
 		boxes:function() { return this.attributes.boxes;  },
 		get: function(buri) {
-			return this.boxes().get(buri) || this._load_box(buri);
+			return this.boxes().get(buri) || this._get_box_tokens(buri);
 		},
-		_load_box:function(buri) {
+		_get_box_tokens:function(buri) {
 			var this_ = this;
 			var d = deferred();
 			this.get_token(buri,this.options.appid).then(function(data) {
 				console.log(buri + ' access token ', data.token);
-				var box = new Box({"@id" : buri}, {store: this_, token: data.token});
+				var box = new Box({"@id" : buri}, { store: this_, token: data.token });
 				this_.boxes().add(box);
 				box.fetch().then(function() {
 					d.resolve(box);
@@ -285,7 +285,7 @@
 			return authajax(this, 'auth/get_token', { data: { appid: appid, boxid: boxid },  type: "POST" });
 	    },
 		create_box:function(boxid) {
-			// @TODO rename something different to differentiate from create() above ^^
+			// actually creates the box above
 			var d = deferred();
 			var this_ = this;
 			authajax(this, 'admin/create_box', { data: { name: boxid },  type: "POST" })
@@ -301,13 +301,15 @@
     // Functions to communicate with the ObjectStore server
     ObjectStore.list_graphs = function(box, callback){
         // return a list of named graphs (each of type ObjectStore.Graph) to populate a GraphCollection
+		assert(box.options.token, "No token associated with this box", box);		
         return $.ajax({
-            url: box.store.options.server_url + box.id,
-            data: {},
+            url: box.options.store.options.server_url + box.id,
+            data: { token:box.options.token },
             dataType: "json",
             type: "GET",
             xhrFields: { withCredentials: true },
             success: function(data){
+				console.log('got graph uris ', data);
                 var graph_uris = data;
                 var graphs = [];
                 $.each(graph_uris, function(){
