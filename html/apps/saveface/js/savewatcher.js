@@ -27,7 +27,7 @@ define(['js/utils'], function(u) {
 			},
 			register: function(m) {
 				var this_ = this;
-				m.on('save', function() { this_._update_counts(m); });
+				// m.on('save', function() { this_._update_counts(m); });
 				m.on('change', function() { this_._update_display(m); this_._update_counts(m); });				
 			}
 		})

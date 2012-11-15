@@ -23,7 +23,7 @@ define(['js/utils','apps/saveface/js/savewatcher'], function(u, savewatcher) {
 		var mm = get_model(graph, v.id || ('object-'+(new Date()).valueOf()));
 		var tval = _transform(graph, v);
 		if (type && !tval.type) { tval.type = type; } 	// add type in there
-		mm.set(tval, {silent:true});
+		mm.set(tval); 
 		d.resolve();
 		return { model: mm, dfd: d.promise() };
 	};
@@ -53,7 +53,12 @@ define(['js/utils','apps/saveface/js/savewatcher'], function(u, savewatcher) {
 		inbox : {
 			path:'/me/inbox',
 			to_models:function(graph, els) {
-				return u.when(els.map(function(item) { return do_obj(graph,item, 'message').dfd; }));
+				if (!els.map) {
+					console.log('got a weird els ', els);
+					window.els = els;
+				} else {
+					return u.when(els.map(function(item) { return do_obj(graph,item, 'message').dfd; }));
+				}
 			}
 		},		
 		friends : {
@@ -82,8 +87,7 @@ define(['js/utils','apps/saveface/js/savewatcher'], function(u, savewatcher) {
 			to_models:function(graph, resp) {
 				return do_obj(graph, resp, 'person').dfd;
 			}
-		}		 
-		
+		}		
 	};
 
 
