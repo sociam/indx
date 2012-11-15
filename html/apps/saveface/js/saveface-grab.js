@@ -97,12 +97,12 @@ define(['js/utils','apps/saveface/js/savewatcher'], function(u, savewatcher) {
 		var _me = arguments.callee;
 		var d = u.deferred();
 		FB.api(action.path, function(resp) {
+			if (resp && resp.error) { return d.resolve(); }
 			if (u.defined(resp)) {
-				action.to_models(graph, resp.data ? debug_subset(resp.data) : resp)
+				return action.to_models(graph, resp.data ? debug_subset(resp.data) : resp)
 					.then(function() {
 						if (resp.paging && resp.paging.next) {
-							_me(graph, _(_(action).clone()).extend({ path: resp.paging.next }))
-								.then(d.resolve).fail(d.reject);
+							_me(graph, _(_(action).clone()).extend({ path: resp.paging.next })).then(d.resolve).fail(d.reject);
 						} else {
 							d.resolve();
 						}
@@ -113,8 +113,7 @@ define(['js/utils','apps/saveface/js/savewatcher'], function(u, savewatcher) {
 			}
 		});
 		return d.promise();
-	};
-	
+	};	
 	return {
 		watcher: save_watcher,
 		actions:actions,
