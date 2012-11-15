@@ -44,7 +44,7 @@ class BoxHandler(BaseHandler):
             def callback(uris):
                 jsondata = json.dumps(uris, indent=2)
                 return self.return_ok(request, {"data": jsondata})
-            store.get_graphs(callback)
+            store.get_graphs().addCallback(callback)
             pass
         pass
     def do_PUT(self,request):
