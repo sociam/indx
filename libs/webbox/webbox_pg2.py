@@ -39,9 +39,10 @@ def list_boxes(db_user, db_pass):
     def connected(conn):
         cursor = conn.cursor()
         d = cursor.execute("SELECT datname FROM pg_database WHERE datname LIKE %s", [WBPREFIX+"%"])
+        d.addCallback(lambda _: cursor.fetchall())
         d.addCallback(db_list)
 
-    connect("pg_database", db_user, db_pass).addCallback(connected)
+    connect("postgres", db_user, db_pass).addCallback(connected)
     return return_d
 
 def create_box(box_name, db_user, db_pass):
