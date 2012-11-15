@@ -32,6 +32,7 @@ from webbox.exception import ResponseOverride
 import webbox.webserver.handlers as handlers
 from webbox.webserver.handlers.box import BoxHandler
 from webbox.webserver import token
+import webbox.webbox_pg2 as database
 
 class WebServer:
     """ Twisted web server for running WebBox. """
@@ -133,8 +134,14 @@ class WebServer:
 
     def start_boxes(self):
         """ Add the webboxes to the server. """
-        for name in self.config['webboxes']:
-            self.start_box(name)
+
+        def boxes(dbs):
+            prefix = database.WBPREFIX
+            for name in dbs:
+                boxname = name[len(prefix):]
+                self.start_box(boxname)
+
+        database.list_boxes(self.config['webbox']['db']['user'], self.config['webbox']['db']['password']).addCallback(boxes)
 
     def start_box(self, name):
         """ Add a single webbox to the server. """
