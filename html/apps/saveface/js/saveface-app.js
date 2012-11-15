@@ -1,10 +1,12 @@
 //
-// saveface APP --
+// 
+// demo saveface webbox app --
 // simple app logic for saveface application
 // see js/fb.js for low-level data scrobbling
+//
+// 
 
-define(['plugins/js/fb','js/models','js/utils'],function(fb,models,u) {
-
+define(['apps/saveface/js/saveface-grab','js/utils'],function(fb,u) {
 	var Router = Backbone.Router.extend({
 		routes: {
 			'login' : 'login',
@@ -87,6 +89,7 @@ define(['plugins/js/fb','js/models','js/utils'],function(fb,models,u) {
 			FB.logout(); _router.nav('login');
 		});
 		Backbone.history.start({root:document.location.pathname});
-	};	
-	return { init : init };	
+	};
+	
+	return { init : init };
 });

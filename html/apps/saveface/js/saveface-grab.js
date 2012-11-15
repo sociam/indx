@@ -1,4 +1,4 @@
-define(['js/models', 'js/utils', 'plugins/js/savewatcher'], function(models, u, savewatcher) {
+define(['js/utils','apps/saveface/js/savewatcher'], function(u, savewatcher) {
 	
 	var DEBUG = false;
 	var debug_subset = function(l) {
