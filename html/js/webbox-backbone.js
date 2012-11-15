@@ -224,9 +224,9 @@
 			var graph_objs = graph.objs().map(function(obj){ return serialize_obj(obj);	});
 			var box = graph.box;
 			boxajax(graph.box,"/update",
-					"PUT", { graph : escape(graph.id),  version: escape(graph.version), data : JSON.stringify(graph_objs) }
-				   ).then(function(data) {
-						graph.version = data["@version"];
+					"PUT", { graph : escape(graph.id),  version: escape(graph.version), data : JSON.stringify(graph_objs) }).then(function(response) {
+						graph.version = response.data["@version"];
+						console.log(">>> SAVE setting graph version ", graph.id, " ", response.data, graph.version);
 						d.resolve(graph);
 					}).fail(function(err) {	d.reject(err);});
 			return d.promise();
@@ -266,6 +266,7 @@
 						});
 						obj_model.change();
 					});
+					console.log(">>> setting graph version ", graph.id, " ", version);
 					graph.version = version;
 					d.resolve(graph);
 				}).fail(function(data) {

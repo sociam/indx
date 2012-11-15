@@ -5,9 +5,8 @@ define(['js/utils','apps/saveface/js/savewatcher'], function(u, savewatcher) {
 		if (DEBUG) { return l.slice(0,5); }
 		return l;
 	};
-	
 	var c = new Backbone.Collection();
-	
+	var defined = u.defined;
 	// collects high level statistics about the saves to provide some visual candy	
 	var save_watcher = new savewatcher.SaveWatcher();
 	
@@ -19,45 +18,13 @@ define(['js/utils','apps/saveface/js/savewatcher'], function(u, savewatcher) {
 		}
 		return c.get(id);
 	};	
-	// debug only -----------------------------------------------------|
-	var fetch_model = function(graph,id) {
-		var m = get_model(graph,id);
-		var d = u.deferred();
-		if (m._fetched) { d.resolve(m); }
-		else if (m._fetching !== undefined) {
-			m._fetching.push(d);
-		} else {
-			m._fetching = [];
-			m.fetch().then(function() {
-				var dfds = m._fetching;
-				delete m._fetching;
-				m._fetched = true;
-				dfds.concat(d).map(function(dd) { dd.resolve(m); });
-			});
-		}
-		return d;
-	};
-
 	var do_obj = function(graph, v, type) {
 		var d = u.deferred();
 		var mm = get_model(graph, v.id || ('object-'+(new Date()).valueOf()));
-		delete v.id;
-		fetch_model(graph,mm).then(function(mm) {
-			var tval = _transform(graph, v);
-			if (type && !tval.type) { tval.type = type; } 	// add type in there
-			// mm.set(tval, undefined, {silent:true});
-			mm.set(tval, {silent:true});
-			d.resolve();
-			// used to save with every dude ----------------
-			/*
-			if (mm.changedAttributes()) {
-				console.log('changed attributes -- calling save >>> ', mm.id);
-				// debug
-				// mm.save().then(function() { mm.trigger('save'); d.resolve(); });
-				d.resolve();
-			} else { console.log(mm.id, ' no changed attributes '); d.resolve(); }
-			*/
-		});
+		var tval = _transform(graph, v);
+		if (type && !tval.type) { tval.type = type; } 	// add type in there
+		mm.set(tval); 
+		d.resolve();
 		return { model: mm, dfd: d.promise() };
 	};
 
@@ -69,9 +36,9 @@ define(['js/utils','apps/saveface/js/savewatcher'], function(u, savewatcher) {
 			return v;
 		};
 		return u.zip(_(obj).map(function(v,k) {
-			if (v === null) { return [k,  undefined]; }
+			if (!defined(v)) { return [k, undefined]; }
 			if (_.isArray(v)) { return [k, v.map(function(vx) { return do_prim(vx, k); })]; 	}
-			if (v.data) {	return [k, v.data.map(function(vx) { return do_prim(vx, k); })];}			
+			if (v.data) {	return [k, v.data.map(function(vx) { return do_prim(vx, k); })];}
 			return [k, do_prim(v,k)];
 		}));		
 	};
@@ -86,7 +53,12 @@ define(['js/utils','apps/saveface/js/savewatcher'], function(u, savewatcher) {
 		inbox : {
 			path:'/me/inbox',
 			to_models:function(graph, els) {
-				return u.when(els.map(function(item) { return do_obj(graph,item, 'message').dfd; }));
+				if (!els.map) {
+					console.log('got a weird els ', els);
+					window.els = els;
+				} else {
+					return u.when(els.map(function(item) { return do_obj(graph,item, 'message').dfd; }));
+				}
 			}
 		},		
 		friends : {
@@ -115,8 +87,7 @@ define(['js/utils','apps/saveface/js/savewatcher'], function(u, savewatcher) {
 			to_models:function(graph, resp) {
 				return do_obj(graph, resp, 'person').dfd;
 			}
-		}		 
-		
+		}		
 	};
 
 
@@ -126,12 +97,12 @@ define(['js/utils','apps/saveface/js/savewatcher'], function(u, savewatcher) {
 		var _me = arguments.callee;
 		var d = u.deferred();
 		FB.api(action.path, function(resp) {
+			if (resp && resp.error) { return d.resolve(); }
 			if (u.defined(resp)) {
-				action.to_models(graph, resp.data ? debug_subset(resp.data) : resp)
+				return action.to_models(graph, resp.data ? debug_subset(resp.data) : resp)
 					.then(function() {
 						if (resp.paging && resp.paging.next) {
-							_me(graph, _(_(action).clone()).extend({ path: resp.paging.next }))
-								.then(d.resolve).fail(d.reject);
+							_me(graph, _(_(action).clone()).extend({ path: resp.paging.next })).then(d.resolve).fail(d.reject);
 						} else {
 							d.resolve();
 						}
@@ -142,8 +113,7 @@ define(['js/utils','apps/saveface/js/savewatcher'], function(u, savewatcher) {
 			}
 		});
 		return d.promise();
-	};
-	
+	};	
 	return {
 		watcher: save_watcher,
 		actions:actions,
