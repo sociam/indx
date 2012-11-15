@@ -1,0 +1,58 @@
+
+@import url(http://fonts.googleapis.com/css?family=Questrial);
+
+* {
+	box-sizing:border-box !important;
+	font-family:helvetica neue ultralight, helvetica neue;
+	font-weight:light;
+}
+
+div {
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+}
+
+body {
+	margin: 130px 0px 0px 0px;
+  	padding: 0;
+	width:100%;
+}
+
+.header {
+	font-family: 'Questrial', sans-serif;
+	font-weight:400;
+	padding:0px; margin:0px;
+	line-height:120px;
+	font-size:84pt;
+	margin-left:0px;
+	text-align:center;
+	width:100%;
+}
+
+.box {
+	position:absolute;
+    left:50%;
+	width:400px;    height:400px;
+    margin-left:-200px;
+    top:50%;
+
+    margin-top:-200px;
+	padding:40px; 
+	background-color:#3B5998;
+	color:white;
+}
+
+hidden {
+	display:none;
+}
+
+#login {
+	position:absolute;
+	bottom:60px; left:50%;
+	margin-left:-90px !important;
+	width:180px;
+}
