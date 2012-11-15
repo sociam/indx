@@ -89,11 +89,13 @@ class BaseHandler(Resource):
                 return self.webserver.tokens.get(tid)
             except Exception as e:
                 return None
-        if request.method == 'POST':
+        if request.method in ['POST', 'PUT']:
             try:
+                logging.debug(self.get_post_args(request)['token'])
                 tid = self.get_post_args(request)['token'][0]
                 return self.webserver.tokens.get(tid)
             except Exception as e:
+                logging.debug('exception {0}'.format(e))
                 return None
         return None
 
@@ -195,6 +197,7 @@ class BaseHandler(Resource):
         return ("Content-Type", "origin", "accept", "Depth", "User-Agent", "X-File-Size", "X-Requested-With", "Cookie", "Set-Cookie", "If-Modified-Since","X-File-Name", "Cache-Control")
 
     def get_post_args(self,request):
+        request.content.seek(0) # dan's fault.
         return parse_qs(request.content.read())
     
     def set_cors_headers(self,request):

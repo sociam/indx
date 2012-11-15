@@ -60,6 +60,64 @@
 		options = _(_(options || {}).clone()).extend(passed_options);
 		return $.ajax( options ); // returns a deferred		
 	};
+	var boxajax = function(box, path, type, data) {
+		var url = box.store.options.server_url + box.id + path;
+		console.log('token ', box.options.token);
+		var options = {
+			type: type,
+			url : url,
+            crossDomain: true,
+            jsonp: false,
+            contentType: "application/json",
+            dataType: "json",
+			data: _({ token:box.options.token }).extend(data),
+			xhrFields: { withCredentials: true }
+		};
+		return $.ajax( options ); // returns a deferred		
+	};
+	var serialize_obj = function(obj) {
+        var uri = obj.id;
+        var out_obj = {};
+        $.each(obj.attributes, function(pred, vals){
+            if (pred[0] == "_"){
+                return;
+            }
+            if (pred[0] == "@"){ // don't expand @id etc.
+                // out_obj[pred] = vals;
+                return;
+            }
+            var obj_vals = [];
+            if (!(vals instanceof Array)){
+                vals = [vals];
+            }
+            $.each(vals, function(){
+                var val = this;
+				if (val instanceof ObjectStore.Obj) {
+                    obj_vals.push({"@id": val.id });
+                } else if (typeof(val) == "object" && ("@value" in val || "@id" in val)) {
+					// not a ObjectStore.Obj, but a plan JS Obj
+                    obj_vals.push(val); // fully expanded string, e.g. {"@value": "foo", "@language": "en" ... }
+                } else if (typeof val === "string" || val instanceof String ){
+                    obj_vals.push({"@value": val});
+                } else if (_.isDate(val)) {
+					obj_vals.push({"@value": val.toISOString(), "@type":"http://www.w3.org/2001/XMLSchema#dateTime"});
+				} else if (_.isNumber(val) && isInteger(val)) {
+					obj_vals.push({"@value": val.toString(), "@type":"http://www.w3.org/2001/XMLSchema#integer"});
+				} else if (_.isNumber(val)) {
+					obj_vals.push({"@value": val.toString(), "@type":"http://www.w3.org/2001/XMLSchema#float"});
+				} else if (_.isBoolean(val)) {
+					obj_vals.push({"@value": val.toString(), "@type":"http://www.w3.org/2001/XMLSchema#boolean"});
+				} else {
+					console.warn("Could not determine type of val ", val);
+					obj_vals.push({"@value": val.toString()});
+				}
+			});
+            out_obj[pred] = obj_vals;
+        });
+		out_obj['@id'] = uri;
+		return out_obj;
+	};
+	
 
 	// MAP OF THIS MODUULE :::::::::::::: -----
 	// 
@@ -136,8 +194,10 @@
     var Graph = ObjectStore.Graph = Backbone.Model.extend({
         idAttribute: "@id", // the URI attribute is '@id' in JSON-LD
         initialize: function(attributes, options) {
-			assert(options.box, "no box provided");			
+			assert(options.box, "no box provided");
 			this.box = options.box;
+			this.options = options;
+			this.version = 0; // starts at 0
 			if (!(attributes.objs instanceof ObjCollection)) {
 				this.attributes.objs = new ObjCollection();
 				if (attributes.objs) {
@@ -159,16 +219,28 @@
             this.objs().add(model);
             return model;
         },
+		_update_graph : function(graph){
+			var d = deferred();
+			var graph_objs = graph.objs().map(function(obj){ return serialize_obj(obj);	});
+			var box = graph.box;
+			boxajax(graph.box,"/update",
+					"PUT", { graph : escape(graph.id),  version: escape(graph.version), data : JSON.stringify(graph_objs) }
+				   ).then(function(data) {
+						graph.version = data["@version"];
+						d.resolve(graph);
+					}).fail(function(err) {	d.reject(err);});
+			return d.promise();
+		},		
         sync: function(method, model, options){
             switch(method){
                 case "create":
                     break;
                 case "read":
                     var graph = model;
-                    return ObjectStore.fetch_graph(graph);
+                    return this._fetch_graph(graph);
                 case "update":
                     console.debug("Update graph called on graph:",model);
-                    return ObjectStore.update_graph(model);
+                    return this._update_graph(model);
                 case "delete":
                     break;
                 default:
@@ -184,6 +256,7 @@
 		idAttribute:"@id",
 		initialize:function(attributes, options) {
 			assert(options.store, "no store provided");
+			this.store = options.store;
 			this.options = _(options).clone();
 			if (!(attributes.graphs instanceof GraphCollection)) {
 				this.attributes.graphs = new GraphCollection();
@@ -201,15 +274,30 @@
             var model = new Graph(attrs, {box: this});
             this.graphs().add(model);
             return model;
-        },		
+        },
+		_list_graphs : function(box){
+			var d = deferred();
+			assert(box.options.token, "No token associated with this box", box);
+			authajax(box.options.store, box.id, { data: { token:box.options.token } })
+				.then(function(data) {
+					var graph_uris = JSON.parse(data.data);
+					console.log('graph uris ', typeof(graph_uris)); 
+					var graphs = graph_uris.map(function(graph_uri){
+						var graph = new Graph({"@id": graph_uri}, {box: box});
+						return graph;
+					});
+					box.graphs().reset(graphs);
+					d.resolve(graphs);
+				}).fail(function(err) { d.reject(err); });
+			return d.promise();
+		},		
         sync: function(method, model, options){
             switch(method){
             case "create":
 				console.warn('box.create() : not implemented yet');				
 				break;
             case "read":
-				var box = model;
-                return ObjectStore.list_graphs(box);
+                return this._list_graphs(model);
             case "update":
 				console.warn('box.update() : not implemented yet');
 				break;
@@ -236,7 +324,7 @@
 				.success(function(data) {
 					var boxes = data.boxes.map(function(boxname) {
 						return new Box({"@id":boxname, name:boxname}, { store: store });
-					})
+					});
 					this_.reset(boxes);
 					d.resolve(boxes);
 				})
@@ -292,7 +380,7 @@
 			var this_ = this;
 			authajax(this, 'admin/create_box', { data: { name: boxid },  type: "POST" })
 				.then(function() {
-					this_.load_box(boxid).then(function() { d.resolve(box); });
+					this_.load_box(boxid).then(function(box) { d.resolve(box); });
 				}).fail(function(err) { d.reject(); });
 			return d.promise();
 		},
@@ -301,86 +389,6 @@
 	    }
     });
 
-    // Functions to communicate with the ObjectStore server
-    ObjectStore.list_graphs = function(box, callback){
-        // return a list of named graphs (each of type ObjectStore.Graph) to populate a GraphCollection
-		assert(box.options.token, "No token associated with this box", box);
-        return $.ajax({
-            url: box.options.store.options.server_url + box.id,
-            data: { token:box.options.token },
-            dataType: "json",
-            type: "GET",
-            crossDomain: true,
-            jsonp: false,
-            xhrFields: { withCredentials: true },
-            success: function(data){
-				console.log('got graph uris ', data);
-                var graph_uris = data;
-                var graphs = [];
-                $.each(graph_uris, function(){
-                    var graph_uri = this;
-                    var graph = new Graph({"@id": graph_uri}, {box: box});
-                    graphs.push(graph);
-                });
-                box.graphs().reset(graphs);
-            }
-        });
-    };
-
-	var serialize_obj = function(obj) {
-        var uri = obj.id;
-        var out_obj = {};
-        $.each(obj.attributes, function(pred, vals){
-            if (pred[0] == "_"){
-                return;
-            }
-            if (pred[0] == "@"){ // don't expand @id etc.
-                // out_obj[pred] = vals;
-                return;
-            }
-            var obj_vals = [];
-            if (!(vals instanceof Array)){
-                vals = [vals];
-            }
-            $.each(vals, function(){
-                var val = this;
-				if (val instanceof ObjectStore.Obj) {
-                    obj_vals.push({"@id": val.id });
-                } else if (typeof(val) == "object" && ("@value" in val || "@id" in val)) {
-					// not a ObjectStore.Obj, but a plan JS Obj
-                    obj_vals.push(val); // fully expanded string, e.g. {"@value": "foo", "@language": "en" ... }
-                } else if (typeof val === "string" || val instanceof String ){
-                    obj_vals.push({"@value": val});
-                } else if (_.isDate(val)) {
-					obj_vals.push({"@value": val.toISOString(), "@type":"http://www.w3.org/2001/XMLSchema#dateTime"});
-				} else if (_.isNumber(val) && isInteger(val)) {
-					obj_vals.push({"@value": val.toString(), "@type":"http://www.w3.org/2001/XMLSchema#integer"});
-				} else if (_.isNumber(val)) {
-					obj_vals.push({"@value": val.toString(), "@type":"http://www.w3.org/2001/XMLSchema#float"});
-				} else if (_.isBoolean(val)) {
-					obj_vals.push({"@value": val.toString(), "@type":"http://www.w3.org/2001/XMLSchema#boolean"});
-				} else {
-					console.warn("Could not determine type of val ", val);
-					obj_vals.push({"@value": val.toString()});
-				}
-			});
-            out_obj[pred] = obj_vals;
-        });
-		out_obj['@id'] = uri;
-		return out_obj;
-	};
-
-    ObjectStore.update_graph = function(graph){
-		var d = deferred();
-		var graph_objs = graph.objs().map(function(obj){ return serialize_obj(obj);	});
-        var store = graph.box.store;
-		var call_url = graph.box.id + "/update?graph="+escape(graph.id)+"&version="+escape(graph.version);
-        authajax(store, call_url, {type: "PUT", processData:false, data:JSON.stringify(graph_objs)}).then(function(data) {
-			graph.version = data["@version"];
-			d.resolve(graph);
-		}).fail(function(err) {	d.reject(err);});
-		return d.promise();				 
-    };
 
     ObjectStore.fetch_graph = function(graph){
 		var store = graph.box.store;

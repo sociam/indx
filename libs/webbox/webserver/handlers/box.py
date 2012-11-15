@@ -47,24 +47,26 @@ class BoxHandler(BaseHandler):
             store.get_graphs().addCallback(callback)
             pass
         pass
+    
     def do_PUT(self,request):
         token = self.get_token(request)
+        logging.debug('token {0}'.format(token))
         if not token:
             return self.return_forbidden(request)
+        args = self.get_post_args(request)
         store = token.store
-        jsondata = request.content.read()
+        jsondata = args['data'][0]
         objs = json.loads(jsondata)
         if type(objs) == type([]):
             # multi object put            
-            if "graph" not in request.args:
+            if "graph" not in args:
                 return self.return_bad_request(request,"Specify a graph URI with &graph=")
-            if "version" not in request.args:
+            if "version" not in args:
                 return self.return_bad_request(request,"Specify a previous version with &version=")
-            graph_uri = request.args['graph'][0]
-            prev_version = int(request.args['version'][0])
+            graph_uri = args['graph'][0]
+            prev_version = int(args['version'][0])
             try:
-                new_version_info = store.add(graph_uri, objs, prev_version)
-                return self.return_created(request,{"data":new_version_info})                
+                store.add(graph_uri, objs, prev_version).addCallback(lambda new_version_info: self.return_created(request,{"data":new_version_info}))
             except IncorrectPreviousVersionException as ipve:
                 logging.debug("Incorrect previous version")
                 actual_version = ipve.version
