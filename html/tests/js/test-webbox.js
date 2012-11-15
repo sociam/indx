@@ -8,9 +8,9 @@ $(document).ready(function() {
 	console.log('http://'+host+':8211/js/webbox-backbone.js');
 
 	var test_pasta = function() {
-		store.login('electronic', 'foobar').then(function(x) {
+		store.login('webbox', 'foobar').then(function(x) {
 			console.log('logged in ');
-			store.load_box('pastas').then(function(box) {
+			store.load_box('hamburgers').then(function(box) {
 				console.log("got a box of pastas ", box.id, box);
 				var dinnergraph = box.get_or_create('dinner');
 				window.dinnergraph = dinnergraph;

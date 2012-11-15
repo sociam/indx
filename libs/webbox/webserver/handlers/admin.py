@@ -36,7 +36,11 @@ class AdminHandler(BaseHandler):
         # request.finish()
         self.return_ok(request)
         pass
-        
+    
+    def info(self, request):
+        """ Information about the webbox. """
+        return self.return_ok(request, data = {"webbox_uri": self.webserver.server_url} )
+
     def create_box(self, request):
         """ Create a new box. """
         args = self.get_post_args(request)
@@ -128,6 +132,15 @@ AdminHandler.subhandlers = [
         'content-type':'text/plain', # optional
         'accept':['application/json']
     },
+    {
+        'prefix': 'info',
+        'methods': ['GET'],
+        'require_auth': False,
+        'require_token': False,
+        'handler': AdminHandler.info,
+        'content-type':'application/json', # optional
+        'accept':['application/json']
+    },    
     { 
         'prefix':'*',
         'methods': ['OPTIONS'],
