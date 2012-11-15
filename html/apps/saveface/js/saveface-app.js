@@ -5,7 +5,6 @@
 // see js/fb.js for low-level data scrobbling
 //
 // 
-
 define(['apps/saveface/js/saveface-grab','js/utils'],function(fb,u) {
 	var Router = Backbone.Router.extend({
 		routes: {
@@ -78,7 +77,7 @@ define(['apps/saveface/js/saveface-grab','js/utils'],function(fb,u) {
 		}
 	});	
 	var init = function(graph) {
-		var _router = (new Router(graph));		
+		var _router = (new Router({graph: graph}));
 		$('#login').on('click', function() {
 			FB.login(function(resp) {
 				if (resp.authResponse) { _router.nav('store'); } else { _router.nav('/denied');	}
@@ -89,7 +88,6 @@ define(['apps/saveface/js/saveface-grab','js/utils'],function(fb,u) {
 			FB.logout(); _router.nav('login');
 		});
 		Backbone.history.start({root:document.location.pathname});
-	};
-	
+	};	
 	return { init : init };
 });
