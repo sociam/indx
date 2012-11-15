@@ -9,14 +9,12 @@ from time import strftime
 
 ## webbox to txpostgres bridge
 
+POSTGRES_DB = "postgres" # default db fallback if db name is none
 WBPREFIX = "wb_"
 
 def connect(db_name,db_user,db_pass):
     conn = txpostgres.Connection()
-    if db_name is None:
-        conn_str = ("user='{0}' password='{1}'".format(db_user, db_pass))
-    else:
-        conn_str = ("dbname='{0}' user='{1}' password='{2}'".format(db_name, db_user, db_pass))
+    conn_str = ("dbname='{0}' user='{1}' password='{2}'".format(db_name or POSTGRES_DB, db_user, db_pass))    
     return conn.connect(conn_str)
 
 def connect_box(box_name,db_user,db_pass):
@@ -47,8 +45,8 @@ def list_boxes(db_user, db_pass):
     return return_d
 
 def create_box(box_name, db_user, db_pass):
-    db_name = WBPREFIX + box_name
-    root_conn = psycopg2.connect(dbname = "postgres", user = db_user, password = db_pass) # have to specify a db that exists
+    db_name = WBPREFIX + box_name 
+    root_conn = psycopg2.connect(dbname = POSTGRES_DB, user = db_user, password = db_pass) # have to specify a db that exists
     root_conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
     root_cur = root_conn.cursor()
     root_cur.execute("CREATE DATABASE %s WITH ENCODING='UTF8' OWNER=%s CONNECTION LIMIT=-1" % (db_name, db_user))
@@ -72,4 +70,5 @@ def create_box(box_name, db_user, db_pass):
 def create_role():
     
     return 
+
 

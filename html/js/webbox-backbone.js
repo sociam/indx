@@ -245,20 +245,38 @@
 	
 	var Store = ObjectStore.Store = Backbone.Model.extend({
 		defaults: {
-			server_url: "http://localhost:8211/"
+			server_url: "http://localhost:8211/",
+			appid:"--default-app-id--"
 		},
 		initialize: function(attributes, options){
 			this.options = _(_(this.defaults).clone()).extend(options);
+			console.log('setting server url ', this.options.server_url);						
 			// get the boxes list from the server
 			this.attributes.boxes = new BoxCollection((options && options.boxes) || [], {store: this});
         },
 		fetch_boxes:function() { return this.boxes().fetch(); },
 		boxes:function() { return this.attributes.boxes;  },
-		get_or_create: function(buri) { return this.boxes().get(buri) || this.create(buri); },
-		create:function(buri) {
-			var box = new Box({"@id" : buri }, { store: this });
-			this.boxes().add(box);
-			return box;
+		get: function(buri) {
+			return this.boxes().get(buri) || this._load_box(buri);
+		},
+		_load_box:function(buri) {
+			var this_ = this;
+			var d = deferred();
+			this.get_token(buri,this.options.appid).then(function(data) {
+				console.log(buri + ' access token ', data.token);
+				var box = new Box({"@id" : buri}, {store: this_, token: data.token});
+				this_.boxes().add(box);
+				box.fetch().then(function() {
+					d.resolve(box);
+				}).fail(function(err) {
+					console.error(' error fetching ', buri, err);
+					d.reject(err);
+				});				
+			}).fail(function(err) {
+				console.error(' error getting token for box ', buri, err);
+				d.reject(err);
+			});
+			return d.promise();
 		},
 		login : function(username,password) {
 			return authajax(this, 'auth/login', { data: { username: username, password: password },  type: "POST" });
@@ -268,7 +286,12 @@
 	    },
 		create_box:function(boxid) {
 			// @TODO rename something different to differentiate from create() above ^^
-			return authajax(this, 'admin/create_box', { data: { name: boxid },  type: "POST" });
+			var d = deferred();
+			var this_ = this;
+			authajax(this, 'admin/create_box', { data: { name: boxid },  type: "POST" })
+				.then(function() { d.resolve(this_.get_or_create(boxid));	})
+				.fail(function(err) { d.reject(); });
+			return d.promise();
 		},
 		logout : function() {
 			return authajax(this, 'auth/logout', { type: "POST" });			
