@@ -257,9 +257,9 @@
 		fetch_boxes:function() { return this.boxes().fetch(); },
 		boxes:function() { return this.attributes.boxes;  },
 		get: function(buri) {
-			return this.boxes().get(buri) || this._get_box_tokens(buri);
+			return this.boxes().get(buri);
 		},
-		_get_box_tokens:function(buri) {
+		load_box:function(buri) {
 			var this_ = this;
 			var d = deferred();
 			this.get_token(buri,this.options.appid).then(function(data) {
