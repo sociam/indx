@@ -156,13 +156,9 @@ class ObjectStoreAsync:
                 objs_out.append(graph_uri)
             results_d.callback(objs_out)
 
-        def cursor_cb(cur):
-            logging.debug("Objectstore get_graphs cursor_cb")
-            d = cur.execute("SELECT DISTINCT graph_uri FROM wb_v_latest_triples")
-            d.addCallback(lambda _: cur.fetchall())
-            d.addCallback(rows_cb)
+        d = self.conn.runQuery("SELECT DISTINCT graph_uri FROM wb_v_latest_triples")
+        d.addCallback(rows_cb)
 
-        cursor_cb(self.conn.cursor())
         return results_d
 
     def get_latest_obj(self, graph_uri, object_uri):
@@ -178,12 +174,9 @@ class ObjectStoreAsync:
             obj_out["@graph"] = graph_uri
             result_d.callback(obj_out)
         
-        def cursor_cb(cur):
-            d = cur.execute("SELECT graph_uri, graph_version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples WHERE graph_uri = %s AND subject = %s", [graph_uri, object_uri]) # order is implicit, defined by the view, so no need to override it here
-            d.addCallback(lambda _: cur.fetchall())
-            d.addCallback(rows_cb)
+        d = self.conn.runQuery("SELECT graph_uri, graph_version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples WHERE graph_uri = %s AND subject = %s", [graph_uri, object_uri]) # order is implicit, defined by the view, so no need to override it here
+        d.addCallback(rows_cb)
  
-        cursor_cb(self.conn.cursor())
         return result_d
     
 
@@ -199,20 +192,17 @@ class ObjectStoreAsync:
             obj_out["@version"] = version
             result_d.callback(obj_out)
 
-        def rows_cb(rows,cur):
-            if rows is None:
-                return result_d.callback({"@graph" : graph_uri, "@version": 0 })            
+        def rows_cb(rows):
+            logging.debug("get_latest rows_cb: "+str(rows))
+            if rows is None or len(rows) < 1:
+                return result_d.callback({"@graph" : graph_uri, "@version": 0 })
             version = rows[0]
-            rowd = cur.execute("SELECT graph_uri, graph_version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples WHERE graph_uri = %s", [graph_uri]) # order is implicit, defined by the view, so no need to override it here
-            rowd.addCallback(lambda _: cur.fetchall())
+            rowd = self.conn.runQuery("SELECT graph_uri, graph_version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples WHERE graph_uri = %s", [graph_uri]) # order is implicit, defined by the view, so no need to override it here
             rowd.addCallback(lambda rows: row_cb(rows,version))
 
-        def cursor_cb(cur):
-            d = cur.execute("SELECT latest_version FROM wb_v_latest_graphvers WHERE graph_uri = %s", [graph_uri])
-            d.addCallback(lambda _: cur.fetchone())
-            d.addCallback(lambda rows: rows_cb(rows,cur)) 
+        d = self.conn.runQuery("SELECT latest_version FROM wb_v_latest_graphvers WHERE graph_uri = %s", [graph_uri])
+        d.addCallback(lambda rows: rows_cb(rows)) 
 
-        cursor_cb(self.conn.cursor())
         return result_d
 
 
@@ -238,10 +228,10 @@ class ObjectStoreAsync:
         def row_cb(row):
             logging.debug("Objectstore add row_cb, row: " + str(row))
 
-            if row is None:
+            if row is None or len(row) < 1:
                 actual_prev_version = 0
             else:
-                actual_prev_version = row[0]
+                actual_prev_version = row[0][0]
 
             if actual_prev_version != specified_prev_version:
                 ipve = IncorrectPreviousVersionException("Actual previous version is {0}, specified previous version is: {1}".format(actual_prev_version, specified_prev_version))
@@ -251,13 +241,9 @@ class ObjectStoreAsync:
             d = self.add_graph_version(graph_uri, objs, actual_prev_version)
             d.addCallback(added_cb)
 
-        def cursor_cb(cur):
-            logging.debug("Objectstore add cursor_cb")
-            d = cur.execute("SELECT latest_version FROM wb_v_latest_graphvers WHERE graph_uri = %s", [graph_uri])
-            d.addCallback(lambda _: cur.fetchone())
-            d.addCallback(row_cb)
+        d = self.conn.runQuery("SELECT latest_version FROM wb_v_latest_graphvers WHERE graph_uri = %s", [graph_uri])
+        d.addCallback(row_cb)
 
-        cursor_cb(self.conn.cursor())
         return result_d
 
 
@@ -270,66 +256,62 @@ class ObjectStoreAsync:
 
         # TODO FIXME XXX lock the table(s) as appropriate inside a transaction (PL/pgspl?) here
 
-        def cursor_cb(cur):
-            logging.debug("Objectstore add_graph_version cursor_cb")
+        # TODO add this
+        id_user = 1
 
-            # TODO add this
-            id_user = 1
+        def row_cb(result):
+            logging.debug("Objectstore add_graph_version row_cb")
+            id_graphver = result[0]
 
-            def row_cb(id_graphver):
-                logging.debug("Objectstore add_graph_version row_cb")
+            triple_order = 0 # for the whole graph
+            queries = []
+            for obj in objs:
+                
+                if "@id" in obj:
+                    uri = obj["@id"]
+                else:
+                    raise Exception("@id required in all objects")
 
-                triple_order = 0 # for the whole graph
-                queries = []
-                for obj in objs:
-                    
-                    if "@id" in obj:
-                        uri = obj["@id"]
-                    else:
-                        raise Exception("@id required in all objects")
+                for predicate in obj:
+                    if predicate[0] == "@":
+                        continue # skip over json_ld predicates
 
-                    for predicate in obj:
-                        if predicate[0] == "@":
-                            continue # skip over json_ld predicates
+                    sub_objs = obj[predicate]
+                    for object in sub_objs:
+                        if "@value" in object:
+                            type = "literal"
+                            value = object["@value"]
+                        elif "@id" in object:
+                            type = "resource"
+                            value = object["@id"]
 
-                        sub_objs = obj[predicate]
-                        for object in sub_objs:
-                            if "@value" in object:
-                                type = "literal"
-                                value = object["@value"]
-                            elif "@id" in object:
-                                type = "resource"
-                                value = object["@id"]
+                        language = ''
+                        if "@language" in object:
+                            language = object["@language"]
 
-                            language = ''
-                            if "@language" in object:
-                                language = object["@language"]
+                        datatype = ''
+                        if "@type" in object:
+                            datatype = object["@type"]
 
-                            datatype = ''
-                            if "@type" in object:
-                                datatype = object["@type"]
+                        triple_order += 1
+                        queries.append( ("SELECT * FROM wb_add_triple_to_graphvers(%s, %s, %s, %s, %s, %s, %s, %s)", [id_graphver, uri, predicate, value, type, language, datatype, triple_order]) )
+    
+            def exec_queries(var):
+                logging.debug("Objectstore add_graph_version exec_queries")
 
-                            triple_order += 1
-                            queries.append( ("SELECT * FROM wb_add_triple_to_graphvers(%s, %s, %s, %s, %s, %s, %s, %s)", [id_graphver, uri, predicate, value, type, language, datatype, triple_order]) )
-        
-                def exec_queries(var):
-                    logging.debug("Objectstore add_graph_version exec_queries")
+                if len(queries) < 1:
+                    result_d.callback((version+1, graph_uri))
+                    return
+                
+                (query, params) = queries.pop(0)
+                d = self.conn.runQuery(query, params)
+                d.addCallback(exec_queries)
 
-                    if len(queries) < 1:
-                        result_d.callback((version+1, graph_uri))
-                        return
-                    
-                    (query, params) = queries.pop(0)
-                    d = cur.execute(query, params)
-                    d.addCallback(exec_queries)
+            exec_queries(None)
 
-                exec_queries(None)
+        d = self.conn.runQuery("SELECT * FROM wb_get_graphvers_id(%s, %s, %s)", [version, graph_uri, id_user])
+        d.addCallback(row_cb)
 
-            d = cur.execute("SELECT * FROM wb_get_graphvers_id(%s, %s, %s)", [version, graph_uri, id_user])
-            d.addCallback(lambda _: cur.fetchone())
-            d.addCallback(row_cb)
-
-        cursor_cb(self.conn.cursor())
         return result_d
 
 
