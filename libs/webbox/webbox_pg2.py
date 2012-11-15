@@ -27,6 +27,25 @@ def auth(db_user,db_pass):
     connect(None,db_user,db_pass).addCallbacks(lambda *x: d.callback(True), lambda *x: d.callback(False))
     return d
 
+def list_boxes(db_user, db_pass):
+
+    return_d = Deferred()
+
+    def db_list(rows):
+        dbs = []
+        for row in rows:
+            db = row[0]
+            dbs.append(db)
+        return_d.callback(dbs)
+
+    def connected(conn):
+        cursor = conn.cursor()
+        d = cursor.execute("SELECT datname FROM pg_database WHERE datname LIKE %s", [WBPREFIX+"%"])
+        d.addCallback(db_list)
+
+    connect("pg_database", db_user, db_pass).addCallback(connected)
+    return return_d
+
 def create_box(box_name, db_user, db_pass):
     db_name = WBPREFIX + box_name
     root_conn = psycopg2.connect(dbname = "postgres", user = db_user, password = db_pass) # have to specify a db that exists

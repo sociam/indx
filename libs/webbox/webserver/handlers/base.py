@@ -186,6 +186,9 @@ class BaseHandler(Resource):
         return ("POST", "GET", "PUT", "HEAD", "OPTIONS")
     def get_cors_origin(self, request):
         # default set of allowed origin hosts
+        origin = request.getHeader("origin")
+        if origin is None:
+            return ()
         return (request.getHeader("origin"),) # ("*",)
     def get_cors_headers(self, request):
         # default set

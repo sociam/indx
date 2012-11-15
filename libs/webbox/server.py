@@ -149,10 +149,6 @@ class WebServer:
         """ Check if this name is safe (only contains a-z0-9_-). """ 
         return re.match("^[a-z0-9_-]*$", name) is None
 
-    def get_boxes(self):
-        ## this should query the database "select datname from pg_database where datname like 'wb_%';'
-        return self.config['webboxes']
-
     # @emax - how does this method relate to create_box in handlers/admin.py 
     def create_box(self, name):
         """ Create a new box, listening on /name. """

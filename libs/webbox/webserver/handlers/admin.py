@@ -53,7 +53,14 @@ class AdminHandler(BaseHandler):
             self.return_internal_error(request)
 
     def list_boxes(self,request):
-        self.return_ok(request,{boxes:self.webserver.get_boxes()})
+        username = self.get_session(request).username
+        password = self.get_session(request).password
+
+        def boxes(db_list):
+            return self.return_ok(request, data={"list": db_list})
+
+        database.list_boxes(username, password).addCallback(boxes)
+
         
 AdminHandler.subhandlers = [
     {
