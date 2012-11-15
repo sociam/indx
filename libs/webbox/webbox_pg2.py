@@ -45,6 +45,23 @@ def list_boxes(db_user, db_pass):
     connect("postgres", db_user, db_pass).addCallback(connected)
     return return_d
 
+def create_user(new_username, new_password, db_user, db_pass):
+
+    return_d = Deferred()
+
+    def created(row):
+        return_d.callback(None)
+
+    def connected(conn):
+        cursor = conn.cursor()
+        d = cursor.execute("CREATE ROLE %s LOGIN ENCRYPTED PASSWORD '%s' NOSUPERUSER INHERIT CREATEDB NOCREATEROLE" % (new_username, new_password))
+        d.addCallback(lambda _: cursor.fetchone())
+        d.addCallback(created)
+
+    connect("postgres", db_user, db_pass).addCallback(connected)
+    return return_d
+
+
 def create_box(box_name, db_user, db_pass):
     db_name = WBPREFIX + box_name 
     root_conn = psycopg2.connect(dbname = POSTGRES_DB, user = db_user, password = db_pass) # have to specify a db that exists

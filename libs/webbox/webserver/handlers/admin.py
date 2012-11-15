@@ -61,6 +61,26 @@ class AdminHandler(BaseHandler):
 
         database.list_boxes(username, password).addCallback(boxes)
 
+    def create_user(self, request):
+        args = self.get_post_args(request)
+        new_username = args['username'][0]
+        new_password = args['password'][0]
+
+        # postgres webbox user
+        username = self.webserver.config['webbox']['db']['user']
+        username = self.webserver.config['webbox']['db']['password']
+
+        logging.debug("Creating new user with username: {0}".format(new_username))
+        try:
+            def created(result):
+                return self.return_ok()
+
+            d = database.create_user(new_username, new_password, username, password)
+            d.addCallback(created)
+        except Exception as e:
+            logging.error("Error creating new user {0}".format(new_username))
+            self.return_internal_error(request)
+
         
 AdminHandler.subhandlers = [
     {
@@ -96,6 +116,15 @@ AdminHandler.subhandlers = [
         'require_auth': False,
         'require_token': False,
         'handler': BaseHandler.return_forbidden,
+        'content-type':'text/plain', # optional
+        'accept':['application/json']
+    },
+    {
+        'prefix': 'create_user',
+        'methods': ['POST'],
+        'require_auth': True,
+        'require_token': False,
+        'handler': AdminHandler.create_user,
         'content-type':'text/plain', # optional
         'accept':['application/json']
     },
