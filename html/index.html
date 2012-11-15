@@ -78,7 +78,7 @@
                 </div>
                 <div class="span4">
                     <h3>Useful Information</h3>
-                    <p><strong>WebBox URL:</strong> {{ server_url }}</p>
+                    <p><strong>WebBox URL:</strong> <span id="index_webbox_uri"></span></p>
                 </div>
             </div>
 
@@ -94,13 +94,6 @@
         <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.8.2.min.js"><\/script>')</script>
 
         <script src="js/vendor/bootstrap.min.js"></script>
-
-        <script>
-            /* some useful values */
-            window.webbox_vars = {};
-            window.webbox_vars.server_url = "{{ server_url }}";
-        </script>
-
         <script src="js/script.js"></script>
     </body>
 </html>

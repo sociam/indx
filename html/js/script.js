@@ -24,6 +24,14 @@
 
 $(document).ready(function(){
 
+    $.ajax({
+        url: "/admin/info",
+        dataType: "json",
+        success: function(data){
+            $("#index_webbox_uri").html(data['webbox_uri']);
+        },
+    });
+
     $("#login_form").submit(function(){
         var username = $("#login_username").val();
         var password = $("#login_password").val();
