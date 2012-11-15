@@ -112,7 +112,7 @@ BoxHandler.subhandlers = [
     {
         "prefix": "*",            
         'methods': ['GET'],
-        'require_auth': True,
+        'require_auth': False,
         'require_token': True,
         'handler': BoxHandler.do_GET,
         'accept':['application/json'],
@@ -121,7 +121,7 @@ BoxHandler.subhandlers = [
     {
         "prefix": "*",            
         'methods': ['PUT'],
-        'require_auth': True,
+        'require_auth': False,
         'require_token': True,
         'handler': BoxHandler.do_PUT,
         'accept':['application/json'],

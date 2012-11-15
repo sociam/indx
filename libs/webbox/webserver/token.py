@@ -38,6 +38,7 @@ class Token:
         self.store = store
         self.id = str(uuid.uuid1())
     def verify(self,boxname,origin):
+        logging.debug("Verify token ({0}) with boxid: {1} and origin {2}, to request boxid: {3} and request origin: {4}".format(self.id, self.boxid, self.origin, boxname, origin))
         return self.boxid == boxname and self.origin == origin
         
 class TokenKeeper:

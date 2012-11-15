@@ -51,6 +51,8 @@
 		var options = {
 			type:'GET',
 			url : url,
+            crossDomain: true,
+            jsonp: false,
             contentType: "application/json",
             dataType: "json",			
 			xhrFields: { withCredentials: true }
@@ -302,12 +304,14 @@
     // Functions to communicate with the ObjectStore server
     ObjectStore.list_graphs = function(box, callback){
         // return a list of named graphs (each of type ObjectStore.Graph) to populate a GraphCollection
-		assert(box.options.token, "No token associated with this box", box);		
+		assert(box.options.token, "No token associated with this box", box);
         return $.ajax({
             url: box.options.store.options.server_url + box.id,
             data: { token:box.options.token },
             dataType: "json",
             type: "GET",
+            crossDomain: true,
+            jsonp: false,
             xhrFields: { withCredentials: true },
             success: function(data){
 				console.log('got graph uris ', data);
