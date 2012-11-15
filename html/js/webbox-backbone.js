@@ -289,8 +289,9 @@
 			var d = deferred();
 			var this_ = this;
 			authajax(this, 'admin/create_box', { data: { name: boxid },  type: "POST" })
-				.then(function() { d.resolve(this_.get_or_create(boxid));	})
-				.fail(function(err) { d.reject(); });
+				.then(function() {
+					this_.load_box(boxid).then(function() { d.resolve(box); });
+				}).fail(function(err) { d.reject(); });
 			return d.promise();
 		},
 		logout : function() {
