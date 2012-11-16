@@ -112,8 +112,8 @@ class ObjectStoreAsync:
 
         def results(rows):
             objs_out = self.rows_to_json(rows)
-            objs_out["@graph"] = graph_uri
-            result_d.callback(objs_out)
+            #objs_out["@graph"] = graph_uri
+            results_d.callback(objs_out)
 
         d = self.conn.runQuery(sql, params)
         d.addCallback(results)
