@@ -7,32 +7,32 @@ define(['js/utils', 'text!components/toolbar/t_template.html', 'text!components/
 		events: {
 			'click .boxlist a' : '_box_selected'
 		},
-		initialize:function(options) {
-		},
+		initialize:function(options) {},
 		first_render:function() {
 			var store = this.options.store;
 			var this_ = this; 
 			this.$el.html(t_templ).addClass('toolbar navbar-fixed-top navbar');
 			store.on('login', function(username) {
-				console.log('login');
+				// console.log('login');
 				this_.username = username; this_.render();
 			});
 			store.on('logout', function(username) {
-				console.log('logout');
+				// console.log('logout');
+				this_.set_selected_box(); // clear selected box
 				delete this_.username; this_.render();
 			});
 			store.checkLogin().then(function(response) {
-				console.log('response >> ', response);
+				// console.log('response >> ', response);
 				if (response.is_authenticated) {
-					console.log('authenticated - as user ', response.user);
+					// console.log('authenticated - as user ', response.user);
 					this_.username = response.user; 
 				} else {
-					console.log('not authenticated ', response.user);
+					// console.log('not authenticated ', response.user);
 					delete this_.username; 
 				}
 				this_._post_login_setup(store);
 			});
-			console.log('appending ', l_templ);
+			// console.log('appending ', l_templ);
 			$('body').append(this.$el);
 			$('body').append(l_templ);
 			$('#login_dialog .loginbtn').click(function() {
@@ -50,7 +50,7 @@ define(['js/utils', 'text!components/toolbar/t_template.html', 'text!components/
 			// get boxes
 			var this_ = this;
 			store.list_boxes().then(function(boxes) {
-				console.log('list_boxes', boxes);
+				// console.log('list_boxes', boxes);
 				var boxlist = boxes.list;
 				$('.boxlist').children().remove();
 				boxlist.map(function(box) {
@@ -61,6 +61,7 @@ define(['js/utils', 'text!components/toolbar/t_template.html', 'text!components/
 
 		},
 		set_selected_box:function(b) {
+			this.trigger('change:box', b);
 			if (b === undefined) {
 				$('.selected-box').html(' no box selected ');
 			} else {
