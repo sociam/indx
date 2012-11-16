@@ -20,12 +20,12 @@ window.fbAsyncInit = function() {
 	basepath = basepath.slice(0,Math.max(0,basepath.lastIndexOf('/'))) || '/';	
 	console.log('setting baseurl to ', document.location.pathname, '-', basepath);
 	require.config({ baseUrl:  basepath });
-	require(['apps/saveface/js/saveface-app'], function(saveface) {
-		console.log('loaded saveface', saveface);		
+	require(['apps/saveface/js/saveface-app', 'components/toolbar/toolbar'], function(saveface, tbcomponent) {
 		$.getScript('http://'+host+':8211/js/webbox-backbone.js', function() {
-	  		var store = new ObjectStore.Store([], { server_url : "http://"+host+":8211/" });
-			window.store = store;
-			
+	  		var store = new ObjectStore.Store();
+			console.log('toolbar >> ', tbcomponent);
+			var toolbar = tbcomponent.init(store);						
+			window.store = store;			
 			//
 			var boxname = 'mybox';
 			var graphname = 'facebook';

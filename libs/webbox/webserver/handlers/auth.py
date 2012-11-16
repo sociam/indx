@@ -70,6 +70,11 @@ class AuthHandler(BaseHandler):
         wbSession.setPassword(None)        
         self.return_ok(request)
 
+    def auth_whoami(self, request):
+        wbSession = self.get_session(request)
+        logging.debug('auth whoami ' + repr(wbSession))
+        self.return_ok(request, { "user" : wbSession and wbSession.username or 'nobody', "is_authenticated" : wbSession and wbSession.is_authenticated })
+        
     def get_token(self,request):
         ## 1. request contains appid & box being requested (?!)
         ## 2. check session is Authenticated, get username/password
@@ -96,6 +101,15 @@ class AuthHandler(BaseHandler):
         database.connect_box(boxid,username,password).addCallbacks(check_app_perms, lambda conn: self.return_forbidden(request))
 
 AuthHandler.subhandlers = [
+    {
+        'prefix':'whoami',
+        'methods': ['GET'],
+        'require_auth': False,
+        'require_token': False,
+        'handler': AuthHandler.auth_whoami,
+        'content-type':'text/plain', # optional
+        'accept':['application/json']      
+    },    
     {
         'prefix':'login',
         'methods': ['POST'],

@@ -40,6 +40,9 @@
          ObjectStore = root.ObjectStore = {};
     }
 
+	var host = document.location.host;
+	if (host.indexOf(':') >= 0) { host = host.slice(0,host.indexOf(':'));	}
+
 	// utilities -----------------
 	var isInteger = function(n) { return n % 1 === 0; };
 	var assert = function(t,s) { if (!t) { throw new Error(s); } };
@@ -389,7 +392,7 @@
 	
 	var Store = ObjectStore.Store = Backbone.Model.extend({
 		defaults: {
-			server_url: "http://localhost:8211/",
+			server_url: "http://"+host+":8211/",
 			appid:"--default-app-id--"
 		},
 		initialize: function(attributes, options){
@@ -402,6 +405,12 @@
 		boxes:function() { return this.attributes.boxes;  },
 		get: function(buri) {
 			return this.boxes().get(buri);
+		},
+		checkLogin:function() {
+			return authajax(this, 'auth/whoami');
+		},
+		getInfo:function() {
+			return authajax(this, 'admin/info');
 		},
 		load_box:function(buri) {
 			var this_ = this;
@@ -423,8 +432,21 @@
 			return d.promise();
 		},
 		login : function(username,password) {
-			return authajax(this, 'auth/login', { data: { username: username, password: password },  type: "POST" });
+			var d = deferred();
+			var this_ = this;
+			authajax(this, 'auth/login', { data: { username: username, password: password },  type: "POST" })
+				.then(function(l) { this_.trigger('login', username); d.resolve(l); })
+				.fail(function(l) { d.reject(l); });			
+			return d.promise();
 	    },
+		logout : function() {
+			var d = deferred();
+			var this_ = this;
+			authajax(this, 'auth/logout', { type: "POST" })
+				.then(function(l) { this_.trigger('logout'); d.resolve(l); })
+				.fail(function(l) { d.reject(l); });
+			return d.promise();			
+	    },		
 		get_token : function(boxid,appid) {
 			return authajax(this, 'auth/get_token', { data: { appid: appid, boxid: boxid },  type: "POST" });
 	    },
@@ -437,9 +459,6 @@
 					this_.load_box(boxid).then(function(box) { d.resolve(box); });
 				}).fail(function(err) { d.reject(); });
 			return d.promise();
-		},
-		logout : function() {
-			return authajax(this, 'auth/logout', { type: "POST" });			
-	    }
+		}
     });
 }).call(this);
