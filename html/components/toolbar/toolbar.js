@@ -24,6 +24,11 @@ define(['js/utils', 'text!components/toolbar/t_template.html', 'text!components/
 			console.log('appending ', l_templ);
 			$('body').append(this.$el);
 			$('body').append(l_templ);
+			$('#login_dialog .loginbtn').click(function() {
+				var username = $('#login_dialog .username_field').val();
+				var password = $('#login_dialog .password_field').val();
+				store.login(username,password);
+			});
 		},
 		render:function() {
 			if (!this.$el.hasClass('toolbar')) {
