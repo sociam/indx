@@ -62,12 +62,9 @@ class BoxHandler(BaseHandler):
                 return self.return_bad_request(request,"Specify a previous version with &version=")
             graph_uri = args['graph'][0]
             prev_version = int(args['version'][0])
-            try:
-                store.add(graph_uri, objs, prev_version).addCallback(lambda new_version_info: self.return_created(request,{"data":new_version_info}))
-            except IncorrectPreviousVersionException as ipve:
-                logging.debug("Incorrect previous version")
-                actual_version = ipve.version
-                return self.return_obsolete(request,{"description": "Document obsolete. Please update before putting", '@version':actual_version})            
+            d = store.add(graph_uri, objs, prev_version)
+            d.addCallback(lambda new_version_info: self.return_created(request,{"data":new_version_info}))
+            d.addErrback(lambda fail: self.return_obsolete(request,{"description": "Document obsolete. Please update before putting", '@version':fail.value.version}))
         else:
             # single object put
             return self.return_bad_request(request,"Single object PUT not supported, PUT an array to create/replace a named graph instead")

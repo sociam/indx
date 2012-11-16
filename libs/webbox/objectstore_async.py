@@ -236,7 +236,8 @@ class ObjectStoreAsync:
             if actual_prev_version != specified_prev_version:
                 ipve = IncorrectPreviousVersionException("Actual previous version is {0}, specified previous version is: {1}".format(actual_prev_version, specified_prev_version))
                 ipve.version = actual_prev_version
-                raise ipve
+                return result_d.errback(ipve)
+                #raise ipve
 
             d = self.add_graph_version(graph_uri, objs, actual_prev_version)
             d.addCallback(added_cb)
@@ -297,7 +298,8 @@ class ObjectStoreAsync:
                         queries.append( ("SELECT * FROM wb_add_triple_to_graphvers(%s, %s, %s, %s, %s, %s, %s, %s)", [id_graphver, uri, predicate, value, type, language, datatype, triple_order]) )
     
             def exec_queries(var):
-                logging.debug("Objectstore add_graph_version exec_queries")
+                #logging.debug("Objectstore add_graph_version exec_queries")
+                # TODO do as one call
 
                 if len(queries) < 1:
                     result_d.callback((version+1, graph_uri))
