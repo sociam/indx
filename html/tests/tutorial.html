@@ -10,18 +10,22 @@
 	 
     <h1>WebBox Tutorial</h1>
 
+    <p>We have presented WebBox using <a href="http://backbonejs.org" target="_blank">Backbone.js</a> collections and models.</p>
+    <p>In this tutorial we give examples of how to login, put new objects into the store, and retrieve objects from the store.</p>
+
     <h2>Login, retrieve Objects from a Box</h2>
 
-	    <pre class="prettyprint"><code class="language-js">store.login('webbox', 'foobar').then(function(status){
+	    <pre class="prettyprint"><code class="language-js">// authenticate with username and password
+store.login('webbox', 'foobar').then(function(status){
     // load a box
     store.load_box('mybox').then(function(box) {
         // get a graph from the box
         var graph = box.get_or_create("facebook");
         // fetch the graph
         graph.fetch().then(function(graph_fetched){
-            // get objects in graph
+            // get an objects collection of the graph
+            // objs is a backbone.js collection
             var objs = graph_fetched.objs();
-            console.debug("Objects:",objs);
         });
     });
 })</code></pre>
