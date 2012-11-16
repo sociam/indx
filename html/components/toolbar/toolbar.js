@@ -2,13 +2,13 @@
 define(['js/utils', 'text!components/toolbar/t_template.html'], function(u,t_templ) {
 	console.log('toolbar --', t_templ);
 	var ToolbarView = Backbone.View.extend({
+		tagClass:"div",
 		initialize:function(options) {
-			
 		},
 		first_render:function() {
 			var store = this.options.store;
-			var this_ = this;
-			this.$el.html(t_templ).addClass('toolbar');
+			var this_ = this; 
+			this.$el.html(t_templ).addClass('toolbar navbar-fixed-top navbar');
 			store.on('login', function(username) { this_.username = username; this_.render(); });
 			store.on('logout', function(username) { delete this_.username; this_.render(); });
 			store.checkLogin().then(function(response) {
@@ -20,7 +20,9 @@ define(['js/utils', 'text!components/toolbar/t_template.html'], function(u,t_tem
 					console.log('not authenticated ', response.user);
 					delete this_.username; this_.render();
 				}
-			});			
+			});
+			console.log('appending ', this.$el);
+			$('body').append(this.$el);
 		},
 		render:function() {
 			if (!this.$el.hasClass('toolbar')) {
@@ -35,8 +37,8 @@ define(['js/utils', 'text!components/toolbar/t_template.html'], function(u,t_tem
 		}
 	});
 	
-	var init = function(component, store) {
-		var tv = new ToolbarView({el:component, store:store});
+	var init = function(store) {
+		var tv = new ToolbarView({store:store});
 		tv.render();
 	};
 	

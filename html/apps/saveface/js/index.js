@@ -24,7 +24,7 @@ window.fbAsyncInit = function() {
 		$.getScript('http://'+host+':8211/js/webbox-backbone.js', function() {
 	  		var store = new ObjectStore.Store();
 			console.log('toolbar >> ', tbcomponent);
-			var toolbar = tbcomponent.init($('#toolbar'),store);						
+			var toolbar = tbcomponent.init(store);						
 			window.store = store;			
 			//
 			var boxname = 'mybox';

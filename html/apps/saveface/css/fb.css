@@ -2,7 +2,6 @@
 
 @import url(../../../components/toolbar/toolbar.css);
 * {
-  box-sizing: border-box !important;
   font-family: helvetica neue ultralight, helvetica neue;
   font-weight: light;
 }
@@ -13,11 +12,6 @@ div {
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
-}
-body {
-  margin: 130px 0px 0px 0px;
-  padding: 0;
-  width: 100%;
 }
 .header {
   font-family: 'Questrial', sans-serif;
