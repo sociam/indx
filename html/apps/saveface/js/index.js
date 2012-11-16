@@ -23,9 +23,9 @@ window.fbAsyncInit = function() {
 	require(['apps/saveface/js/saveface-app', 'components/toolbar/toolbar'], function(saveface, tbcomponent) {
 		$.getScript('http://'+host+':8211/js/webbox-backbone.js', function() {
 	  		var store = new ObjectStore.Store();
+			window.store = store;
 			console.log('toolbar >> ', tbcomponent);
 			var toolbar = tbcomponent.init(store);
-			
 			var boxname = 'mybox';
 			var graphname = 'facebook';			
 			/*

@@ -448,6 +448,10 @@
 					this_.load_box(boxid).then(function(box) { d.resolve(box); });
 				}).fail(function(err) { d.reject(); });
 			return d.promise();
-		}
+		},
+		list_boxes : function() {
+			var this_ = this;
+			return authajax(this, 'admin/list_boxes', { type: "GET" });
+	    }		
     });
 }).call(this);
