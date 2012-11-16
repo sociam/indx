@@ -8,7 +8,7 @@
   <body onload="prettyPrint()">
 	<div class="container">
         <div class="row">
-            <div class="span7">
+            <div class="span10">
 
             <h1>WebBox Tutorial</h1>
 
@@ -30,41 +30,32 @@ store.login('webbox', 'foobar').then(function(status){
             var objs = graph_fetched.objs();
         });
     });
-})</code></pre>
+})
+</code></pre>
 
             <h2>Put objects into a box, and retrieve objects</h2>
 
                 <pre class="prettyprint"><code class="language-js">// use objs collection from above example
-// create two new objects and save them to the box
+// create an object and save to the box
 var account1 = objs.get_or_create("current_account"); // set the id of the new object
 account1.set({"bank": "Lloyds Bank", "number": "12345678", "sort-code": "10-11-12"});
 account1.save().then(function(status){ console.debug("Save Object: ", status); });
+</code></pre>
 
-var account2 = objs.get_or_create("secret_swiss_account");
-account2.set({"bank": "Credit Suisse", "number": "1234567890", "name": "Mr Banker"});
-account2.save().then(function(status){ console.debug("Save Object: ", status); });
-
-// retrieve an object based on its id
+                <pre class="prettyprint"><code class="language-js">// retrieve an object from its id
 var account = objs.get("current_account");
 console.debug(account.tojson());
 </code></pre>
 
             <h2>Get objects by querying a box</h2>
 
-                <pre class="prettyprint"><code class="language-js">// authenticate with username and password
-store.login('webbox', 'foobar').then(function(status){
-    // load a box
-    store.load_box('mybox').then(function(box) {
-        // get a graph from the box
-        var graph = box.get_or_create("facebook");
-        // fetch the graph
-        graph.fetch().then(function(graph_fetched){
-            // get an objects collection of the graph
-            // objs is a backbone.js collection
-            var objs = graph_fetched.objs();
-        });
-    });
-})</code></pre>
+                <pre class="prettyprint"><code class="language-js">// use box collection from above example
+// query based on matching keys and values
+box.query({"number": "12345678"}).then(function (objs){
+    // matching objects returned from store
+    console.debug(objs)
+});
+</code></pre>
 
             </div>
         </div>
