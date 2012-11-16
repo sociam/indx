@@ -23,6 +23,11 @@ from webbox.webserver.session import WebBoxSession, ISession
 from webbox.exception import AbstractException,ResponseOverride
 from mimeparse import quality
 from urlparse import urlparse, parse_qs
+try:
+    import cjson
+    logging.debug("Using CJSON.")
+except Exception as e:
+    logging.debug("No CJSON, falling back to python json.")
 
 class BaseHandler(Resource):
     """ Add/remove boxes, add/remove users, change config. """
@@ -155,7 +160,12 @@ class BaseHandler(Resource):
         response = {"message": message, "code": code}
         if additional_data:
             response.update(additional_data)
-        responsejson = json.dumps(response)
+        try:
+            responsejson = cjson.encode(response)
+            logging.debug("Encoding response with cjson")
+        except Exception as e:
+            responsejson = json.dumps(response)
+            logging.debug("Encoding response with python json")
         request.setResponseCode(code, message=message)
         request.setHeader("Content-Type", "application/json")
         request.setHeader("Content-Length", len(responsejson))

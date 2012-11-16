@@ -11,3 +11,4 @@ pystache
 psutil
 psycopg2
 txpostgres
+python-cjson
