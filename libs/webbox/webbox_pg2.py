@@ -25,14 +25,13 @@ def auth(db_user,db_pass):
     connect(None,db_user,db_pass).addCallbacks(lambda *x: d.callback(True), lambda *x: d.callback(False))
     return d
 
-def list_boxes(db_user, db_pass):
-
+def list_databases(db_user, db_pass):
     return_d = Deferred()
 
     def db_list(rows):
         dbs = []
         for row in rows:
-            db = row[0][len(WBPREFIX):] # strip wb_ prefix from name
+            db = row[0] # strip wb_ prefix from name
             dbs.append(db)
         return_d.callback(dbs)
 
@@ -44,6 +43,23 @@ def list_boxes(db_user, db_pass):
 
     connect("postgres", db_user, db_pass).addCallback(connected)
     return return_d
+
+
+def list_boxes(db_user, db_pass):
+    return_d = Deferred()
+
+    def db_list(dbs):
+        boxes = []
+        for db in dbs:
+            box = db[len(WBPREFIX):]
+            boxes.append(box)
+        return_d.callback(boxes)
+
+    d = list_databases(db_user, db_pass)
+    d.addCallback(db_list)
+
+    return return_d
+
 
 def create_user(new_username, new_password, db_user, db_pass):
 
