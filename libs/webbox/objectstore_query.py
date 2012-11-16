@@ -22,7 +22,7 @@ class ObjectStoreQuery:
     """ Handles JSON queries to an objectstore. """
 
     def __init__(self):
-        self.exact_types = [types.IntType, types.LongType, types.BooleanType, types.FloatType, types.StringType]
+        self.exact_types = [types.IntType, types.LongType, types.BooleanType, types.FloatType, types.StringType, types.UnicodeType]
 
     def to_sql(self, q):
         """ Convert the query 'q', return a tuple of sql query and array of parameters. """

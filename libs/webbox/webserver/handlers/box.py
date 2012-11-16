@@ -42,7 +42,8 @@ class BoxHandler(BaseHandler):
             return self.return_bad_request(request, "Specify query as query string parameter 'q' as valid JSON")
 
         try:
-            token.store.query(q).addCallback(lambda results: self.return_ok(request, {"data": json.dumps(results, indent=2)}))
+            logging.debug("querying store with q: "+str(q))
+            token.store.query(q).addCallback(lambda results: self.return_ok(request, {"data": results}))
         except Exception as e:
             return self.return_internal_error(request)
 
