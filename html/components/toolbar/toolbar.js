@@ -1,8 +1,12 @@
+
 /** toolbar */ 
 define(['js/utils', 'text!components/toolbar/t_template.html', 'text!components/toolbar/login_template.html'], function(u,t_templ,l_templ) {
 	console.log('toolbar --', t_templ);
 	var ToolbarView = Backbone.View.extend({
 		tagClass:"div",
+		events: {
+			'click .boxlist a' : '_box_selected'
+		},
 		initialize:function(options) {
 		},
 		first_render:function() {
@@ -21,11 +25,12 @@ define(['js/utils', 'text!components/toolbar/t_template.html', 'text!components/
 				console.log('response >> ', response);
 				if (response.is_authenticated) {
 					console.log('authenticated - as user ', response.user);
-					this_.username = response.user; this_.render(); 
+					this_.username = response.user; 
 				} else {
 					console.log('not authenticated ', response.user);
-					delete this_.username; this_.render();
+					delete this_.username; 
 				}
+				this_._post_login_setup(store);
 			});
 			console.log('appending ', l_templ);
 			$('body').append(this.$el);
@@ -33,12 +38,38 @@ define(['js/utils', 'text!components/toolbar/t_template.html', 'text!components/
 			$('#login_dialog .loginbtn').click(function() {
 				var username = $('#login_dialog .username_field').val();
 				var password = $('#login_dialog .password_field').val();
-				store.login(username,password);
+				store.login(username,password).then(function() {
+					this_._post_login_setup(store);
+				});
 			});
 			$('#logout_dialog .logoutbtn').click(function() {
 				store.logout();
+			});			
+		},
+		_post_login_setup:function(store) {
+			// get boxes
+			var this_ = this;
+			store.list_boxes().then(function(boxes) {
+				console.log('list_boxes', boxes);
+				var boxlist = boxes.list;
+				$('.boxlist').children().remove();
+				boxlist.map(function(box) {
+					$('.boxlist').append(_('<li><a data-id="<%= id %>" href="#"><%= id %></a></li>').template({id:box}));
+				});
+				this_.render();				
 			});
-			
+
+		},
+		set_selected_box:function(b) {
+			if (b === undefined) {
+				$('.selected-box').html(' no box selected ');
+			} else {
+				$('.selected-box').html(b);
+			}
+			this.selected_box = b;
+		},
+		_box_selected:function(d) {
+			this.set_selected_box($(d.currentTarget).attr('data-id'));
 		},
 		render:function() {
 			if (!this.$el.hasClass('toolbar')) {
