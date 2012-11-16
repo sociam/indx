@@ -9,8 +9,14 @@ define(['js/utils', 'text!components/toolbar/t_template.html', 'text!components/
 			var store = this.options.store;
 			var this_ = this; 
 			this.$el.html(t_templ).addClass('toolbar navbar-fixed-top navbar');
-			store.on('login', function(username) { this_.username = username; this_.render(); });
-			store.on('logout', function(username) { delete this_.username; this_.render(); });
+			store.on('login', function(username) {
+				console.log('login');
+				this_.username = username; this_.render();
+			});
+			store.on('logout', function(username) {
+				console.log('logout');
+				delete this_.username; this_.render();
+			});
 			store.checkLogin().then(function(response) {
 				console.log('response >> ', response);
 				if (response.is_authenticated) {
@@ -29,15 +35,24 @@ define(['js/utils', 'text!components/toolbar/t_template.html', 'text!components/
 				var password = $('#login_dialog .password_field').val();
 				store.login(username,password);
 			});
+			$('#logout_dialog .logoutbtn').click(function() {
+				store.logout();
+			});
+			
 		},
 		render:function() {
 			if (!this.$el.hasClass('toolbar')) {
 				this.first_render();
 			}
 			if (this.username) {
-				this.$el.find('.username a').html(this.username);
+				console.log('username - login');
+				this.$el.find('.username_display a').html(this.username);
+				this.$el.find('.username_display').show();
+				this.$el.find('.login_display').hide();				
 			} else {
-				this.$el.find('.username a').html('<i>not logged in</i>');
+				console.log('no username - logout');
+				this.$el.find('.username_display').hide();
+				this.$el.find('.login_display').show();				
 			}
 			return this;
 		}
