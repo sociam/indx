@@ -280,7 +280,7 @@ class ObjectStoreAsync:
 
         def row_cb(result):
             logging.debug("Objectstore add_graph_version row_cb")
-            id_graphver = result[0]
+            id_graphver = result[0][0]
 
             triple_order = 0 # for the whole graph
             queries = []
