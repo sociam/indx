@@ -1,4 +1,6 @@
 @import url(http://fonts.googleapis.com/css?family=Questrial);
+
+@import url(../../../components/toolbar/toolbar.css);
 * {
   box-sizing: border-box !important;
   font-family: helvetica neue ultralight, helvetica neue;
