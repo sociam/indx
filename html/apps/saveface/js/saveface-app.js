@@ -57,7 +57,7 @@ define(['apps/saveface/js/saveface-grab','js/utils'],function(fb,u) {
 		login:function() {
 			console.log('>> mode login --');
 			var this_ = this;
-			$('.box').not('.loginbtn').fadeOut('slow', function(){ $('.loginbtn').fadeIn(); });
+			$('.box').not('.loginbox').fadeOut('slow', function(){ $('.loginbox').fadeIn(); });
 		},
 		store:function() {
 			console.log('>> mode store --');
@@ -74,8 +74,11 @@ define(['apps/saveface/js/saveface-grab','js/utils'],function(fb,u) {
 		},
 		nav:function(state) {
 			this.navigate(state, {trigger:true});
+		},
+		hide:function() {
+			$('.box').remove();
 		}
-	});	
+	});
 	var init = function(graph) {
 		var _router = (new Router({graph: graph}));
 		$('#loginbtn').on('click', function() {
@@ -88,6 +91,7 @@ define(['apps/saveface/js/saveface-grab','js/utils'],function(fb,u) {
 			FB.logout(); _router.nav('login');
 		});
 		Backbone.history.start({root:document.location.pathname});
+		return _router;
 	};	
 	return { init : init };
 });

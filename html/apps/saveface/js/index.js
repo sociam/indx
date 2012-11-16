@@ -24,23 +24,24 @@ window.fbAsyncInit = function() {
 		$.getScript('http://'+host+':8211/js/webbox-backbone.js', function() {
 	  		var store = new ObjectStore.Store();
 			console.log('toolbar >> ', tbcomponent);
-			var toolbar = tbcomponent.init(store);						
-			window.store = store;			
-			//
+			var toolbar = tbcomponent.init(store);
+			
 			var boxname = 'mybox';
-			var graphname = 'facebook';
-
+			var graphname = 'facebook';			
+			/*
 			// 
 			var username = 'electronic';
 			var password = 'foobar';
-
-			// 
-			store.login(username,password).then(function() {
+			//
+			*/
+			var init = function() {
+				var d = new $.Deferred();
 				var get_graph = function(box) {					
 					var graph = box.get_or_create(graphname);
 					graph.fetch().then(function(graph) {
 						console.log('graph loaded ', graph.objs().length, ' items already in it');
-						saveface.init(graph);
+						var sfi = saveface.init(graph);
+						d.resolve(sfi);
 					});
 				};
 				var load_box = function() {
@@ -48,8 +49,29 @@ window.fbAsyncInit = function() {
 						.then(function() { get_graph(store.get(boxname));})
 						.fail(function(err) { console.error('fail loading box ', err); });
 				};
-				store.create_box(boxname).then(load_box).fail(load_box);					
-			})
+				store.create_box(boxname).then(load_box).fail(load_box);
+				return d.promise();
+			};
+			var sf_instance = undefined;
+			store.checkLogin().then(function(result) {
+				console.log('checklogin sdlkfjdsflkj ', result);
+				if (result.is_authenticated) {
+					console.log('autocalling initttttttttttttttttttt ------------->');					
+					init().then(function(sfi) { sf_instance = sfi; });
+				} else {
+					store.on('login',function() {
+						console.log('calling initttttttttttttttttttt ------------->');
+						init().then(function(sfi) { sf_instance = sfi; });
+						store.off('login',arguments.callee);
+					});
+				}
+				store.on('logout', function() {
+					if (sf_instance) {
+						sf_instance.hide(); sf_instance = undefined;
+					}
+					store.off('logout',arguments.callee);
+				});
+			});
 	 	});
 	});
 };
