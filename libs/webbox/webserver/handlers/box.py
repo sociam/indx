@@ -36,12 +36,11 @@ class BoxHandler(BaseHandler):
         if "graph" in request.args:
             # graph URI specified, so return the objects in that graph
             graph_uri = request.args["graph"][0]
-            return store.get_latest(graph_uri).addCallback(lambda obj: self.return_ok(request, {"data":json.dumps(obj, indent=2)}))
+            return store.get_latest(graph_uri).addCallback(lambda obj: self.return_ok(request, {"data": obj}))
         else:
             # no graph URI specified, so return the list of graph URIs
             def callback(uris):
-                jsondata = json.dumps(uris, indent=2)
-                return self.return_ok(request, {"data": jsondata})
+                return self.return_ok(request, {"data": uris})
             store.get_graphs().addCallback(callback)
             pass
         pass

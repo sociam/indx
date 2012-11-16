@@ -243,7 +243,7 @@
 				.then(function(data){
 					var graph_collection = graph.objs();
 					var version = 0; // new version FIXME check
-					var objdata = JSON.parse(data.data);
+					var objdata = data.data;
 					$.each(objdata, function(uri, obj){
 						// top level keys
 						if (uri == "@version"){ version = obj; }
@@ -326,7 +326,7 @@
 			assert(box.options.token, "No token associated with this box", box);
 			authajax(box.options.store, box.id, { data: { token:box.options.token } })
 				.then(function(data) {
-					var graph_uris = JSON.parse(data.data);
+					var graph_uris = data.data;
 					console.log('graph uris ', typeof(graph_uris)); 
 					var graphs = graph_uris.map(function(graph_uri){
 						var graph = new Graph({"@id": graph_uri}, {box: box});
