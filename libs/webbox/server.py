@@ -135,10 +135,8 @@ class WebServer:
     def start_boxes(self):
         """ Add the webboxes to the server. """
 
-        def boxes(dbs):
-            prefix = database.WBPREFIX
-            for name in dbs:
-                boxname = name[len(prefix):]
+        def boxes(boxes):
+            for boxname in boxes:
                 self.start_box(boxname)
 
         database.list_boxes(self.config['webbox']['db']['user'], self.config['webbox']['db']['password']).addCallback(boxes)
