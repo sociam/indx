@@ -102,6 +102,14 @@ class ObjectStoreAsync:
 
         self.conn.autocommit = value
 
+    def query(self, q):
+        """ Perform a query and return results. """
+        results_d = Deferred()
+
+
+        return results_d
+
+
     def rows_to_json(self, rows):
         """ Serialise results from database view as JSON-LD
 

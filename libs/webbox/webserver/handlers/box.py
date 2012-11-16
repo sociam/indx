@@ -27,7 +27,26 @@ class BoxHandler(BaseHandler):
     base_path = ''
     def options(self, request):
         self.return_ok(request)
-        
+
+    def query(self, request):
+        """ Perform a query against the box, and return matching objects. """
+        token = self.get_token(request)
+        if not token:
+            return self.return_forbidden(request)
+
+        store = token.store
+
+        try:
+            q = json.loads(request.args['q'][0])
+        except Exception as e:
+            return self.return_bad_request(request, "Specify query as query string parameter 'q' as valid JSON")
+
+        try:
+            token.store.query(q).addCallback(lambda results: self.return_ok(request, {"data": json.dumps(results, indent=2)}))
+        except Exception as e:
+            return self.return_internal_error(request)
+
+
     def do_GET(self,request):
         token = self.get_token(request)
         if not token:
@@ -109,6 +128,15 @@ class BoxHandler(BaseHandler):
     #     pass
 
 BoxHandler.subhandlers = [
+    {
+        "prefix": "query",
+        'methods': ['GET'],
+        'require_auth': True,
+        'require_token': True,
+        'handler': BoxHandler.query,
+        'accept':['application/json'],
+        'content-type':'application/json'
+        },
     {
         "prefix": "*",            
         'methods': ['GET'],
