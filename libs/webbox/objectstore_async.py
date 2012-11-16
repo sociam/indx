@@ -18,6 +18,7 @@
 
 import logging, psycopg2, os, txpostgres
 from twisted.internet.defer import Deferred
+from webbox.objectstore_query import ObjectStoreQuery
 
 class ObjectStoreAsync:
     """ Stores objects in a database, handling import, export and versioning.
@@ -106,6 +107,16 @@ class ObjectStoreAsync:
         """ Perform a query and return results. """
         results_d = Deferred()
 
+        query = ObjectStoreQuery()
+        sql, params = query.to_sql(q)
+
+        def results(rows):
+            objs_out = self.rows_to_json(rows)
+            objs_out["@graph"] = graph_uri
+            result_d.callback(objs_out)
+
+        d = self.conn.runQuery(sql, params)
+        d.addCallback(results)
 
         return results_d
 
