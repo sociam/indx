@@ -1,5 +1,5 @@
 /** toolbar */ 
-define(['js/utils', 'text!components/toolbar/t_template.html'], function(u,t_templ) {
+define(['js/utils', 'text!components/toolbar/t_template.html', 'text!components/toolbar/login_template.html'], function(u,t_templ,l_templ) {
 	console.log('toolbar --', t_templ);
 	var ToolbarView = Backbone.View.extend({
 		tagClass:"div",
@@ -21,8 +21,9 @@ define(['js/utils', 'text!components/toolbar/t_template.html'], function(u,t_tem
 					delete this_.username; this_.render();
 				}
 			});
-			console.log('appending ', this.$el);
+			console.log('appending ', l_templ);
 			$('body').append(this.$el);
+			$('body').append(l_templ);
 		},
 		render:function() {
 			if (!this.$el.hasClass('toolbar')) {

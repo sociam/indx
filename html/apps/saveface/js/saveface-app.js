@@ -57,7 +57,7 @@ define(['apps/saveface/js/saveface-grab','js/utils'],function(fb,u) {
 		login:function() {
 			console.log('>> mode login --');
 			var this_ = this;
-			$('.box').not('.login').fadeOut('slow', function(){ $('.login').fadeIn(); });
+			$('.box').not('.loginbtn').fadeOut('slow', function(){ $('.loginbtn').fadeIn(); });
 		},
 		store:function() {
 			console.log('>> mode store --');
@@ -78,7 +78,7 @@ define(['apps/saveface/js/saveface-grab','js/utils'],function(fb,u) {
 	});	
 	var init = function(graph) {
 		var _router = (new Router({graph: graph}));
-		$('#login').on('click', function() {
+		$('#loginbtn').on('click', function() {
 			FB.login(function(resp) {
 				if (resp.authResponse) { _router.nav('store'); } else { _router.nav('/denied');	}
 			}, { perms:'read_stream,read_mailbox,offline_access'});
