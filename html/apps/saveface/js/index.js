@@ -24,24 +24,17 @@ window.fbAsyncInit = function() {
 		$.getScript('http://'+host+':8211/js/webbox-backbone.js', function() {
 	  		var store = new ObjectStore.Store();
 			window.store = store;
+			var graphname = 'facebook';
 			console.log('toolbar >> ', tbcomponent);
 			var toolbar = tbcomponent.init(store);
-			var boxname = 'mybox';
-			var graphname = 'facebook';			
-			/*
-			// 
-			var username = 'electronic';
-			var password = 'foobar';
-			//
-			*/
-			var init = function() {
+			var router = undefined;
+			var get_graph = function(boxname) {
 				var d = new $.Deferred();
 				var get_graph = function(box) {					
 					var graph = box.get_or_create(graphname);
 					graph.fetch().then(function(graph) {
 						console.log('graph loaded ', graph.objs().length, ' items already in it');
-						var sfi = saveface.init(graph);
-						d.resolve(sfi);
+						d.resolve(graph);
 					});
 				};
 				var load_box = function() {
@@ -52,27 +45,25 @@ window.fbAsyncInit = function() {
 				store.create_box(boxname).then(load_box).fail(load_box);
 				return d.promise();
 			};
-			var sf_instance = undefined;
-			store.checkLogin().then(function(result) {
-				console.log('checklogin sdlkfjdsflkj ', result);
-				if (result.is_authenticated) {
-					console.log('autocalling initttttttttttttttttttt ------------->');					
-					init().then(function(sfi) { sf_instance = sfi; });
-				} else {
-					store.on('login',function() {
-						console.log('calling initttttttttttttttttttt ------------->');
-						init().then(function(sfi) { sf_instance = sfi; });
-						store.off('login',arguments.callee);
+			toolbar.on('change:box', function(b) {
+				if (b !== undefined) {
+					get_graph(b).then(function(graph) {
+						router = saveface.init(graph);
+						router.show();
 					});
+				} else {
+					if (router !== undefined) {	router.hide();	}
+					router = undefined;
 				}
-				store.on('logout', function() {
-					if (sf_instance) {
-						sf_instance.hide(); sf_instance = undefined;
-					}
-					store.off('logout',arguments.callee);
-				});
 			});
-	 	});
+			toolbar.on('logout', function() {
+				console.log('toolbar logout');
+				if (router !== undefined) {
+					router.hide();
+				}
+				router = undefined;
+			});
+		});
 	});
 };
 // Load the SDK Asynchronously

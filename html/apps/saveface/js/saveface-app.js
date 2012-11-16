@@ -76,22 +76,32 @@ define(['apps/saveface/js/saveface-grab','js/utils'],function(fb,u) {
 			this.navigate(state, {trigger:true});
 		},
 		hide:function() {
-			$('.box').remove();
-		}
+			$('.box').hide();
+		},
+		show:function() {
+			$('.box').show();
+		}		
 	});
+	
+	var router = undefined;	
 	var init = function(graph) {
-		var _router = (new Router({graph: graph}));
-		$('#loginbtn').on('click', function() {
-			FB.login(function(resp) {
-				if (resp.authResponse) { _router.nav('store'); } else { _router.nav('/denied');	}
-			}, { perms:'read_stream,read_mailbox,offline_access'});
-		});	
-		$('#logoff').click('click', function() {
-			console.log('logging out');
-			FB.logout(); _router.nav('login');
-		});
-		Backbone.history.start({root:document.location.pathname});
-		return _router;
+		if (router === undefined) {
+			router = (new Router({graph: graph}));
+			$('#loginbtn').on('click', function() {
+				FB.login(function(resp) {
+					if (resp.authResponse) { router.nav('store'); } else { router.nav('denied');	}
+				}, { perms:'read_stream,read_mailbox,offline_access'});
+			});	
+			$('#logoff').click('click', function() {
+				console.log('logging out');
+				FB.logout(); router.nav('login');
+			});
+			Backbone.history.start({root:document.location.pathname});
+			return router;
+		}
+		router.graph = graph; 
+		router.nav('login')
+		return router;
 	};	
 	return { init : init };
 });

@@ -15,20 +15,24 @@ define(['js/utils', 'text!components/toolbar/t_template.html', 'text!components/
 			store.on('login', function(username) {
 				// console.log('login');
 				this_.username = username; this_.render();
+				this_.trigger('login', username);
 			});
 			store.on('logout', function(username) {
 				// console.log('logout');
 				this_.set_selected_box(); // clear selected box
 				delete this_.username; this_.render();
+				this_.trigger('logout');				
 			});
 			store.checkLogin().then(function(response) {
 				// console.log('response >> ', response);
 				if (response.is_authenticated) {
 					// console.log('authenticated - as user ', response.user);
-					this_.username = response.user; 
+					this_.username = response.user;
+					this_.trigger('login', response.user);					
 				} else {
 					// console.log('not authenticated ', response.user);
-					delete this_.username; 
+					delete this_.username;
+					this_.trigger('logout');
 				}
 				this_._post_login_setup(store);
 			});
@@ -58,7 +62,6 @@ define(['js/utils', 'text!components/toolbar/t_template.html', 'text!components/
 				});
 				this_.render();				
 			});
-
 		},
 		set_selected_box:function(b) {
 			this.trigger('change:box', b);
@@ -93,6 +96,7 @@ define(['js/utils', 'text!components/toolbar/t_template.html', 'text!components/
 	var init = function(store) {
 		var tv = new ToolbarView({store:store});
 		tv.render();
+		return tv;
 	};
 	
 	return { init:init };
