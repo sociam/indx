@@ -32,7 +32,7 @@ def list_boxes(db_user, db_pass):
     def db_list(rows):
         dbs = []
         for row in rows:
-            db = row[0]
+            db = row[0][len(WBPREFIX):] # strip wb_ prefix from name
             dbs.append(db)
         return_d.callback(dbs)
 
