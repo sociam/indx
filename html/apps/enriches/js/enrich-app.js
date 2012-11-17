@@ -1,7 +1,15 @@
 define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) {
+	console.log('foo');
 
 	var assert = u.assert, deferred = u.deferred, defined = u.defined;
-		
+
+	var example_round = {
+		text: "M & S Kings X",
+		name: { begin: 0, end: 4 },
+		location: { begin: 5, end: 15 },
+		categories: ['groceries']
+	};
+	
 	var RoundView = Backbone.View.extend({
 		template:round,
 		tagClass:'round',
@@ -9,13 +17,13 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 			'mouseup .name-input' : '_cb_name_input_selection',
 			'mouseup .location-input' : '_cb_location_input_sel'			
 		},
-		initialize:function() {
+		initialize:function(options) {
 			assert(options.round, 'please provide a round as an argument');
 		},
 		_cb_location_input_sel:function() {
 			console.log('location input sel > ', this.$el.find('.name-input').getSelection());
 		},
-		_cb_name_input_sel:function() {
+		_cb_name_input_selection:function() {
 			console.log('name input sel > ', this.$el.find('.name-input').getSelection());
 		},		
 		render:function() {
@@ -26,12 +34,15 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 	});
 
 	var EnrichView = Backbone.View.extend({
-		show:function(round) {
-			this.round = round;
+		show_round:function(round) {
+			console.log('showing round >> ', round);
+			var roundview = new RoundView({round:round});
+			this.roundview = roundview;
+			this.$el.find('.round-holder').children().remove();
+			this.$el.find('.round-holder').append(roundview.render().el);
 			this.render();
 		},
 		render:function() {
-			
 			return this;
 		}
 	});
@@ -40,7 +51,14 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 		initialize:function() {
 			this.view = new EnrichView();
 			$('body').append(this.view.render().el);
-		}
+			this.view.show_round(example_round);
+		},
+		show:function() {
+			this.view.$el.show();
+		},
+		hide:function() {
+			this.view.$el.hide();
+		}				
 	});
 
 	return {
