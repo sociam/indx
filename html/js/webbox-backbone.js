@@ -63,21 +63,6 @@
 		options = _(_(options || {}).clone()).extend(passed_options);
 		return $.ajax( options ); // returns a deferred		
 	};
-	var boxajax = function(box, path, type, data) {
-		var url = box.store.options.server_url + box.id + path;
-		console.log('token ', box.options.token);
-		var options = {
-			type: type,
-			url : url,
-            crossDomain: true,
-            jsonp: false,
-            contentType: "application/json",
-            dataType: "json",
-			data: _({ token:box.options.token }).extend(data),
-			xhrFields: { withCredentials: true }
-		};
-		return $.ajax( options ); // returns a deferred		
-	};
 	var serialize_obj = function(obj) {
         var uri = obj.id;
         var out_obj = {};
@@ -226,7 +211,7 @@
 			var d = deferred();
 			var graph_objs = graph.objs().map(function(obj){ return serialize_obj(obj);	});
 			var box = graph.box;
-			boxajax(graph.box,"/update",
+			graph.box.ajax("/update",
 					"PUT", { graph : escape(graph.id),  version: escape(graph.version), data : JSON.stringify(graph_objs) }).then(function(response) {
 						graph.version = response.data["@version"];
 						console.log(">>> SAVE setting graph version ", graph.id, " ", response.data, graph.version);
@@ -239,7 +224,7 @@
 			var uri = graph.id;
 			var d = deferred();
 			// return a list of models (each of type ObjectStore.Object) to populate a GraphCollection
-			boxajax(graph.box, "/", "GET", {"graph": uri})
+			graph.box.ajax(graph.box, "/", "GET", {"graph": uri})
 				.then(function(data){
 					var graph_collection = graph.objs();
 					var version = 0; // new version FIXME check
@@ -311,6 +296,21 @@
 				}
 			}
 		},
+		ajax : function( path, type, data ) {
+			var url = this.store.options.server_url + this.id + path;
+			console.log('token ', this.options.token);
+			var options = {
+				type: type,
+				url : url,
+				crossDomain: true,
+				jsonp: false,
+				contentType: "application/json",
+				dataType: "json",
+				data: _({ token:this.options.token }).extend(data),
+				xhrFields: { withCredentials: true }
+			};
+			return $.ajax( options ); // returns a deferred		
+		},		
 		graphs:function() { return this.attributes.graphs; },
 		get_or_create:function(uri) { return this.graphs().get(uri) || this.create(uri); },
         create: function(attrs){
