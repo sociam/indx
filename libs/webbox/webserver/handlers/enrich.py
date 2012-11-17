@@ -67,7 +67,7 @@ class EnrichHandler(BaseHandler):
     def save_entity_from_round(self, abbrv, full, table_name):
         entities = store.get_latest(table_name)
         found = False
-        for entity_id, entity_info in entities :
+        for entity_id, entity_info in entities.items():
             if (entity_id != "@version" and entity_id != "@graph"):
                 if abbrv == entity_info["abbrv"][0]["@value"] and full == entity_info["full"][0]["@value"]:
                     entity_info["count"][0]["@value"] += 1
@@ -102,7 +102,7 @@ class EnrichHandler(BaseHandler):
     def search_entity_for_term(self, store, term, table_name, startswith=False, approx=False):
         d = []
         entities = store.get_latest(table_name)
-        for entity_id, entity_info in entities :
+        for entity_id, entity_info in entities.items():
             if (entity_id != "@version" and entity_id != "@graph"):
                 if approx:
                     if entity_info["abbrv"][0]["@value"].find(q, 0) > -1:
