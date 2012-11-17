@@ -35,8 +35,7 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 			this.$el.html( html );
 			var cats = this.$el.find('.categories-input');
 			cats.children('.option').remove();
-			console.log("==================================================================");
-			$.ajax({url:'categories/cat-simple.json', type:"GET"}).success(function(result) {
+			$.ajax({url:'categories/cat-simple.json', type:"GET", dataType:"json"}).success(function(result) {
 				result.categories.map(function(c) {
 					var h = _('<option value="<%= text %>"><%= text %></option>').template({text:c});
 					cats.append(h);
