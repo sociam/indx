@@ -36,11 +36,11 @@ class EnrichHandler(BaseHandler):
             return self.return_forbidden(request)
         store = token.store
 
-        desc = request.args['user'][0]
+        desc = request.args['desc'][0]
         user = ''
         owner = ''
         
-        round = {
+        r = {
             "@id":              str(uuid.uuid1()),
             "type":             "round",
             "user":             None,
@@ -50,19 +50,19 @@ class EnrichHandler(BaseHandler):
         
         place = self.try_to_find_entity(desc, 'places')
         if place is not None:
-            round['place-start'] = place['start']
-            round['place-end'] = place['end']
-            round['place-full'] = place['full']
-            round['place-abbrv'] = place['abbrv']
+            r['place-start'] = place['start']
+            r['place-end'] = place['end']
+            r['place-full'] = place['full']
+            r['place-abbrv'] = place['abbrv']
             
         establishment = self.try_to_find_entity(desc, 'establishments')
         if establishment is not None:
-            round['establishment-start'] = establishment['start']
-            round['establishment-end'] = establishment['end']
-            round['establishment-full'] = establishment['full']
-            round['establishment-abbrv'] = establishment['abbrv']
+            r['establishment-start'] = establishment['start']
+            r['establishment-end'] = establishment['end']
+            r['establishment-full'] = establishment['full']
+            r['establishment-abbrv'] = establishment['abbrv']
         
-        self.return_ok(request, {"round": round})
+        self.return_ok(request, {"round": r})
         
     def save_entity_from_round(self, abbrv, full, table_name):
         entities = store.get_latest(table_name)
