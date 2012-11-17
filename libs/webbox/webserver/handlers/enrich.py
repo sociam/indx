@@ -156,6 +156,7 @@ class EnrichHandler(BaseHandler):
         
         # the highlighted string from user: "Kings X"
         q = request.args['q'][0]
+        q = q.lower()
         startswith = 'startswith' in request.args
        
         def got_entities(returned):
@@ -172,7 +173,7 @@ class EnrichHandler(BaseHandler):
             for place in uk_places:
                 if startswith and place.lower().startswith(q):
                     entities.append(place)
-                elif not startswith and place.lower() == q:
+                elif (not startswith) and place.lower() == q:
                     entities.append(place)
             return self.return_ok(request, {"entries": entities})
                 
