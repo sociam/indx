@@ -25,18 +25,65 @@ from webbox.objectstore_async import ObjectStoreAsync
 class EnrichHandler(BaseHandler):
     """ Add/remove boxes, add/remove users, change config. """
     base_path = 'enrich'
+    
+    def get_next_round(self, request):
+        token = self.get_token(request)
+        if not token:
+            return self.return_forbidden(request)
+        store = token.store
+
+        desc = request.args['user'][0]
+        
+        round = []
+        
+        self.return_ok(request, {"round": round})
 
     def get_establishments(self, request):
-        desc = request.args['description'][0]
+        desc = request.args['q'][0]
         self.return_ok(request, {"entries": [{"text": desc, "weight": 100}, {"text": desc.lower(), "weight": 50}]})
+
+    def get_places(self, request):
+        token = self.get_token(request)
+        if not token:
+            return self.return_forbidden(request)
+        store = token.store
+        
+        # the highlighted string from user: "Kings X"
+        q = request.args['q'][0]
+        
+        # query db for something similar to q
+        d = []
+        
+        d.append({"id": desc, "name": desc.lower()})
+        
+        self.return_ok(request, {"entries": d})
+        
         
 EnrichHandler.subhandlers = [
     {
         'prefix': 'get_establishments',
         'methods': ['GET'],
-        'require_auth': False,
-        'require_token': False,
+        'require_auth': True,
+        'require_token': True,
         'handler': EnrichHandler.get_establishments,
+        'content-type':'text/plain', # optional
+        'accept':['application/json']                
+    },
+    {
+        'prefix': 'get_places',
+        'methods': ['GET'],
+        'require_auth': True,
+        'require_token': True,
+        'handler': EnrichHandler.get_places,
+        'content-type':'text/plain', # optional
+        'accept':['application/json']                
+    },
+    {
+        'prefix': 'get_next_round',
+        'methods': ['GET'],
+        'require_auth': True,
+        'require_token': True,
+        'handler': EnrichHandler.get_next_round,
         'content-type':'text/plain', # optional
         'accept':['application/json']                
     }
