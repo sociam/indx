@@ -83,8 +83,9 @@ class EnrichHandler(BaseHandler):
         
         # the highlighted string from user: "Kings X"
         q = request.args['q'][0]
+        startswith = 'startswith' in request.args
         
-        self.return_ok(request, {"entries": search_entities_for_term(q, "establishments")})
+        self.return_ok(request, {"entries": self.search_entity_for_term(q, "establishments", startswith)})
 
 
     def get_places(self, request):
@@ -96,9 +97,9 @@ class EnrichHandler(BaseHandler):
         # the highlighted string from user: "Kings X"
         q = request.args['q'][0]
         
-        self.return_ok(request, {"entries": search_entities_for_term(q, "places")})
+        self.return_ok(request, {"entries": self.search_entity_for_term(q, "places")})
  
-    def search_entity_for_term(self, term, table_name, approx=False):
+    def search_entity_for_term(self, term, table_name, startswith=False, approx=False):
         d = []
         entities = store.get_latest(table_name)
         for entity_id, entity_info in entities :
@@ -106,6 +107,9 @@ class EnrichHandler(BaseHandler):
                 if approx:
                     if entity_info["abbrv"][0]["@value"].find(q, 0) > -1:
                         d.append({"id": entity_id, "name": entity_info["full"][0]["@value"]})
+                elif startswith:
+                    if entity_info["abbrv"][0]["@value"].startswith(q):
+                        d.append({"id": entity_id, "name": entity_info["full"][0]["@value"], "count": entity_info["count"][0]["@value"]})
                 else:
                     if entity_info["abbrv"][0]["@value"] == q:
                         d.append({"id": entity_id, "name": entity_info["full"][0]["@value"], "count": entity_info["count"][0]["@value"]})
