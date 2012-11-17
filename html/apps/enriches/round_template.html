@@ -1,33 +1,27 @@
+
 <!-- name --> 
 <div class="row">
-  <input class="selectable-description-display select-name" type="text"><%= text %></div>
+  <input class="selectable-description-display select-name" value="<%= text %>"></input>
 </div>
 <div class="row">
-  <div class="span4">display name</div>
-  <div class="span8"><input type="text" class="display-selected-name" disabled="true"></input></div>  
-</div>
-<div class="row">
-  <div class="span4">name of establishment</div>
-  <!-- todo : autocomplete on establishment gazeteers -->  
-  <div class="span8"><input type="text" class="input-name"></input></div>  
+  <div class="span3">name of establishment</div>
+  <div class="span2"><input type="text" class="display-selected-name" disabled="true"></input></div>  
+  <div class="span2"><input type="text" class="input-name"></input></div>  
 </div>
 
 <!-- location -->
 <div class="row">
-  <input class="selectable-description-display select-location" type="text"><%= text %></div>
+  <input class="selectable-description-display select-location" value="<%= text %>"></input>
 </div>
 <div class="row">
-  <div class="span4">display location</div>
-  <div class="span8"><input type="text" class="display-selected-location" disabled="true"></input></div>  
-</div>
-<div class="row">
-  <div class="span4">name of location</div>
+  <div class="span3">location</div>
+  <div class="span2"><input type="text" class="display-selected-location" disabled="true"></input></div>  
   <!-- todo : autocomplete on location gazeteers -->
-  <div class="span8"><input type="text" class="location-input"></input></div>
+  <div class="span2"><input type="text" class="location-input"></input></div>
 </div>
 
 <!-- --> 
 <div class="row">
-  <div class="span4">categories</div>
-  <div class="span8"><input type="text" class="categories-input"></input></div>  
+  <div class="span2">categories</div>
+  <div class="span4"><input type="text" class="categories-input"></input></div>  
 </div>

@@ -1,9 +1,9 @@
 
-all: fb.css 
+all: enrich.css 
 
-fb.css : fb.less force_look
-	lessc fb.less > fb.css_
-	mv fb.css_ fb.css
+enrich.css : enrich.less force_look
+	lessc enrich.less > enrich.css_
+	mv enrich.css_ enrich.css
 
 force_look:
 	true

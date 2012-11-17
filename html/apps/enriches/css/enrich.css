@@ -1,0 +1,16 @@
+.main {
+  width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-top: 100px;
+}
+.selectable-description-display {
+  font-size: 48pt;
+  border: none;
+  border: none;
+  width: 100%;
+  padding-bottom: 10px;
+}
+.selectable-description-display:focus {
+  outline: none;
+}
