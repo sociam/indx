@@ -23,12 +23,14 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 			console.log(evt.target);
 			var start = evt.target.selectionStart, end = evt.target.selectionEnd;
 			var val = $(evt.target).val().substring(start,end);			
-			this.$el.find('.display-selected-location').val(val);			
+			this.$el.find('.display-selected-location').val(val);
+			this.$el.find('.input-location').focus();
 		},
 		_cb_name_input_selection:function(evt) {
 			var start = evt.target.selectionStart, end = evt.target.selectionEnd;
 			var val = $(evt.target).val().substring(start,end);						
 			this.$el.find('.display-selected-name').val(val);
+			this.$el.find('.input-name').focus();
 		},		
 		render:function() {
 			var html = _(this.template).template(this.options.round);
