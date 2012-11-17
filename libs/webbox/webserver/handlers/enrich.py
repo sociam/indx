@@ -151,15 +151,15 @@ class EnrichHandler(BaseHandler):
             abbrv = ' '.join(sublist)
             tosearch.append( (store, abbrv, table_name) )
 
-        def done_all_searches():
-            if len(candidates) > 0:
+        def done_all_searches(candidates):
+            if len(candidates) == 0:
                 result_d.callback(None)
             else:
-                candidates.sorted(candidates, self.sort_candidates)
+                candidates = sorted(candidates, self.sort_candidates)
                 result_d.callback(candidates[0])
 
 
-        def do_search(matches):
+        def do_search(matches, candidates):
             if matches is not None:
                 if len(matches) > 0:
                     for match in matches:
@@ -174,11 +174,11 @@ class EnrichHandler(BaseHandler):
 
             if len(tosearch) > 0:
                 store, abbrv, table_name = tosearch.pop(0)
-                self.search_entity_for_term(store, abbrv, table_name).addCallback(do_search)
+                self.search_entity_for_term(store, abbrv, table_name).addCallback(lambda matches: do_search(matches, candidates))
             else:
-                done_all_searches()
+                done_all_searches(candidates)
 
-        do_search(None)
+        do_search(None, candidates)
 
         return result_d
 
