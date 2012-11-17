@@ -108,11 +108,13 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 			return this;
 		},
 		get_values:function() {
+			var cats = this.$el.find('.categories-input').val();
 			return {
 				'place-abbrv': this.loc_abbrv || this.options.round.text,
 				'place-full':this.$el.find('.input-location').val(),
 				'establishment-abbrv':this.name_abbrv || this.options.round.text,
-				'establishment-full':this.$el.find('.input-name').val()
+				'establishment-full':this.$el.find('.input-name').val(),
+				'categories': cats
 			};
 		},
 		_location_not_specified:function() {
