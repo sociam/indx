@@ -33,7 +33,8 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 		events: {
 			'select .select-name' : '_cb_name_input_selection',
 			'select .select-location' : '_cb_location_input_sel',
-			'click .not-specified' : '_location_not_specified'
+			'click .loc-not-specified' : '_location_not_specified',
+			'click .name-not-specified' : '_name_not_specified'			
 		},
 		initialize:function(options) {
 			assert(options.round, 'please provide a round as an argument');
@@ -121,6 +122,10 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 			this.$el.find('.loc').slideUp();
 			this.loc_abbrv = "_NOT_SPECIFIED_";
 		},
+		_name_not_specified:function() {
+			this.$el.find('.name').slideUp();
+			this.name_abbrv = "_NOT_SPECIFIED_";
+		},		
 		hide:function() {
 			this.$el.fadeOut('fast');
 			this.$el.remove();	
