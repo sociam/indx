@@ -81,7 +81,7 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 				$(".chzn-select").chosen({no_results_text: "No results matched"});				
 			}).error(function(f) {	console.log("FAIL ", f);});
 
-			this.$el.find('.input-location').typeahead({ source: function(q,process) {
+			this.$el.find('.input-location').typeahead({ items:16, source: function(q,process) {
 				// put an ajax call to thingy now
 				// debug code --
 				// var locs = ['london', 'dublin', 'berlin', 'southampton'];
@@ -90,7 +90,7 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 				this_.options.box.ajax('/get_places', 'GET', { q: q, startswith: true })
 					.then(function(results) { process(results.entries);	});
 			}});
-			this.$el.find('.input-name').typeahead({ source: function(q,process) {
+			this.$el.find('.input-name').typeahead({ items:16, source: function(q,process) {
 				// debug code 
 				// var locs = ['marks & spencers', 'john lewis', 'harrods'];
 				// process(locs.filter(function(f) { return f.indexOf(q) == 0; }));
