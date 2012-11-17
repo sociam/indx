@@ -121,16 +121,39 @@ class EnrichHandler(BaseHandler):
         self.get_unprocessed_statement(store, persona).addCallback(got_statement)
 
         
-    def save_entity_from_round(self, abbrv, full, table_name):
-        entities = store.get_latest(table_name)
-        found = False
-        for entity_id, entity_info in entities.items():
-            if (entity_id != "@version" and entity_id != "@graph"):
-                if abbrv == entity_info["abbrv"][0]["@value"] and full == entity_info["full"][0]["@value"]:
-                    entity_info["count"][0]["@value"] += 1
-                    found = True
-        if not found:
-            entities.add(table_name, {"abbrv": abbrv, "full": full, "count": 1}, entities["@version"])
+    def save_entity_from_round(self, abbrv, full, table_name, request):
+       
+        def get_entities(entities):
+            found = False
+	    for entity_id, entity_info in entities.items():
+		if entity_id[0] != "@":
+		    if abbrv == entity_info["abbrv"][0]["@value"] and full == entity_info["full"][0]["@value"]:
+			entity_info["count"][0]["@value"] = str(int(entity_info["count"][0]["@value"]) + 1)
+			found = True
+	
+	    if not found:
+		entities.append({"abbrv": [{"@value":abbrv}], "full": [{"@value": full}], "count": [{"@value": "1"}]})
+		
+	    def write_back(version_info):
+	        pass
+	    
+	    store.add_graph_version(table_name, entities, entities["@version"]).addCallback(write_back)
+
+        store.get_latest(table_name).addCallback(get_entities)
+
+    def save_round(self, request):
+        token = self.get_token(request)
+        if not token:
+            return self.return_forbidden(request)
+        store = token.store
+
+        r = request.args['round'][0]
+        
+        self.save_entity_from_round(r["place-abbrv"]["@value"], r["place-full"]["@value"], "places", request)
+        self.save_entity_from_round(r["establishment-abbrv"]["@value"], r["establishment-full"]["@value"], "establishments", request)      
+        
+        self.return_ok(request)
+        
 
     def get_establishments(self, request):
         token = self.get_token(request)
@@ -188,7 +211,7 @@ class EnrichHandler(BaseHandler):
         def got_latest(entities):
             d = []
             for entity_id, entity_info in entities.items():
-                if (entity_id != "@version" and entity_id != "@graph"):
+                if entity_id[0] != "@":
                     if approx:
                         if entity_info["abbrv"][0]["@value"].lower().find(q, 0) > -1:
                             d.append({"id": entity_id, "name": entity_info["full"][0]["@value"]})
