@@ -43,6 +43,7 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 			this.$el.find('.display-selected-location').val(val);
 			this.$el.find('.input-location').focus();
 			this.loc_matches_view.update([val]);
+			this.loc_abbrv = val;
 		},
 		_cb_name_input_selection:function(evt) {
 			var start = evt.target.selectionStart, end = evt.target.selectionEnd;
@@ -50,6 +51,7 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 			this.$el.find('.display-selected-name').val(val);
 			this.$el.find('.input-name').focus();
 			this.name_matches_view.update([val]);
+			this.name_abbrv = val;
 		},		
 		render:function() {
 			var this_ = this;
@@ -84,11 +86,20 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 				this_.$el.find('.input-name').val(what);
 			});
 			return this;
+		},
+		get_values:function() {
+			return {
+				'place-abbrv': this.loc_abbrv || this.options.round.text,
+				'place-full':this.$el.find('.input-location').val(),
+				'establishment-abbrv':this.name_abbrv || this.options.round.text,
+				'establishment-full':this.$el.find('.input-name').val()
+			};
 		}
 	});
 	var EnrichView = Backbone.View.extend({
 		show_round:function(round) {
 			console.log('showing round >> ', round);
+			this.round = round;
 			var roundview = new RoundView({round:round});
 			this.roundview = roundview;
 			this.$el.find('.round-holder').children().remove();
