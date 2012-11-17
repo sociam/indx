@@ -65,7 +65,7 @@ class EnrichHandler(BaseHandler):
         d = []
         entities = store.get_latest(table_name)
         for entity_id, entity_info in entities :
-            if (entity_id != "@version" && entity_id != "@graph"):
+            if (entity_id != "@version" and entity_id != "@graph"):
                 if approx:
                     if entity_info["abbrv"]["@value"].find(q, 0) > -1:
                         d.append({"id": entity_id, "name": entity_info["full"]["@value"]})
@@ -73,6 +73,26 @@ class EnrichHandler(BaseHandler):
                     if entity_info["abbrv"]["@value"] == q:
                         d.append({"id": entity_id, "name": entity_info["full"]["@value"]})
         return d
+        
+    def try_to_find_entity(self, description):
+        parts = description.split()
+        
+        candidates = []
+        for sublist in iter_sublists(parts):
+            abbrv = ' '.join(sublist)
+            matches = self.get_places(abbrv)
+            if len(matches) > 0:
+                for match in matches:
+                    if match not in candidates:
+                        candidates.append({'abbrv': abbrv, 'start': q.find(abbrv, 0), 'end': q.find(abbrv, 0) + len(abbrv), 'full': match})
+        
+        return candidates
+    
+    def iter_sublists(l):
+        n = len(l)+1
+        for i in range(n):
+            for j in range(i+1, n):
+                yield l[i:j]
         
 EnrichHandler.subhandlers = [
     {
