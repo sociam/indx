@@ -48,14 +48,14 @@ class EnrichHandler(BaseHandler):
             "isOwn":            bool(owner == user)
         }
         
-        place = self.try_to_find_entity(desc, 'places')
+        place = self.try_to_find_entity(store, desc, 'places')
         if place is not None:
             r['place-start'] = place['start']
             r['place-end'] = place['end']
             r['place-full'] = place['full']
             r['place-abbrv'] = place['abbrv']
             
-        establishment = self.try_to_find_entity(desc, 'establishments')
+        establishment = self.try_to_find_entity(store, desc, 'establishments')
         if establishment is not None:
             r['establishment-start'] = establishment['start']
             r['establishment-end'] = establishment['end']
@@ -85,7 +85,7 @@ class EnrichHandler(BaseHandler):
         q = request.args['q'][0]
         startswith = 'startswith' in request.args
         
-        self.return_ok(request, {"entries": self.search_entity_for_term(q, "establishments", startswith)})
+        self.return_ok(request, {"entries": self.search_entity_for_term(store, q, "establishments", startswith)})
 
 
     def get_places(self, request):
@@ -97,9 +97,9 @@ class EnrichHandler(BaseHandler):
         # the highlighted string from user: "Kings X"
         q = request.args['q'][0]
         
-        self.return_ok(request, {"entries": self.search_entity_for_term(q, "places")})
+        self.return_ok(request, {"entries": self.search_entity_for_term(store, q, "places")})
  
-    def search_entity_for_term(self, term, table_name, startswith=False, approx=False):
+    def search_entity_for_term(self, store, term, table_name, startswith=False, approx=False):
         d = []
         entities = store.get_latest(table_name)
         for entity_id, entity_info in entities :
@@ -115,13 +115,13 @@ class EnrichHandler(BaseHandler):
                         d.append({"id": entity_id, "name": entity_info["full"][0]["@value"], "count": entity_info["count"][0]["@value"]})
         return d
         
-    def try_to_find_entity(self, description, table_name):
+    def try_to_find_entity(self, store, description, table_name):
         parts = description.split()
         
         candidates = []
         for sublist in self.iter_sublists(parts):
             abbrv = ' '.join(sublist)
-            matches = self.search_entity_for_term(abbrv, table_name)
+            matches = self.search_entity_for_term(store, abbrv, table_name)
             if len(matches) > 0:
                 for match in matches:
                     #if match not in candidates:
