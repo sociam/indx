@@ -40,15 +40,16 @@ class BaseHandler(Resource):
         # }
     }
     
-    def __init__(self, webserver, base_path=None):
+    def __init__(self, webserver, base_path=None, register=True):
         self.webserver = webserver
 
         if base_path is not None:
             self.base_path = base_path
 
         self.isLeaf = True # stops twisted from seeking children resources from me
-        logging.debug("Putting child " + self.base_path)
-        webserver.root.putChild(self.base_path, self) # register path with webserver
+        if register:
+            logging.debug("Putting child " + self.base_path)
+            webserver.root.putChild(self.base_path, self) # register path with webserver
 
     def _matches_request(self, request, subhandler):
         path_fields = request.path.split("/")

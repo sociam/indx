@@ -76,15 +76,15 @@ class BoxHandler(BaseHandler):
         pass
    
     def get_establishments(self, request):
-        eh = EnrichHandler(self.webserver, base_path=self.base_path)
+        eh = EnrichHandler(self.webserver, base_path=self.base_path, register=False)
         return eh.get_establishments(request)
 
     def get_places(self, request):
-        eh = EnrichHandler(self.webserver, base_path=self.base_path)
+        eh = EnrichHandler(self.webserver, base_path=self.base_path, register=False)
         return eh.get_places(request)
 
     def get_next_round(self, request):
-        eh = EnrichHandler(self.webserver, base_path=self.base_path)
+        eh = EnrichHandler(self.webserver, base_path=self.base_path, register=False)
         return eh.get_next_round(request)
 
 
