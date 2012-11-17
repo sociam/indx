@@ -1,46 +1,71 @@
 define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) {
+	console.log('foo');
 
 	var assert = u.assert, deferred = u.deferred, defined = u.defined;
-		
+
+	var example_round = {
+		text: "M & S Kings X",
+		name: { begin: 0, end: 4 },
+		location: { begin: 5, end: 15 },
+		categories: ['groceries']
+	};
+	
 	var RoundView = Backbone.View.extend({
 		template:round,
 		tagClass:'round',
 		events: {
-			'mouseup .name-input' : '_cb_name_input_selection',
-			'mouseup .location-input' : '_cb_location_input_sel'			
+			'select .select-name' : '_cb_name_input_selection',
+			'select .select-location' : '_cb_location_input_sel'			
 		},
-		initialize:function() {
+		initialize:function(options) {
 			assert(options.round, 'please provide a round as an argument');
 		},
-		_cb_location_input_sel:function() {
-			console.log('location input sel > ', this.$el.find('.name-input').getSelection());
+		_cb_location_input_sel:function(evt) {
+			console.log(evt.target);
+			var start = evt.target.selectionStart, end = evt.target.selectionEnd;
+			var val = $(evt.target).val().substring(start,end);			
+			this.$el.find('.display-selected-location').val(val);			
 		},
-		_cb_name_input_sel:function() {
-			console.log('name input sel > ', this.$el.find('.name-input').getSelection());
+		_cb_name_input_selection:function(evt) {
+			var start = evt.target.selectionStart, end = evt.target.selectionEnd;
+			var val = $(evt.target).val().substring(start,end);						
+			this.$el.find('.display-selected-name').val(val);
 		},		
 		render:function() {
 			var html = _(this.template).template(this.options.round);
+			console.log(" >>>>>>>>>>>>> template ", html);
 			this.$el.html( html );
 			return this;
 		}
 	});
 
 	var EnrichView = Backbone.View.extend({
-		show:function(round) {
-			this.round = round;
+		show_round:function(round) {
+			console.log('showing round >> ', round);
+			var roundview = new RoundView({round:round});
+			this.roundview = roundview;
+			this.$el.find('.round-holder').children().remove();
+			this.$el.find('.round-holder').append(roundview.render().el);
+			
 			this.render();
 		},
 		render:function() {
-			
 			return this;
 		}
 	});
 
 	var EnrichApp = Backbone.Model.extend({
 		initialize:function() {
-			this.view = new EnrichView();
+			this.view = new EnrichView({el:$('.main')[0]});
 			$('body').append(this.view.render().el);
-		}
+			this.view.show_round(example_round);
+		},
+		show:function() {
+			this.view.$el.show();
+		},
+		hide:function() {
+			this.view.$el.hide();
+		}				
 	});
 
 	return {
