@@ -73,7 +73,20 @@ class BoxHandler(BaseHandler):
             # single object put
             return self.return_bad_request(request,"Single object PUT not supported, PUT an array to create/replace a named graph instead")
         pass
-    
+   
+    def get_establishments(self, request):
+        eh = EnrichHandler(self.webserver, base_path=self.base_path)
+        return eh.get_establishments(request)
+
+    def get_places(self, request):
+        eh = EnrichHandler(self.webserver, base_path=self.base_path)
+        return eh.get_places(request)
+
+    def get_next_round(self, request):
+        eh = EnrichHandler(self.webserver, base_path=self.base_path)
+        return eh.get_next_round(request)
+
+
     # ## @TODO ::
     # def handle_update(self,request):
     #     """ Handle calls to the Journal update URL. """
@@ -109,6 +122,33 @@ class BoxHandler(BaseHandler):
     #     pass
 
 BoxHandler.subhandlers = [
+    {
+        'prefix': 'get_establishments',
+        'methods': ['GET'],
+        'require_auth': True,
+        'require_token': True,
+        'handler': BoxHandler.get_establishments,
+        'content-type':'text/plain', # optional
+        'accept':['application/json']                
+    },
+    {
+        'prefix': 'get_places',
+        'methods': ['GET'],
+        'require_auth': True,
+        'require_token': True,
+        'handler': BoxHandler.get_places,
+        'content-type':'text/plain', # optional
+        'accept':['application/json']                
+    },
+    {
+        'prefix': 'get_next_round',
+        'methods': ['GET'],
+        'require_auth': True,
+        'require_token': True,
+        'handler': BoxHandler.get_next_round,
+        'content-type':'text/plain', # optional
+        'accept':['application/json']                
+    },
     {
         "prefix": "*",            
         'methods': ['GET'],
