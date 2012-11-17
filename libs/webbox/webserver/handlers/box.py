@@ -21,6 +21,7 @@ import logging, urllib2, uuid, rdflib, os, traceback, mimetypes, shutil, json
 from twisted.web.resource import Resource
 from webbox.webserver.session import WebBoxSession, ISession
 from webbox.webserver.handlers.base import BaseHandler
+from webbox.webserver.handlers.enrich import EnrichHandler
 from webbox.objectstore_async import IncorrectPreviousVersionException
 
 class BoxHandler(BaseHandler):
