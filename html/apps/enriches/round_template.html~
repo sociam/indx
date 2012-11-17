@@ -1,0 +1,7 @@
+<input class="selectable-description-display" type="text"><%= text %></div>
+<div class="row">
+  <div class="span4">name of establishment</div>
+  
+</div>
+<input class="selectable-description-display" type="text"><%= text %></div>
+
