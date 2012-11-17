@@ -1,27 +1,43 @@
 
-<!-- name --> 
+<!-- name -->
+<div class="row">
+  <div class="span12">
+	<h5>step 1: use your mouse to select the <span class="em">name</span> of the merchant/establishment</h5>
+  </div>
+</div>
 <div class="row">
   <div class="span12">
 	<input class="selectable-description-display select-name" value="<%= text %>"></input>
   </div>
 </div>
 <div class="row">  
-  <div class="span3">name of establishment</div>
+  <div class="span2">name of establishment</div>
   <div class="span2"><input type="text" class="display-selected-name" disabled="true"></input></div>  
   <div class="span2"><input type="text" class="input-name"></input></div>  
 </div>
 
 <!-- location -->
+<div class="row" style="margin-top:20px;">
+  <div class="span12">
+	<h5>step 2: select the <span class="em">location</span> of the merchant/establishment</h5>
+  </div>
+</div>
 <div class="row">
   <div class="span12">
 	<input class="selectable-description-display select-location" value="<%= text %>"></input>
   </div>
 </div>
 <div class="row">
-  <div class="span3">location</div>
+  <div class="span2">location</div>
   <div class="span2"><input type="text" class="display-selected-location" disabled="true"></input></div>  
   <!-- todo : autocomplete on location gazeteers -->
   <div class="span2"><input type="text" class="location-input"></input></div>
+</div>
+
+<div class="row" style="margin-top:20px;">
+  <div class="span12">
+	<h5>step 3: select a <span class="em">category</span></h5>
+  </div>
 </div>
 
 <!-- --> 

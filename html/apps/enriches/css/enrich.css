@@ -4,12 +4,20 @@
   margin-right: auto;
   padding-top: 100px;
 }
+h4 {
+  margin: 0px;
+  padding: 0px;
+}
 .selectable-description-display {
-  width: 95%;
-  font-size: 48pt;
+  width: 680px;
+  font-size: 28pt;
+  font-family: courier, lucida typewriter;
   border: none;
-  border: none;
+  border-left: 1px solid #eee;
+  border-right: 1px solid #eee;
   padding-bottom: 10px;
+  padding-top: 0px;
+  margin-top: 0px;
 }
 .selectable-description-display:focus {
   outline: none;
@@ -18,4 +26,7 @@
   position: relative;
   padding: 10px;
   border: 1px solid #eeeeee;
+}
+.em {
+  color: #ff69b4;
 }
