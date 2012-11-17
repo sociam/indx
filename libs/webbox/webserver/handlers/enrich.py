@@ -16,7 +16,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging, traceback, json
+import logging, traceback, json, os
 from twisted.web.resource import Resource
 from twisted.internet.defer import Deferred
 
