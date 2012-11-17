@@ -21,10 +21,14 @@ from twisted.web.resource import Resource
 from webbox.webserver.handlers.base import BaseHandler
 import webbox.webbox_pg2 as database
 from webbox.objectstore_async import ObjectStoreAsync
+import uuid
 
 class EnrichHandler(BaseHandler):
     """ Add/remove boxes, add/remove users, change config. """
     base_path = 'enrich'
+    
+    def val(self, value):
+        return {"@value": value}
     
     def get_next_round(self, request):
         token = self.get_token(request)
@@ -34,7 +38,14 @@ class EnrichHandler(BaseHandler):
 
         desc = request.args['user'][0]
         
-        round = []
+        round = {
+            "@id":              str(uuid.uuid1()),
+            "type":             "round",
+            "user":             None,
+            "statement":        statement,
+            "place":            self.try_to_find_entity(desc, 'places'),
+            "establishment":    self.try_to_find_entity(desc, 'establishments')
+        }
         
         self.return_ok(request, {"round": round})
 
@@ -61,7 +72,7 @@ class EnrichHandler(BaseHandler):
         
         self.return_ok(request, {"entries": search_entities_for_term(q, "places")})
  
-    def search_entity_for_term(term, table_name, approx=False):
+    def search_entity_for_term(self, term, table_name, approx=False):
         d = []
         entities = store.get_latest(table_name)
         for entity_id, entity_info in entities :
@@ -74,21 +85,33 @@ class EnrichHandler(BaseHandler):
                         d.append({"id": entity_id, "name": entity_info["full"]["@value"], "count": entity_info["count"]["@value"]})
         return d
         
-    def try_to_find_entity(self, description):
+    def try_to_find_entity(self, description, table_name):
         parts = description.split()
         
         candidates = []
-        for sublist in iter_sublists(parts):
+        for sublist in self.iter_sublists(parts):
             abbrv = ' '.join(sublist)
-            matches = self.get_places(abbrv)
+            matches = self.search_entity_for_term(abbrv, table_name)
             if len(matches) > 0:
                 for match in matches:
-                    if match not in candidates:
-                        candidates.append({'abbrv': abbrv, 'start': q.find(abbrv, 0), 'end': q.find(abbrv, 0) + len(abbrv), 'full': match})
+                    #if match not in candidates:
+                    candidates.append({'abbrv': abbrv, 'start': q.find(abbrv, 0), 'end': q.find(abbrv, 0) + len(abbrv), 'full': match['name'], 'count': match['count']})
         
-        return candidates
-    
-    def iter_sublists(l):
+        if len(candidates) > 0:
+            return None
+        else:
+            candidates.sorted(candidates, self.sort_candidates)
+            return candidates[0]
+        
+    def sort_candidates(self, a, b):
+        if a['count'] == b['count']:
+            return -1
+        elif a['count'] > b['count']:
+            return 1
+        else:
+            return -1
+            
+    def iter_sublists(self, l):
         n = len(l)+1
         for i in range(n):
             for j in range(i+1, n):
