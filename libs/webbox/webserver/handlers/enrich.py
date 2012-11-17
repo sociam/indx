@@ -37,17 +37,33 @@ class EnrichHandler(BaseHandler):
         store = token.store
 
         desc = request.args['user'][0]
+        user = ''
+        owner = ''
         
         round = {
             "@id":              str(uuid.uuid1()),
             "type":             "round",
             "user":             None,
-            "statement":        statement,
-            "place":            self.try_to_find_entity(desc, 'places'),
-            "establishment":    self.try_to_find_entity(desc, 'establishments')
+            "statement":        desc
+            "isOwn":            bool(owner == user)
         }
         
+        place = self.try_to_find_entity(desc, 'places')
+        if place is not None:
+            round['place-start'] = place['start']
+            round['place-end'] = place['end']
+            round['place-full'] = place['full']
+            round['place-abbrv'] = place['abbrv']
+            
+        establishment = self.try_to_find_entity(desc, 'establishments')
+        if establishment is not None:
+            round['establishment-start'] = establishment['start']
+            round['establishment-end'] = establishment['end']
+            round['establishment-full'] = establishment['full']
+            round['establishment-abbrv'] = establishment['abbrv']
+        
         self.return_ok(request, {"round": round})
+        
 
     def get_establishments(self, request):
         token = self.get_token(request)
@@ -95,7 +111,13 @@ class EnrichHandler(BaseHandler):
             if len(matches) > 0:
                 for match in matches:
                     #if match not in candidates:
-                    candidates.append({'abbrv': abbrv, 'start': q.find(abbrv, 0), 'end': q.find(abbrv, 0) + len(abbrv), 'full': match['name'], 'count': match['count']})
+                    candidates.append({
+                        'abbrv':    abbrv,
+                        'start':    q.find(abbrv, 0),
+                        'end':      q.find(abbrv, 0) + len(abbrv),
+                        'full':     match['name'],
+                        'count':    match['count']
+                    })
         
         if len(candidates) > 0:
             return None
