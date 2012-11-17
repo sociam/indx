@@ -1,0 +1,860 @@
+<!DOCTYPE SKGML>
+<document>
+ <table name="parameters">
+  <row d_lastmodifdate="2012-11-17 15:43:05" t_name="SKG_DB_BANK_VERSION" i_tmp="0" t_value="7.3" b_blob="" id="1" t_uuid_parent="document"/>
+  <row d_lastmodifdate="2012-11-17 15:43:05" t_name="SKG_UNDO_MAX_DEPTH" i_tmp="0" t_value="50" b_blob="" id="2" t_uuid_parent="document"/>
+  <row d_lastmodifdate="2012-11-17 15:43:05" t_name="SKG_UNDO_CLEAN_AFTER_SAVE" i_tmp="0" t_value="N" b_blob="" id="3" t_uuid_parent="document"/>
+  <row d_lastmodifdate="2012-11-17 15:43:05" t_name="SKG_DB_VERSION" i_tmp="0" t_value="1.4" b_blob="" id="4" t_uuid_parent="document"/>
+  <row d_lastmodifdate="2012-11-17 15:43:05" t_name="SKG_SQLITE_CREATION_VERSION" i_tmp="0" t_value="3.7.11" b_blob="" id="5" t_uuid_parent="document"/>
+  <row d_lastmodifdate="2012-11-17 15:43:05" t_name="SKG_SQLITE_LAST_VERSION" i_tmp="0" t_value="3.7.11" b_blob="" id="6" t_uuid_parent="document"/>
+  <row d_lastmodifdate="2012-11-17 15:43:05" t_name="SKG_DB_BANK_VIEWS_VERSION" i_tmp="0" t_value="2011.11.05_en_US" b_blob="" id="7" t_uuid_parent="document"/>
+  <row d_lastmodifdate="2012-11-17 15:43:05" t_name="SKG_LANGUAGE" i_tmp="0" t_value="en_US" b_blob="" id="8" t_uuid_parent="document"/>
+  <row d_lastmodifdate="2012-11-17 15:46:52" t_name="SKGCATEGORIES_DEFAULT_PARAMETERS" i_tmp="0" t_value="&lt;!DOCTYPE SKGML>&lt;parameters view=&quot;&amp;lt;!DOCTYPE SKGML>&amp;#xa;&amp;lt;parameters view=&amp;quot;&amp;amp;lt;!DOCTYPE SKGML>&amp;amp;#xa;&amp;amp;lt;parameters zoomPosition=&amp;amp;quot;0&amp;amp;quot; columnsVisibility=&amp;amp;quot;Y;N;N;N;N;N&amp;amp;quot; columnsAutoResize=&amp;amp;quot;Y&amp;amp;quot; groupBy=&amp;amp;quot;&amp;amp;quot; sortColumn=&amp;amp;quot;t_name&amp;amp;quot; columns=&amp;amp;quot;t_name;t_bookmarked;i_NBOPERATIONS;f_REALCURRENTAMOUNT;i_SUMNBOPERATIONS;f_SUMCURRENTAMOUNT&amp;amp;quot; sortOrder=&amp;amp;quot;0&amp;amp;quot; alternatingRowColors=&amp;amp;quot;Y&amp;amp;quot;/>&amp;amp;#xa;&amp;quot; filter=&amp;quot;&amp;quot; show=&amp;quot;&amp;amp;quot;all&amp;amp;quot;&amp;quot;/>&amp;#xa;&quot;/>" b_blob="" id="9" t_uuid_parent="document"/>
+  <row d_lastmodifdate="2012-11-17 15:47:13" t_name="SKGOPERATION_CONSOLIDATED_DEFAULT_PARAMETERS" i_tmp="0" t_value="&lt;parameters operationTable=&quot;v_operation_consolidated&quot; title=&quot;Sub operations&quot; modeInfoZone=&quot;0&quot; reconcilitorAmount=&quot;&quot; modeTemplate=&quot;N&quot; operationWhereClause=&quot;&quot; view=&quot;&amp;lt;!DOCTYPE SKGML>&amp;#xa;&amp;lt;parameters zoomPosition=&amp;quot;0&amp;quot; columnsVisibility=&amp;quot;Y;Y;Y;Y;Y;Y;Y;Y;Y;Y;Y;N;N;N;N;N;N;N;N&amp;quot; columnsAutoResize=&amp;quot;Y&amp;quot; groupBy=&amp;quot;&amp;quot; sortColumn=&amp;quot;d_date&amp;quot; columns=&amp;quot;d_date;i_NBRECURRENT;t_bookmarked;t_ACCOUNT;i_number;t_mode;t_PAYEE;t_REALCOMMENT;t_REALCATEGORY;t_status;f_REALCURRENTAMOUNT;f_REALCURRENTAMOUNT_EXPENSE;f_REALCURRENTAMOUNT_INCOME;f_REALQUANTITY;f_REALQUANTITY_EXPENSE;f_REALQUANTITY_INCOME;t_imported;t_REALREFUND;f_BALANCE&amp;quot; sortOrder=&amp;quot;0&amp;quot; alternatingRowColors=&amp;quot;Y&amp;quot;/>&amp;#xa;&quot; filter=&quot;&quot; account=&quot;All&quot; hideUselessOperation=&quot;Y&quot; title_icon=&quot;split&quot; currentPage=&quot;0&quot;/>" b_blob="" id="10" t_uuid_parent="document"/>
+ </table>
+ <table name="node">
+  <row t_icon="go-home" t_data="&quot;Dashboard plugin&quot;;&quot;Dashboard&quot;;&quot;&lt;!DOCTYPE SKGML>&lt;parameters zoomPosition=&quot;&quot;0&quot;&quot;> &lt;ITEM-1 zoom=&quot;&quot;0&quot;&quot; index=&quot;&quot;0&quot;&quot; name=&quot;&quot;Skrooge bank plugin&quot;&quot; state=&quot;&quot;&amp;lt;!DOCTYPE SKGML>&amp;#xa;&amp;lt;parameters menuOther=&amp;quot;Y&amp;quot; menuCurrent=&amp;quot;Y&amp;quot; menuFavorite=&amp;quot;N&amp;quot; menuAssets=&amp;quot;Y&amp;quot; menuInvestment=&amp;quot;Y&amp;quot; menuCreditCard=&amp;quot;Y&amp;quot;/>&amp;#xa;&quot;&quot;/> &lt;ITEM-2 zoom=&quot;&quot;0&quot;&quot; index=&quot;&quot;0&quot;&quot; name=&quot;&quot;Skrooge operation plugin&quot;&quot; state=&quot;&quot;&amp;lt;!DOCTYPE SKGML>&amp;#xa;&amp;lt;parameters menuTransfert=&amp;quot;Y&amp;quot;/>&amp;#xa;&quot;&quot;/> &lt;ITEM-3 zoom=&quot;&quot;0&quot;&quot; index=&quot;&quot;1&quot;&quot; name=&quot;&quot;Skrooge operation plugin&quot;&quot; state=&quot;&quot;&quot;&quot;/> &lt;ITEM-4 zoom=&quot;&quot;0&quot;&quot; index=&quot;&quot;0&quot;&quot; name=&quot;&quot;Skrooge scheduled plugin&quot;&quot; state=&quot;&quot;&quot;&quot;/> &lt;ITEM-5 zoom=&quot;&quot;0&quot;&quot; index=&quot;&quot;0&quot;&quot; name=&quot;&quot;Skrooge search plugin&quot;&quot; state=&quot;&quot;&amp;lt;!DOCTYPE SKGML>&amp;#xa;&amp;lt;parameters menuFavorite=&amp;quot;N&amp;quot;/>&amp;#xa;&quot;&quot;/> &lt;ITEM-6 zoom=&quot;&quot;0&quot;&quot; index=&quot;&quot;0&quot;&quot; name=&quot;&quot;Skrooge unit plugin&quot;&quot; state=&quot;&quot;&amp;lt;!DOCTYPE SKGML>&amp;#xa;&amp;lt;parameters menuShares=&amp;quot;Y&amp;quot; menuSharesOwnedOnly=&amp;quot;N&amp;quot; menuIndexes=&amp;quot;Y&amp;quot;/>&amp;#xa;&quot;&quot;/> &lt;ITEM-7 zoom=&quot;&quot;0&quot;&quot; index=&quot;&quot;0&quot;&quot; name=&quot;&quot;Skrooge calculator plugin&quot;&quot; state=&quot;&quot;&quot;&quot;/>&lt;/parameters>&quot;" t_name="Dashboard" t_autostart="Y" f_sortorder="1" id="1" rd_node_id="" t_fullname="Dashboard"/>
+  <row t_icon="folder" t_data="" t_name="Report" t_autostart="N" f_sortorder="2" id="2" rd_node_id="" t_fullname="Report"/>
+  <row t_icon="view-investment" t_data="&quot;Skrooge report plugin&quot;;&quot;Rapport&quot;;&quot;&lt;!DOCTYPE SKGML>&lt;parameters  expenses=&quot;&quot;Y&quot;&quot; tableAndGraphState=&quot;&quot;&amp;lt;!DOCTYPE SKGML>&amp;#xa;&amp;lt;parameters graphMode=&amp;quot;1&amp;quot; graphicViewState=&amp;quot;&amp;amp;lt;!DOCTYPE SKGML>&amp;amp;#xa;&amp;amp;lt;parameters isToolBarVisible=&amp;amp;quot;Y&amp;amp;quot; antialiasing=&amp;amp;quot;Y&amp;amp;quot;/>&amp;amp;#xa;&amp;quot; splitterState=&amp;quot;000000ff00000000000000020000025b0000032901000000060100000001&amp;quot; bottomToolBarVisible=&amp;quot;Y&amp;quot; filter=&amp;quot;&amp;quot; legendVisible=&amp;quot;N&amp;quot; allPositive=&amp;quot;Y&amp;quot; linearRegressionVisible=&amp;quot;Y&amp;quot; sortColumn=&amp;quot;0&amp;quot; limitVisible=&amp;quot;Y&amp;quot; web=&amp;quot;&amp;amp;lt;!DOCTYPE SKGML>&amp;amp;#xa;&amp;amp;lt;parameters zoomFactor=&amp;amp;quot;0&amp;amp;quot;/>&amp;amp;#xa;&amp;quot; sortOrder=&amp;quot;0&amp;quot;/>&amp;#xa;&quot;&quot; mode=&quot;&quot;0&quot;&quot; period=&quot;&quot;3&quot;&quot; incomes=&quot;&quot;Y&quot;&quot; interval=&quot;&quot;2&quot;&quot; lines=&quot;&quot;t_TYPEEXPENSENLS&quot;&quot; lines2=&quot;&quot;#NOTHING#&quot;&quot; nbLevelLines=&quot;&quot;0&quot;&quot; nbLevelColumns=&quot;&quot;0&quot;&quot; forecast=&quot;&quot;0&quot;&quot; columns=&quot;&quot;d_DATEMONTH&quot;&quot; nb_intervals=&quot;&quot;12&quot;&quot; forecastValue=&quot;&quot;20&quot;&quot; transfers=&quot;&quot;N&quot;&quot; currentPage=&quot;&quot;0&quot;&quot;/>&quot;" t_name="Income vs Expenditure on 12 last months" t_autostart="N" f_sortorder="3" id="3" rd_node_id="2" t_fullname="Report > Income vs Expenditure on 12 last months"/>
+  <row t_icon="view-investment" t_data="&quot;Skrooge report plugin&quot;;&quot;Rapport&quot;;&quot;&lt;!DOCTYPE SKGML>&lt;parameters expenses=&quot;&quot;Y&quot;&quot; tableAndGraphState=&quot;&quot;&amp;lt;!DOCTYPE SKGML>&amp;#xa;&amp;lt;parameters graphMode=&amp;quot;2&amp;quot; graphicViewState=&amp;quot;&amp;amp;lt;!DOCTYPE SKGML>&amp;amp;#xa;&amp;amp;lt;parameters isToolBarVisible=&amp;amp;quot;Y&amp;amp;quot; antialiasing=&amp;amp;quot;Y&amp;amp;quot;/>&amp;amp;#xa;&amp;quot; splitterState=&amp;quot;000000ff00000000000000020000025b0000032901000000060100000001&amp;quot; bottomToolBarVisible=&amp;quot;Y&amp;quot; filter=&amp;quot;&amp;quot; legendVisible=&amp;quot;N&amp;quot; allPositive=&amp;quot;Y&amp;quot; linearRegressionVisible=&amp;quot;Y&amp;quot; sortColumn=&amp;quot;-1&amp;quot; limitVisible=&amp;quot;Y&amp;quot; web=&amp;quot;&amp;amp;lt;!DOCTYPE SKGML>&amp;amp;#xa;&amp;amp;lt;parameters zoomFactor=&amp;amp;quot;0&amp;amp;quot;/>&amp;amp;#xa;&amp;quot; sortOrder=&amp;quot;0&amp;quot;/>&amp;#xa;&quot;&quot; mode=&quot;&quot;0&quot;&quot; period=&quot;&quot;3&quot;&quot; incomes=&quot;&quot;Y&quot;&quot; interval=&quot;&quot;2&quot;&quot; lines=&quot;&quot;t_REALCATEGORY&quot;&quot; lines2=&quot;&quot;#NOTHING#&quot;&quot; nbLevelLines=&quot;&quot;0&quot;&quot; nbLevelColumns=&quot;&quot;0&quot;&quot; forecast=&quot;&quot;0&quot;&quot; columns=&quot;&quot;d_DATEMONTH&quot;&quot; nb_intervals=&quot;&quot;12&quot;&quot; forecastValue=&quot;&quot;20&quot;&quot; transfers=&quot;&quot;N&quot;&quot; currentPage=&quot;&quot;0&quot;&quot;/>&quot;" t_name="Pie categories in 12 last months" t_autostart="N" f_sortorder="4" id="4" rd_node_id="2" t_fullname="Report > Pie categories in 12 last months"/>
+  <row t_icon="view-investment" t_data="&quot;Skrooge report plugin&quot;;&quot;Rapport&quot;;&quot;&lt;!DOCTYPE SKGML>&lt;parameters expenses=&quot;&quot;Y&quot;&quot; tableAndGraphState=&quot;&quot;&amp;lt;!DOCTYPE SKGML>&amp;#xa;&amp;lt;parameters graphMode=&amp;quot;1&amp;quot; graphicViewState=&amp;quot;&amp;amp;lt;!DOCTYPE SKGML>&amp;amp;#xa;&amp;amp;lt;parameters isToolBarVisible=&amp;amp;quot;Y&amp;amp;quot; antialiasing=&amp;amp;quot;Y&amp;amp;quot;/>&amp;amp;#xa;&amp;quot; splitterState=&amp;quot;000000ff0000000000000002000002b50000032601000000060100000001&amp;quot; bottomToolBarVisible=&amp;quot;Y&amp;quot; filter=&amp;quot;&amp;quot; legendVisible=&amp;quot;N&amp;quot; allPositive=&amp;quot;N&amp;quot; linearRegressionVisible=&amp;quot;Y&amp;quot; sortColumn=&amp;quot;-1&amp;quot; limitVisible=&amp;quot;Y&amp;quot; web=&amp;quot;&amp;amp;lt;!DOCTYPE SKGML>&amp;amp;#xa;&amp;amp;lt;parameters zoomFactor=&amp;amp;quot;0&amp;amp;quot;/>&amp;amp;#xa;&amp;quot; sortOrder=&amp;quot;0&amp;quot;/>&amp;#xa;&quot;&quot; mode=&quot;&quot;1&quot;&quot; period=&quot;&quot;0&quot;&quot; incomes=&quot;&quot;Y&quot;&quot; interval=&quot;&quot;2&quot;&quot; lines=&quot;&quot;#NOTHING#&quot;&quot; lines2=&quot;&quot;#NOTHING#&quot;&quot; nbLevelLines=&quot;&quot;0&quot;&quot; nbLevelColumns=&quot;&quot;0&quot;&quot; forecast=&quot;&quot;0&quot;&quot; columns=&quot;&quot;d_DATEMONTH&quot;&quot; nb_intervals=&quot;&quot;1&quot;&quot; forecastValue=&quot;&quot;20&quot;&quot; transfers=&quot;&quot;Y&quot;&quot; currentPage=&quot;&quot;0&quot;&quot;/>&quot;" t_name="History" t_autostart="N" f_sortorder="5" id="5" rd_node_id="2" t_fullname="Report > History"/>
+ </table>
+ <table name="doctransaction">
+  <row i_parent="0" t_refreshviews="Y" t_name="Import standard bookmarks" d_date="2012-11-17 15:43:06" id="3" t_savestep="N" t_mode="U"/>
+  <row i_parent="3" t_refreshviews="Y" t_name="Import standard categories" d_date="2012-11-17 15:43:06" id="5" t_savestep="N" t_mode="U"/>
+  <row i_parent="5" t_refreshviews="Y" t_name="Create default unit" d_date="2012-11-17 15:43:06" id="6" t_savestep="N" t_mode="U"/>
+  <row i_parent="6" t_refreshviews="N" t_name="Save default state" d_date="2012-11-17 15:46:52" id="7" t_savestep="N" t_mode="U"/>
+  <row i_parent="7" t_refreshviews="N" t_name="Save default state" d_date="2012-11-17 15:47:13" id="8" t_savestep="Y" t_mode="U"/>
+  <row i_parent="8" t_refreshviews="Y" t_name="Export" d_date="2012-11-17 15:51:41" id="9" t_savestep="N" t_mode="U"/>
+ </table>
+ <table name="doctransactionitem">
+  <row t_object_table="node" t_sqlorder="DELETE FROM node WHERE id=1" id="3" rd_doctransaction_id="3" i_object_id="1" t_action="D"/>
+  <row t_object_table="node" t_sqlorder="UPDATE node SET id=1,t_name='Dashboard',t_fullname=NULL,t_icon='folder',f_sortorder=1.0,t_autostart='N',t_data=NULL,rd_node_id=NULL WHERE id=1" id="4" rd_doctransaction_id="3" i_object_id="1" t_action="U"/>
+  <row t_object_table="node" t_sqlorder="UPDATE node SET id=1,t_name='Dashboard',t_fullname='Dashboard',t_icon='folder',f_sortorder=1.0,t_autostart='N',t_data=NULL,rd_node_id=NULL WHERE id=1" id="5" rd_doctransaction_id="3" i_object_id="1" t_action="U"/>
+  <row t_object_table="node" t_sqlorder="UPDATE node SET id=1,t_name='Dashboard',t_fullname='Dashboard',t_icon='go-home',f_sortorder=1.0,t_autostart='Y',t_data='&quot;Dashboard plugin&quot;;&quot;Dashboard&quot;;&quot;&lt;!DOCTYPE SKGML>&lt;parameters zoomPosition=&quot;&quot;0&quot;&quot;> &lt;ITEM-1 zoom=&quot;&quot;0&quot;&quot; index=&quot;&quot;0&quot;&quot; name=&quot;&quot;Skrooge bank plugin&quot;&quot; state=&quot;&quot;&amp;lt;!DOCTYPE SKGML>&amp;#xa;&amp;lt;parameters menuOther=&amp;quot;Y&amp;quot; menuCurrent=&amp;quot;Y&amp;quot; menuFavorite=&amp;quot;N&amp;quot; menuAssets=&amp;quot;Y&amp;quot; menuInvestment=&amp;quot;Y&amp;quot; menuCreditCard=&amp;quot;Y&amp;quot;/>&amp;#xa;&quot;&quot;/> &lt;ITEM-2 zoom=&quot;&quot;0&quot;&quot; index=&quot;&quot;0&quot;&quot; name=&quot;&quot;Skrooge operation plugin&quot;&quot; state=&quot;&quot;&amp;lt;!DOCTYPE SKGML>&amp;#xa;&amp;lt;parameters menuTransfert=&amp;quot;Y&amp;quot;/>&amp;#xa;&quot;&quot;/> &lt;ITEM-3 zoom=&quot;&quot;0&quot;&quot; index=&quot;&quot;1&quot;&quot; name=&quot;&quot;Skrooge operation plugin&quot;&quot; state=&quot;&quot;&quot;&quot;/> &lt;ITEM-4 zoom=&quot;&quot;0&quot;&quot; index=&quot;&quot;0&quot;&quot; name=&quot;&quot;Skrooge scheduled plugin&quot;&quot; state=&quot;&quot;&quot;&quot;/> &lt;ITEM-5 zoom=&quot;&quot;0&quot;&quot; index=&quot;&quot;0&quot;&quot; name=&quot;&quot;Skrooge search plugin&quot;&quot; state=&quot;&quot;&amp;lt;!DOCTYPE SKGML>&amp;#xa;&amp;lt;parameters menuFavorite=&amp;quot;N&amp;quot;/>&amp;#xa;&quot;&quot;/> &lt;ITEM-6 zoom=&quot;&quot;0&quot;&quot; index=&quot;&quot;0&quot;&quot; name=&quot;&quot;Skrooge unit plugin&quot;&quot; state=&quot;&quot;&amp;lt;!DOCTYPE SKGML>&amp;#xa;&amp;lt;parameters menuShares=&amp;quot;Y&amp;quot; menuSharesOwnedOnly=&amp;quot;N&amp;quot; menuIndexes=&amp;quot;Y&amp;quot;/>&amp;#xa;&quot;&quot;/> &lt;ITEM-7 zoom=&quot;&quot;0&quot;&quot; index=&quot;&quot;0&quot;&quot; name=&quot;&quot;Skrooge calculator plugin&quot;&quot; state=&quot;&quot;&quot;&quot;/>&lt;/parameters>&quot;',rd_node_id='' WHERE id=1" id="6" rd_doctransaction_id="3" i_object_id="1" t_action="U"/>
+  <row t_object_table="node" t_sqlorder="DELETE FROM node WHERE id=2" id="7" rd_doctransaction_id="3" i_object_id="2" t_action="D"/>
+  <row t_object_table="node" t_sqlorder="UPDATE node SET id=2,t_name='Report',t_fullname=NULL,t_icon='folder',f_sortorder=2.0,t_autostart='N',t_data=NULL,rd_node_id=NULL WHERE id=2" id="8" rd_doctransaction_id="3" i_object_id="2" t_action="U"/>
+  <row t_object_table="node" t_sqlorder="DELETE FROM node WHERE id=3" id="9" rd_doctransaction_id="3" i_object_id="3" t_action="D"/>
+  <row t_object_table="node" t_sqlorder="UPDATE node SET id=3,t_name='Income vs Expenditure on 12 last months',t_fullname=NULL,t_icon='folder',f_sortorder=3.0,t_autostart='N',t_data=NULL,rd_node_id=2 WHERE id=3" id="10" rd_doctransaction_id="3" i_object_id="3" t_action="U"/>
+  <row t_object_table="node" t_sqlorder="UPDATE node SET id=3,t_name='Income vs Expenditure on 12 last months',t_fullname='Report > Income vs Expenditure on 12 last months',t_icon='folder',f_sortorder=3.0,t_autostart='N',t_data=NULL,rd_node_id=2 WHERE id=3" id="11" rd_doctransaction_id="3" i_object_id="3" t_action="U"/>
+  <row t_object_table="node" t_sqlorder="UPDATE node SET id=3,t_name='Income vs Expenditure on 12 last months',t_fullname='Report > Income vs Expenditure on 12 last months',t_icon='view-investment',f_sortorder=3.0,t_autostart='N',t_data='&quot;Skrooge report plugin&quot;;&quot;Rapport&quot;;&quot;&lt;!DOCTYPE SKGML>&lt;parameters  expenses=&quot;&quot;Y&quot;&quot; tableAndGraphState=&quot;&quot;&amp;lt;!DOCTYPE SKGML>&amp;#xa;&amp;lt;parameters graphMode=&amp;quot;1&amp;quot; graphicViewState=&amp;quot;&amp;amp;lt;!DOCTYPE SKGML>&amp;amp;#xa;&amp;amp;lt;parameters isToolBarVisible=&amp;amp;quot;Y&amp;amp;quot; antialiasing=&amp;amp;quot;Y&amp;amp;quot;/>&amp;amp;#xa;&amp;quot; splitterState=&amp;quot;000000ff00000000000000020000025b0000032901000000060100000001&amp;quot; bottomToolBarVisible=&amp;quot;Y&amp;quot; filter=&amp;quot;&amp;quot; legendVisible=&amp;quot;N&amp;quot; allPositive=&amp;quot;Y&amp;quot; linearRegressionVisible=&amp;quot;Y&amp;quot; sortColumn=&amp;quot;0&amp;quot; limitVisible=&amp;quot;Y&amp;quot; web=&amp;quot;&amp;amp;lt;!DOCTYPE SKGML>&amp;amp;#xa;&amp;amp;lt;parameters zoomFactor=&amp;amp;quot;0&amp;amp;quot;/>&amp;amp;#xa;&amp;quot; sortOrder=&amp;quot;0&amp;quot;/>&amp;#xa;&quot;&quot; mode=&quot;&quot;0&quot;&quot; period=&quot;&quot;3&quot;&quot; incomes=&quot;&quot;Y&quot;&quot; interval=&quot;&quot;2&quot;&quot; lines=&quot;&quot;t_TYPEEXPENSENLS&quot;&quot; lines2=&quot;&quot;#NOTHING#&quot;&quot; nbLevelLines=&quot;&quot;0&quot;&quot; nbLevelColumns=&quot;&quot;0&quot;&quot; forecast=&quot;&quot;0&quot;&quot; columns=&quot;&quot;d_DATEMONTH&quot;&quot; nb_intervals=&quot;&quot;12&quot;&quot; forecastValue=&quot;&quot;20&quot;&quot; transfers=&quot;&quot;N&quot;&quot; currentPage=&quot;&quot;0&quot;&quot;/>&quot;',rd_node_id=2 WHERE id=3" id="12" rd_doctransaction_id="3" i_object_id="3" t_action="U"/>
+  <row t_object_table="node" t_sqlorder="DELETE FROM node WHERE id=4" id="13" rd_doctransaction_id="3" i_object_id="4" t_action="D"/>
+  <row t_object_table="node" t_sqlorder="UPDATE node SET id=4,t_name='Pie categories in 12 last months',t_fullname=NULL,t_icon='folder',f_sortorder=4.0,t_autostart='N',t_data=NULL,rd_node_id=2 WHERE id=4" id="14" rd_doctransaction_id="3" i_object_id="4" t_action="U"/>
+  <row t_object_table="node" t_sqlorder="UPDATE node SET id=4,t_name='Pie categories in 12 last months',t_fullname='Report > Pie categories in 12 last months',t_icon='folder',f_sortorder=4.0,t_autostart='N',t_data=NULL,rd_node_id=2 WHERE id=4" id="15" rd_doctransaction_id="3" i_object_id="4" t_action="U"/>
+  <row t_object_table="node" t_sqlorder="UPDATE node SET id=4,t_name='Pie categories in 12 last months',t_fullname='Report > Pie categories in 12 last months',t_icon='view-investment',f_sortorder=4.0,t_autostart='N',t_data='&quot;Skrooge report plugin&quot;;&quot;Rapport&quot;;&quot;&lt;!DOCTYPE SKGML>&lt;parameters expenses=&quot;&quot;Y&quot;&quot; tableAndGraphState=&quot;&quot;&amp;lt;!DOCTYPE SKGML>&amp;#xa;&amp;lt;parameters graphMode=&amp;quot;2&amp;quot; graphicViewState=&amp;quot;&amp;amp;lt;!DOCTYPE SKGML>&amp;amp;#xa;&amp;amp;lt;parameters isToolBarVisible=&amp;amp;quot;Y&amp;amp;quot; antialiasing=&amp;amp;quot;Y&amp;amp;quot;/>&amp;amp;#xa;&amp;quot; splitterState=&amp;quot;000000ff00000000000000020000025b0000032901000000060100000001&amp;quot; bottomToolBarVisible=&amp;quot;Y&amp;quot; filter=&amp;quot;&amp;quot; legendVisible=&amp;quot;N&amp;quot; allPositive=&amp;quot;Y&amp;quot; linearRegressionVisible=&amp;quot;Y&amp;quot; sortColumn=&amp;quot;-1&amp;quot; limitVisible=&amp;quot;Y&amp;quot; web=&amp;quot;&amp;amp;lt;!DOCTYPE SKGML>&amp;amp;#xa;&amp;amp;lt;parameters zoomFactor=&amp;amp;quot;0&amp;amp;quot;/>&amp;amp;#xa;&amp;quot; sortOrder=&amp;quot;0&amp;quot;/>&amp;#xa;&quot;&quot; mode=&quot;&quot;0&quot;&quot; period=&quot;&quot;3&quot;&quot; incomes=&quot;&quot;Y&quot;&quot; interval=&quot;&quot;2&quot;&quot; lines=&quot;&quot;t_REALCATEGORY&quot;&quot; lines2=&quot;&quot;#NOTHING#&quot;&quot; nbLevelLines=&quot;&quot;0&quot;&quot; nbLevelColumns=&quot;&quot;0&quot;&quot; forecast=&quot;&quot;0&quot;&quot; columns=&quot;&quot;d_DATEMONTH&quot;&quot; nb_intervals=&quot;&quot;12&quot;&quot; forecastValue=&quot;&quot;20&quot;&quot; transfers=&quot;&quot;N&quot;&quot; currentPage=&quot;&quot;0&quot;&quot;/>&quot;',rd_node_id=2 WHERE id=4" id="16" rd_doctransaction_id="3" i_object_id="4" t_action="U"/>
+  <row t_object_table="node" t_sqlorder="DELETE FROM node WHERE id=5" id="17" rd_doctransaction_id="3" i_object_id="5" t_action="D"/>
+  <row t_object_table="node" t_sqlorder="UPDATE node SET id=5,t_name='History',t_fullname=NULL,t_icon='folder',f_sortorder=5.0,t_autostart='N',t_data=NULL,rd_node_id=2 WHERE id=5" id="18" rd_doctransaction_id="3" i_object_id="5" t_action="U"/>
+  <row t_object_table="node" t_sqlorder="UPDATE node SET id=5,t_name='History',t_fullname='Report > History',t_icon='folder',f_sortorder=5.0,t_autostart='N',t_data=NULL,rd_node_id=2 WHERE id=5" id="19" rd_doctransaction_id="3" i_object_id="5" t_action="U"/>
+  <row t_object_table="node" t_sqlorder="UPDATE node SET id=5,t_name='History',t_fullname='Report > History',t_icon='view-investment',f_sortorder=5.0,t_autostart='N',t_data='&quot;Skrooge report plugin&quot;;&quot;Rapport&quot;;&quot;&lt;!DOCTYPE SKGML>&lt;parameters expenses=&quot;&quot;Y&quot;&quot; tableAndGraphState=&quot;&quot;&amp;lt;!DOCTYPE SKGML>&amp;#xa;&amp;lt;parameters graphMode=&amp;quot;1&amp;quot; graphicViewState=&amp;quot;&amp;amp;lt;!DOCTYPE SKGML>&amp;amp;#xa;&amp;amp;lt;parameters isToolBarVisible=&amp;amp;quot;Y&amp;amp;quot; antialiasing=&amp;amp;quot;Y&amp;amp;quot;/>&amp;amp;#xa;&amp;quot; splitterState=&amp;quot;000000ff0000000000000002000002b50000032601000000060100000001&amp;quot; bottomToolBarVisible=&amp;quot;Y&amp;quot; filter=&amp;quot;&amp;quot; legendVisible=&amp;quot;N&amp;quot; allPositive=&amp;quot;N&amp;quot; linearRegressionVisible=&amp;quot;Y&amp;quot; sortColumn=&amp;quot;-1&amp;quot; limitVisible=&amp;quot;Y&amp;quot; web=&amp;quot;&amp;amp;lt;!DOCTYPE SKGML>&amp;amp;#xa;&amp;amp;lt;parameters zoomFactor=&amp;amp;quot;0&amp;amp;quot;/>&amp;amp;#xa;&amp;quot; sortOrder=&amp;quot;0&amp;quot;/>&amp;#xa;&quot;&quot; mode=&quot;&quot;1&quot;&quot; period=&quot;&quot;0&quot;&quot; incomes=&quot;&quot;Y&quot;&quot; interval=&quot;&quot;2&quot;&quot; lines=&quot;&quot;#NOTHING#&quot;&quot; lines2=&quot;&quot;#NOTHING#&quot;&quot; nbLevelLines=&quot;&quot;0&quot;&quot; nbLevelColumns=&quot;&quot;0&quot;&quot; forecast=&quot;&quot;0&quot;&quot; columns=&quot;&quot;d_DATEMONTH&quot;&quot; nb_intervals=&quot;&quot;1&quot;&quot; forecastValue=&quot;&quot;20&quot;&quot; transfers=&quot;&quot;Y&quot;&quot; currentPage=&quot;&quot;0&quot;&quot;/>&quot;',rd_node_id=2 WHERE id=5" id="20" rd_doctransaction_id="3" i_object_id="5" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=1" id="21" rd_doctransaction_id="5" i_object_id="1" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=1,t_name='Alimony',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=1" id="22" rd_doctransaction_id="5" i_object_id="1" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=2" id="23" rd_doctransaction_id="5" i_object_id="2" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=2,t_name='Auto',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=2" id="24" rd_doctransaction_id="5" i_object_id="2" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=3" id="25" rd_doctransaction_id="5" i_object_id="3" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=3,t_name='Fuel',t_fullname=NULL,rd_category_id=2,t_bookmarked='N' WHERE id=3" id="26" rd_doctransaction_id="5" i_object_id="3" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=4" id="27" rd_doctransaction_id="5" i_object_id="4" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=4,t_name='Insurance',t_fullname=NULL,rd_category_id=2,t_bookmarked='N' WHERE id=4" id="28" rd_doctransaction_id="5" i_object_id="4" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=5" id="29" rd_doctransaction_id="5" i_object_id="5" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=5,t_name='Lease',t_fullname=NULL,rd_category_id=2,t_bookmarked='N' WHERE id=5" id="30" rd_doctransaction_id="5" i_object_id="5" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=6" id="31" rd_doctransaction_id="5" i_object_id="6" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=6,t_name='Loan',t_fullname=NULL,rd_category_id=2,t_bookmarked='N' WHERE id=6" id="32" rd_doctransaction_id="5" i_object_id="6" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=7" id="33" rd_doctransaction_id="5" i_object_id="7" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=7,t_name='Registration',t_fullname=NULL,rd_category_id=2,t_bookmarked='N' WHERE id=7" id="34" rd_doctransaction_id="5" i_object_id="7" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=8" id="35" rd_doctransaction_id="5" i_object_id="8" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=8,t_name='Service',t_fullname=NULL,rd_category_id=2,t_bookmarked='N' WHERE id=8" id="36" rd_doctransaction_id="5" i_object_id="8" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=9" id="37" rd_doctransaction_id="5" i_object_id="9" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=9,t_name='Bank Charges',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=9" id="38" rd_doctransaction_id="5" i_object_id="9" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=10" id="39" rd_doctransaction_id="5" i_object_id="10" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=10,t_name='Interest Paid',t_fullname=NULL,rd_category_id=9,t_bookmarked='N' WHERE id=10" id="40" rd_doctransaction_id="5" i_object_id="10" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=11" id="41" rd_doctransaction_id="5" i_object_id="11" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=11,t_name='Service Charge',t_fullname=NULL,rd_category_id=9,t_bookmarked='N' WHERE id=11" id="42" rd_doctransaction_id="5" i_object_id="11" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=12" id="43" rd_doctransaction_id="5" i_object_id="12" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=12,t_name='Bills',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=12" id="44" rd_doctransaction_id="5" i_object_id="12" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=13" id="45" rd_doctransaction_id="5" i_object_id="13" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=13,t_name='Electricity',t_fullname=NULL,rd_category_id=12,t_bookmarked='N' WHERE id=13" id="46" rd_doctransaction_id="5" i_object_id="13" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=14" id="47" rd_doctransaction_id="5" i_object_id="14" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=14,t_name='Fuel Oil',t_fullname=NULL,rd_category_id=12,t_bookmarked='N' WHERE id=14" id="48" rd_doctransaction_id="5" i_object_id="14" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=15" id="49" rd_doctransaction_id="5" i_object_id="15" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=15,t_name='Local Taxes',t_fullname=NULL,rd_category_id=12,t_bookmarked='N' WHERE id=15" id="50" rd_doctransaction_id="5" i_object_id="15" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=16" id="51" rd_doctransaction_id="5" i_object_id="16" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=16,t_name='Mortgage',t_fullname=NULL,rd_category_id=12,t_bookmarked='N' WHERE id=16" id="52" rd_doctransaction_id="5" i_object_id="16" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=17" id="53" rd_doctransaction_id="5" i_object_id="17" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=17,t_name='Natural Gas',t_fullname=NULL,rd_category_id=12,t_bookmarked='N' WHERE id=17" id="54" rd_doctransaction_id="5" i_object_id="17" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=18" id="55" rd_doctransaction_id="5" i_object_id="18" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=18,t_name='Rent',t_fullname=NULL,rd_category_id=12,t_bookmarked='N' WHERE id=18" id="56" rd_doctransaction_id="5" i_object_id="18" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=19" id="57" rd_doctransaction_id="5" i_object_id="19" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=19,t_name='TV',t_fullname=NULL,rd_category_id=12,t_bookmarked='N' WHERE id=19" id="58" rd_doctransaction_id="5" i_object_id="19" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=20" id="59" rd_doctransaction_id="5" i_object_id="20" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=20,t_name='Telephone',t_fullname=NULL,rd_category_id=12,t_bookmarked='N' WHERE id=20" id="60" rd_doctransaction_id="5" i_object_id="20" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=21" id="61" rd_doctransaction_id="5" i_object_id="21" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=21,t_name='Water &amp; Sewage',t_fullname=NULL,rd_category_id=12,t_bookmarked='N' WHERE id=21" id="62" rd_doctransaction_id="5" i_object_id="21" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=22" id="63" rd_doctransaction_id="5" i_object_id="22" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=22,t_name='Bonus',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=22" id="64" rd_doctransaction_id="5" i_object_id="22" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=23" id="65" rd_doctransaction_id="5" i_object_id="23" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=23,t_name='Business',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=23" id="66" rd_doctransaction_id="5" i_object_id="23" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=24" id="67" rd_doctransaction_id="5" i_object_id="24" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=24,t_name='Auto',t_fullname=NULL,rd_category_id=23,t_bookmarked='N' WHERE id=24" id="68" rd_doctransaction_id="5" i_object_id="24" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=25" id="69" rd_doctransaction_id="5" i_object_id="25" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=25,t_name='Capital Goods',t_fullname=NULL,rd_category_id=23,t_bookmarked='N' WHERE id=25" id="70" rd_doctransaction_id="5" i_object_id="25" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=26" id="71" rd_doctransaction_id="5" i_object_id="26" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=26,t_name='Legal Expenses',t_fullname=NULL,rd_category_id=23,t_bookmarked='N' WHERE id=26" id="72" rd_doctransaction_id="5" i_object_id="26" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=27" id="73" rd_doctransaction_id="5" i_object_id="27" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=27,t_name='Office Rent',t_fullname=NULL,rd_category_id=23,t_bookmarked='N' WHERE id=27" id="74" rd_doctransaction_id="5" i_object_id="27" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=28" id="75" rd_doctransaction_id="5" i_object_id="28" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=28,t_name='Office Supplies',t_fullname=NULL,rd_category_id=23,t_bookmarked='N' WHERE id=28" id="76" rd_doctransaction_id="5" i_object_id="28" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=29" id="77" rd_doctransaction_id="5" i_object_id="29" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=29,t_name='Other',t_fullname=NULL,rd_category_id=23,t_bookmarked='N' WHERE id=29" id="78" rd_doctransaction_id="5" i_object_id="29" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=30" id="79" rd_doctransaction_id="5" i_object_id="30" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=30,t_name='Revenue',t_fullname=NULL,rd_category_id=23,t_bookmarked='N' WHERE id=30" id="80" rd_doctransaction_id="5" i_object_id="30" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=31" id="81" rd_doctransaction_id="5" i_object_id="31" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=31,t_name='Taxes',t_fullname=NULL,rd_category_id=23,t_bookmarked='N' WHERE id=31" id="82" rd_doctransaction_id="5" i_object_id="31" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=32" id="83" rd_doctransaction_id="5" i_object_id="32" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=32,t_name='Travel',t_fullname=NULL,rd_category_id=23,t_bookmarked='N' WHERE id=32" id="84" rd_doctransaction_id="5" i_object_id="32" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=33" id="85" rd_doctransaction_id="5" i_object_id="33" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=33,t_name='Utilities',t_fullname=NULL,rd_category_id=23,t_bookmarked='N' WHERE id=33" id="86" rd_doctransaction_id="5" i_object_id="33" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=34" id="87" rd_doctransaction_id="5" i_object_id="34" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=34,t_name='Wages &amp; Salary',t_fullname=NULL,rd_category_id=23,t_bookmarked='N' WHERE id=34" id="88" rd_doctransaction_id="5" i_object_id="34" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=35" id="89" rd_doctransaction_id="5" i_object_id="35" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=35,t_name='Car',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=35" id="90" rd_doctransaction_id="5" i_object_id="35" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=36" id="91" rd_doctransaction_id="5" i_object_id="36" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=36,t_name='Fuel',t_fullname=NULL,rd_category_id=35,t_bookmarked='N' WHERE id=36" id="92" rd_doctransaction_id="5" i_object_id="36" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=37" id="93" rd_doctransaction_id="5" i_object_id="37" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=37,t_name='Insurance',t_fullname=NULL,rd_category_id=35,t_bookmarked='N' WHERE id=37" id="94" rd_doctransaction_id="5" i_object_id="37" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=38" id="95" rd_doctransaction_id="5" i_object_id="38" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=38,t_name='Lease',t_fullname=NULL,rd_category_id=35,t_bookmarked='N' WHERE id=38" id="96" rd_doctransaction_id="5" i_object_id="38" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=39" id="97" rd_doctransaction_id="5" i_object_id="39" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=39,t_name='Loan',t_fullname=NULL,rd_category_id=35,t_bookmarked='N' WHERE id=39" id="98" rd_doctransaction_id="5" i_object_id="39" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=40" id="99" rd_doctransaction_id="5" i_object_id="40" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=40,t_name='Registration',t_fullname=NULL,rd_category_id=35,t_bookmarked='N' WHERE id=40" id="100" rd_doctransaction_id="5" i_object_id="40" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=41" id="101" rd_doctransaction_id="5" i_object_id="41" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=41,t_name='Service',t_fullname=NULL,rd_category_id=35,t_bookmarked='N' WHERE id=41" id="102" rd_doctransaction_id="5" i_object_id="41" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=42" id="103" rd_doctransaction_id="5" i_object_id="42" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=42,t_name='Cash Withdrawal',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=42" id="104" rd_doctransaction_id="5" i_object_id="42" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=43" id="105" rd_doctransaction_id="5" i_object_id="43" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=43,t_name='Charity',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=43" id="106" rd_doctransaction_id="5" i_object_id="43" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=44" id="107" rd_doctransaction_id="5" i_object_id="44" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=44,t_name='Donations',t_fullname=NULL,rd_category_id=43,t_bookmarked='N' WHERE id=44" id="108" rd_doctransaction_id="5" i_object_id="44" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=45" id="109" rd_doctransaction_id="5" i_object_id="45" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=45,t_name='Child Care',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=45" id="110" rd_doctransaction_id="5" i_object_id="45" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=46" id="111" rd_doctransaction_id="5" i_object_id="46" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=46,t_name='Child Support',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=46" id="112" rd_doctransaction_id="5" i_object_id="46" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=47" id="113" rd_doctransaction_id="5" i_object_id="47" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=47,t_name='Clothing',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=47" id="114" rd_doctransaction_id="5" i_object_id="47" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=48" id="115" rd_doctransaction_id="5" i_object_id="48" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=48,t_name='Disability',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=48" id="116" rd_doctransaction_id="5" i_object_id="48" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=49" id="117" rd_doctransaction_id="5" i_object_id="49" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=49,t_name='Div Income',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=49" id="118" rd_doctransaction_id="5" i_object_id="49" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=50" id="119" rd_doctransaction_id="5" i_object_id="50" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=50,t_name='Ord dividend',t_fullname=NULL,rd_category_id=49,t_bookmarked='N' WHERE id=50" id="120" rd_doctransaction_id="5" i_object_id="50" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=51" id="121" rd_doctransaction_id="5" i_object_id="51" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=51,t_name='Stock dividend',t_fullname=NULL,rd_category_id=49,t_bookmarked='N' WHERE id=51" id="122" rd_doctransaction_id="5" i_object_id="51" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=52" id="123" rd_doctransaction_id="5" i_object_id="52" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=52,t_name='Education',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=52" id="124" rd_doctransaction_id="5" i_object_id="52" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=53" id="125" rd_doctransaction_id="5" i_object_id="53" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=53,t_name='Board',t_fullname=NULL,rd_category_id=52,t_bookmarked='N' WHERE id=53" id="126" rd_doctransaction_id="5" i_object_id="53" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=54" id="127" rd_doctransaction_id="5" i_object_id="54" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=54,t_name='Books',t_fullname=NULL,rd_category_id=52,t_bookmarked='N' WHERE id=54" id="128" rd_doctransaction_id="5" i_object_id="54" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=55" id="129" rd_doctransaction_id="5" i_object_id="55" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=55,t_name='Fees',t_fullname=NULL,rd_category_id=52,t_bookmarked='N' WHERE id=55" id="130" rd_doctransaction_id="5" i_object_id="55" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=56" id="131" rd_doctransaction_id="5" i_object_id="56" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=56,t_name='Loans',t_fullname=NULL,rd_category_id=52,t_bookmarked='N' WHERE id=56" id="132" rd_doctransaction_id="5" i_object_id="56" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=57" id="133" rd_doctransaction_id="5" i_object_id="57" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=57,t_name='Tuition',t_fullname=NULL,rd_category_id=52,t_bookmarked='N' WHERE id=57" id="134" rd_doctransaction_id="5" i_object_id="57" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=58" id="135" rd_doctransaction_id="5" i_object_id="58" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=58,t_name='Employment',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=58" id="136" rd_doctransaction_id="5" i_object_id="58" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=59" id="137" rd_doctransaction_id="5" i_object_id="59" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=59,t_name='Benefits',t_fullname=NULL,rd_category_id=58,t_bookmarked='N' WHERE id=59" id="138" rd_doctransaction_id="5" i_object_id="59" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=60" id="139" rd_doctransaction_id="5" i_object_id="60" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=60,t_name='Foreign',t_fullname=NULL,rd_category_id=58,t_bookmarked='N' WHERE id=60" id="140" rd_doctransaction_id="5" i_object_id="60" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=61" id="141" rd_doctransaction_id="5" i_object_id="61" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=61,t_name='Lump sums',t_fullname=NULL,rd_category_id=58,t_bookmarked='N' WHERE id=61" id="142" rd_doctransaction_id="5" i_object_id="61" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=62" id="143" rd_doctransaction_id="5" i_object_id="62" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=62,t_name='Other employ',t_fullname=NULL,rd_category_id=58,t_bookmarked='N' WHERE id=62" id="144" rd_doctransaction_id="5" i_object_id="62" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=63" id="145" rd_doctransaction_id="5" i_object_id="63" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=63,t_name='Salary &amp; wages',t_fullname=NULL,rd_category_id=58,t_bookmarked='N' WHERE id=63" id="146" rd_doctransaction_id="5" i_object_id="63" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=64" id="147" rd_doctransaction_id="5" i_object_id="64" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=64,t_name='Food',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=64" id="148" rd_doctransaction_id="5" i_object_id="64" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=65" id="149" rd_doctransaction_id="5" i_object_id="65" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=65,t_name='Dining Out',t_fullname=NULL,rd_category_id=64,t_bookmarked='N' WHERE id=65" id="150" rd_doctransaction_id="5" i_object_id="65" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=66" id="151" rd_doctransaction_id="5" i_object_id="66" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=66,t_name='Groceries',t_fullname=NULL,rd_category_id=64,t_bookmarked='N' WHERE id=66" id="152" rd_doctransaction_id="5" i_object_id="66" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=67" id="153" rd_doctransaction_id="5" i_object_id="67" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=67,t_name='Gardening',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=67" id="154" rd_doctransaction_id="5" i_object_id="67" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=68" id="155" rd_doctransaction_id="5" i_object_id="68" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=68,t_name='Gift Received',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=68" id="156" rd_doctransaction_id="5" i_object_id="68" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=69" id="157" rd_doctransaction_id="5" i_object_id="69" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=69,t_name='Gifts',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=69" id="158" rd_doctransaction_id="5" i_object_id="69" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=70" id="159" rd_doctransaction_id="5" i_object_id="70" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=70,t_name='Healthcare',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=70" id="160" rd_doctransaction_id="5" i_object_id="70" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=71" id="161" rd_doctransaction_id="5" i_object_id="71" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=71,t_name='Dental',t_fullname=NULL,rd_category_id=70,t_bookmarked='N' WHERE id=71" id="162" rd_doctransaction_id="5" i_object_id="71" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=72" id="163" rd_doctransaction_id="5" i_object_id="72" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=72,t_name='Doctor',t_fullname=NULL,rd_category_id=70,t_bookmarked='N' WHERE id=72" id="164" rd_doctransaction_id="5" i_object_id="72" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=73" id="165" rd_doctransaction_id="5" i_object_id="73" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=73,t_name='Hospital',t_fullname=NULL,rd_category_id=70,t_bookmarked='N' WHERE id=73" id="166" rd_doctransaction_id="5" i_object_id="73" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=74" id="167" rd_doctransaction_id="5" i_object_id="74" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=74,t_name='Optician',t_fullname=NULL,rd_category_id=70,t_bookmarked='N' WHERE id=74" id="168" rd_doctransaction_id="5" i_object_id="74" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=75" id="169" rd_doctransaction_id="5" i_object_id="75" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=75,t_name='Prescriptions',t_fullname=NULL,rd_category_id=70,t_bookmarked='N' WHERE id=75" id="170" rd_doctransaction_id="5" i_object_id="75" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=76" id="171" rd_doctransaction_id="5" i_object_id="76" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=76,t_name='Holidays',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=76" id="172" rd_doctransaction_id="5" i_object_id="76" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=77" id="173" rd_doctransaction_id="5" i_object_id="77" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=77,t_name='Accomodation',t_fullname=NULL,rd_category_id=76,t_bookmarked='N' WHERE id=77" id="174" rd_doctransaction_id="5" i_object_id="77" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=78" id="175" rd_doctransaction_id="5" i_object_id="78" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=78,t_name='Travel',t_fullname=NULL,rd_category_id=76,t_bookmarked='N' WHERE id=78" id="176" rd_doctransaction_id="5" i_object_id="78" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=79" id="177" rd_doctransaction_id="5" i_object_id="79" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=79,t_name='Household',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=79" id="178" rd_doctransaction_id="5" i_object_id="79" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=80" id="179" rd_doctransaction_id="5" i_object_id="80" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=80,t_name='Furnishings',t_fullname=NULL,rd_category_id=79,t_bookmarked='N' WHERE id=80" id="180" rd_doctransaction_id="5" i_object_id="80" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=81" id="181" rd_doctransaction_id="5" i_object_id="81" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=81,t_name='Repairs',t_fullname=NULL,rd_category_id=79,t_bookmarked='N' WHERE id=81" id="182" rd_doctransaction_id="5" i_object_id="81" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=82" id="183" rd_doctransaction_id="5" i_object_id="82" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=82,t_name='Insurance',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=82" id="184" rd_doctransaction_id="5" i_object_id="82" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=83" id="185" rd_doctransaction_id="5" i_object_id="83" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=83,t_name='Auto',t_fullname=NULL,rd_category_id=82,t_bookmarked='N' WHERE id=83" id="186" rd_doctransaction_id="5" i_object_id="83" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=84" id="187" rd_doctransaction_id="5" i_object_id="84" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=84,t_name='Disability',t_fullname=NULL,rd_category_id=82,t_bookmarked='N' WHERE id=84" id="188" rd_doctransaction_id="5" i_object_id="84" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=85" id="189" rd_doctransaction_id="5" i_object_id="85" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=85,t_name='Home and Contents',t_fullname=NULL,rd_category_id=82,t_bookmarked='N' WHERE id=85" id="190" rd_doctransaction_id="5" i_object_id="85" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=86" id="191" rd_doctransaction_id="5" i_object_id="86" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=86,t_name='Life',t_fullname=NULL,rd_category_id=82,t_bookmarked='N' WHERE id=86" id="192" rd_doctransaction_id="5" i_object_id="86" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=87" id="193" rd_doctransaction_id="5" i_object_id="87" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=87,t_name='Medical',t_fullname=NULL,rd_category_id=82,t_bookmarked='N' WHERE id=87" id="194" rd_doctransaction_id="5" i_object_id="87" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=88" id="195" rd_doctransaction_id="5" i_object_id="88" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=88,t_name='Int Inc',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=88" id="196" rd_doctransaction_id="5" i_object_id="88" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=89" id="197" rd_doctransaction_id="5" i_object_id="89" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=89,t_name='Bank Interest',t_fullname=NULL,rd_category_id=88,t_bookmarked='N' WHERE id=89" id="198" rd_doctransaction_id="5" i_object_id="89" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=90" id="199" rd_doctransaction_id="5" i_object_id="90" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=90,t_name='Gross',t_fullname=NULL,rd_category_id=88,t_bookmarked='N' WHERE id=90" id="200" rd_doctransaction_id="5" i_object_id="90" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=91" id="201" rd_doctransaction_id="5" i_object_id="91" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=91,t_name='Net',t_fullname=NULL,rd_category_id=88,t_bookmarked='N' WHERE id=91" id="202" rd_doctransaction_id="5" i_object_id="91" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=92" id="203" rd_doctransaction_id="5" i_object_id="92" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=92,t_name='Other savings',t_fullname=NULL,rd_category_id=88,t_bookmarked='N' WHERE id=92" id="204" rd_doctransaction_id="5" i_object_id="92" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=93" id="205" rd_doctransaction_id="5" i_object_id="93" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=93,t_name='Invest. income',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=93" id="206" rd_doctransaction_id="5" i_object_id="93" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=94" id="207" rd_doctransaction_id="5" i_object_id="94" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=94,t_name='1st option',t_fullname=NULL,rd_category_id=93,t_bookmarked='N' WHERE id=94" id="208" rd_doctransaction_id="5" i_object_id="94" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=95" id="209" rd_doctransaction_id="5" i_object_id="95" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=95,t_name='Dividend',t_fullname=NULL,rd_category_id=93,t_bookmarked='N' WHERE id=95" id="210" rd_doctransaction_id="5" i_object_id="95" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=96" id="211" rd_doctransaction_id="5" i_object_id="96" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=96,t_name='Foreign',t_fullname=NULL,rd_category_id=93,t_bookmarked='N' WHERE id=96" id="212" rd_doctransaction_id="5" i_object_id="96" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=97" id="213" rd_doctransaction_id="5" i_object_id="97" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=97,t_name='Other savings',t_fullname=NULL,rd_category_id=93,t_bookmarked='N' WHERE id=97" id="214" rd_doctransaction_id="5" i_object_id="97" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=98" id="215" rd_doctransaction_id="5" i_object_id="98" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=98,t_name='Other trusts',t_fullname=NULL,rd_category_id=93,t_bookmarked='N' WHERE id=98" id="216" rd_doctransaction_id="5" i_object_id="98" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=99" id="217" rd_doctransaction_id="5" i_object_id="99" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=99,t_name='Other trusts#Capital',t_fullname=NULL,rd_category_id=93,t_bookmarked='N' WHERE id=99" id="218" rd_doctransaction_id="5" i_object_id="99" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=100" id="219" rd_doctransaction_id="5" i_object_id="100" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=100,t_name='Other trusts#Dist. rec''d',t_fullname=NULL,rd_category_id=93,t_bookmarked='N' WHERE id=100" id="220" rd_doctransaction_id="5" i_object_id="100" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=101" id="221" rd_doctransaction_id="5" i_object_id="101" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=101,t_name='Other trusts#Estate',t_fullname=NULL,rd_category_id=93,t_bookmarked='N' WHERE id=101" id="222" rd_doctransaction_id="5" i_object_id="101" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=102" id="223" rd_doctransaction_id="5" i_object_id="102" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=102,t_name='Investment Income',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=102" id="224" rd_doctransaction_id="5" i_object_id="102" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=103" id="225" rd_doctransaction_id="5" i_object_id="103" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=103,t_name='Dividends',t_fullname=NULL,rd_category_id=102,t_bookmarked='N' WHERE id=103" id="226" rd_doctransaction_id="5" i_object_id="103" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=104" id="227" rd_doctransaction_id="5" i_object_id="104" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=104,t_name='Interest',t_fullname=NULL,rd_category_id=102,t_bookmarked='N' WHERE id=104" id="228" rd_doctransaction_id="5" i_object_id="104" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=105" id="229" rd_doctransaction_id="5" i_object_id="105" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=105,t_name='Long-Term Capital Gains',t_fullname=NULL,rd_category_id=102,t_bookmarked='N' WHERE id=105" id="230" rd_doctransaction_id="5" i_object_id="105" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=106" id="231" rd_doctransaction_id="5" i_object_id="106" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=106,t_name='Short-Term Capital Gains',t_fullname=NULL,rd_category_id=102,t_bookmarked='N' WHERE id=106" id="232" rd_doctransaction_id="5" i_object_id="106" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=107" id="233" rd_doctransaction_id="5" i_object_id="107" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=107,t_name='Tax-Exempt Interest',t_fullname=NULL,rd_category_id=102,t_bookmarked='N' WHERE id=107" id="234" rd_doctransaction_id="5" i_object_id="107" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=108" id="235" rd_doctransaction_id="5" i_object_id="108" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=108,t_name='Job Expense',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=108" id="236" rd_doctransaction_id="5" i_object_id="108" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=109" id="237" rd_doctransaction_id="5" i_object_id="109" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=109,t_name='Non-Reimbursed',t_fullname=NULL,rd_category_id=108,t_bookmarked='N' WHERE id=109" id="238" rd_doctransaction_id="5" i_object_id="109" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=110" id="239" rd_doctransaction_id="5" i_object_id="110" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=110,t_name='Reimbursed',t_fullname=NULL,rd_category_id=108,t_bookmarked='N' WHERE id=110" id="240" rd_doctransaction_id="5" i_object_id="110" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=111" id="241" rd_doctransaction_id="5" i_object_id="111" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=111,t_name='Legal Fees',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=111" id="242" rd_doctransaction_id="5" i_object_id="111" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=112" id="243" rd_doctransaction_id="5" i_object_id="112" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=112,t_name='Leisure',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=112" id="244" rd_doctransaction_id="5" i_object_id="112" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=113" id="245" rd_doctransaction_id="5" i_object_id="113" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=113,t_name='Books &amp; Magazines',t_fullname=NULL,rd_category_id=112,t_bookmarked='N' WHERE id=113" id="246" rd_doctransaction_id="5" i_object_id="113" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=114" id="247" rd_doctransaction_id="5" i_object_id="114" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=114,t_name='Entertaining',t_fullname=NULL,rd_category_id=112,t_bookmarked='N' WHERE id=114" id="248" rd_doctransaction_id="5" i_object_id="114" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=115" id="249" rd_doctransaction_id="5" i_object_id="115" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=115,t_name='Films &amp; Video Rentals',t_fullname=NULL,rd_category_id=112,t_bookmarked='N' WHERE id=115" id="250" rd_doctransaction_id="5" i_object_id="115" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=116" id="251" rd_doctransaction_id="5" i_object_id="116" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=116,t_name='Hobbies',t_fullname=NULL,rd_category_id=112,t_bookmarked='N' WHERE id=116" id="252" rd_doctransaction_id="5" i_object_id="116" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=117" id="253" rd_doctransaction_id="5" i_object_id="117" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=117,t_name='Sporting Events',t_fullname=NULL,rd_category_id=112,t_bookmarked='N' WHERE id=117" id="254" rd_doctransaction_id="5" i_object_id="117" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=118" id="255" rd_doctransaction_id="5" i_object_id="118" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=118,t_name='Sports Goods',t_fullname=NULL,rd_category_id=112,t_bookmarked='N' WHERE id=118" id="256" rd_doctransaction_id="5" i_object_id="118" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=119" id="257" rd_doctransaction_id="5" i_object_id="119" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=119,t_name='Tapes &amp; CDs',t_fullname=NULL,rd_category_id=112,t_bookmarked='N' WHERE id=119" id="258" rd_doctransaction_id="5" i_object_id="119" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=120" id="259" rd_doctransaction_id="5" i_object_id="120" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=120,t_name='Theatre &amp; Concerts etc',t_fullname=NULL,rd_category_id=112,t_bookmarked='N' WHERE id=120" id="260" rd_doctransaction_id="5" i_object_id="120" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=121" id="261" rd_doctransaction_id="5" i_object_id="121" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=121,t_name='Toys &amp; Games',t_fullname=NULL,rd_category_id=112,t_bookmarked='N' WHERE id=121" id="262" rd_doctransaction_id="5" i_object_id="121" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=122" id="263" rd_doctransaction_id="5" i_object_id="122" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=122,t_name='Loan',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=122" id="264" rd_doctransaction_id="5" i_object_id="122" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=123" id="265" rd_doctransaction_id="5" i_object_id="123" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=123,t_name='Loan Interest',t_fullname=NULL,rd_category_id=122,t_bookmarked='N' WHERE id=123" id="266" rd_doctransaction_id="5" i_object_id="123" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=124" id="267" rd_doctransaction_id="5" i_object_id="124" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=124,t_name='Long-Term Capital gains',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=124" id="268" rd_doctransaction_id="5" i_object_id="124" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=125" id="269" rd_doctransaction_id="5" i_object_id="125" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=125,t_name='Mortgage',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=125" id="270" rd_doctransaction_id="5" i_object_id="125" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=126" id="271" rd_doctransaction_id="5" i_object_id="126" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=126,t_name='Interest',t_fullname=NULL,rd_category_id=125,t_bookmarked='N' WHERE id=126" id="272" rd_doctransaction_id="5" i_object_id="126" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=127" id="273" rd_doctransaction_id="5" i_object_id="127" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=127,t_name='PMI',t_fullname=NULL,rd_category_id=125,t_bookmarked='N' WHERE id=127" id="274" rd_doctransaction_id="5" i_object_id="127" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=128" id="275" rd_doctransaction_id="5" i_object_id="128" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=128,t_name='Principle',t_fullname=NULL,rd_category_id=125,t_bookmarked='N' WHERE id=128" id="276" rd_doctransaction_id="5" i_object_id="128" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=129" id="277" rd_doctransaction_id="5" i_object_id="129" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=129,t_name='Motor',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=129" id="278" rd_doctransaction_id="5" i_object_id="129" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=130" id="279" rd_doctransaction_id="5" i_object_id="130" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=130,t_name='Fuel',t_fullname=NULL,rd_category_id=129,t_bookmarked='N' WHERE id=130" id="280" rd_doctransaction_id="5" i_object_id="130" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=131" id="281" rd_doctransaction_id="5" i_object_id="131" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=131,t_name='Loan',t_fullname=NULL,rd_category_id=129,t_bookmarked='N' WHERE id=131" id="282" rd_doctransaction_id="5" i_object_id="131" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=132" id="283" rd_doctransaction_id="5" i_object_id="132" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=132,t_name='Service',t_fullname=NULL,rd_category_id=129,t_bookmarked='N' WHERE id=132" id="284" rd_doctransaction_id="5" i_object_id="132" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=133" id="285" rd_doctransaction_id="5" i_object_id="133" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=133,t_name='Other Expense',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=133" id="286" rd_doctransaction_id="5" i_object_id="133" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=134" id="287" rd_doctransaction_id="5" i_object_id="134" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=134,t_name='Unknown',t_fullname=NULL,rd_category_id=133,t_bookmarked='N' WHERE id=134" id="288" rd_doctransaction_id="5" i_object_id="134" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=135" id="289" rd_doctransaction_id="5" i_object_id="135" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=135,t_name='Other Income',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=135" id="290" rd_doctransaction_id="5" i_object_id="135" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=136" id="291" rd_doctransaction_id="5" i_object_id="136" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=136,t_name='Child Support',t_fullname=NULL,rd_category_id=135,t_bookmarked='N' WHERE id=136" id="292" rd_doctransaction_id="5" i_object_id="136" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=137" id="293" rd_doctransaction_id="5" i_object_id="137" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=137,t_name='Employee Share Option',t_fullname=NULL,rd_category_id=135,t_bookmarked='N' WHERE id=137" id="294" rd_doctransaction_id="5" i_object_id="137" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=138" id="295" rd_doctransaction_id="5" i_object_id="138" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=138,t_name='Gifts Received',t_fullname=NULL,rd_category_id=135,t_bookmarked='N' WHERE id=138" id="296" rd_doctransaction_id="5" i_object_id="138" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=139" id="297" rd_doctransaction_id="5" i_object_id="139" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=139,t_name='Loan Principal Received',t_fullname=NULL,rd_category_id=135,t_bookmarked='N' WHERE id=139" id="298" rd_doctransaction_id="5" i_object_id="139" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=140" id="299" rd_doctransaction_id="5" i_object_id="140" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=140,t_name='Lottery or Premium Bond Prizes',t_fullname=NULL,rd_category_id=135,t_bookmarked='N' WHERE id=140" id="300" rd_doctransaction_id="5" i_object_id="140" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=141" id="301" rd_doctransaction_id="5" i_object_id="141" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=141,t_name='Student loan',t_fullname=NULL,rd_category_id=135,t_bookmarked='N' WHERE id=141" id="302" rd_doctransaction_id="5" i_object_id="141" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=142" id="303" rd_doctransaction_id="5" i_object_id="142" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=142,t_name='Tax Refund',t_fullname=NULL,rd_category_id=135,t_bookmarked='N' WHERE id=142" id="304" rd_doctransaction_id="5" i_object_id="142" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=143" id="305" rd_doctransaction_id="5" i_object_id="143" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=143,t_name='Unemployment Benefit',t_fullname=NULL,rd_category_id=135,t_bookmarked='N' WHERE id=143" id="306" rd_doctransaction_id="5" i_object_id="143" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=144" id="307" rd_doctransaction_id="5" i_object_id="144" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=144,t_name='Pension',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=144" id="308" rd_doctransaction_id="5" i_object_id="144" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=145" id="309" rd_doctransaction_id="5" i_object_id="145" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=145,t_name='Employer',t_fullname=NULL,rd_category_id=144,t_bookmarked='N' WHERE id=145" id="310" rd_doctransaction_id="5" i_object_id="145" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=146" id="311" rd_doctransaction_id="5" i_object_id="146" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=146,t_name='Personal Care',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=146" id="312" rd_doctransaction_id="5" i_object_id="146" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=147" id="313" rd_doctransaction_id="5" i_object_id="147" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=147,t_name='Pet Care',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=147" id="314" rd_doctransaction_id="5" i_object_id="147" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=148" id="315" rd_doctransaction_id="5" i_object_id="148" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=148,t_name='Food',t_fullname=NULL,rd_category_id=147,t_bookmarked='N' WHERE id=148" id="316" rd_doctransaction_id="5" i_object_id="148" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=149" id="317" rd_doctransaction_id="5" i_object_id="149" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=149,t_name='Supplies',t_fullname=NULL,rd_category_id=147,t_bookmarked='N' WHERE id=149" id="318" rd_doctransaction_id="5" i_object_id="149" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=150" id="319" rd_doctransaction_id="5" i_object_id="150" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=150,t_name='Vet''s Bills',t_fullname=NULL,rd_category_id=147,t_bookmarked='N' WHERE id=150" id="320" rd_doctransaction_id="5" i_object_id="150" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=151" id="321" rd_doctransaction_id="5" i_object_id="151" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=151,t_name='Recreation',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=151" id="322" rd_doctransaction_id="5" i_object_id="151" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=152" id="323" rd_doctransaction_id="5" i_object_id="152" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=152,t_name='Retirement Accounts',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=152" id="324" rd_doctransaction_id="5" i_object_id="152" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=153" id="325" rd_doctransaction_id="5" i_object_id="153" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=153,t_name='401(k)403(b) Plan Contributions',t_fullname=NULL,rd_category_id=152,t_bookmarked='N' WHERE id=153" id="326" rd_doctransaction_id="5" i_object_id="153" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=154" id="327" rd_doctransaction_id="5" i_object_id="154" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=154,t_name='529 Plan Contributions',t_fullname=NULL,rd_category_id=152,t_bookmarked='N' WHERE id=154" id="328" rd_doctransaction_id="5" i_object_id="154" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=155" id="329" rd_doctransaction_id="5" i_object_id="155" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=155,t_name='IRA Contributions',t_fullname=NULL,rd_category_id=152,t_bookmarked='N' WHERE id=155" id="330" rd_doctransaction_id="5" i_object_id="155" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=156" id="331" rd_doctransaction_id="5" i_object_id="156" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=156,t_name='Retirement Income',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=156" id="332" rd_doctransaction_id="5" i_object_id="156" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=157" id="333" rd_doctransaction_id="5" i_object_id="157" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=157,t_name='401(k)',t_fullname=NULL,rd_category_id=156,t_bookmarked='N' WHERE id=157" id="334" rd_doctransaction_id="5" i_object_id="157" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=158" id="335" rd_doctransaction_id="5" i_object_id="158" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=158,t_name='403(b) Distributions',t_fullname=NULL,rd_category_id=157,t_bookmarked='N' WHERE id=158" id="336" rd_doctransaction_id="5" i_object_id="158" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=159" id="337" rd_doctransaction_id="5" i_object_id="159" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=159,t_name='IRA Distributions',t_fullname=NULL,rd_category_id=156,t_bookmarked='N' WHERE id=159" id="338" rd_doctransaction_id="5" i_object_id="159" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=160" id="339" rd_doctransaction_id="5" i_object_id="160" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=160,t_name='Pensions &amp; Annuities',t_fullname=NULL,rd_category_id=156,t_bookmarked='N' WHERE id=160" id="340" rd_doctransaction_id="5" i_object_id="160" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=161" id="341" rd_doctransaction_id="5" i_object_id="161" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=161,t_name='State Pension Benefits',t_fullname=NULL,rd_category_id=156,t_bookmarked='N' WHERE id=161" id="342" rd_doctransaction_id="5" i_object_id="161" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=162" id="343" rd_doctransaction_id="5" i_object_id="162" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=162,t_name='Short-Term Capital gains',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=162" id="344" rd_doctransaction_id="5" i_object_id="162" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=163" id="345" rd_doctransaction_id="5" i_object_id="163" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=163,t_name='Social Security Benefits',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=163" id="346" rd_doctransaction_id="5" i_object_id="163" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=164" id="347" rd_doctransaction_id="5" i_object_id="164" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=164,t_name='Taxes',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=164" id="348" rd_doctransaction_id="5" i_object_id="164" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=165" id="349" rd_doctransaction_id="5" i_object_id="165" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=165,t_name='AMT',t_fullname=NULL,rd_category_id=164,t_bookmarked='N' WHERE id=165" id="350" rd_doctransaction_id="5" i_object_id="165" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=166" id="351" rd_doctransaction_id="5" i_object_id="166" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=166,t_name='Federal Tax',t_fullname=NULL,rd_category_id=164,t_bookmarked='N' WHERE id=166" id="352" rd_doctransaction_id="5" i_object_id="166" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=167" id="353" rd_doctransaction_id="5" i_object_id="167" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=167,t_name='Federal Taxes',t_fullname=NULL,rd_category_id=164,t_bookmarked='N' WHERE id=167" id="354" rd_doctransaction_id="5" i_object_id="167" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=168" id="355" rd_doctransaction_id="5" i_object_id="168" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=168,t_name='Local Tax',t_fullname=NULL,rd_category_id=164,t_bookmarked='N' WHERE id=168" id="356" rd_doctransaction_id="5" i_object_id="168" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=169" id="357" rd_doctransaction_id="5" i_object_id="169" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=169,t_name='Local Taxes',t_fullname=NULL,rd_category_id=164,t_bookmarked='N' WHERE id=169" id="358" rd_doctransaction_id="5" i_object_id="169" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=170" id="359" rd_doctransaction_id="5" i_object_id="170" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=170,t_name='Other Invest',t_fullname=NULL,rd_category_id=164,t_bookmarked='N' WHERE id=170" id="360" rd_doctransaction_id="5" i_object_id="170" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=171" id="361" rd_doctransaction_id="5" i_object_id="171" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=171,t_name='Other Tax',t_fullname=NULL,rd_category_id=164,t_bookmarked='N' WHERE id=171" id="362" rd_doctransaction_id="5" i_object_id="171" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=172" id="363" rd_doctransaction_id="5" i_object_id="172" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=172,t_name='Property Taxes',t_fullname=NULL,rd_category_id=164,t_bookmarked='N' WHERE id=172" id="364" rd_doctransaction_id="5" i_object_id="172" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=173" id="365" rd_doctransaction_id="5" i_object_id="173" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=173,t_name='Social Security',t_fullname=NULL,rd_category_id=164,t_bookmarked='N' WHERE id=173" id="366" rd_doctransaction_id="5" i_object_id="173" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=174" id="367" rd_doctransaction_id="5" i_object_id="174" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=174,t_name='State Tax',t_fullname=NULL,rd_category_id=164,t_bookmarked='N' WHERE id=174" id="368" rd_doctransaction_id="5" i_object_id="174" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=175" id="369" rd_doctransaction_id="5" i_object_id="175" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=175,t_name='State Taxes',t_fullname=NULL,rd_category_id=164,t_bookmarked='N' WHERE id=175" id="370" rd_doctransaction_id="5" i_object_id="175" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=176" id="371" rd_doctransaction_id="5" i_object_id="176" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=176,t_name='Travel',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=176" id="372" rd_doctransaction_id="5" i_object_id="176" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=177" id="373" rd_doctransaction_id="5" i_object_id="177" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=177,t_name='Accomodations',t_fullname=NULL,rd_category_id=176,t_bookmarked='N' WHERE id=177" id="374" rd_doctransaction_id="5" i_object_id="177" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=178" id="375" rd_doctransaction_id="5" i_object_id="178" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=178,t_name='Car Rental',t_fullname=NULL,rd_category_id=176,t_bookmarked='N' WHERE id=178" id="376" rd_doctransaction_id="5" i_object_id="178" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=179" id="377" rd_doctransaction_id="5" i_object_id="179" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=179,t_name='Fares',t_fullname=NULL,rd_category_id=176,t_bookmarked='N' WHERE id=179" id="378" rd_doctransaction_id="5" i_object_id="179" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=180" id="379" rd_doctransaction_id="5" i_object_id="180" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=180,t_name='Utilities',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=180" id="380" rd_doctransaction_id="5" i_object_id="180" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=181" id="381" rd_doctransaction_id="5" i_object_id="181" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=181,t_name='Electricity',t_fullname=NULL,rd_category_id=180,t_bookmarked='N' WHERE id=181" id="382" rd_doctransaction_id="5" i_object_id="181" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=182" id="383" rd_doctransaction_id="5" i_object_id="182" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=182,t_name='Garbage &amp; Recycling',t_fullname=NULL,rd_category_id=180,t_bookmarked='N' WHERE id=182" id="384" rd_doctransaction_id="5" i_object_id="182" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=183" id="385" rd_doctransaction_id="5" i_object_id="183" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=183,t_name='Gas',t_fullname=NULL,rd_category_id=180,t_bookmarked='N' WHERE id=183" id="386" rd_doctransaction_id="5" i_object_id="183" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=184" id="387" rd_doctransaction_id="5" i_object_id="184" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=184,t_name='Sewer',t_fullname=NULL,rd_category_id=180,t_bookmarked='N' WHERE id=184" id="388" rd_doctransaction_id="5" i_object_id="184" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=185" id="389" rd_doctransaction_id="5" i_object_id="185" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=185,t_name='Telephone',t_fullname=NULL,rd_category_id=180,t_bookmarked='N' WHERE id=185" id="390" rd_doctransaction_id="5" i_object_id="185" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=186" id="391" rd_doctransaction_id="5" i_object_id="186" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=186,t_name='Water',t_fullname=NULL,rd_category_id=180,t_bookmarked='N' WHERE id=186" id="392" rd_doctransaction_id="5" i_object_id="186" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=187" id="393" rd_doctransaction_id="5" i_object_id="187" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=187,t_name='Wages &amp; Salary',t_fullname=NULL,rd_category_id=NULL,t_bookmarked='N' WHERE id=187" id="394" rd_doctransaction_id="5" i_object_id="187" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=188" id="395" rd_doctransaction_id="5" i_object_id="188" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=188,t_name='Benefits',t_fullname=NULL,rd_category_id=187,t_bookmarked='N' WHERE id=188" id="396" rd_doctransaction_id="5" i_object_id="188" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=189" id="397" rd_doctransaction_id="5" i_object_id="189" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=189,t_name='Bonus',t_fullname=NULL,rd_category_id=187,t_bookmarked='N' WHERE id=189" id="398" rd_doctransaction_id="5" i_object_id="189" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=190" id="399" rd_doctransaction_id="5" i_object_id="190" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=190,t_name='Commission',t_fullname=NULL,rd_category_id=187,t_bookmarked='N' WHERE id=190" id="400" rd_doctransaction_id="5" i_object_id="190" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=191" id="401" rd_doctransaction_id="5" i_object_id="191" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=191,t_name='Employer Pension Contributions',t_fullname=NULL,rd_category_id=187,t_bookmarked='N' WHERE id=191" id="402" rd_doctransaction_id="5" i_object_id="191" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=192" id="403" rd_doctransaction_id="5" i_object_id="192" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=192,t_name='Gross Pay',t_fullname=NULL,rd_category_id=187,t_bookmarked='N' WHERE id=192" id="404" rd_doctransaction_id="5" i_object_id="192" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=193" id="405" rd_doctransaction_id="5" i_object_id="193" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=193,t_name='Net Pay',t_fullname=NULL,rd_category_id=187,t_bookmarked='N' WHERE id=193" id="406" rd_doctransaction_id="5" i_object_id="193" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=194" id="407" rd_doctransaction_id="5" i_object_id="194" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=194,t_name='Overtime',t_fullname=NULL,rd_category_id=187,t_bookmarked='N' WHERE id=194" id="408" rd_doctransaction_id="5" i_object_id="194" t_action="U"/>
+  <row t_object_table="category" t_sqlorder="DELETE FROM category WHERE id=195" id="409" rd_doctransaction_id="5" i_object_id="195" t_action="D"/>
+  <row t_object_table="category" t_sqlorder="UPDATE category SET id=195,t_name='Workman''s Comp',t_fullname=NULL,rd_category_id=187,t_bookmarked='N' WHERE id=195" id="410" rd_doctransaction_id="5" i_object_id="195" t_action="U"/>
+  <row t_object_table="unit" t_sqlorder="DELETE FROM unit WHERE id=1" id="411" rd_doctransaction_id="6" i_object_id="1" t_action="D"/>
+  <row t_object_table="unitvalue" t_sqlorder="DELETE FROM unitvalue WHERE id=1" id="412" rd_doctransaction_id="6" i_object_id="1" t_action="D"/>
+  <row t_object_table="parameters" t_sqlorder="DELETE FROM parameters WHERE id=9" id="413" rd_doctransaction_id="7" i_object_id="9" t_action="D"/>
+  <row t_object_table="parameters" t_sqlorder="DELETE FROM parameters WHERE id=10" id="414" rd_doctransaction_id="8" i_object_id="10" t_action="D"/>
+ </table>
+ <table name="doctransactionmsg"/>
+ <table name="unit">
+  <row t_internet_code="" i_nbdecimal="2" t_source="" t_type="1" t_name="Euro (EUR)" t_symbol="€" t_country="AT" id="1" rd_unit_id="0"/>
+ </table>
+ <table name="unitvalue">
+  <row f_quantity="1" d_date="1999-01-01" id="1" rd_unit_id="1"/>
+ </table>
+ <table name="bank"/>
+ <table name="account"/>
+ <table name="interest"/>
+ <table name="category">
+  <row t_name="Alimony" id="1" t_fullname="Alimony" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="Auto" id="2" t_fullname="Auto" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="Fuel" id="3" t_fullname="Auto > Fuel" t_bookmarked="N" rd_category_id="2"/>
+  <row t_name="Insurance" id="4" t_fullname="Auto > Insurance" t_bookmarked="N" rd_category_id="2"/>
+  <row t_name="Lease" id="5" t_fullname="Auto > Lease" t_bookmarked="N" rd_category_id="2"/>
+  <row t_name="Loan" id="6" t_fullname="Auto > Loan" t_bookmarked="N" rd_category_id="2"/>
+  <row t_name="Registration" id="7" t_fullname="Auto > Registration" t_bookmarked="N" rd_category_id="2"/>
+  <row t_name="Service" id="8" t_fullname="Auto > Service" t_bookmarked="N" rd_category_id="2"/>
+  <row t_name="Bank Charges" id="9" t_fullname="Bank Charges" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="Interest Paid" id="10" t_fullname="Bank Charges > Interest Paid" t_bookmarked="N" rd_category_id="9"/>
+  <row t_name="Service Charge" id="11" t_fullname="Bank Charges > Service Charge" t_bookmarked="N" rd_category_id="9"/>
+  <row t_name="Bills" id="12" t_fullname="Bills" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="Electricity" id="13" t_fullname="Bills > Electricity" t_bookmarked="N" rd_category_id="12"/>
+  <row t_name="Fuel Oil" id="14" t_fullname="Bills > Fuel Oil" t_bookmarked="N" rd_category_id="12"/>
+  <row t_name="Local Taxes" id="15" t_fullname="Bills > Local Taxes" t_bookmarked="N" rd_category_id="12"/>
+  <row t_name="Mortgage" id="16" t_fullname="Bills > Mortgage" t_bookmarked="N" rd_category_id="12"/>
+  <row t_name="Natural Gas" id="17" t_fullname="Bills > Natural Gas" t_bookmarked="N" rd_category_id="12"/>
+  <row t_name="Rent" id="18" t_fullname="Bills > Rent" t_bookmarked="N" rd_category_id="12"/>
+  <row t_name="TV" id="19" t_fullname="Bills > TV" t_bookmarked="N" rd_category_id="12"/>
+  <row t_name="Telephone" id="20" t_fullname="Bills > Telephone" t_bookmarked="N" rd_category_id="12"/>
+  <row t_name="Water &amp; Sewage" id="21" t_fullname="Bills > Water &amp; Sewage" t_bookmarked="N" rd_category_id="12"/>
+  <row t_name="Bonus" id="22" t_fullname="Bonus" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="Business" id="23" t_fullname="Business" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="Auto" id="24" t_fullname="Business > Auto" t_bookmarked="N" rd_category_id="23"/>
+  <row t_name="Capital Goods" id="25" t_fullname="Business > Capital Goods" t_bookmarked="N" rd_category_id="23"/>
+  <row t_name="Legal Expenses" id="26" t_fullname="Business > Legal Expenses" t_bookmarked="N" rd_category_id="23"/>
+  <row t_name="Office Rent" id="27" t_fullname="Business > Office Rent" t_bookmarked="N" rd_category_id="23"/>
+  <row t_name="Office Supplies" id="28" t_fullname="Business > Office Supplies" t_bookmarked="N" rd_category_id="23"/>
+  <row t_name="Other" id="29" t_fullname="Business > Other" t_bookmarked="N" rd_category_id="23"/>
+  <row t_name="Revenue" id="30" t_fullname="Business > Revenue" t_bookmarked="N" rd_category_id="23"/>
+  <row t_name="Taxes" id="31" t_fullname="Business > Taxes" t_bookmarked="N" rd_category_id="23"/>
+  <row t_name="Travel" id="32" t_fullname="Business > Travel" t_bookmarked="N" rd_category_id="23"/>
+  <row t_name="Utilities" id="33" t_fullname="Business > Utilities" t_bookmarked="N" rd_category_id="23"/>
+  <row t_name="Wages &amp; Salary" id="34" t_fullname="Business > Wages &amp; Salary" t_bookmarked="N" rd_category_id="23"/>
+  <row t_name="Car" id="35" t_fullname="Car" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="Fuel" id="36" t_fullname="Car > Fuel" t_bookmarked="N" rd_category_id="35"/>
+  <row t_name="Insurance" id="37" t_fullname="Car > Insurance" t_bookmarked="N" rd_category_id="35"/>
+  <row t_name="Lease" id="38" t_fullname="Car > Lease" t_bookmarked="N" rd_category_id="35"/>
+  <row t_name="Loan" id="39" t_fullname="Car > Loan" t_bookmarked="N" rd_category_id="35"/>
+  <row t_name="Registration" id="40" t_fullname="Car > Registration" t_bookmarked="N" rd_category_id="35"/>
+  <row t_name="Service" id="41" t_fullname="Car > Service" t_bookmarked="N" rd_category_id="35"/>
+  <row t_name="Cash Withdrawal" id="42" t_fullname="Cash Withdrawal" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="Charity" id="43" t_fullname="Charity" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="Donations" id="44" t_fullname="Charity > Donations" t_bookmarked="N" rd_category_id="43"/>
+  <row t_name="Child Care" id="45" t_fullname="Child Care" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="Child Support" id="46" t_fullname="Child Support" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="Clothing" id="47" t_fullname="Clothing" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="Disability" id="48" t_fullname="Disability" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="Div Income" id="49" t_fullname="Div Income" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="Ord dividend" id="50" t_fullname="Div Income > Ord dividend" t_bookmarked="N" rd_category_id="49"/>
+  <row t_name="Stock dividend" id="51" t_fullname="Div Income > Stock dividend" t_bookmarked="N" rd_category_id="49"/>
+  <row t_name="Education" id="52" t_fullname="Education" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="Board" id="53" t_fullname="Education > Board" t_bookmarked="N" rd_category_id="52"/>
+  <row t_name="Books" id="54" t_fullname="Education > Books" t_bookmarked="N" rd_category_id="52"/>
+  <row t_name="Fees" id="55" t_fullname="Education > Fees" t_bookmarked="N" rd_category_id="52"/>
+  <row t_name="Loans" id="56" t_fullname="Education > Loans" t_bookmarked="N" rd_category_id="52"/>
+  <row t_name="Tuition" id="57" t_fullname="Education > Tuition" t_bookmarked="N" rd_category_id="52"/>
+  <row t_name="Employment" id="58" t_fullname="Employment" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="Benefits" id="59" t_fullname="Employment > Benefits" t_bookmarked="N" rd_category_id="58"/>
+  <row t_name="Foreign" id="60" t_fullname="Employment > Foreign" t_bookmarked="N" rd_category_id="58"/>
+  <row t_name="Lump sums" id="61" t_fullname="Employment > Lump sums" t_bookmarked="N" rd_category_id="58"/>
+  <row t_name="Other employ" id="62" t_fullname="Employment > Other employ" t_bookmarked="N" rd_category_id="58"/>
+  <row t_name="Salary &amp; wages" id="63" t_fullname="Employment > Salary &amp; wages" t_bookmarked="N" rd_category_id="58"/>
+  <row t_name="Food" id="64" t_fullname="Food" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="Dining Out" id="65" t_fullname="Food > Dining Out" t_bookmarked="N" rd_category_id="64"/>
+  <row t_name="Groceries" id="66" t_fullname="Food > Groceries" t_bookmarked="N" rd_category_id="64"/>
+  <row t_name="Gardening" id="67" t_fullname="Gardening" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="Gift Received" id="68" t_fullname="Gift Received" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="Gifts" id="69" t_fullname="Gifts" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="Healthcare" id="70" t_fullname="Healthcare" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="Dental" id="71" t_fullname="Healthcare > Dental" t_bookmarked="N" rd_category_id="70"/>
+  <row t_name="Doctor" id="72" t_fullname="Healthcare > Doctor" t_bookmarked="N" rd_category_id="70"/>
+  <row t_name="Hospital" id="73" t_fullname="Healthcare > Hospital" t_bookmarked="N" rd_category_id="70"/>
+  <row t_name="Optician" id="74" t_fullname="Healthcare > Optician" t_bookmarked="N" rd_category_id="70"/>
+  <row t_name="Prescriptions" id="75" t_fullname="Healthcare > Prescriptions" t_bookmarked="N" rd_category_id="70"/>
+  <row t_name="Holidays" id="76" t_fullname="Holidays" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="Accomodation" id="77" t_fullname="Holidays > Accomodation" t_bookmarked="N" rd_category_id="76"/>
+  <row t_name="Travel" id="78" t_fullname="Holidays > Travel" t_bookmarked="N" rd_category_id="76"/>
+  <row t_name="Household" id="79" t_fullname="Household" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="Furnishings" id="80" t_fullname="Household > Furnishings" t_bookmarked="N" rd_category_id="79"/>
+  <row t_name="Repairs" id="81" t_fullname="Household > Repairs" t_bookmarked="N" rd_category_id="79"/>
+  <row t_name="Insurance" id="82" t_fullname="Insurance" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="Auto" id="83" t_fullname="Insurance > Auto" t_bookmarked="N" rd_category_id="82"/>
+  <row t_name="Disability" id="84" t_fullname="Insurance > Disability" t_bookmarked="N" rd_category_id="82"/>
+  <row t_name="Home and Contents" id="85" t_fullname="Insurance > Home and Contents" t_bookmarked="N" rd_category_id="82"/>
+  <row t_name="Life" id="86" t_fullname="Insurance > Life" t_bookmarked="N" rd_category_id="82"/>
+  <row t_name="Medical" id="87" t_fullname="Insurance > Medical" t_bookmarked="N" rd_category_id="82"/>
+  <row t_name="Int Inc" id="88" t_fullname="Int Inc" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="Bank Interest" id="89" t_fullname="Int Inc > Bank Interest" t_bookmarked="N" rd_category_id="88"/>
+  <row t_name="Gross" id="90" t_fullname="Int Inc > Gross" t_bookmarked="N" rd_category_id="88"/>
+  <row t_name="Net" id="91" t_fullname="Int Inc > Net" t_bookmarked="N" rd_category_id="88"/>
+  <row t_name="Other savings" id="92" t_fullname="Int Inc > Other savings" t_bookmarked="N" rd_category_id="88"/>
+  <row t_name="Invest. income" id="93" t_fullname="Invest. income" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="1st option" id="94" t_fullname="Invest. income > 1st option" t_bookmarked="N" rd_category_id="93"/>
+  <row t_name="Dividend" id="95" t_fullname="Invest. income > Dividend" t_bookmarked="N" rd_category_id="93"/>
+  <row t_name="Foreign" id="96" t_fullname="Invest. income > Foreign" t_bookmarked="N" rd_category_id="93"/>
+  <row t_name="Other savings" id="97" t_fullname="Invest. income > Other savings" t_bookmarked="N" rd_category_id="93"/>
+  <row t_name="Other trusts" id="98" t_fullname="Invest. income > Other trusts" t_bookmarked="N" rd_category_id="93"/>
+  <row t_name="Other trusts#Capital" id="99" t_fullname="Invest. income > Other trusts#Capital" t_bookmarked="N" rd_category_id="93"/>
+  <row t_name="Other trusts#Dist. rec'd" id="100" t_fullname="Invest. income > Other trusts#Dist. rec'd" t_bookmarked="N" rd_category_id="93"/>
+  <row t_name="Other trusts#Estate" id="101" t_fullname="Invest. income > Other trusts#Estate" t_bookmarked="N" rd_category_id="93"/>
+  <row t_name="Investment Income" id="102" t_fullname="Investment Income" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="Dividends" id="103" t_fullname="Investment Income > Dividends" t_bookmarked="N" rd_category_id="102"/>
+  <row t_name="Interest" id="104" t_fullname="Investment Income > Interest" t_bookmarked="N" rd_category_id="102"/>
+  <row t_name="Long-Term Capital Gains" id="105" t_fullname="Investment Income > Long-Term Capital Gains" t_bookmarked="N" rd_category_id="102"/>
+  <row t_name="Short-Term Capital Gains" id="106" t_fullname="Investment Income > Short-Term Capital Gains" t_bookmarked="N" rd_category_id="102"/>
+  <row t_name="Tax-Exempt Interest" id="107" t_fullname="Investment Income > Tax-Exempt Interest" t_bookmarked="N" rd_category_id="102"/>
+  <row t_name="Job Expense" id="108" t_fullname="Job Expense" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="Non-Reimbursed" id="109" t_fullname="Job Expense > Non-Reimbursed" t_bookmarked="N" rd_category_id="108"/>
+  <row t_name="Reimbursed" id="110" t_fullname="Job Expense > Reimbursed" t_bookmarked="N" rd_category_id="108"/>
+  <row t_name="Legal Fees" id="111" t_fullname="Legal Fees" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="Leisure" id="112" t_fullname="Leisure" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="Books &amp; Magazines" id="113" t_fullname="Leisure > Books &amp; Magazines" t_bookmarked="N" rd_category_id="112"/>
+  <row t_name="Entertaining" id="114" t_fullname="Leisure > Entertaining" t_bookmarked="N" rd_category_id="112"/>
+  <row t_name="Films &amp; Video Rentals" id="115" t_fullname="Leisure > Films &amp; Video Rentals" t_bookmarked="N" rd_category_id="112"/>
+  <row t_name="Hobbies" id="116" t_fullname="Leisure > Hobbies" t_bookmarked="N" rd_category_id="112"/>
+  <row t_name="Sporting Events" id="117" t_fullname="Leisure > Sporting Events" t_bookmarked="N" rd_category_id="112"/>
+  <row t_name="Sports Goods" id="118" t_fullname="Leisure > Sports Goods" t_bookmarked="N" rd_category_id="112"/>
+  <row t_name="Tapes &amp; CDs" id="119" t_fullname="Leisure > Tapes &amp; CDs" t_bookmarked="N" rd_category_id="112"/>
+  <row t_name="Theatre &amp; Concerts etc" id="120" t_fullname="Leisure > Theatre &amp; Concerts etc" t_bookmarked="N" rd_category_id="112"/>
+  <row t_name="Toys &amp; Games" id="121" t_fullname="Leisure > Toys &amp; Games" t_bookmarked="N" rd_category_id="112"/>
+  <row t_name="Loan" id="122" t_fullname="Loan" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="Loan Interest" id="123" t_fullname="Loan > Loan Interest" t_bookmarked="N" rd_category_id="122"/>
+  <row t_name="Long-Term Capital gains" id="124" t_fullname="Long-Term Capital gains" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="Mortgage" id="125" t_fullname="Mortgage" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="Interest" id="126" t_fullname="Mortgage > Interest" t_bookmarked="N" rd_category_id="125"/>
+  <row t_name="PMI" id="127" t_fullname="Mortgage > PMI" t_bookmarked="N" rd_category_id="125"/>
+  <row t_name="Principle" id="128" t_fullname="Mortgage > Principle" t_bookmarked="N" rd_category_id="125"/>
+  <row t_name="Motor" id="129" t_fullname="Motor" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="Fuel" id="130" t_fullname="Motor > Fuel" t_bookmarked="N" rd_category_id="129"/>
+  <row t_name="Loan" id="131" t_fullname="Motor > Loan" t_bookmarked="N" rd_category_id="129"/>
+  <row t_name="Service" id="132" t_fullname="Motor > Service" t_bookmarked="N" rd_category_id="129"/>
+  <row t_name="Other Expense" id="133" t_fullname="Other Expense" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="Unknown" id="134" t_fullname="Other Expense > Unknown" t_bookmarked="N" rd_category_id="133"/>
+  <row t_name="Other Income" id="135" t_fullname="Other Income" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="Child Support" id="136" t_fullname="Other Income > Child Support" t_bookmarked="N" rd_category_id="135"/>
+  <row t_name="Employee Share Option" id="137" t_fullname="Other Income > Employee Share Option" t_bookmarked="N" rd_category_id="135"/>
+  <row t_name="Gifts Received" id="138" t_fullname="Other Income > Gifts Received" t_bookmarked="N" rd_category_id="135"/>
+  <row t_name="Loan Principal Received" id="139" t_fullname="Other Income > Loan Principal Received" t_bookmarked="N" rd_category_id="135"/>
+  <row t_name="Lottery or Premium Bond Prizes" id="140" t_fullname="Other Income > Lottery or Premium Bond Prizes" t_bookmarked="N" rd_category_id="135"/>
+  <row t_name="Student loan" id="141" t_fullname="Other Income > Student loan" t_bookmarked="N" rd_category_id="135"/>
+  <row t_name="Tax Refund" id="142" t_fullname="Other Income > Tax Refund" t_bookmarked="N" rd_category_id="135"/>
+  <row t_name="Unemployment Benefit" id="143" t_fullname="Other Income > Unemployment Benefit" t_bookmarked="N" rd_category_id="135"/>
+  <row t_name="Pension" id="144" t_fullname="Pension" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="Employer" id="145" t_fullname="Pension > Employer" t_bookmarked="N" rd_category_id="144"/>
+  <row t_name="Personal Care" id="146" t_fullname="Personal Care" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="Pet Care" id="147" t_fullname="Pet Care" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="Food" id="148" t_fullname="Pet Care > Food" t_bookmarked="N" rd_category_id="147"/>
+  <row t_name="Supplies" id="149" t_fullname="Pet Care > Supplies" t_bookmarked="N" rd_category_id="147"/>
+  <row t_name="Vet's Bills" id="150" t_fullname="Pet Care > Vet's Bills" t_bookmarked="N" rd_category_id="147"/>
+  <row t_name="Recreation" id="151" t_fullname="Recreation" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="Retirement Accounts" id="152" t_fullname="Retirement Accounts" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="401(k)403(b) Plan Contributions" id="153" t_fullname="Retirement Accounts > 401(k)403(b) Plan Contributions" t_bookmarked="N" rd_category_id="152"/>
+  <row t_name="529 Plan Contributions" id="154" t_fullname="Retirement Accounts > 529 Plan Contributions" t_bookmarked="N" rd_category_id="152"/>
+  <row t_name="IRA Contributions" id="155" t_fullname="Retirement Accounts > IRA Contributions" t_bookmarked="N" rd_category_id="152"/>
+  <row t_name="Retirement Income" id="156" t_fullname="Retirement Income" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="401(k)" id="157" t_fullname="Retirement Income > 401(k)" t_bookmarked="N" rd_category_id="156"/>
+  <row t_name="403(b) Distributions" id="158" t_fullname="Retirement Income > 401(k) > 403(b) Distributions" t_bookmarked="N" rd_category_id="157"/>
+  <row t_name="IRA Distributions" id="159" t_fullname="Retirement Income > IRA Distributions" t_bookmarked="N" rd_category_id="156"/>
+  <row t_name="Pensions &amp; Annuities" id="160" t_fullname="Retirement Income > Pensions &amp; Annuities" t_bookmarked="N" rd_category_id="156"/>
+  <row t_name="State Pension Benefits" id="161" t_fullname="Retirement Income > State Pension Benefits" t_bookmarked="N" rd_category_id="156"/>
+  <row t_name="Short-Term Capital gains" id="162" t_fullname="Short-Term Capital gains" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="Social Security Benefits" id="163" t_fullname="Social Security Benefits" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="Taxes" id="164" t_fullname="Taxes" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="AMT" id="165" t_fullname="Taxes > AMT" t_bookmarked="N" rd_category_id="164"/>
+  <row t_name="Federal Tax" id="166" t_fullname="Taxes > Federal Tax" t_bookmarked="N" rd_category_id="164"/>
+  <row t_name="Federal Taxes" id="167" t_fullname="Taxes > Federal Taxes" t_bookmarked="N" rd_category_id="164"/>
+  <row t_name="Local Tax" id="168" t_fullname="Taxes > Local Tax" t_bookmarked="N" rd_category_id="164"/>
+  <row t_name="Local Taxes" id="169" t_fullname="Taxes > Local Taxes" t_bookmarked="N" rd_category_id="164"/>
+  <row t_name="Other Invest" id="170" t_fullname="Taxes > Other Invest" t_bookmarked="N" rd_category_id="164"/>
+  <row t_name="Other Tax" id="171" t_fullname="Taxes > Other Tax" t_bookmarked="N" rd_category_id="164"/>
+  <row t_name="Property Taxes" id="172" t_fullname="Taxes > Property Taxes" t_bookmarked="N" rd_category_id="164"/>
+  <row t_name="Social Security" id="173" t_fullname="Taxes > Social Security" t_bookmarked="N" rd_category_id="164"/>
+  <row t_name="State Tax" id="174" t_fullname="Taxes > State Tax" t_bookmarked="N" rd_category_id="164"/>
+  <row t_name="State Taxes" id="175" t_fullname="Taxes > State Taxes" t_bookmarked="N" rd_category_id="164"/>
+  <row t_name="Travel" id="176" t_fullname="Travel" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="Accomodations" id="177" t_fullname="Travel > Accomodations" t_bookmarked="N" rd_category_id="176"/>
+  <row t_name="Car Rental" id="178" t_fullname="Travel > Car Rental" t_bookmarked="N" rd_category_id="176"/>
+  <row t_name="Fares" id="179" t_fullname="Travel > Fares" t_bookmarked="N" rd_category_id="176"/>
+  <row t_name="Utilities" id="180" t_fullname="Utilities" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="Electricity" id="181" t_fullname="Utilities > Electricity" t_bookmarked="N" rd_category_id="180"/>
+  <row t_name="Garbage &amp; Recycling" id="182" t_fullname="Utilities > Garbage &amp; Recycling" t_bookmarked="N" rd_category_id="180"/>
+  <row t_name="Gas" id="183" t_fullname="Utilities > Gas" t_bookmarked="N" rd_category_id="180"/>
+  <row t_name="Sewer" id="184" t_fullname="Utilities > Sewer" t_bookmarked="N" rd_category_id="180"/>
+  <row t_name="Telephone" id="185" t_fullname="Utilities > Telephone" t_bookmarked="N" rd_category_id="180"/>
+  <row t_name="Water" id="186" t_fullname="Utilities > Water" t_bookmarked="N" rd_category_id="180"/>
+  <row t_name="Wages &amp; Salary" id="187" t_fullname="Wages &amp; Salary" t_bookmarked="N" rd_category_id=""/>
+  <row t_name="Benefits" id="188" t_fullname="Wages &amp; Salary > Benefits" t_bookmarked="N" rd_category_id="187"/>
+  <row t_name="Bonus" id="189" t_fullname="Wages &amp; Salary > Bonus" t_bookmarked="N" rd_category_id="187"/>
+  <row t_name="Commission" id="190" t_fullname="Wages &amp; Salary > Commission" t_bookmarked="N" rd_category_id="187"/>
+  <row t_name="Employer Pension Contributions" id="191" t_fullname="Wages &amp; Salary > Employer Pension Contributions" t_bookmarked="N" rd_category_id="187"/>
+  <row t_name="Gross Pay" id="192" t_fullname="Wages &amp; Salary > Gross Pay" t_bookmarked="N" rd_category_id="187"/>
+  <row t_name="Net Pay" id="193" t_fullname="Wages &amp; Salary > Net Pay" t_bookmarked="N" rd_category_id="187"/>
+  <row t_name="Overtime" id="194" t_fullname="Wages &amp; Salary > Overtime" t_bookmarked="N" rd_category_id="187"/>
+  <row t_name="Workman's Comp" id="195" t_fullname="Wages &amp; Salary > Workman's Comp" t_bookmarked="N" rd_category_id="187"/>
+ </table>
+ <table name="operation"/>
+ <table name="operationbalance"/>
+ <table name="refund"/>
+ <table name="payee"/>
+ <table name="suboperation"/>
+ <table name="recurrentoperation"/>
+ <table name="rule"/>
+ <table name="budget"/>
+ <table name="budgetcategory"/>
+ <table name="budgetrule"/>
+ <table name="vm_category_display_tmp">
+  <row i_NBOPERATIONS="0" t_name="Alimony" f_REALCURRENTAMOUNT="0" id="1" t_fullname="Alimony" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="Auto" f_REALCURRENTAMOUNT="0" id="2" t_fullname="Auto" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="Fuel" f_REALCURRENTAMOUNT="0" id="3" t_fullname="Auto > Fuel" t_bookmarked="N" rd_category_id="2"/>
+  <row i_NBOPERATIONS="0" t_name="Insurance" f_REALCURRENTAMOUNT="0" id="4" t_fullname="Auto > Insurance" t_bookmarked="N" rd_category_id="2"/>
+  <row i_NBOPERATIONS="0" t_name="Lease" f_REALCURRENTAMOUNT="0" id="5" t_fullname="Auto > Lease" t_bookmarked="N" rd_category_id="2"/>
+  <row i_NBOPERATIONS="0" t_name="Loan" f_REALCURRENTAMOUNT="0" id="6" t_fullname="Auto > Loan" t_bookmarked="N" rd_category_id="2"/>
+  <row i_NBOPERATIONS="0" t_name="Registration" f_REALCURRENTAMOUNT="0" id="7" t_fullname="Auto > Registration" t_bookmarked="N" rd_category_id="2"/>
+  <row i_NBOPERATIONS="0" t_name="Service" f_REALCURRENTAMOUNT="0" id="8" t_fullname="Auto > Service" t_bookmarked="N" rd_category_id="2"/>
+  <row i_NBOPERATIONS="0" t_name="Bank Charges" f_REALCURRENTAMOUNT="0" id="9" t_fullname="Bank Charges" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="Interest Paid" f_REALCURRENTAMOUNT="0" id="10" t_fullname="Bank Charges > Interest Paid" t_bookmarked="N" rd_category_id="9"/>
+  <row i_NBOPERATIONS="0" t_name="Service Charge" f_REALCURRENTAMOUNT="0" id="11" t_fullname="Bank Charges > Service Charge" t_bookmarked="N" rd_category_id="9"/>
+  <row i_NBOPERATIONS="0" t_name="Bills" f_REALCURRENTAMOUNT="0" id="12" t_fullname="Bills" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="Electricity" f_REALCURRENTAMOUNT="0" id="13" t_fullname="Bills > Electricity" t_bookmarked="N" rd_category_id="12"/>
+  <row i_NBOPERATIONS="0" t_name="Fuel Oil" f_REALCURRENTAMOUNT="0" id="14" t_fullname="Bills > Fuel Oil" t_bookmarked="N" rd_category_id="12"/>
+  <row i_NBOPERATIONS="0" t_name="Local Taxes" f_REALCURRENTAMOUNT="0" id="15" t_fullname="Bills > Local Taxes" t_bookmarked="N" rd_category_id="12"/>
+  <row i_NBOPERATIONS="0" t_name="Mortgage" f_REALCURRENTAMOUNT="0" id="16" t_fullname="Bills > Mortgage" t_bookmarked="N" rd_category_id="12"/>
+  <row i_NBOPERATIONS="0" t_name="Natural Gas" f_REALCURRENTAMOUNT="0" id="17" t_fullname="Bills > Natural Gas" t_bookmarked="N" rd_category_id="12"/>
+  <row i_NBOPERATIONS="0" t_name="Rent" f_REALCURRENTAMOUNT="0" id="18" t_fullname="Bills > Rent" t_bookmarked="N" rd_category_id="12"/>
+  <row i_NBOPERATIONS="0" t_name="TV" f_REALCURRENTAMOUNT="0" id="19" t_fullname="Bills > TV" t_bookmarked="N" rd_category_id="12"/>
+  <row i_NBOPERATIONS="0" t_name="Telephone" f_REALCURRENTAMOUNT="0" id="20" t_fullname="Bills > Telephone" t_bookmarked="N" rd_category_id="12"/>
+  <row i_NBOPERATIONS="0" t_name="Water &amp; Sewage" f_REALCURRENTAMOUNT="0" id="21" t_fullname="Bills > Water &amp; Sewage" t_bookmarked="N" rd_category_id="12"/>
+  <row i_NBOPERATIONS="0" t_name="Bonus" f_REALCURRENTAMOUNT="0" id="22" t_fullname="Bonus" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="Business" f_REALCURRENTAMOUNT="0" id="23" t_fullname="Business" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="Auto" f_REALCURRENTAMOUNT="0" id="24" t_fullname="Business > Auto" t_bookmarked="N" rd_category_id="23"/>
+  <row i_NBOPERATIONS="0" t_name="Capital Goods" f_REALCURRENTAMOUNT="0" id="25" t_fullname="Business > Capital Goods" t_bookmarked="N" rd_category_id="23"/>
+  <row i_NBOPERATIONS="0" t_name="Legal Expenses" f_REALCURRENTAMOUNT="0" id="26" t_fullname="Business > Legal Expenses" t_bookmarked="N" rd_category_id="23"/>
+  <row i_NBOPERATIONS="0" t_name="Office Rent" f_REALCURRENTAMOUNT="0" id="27" t_fullname="Business > Office Rent" t_bookmarked="N" rd_category_id="23"/>
+  <row i_NBOPERATIONS="0" t_name="Office Supplies" f_REALCURRENTAMOUNT="0" id="28" t_fullname="Business > Office Supplies" t_bookmarked="N" rd_category_id="23"/>
+  <row i_NBOPERATIONS="0" t_name="Other" f_REALCURRENTAMOUNT="0" id="29" t_fullname="Business > Other" t_bookmarked="N" rd_category_id="23"/>
+  <row i_NBOPERATIONS="0" t_name="Revenue" f_REALCURRENTAMOUNT="0" id="30" t_fullname="Business > Revenue" t_bookmarked="N" rd_category_id="23"/>
+  <row i_NBOPERATIONS="0" t_name="Taxes" f_REALCURRENTAMOUNT="0" id="31" t_fullname="Business > Taxes" t_bookmarked="N" rd_category_id="23"/>
+  <row i_NBOPERATIONS="0" t_name="Travel" f_REALCURRENTAMOUNT="0" id="32" t_fullname="Business > Travel" t_bookmarked="N" rd_category_id="23"/>
+  <row i_NBOPERATIONS="0" t_name="Utilities" f_REALCURRENTAMOUNT="0" id="33" t_fullname="Business > Utilities" t_bookmarked="N" rd_category_id="23"/>
+  <row i_NBOPERATIONS="0" t_name="Wages &amp; Salary" f_REALCURRENTAMOUNT="0" id="34" t_fullname="Business > Wages &amp; Salary" t_bookmarked="N" rd_category_id="23"/>
+  <row i_NBOPERATIONS="0" t_name="Car" f_REALCURRENTAMOUNT="0" id="35" t_fullname="Car" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="Fuel" f_REALCURRENTAMOUNT="0" id="36" t_fullname="Car > Fuel" t_bookmarked="N" rd_category_id="35"/>
+  <row i_NBOPERATIONS="0" t_name="Insurance" f_REALCURRENTAMOUNT="0" id="37" t_fullname="Car > Insurance" t_bookmarked="N" rd_category_id="35"/>
+  <row i_NBOPERATIONS="0" t_name="Lease" f_REALCURRENTAMOUNT="0" id="38" t_fullname="Car > Lease" t_bookmarked="N" rd_category_id="35"/>
+  <row i_NBOPERATIONS="0" t_name="Loan" f_REALCURRENTAMOUNT="0" id="39" t_fullname="Car > Loan" t_bookmarked="N" rd_category_id="35"/>
+  <row i_NBOPERATIONS="0" t_name="Registration" f_REALCURRENTAMOUNT="0" id="40" t_fullname="Car > Registration" t_bookmarked="N" rd_category_id="35"/>
+  <row i_NBOPERATIONS="0" t_name="Service" f_REALCURRENTAMOUNT="0" id="41" t_fullname="Car > Service" t_bookmarked="N" rd_category_id="35"/>
+  <row i_NBOPERATIONS="0" t_name="Cash Withdrawal" f_REALCURRENTAMOUNT="0" id="42" t_fullname="Cash Withdrawal" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="Charity" f_REALCURRENTAMOUNT="0" id="43" t_fullname="Charity" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="Donations" f_REALCURRENTAMOUNT="0" id="44" t_fullname="Charity > Donations" t_bookmarked="N" rd_category_id="43"/>
+  <row i_NBOPERATIONS="0" t_name="Child Care" f_REALCURRENTAMOUNT="0" id="45" t_fullname="Child Care" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="Child Support" f_REALCURRENTAMOUNT="0" id="46" t_fullname="Child Support" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="Clothing" f_REALCURRENTAMOUNT="0" id="47" t_fullname="Clothing" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="Disability" f_REALCURRENTAMOUNT="0" id="48" t_fullname="Disability" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="Div Income" f_REALCURRENTAMOUNT="0" id="49" t_fullname="Div Income" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="Ord dividend" f_REALCURRENTAMOUNT="0" id="50" t_fullname="Div Income > Ord dividend" t_bookmarked="N" rd_category_id="49"/>
+  <row i_NBOPERATIONS="0" t_name="Stock dividend" f_REALCURRENTAMOUNT="0" id="51" t_fullname="Div Income > Stock dividend" t_bookmarked="N" rd_category_id="49"/>
+  <row i_NBOPERATIONS="0" t_name="Education" f_REALCURRENTAMOUNT="0" id="52" t_fullname="Education" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="Board" f_REALCURRENTAMOUNT="0" id="53" t_fullname="Education > Board" t_bookmarked="N" rd_category_id="52"/>
+  <row i_NBOPERATIONS="0" t_name="Books" f_REALCURRENTAMOUNT="0" id="54" t_fullname="Education > Books" t_bookmarked="N" rd_category_id="52"/>
+  <row i_NBOPERATIONS="0" t_name="Fees" f_REALCURRENTAMOUNT="0" id="55" t_fullname="Education > Fees" t_bookmarked="N" rd_category_id="52"/>
+  <row i_NBOPERATIONS="0" t_name="Loans" f_REALCURRENTAMOUNT="0" id="56" t_fullname="Education > Loans" t_bookmarked="N" rd_category_id="52"/>
+  <row i_NBOPERATIONS="0" t_name="Tuition" f_REALCURRENTAMOUNT="0" id="57" t_fullname="Education > Tuition" t_bookmarked="N" rd_category_id="52"/>
+  <row i_NBOPERATIONS="0" t_name="Employment" f_REALCURRENTAMOUNT="0" id="58" t_fullname="Employment" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="Benefits" f_REALCURRENTAMOUNT="0" id="59" t_fullname="Employment > Benefits" t_bookmarked="N" rd_category_id="58"/>
+  <row i_NBOPERATIONS="0" t_name="Foreign" f_REALCURRENTAMOUNT="0" id="60" t_fullname="Employment > Foreign" t_bookmarked="N" rd_category_id="58"/>
+  <row i_NBOPERATIONS="0" t_name="Lump sums" f_REALCURRENTAMOUNT="0" id="61" t_fullname="Employment > Lump sums" t_bookmarked="N" rd_category_id="58"/>
+  <row i_NBOPERATIONS="0" t_name="Other employ" f_REALCURRENTAMOUNT="0" id="62" t_fullname="Employment > Other employ" t_bookmarked="N" rd_category_id="58"/>
+  <row i_NBOPERATIONS="0" t_name="Salary &amp; wages" f_REALCURRENTAMOUNT="0" id="63" t_fullname="Employment > Salary &amp; wages" t_bookmarked="N" rd_category_id="58"/>
+  <row i_NBOPERATIONS="0" t_name="Food" f_REALCURRENTAMOUNT="0" id="64" t_fullname="Food" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="Dining Out" f_REALCURRENTAMOUNT="0" id="65" t_fullname="Food > Dining Out" t_bookmarked="N" rd_category_id="64"/>
+  <row i_NBOPERATIONS="0" t_name="Groceries" f_REALCURRENTAMOUNT="0" id="66" t_fullname="Food > Groceries" t_bookmarked="N" rd_category_id="64"/>
+  <row i_NBOPERATIONS="0" t_name="Gardening" f_REALCURRENTAMOUNT="0" id="67" t_fullname="Gardening" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="Gift Received" f_REALCURRENTAMOUNT="0" id="68" t_fullname="Gift Received" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="Gifts" f_REALCURRENTAMOUNT="0" id="69" t_fullname="Gifts" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="Healthcare" f_REALCURRENTAMOUNT="0" id="70" t_fullname="Healthcare" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="Dental" f_REALCURRENTAMOUNT="0" id="71" t_fullname="Healthcare > Dental" t_bookmarked="N" rd_category_id="70"/>
+  <row i_NBOPERATIONS="0" t_name="Doctor" f_REALCURRENTAMOUNT="0" id="72" t_fullname="Healthcare > Doctor" t_bookmarked="N" rd_category_id="70"/>
+  <row i_NBOPERATIONS="0" t_name="Hospital" f_REALCURRENTAMOUNT="0" id="73" t_fullname="Healthcare > Hospital" t_bookmarked="N" rd_category_id="70"/>
+  <row i_NBOPERATIONS="0" t_name="Optician" f_REALCURRENTAMOUNT="0" id="74" t_fullname="Healthcare > Optician" t_bookmarked="N" rd_category_id="70"/>
+  <row i_NBOPERATIONS="0" t_name="Prescriptions" f_REALCURRENTAMOUNT="0" id="75" t_fullname="Healthcare > Prescriptions" t_bookmarked="N" rd_category_id="70"/>
+  <row i_NBOPERATIONS="0" t_name="Holidays" f_REALCURRENTAMOUNT="0" id="76" t_fullname="Holidays" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="Accomodation" f_REALCURRENTAMOUNT="0" id="77" t_fullname="Holidays > Accomodation" t_bookmarked="N" rd_category_id="76"/>
+  <row i_NBOPERATIONS="0" t_name="Travel" f_REALCURRENTAMOUNT="0" id="78" t_fullname="Holidays > Travel" t_bookmarked="N" rd_category_id="76"/>
+  <row i_NBOPERATIONS="0" t_name="Household" f_REALCURRENTAMOUNT="0" id="79" t_fullname="Household" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="Furnishings" f_REALCURRENTAMOUNT="0" id="80" t_fullname="Household > Furnishings" t_bookmarked="N" rd_category_id="79"/>
+  <row i_NBOPERATIONS="0" t_name="Repairs" f_REALCURRENTAMOUNT="0" id="81" t_fullname="Household > Repairs" t_bookmarked="N" rd_category_id="79"/>
+  <row i_NBOPERATIONS="0" t_name="Insurance" f_REALCURRENTAMOUNT="0" id="82" t_fullname="Insurance" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="Auto" f_REALCURRENTAMOUNT="0" id="83" t_fullname="Insurance > Auto" t_bookmarked="N" rd_category_id="82"/>
+  <row i_NBOPERATIONS="0" t_name="Disability" f_REALCURRENTAMOUNT="0" id="84" t_fullname="Insurance > Disability" t_bookmarked="N" rd_category_id="82"/>
+  <row i_NBOPERATIONS="0" t_name="Home and Contents" f_REALCURRENTAMOUNT="0" id="85" t_fullname="Insurance > Home and Contents" t_bookmarked="N" rd_category_id="82"/>
+  <row i_NBOPERATIONS="0" t_name="Life" f_REALCURRENTAMOUNT="0" id="86" t_fullname="Insurance > Life" t_bookmarked="N" rd_category_id="82"/>
+  <row i_NBOPERATIONS="0" t_name="Medical" f_REALCURRENTAMOUNT="0" id="87" t_fullname="Insurance > Medical" t_bookmarked="N" rd_category_id="82"/>
+  <row i_NBOPERATIONS="0" t_name="Int Inc" f_REALCURRENTAMOUNT="0" id="88" t_fullname="Int Inc" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="Bank Interest" f_REALCURRENTAMOUNT="0" id="89" t_fullname="Int Inc > Bank Interest" t_bookmarked="N" rd_category_id="88"/>
+  <row i_NBOPERATIONS="0" t_name="Gross" f_REALCURRENTAMOUNT="0" id="90" t_fullname="Int Inc > Gross" t_bookmarked="N" rd_category_id="88"/>
+  <row i_NBOPERATIONS="0" t_name="Net" f_REALCURRENTAMOUNT="0" id="91" t_fullname="Int Inc > Net" t_bookmarked="N" rd_category_id="88"/>
+  <row i_NBOPERATIONS="0" t_name="Other savings" f_REALCURRENTAMOUNT="0" id="92" t_fullname="Int Inc > Other savings" t_bookmarked="N" rd_category_id="88"/>
+  <row i_NBOPERATIONS="0" t_name="Invest. income" f_REALCURRENTAMOUNT="0" id="93" t_fullname="Invest. income" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="1st option" f_REALCURRENTAMOUNT="0" id="94" t_fullname="Invest. income > 1st option" t_bookmarked="N" rd_category_id="93"/>
+  <row i_NBOPERATIONS="0" t_name="Dividend" f_REALCURRENTAMOUNT="0" id="95" t_fullname="Invest. income > Dividend" t_bookmarked="N" rd_category_id="93"/>
+  <row i_NBOPERATIONS="0" t_name="Foreign" f_REALCURRENTAMOUNT="0" id="96" t_fullname="Invest. income > Foreign" t_bookmarked="N" rd_category_id="93"/>
+  <row i_NBOPERATIONS="0" t_name="Other savings" f_REALCURRENTAMOUNT="0" id="97" t_fullname="Invest. income > Other savings" t_bookmarked="N" rd_category_id="93"/>
+  <row i_NBOPERATIONS="0" t_name="Other trusts" f_REALCURRENTAMOUNT="0" id="98" t_fullname="Invest. income > Other trusts" t_bookmarked="N" rd_category_id="93"/>
+  <row i_NBOPERATIONS="0" t_name="Other trusts#Capital" f_REALCURRENTAMOUNT="0" id="99" t_fullname="Invest. income > Other trusts#Capital" t_bookmarked="N" rd_category_id="93"/>
+  <row i_NBOPERATIONS="0" t_name="Other trusts#Dist. rec'd" f_REALCURRENTAMOUNT="0" id="100" t_fullname="Invest. income > Other trusts#Dist. rec'd" t_bookmarked="N" rd_category_id="93"/>
+  <row i_NBOPERATIONS="0" t_name="Other trusts#Estate" f_REALCURRENTAMOUNT="0" id="101" t_fullname="Invest. income > Other trusts#Estate" t_bookmarked="N" rd_category_id="93"/>
+  <row i_NBOPERATIONS="0" t_name="Investment Income" f_REALCURRENTAMOUNT="0" id="102" t_fullname="Investment Income" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="Dividends" f_REALCURRENTAMOUNT="0" id="103" t_fullname="Investment Income > Dividends" t_bookmarked="N" rd_category_id="102"/>
+  <row i_NBOPERATIONS="0" t_name="Interest" f_REALCURRENTAMOUNT="0" id="104" t_fullname="Investment Income > Interest" t_bookmarked="N" rd_category_id="102"/>
+  <row i_NBOPERATIONS="0" t_name="Long-Term Capital Gains" f_REALCURRENTAMOUNT="0" id="105" t_fullname="Investment Income > Long-Term Capital Gains" t_bookmarked="N" rd_category_id="102"/>
+  <row i_NBOPERATIONS="0" t_name="Short-Term Capital Gains" f_REALCURRENTAMOUNT="0" id="106" t_fullname="Investment Income > Short-Term Capital Gains" t_bookmarked="N" rd_category_id="102"/>
+  <row i_NBOPERATIONS="0" t_name="Tax-Exempt Interest" f_REALCURRENTAMOUNT="0" id="107" t_fullname="Investment Income > Tax-Exempt Interest" t_bookmarked="N" rd_category_id="102"/>
+  <row i_NBOPERATIONS="0" t_name="Job Expense" f_REALCURRENTAMOUNT="0" id="108" t_fullname="Job Expense" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="Non-Reimbursed" f_REALCURRENTAMOUNT="0" id="109" t_fullname="Job Expense > Non-Reimbursed" t_bookmarked="N" rd_category_id="108"/>
+  <row i_NBOPERATIONS="0" t_name="Reimbursed" f_REALCURRENTAMOUNT="0" id="110" t_fullname="Job Expense > Reimbursed" t_bookmarked="N" rd_category_id="108"/>
+  <row i_NBOPERATIONS="0" t_name="Legal Fees" f_REALCURRENTAMOUNT="0" id="111" t_fullname="Legal Fees" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="Leisure" f_REALCURRENTAMOUNT="0" id="112" t_fullname="Leisure" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="Books &amp; Magazines" f_REALCURRENTAMOUNT="0" id="113" t_fullname="Leisure > Books &amp; Magazines" t_bookmarked="N" rd_category_id="112"/>
+  <row i_NBOPERATIONS="0" t_name="Entertaining" f_REALCURRENTAMOUNT="0" id="114" t_fullname="Leisure > Entertaining" t_bookmarked="N" rd_category_id="112"/>
+  <row i_NBOPERATIONS="0" t_name="Films &amp; Video Rentals" f_REALCURRENTAMOUNT="0" id="115" t_fullname="Leisure > Films &amp; Video Rentals" t_bookmarked="N" rd_category_id="112"/>
+  <row i_NBOPERATIONS="0" t_name="Hobbies" f_REALCURRENTAMOUNT="0" id="116" t_fullname="Leisure > Hobbies" t_bookmarked="N" rd_category_id="112"/>
+  <row i_NBOPERATIONS="0" t_name="Sporting Events" f_REALCURRENTAMOUNT="0" id="117" t_fullname="Leisure > Sporting Events" t_bookmarked="N" rd_category_id="112"/>
+  <row i_NBOPERATIONS="0" t_name="Sports Goods" f_REALCURRENTAMOUNT="0" id="118" t_fullname="Leisure > Sports Goods" t_bookmarked="N" rd_category_id="112"/>
+  <row i_NBOPERATIONS="0" t_name="Tapes &amp; CDs" f_REALCURRENTAMOUNT="0" id="119" t_fullname="Leisure > Tapes &amp; CDs" t_bookmarked="N" rd_category_id="112"/>
+  <row i_NBOPERATIONS="0" t_name="Theatre &amp; Concerts etc" f_REALCURRENTAMOUNT="0" id="120" t_fullname="Leisure > Theatre &amp; Concerts etc" t_bookmarked="N" rd_category_id="112"/>
+  <row i_NBOPERATIONS="0" t_name="Toys &amp; Games" f_REALCURRENTAMOUNT="0" id="121" t_fullname="Leisure > Toys &amp; Games" t_bookmarked="N" rd_category_id="112"/>
+  <row i_NBOPERATIONS="0" t_name="Loan" f_REALCURRENTAMOUNT="0" id="122" t_fullname="Loan" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="Loan Interest" f_REALCURRENTAMOUNT="0" id="123" t_fullname="Loan > Loan Interest" t_bookmarked="N" rd_category_id="122"/>
+  <row i_NBOPERATIONS="0" t_name="Long-Term Capital gains" f_REALCURRENTAMOUNT="0" id="124" t_fullname="Long-Term Capital gains" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="Mortgage" f_REALCURRENTAMOUNT="0" id="125" t_fullname="Mortgage" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="Interest" f_REALCURRENTAMOUNT="0" id="126" t_fullname="Mortgage > Interest" t_bookmarked="N" rd_category_id="125"/>
+  <row i_NBOPERATIONS="0" t_name="PMI" f_REALCURRENTAMOUNT="0" id="127" t_fullname="Mortgage > PMI" t_bookmarked="N" rd_category_id="125"/>
+  <row i_NBOPERATIONS="0" t_name="Principle" f_REALCURRENTAMOUNT="0" id="128" t_fullname="Mortgage > Principle" t_bookmarked="N" rd_category_id="125"/>
+  <row i_NBOPERATIONS="0" t_name="Motor" f_REALCURRENTAMOUNT="0" id="129" t_fullname="Motor" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="Fuel" f_REALCURRENTAMOUNT="0" id="130" t_fullname="Motor > Fuel" t_bookmarked="N" rd_category_id="129"/>
+  <row i_NBOPERATIONS="0" t_name="Loan" f_REALCURRENTAMOUNT="0" id="131" t_fullname="Motor > Loan" t_bookmarked="N" rd_category_id="129"/>
+  <row i_NBOPERATIONS="0" t_name="Service" f_REALCURRENTAMOUNT="0" id="132" t_fullname="Motor > Service" t_bookmarked="N" rd_category_id="129"/>
+  <row i_NBOPERATIONS="0" t_name="Other Expense" f_REALCURRENTAMOUNT="0" id="133" t_fullname="Other Expense" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="Unknown" f_REALCURRENTAMOUNT="0" id="134" t_fullname="Other Expense > Unknown" t_bookmarked="N" rd_category_id="133"/>
+  <row i_NBOPERATIONS="0" t_name="Other Income" f_REALCURRENTAMOUNT="0" id="135" t_fullname="Other Income" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="Child Support" f_REALCURRENTAMOUNT="0" id="136" t_fullname="Other Income > Child Support" t_bookmarked="N" rd_category_id="135"/>
+  <row i_NBOPERATIONS="0" t_name="Employee Share Option" f_REALCURRENTAMOUNT="0" id="137" t_fullname="Other Income > Employee Share Option" t_bookmarked="N" rd_category_id="135"/>
+  <row i_NBOPERATIONS="0" t_name="Gifts Received" f_REALCURRENTAMOUNT="0" id="138" t_fullname="Other Income > Gifts Received" t_bookmarked="N" rd_category_id="135"/>
+  <row i_NBOPERATIONS="0" t_name="Loan Principal Received" f_REALCURRENTAMOUNT="0" id="139" t_fullname="Other Income > Loan Principal Received" t_bookmarked="N" rd_category_id="135"/>
+  <row i_NBOPERATIONS="0" t_name="Lottery or Premium Bond Prizes" f_REALCURRENTAMOUNT="0" id="140" t_fullname="Other Income > Lottery or Premium Bond Prizes" t_bookmarked="N" rd_category_id="135"/>
+  <row i_NBOPERATIONS="0" t_name="Student loan" f_REALCURRENTAMOUNT="0" id="141" t_fullname="Other Income > Student loan" t_bookmarked="N" rd_category_id="135"/>
+  <row i_NBOPERATIONS="0" t_name="Tax Refund" f_REALCURRENTAMOUNT="0" id="142" t_fullname="Other Income > Tax Refund" t_bookmarked="N" rd_category_id="135"/>
+  <row i_NBOPERATIONS="0" t_name="Unemployment Benefit" f_REALCURRENTAMOUNT="0" id="143" t_fullname="Other Income > Unemployment Benefit" t_bookmarked="N" rd_category_id="135"/>
+  <row i_NBOPERATIONS="0" t_name="Pension" f_REALCURRENTAMOUNT="0" id="144" t_fullname="Pension" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="Employer" f_REALCURRENTAMOUNT="0" id="145" t_fullname="Pension > Employer" t_bookmarked="N" rd_category_id="144"/>
+  <row i_NBOPERATIONS="0" t_name="Personal Care" f_REALCURRENTAMOUNT="0" id="146" t_fullname="Personal Care" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="Pet Care" f_REALCURRENTAMOUNT="0" id="147" t_fullname="Pet Care" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="Food" f_REALCURRENTAMOUNT="0" id="148" t_fullname="Pet Care > Food" t_bookmarked="N" rd_category_id="147"/>
+  <row i_NBOPERATIONS="0" t_name="Supplies" f_REALCURRENTAMOUNT="0" id="149" t_fullname="Pet Care > Supplies" t_bookmarked="N" rd_category_id="147"/>
+  <row i_NBOPERATIONS="0" t_name="Vet's Bills" f_REALCURRENTAMOUNT="0" id="150" t_fullname="Pet Care > Vet's Bills" t_bookmarked="N" rd_category_id="147"/>
+  <row i_NBOPERATIONS="0" t_name="Recreation" f_REALCURRENTAMOUNT="0" id="151" t_fullname="Recreation" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="Retirement Accounts" f_REALCURRENTAMOUNT="0" id="152" t_fullname="Retirement Accounts" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="401(k)403(b) Plan Contributions" f_REALCURRENTAMOUNT="0" id="153" t_fullname="Retirement Accounts > 401(k)403(b) Plan Contributions" t_bookmarked="N" rd_category_id="152"/>
+  <row i_NBOPERATIONS="0" t_name="529 Plan Contributions" f_REALCURRENTAMOUNT="0" id="154" t_fullname="Retirement Accounts > 529 Plan Contributions" t_bookmarked="N" rd_category_id="152"/>
+  <row i_NBOPERATIONS="0" t_name="IRA Contributions" f_REALCURRENTAMOUNT="0" id="155" t_fullname="Retirement Accounts > IRA Contributions" t_bookmarked="N" rd_category_id="152"/>
+  <row i_NBOPERATIONS="0" t_name="Retirement Income" f_REALCURRENTAMOUNT="0" id="156" t_fullname="Retirement Income" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="401(k)" f_REALCURRENTAMOUNT="0" id="157" t_fullname="Retirement Income > 401(k)" t_bookmarked="N" rd_category_id="156"/>
+  <row i_NBOPERATIONS="0" t_name="403(b) Distributions" f_REALCURRENTAMOUNT="0" id="158" t_fullname="Retirement Income > 401(k) > 403(b) Distributions" t_bookmarked="N" rd_category_id="157"/>
+  <row i_NBOPERATIONS="0" t_name="IRA Distributions" f_REALCURRENTAMOUNT="0" id="159" t_fullname="Retirement Income > IRA Distributions" t_bookmarked="N" rd_category_id="156"/>
+  <row i_NBOPERATIONS="0" t_name="Pensions &amp; Annuities" f_REALCURRENTAMOUNT="0" id="160" t_fullname="Retirement Income > Pensions &amp; Annuities" t_bookmarked="N" rd_category_id="156"/>
+  <row i_NBOPERATIONS="0" t_name="State Pension Benefits" f_REALCURRENTAMOUNT="0" id="161" t_fullname="Retirement Income > State Pension Benefits" t_bookmarked="N" rd_category_id="156"/>
+  <row i_NBOPERATIONS="0" t_name="Short-Term Capital gains" f_REALCURRENTAMOUNT="0" id="162" t_fullname="Short-Term Capital gains" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="Social Security Benefits" f_REALCURRENTAMOUNT="0" id="163" t_fullname="Social Security Benefits" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="Taxes" f_REALCURRENTAMOUNT="0" id="164" t_fullname="Taxes" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="AMT" f_REALCURRENTAMOUNT="0" id="165" t_fullname="Taxes > AMT" t_bookmarked="N" rd_category_id="164"/>
+  <row i_NBOPERATIONS="0" t_name="Federal Tax" f_REALCURRENTAMOUNT="0" id="166" t_fullname="Taxes > Federal Tax" t_bookmarked="N" rd_category_id="164"/>
+  <row i_NBOPERATIONS="0" t_name="Federal Taxes" f_REALCURRENTAMOUNT="0" id="167" t_fullname="Taxes > Federal Taxes" t_bookmarked="N" rd_category_id="164"/>
+  <row i_NBOPERATIONS="0" t_name="Local Tax" f_REALCURRENTAMOUNT="0" id="168" t_fullname="Taxes > Local Tax" t_bookmarked="N" rd_category_id="164"/>
+  <row i_NBOPERATIONS="0" t_name="Local Taxes" f_REALCURRENTAMOUNT="0" id="169" t_fullname="Taxes > Local Taxes" t_bookmarked="N" rd_category_id="164"/>
+  <row i_NBOPERATIONS="0" t_name="Other Invest" f_REALCURRENTAMOUNT="0" id="170" t_fullname="Taxes > Other Invest" t_bookmarked="N" rd_category_id="164"/>
+  <row i_NBOPERATIONS="0" t_name="Other Tax" f_REALCURRENTAMOUNT="0" id="171" t_fullname="Taxes > Other Tax" t_bookmarked="N" rd_category_id="164"/>
+  <row i_NBOPERATIONS="0" t_name="Property Taxes" f_REALCURRENTAMOUNT="0" id="172" t_fullname="Taxes > Property Taxes" t_bookmarked="N" rd_category_id="164"/>
+  <row i_NBOPERATIONS="0" t_name="Social Security" f_REALCURRENTAMOUNT="0" id="173" t_fullname="Taxes > Social Security" t_bookmarked="N" rd_category_id="164"/>
+  <row i_NBOPERATIONS="0" t_name="State Tax" f_REALCURRENTAMOUNT="0" id="174" t_fullname="Taxes > State Tax" t_bookmarked="N" rd_category_id="164"/>
+  <row i_NBOPERATIONS="0" t_name="State Taxes" f_REALCURRENTAMOUNT="0" id="175" t_fullname="Taxes > State Taxes" t_bookmarked="N" rd_category_id="164"/>
+  <row i_NBOPERATIONS="0" t_name="Travel" f_REALCURRENTAMOUNT="0" id="176" t_fullname="Travel" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="Accomodations" f_REALCURRENTAMOUNT="0" id="177" t_fullname="Travel > Accomodations" t_bookmarked="N" rd_category_id="176"/>
+  <row i_NBOPERATIONS="0" t_name="Car Rental" f_REALCURRENTAMOUNT="0" id="178" t_fullname="Travel > Car Rental" t_bookmarked="N" rd_category_id="176"/>
+  <row i_NBOPERATIONS="0" t_name="Fares" f_REALCURRENTAMOUNT="0" id="179" t_fullname="Travel > Fares" t_bookmarked="N" rd_category_id="176"/>
+  <row i_NBOPERATIONS="0" t_name="Utilities" f_REALCURRENTAMOUNT="0" id="180" t_fullname="Utilities" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="Electricity" f_REALCURRENTAMOUNT="0" id="181" t_fullname="Utilities > Electricity" t_bookmarked="N" rd_category_id="180"/>
+  <row i_NBOPERATIONS="0" t_name="Garbage &amp; Recycling" f_REALCURRENTAMOUNT="0" id="182" t_fullname="Utilities > Garbage &amp; Recycling" t_bookmarked="N" rd_category_id="180"/>
+  <row i_NBOPERATIONS="0" t_name="Gas" f_REALCURRENTAMOUNT="0" id="183" t_fullname="Utilities > Gas" t_bookmarked="N" rd_category_id="180"/>
+  <row i_NBOPERATIONS="0" t_name="Sewer" f_REALCURRENTAMOUNT="0" id="184" t_fullname="Utilities > Sewer" t_bookmarked="N" rd_category_id="180"/>
+  <row i_NBOPERATIONS="0" t_name="Telephone" f_REALCURRENTAMOUNT="0" id="185" t_fullname="Utilities > Telephone" t_bookmarked="N" rd_category_id="180"/>
+  <row i_NBOPERATIONS="0" t_name="Water" f_REALCURRENTAMOUNT="0" id="186" t_fullname="Utilities > Water" t_bookmarked="N" rd_category_id="180"/>
+  <row i_NBOPERATIONS="0" t_name="Wages &amp; Salary" f_REALCURRENTAMOUNT="0" id="187" t_fullname="Wages &amp; Salary" t_bookmarked="N" rd_category_id=""/>
+  <row i_NBOPERATIONS="0" t_name="Benefits" f_REALCURRENTAMOUNT="0" id="188" t_fullname="Wages &amp; Salary > Benefits" t_bookmarked="N" rd_category_id="187"/>
+  <row i_NBOPERATIONS="0" t_name="Bonus" f_REALCURRENTAMOUNT="0" id="189" t_fullname="Wages &amp; Salary > Bonus" t_bookmarked="N" rd_category_id="187"/>
+  <row i_NBOPERATIONS="0" t_name="Commission" f_REALCURRENTAMOUNT="0" id="190" t_fullname="Wages &amp; Salary > Commission" t_bookmarked="N" rd_category_id="187"/>
+  <row i_NBOPERATIONS="0" t_name="Employer Pension Contributions" f_REALCURRENTAMOUNT="0" id="191" t_fullname="Wages &amp; Salary > Employer Pension Contributions" t_bookmarked="N" rd_category_id="187"/>
+  <row i_NBOPERATIONS="0" t_name="Gross Pay" f_REALCURRENTAMOUNT="0" id="192" t_fullname="Wages &amp; Salary > Gross Pay" t_bookmarked="N" rd_category_id="187"/>
+  <row i_NBOPERATIONS="0" t_name="Net Pay" f_REALCURRENTAMOUNT="0" id="193" t_fullname="Wages &amp; Salary > Net Pay" t_bookmarked="N" rd_category_id="187"/>
+  <row i_NBOPERATIONS="0" t_name="Overtime" f_REALCURRENTAMOUNT="0" id="194" t_fullname="Wages &amp; Salary > Overtime" t_bookmarked="N" rd_category_id="187"/>
+  <row i_NBOPERATIONS="0" t_name="Workman's Comp" f_REALCURRENTAMOUNT="0" id="195" t_fullname="Wages &amp; Salary > Workman's Comp" t_bookmarked="N" rd_category_id="187"/>
+ </table>
+ <table name="vm_budget_tmp"/>
+</document>
+
