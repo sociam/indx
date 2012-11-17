@@ -24,13 +24,11 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 			console.log(evt.target);
 			var start = evt.target.selectionStart, end = evt.target.selectionEnd;
 			var val = $(evt.target).val().substring(start,end);			
-			console.log('loc input sel > ', val.substring(start,end)); // this.$el.find('.select-name').select());
 			this.$el.find('.display-selected-location').val(val);			
 		},
 		_cb_name_input_selection:function(evt) {
 			var start = evt.target.selectionStart, end = evt.target.selectionEnd;
 			var val = $(evt.target).val().substring(start,end);						
-			console.log('name input sel > ', val.substring(start,end)); // this.$el.find('.select-name').select());
 			this.$el.find('.display-selected-name').val(val);
 		},		
 		render:function() {
