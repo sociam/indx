@@ -10,6 +10,9 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 		categories: ['groceries']
 	};
 	var MatchesView = Backbone.View.extend({
+		events: {
+			'click .btn' : 'click'
+		},
 		update:function(results) {
 			var this_ = this;
 			var button_templ = "<div class='btn' name='<%= text %>'><%= text %></div>";
@@ -18,6 +21,9 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 				console.log(b);
 				this_.$el.append(_(button_templ).template({text:b}));
 			});
+		},
+		click:function(evt) {
+			this.trigger('click', $(evt.currentTarget).attr('name'));
 		},
 		render:function() { return this; }
 	});
@@ -46,6 +52,7 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 			this.name_matches_view.update([val]);
 		},		
 		render:function() {
+			var this_ = this;
 			var html = _(this.template).template(this.options.round);
 			this.$el.html( html );
 			var cats = this.$el.find('.categories-input');
@@ -69,7 +76,13 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 			}});
 
 			this.loc_matches_view = new MatchesView({el:this.$el.find('.match-location')});
-			this.name_matches_view = new MatchesView({el:this.$el.find('.match-name')});			
+			this.loc_matches_view.on('click', function(what) {
+				this_.$el.find('.input-location').val(what);
+			});
+			this.name_matches_view = new MatchesView({el:this.$el.find('.match-name')});
+			this.name_matches_view.on('click', function(what) {
+				this_.$el.find('.input-name').val(what);
+			});
 			return this;
 		}
 	});
