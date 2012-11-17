@@ -71,7 +71,7 @@ class EnrichHandler(BaseHandler):
                         d.append({"id": entity_id, "name": entity_info["full"]["@value"]})
                 else:
                     if entity_info["abbrv"]["@value"] == q:
-                        d.append({"id": entity_id, "name": entity_info["full"]["@value"]})
+                        d.append({"id": entity_id, "name": entity_info["full"]["@value"], "count": entity_info["count"]["@value"]})
         return d
         
     def try_to_find_entity(self, description):
