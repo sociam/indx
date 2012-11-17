@@ -10,7 +10,7 @@ $(document).ready(function() {
 	basepath = basepath.slice(0,Math.max(0,basepath.lastIndexOf('/'))) || '/';	
 	console.log('setting baseurl to ', document.location.pathname, '-', basepath);
 	require.config({ baseUrl:  basepath });
-	require(['apps/enrich/js/enrich-app', 'components/toolbar/toolbar'], function(enrich, tbcomponent) {
+	require(['apps/enriches/js/enrich-app', 'components/toolbar/toolbar'], function(enrich, tbcomponent) {
 		$.getScript('http://'+host+':8211/js/webbox-backbone.js', function() {
 	  		var store = new ObjectStore.Store();
 			window.store = store;
@@ -41,11 +41,9 @@ $(document).ready(function() {
 				} 
 			});
 			toolbar.on('login', function() { if (app !== undefined) { app.show(); }	});			
-			toolbar.on('logout', function() {
-				console.log('toolbar logout');
-				if (app !== undefined) { app.hide(); }
-			});
+			toolbar.on('logout', function() { if (app !== undefined) { app.hide(); }});
 			app = enrich.init();
+			window.app = app;
 		});
 	});
-};
+});
