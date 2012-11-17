@@ -18,6 +18,8 @@
 
 import logging, traceback, json
 from twisted.web.resource import Resource
+from twisted.internet.defer import Deferred
+
 from webbox.webserver.handlers.base import BaseHandler
 import webbox.webbox_pg2 as database
 from webbox.objectstore_async import ObjectStoreAsync
@@ -47,22 +49,30 @@ class EnrichHandler(BaseHandler):
             "statement":        desc,
             "isOwn":            bool(owner == user)
         }
+       
+        def found_a(place):
+
+            if place is not None:
+                r['place-start'] = place['start']
+                r['place-end'] = place['end']
+                r['place-full'] = place['full']
+                r['place-abbrv'] = place['abbrv']
+                
+            def found_b(establishment):
+
+                if establishment is not None:
+                    r['establishment-start'] = establishment['start']
+                    r['establishment-end'] = establishment['end']
+                    r['establishment-full'] = establishment['full']
+                    r['establishment-abbrv'] = establishment['abbrv']
         
-        place = self.try_to_find_entity(store, desc, 'places')
-        if place is not None:
-            r['place-start'] = place['start']
-            r['place-end'] = place['end']
-            r['place-full'] = place['full']
-            r['place-abbrv'] = place['abbrv']
-            
-        establishment = self.try_to_find_entity(store, desc, 'establishments')
-        if establishment is not None:
-            r['establishment-start'] = establishment['start']
-            r['establishment-end'] = establishment['end']
-            r['establishment-full'] = establishment['full']
-            r['establishment-abbrv'] = establishment['abbrv']
-        
-        self.return_ok(request, {"round": r})
+                self.return_ok(request, {"round": r})
+
+
+            self.try_to_find_entity(store, desc, 'establishments').addCallback(found_b)
+
+
+        self.try_to_find_entity(store, desc, 'places').addCallback(found_a)
         
     def save_entity_from_round(self, abbrv, full, table_name):
         entities = store.get_latest(table_name)
@@ -85,7 +95,10 @@ class EnrichHandler(BaseHandler):
         q = request.args['q'][0]
         startswith = 'startswith' in request.args
         
-        self.return_ok(request, {"entries": self.search_entity_for_term(store, q, "establishments", startswith)})
+        def got_entities(returned):
+            self.return_ok(request, {"entries": returned})
+
+        self.search_entity_for_term(store, q, "establishments", startswith).addCallback(got_entities)
 
 
     def get_places(self, request):
@@ -96,48 +109,80 @@ class EnrichHandler(BaseHandler):
         
         # the highlighted string from user: "Kings X"
         q = request.args['q'][0]
-        
-        self.return_ok(request, {"entries": self.search_entity_for_term(store, q, "places")})
- 
+       
+        def got_entities(returned):
+            self.return_ok(request, {"entries": returned})
+
+        self.search_entity_for_term(store, q, "places").addCallback(got_entities)
+
+
     def search_entity_for_term(self, store, term, table_name, startswith=False, approx=False):
-        d = []
-        entities = store.get_latest(table_name)
-        for entity_id, entity_info in entities.items():
-            if (entity_id != "@version" and entity_id != "@graph"):
-                if approx:
-                    if entity_info["abbrv"][0]["@value"].find(q, 0) > -1:
-                        d.append({"id": entity_id, "name": entity_info["full"][0]["@value"]})
-                elif startswith:
-                    if entity_info["abbrv"][0]["@value"].startswith(q):
-                        d.append({"id": entity_id, "name": entity_info["full"][0]["@value"], "count": entity_info["count"][0]["@value"]})
-                else:
-                    if entity_info["abbrv"][0]["@value"] == q:
-                        d.append({"id": entity_id, "name": entity_info["full"][0]["@value"], "count": entity_info["count"][0]["@value"]})
-        return d
-        
+        return_d = Deferred()
+
+        def got_latest(entities):
+            d = []
+            for entity_id, entity_info in entities.items():
+                if (entity_id != "@version" and entity_id != "@graph"):
+                    if approx:
+                        if entity_info["abbrv"][0]["@value"].find(q, 0) > -1:
+                            d.append({"id": entity_id, "name": entity_info["full"][0]["@value"]})
+                    elif startswith:
+                        if entity_info["abbrv"][0]["@value"].startswith(q):
+                            d.append({"id": entity_id, "name": entity_info["full"][0]["@value"], "count": entity_info["count"][0]["@value"]})
+                    else:
+                        if entity_info["abbrv"][0]["@value"] == q:
+                            d.append({"id": entity_id, "name": entity_info["full"][0]["@value"], "count": entity_info["count"][0]["@value"]})
+
+            return_d.callback(d)
+
+        store.get_latest(table_name).addCallback(got_latest)
+        return return_d
+
+
     def try_to_find_entity(self, store, description, table_name):
+        result_d = Deferred()
+
         parts = description.split()
         
         candidates = []
+
+        tosearch = []
         for sublist in self.iter_sublists(parts):
             abbrv = ' '.join(sublist)
-            matches = self.search_entity_for_term(store, abbrv, table_name)
-            if len(matches) > 0:
-                for match in matches:
-                    #if match not in candidates:
-                    candidates.append({
-                        'abbrv':    abbrv,
-                        'start':    q.find(abbrv, 0),
-                        'end':      q.find(abbrv, 0) + len(abbrv),
-                        'full':     match['name'],
-                        'count':    match['count']
-                    })
+            tosearch.append( (store, abbrv, table_name) )
+
+        def done_all_searches():
+            if len(candidates) > 0:
+                result_d.callback(None)
+            else:
+                candidates.sorted(candidates, self.sort_candidates)
+                result_d.callback(candidates[0])
+
+
+        def do_search(matches):
+            if matches is not None:
+                if len(matches) > 0:
+                    for match in matches:
+                        #if match not in candidates:
+                        candidates.append({
+                            'abbrv':    abbrv,
+                            'start':    q.find(abbrv, 0),
+                            'end':      q.find(abbrv, 0) + len(abbrv),
+                            'full':     match['name'],
+                            'count':    match['count']
+                        })
+
+            if len(tosearch) > 0:
+                store, abbrv, table_name = tosearch.pop(0)
+                self.search_entity_for_term(store, abbrv, table_name).addCallback(do_search)
+            else:
+                done_all_searches()
+
+        do_search(None)
+
+        return result_d
+
         
-        if len(candidates) > 0:
-            return None
-        else:
-            candidates.sorted(candidates, self.sort_candidates)
-            return candidates[0]
         
     def sort_candidates(self, a, b):
         if a['count'] == b['count']:
