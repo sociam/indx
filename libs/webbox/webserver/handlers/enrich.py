@@ -24,6 +24,7 @@ from webbox.webserver.handlers.base import BaseHandler
 import webbox.webbox_pg2 as database
 from webbox.objectstore_async import ObjectStoreAsync
 import uuid
+import random
 
 class EnrichHandler(BaseHandler):
     """ Add/remove boxes, add/remove users, change config. """
@@ -36,8 +37,11 @@ class EnrichHandler(BaseHandler):
         result_d = Deferred()
 
         def get_graph(objs):
+            keys = objs.keys()
+            random.shuffle(keys)
+            
             # get our objects
-            for uri in objs:
+            for uri in keys:
                 if uri[0] != "@":
                     obj = objs[uri]
                     if obj['user'][0]["@value"] == persona and ('place_id' not in obj or 'establishment_id' not in obj):
@@ -45,7 +49,7 @@ class EnrichHandler(BaseHandler):
                         return
 
             # get any object
-            for uri in objs:
+            for uri in keys:
                 if uri[0] != "@":
                     obj = objs[uri]
                     if ('place_id' not in obj or 'establishment_id' not in obj):
