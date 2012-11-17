@@ -45,7 +45,7 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 			this.$el.find('.input-location').focus();
 			this.options.box.ajax('/get_places', 'GET', { q : val })
 				.then(function(results) {
-					console.log("PLACE SEARCH  RESULTS ", results);
+					// console.log("PLACE SEARCH  RESULTS ", results);
 					this_.loc_matches_view.update(results.entries);
 				});			
 			// this.loc_matches_view.update([val]);
@@ -59,7 +59,7 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 			this.$el.find('.input-name').focus();
 			this.options.box.ajax('/get_establishments', 'GET', { q : val })
 				.then(function(results) {
-					console.log("ESTABLISHMENT Q RESULTS ", results);
+					// console.log("ESTABLISHMENT Q RESULTS ", results);
 					this_.name_matches_view.update(results.entries);
 				});
 			// this.name_matches_view.update([val]);
@@ -81,12 +81,19 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 
 			this.$el.find('.input-location').typeahead({ source: function(q,process) {
 				// put an ajax call to thingy now
-				var locs = ['london', 'dublin', 'berlin', 'southampton'];
-				process(locs.filter(function(f) { return f.indexOf(q) == 0; }));
+				// debug code --
+				// var locs = ['london', 'dublin', 'berlin', 'southampton'];
+				// process(locs.filter(function(f) { return f.indexOf(q) == 0; }));
+				//
+				this_.options.box.ajax('/get_places', 'GET', { q: q, startswith: true })
+					.then(function(results) { process(results.entries);	});
 			}});
 			this.$el.find('.input-name').typeahead({ source: function(q,process) {
-				var locs = ['marks & spencers', 'john lewis', 'harrods'];
-				process(locs.filter(function(f) { return f.indexOf(q) == 0; }));
+				// debug code 
+				// var locs = ['marks & spencers', 'john lewis', 'harrods'];
+				// process(locs.filter(function(f) { return f.indexOf(q) == 0; }));
+				this_.options.box.ajax('/get_establishments', 'GET', { q: q, startswith: true })
+					.then(function(results) { process(results.entries);	});				
 			}});
 
 			this.loc_matches_view = new MatchesView({el:this.$el.find('.match-location')});
