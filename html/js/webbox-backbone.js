@@ -224,7 +224,7 @@
 			var uri = graph.id;
 			var d = deferred();
 			// return a list of models (each of type ObjectStore.Object) to populate a GraphCollection
-			graph.box.ajax(graph.box, "/", "GET", {"graph": uri})
+			graph.box.ajax("/", "GET", {"graph": uri})
 				.then(function(data){
 					var graph_collection = graph.objs();
 					var version = 0; // new version FIXME check
@@ -299,6 +299,7 @@
 		ajax : function( path, type, data ) {
 			var url = this.store.options.server_url + this.id + path;
 			console.log('token ', this.options.token);
+			console.log('boxajax call ', data );
 			var options = {
 				type: type,
 				url : url,
