@@ -156,28 +156,46 @@ class EnrichHandler(BaseHandler):
         
         # the highlighted string from user: "Kings X"
         q = request.args['q'][0]
+        startswith = 'startswith' in request.args
        
         def got_entities(returned):
-            self.return_ok(request, {"entries": returned})
 
-        self.search_entity_for_term(store, q, "places").addCallback(got_entities)
+            if len(returned) > 0:
+                return self.return_ok(request, {"entries": returned})
+
+            # else search the gazetteer
+            f = open(os.path.join(os.path.dirname(__file__), "uk_places.json"), "r")
+            uk_places = json.load(f)
+            f.close()
+            
+            entities = []
+            for place in uk_places:
+                if startswith and place.lower().startswith(q):
+                    entities.append(place)
+                elif not startswith and place.lower() == q:
+                    entities.append(place)
+            return self.return_ok(request, {"entries": entities})
+                
+
+        self.search_entity_for_term(store, q, "places", startswith).addCallback(got_entities)
 
 
-    def search_entity_for_term(self, store, term, table_name, startswith=False, approx=False):
+    def search_entity_for_term(self, store, q, table_name, startswith=False, approx=False):
         return_d = Deferred()
+        q = q.lower()
 
         def got_latest(entities):
             d = []
             for entity_id, entity_info in entities.items():
                 if (entity_id != "@version" and entity_id != "@graph"):
                     if approx:
-                        if entity_info["abbrv"][0]["@value"].find(q, 0) > -1:
+                        if entity_info["abbrv"][0]["@value"].lower().find(q, 0) > -1:
                             d.append({"id": entity_id, "name": entity_info["full"][0]["@value"]})
                     elif startswith:
-                        if entity_info["abbrv"][0]["@value"].startswith(q):
+                        if entity_info["abbrv"][0]["@value"].lower().startswith(q):
                             d.append({"id": entity_id, "name": entity_info["full"][0]["@value"], "count": entity_info["count"][0]["@value"]})
                     else:
-                        if entity_info["abbrv"][0]["@value"] == q:
+                        if entity_info["abbrv"][0]["@value"].lower() == q:
                             d.append({"id": entity_id, "name": entity_info["full"][0]["@value"], "count": entity_info["count"][0]["@value"]})
 
             return_d.callback(d)

@@ -5,6 +5,7 @@ for line in f.readlines():
     line = line.rstrip()
     fields = line.split("\t")
     if fields[6][0] == "P":
-        places.append(fields[1])
+        if fields[1] not in places:
+            places.append(fields[1])
 
 print json.dumps(places)
