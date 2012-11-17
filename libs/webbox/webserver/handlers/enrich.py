@@ -44,7 +44,7 @@ class EnrichHandler(BaseHandler):
             "@id":              str(uuid.uuid1()),
             "type":             "round",
             "user":             None,
-            "statement":        desc
+            "statement":        desc,
             "isOwn":            bool(owner == user)
         }
         

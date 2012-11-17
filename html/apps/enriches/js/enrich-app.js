@@ -42,6 +42,17 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 				});
 				$(".chzn-select").chosen({no_results_text: "No results matched"});				
 			}).error(function(f) {	console.log("FAIL ", f);});
+
+			this.$el.find('.input-location').typeahead({ source: function(q,process) {
+				// put an ajax call to thingy now
+				var locs = ['london', 'dublin', 'berlin', 'southampton'];
+				process(locs.filter(function(f) { return f.indexOf(q) == 0; }));
+			}});
+			this.$el.find('.input-name').typeahead({ source: function(q,process) {
+				var locs = ['marks & spencers', 'john lewis', 'harrods'];
+				process(locs.filter(function(f) { return f.indexOf(q) == 0; }));
+			}});
+			
 			return this;
 		}
 	});
