@@ -39,18 +39,30 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 		},
 		_cb_location_input_sel:function(evt) {
 			var start = evt.target.selectionStart, end = evt.target.selectionEnd;
-			var val = $(evt.target).val().substring(start,end);			
+			var val = $(evt.target).val().substring(start,end);
+			var this_ = this;
 			this.$el.find('.display-selected-location').val(val);
 			this.$el.find('.input-location').focus();
-			this.loc_matches_view.update([val]);
+			this.options.box.ajax('/get_places', 'GET', { q : val })
+				.then(function(results) {
+					// console.log("PLACE SEARCH  RESULTS ", results);
+					this_.loc_matches_view.update(results.entries);
+				});			
+			// this.loc_matches_view.update([val]);
 			this.loc_abbrv = val;
 		},
 		_cb_name_input_selection:function(evt) {
 			var start = evt.target.selectionStart, end = evt.target.selectionEnd;
-			var val = $(evt.target).val().substring(start,end);						
+			var val = $(evt.target).val().substring(start,end);
+			var this_ = this;
 			this.$el.find('.display-selected-name').val(val);
 			this.$el.find('.input-name').focus();
-			this.name_matches_view.update([val]);
+			this.options.box.ajax('/get_establishments', 'GET', { q : val })
+				.then(function(results) {
+					// console.log("ESTABLISHMENT Q RESULTS ", results);
+					this_.name_matches_view.update(results.entries);
+				});
+			// this.name_matches_view.update([val]);
 			this.name_abbrv = val;
 		},		
 		render:function() {
@@ -69,12 +81,19 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 
 			this.$el.find('.input-location').typeahead({ source: function(q,process) {
 				// put an ajax call to thingy now
-				var locs = ['london', 'dublin', 'berlin', 'southampton'];
-				process(locs.filter(function(f) { return f.indexOf(q) == 0; }));
+				// debug code --
+				// var locs = ['london', 'dublin', 'berlin', 'southampton'];
+				// process(locs.filter(function(f) { return f.indexOf(q) == 0; }));
+				//
+				this_.options.box.ajax('/get_places', 'GET', { q: q, startswith: true })
+					.then(function(results) { process(results.entries);	});
 			}});
 			this.$el.find('.input-name').typeahead({ source: function(q,process) {
-				var locs = ['marks & spencers', 'john lewis', 'harrods'];
-				process(locs.filter(function(f) { return f.indexOf(q) == 0; }));
+				// debug code 
+				// var locs = ['marks & spencers', 'john lewis', 'harrods'];
+				// process(locs.filter(function(f) { return f.indexOf(q) == 0; }));
+				this_.options.box.ajax('/get_establishments', 'GET', { q: q, startswith: true })
+					.then(function(results) { process(results.entries);	});				
 			}});
 
 			this.loc_matches_view = new MatchesView({el:this.$el.find('.match-location')});
@@ -97,10 +116,13 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 		}
 	});
 	var EnrichView = Backbone.View.extend({
+		initialize:function(options) {
+			this.options = options;
+		},
 		show_round:function(round) {
 			console.log('showing round >> ', round);
 			this.round = round;
-			var roundview = new RoundView({round:round});
+			var roundview = new RoundView({round:round, box:this.options.box});
 			this.roundview = roundview;
 			this.$el.find('.round-holder').children().remove();
 			this.$el.find('.round-holder').append(roundview.render().el);
@@ -116,7 +138,7 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 		initialize:function(options) {
 			this.box = options.box;
 			this.persona = options.persona;
-			this.view = new EnrichView({el:$('.main')[0]});
+			this.view = new EnrichView({el:$('.main')[0], box:options.box});
 			$('body').append(this.view.render().el);
 			this.next_round();
 			// this.view.show_round(example_round);
@@ -127,8 +149,7 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 				console.log("LOADING ROUND ", x.round);
 				this_.view.show_round(x.round);
 			});
-		},
-		
+		},		
 		show:function() {
 			this.view.$el.show();
 		},
