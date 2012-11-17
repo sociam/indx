@@ -8,7 +8,19 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 		name: { begin: 0, end: 4 },
 		location: { begin: 5, end: 15 },
 		categories: ['groceries']
-	};	
+	};
+	var MatchesView = Backbone.View.extend({
+		update:function(results) {
+			var this_ = this;
+			var button_templ = "<div class='btn' name='<%= text %>'><%= text %></div>";
+			this.$el.html(''); // children().remove();
+			results.map(function(b) {
+				console.log(b);
+				this_.$el.append(_(button_templ).template({text:b}));
+			});
+		},
+		render:function() { return this; }
+	});
 	var RoundView = Backbone.View.extend({
 		template:round,
 		tagClass:'round',
@@ -20,17 +32,18 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 			assert(options.round, 'please provide a round as an argument');
 		},
 		_cb_location_input_sel:function(evt) {
-			console.log(evt.target);
 			var start = evt.target.selectionStart, end = evt.target.selectionEnd;
 			var val = $(evt.target).val().substring(start,end);			
 			this.$el.find('.display-selected-location').val(val);
 			this.$el.find('.input-location').focus();
+			this.loc_matches_view.update([val]);
 		},
 		_cb_name_input_selection:function(evt) {
 			var start = evt.target.selectionStart, end = evt.target.selectionEnd;
 			var val = $(evt.target).val().substring(start,end);						
 			this.$el.find('.display-selected-name').val(val);
 			this.$el.find('.input-name').focus();
+			this.name_matches_view.update([val]);
 		},		
 		render:function() {
 			var html = _(this.template).template(this.options.round);
@@ -54,7 +67,9 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 				var locs = ['marks & spencers', 'john lewis', 'harrods'];
 				process(locs.filter(function(f) { return f.indexOf(q) == 0; }));
 			}});
-			
+
+			this.loc_matches_view = new MatchesView({el:this.$el.find('.match-location')});
+			this.name_matches_view = new MatchesView({el:this.$el.find('.match-name')});			
 			return this;
 		}
 	});
