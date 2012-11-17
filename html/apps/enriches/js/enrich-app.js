@@ -32,7 +32,8 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 		tagClass:'round',
 		events: {
 			'select .select-name' : '_cb_name_input_selection',
-			'select .select-location' : '_cb_location_input_sel'			
+			'select .select-location' : '_cb_location_input_sel',
+			'click .not-specified' : '_location_not_specified'
 		},
 		initialize:function(options) {
 			assert(options.round, 'please provide a round as an argument');
@@ -113,6 +114,10 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 				'establishment-abbrv':this.name_abbrv || this.options.round.text,
 				'establishment-full':this.$el.find('.input-name').val()
 			};
+		},
+		_location_not_specified:function() {
+			this.$el.find('.loc').slideUp();
+			this.loc_abbrv = "_NOT_SPECIFIED_";
 		}
 	});
 	var EnrichView = Backbone.View.extend({
