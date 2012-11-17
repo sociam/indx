@@ -4,7 +4,7 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 	var assert = u.assert, deferred = u.deferred, defined = u.defined;
 
 	var example_round = {
-		text: "M & S Kings X",
+		statement: "M & S Kings X",
 		name: { begin: 0, end: 4 },
 		location: { begin: 5, end: 15 },
 		categories: ['groceries']
@@ -113,11 +113,22 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 	});
 
 	var EnrichApp = Backbone.Model.extend({
-		initialize:function() {
+		initialize:function(options) {
+			this.box = options.box;
+			this.persona = options.persona;
 			this.view = new EnrichView({el:$('.main')[0]});
 			$('body').append(this.view.render().el);
-			this.view.show_round(example_round);
+			this.next_round();
+			// this.view.show_round(example_round);
 		},
+		next_round:function() {
+			var this_ = this;
+			this.box.ajax('/get_next_round', 'GET', { persona: this.persona }).then(function(x) {
+				console.log("LOADING ROUND ", x.round);
+				this_.view.show_round(x.round);
+			});
+		},
+		
 		show:function() {
 			this.view.$el.show();
 		},
@@ -127,8 +138,8 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 	});
 
 	return {
-		init:function() {
-			return new EnrichApp();
+		init:function(box) {
+			return new EnrichApp({ box: box, persona: 'Persona2' });
 		}
 	};	
 });

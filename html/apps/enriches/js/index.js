@@ -19,16 +19,16 @@ $(document).ready(function() {
 			var app = undefined;
 			var get_graph = function(boxname) {
 				var d = new $.Deferred();
-				var get_graph = function(box) {					
+				var _get_graph = function(box) {					
 					var graph = box.get_or_create(graphname);
 					graph.fetch().then(function(graph) {
 						console.log('graph loaded ', graph.objs().length, ' items already in it');
-						d.resolve(graph);
+						d.resolve(box,graph);
 					});
 				};
 				var load_box = function() {
 					store.load_box(boxname)
-						.then(function(box) { window.box = box; get_graph(store.get(boxname));})
+						.then(function(box) { window.box = box; _get_graph(store.get(boxname));})
 						.fail(function(err) { console.error('fail loading box ', err); });
 				};
 				store.create_box(boxname).then(load_box).fail(load_box);
@@ -38,14 +38,18 @@ $(document).ready(function() {
 				console.log('change box ', b);
 				if (b !== undefined) {					
 					// enrich.set({box:b});
-					get_graph(b).then(function(graph) {
+					get_graph(b).then(function(box,graph) {
+						if (app === undefined) {
+							console.log("LOADING with BOX ", box.id);
+							app = enrich.init(box);
+						}
 						// enrich.set({graph:graph});
 					});
 				} 
 			});
 			toolbar.on('login', function() { if (app !== undefined) { app.show(); }	});			
 			toolbar.on('logout', function() { if (app !== undefined) { app.hide(); }});
-			app = enrich.init();
+			// app = enrich.init();
 			window.app = app;
 		});
 	});
