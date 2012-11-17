@@ -64,6 +64,16 @@ class EnrichHandler(BaseHandler):
         
         self.return_ok(request, {"round": round})
         
+    def save_entity_from_round(self, abbrv, full, table_name):
+        entities = store.get_latest(table_name)
+        found = False
+        for entity_id, entity_info in entities :
+            if (entity_id != "@version" and entity_id != "@graph"):
+                if abbrv == entity_info["abbrv"][0]["@value"] and full == entity_info["full"][0]["@value"]:
+                    entity_info["count"][0]["@value"] += 1
+                    found = True
+        if not found:
+            entities.add(table_name, {"abbrv": abbrv, "full": full, "count": 1}, entities["@version"])
 
     def get_establishments(self, request):
         token = self.get_token(request)
@@ -94,11 +104,11 @@ class EnrichHandler(BaseHandler):
         for entity_id, entity_info in entities :
             if (entity_id != "@version" and entity_id != "@graph"):
                 if approx:
-                    if entity_info["abbrv"]["@value"].find(q, 0) > -1:
-                        d.append({"id": entity_id, "name": entity_info["full"]["@value"]})
+                    if entity_info["abbrv"][0]["@value"].find(q, 0) > -1:
+                        d.append({"id": entity_id, "name": entity_info["full"][0]["@value"]})
                 else:
-                    if entity_info["abbrv"]["@value"] == q:
-                        d.append({"id": entity_id, "name": entity_info["full"]["@value"], "count": entity_info["count"]["@value"]})
+                    if entity_info["abbrv"][0]["@value"] == q:
+                        d.append({"id": entity_id, "name": entity_info["full"][0]["@value"], "count": entity_info["count"][0]["@value"]})
         return d
         
     def try_to_find_entity(self, description, table_name):
