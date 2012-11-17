@@ -1,0 +1,12 @@
+Go to app:
+
+http://localhost:8211/apps/enriches/#
+
+Login, and select a box.
+
+
+In console:
+
+$.ajax({"url": "http://localhost:8211/apps/enriches/all_data.json"}).then(function(x){window.x = x;});
+box.ajax("/", "PUT", {data: x, graph: "statements", version: 0}).then(function(x1){ console.debug("return", x1);});
+

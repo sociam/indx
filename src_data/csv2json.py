@@ -1,4 +1,4 @@
-import csv, json
+import csv, json, uuid
 
 personas = []
 for num in [1,2,3,4,5,6,7,8]:
@@ -19,7 +19,7 @@ for persona in personas:
             if not header:
                 header = row
             else:
-                obj = {"user": [{"@value": persona}], "record_type": [{"@value": record_type}]}
+                obj = {"@id": str(uuid.uuid1()), "user": [{"@value": persona}], "record_type": [{"@value": record_type}]}
                 for n in range(len(header)):
                     field = header[n]
                     if field == "":
