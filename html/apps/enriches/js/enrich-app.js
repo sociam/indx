@@ -118,9 +118,16 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 		_location_not_specified:function() {
 			this.$el.find('.loc').slideUp();
 			this.loc_abbrv = "_NOT_SPECIFIED_";
+		},
+		hide:function() {
+			this.$el.fadeOut('fast');
+			this.$el.remove();	
 		}
 	});
 	var EnrichView = Backbone.View.extend({
+		events : {
+			'click .save' : '_save'
+		},
 		initialize:function(options) {
 			this.options = options;
 		},
@@ -131,21 +138,38 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 			this.roundview = roundview;
 			this.$el.find('.round-holder').children().remove();
 			this.$el.find('.round-holder').append(roundview.render().el);
-			
-			this.render();
 		},
 		render:function() {
+			$('.save').show();
+
 			return this;
+		},
+		_save:function() {
+			var box = this.options.box;
+			var this_ = this;
+			var round_vals = this.roundview.get_values();
+			console.log("SAVING VALS ", round_vals);
+			box.ajax('/save_round', 'POST', { round : round_vals })
+				.then(function() {	this_.trigger('save'); 	})
+				.fail(function() {	this_.trigger('save'); 	});			
+		},
+		destroy:function() {
+			this.roundview.hide();
 		}
 	});
 
 	var EnrichApp = Backbone.Model.extend({
 		initialize:function(options) {
+			var this_ = this;
 			this.box = options.box;
 			this.persona = options.persona;
 			this.view = new EnrichView({el:$('.main')[0], box:options.box});
 			$('body').append(this.view.render().el);
 			this.next_round();
+			this.view.on('save', function() {
+				this_.view.destroy();				
+				this_.next_round();
+			});
 			// this.view.show_round(example_round);
 		},
 		next_round:function() {
@@ -159,7 +183,8 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 			this.view.$el.show();
 		},
 		hide:function() {
-			this.view.$el.hide();
+			this.view.$el.fadeOut('fast');
+			this.view.$el.remove();	
 		}				
 	});
 
