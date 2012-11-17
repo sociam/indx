@@ -29,6 +29,6 @@ source env/bin/activate
 export PYTHONPATH="$WBDIR/libs:$PYTHONPATH"
 
 echo `which python`
-#python -m cProfile run.py &
+#python -m cProfile run.py
 python run.py
 

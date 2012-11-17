@@ -18,8 +18,10 @@ define(['apps/saveface/js/saveface-grab','js/utils'],function(fb,u) {
 			this.graph = options.graph;
 		},
 		init_controls:function() {
-			var graph = this.graph || models.get_graph('facebook');;
+			var graph = this.graph || models.get_graph('facebook');
+            console.debug("Init controls");
 			_(fb.actions).map(function(action, mode) {
+                console.debug("Init controls::fb_actions for action: ",action,", mode:",mode);
 				$('#'+mode)
 					.attr("disabled",false)
 					.on("click", function() {

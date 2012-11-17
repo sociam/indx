@@ -20,6 +20,7 @@ import logging, traceback, json
 from twisted.web.resource import Resource
 from webbox.webserver.handlers.base import BaseHandler
 import webbox.webbox_pg2 as database
+from webbox.objectstore_async import ObjectStoreAsync
 
 class AdminHandler(BaseHandler):
     """ Add/remove boxes, add/remove users, change config. """
@@ -29,7 +30,7 @@ class AdminHandler(BaseHandler):
         root_user = request.args['input_user'][0]
         root_password = request.args['input_password'][0]
 
-        self.webbox.initialise_object_store(root_user, root_password)
+        ObjectStoreAsync.initialise(self.webserver.config['webbox']['db']['name'], root_user, root_password, self.webserver.config['webbox']['db']['user'], self.webserver.config['webbox']['db']['password'])
 
         # send them back to the webbox start page
         # request.redirect(str(self.webbox.get_base_url()))
