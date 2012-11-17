@@ -39,8 +39,16 @@ class EnrichHandler(BaseHandler):
         self.return_ok(request, {"round": round})
 
     def get_establishments(self, request):
-        desc = request.args['q'][0]
-        self.return_ok(request, {"entries": [{"text": desc, "weight": 100}, {"text": desc.lower(), "weight": 50}]})
+        token = self.get_token(request)
+        if not token:
+            return self.return_forbidden(request)
+        store = token.store
+        
+        # the highlighted string from user: "Kings X"
+        q = request.args['q'][0]
+        
+        self.return_ok(request, {"entries": search_entities_for_term(q, "establishments")})
+
 
     def get_places(self, request):
         token = self.get_token(request)
@@ -51,13 +59,20 @@ class EnrichHandler(BaseHandler):
         # the highlighted string from user: "Kings X"
         q = request.args['q'][0]
         
-        # query db for something similar to q
+        self.return_ok(request, {"entries": search_entities_for_term(q, "places")})
+ 
+    def search_entity_for_term(term, table_name, approx=False):
         d = []
-        
-        d.append({"id": desc, "name": desc.lower()})
-        
-        self.return_ok(request, {"entries": d})
-        
+        entities = store.get_latest(table_name)
+        for entity_id, entity_info in entities :
+            if (entity_id != "@version" && entity_id != "@graph"):
+                if approx:
+                    if entity_info["abbrv"]["@value"].find(q, 0) > -1:
+                        d.append({"id": entity_id, "name": entity_info["full"]["@value"]})
+                else:
+                    if entity_info["abbrv"]["@value"] == q:
+                        d.append({"id": entity_id, "name": entity_info["full"]["@value"]})
+        return d
         
 EnrichHandler.subhandlers = [
     {
