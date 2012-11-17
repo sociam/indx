@@ -150,31 +150,4 @@ class EnrichHandler(BaseHandler):
                 yield l[i:j]
         
 EnrichHandler.subhandlers = [
-    {
-        'prefix': 'get_establishments',
-        'methods': ['GET'],
-        'require_auth': True,
-        'require_token': True,
-        'handler': EnrichHandler.get_establishments,
-        'content-type':'text/plain', # optional
-        'accept':['application/json']                
-    },
-    {
-        'prefix': 'get_places',
-        'methods': ['GET'],
-        'require_auth': True,
-        'require_token': True,
-        'handler': EnrichHandler.get_places,
-        'content-type':'text/plain', # optional
-        'accept':['application/json']                
-    },
-    {
-        'prefix': 'get_next_round',
-        'methods': ['GET'],
-        'require_auth': True,
-        'require_token': True,
-        'handler': EnrichHandler.get_next_round,
-        'content-type':'text/plain', # optional
-        'accept':['application/json']                
-    }
 ]
