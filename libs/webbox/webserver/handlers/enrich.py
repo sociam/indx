@@ -32,47 +32,90 @@ class EnrichHandler(BaseHandler):
     def val(self, value):
         return {"@value": value}
     
+    def get_unprocessed_statement(self, store, persona):
+        result_d = Deferred()
+
+        def get_graph(objs):
+            # get our objects
+            for uri in objs:
+                if uri[0] != "@":
+                    obj = objs[uri]
+                    if obj['user'][0]["@value"] == persona and ('place_id' not in obj or 'establishment_id' not in obj):
+                        result_d.callback(obj)
+                        return
+
+            # get any object
+            for uri in objs:
+                if uri[0] != "@":
+                    obj = objs[uri]
+                    if ('place_id' not in obj or 'establishment_id' not in obj):
+                        result_d.callback(obj)
+                        return
+
+            result_d.callback(None)
+
+        store.get_latest("statements").addCallback(get_graph)
+
+        return result_d
+
+
     def get_next_round(self, request):
         token = self.get_token(request)
         if not token:
             return self.return_forbidden(request)
         store = token.store
 
-        desc = request.args['desc'][0]
-        user = ''
-        owner = ''
-        
-        r = {
-            "@id":              str(uuid.uuid1()),
-            "type":             "round",
-            "user":             None,
-            "statement":        desc,
-            "isOwn":            bool(owner == user)
-        }
-       
-        def found_a(place):
+        persona = request.args['persona'][0]
 
-            if place is not None:
-                r['place-start'] = place['start']
-                r['place-end'] = place['end']
-                r['place-full'] = place['full']
-                r['place-abbrv'] = place['abbrv']
-                
-            def found_b(establishment):
+        def got_statement(obj):
+            if obj is None:
+                return self.return_ok()
+ 
+            user = persona
+            owner = obj['user'][0]["@value"]
+           
+            if "field_cc_transaction_description" in obj:
+                desc = obj['field_cc_transaction_description'][0]["@value"]
+            elif "field_ba_transaction_description" in obj:
+                desc = obj['field_ba_transaction_description'][0]["@value"]
+            else:
+                return self.return_internal_error(request)
 
-                if establishment is not None:
-                    r['establishment-start'] = establishment['start']
-                    r['establishment-end'] = establishment['end']
-                    r['establishment-full'] = establishment['full']
-                    r['establishment-abbrv'] = establishment['abbrv']
-        
-                self.return_ok(request, {"round": r})
+            r = {
+                "@id":              str(uuid.uuid1()),
+                "type":             "round",
+                "user":             user,
+                "statement":        desc,
+                "isOwn":            owner == user
+            }
+           
+            def found_a(place):
+
+                if place is not None:
+                    r['place-start'] = place['start']
+                    r['place-end'] = place['end']
+                    r['place-full'] = place['full']
+                    r['place-abbrv'] = place['abbrv']
+                    
+                def found_b(establishment):
+
+                    if establishment is not None:
+                        r['establishment-start'] = establishment['start']
+                        r['establishment-end'] = establishment['end']
+                        r['establishment-full'] = establishment['full']
+                        r['establishment-abbrv'] = establishment['abbrv']
+            
+                    self.return_ok(request, {"round": r})
 
 
-            self.try_to_find_entity(store, desc, 'establishments').addCallback(found_b)
+                self.try_to_find_entity(store, desc, 'establishments').addCallback(found_b)
 
 
-        self.try_to_find_entity(store, desc, 'places').addCallback(found_a)
+            self.try_to_find_entity(store, desc, 'places').addCallback(found_a)
+            
+
+        self.get_unprocessed_statement(store, persona).addCallback(got_statement)
+
         
     def save_entity_from_round(self, abbrv, full, table_name):
         entities = store.get_latest(table_name)
