@@ -8,8 +8,7 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 		name: { begin: 0, end: 4 },
 		location: { begin: 5, end: 15 },
 		categories: ['groceries']
-	};
-	
+	};	
 	var RoundView = Backbone.View.extend({
 		template:round,
 		tagClass:'round',
@@ -33,12 +32,20 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 		},		
 		render:function() {
 			var html = _(this.template).template(this.options.round);
-			console.log(" >>>>>>>>>>>>> template ", html);
 			this.$el.html( html );
+			var cats = this.$el.find('.categories-input');
+			cats.children('.option').remove();
+			console.log("==================================================================");
+			$.ajax({url:'categories/cat-simple.json', type:"GET"}).success(function(result) {
+				result.categories.map(function(c) {
+					var h = _('<option value="<%= text %>"><%= text %></option>').template({text:c});
+					cats.append(h);
+				});
+				$(".chzn-select").chosen({no_results_text: "No results matched"});				
+			}).error(function(f) {	console.log("FAIL ", f);});
 			return this;
 		}
 	});
-
 	var EnrichView = Backbone.View.extend({
 		show_round:function(round) {
 			console.log('showing round >> ', round);
