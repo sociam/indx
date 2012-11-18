@@ -27,8 +27,15 @@ $(document).ready(function() {
 			        });
 				});
 	    }
+        window.populate_table = populate_table;
+        window.show_results = function(){
+            $('.round-holder, .save').hide();
+                $('<div id="tran-list"></div>').appendTo('body');
+                $('#tran-list').append('<table></table>');
+            populate_table(box);
+        };
 	    
-		$.getScript('http://'+host+':8211/js/webbox-backbone.js', function() {
+		$.getScript('http://'+host+'/js/webbox-backbone.js', function() {
 	  		var store = new ObjectStore.Store();
 			window.store = store;
 			var graphname = 'enrich';
