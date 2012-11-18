@@ -44,7 +44,7 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 			'select .select-name' : '_cb_name_input_selection',
 			'select .select-location' : '_cb_location_input_sel',
 			'click .loc-not-specified' : '_location_not_specified',
-			'click .name-not-specified' : '_name_not_specified'			
+			'click .name-not-specified' : '_name_not_specified'
 		},
 		initialize:function(options) {
 			assert(options.round, 'please provide a round as an argument');
@@ -52,6 +52,9 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 		_cb_location_input_sel:function(evt) {
 			var start = evt.target.selectionStart, end = evt.target.selectionEnd;
 			var val = $(evt.target).val().substring(start,end);
+			this.cb_location_input_sel_p(start, end, val);
+		},
+		cb_location_input_sel_p:function(start, end, val) {
 			var this_ = this;
 			this.$el.find('.display-selected-location').val(val);
 			this.$el.find('.input-location').focus();
@@ -65,7 +68,7 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 			
 			// position back div
 			$('.location-highlight').css(this._pink_offsets(start,end));
-			
+			this.trigger('select-location');			
 		},
 		_pink_offsets: function(start,end) {
 			var x = CHARWIDTH * start, width= CHARWIDTH * (end-start);
@@ -74,6 +77,9 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 		_cb_name_input_selection:function(evt) {
 			var start = evt.target.selectionStart, end = evt.target.selectionEnd;
 			var val = $(evt.target).val().substring(start,end);
+			this.cb_name_input_selection_p(start, end, val);
+		},
+		cb_name_input_selection_p:function(start, end, val) {
 			var this_ = this;
 			this.$el.find('.display-selected-name').val(val);
 			this.$el.find('.input-name').focus();
@@ -87,6 +93,7 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 			
 			// position back div			
 			$('.name-highlight').css(this._pink_offsets(start,end));
+			this.trigger('select-name');
 		},		
 		render:function() {
 			var this_ = this;
@@ -110,14 +117,14 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 				//
 				this_.options.box.ajax('/get_places', 'GET', { q: q, startswith: true })
 					.then(function(results) { process(results.entries);	});
-			}});
+			}, matcher: function(q) {return true} });
 			this.$el.find('.input-name').typeahead({ items:16, source: function(q,process) {
 				// debug code 
 				// var locs = ['marks & spencers', 'john lewis', 'harrods'];
 				// process(locs.filter(function(f) { return f.indexOf(q) == 0; }));
 				this_.options.box.ajax('/get_establishments', 'GET', { q: q, startswith: true })
 					.then(function(results) { process(results.entries);	});				
-			}});
+			}, matcher: function(q) {return true} });
 
 			this.loc_matches_view = new MatchesView({el:this.$el.find('.match-location')});
 			this.loc_matches_view.on('click', function(what) {
@@ -127,16 +134,31 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 			this.name_matches_view.on('click', function(what) {
 				this_.$el.find('.input-name').val(what);
 			});
+			var mapOptions = {
+				zoom: 10,
+				center: new google.maps.LatLng(51.5223, -0.0835),
+				mapTypeId: google.maps.MapTypeId.ROADMAP
+			};
+			this.map = new google.maps.Map(this.$el.find('.map_canvas')[0],   mapOptions);
+			
+			this.$el.find('.input-name').on('keyup', function() { this_._check_map(); });
+			this.$el.find('.input-location').on('keyup', function() { this_._check_map(); });
+			this.on('select-name', function() { this_._check_map(); });
+			this.on('select-location', function() { this_._check_map(); });			
+
 			return this;
 		},
 		get_values:function() {
 			var cats = this.$el.find('.categories-input').val();
 			return {
+				'@id':this.options.round['@id'],
 				'place-abbrv': this.loc_abbrv || '_NOT_SPECIFIED_',
 				'place-full':this.$el.find('.input-location').val() || '_NOT_SPECIFIED_',
 				'establishment-abbrv':this.name_abbrv || '_NOT_SPECIFIED_',
 				'establishment-full':this.$el.find('.input-name').val() || '_NOT_SPECIFIED_',
-				'categories': cats
+				'categories': cats,
+    			'isOwn': this.options.round['isOwn'],
+    			'statement_id':this.options.round['statement_id']
 			};
 		},
 		_location_not_specified:function() {
@@ -146,11 +168,42 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 		_name_not_specified:function() {
 			this.$el.find('.name').slideUp();
 			delete this.name_abbrv; //  = "_NOT_SPECIFIED_";
-		},		
+		},
+		_check_map:function() {
+			var this_ = this;
+			if (!this.place_service) {
+				console.log("INIT PLACE SERVICE");
+				this.place_service = new google.maps.places.PlacesService(this.map);
+				this.infowindow = new google.maps.InfoWindow();
+			}			
+			var s = (this.$el.find('.input-name').val() || this.name_abbrv || '') + ' ' + (this.$el.find('.input-location').val() || this.loc_abbrv || '');
+			var rdiv = this.$el.find('.map-results');
+			console.log('>>>>> searching for ', s);
+			this.place_service.textSearch({query:s},function(results) {
+				// update results
+				rdiv.html('');
+				var geoms = results.slice(0,5).map(function(r) {
+					var d = $(_('<div class="map-result"><%= name %></div>').template(r));
+					rdiv.append(d);
+					// d.click(function() { console.log('click rsult == ', r.geometry.location);	});
+					var marker = new google.maps.Marker({ map: this_.map, position: r.geometry.location });
+					console.log('adding marker ', r.name, r.geometry.location);
+					google.maps.event.addListener(marker, 'click', function() {
+						this_.infowindow.setContent(r.name);
+						this_.infowindow.open(this_.map, this);
+					});					
+					return r.geometry.location;
+				});
+				var bounds = new google.maps.LatLngBounds();
+				geoms.map(function(geo) { bounds.extend(geo); });
+				this_.map.fitBounds(bounds);
+				console.log('results >> ', results);
+			});
+		},
 		hide:function() {
 			this.$el.fadeOut('fast');
 			this.$el.remove();	
-		}
+		},
 	});
 	var EnrichView = Backbone.View.extend({
 		events : {
@@ -166,6 +219,12 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 			this.roundview = roundview;
 			this.$el.find('.round-holder').children().remove();
 			this.$el.find('.round-holder').append(roundview.render().el);
+			if(round['establishment-abbrv']) {
+			    roundview.cb_name_input_selection_p(round['establishment-start'], round['establishment-end'], round['establishment-abbrv']);
+			}
+    	    if(round['place-abbrv']) {
+    		    roundview.cb_location_input_sel_p(round['place-start'], round['place-end'], round['place-abbrv']);
+    		}
 		},
 		render:function() {
 			$('.save').show();

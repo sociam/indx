@@ -27,6 +27,9 @@ import uuid
 import random
 import re
 
+def clean(text):
+    return re.sub(r'[^a-z ]', '', text.lower())
+
 class EnrichHandler(BaseHandler):
     """ Add/remove boxes, add/remove users, change config. """
     base_path = 'enrich'
@@ -45,6 +48,7 @@ class EnrichHandler(BaseHandler):
             for uri in keys:
                 if uri[0] != "@":
                     obj = objs[uri]
+                    obj["@id"] = uri
                     logging.debug("object "+repr(obj))
                     if 'user' in obj and obj['user'][0]["@value"] == persona and ('place_id' not in obj or 'establishment_id' not in obj):
                         result_d.callback(obj)
@@ -54,6 +58,7 @@ class EnrichHandler(BaseHandler):
             for uri in keys:
                 if uri[0] != "@":
                     obj = objs[uri]
+                    obj["@id"] = uri
                     if ('place_id' not in obj or 'establishment_id' not in obj):
                         result_d.callback(obj)
                         return
@@ -79,6 +84,7 @@ class EnrichHandler(BaseHandler):
  
             user = persona
             owner = obj['user'][0]["@value"]
+            statement_id = obj["@id"]
            
             if "field_cc_transaction_description" in obj:
                 desc = obj['field_cc_transaction_description'][0]["@value"]
@@ -87,10 +93,14 @@ class EnrichHandler(BaseHandler):
             else:
                 return self.return_internal_error(request)
                 
-            desc = re.sub(r"[A-Z][A-Z][0-9][0-9A-Z]?[0-9][A-Z][A-Z]", "", desc, flags=re.I)
-            desc = re.sub(r"[0-3]?[0-9][A-Z][A-Z][A-Z][0-9][0-9]", "", desc, flags=re.I)
-            desc = re.sub(r"[0-9][0-9][0-9]+", "", desc, flags=re.I)
+            desc = re.sub(r"[0-2][0-9]:[0-5][0-9][A-Z][A-Z][A-Z][0-3][0-9]", "", desc, flags=re.I)
+            desc = re.sub(r"[0-3][0-9][A-Z][A-Z][A-Z][0-9][0-9]", "", desc, flags=re.I)
+            desc = re.sub(r"[A-Z][A-Z][A-Z][0-3][0-9]", "", desc, flags=re.I)
+            desc = re.sub(r"[0-3][0-9][A-Z][A-Z][A-Z][0-3][0-9]", "", desc, flags=re.I)
+            desc = re.sub(r"\+AEA-.*", "", desc, flags=re.I)
+            desc = re.sub(r" +,+", ",", desc, flags=re.I)
             desc = re.sub(r" +", " ", desc, flags=re.I)
+            desc = desc.strip()
         
 
             r = {
@@ -98,6 +108,7 @@ class EnrichHandler(BaseHandler):
                 "type":             "round",
                 "user":             user,
                 "statement":        desc,
+                "statement_id":     statement_id,
                 "isOwn":            owner == user
             }
            
@@ -129,7 +140,7 @@ class EnrichHandler(BaseHandler):
         self.get_unprocessed_statement(store, persona).addCallback(got_statement)
 
         
-    def save_entity_from_round(self, abbrv, full, table_name, request, store):
+    def save_entity_from_round(self, abbrv, full, table_name, ids_to_save, request, store):
        
         result_d = Deferred()
         
@@ -143,22 +154,63 @@ class EnrichHandler(BaseHandler):
                 if entity_id[0] != "@":
                     if abbrv == entity_info["abbrv"][0]["@value"] and full == entity_info["full"][0]["@value"]:
                         entity_info["count"][0]["@value"] = str(int(entity_info["count"][0]["@value"]) + 1)
+                        ids_to_save.append({table_name: entity_id})
                         found = True
                     entity_info["@id"] = entity_id
                     new_entities.append(entity_info)
 
             if not found:
-                id = str(uuid.uuid1())
-                new_entity = {"@id": id, "abbrv": [{"@value":abbrv}], "full": [{"@value": full}], "count": [{"@value": "1"}]}
+                new_id = str(uuid.uuid1())
+                ids_to_save.append({table_name: new_id})
+                new_entity = {"@id": new_id, "abbrv": [{"@value":abbrv}], "full": [{"@value": full}], "count": [{"@value": "1"}]}
                 new_entities.append(new_entity)
 
             def write_back(version_info):
-                result_d.callback(None)
+                result_d.callback(ids_to_save)
 	    
             logging.debug("About to save entitites: "+repr(new_entities))
             store.add_graph_version(table_name, new_entities, entities["@version"][0]).addCallback(write_back)
 
         store.get_latest(table_name).addCallback(save_entities)
+        return result_d
+    
+    def save_ids_in_transaction(self, ids_to_save, request, store):
+        token = self.get_token(request)
+        if not token:
+            return self.return_forbidden(request)
+        store = token.store
+
+        r = json.loads(self.get_post_args(request)['round'][0]) 
+        
+        result_d = Deferred()
+        
+        def save_statements(statements):
+            new_statements = []
+            for stat_id, stat_info in statements.items():
+                if stat_id[0] != "@":
+                    logging.debug("IDS: "+stat_id+" - "+r["statement_id"])
+                    if stat_id == r["statement_id"]:
+                        logging.debug("FOUND MATCHING STATEMENT ID: "+repr(ids_to_save))
+                        for item in ids_to_save:
+                            if "places" in item:
+                                stat_info["place_id"] = [{"@value": item["places"]}]
+                            if "establishments" in item:
+                                stat_info["establishment_id"] = [{"@value": item["establishments"]}]
+                        logging.debug("TRYING TO UPDATE STATEMENT: "+repr(stat_info))
+                    stat_info["@id"] = stat_id
+                    new_statements.append(stat_info)
+
+            def write_back(version_info):
+                result_d.callback(None)
+        
+            store.add_graph_version("statements", new_statements, int(statements["@version"][0])).addCallback(write_back)
+
+        logging.debug("THE ROUND: "+repr(r))
+        #if "isOwn" in r and r["isOwn"]==True :
+        store.get_latest("statements").addCallback(save_statements)
+        #else:
+        #    result_d.callback(None)
+            
         return result_d
 
     def save_round(self, request):
@@ -170,17 +222,23 @@ class EnrichHandler(BaseHandler):
         logging.debug(' POST ARGS ' + repr(self.get_post_args(request)))
 
         r = json.loads(self.get_post_args(request)['round'][0]) # request.args['round'][0]
-        logging.debug(' r ' + repr(r))
+        ids_to_save = []
+        
+        def save_in_transaction(variable):
+            if len(ids_to_save) > 0:
+                self.save_ids_in_transaction(ids_to_save, request, store).addCallback(lambda x: self.return_ok(request))
+            else:
+                self.return_ok(request)
         
         def save_place(variable):
             if not (r["place-full"] == "_NOT_SPECIFIED_" or r["place-abbrv"] == "_NOT_SPECIFIED_"):
-                self.save_entity_from_round(r["place-abbrv"], r["place-full"], "places", request, store).addCallback(lambda x: self.return_ok(request))
+                self.save_entity_from_round(r["place-abbrv"], r["place-full"], "places", ids_to_save, request, store).addCallback(save_in_transaction)
             else:
-                self.return_ok(request)
+                save_in_transaction(None)
 
      
         if not (r["establishment-full"] == "_NOT_SPECIFIED_" or r["establishment-abbrv"] == "_NOT_SPECIFIED_"):
-            self.save_entity_from_round(r["establishment-abbrv"], r["establishment-full"], "establishments", request, store).addCallback(save_place)
+            self.save_entity_from_round(r["establishment-abbrv"], r["establishment-full"], "establishments", ids_to_save, request, store).addCallback(save_place)
         else:
             save_place(None)
             
@@ -209,7 +267,7 @@ class EnrichHandler(BaseHandler):
         
         # the highlighted string from user: "Kings X"
         q = request.args['q'][0]
-        q = q.lower()
+        q = clean(q)
         startswith = 'startswith' in request.args
        
         def got_entities(returned):
@@ -224,9 +282,10 @@ class EnrichHandler(BaseHandler):
             
             entities = []
             for place in uk_places:
-                if startswith and place.lower().startswith(q):
+                cleanplace = clean(place)
+                if startswith and cleanplace.startswith(q):
                     entities.append(place)
-                elif (not startswith) and place.lower() == q:
+                elif (not startswith) and cleanplace == q:
                     entities.append(place)
             return self.return_ok(request, {"entries": entities})
                 
@@ -236,20 +295,20 @@ class EnrichHandler(BaseHandler):
 
     def search_entity_for_term(self, store, q, table_name, startswith=False, approx=False):
         return_d = Deferred()
-        q = q.lower()
+        q = clean(q)
 
         def got_latest(entities):
             d = []
             for entity_id, entity_info in entities.items():
                 if entity_id[0] != "@":
                     if approx:
-                        if entity_info["abbrv"][0]["@value"].lower().find(q, 0) > -1:
+                        if clean(entity_info["abbrv"][0]["@value"]).find(q, 0) > -1:
                             d.append({"id": entity_id, "name": entity_info["full"][0]["@value"]})
                     elif startswith:
-                        if entity_info["abbrv"][0]["@value"].lower().startswith(q):
+                        if clean(entity_info["abbrv"][0]["@value"]).startswith(q):
                             d.append({"id": entity_id, "name": entity_info["full"][0]["@value"], "count": entity_info["count"][0]["@value"]})
                     else:
-                        if entity_info["abbrv"][0]["@value"].lower() == q:
+                        if clean(entity_info["abbrv"][0]["@value"]) == q:
                             d.append({"id": entity_id, "name": entity_info["full"][0]["@value"], "count": entity_info["count"][0]["@value"]})
 
             return_d.callback(d)
@@ -283,7 +342,7 @@ class EnrichHandler(BaseHandler):
             
                 for place in uk_places:
                     for search in tosearch:
-                        if (place.lower() == search.lower()):
+                        if (clean(place) == clean(search)):
                             candidates.append({
                                 'abbrv':    search,
                                 'start':    q.find(search, 0),
@@ -303,7 +362,6 @@ class EnrichHandler(BaseHandler):
                 if len(matches) > 0:
                     for match in matches:
                         #if match not in candidates:
-                        logging.debug("do_search: "+abbrv+" ("+q+")"+" ("+table_name+")")
                         candidates.append({
                             'abbrv':    abbrv,
                             'start':    q.find(abbrv, 0),
@@ -339,6 +397,119 @@ class EnrichHandler(BaseHandler):
         for i in range(n):
             for j in range(i+1, n):
                 yield l[i:j]
+                
+    def get_all_transactions(self, request):
+        token = self.get_token(request)
+        if not token:
+            return self.return_forbidden(request)
+        store = token.store
+        
+        persona = request.args['persona'][0]
+
+        def got_latest(entities):
+            d = []
+            for entity_id, entity_info in entities.items():
+                if entity_id[0] != "@":
+                    if entity_info['user'][0]["@value"] == persona:
+                        if "field_cc_transaction_description" in entity_info:
+                            desc = entity_info['field_cc_transaction_description'][0]["@value"]
+                        elif "field_ba_transaction_description" in entity_info:
+                            desc = entity_info['field_ba_transaction_description'][0]["@value"]
+                        if "field_cc_transaction_value" in entity_info:
+                            amount = entity_info['field_cc_transaction_value'][0]["@value"]
+                        elif "field_ba_transaction_value" in entity_info:
+                            amount = entity_info['field_ba_transaction_value'][0]["@value"]
+                        if "field_cc_transaction_date" in entity_info:
+                            date = entity_info['field_cc_transaction_date'][0]["@value"]
+                        elif "field_ba_transaction_date" in entity_info:
+                            date = entity_info['field_ba_transaction_date'][0]["@value"]
+                            
+                        
+                        row = {
+                            "id": entity_id,
+                            "description": desc,
+                            "amount": amount,
+                            "date": date,
+                        }
+                        
+                        if "place_id" in entity_info:
+                            row["place_id"] = entity_info["place_id"][0]["@value"]
+                        if "place_id" in entity_info:
+                            row["establishment_id"] = entity_info["establishment_id"][0]["@value"]
+                            
+                        d.append(row)
+
+            self.return_ok(request, {'data': d})
+
+        store.get_latest('statements').addCallback(got_latest)
+        
+                
+# aggregations
+
+    def get_spendings_all_establishments(self, request):
+        token = self.get_token(request)
+        if not token:
+            return self.return_forbidden(request)
+        store = token.store
+        
+        sums = []
+        
+        def sum_up_establishments(establishments):
+            return_d = Deferred()
+
+            if len(establishments) > 0:
+                establishment = establishments.pop(0)
+            else:
+                self.return_ok(request, {"sums": sums})
+            
+            def sum_up_establishment(establishment, spending):
+                
+                sums.append({"establishment": establishment, "spending": spending})
+                sum_up_establishments(establishments)
+                    
+
+            self.get_all_spendings_at_establishment(store, establishment).addCallback(lambda spending: sum_up_establishment(establishment, spending))
+#            sum_up_establishments(establishments).addCallback(lambda x: sum_up_establishment(establishment))
+            return return_d
+
+        self.get_all_entities_from_table(store, "establishments").addCallback(sum_up_establishments)
+
+
+    def get_all_spendings_at_establishment(self, store, establishment):
+        return_d = Deferred()
+        
+        def got_latest(transactions):
+            spending = 0
+            for trans_id, trans_info in transactions.items():
+                if trans_id[0] != "@":
+                    logging.debug("transaction info : "+repr(trans_info))
+                    if "establishment_id" in trans_info and trans_info["establishment_id"][0]==establishment["@id"]:
+                        logging.debug("FOUND ESTABLISHMENT")
+
+                        if "field_ba_transaction_value" in trans_info:
+                            spending += trans_info["field_ba_transaction_value"][0]["@value"]
+                        elif "field_cc_transaction_value" in trans_info:
+                            spending += trans_info["field_cc_transaction_value"][0]["@value"]
+
+            return_d.callback(spending)
+
+        store.get_latest("statements").addCallback(got_latest)
+        return return_d
+        
+    def get_all_entities_from_table(self, store, table_name):
+        return_d = Deferred()
+
+        def got_latest(entities):
+            d = []
+            for entity_id, entity_info in entities.items():
+                if entity_id[0] != "@":
+                    if "full" in entity_info and "count" in entity_info:
+                        d.append({"@id": entity_id, "name": entity_info["full"][0]["@value"], "count": entity_info["count"][0]["@value"]})
+
+            return_d.callback(d)
+
+        store.get_latest(table_name).addCallback(got_latest)
+        return return_d
         
 EnrichHandler.subhandlers = [
 ]
