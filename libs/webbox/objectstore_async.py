@@ -303,7 +303,7 @@ class ObjectStoreAsync:
                             datatype = object["@type"]
 
                         triple_order += 1
-                        queries.append( ("SELECT * FROM wb_add_triple_to_graphvers(%s, %s, %s, %s, %s, %s, %s, %s)", [id_graphver, uri, predicate, value, type, language, datatype, triple_order]) )
+                        queries.append( ("SELECT * FROM wb_add_triple_to_graphvers(%s, %s, %s, %s, %s, %s, %s, %s)", [id_graphver, uri, predicate, str(value), type, language, datatype, triple_order]) )
     
             def exec_queries(var):
                 logging.debug("Objectstore add_graph_version exec_queries")
