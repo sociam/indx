@@ -111,20 +111,20 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 		get_values:function() {
 			var cats = this.$el.find('.categories-input').val();
 			return {
-				'place-abbrv': this.loc_abbrv || this.options.round.text,
-				'place-full':this.$el.find('.input-location').val(),
-				'establishment-abbrv':this.name_abbrv || this.options.round.text,
-				'establishment-full':this.$el.find('.input-name').val(),
+				'place-abbrv': this.loc_abbrv || '_NOT_SPECIFIED_',
+				'place-full':this.$el.find('.input-location').val() || '_NOT_SPECIFIED_',
+				'establishment-abbrv':this.name_abbrv || '_NOT_SPECIFIED_',
+				'establishment-full':this.$el.find('.input-name').val() || '_NOT_SPECIFIED_',
 				'categories': cats
 			};
 		},
 		_location_not_specified:function() {
 			this.$el.find('.loc').slideUp();
-			this.loc_abbrv = "_NOT_SPECIFIED_";
+			delete this.loc_abbrv; //  = "_NOT_SPECIFIED_";
 		},
 		_name_not_specified:function() {
 			this.$el.find('.name').slideUp();
-			this.name_abbrv = "_NOT_SPECIFIED_";
+			delete this.name_abbrv; //  = "_NOT_SPECIFIED_";
 		},		
 		hide:function() {
 			this.$el.fadeOut('fast');
