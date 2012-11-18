@@ -414,7 +414,7 @@ class EnrichHandler(BaseHandler):
             if len(establishments) > 0:
                 establishment = establishments.pop(0)
             else:
-                self.return_ok(request, {"sums": sums})
+                return self.return_ok(request, {"sums": sums})
             
             def sum_up_establishment(establishment, spending):
                 
@@ -437,13 +437,14 @@ class EnrichHandler(BaseHandler):
             for trans_id, trans_info in transactions.items():
                 if trans_id[0] != "@":
                     logging.debug("transaction info : "+repr(trans_info))
-                    if "establishment_id" in trans_info and trans_info["establishment_id"][0]==establishment["@id"]:
+                    if "establishment_id" in trans_info and trans_info["establishment_id"][0]["@value"]==establishment["@id"]:
                         logging.debug("FOUND ESTABLISHMENT")
 
                         if "field_ba_transaction_value" in trans_info:
-                            spending += trans_info["field_ba_transaction_value"][0]["@value"]
+                            spending += float(trans_info["field_ba_transaction_value"][0]["@value"])
                         elif "field_cc_transaction_value" in trans_info:
-                            spending += trans_info["field_cc_transaction_value"][0]["@value"]
+                            spending += float(trans_info["field_cc_transaction_value"][0]["@value"])
+            logging.debug("SPENDING TOTAL: "+str(spending))
 
             return_d.callback(spending)
 
