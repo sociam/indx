@@ -136,7 +136,7 @@ class EnrichHandler(BaseHandler):
         self.get_unprocessed_statement(store, persona).addCallback(got_statement)
 
         
-    def save_entity_from_round(self, abbrv, full, table_name, request, store):
+    def save_entity_from_round(self, abbrv, full, table_name, ids_to_save, request, store):
        
         result_d = Deferred()
         
@@ -150,22 +150,59 @@ class EnrichHandler(BaseHandler):
                 if entity_id[0] != "@":
                     if abbrv == entity_info["abbrv"][0]["@value"] and full == entity_info["full"][0]["@value"]:
                         entity_info["count"][0]["@value"] = str(int(entity_info["count"][0]["@value"]) + 1)
+                        ids_to_save.append({table_name: entity_id})
                         found = True
                     entity_info["@id"] = entity_id
                     new_entities.append(entity_info)
 
             if not found:
-                id = str(uuid.uuid1())
-                new_entity = {"@id": id, "abbrv": [{"@value":abbrv}], "full": [{"@value": full}], "count": [{"@value": "1"}]}
+                new_id = str(uuid.uuid1())
+                ids_to_save.append({table_name: new_id})
+                new_entity = {"@id": new_id, "abbrv": [{"@value":abbrv}], "full": [{"@value": full}], "count": [{"@value": "1"}]}
                 new_entities.append(new_entity)
 
             def write_back(version_info):
-                result_d.callback(None)
+                result_d.callback(ids_to_save)
 	    
             logging.debug("About to save entitites: "+repr(new_entities))
             store.add_graph_version(table_name, new_entities, entities["@version"][0]).addCallback(write_back)
 
         store.get_latest(table_name).addCallback(save_entities)
+        return result_d
+    
+    def save_ids_in_transaction(self, ids_to_save, request, store):
+        token = self.get_token(request)
+        if not token:
+            return self.return_forbidden(request)
+        store = token.store
+
+        r = json.loads(self.get_post_args(request)['round'][0]) 
+        
+        result_d = Deferred()
+        
+        def save_statements(statements):
+            new_statements = []
+            for stat_id, stat_info in statements.items():
+                if stat_id[0] != "@":
+                    if stat_id == r["@id"]:
+                        if "places" in ids_to_save:
+                            stat_info["place_id"] = {"@value": ids_to_save["places"]}
+                        if "establishments" in ids_to_save:
+                            stat_info["establishment_id"] = {"@value": ids_to_save["establishments"]}
+                    stat_info["@id"] = stat_id
+                    new_statements.append(stat_info)
+
+            def write_back(version_info):
+                result_d.callback(None)
+        
+            store.add_graph_version("statements", new_statements, int(statements["@version"][0])).addCallback(write_back)
+
+        logging.debug("THE ROUND: "+repr(r))
+        #if "isOwn" in r and r["isOwn"]==True :
+        store.get_latest("statements").addCallback(save_statements)
+        #else:
+        #    result_d.callback(None)
+            
         return result_d
 
     def save_round(self, request):
@@ -177,17 +214,23 @@ class EnrichHandler(BaseHandler):
         logging.debug(' POST ARGS ' + repr(self.get_post_args(request)))
 
         r = json.loads(self.get_post_args(request)['round'][0]) # request.args['round'][0]
-        logging.debug(' r ' + repr(r))
+        ids_to_save = []
+        
+        def save_in_transaction(variable):
+            if len(ids_to_save) > 0:
+                self.save_ids_in_transaction(ids_to_save, request, store).addCallback(lambda x: self.return_ok(request))
+            else:
+                self.return_ok(request)
         
         def save_place(variable):
             if not (r["place-full"] == "_NOT_SPECIFIED_" or r["place-abbrv"] == "_NOT_SPECIFIED_"):
-                self.save_entity_from_round(r["place-abbrv"], r["place-full"], "places", request, store).addCallback(lambda x: self.return_ok(request))
+                self.save_entity_from_round(r["place-abbrv"], r["place-full"], "places", ids_to_save, request, store).addCallback(save_in_transaction)
             else:
-                self.return_ok(request)
+                save_in_transaction(None)
 
      
         if not (r["establishment-full"] == "_NOT_SPECIFIED_" or r["establishment-abbrv"] == "_NOT_SPECIFIED_"):
-            self.save_entity_from_round(r["establishment-abbrv"], r["establishment-full"], "establishments", request, store).addCallback(save_place)
+            self.save_entity_from_round(r["establishment-abbrv"], r["establishment-full"], "establishments", ids_to_save, request, store).addCallback(save_place)
         else:
             save_place(None)
             
@@ -311,7 +354,6 @@ class EnrichHandler(BaseHandler):
                 if len(matches) > 0:
                     for match in matches:
                         #if match not in candidates:
-                        logging.debug("do_search: "+abbrv+" ("+q+")"+" ("+table_name+")")
                         candidates.append({
                             'abbrv':    abbrv,
                             'start':    q.find(abbrv, 0),
@@ -347,6 +389,73 @@ class EnrichHandler(BaseHandler):
         for i in range(n):
             for j in range(i+1, n):
                 yield l[i:j]
+                
+# aggregations
+
+    def get_spendings_all_establishments(self, request):
+        token = self.get_token(request)
+        if not token:
+            return self.return_forbidden(request)
+        store = token.store
+        
+        sums = []
+        
+        def sum_up_establishments(establishments):
+            return_d = Deferred()
+
+            if len(establishments) > 0:
+                establishment = establishments.pop(0)
+            else:
+                self.return_ok(request, {"sums": sums})
+            
+            def sum_up_establishment(establishment, spending):
+                
+                sums.append({"establishment": establishment, "spending": spending})
+                sum_up_establishments(establishments)
+                    
+
+            self.get_all_spendings_at_establishment(store, establishment).addCallback(lambda spending: sum_up_establishment(establishment, spending))
+#            sum_up_establishments(establishments).addCallback(lambda x: sum_up_establishment(establishment))
+            return return_d
+
+        self.get_all_entities_from_table(store, "establishments").addCallback(sum_up_establishments)
+
+
+    def get_all_spendings_at_establishment(self, store, establishment):
+        return_d = Deferred()
+        
+        def got_latest(transactions):
+            spending = 0
+            for trans_id, trans_info in transactions.items():
+                if trans_id[0] != "@":
+                    logging.debug("transaction info : "+repr(trans_info))
+                    if "establishment_id" in trans_info and trans_info["establishment_id"][0]==establishment["@id"]:
+                        logging.debug("FOUND ESTABLISHMENT")
+
+                        if "field_ba_transaction_value" in trans_info:
+                            spending += trans_info["field_ba_transaction_value"][0]["@value"]
+                        elif "field_cc_transaction_value" in trans_info:
+                            spending += trans_info["field_cc_transaction_value"][0]["@value"]
+
+            return_d.callback(spending)
+
+        store.get_latest("statements").addCallback(got_latest)
+        return return_d
+        
+    def get_all_entities_from_table(self, store, table_name):
+        return_d = Deferred()
+
+        def got_latest(entities):
+            d = []
+            for entity_id, entity_info in entities.items():
+                if entity_id[0] != "@":
+                    if "full" in entity_info and "count" in entity_info:
+                        d.append({"id": entity_id, "name": entity_info["full"][0]["@value"], "count": entity_info["count"][0]["@value"]})
+
+            return_d.callback(d)
+
+        store.get_latest(table_name).addCallback(got_latest)
+        return return_d
         
 EnrichHandler.subhandlers = [
 ]
