@@ -46,7 +46,7 @@ class EnrichHandler(BaseHandler):
                 if uri[0] != "@":
                     obj = objs[uri]
                     logging.debug("object "+repr(obj))
-                    if obj['user'] != None and obj['user'][0]["@value"] == persona and ('place_id' not in obj or 'establishment_id' not in obj):
+                    if 'user' in obj and obj['user'][0]["@value"] == persona and ('place_id' not in obj or 'establishment_id' not in obj):
                         result_d.callback(obj)
                         return
 
@@ -264,7 +264,7 @@ class EnrichHandler(BaseHandler):
         parts = description.split()
         
         candidates = []
-
+        
         tosearch = []
         for sublist in self.iter_sublists(parts):
             abbrv = ' '.join(sublist)
@@ -298,11 +298,12 @@ class EnrichHandler(BaseHandler):
                 result_d.callback(candidates[0])
 
 
-        def do_search(matches, candidates, q, in_table_name):
+        def do_search(matches, candidates, q, abbrv, in_table_name):
             if matches is not None:
                 if len(matches) > 0:
                     for match in matches:
                         #if match not in candidates:
+                        logging.debug("do_search: "+abbrv+" ("+q+")"+" ("+table_name+")")
                         candidates.append({
                             'abbrv':    abbrv,
                             'start':    q.find(abbrv, 0),
@@ -314,11 +315,12 @@ class EnrichHandler(BaseHandler):
 
             if len(tosearch) > 0:
                 store, abbrv, table_name = tosearch.pop(0)
-                self.search_entity_for_term(store, abbrv, table_name).addCallback(lambda matches: do_search(matches, candidates, q, in_table_name))
+                logging.debug("popped: "+repr(abbrv)+" ("+table_name+")")
+                self.search_entity_for_term(store, abbrv, table_name).addCallback(lambda matches: do_search(matches, candidates, q, abbrv, in_table_name))
             else:
                 done_all_searches(candidates, q, in_table_name)
 
-        do_search(None, candidates, description, table_name)
+        do_search(None, candidates, description, None, table_name)
 
         return result_d
 
