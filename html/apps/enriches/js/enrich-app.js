@@ -151,6 +151,7 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 		get_values:function() {
 			var cats = this.$el.find('.categories-input').val();
 			return {
+				'@id':this.options.round['@id'],
 				'place-abbrv': this.loc_abbrv || '_NOT_SPECIFIED_',
 				'place-full':this.$el.find('.input-location').val() || '_NOT_SPECIFIED_',
 				'establishment-abbrv':this.name_abbrv || '_NOT_SPECIFIED_',
