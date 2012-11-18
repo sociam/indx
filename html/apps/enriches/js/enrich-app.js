@@ -156,7 +156,8 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 				'place-full':this.$el.find('.input-location').val() || '_NOT_SPECIFIED_',
 				'establishment-abbrv':this.name_abbrv || '_NOT_SPECIFIED_',
 				'establishment-full':this.$el.find('.input-name').val() || '_NOT_SPECIFIED_',
-				'categories': cats
+				'categories': cats,
+    			'isOwn': this.options.round['isOwn']
 			};
 		},
 		_location_not_specified:function() {
