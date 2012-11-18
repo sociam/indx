@@ -156,7 +156,7 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 			var this_ = this;
 			var round_vals = this.roundview.get_values();
 			console.log("SAVING VALS ", round_vals);
-			box.ajax('/save_round', 'POST', { round : round_vals })
+			box.ajax('/save_round', 'POST', { round : JSON.stringify(round_vals) })
 				.then(function() {	this_.trigger('save'); 	})
 				.fail(function() {	this_.trigger('save'); 	});			
 		},

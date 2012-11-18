@@ -73,7 +73,7 @@ class EnrichHandler(BaseHandler):
 
         def got_statement(obj):
             if obj is None:
-                return self.return_ok()
+                return self.return_ok(request)
  
             user = persona
             owner = obj['user'][0]["@value"]
@@ -147,8 +147,10 @@ class EnrichHandler(BaseHandler):
             return self.return_forbidden(request)
         store = token.store
 
-        r = request.args['round'][0]
-        
+        logging.debug(' POST ARGS ' + repr(self.get_post_args(request)))
+
+        r = json.loads(self.get_post_args(request)['round'][0]) # request.args['round'][0]
+        logging.debug(' r ' + repr(r))
         self.save_entity_from_round(r["place-abbrv"]["@value"], r["place-full"]["@value"], "places", request)
         self.save_entity_from_round(r["establishment-abbrv"]["@value"], r["establishment-full"]["@value"], "establishments", request)      
         
