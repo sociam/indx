@@ -260,7 +260,27 @@ class EnrichHandler(BaseHandler):
             abbrv = ' '.join(sublist)
             tosearch.append( (store, abbrv, table_name) )
 
-        def done_all_searches(candidates):
+        def done_all_searches(candidates, q, table_name):    
+            if table_name == 'places' and len(candidates) == 0:
+                tosearch = []
+                for sublist in self.iter_sublists(q.split()):
+                    abbrv = ' '.join(sublist)
+                    tosearch.append(abbrv)
+                # search the gazetteer
+                f = open(os.path.join(os.path.dirname(__file__), "uk_places.json"), "r")
+                uk_places = json.load(f)
+                f.close()
+            
+                for place in uk_places:
+                    for search in tosearch:
+                        if (place.lower() == search.lower()):
+                            candidates.append({
+                                'abbrv':    search,
+                                'start':    q.find(search, 0),
+                                'end':      q.find(search, 0) + len(search),
+                                'full':     place,
+                                'count':    1
+                            })
             if len(candidates) == 0:
                 result_d.callback(None)
             else:
@@ -268,7 +288,7 @@ class EnrichHandler(BaseHandler):
                 result_d.callback(candidates[0])
 
 
-        def do_search(matches, candidates):
+        def do_search(matches, candidates, q, in_table_name):
             if matches is not None:
                 if len(matches) > 0:
                     for match in matches:
@@ -281,13 +301,14 @@ class EnrichHandler(BaseHandler):
                             'count':    match['count']
                         })
 
+
             if len(tosearch) > 0:
                 store, abbrv, table_name = tosearch.pop(0)
-                self.search_entity_for_term(store, abbrv, table_name).addCallback(lambda matches: do_search(matches, candidates))
+                self.search_entity_for_term(store, abbrv, table_name).addCallback(lambda matches: do_search(matches, candidates, q, in_table_name))
             else:
-                done_all_searches(candidates)
+                done_all_searches(candidates, q, in_table_name)
 
-        do_search(None, candidates)
+        do_search(None, candidates, description, table_name)
 
         return result_d
 
