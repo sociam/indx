@@ -267,6 +267,8 @@ class ObjectStoreAsync:
             queries = []
             for obj in objs:
                 
+                logging.debug("Trying to add object: "+str(obj)+"\t\tprev version: "+repr(version))
+                
                 if "@id" in obj:
                     uri = obj["@id"]
                 else:
@@ -300,7 +302,8 @@ class ObjectStoreAsync:
                 logging.debug("Objectstore add_graph_version exec_queries")
 
                 if len(queries) < 1:
-                    result_d.callback((version+1, graph_uri))
+                    logging.debug("version: "+str(version)+"\tgraph uri: "+repr(graph_uri))
+                    result_d.callback({"@graph" : graph_uri, "@version": version+1})
                     return
                 
                 (query, params) = queries.pop(0)
