@@ -11,7 +11,7 @@ $(document).ready(function() {
 	console.log('setting baseurl to ', document.location.pathname, '-', basepath);
 	require.config({ baseUrl:  basepath });
 	require(['apps/enriches/js/enrich-app', 'components/toolbar/toolbar'], function(enrich, tbcomponent) {
-		$.getScript('http://'+host+':8211/js/webbox-backbone.js', function() {
+		$.getScript('/js/webbox-backbone.js', function() {
 	  		var store = new ObjectStore.Store();
 			window.store = store;
 			var graphname = 'enrich';
