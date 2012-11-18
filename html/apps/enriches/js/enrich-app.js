@@ -52,6 +52,9 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 		_cb_location_input_sel:function(evt) {
 			var start = evt.target.selectionStart, end = evt.target.selectionEnd;
 			var val = $(evt.target).val().substring(start,end);
+			this.cb_location_input_sel_p(start, end, val);
+		},
+		cb_location_input_sel_p:function(start, end, val) {
 			var this_ = this;
 			this.$el.find('.display-selected-location').val(val);
 			this.$el.find('.input-location').focus();
@@ -74,6 +77,9 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 		_cb_name_input_selection:function(evt) {
 			var start = evt.target.selectionStart, end = evt.target.selectionEnd;
 			var val = $(evt.target).val().substring(start,end);
+			this.cb_name_input_selection_p(start, end, val);
+		},
+		cb_name_input_selection_p:function(start, end, val) {
 			var this_ = this;
 			this.$el.find('.display-selected-name').val(val);
 			this.$el.find('.input-name').focus();
@@ -111,14 +117,14 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 				//
 				this_.options.box.ajax('/get_places', 'GET', { q: q, startswith: true })
 					.then(function(results) { process(results.entries);	});
-			}});
+			}, matcher: function(q) {return true} });
 			this.$el.find('.input-name').typeahead({ items:16, source: function(q,process) {
 				// debug code 
 				// var locs = ['marks & spencers', 'john lewis', 'harrods'];
 				// process(locs.filter(function(f) { return f.indexOf(q) == 0; }));
 				this_.options.box.ajax('/get_establishments', 'GET', { q: q, startswith: true })
 					.then(function(results) { process(results.entries);	});				
-			}});
+			}, matcher: function(q) {return true} });
 
 			this.loc_matches_view = new MatchesView({el:this.$el.find('.match-location')});
 			this.loc_matches_view.on('click', function(what) {
@@ -210,6 +216,12 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 			this.roundview = roundview;
 			this.$el.find('.round-holder').children().remove();
 			this.$el.find('.round-holder').append(roundview.render().el);
+			if(round['establishment-abbrv']) {
+			    roundview.cb_name_input_selection_p(round['establishment-start'], round['establishment-end'], round['establishment-abbrv']);
+			}
+    	    if(round['place-abbrv']) {
+    		    roundview.cb_location_input_sel_p(round['place-start'], round['place-end'], round['place-abbrv']);
+    		}
 		},
 		render:function() {
 			$('.save').show();
