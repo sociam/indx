@@ -110,14 +110,14 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 				//
 				this_.options.box.ajax('/get_places', 'GET', { q: q, startswith: true })
 					.then(function(results) { process(results.entries);	});
-			}});
+			}, matcher: function(q) {return true} });
 			this.$el.find('.input-name').typeahead({ items:16, source: function(q,process) {
 				// debug code 
 				// var locs = ['marks & spencers', 'john lewis', 'harrods'];
 				// process(locs.filter(function(f) { return f.indexOf(q) == 0; }));
 				this_.options.box.ajax('/get_establishments', 'GET', { q: q, startswith: true })
 					.then(function(results) { process(results.entries);	});				
-			}});
+			}, matcher: function(q) {return true} });
 
 			this.loc_matches_view = new MatchesView({el:this.$el.find('.match-location')});
 			this.loc_matches_view.on('click', function(what) {
