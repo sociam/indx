@@ -25,6 +25,7 @@ import webbox.webbox_pg2 as database
 from webbox.objectstore_async import ObjectStoreAsync
 import uuid
 import random
+import re
 
 class EnrichHandler(BaseHandler):
     """ Add/remove boxes, add/remove users, change config. """
@@ -84,6 +85,12 @@ class EnrichHandler(BaseHandler):
                 desc = obj['field_ba_transaction_description'][0]["@value"]
             else:
                 return self.return_internal_error(request)
+                
+            desc = re.sub(r"[A-Z][A-Z][0-9][0-9A-Z]?[0-9][A-Z][A-Z]", "", desc, flags=re.I)
+            desc = re.sub(r"[0-3]?[0-9][A-Z][A-Z][A-Z][0-9][0-9]", "", desc, flags=re.I)
+            desc = re.sub(r"[0-9][0-9][0-9]+", "", desc, flags=re.I)
+            desc = re.sub(r" +", " ", desc, flags=re.I)
+        
 
             r = {
                 "@id":              str(uuid.uuid1()),
