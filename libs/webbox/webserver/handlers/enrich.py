@@ -169,7 +169,7 @@ class EnrichHandler(BaseHandler):
                 result_d.callback(ids_to_save)
 	    
             logging.debug("About to save entitites: "+repr(new_entities))
-            store.add_graph_version(table_name, new_entities, entities["@version"][0]).addCallback(write_back)
+            store.add_graph_version(table_name, new_entities, entities["@version"]).addCallback(write_back)
 
         store.get_latest(table_name).addCallback(save_entities)
         return result_d
@@ -398,6 +398,7 @@ class EnrichHandler(BaseHandler):
             for j in range(i+1, n):
                 yield l[i:j]
                 
+
     def get_all_transactions(self, request):
         token = self.get_token(request)
         if not token:
@@ -406,42 +407,76 @@ class EnrichHandler(BaseHandler):
         
         persona = request.args['persona'][0]
 
-        def got_latest(entities):
-            d = []
-            for entity_id, entity_info in entities.items():
-                if entity_id[0] != "@":
-                    if entity_info['user'][0]["@value"] == persona:
-                        if "field_cc_transaction_description" in entity_info:
-                            desc = entity_info['field_cc_transaction_description'][0]["@value"]
-                        elif "field_ba_transaction_description" in entity_info:
-                            desc = entity_info['field_ba_transaction_description'][0]["@value"]
-                        if "field_cc_transaction_value" in entity_info:
-                            amount = entity_info['field_cc_transaction_value'][0]["@value"]
-                        elif "field_ba_transaction_value" in entity_info:
-                            amount = entity_info['field_ba_transaction_value'][0]["@value"]
-                        if "field_cc_transaction_date" in entity_info:
-                            date = entity_info['field_cc_transaction_date'][0]["@value"]
-                        elif "field_ba_transaction_date" in entity_info:
-                            date = entity_info['field_ba_transaction_date'][0]["@value"]
-                            
-                        
-                        row = {
-                            "id": entity_id,
-                            "description": desc,
-                            "amount": amount,
-                            "date": date,
-                        }
-                        
-                        if "place_id" in entity_info:
-                            row["place_id"] = entity_info["place_id"][0]["@value"]
-                        if "place_id" in entity_info:
-                            row["establishment_id"] = entity_info["establishment_id"][0]["@value"]
-                            
-                        d.append(row)
+        def get_place_name(e_id, items):
 
-            self.return_ok(request, {'data': d})
+            logging.debug('places {0}: {1}'.format(e_id, items))
+            if e_id in items:
+                try:
+                    item = items[e_id]
+                    return item['full'][0]["@value"]
+                except Exception as e:
+                    pass
+            return e_id
+                
 
-        store.get_latest('statements').addCallback(got_latest)
+        def get_establishment_name(e_id, items):
+
+            logging.debug('establishments {0}: {1}'.format(e_id, items))
+            if e_id in items:
+                try:
+                    item = items[e_id]
+                    return item['full'][0]["@value"]
+                except Exception as e:
+                    pass
+            return e_id
+
+        
+        def got_places(places):
+            
+            def got_establishments(establishments):
+
+
+                def got_latest(entities):
+                    d = []
+                    for entity_id, entity_info in entities.items():
+                        if entity_id[0] != "@":
+                            if True or entity_info['user'][0]["@value"] == persona:
+                                if "field_cc_transaction_description" in entity_info:
+                                    desc = entity_info['field_cc_transaction_description'][0]["@value"]
+                                elif "field_ba_transaction_description" in entity_info:
+                                    desc = entity_info['field_ba_transaction_description'][0]["@value"]
+                                if "field_cc_transaction_value" in entity_info:
+                                    amount = entity_info['field_cc_transaction_value'][0]["@value"]
+                                elif "field_ba_transaction_value" in entity_info:
+                                    amount = entity_info['field_ba_transaction_value'][0]["@value"]
+                                if "field_cc_transaction_date" in entity_info:
+                                    date = entity_info['field_cc_transaction_date'][0]["@value"]
+                                elif "field_ba_transaction_date" in entity_info:
+                                    date = entity_info['field_ba_transaction_date'][0]["@value"]
+                                    
+                                
+                                row = {
+                                    "id": entity_id,
+                                    "description": desc,
+                                    "amount": amount,
+                                    "date": date,
+                                }
+                                
+                                if "place_id" in entity_info:
+                                    row["place_id"] = get_place_name(entity_info["place_id"][0]["@value"], places)
+                                if "establishment_id" in entity_info:
+                                    row["establishment_id"] = get_establishment_name(entity_info["establishment_id"][0]["@value"], establishments)
+                                    
+                                d.append(row)
+
+                    self.return_ok(request, {'data': d})
+
+                store.get_latest('statements').addCallback(got_latest)
+
+            store.get_latest("establishments").addCallback(got_establishments)
+
+        store.get_latest("places").addCallback(got_places)
+
         
                 
 # aggregations
