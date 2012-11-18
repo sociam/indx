@@ -156,13 +156,14 @@ class EnrichHandler(BaseHandler):
         logging.debug(' r ' + repr(r))
         
         def save_establishment():
-            if not (r["establishment-full"]["@value"] == "_NOT_SPECIFIED_" or r["establishment-abbrv"]["@value"] == "_NOT_SPECIFIED_"):
-                self.save_entity_from_round(r["establishment-abbrv"]["@value"], r["establishment-full"]["@value"], "establishments", request).addCallback(lambda x: self.return_ok(request))
+            if not (r["place-full"] == "_NOT_SPECIFIED_" or r["place-abbrv"] == "_NOT_SPECIFIED_"):
+                self.save_entity_from_round(r["establishment-abbrv"], r["establishment-full"], "establishments", request).addCallback(lambda x: self.return_ok(request))
             else:
                 self.return_ok(request)
-        
-        if not (r["place-full"]["@value"] == "_NOT_SPECIFIED_" or r["place-abbrv"]["@value"] == "_NOT_SPECIFIED_"):
-            self.save_entity_from_round(r["place-abbrv"]["@value"], r["place-full"]["@value"], "places", request).addCallback(save_establishment)
+
+     
+        if not (r["establishment-full"] == "_NOT_SPECIFIED_" or r["establishment-abbrv"] == "_NOT_SPECIFIED_"):
+            self.save_entity_from_round(r["place-abbrv"], r["place-full"], "places", request).addCallback(save_establishment)
         else:
             save_establishment()
             
