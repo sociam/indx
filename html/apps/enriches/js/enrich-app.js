@@ -182,7 +182,7 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 		next_round:function() {
 			var this_ = this;
 			var persona_n = Math.floor(8*Math.random() + 1);
-			this.box.ajax('/get_next_round', 'GET', { persona: 'persona' + persona_n }).then(function(x) {
+			this.box.ajax('/get_next_round', 'GET', { persona: 'Persona' + persona_n }).then(function(x) {
 				console.log("LOADING ROUND ", x.round);
 				this_.view.show_round(x.round);
 			});
