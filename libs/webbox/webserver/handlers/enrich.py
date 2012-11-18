@@ -87,10 +87,14 @@ class EnrichHandler(BaseHandler):
             else:
                 return self.return_internal_error(request)
                 
-            desc = re.sub(r"[A-Z][A-Z][0-9][0-9A-Z]?[0-9][A-Z][A-Z]", "", desc, flags=re.I)
-            desc = re.sub(r"[0-3]?[0-9][A-Z][A-Z][A-Z][0-9][0-9]", "", desc, flags=re.I)
-            desc = re.sub(r"[0-9][0-9][0-9]+", "", desc, flags=re.I)
+            desc = re.sub(r"[0-2][0-9]:[0-5][0-9][A-Z][A-Z][A-Z][0-3][0-9]", "", desc, flags=re.I)
+            desc = re.sub(r"[0-3][0-9][A-Z][A-Z][A-Z][0-9][0-9]", "", desc, flags=re.I)
+            desc = re.sub(r"[A-Z][A-Z][A-Z][0-3][0-9]", "", desc, flags=re.I)
+            desc = re.sub(r"[0-3][0-9][A-Z][A-Z][A-Z][0-3][0-9]", "", desc, flags=re.I)
+            desc = re.sub(r"\+AEA-.*", "", desc, flags=re.I)
+            desc = re.sub(r" +,+", ",", desc, flags=re.I)
             desc = re.sub(r" +", " ", desc, flags=re.I)
+            desc = desc.strip()
         
 
             r = {
