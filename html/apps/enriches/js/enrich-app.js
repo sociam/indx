@@ -44,7 +44,7 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 			'select .select-name' : '_cb_name_input_selection',
 			'select .select-location' : '_cb_location_input_sel',
 			'click .loc-not-specified' : '_location_not_specified',
-			'click .name-not-specified' : '_name_not_specified'			
+			'click .name-not-specified' : '_name_not_specified'
 		},
 		initialize:function(options) {
 			assert(options.round, 'please provide a round as an argument');
@@ -65,7 +65,7 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 			
 			// position back div
 			$('.location-highlight').css(this._pink_offsets(start,end));
-			
+			this.trigger('select-location');			
 		},
 		_pink_offsets: function(start,end) {
 			var x = CHARWIDTH * start, width= CHARWIDTH * (end-start);
@@ -87,6 +87,7 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 			
 			// position back div			
 			$('.name-highlight').css(this._pink_offsets(start,end));
+			this.trigger('select-name');
 		},		
 		render:function() {
 			var this_ = this;
@@ -127,6 +128,18 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 			this.name_matches_view.on('click', function(what) {
 				this_.$el.find('.input-name').val(what);
 			});
+			var mapOptions = {
+				zoom: 10,
+				center: new google.maps.LatLng(51.5223, -0.0835),
+				mapTypeId: google.maps.MapTypeId.ROADMAP
+			};
+			this.map = new google.maps.Map(this.$el.find('.map_canvas')[0],   mapOptions);
+			
+			this.$el.find('.input-name').on('keyup', function() { this_._check_map(); });
+			this.$el.find('.input-location').on('keyup', function() { this_._check_map(); });
+			this.on('select-name', function() { this_._check_map(); });
+			this.on('select-location', function() { this_._check_map(); });			
+
 			return this;
 		},
 		get_values:function() {
@@ -146,11 +159,42 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 		_name_not_specified:function() {
 			this.$el.find('.name').slideUp();
 			delete this.name_abbrv; //  = "_NOT_SPECIFIED_";
-		},		
+		},
+		_check_map:function() {
+			var this_ = this;
+			if (!this.place_service) {
+				console.log("INIT PLACE SERVICE");
+				this.place_service = new google.maps.places.PlacesService(this.map);
+				this.infowindow = new google.maps.InfoWindow();
+			}			
+			var s = (this.$el.find('.input-name').val() || this.name_abbrv || '') + ' ' + (this.$el.find('.input-location').val() || this.loc_abbrv || '');
+			var rdiv = this.$el.find('.map-results');
+			console.log('>>>>> searching for ', s);
+			this.place_service.textSearch({query:s},function(results) {
+				// update results
+				rdiv.html('');
+				var geoms = results.slice(0,5).map(function(r) {
+					var d = $(_('<div class="map-result"><%= name %></div>').template(r));
+					rdiv.append(d);
+					// d.click(function() { console.log('click rsult == ', r.geometry.location);	});
+					var marker = new google.maps.Marker({ map: this_.map, position: r.geometry.location });
+					console.log('adding marker ', r.name, r.geometry.location);
+					google.maps.event.addListener(marker, 'click', function() {
+						this_.infowindow.setContent(r.name);
+						this_.infowindow.open(this_.map, this);
+					});					
+					return r.geometry.location;
+				});
+				var bounds = new google.maps.LatLngBounds();
+				geoms.map(function(geo) { bounds.extend(geo); });
+				this_.map.fitBounds(bounds);
+				console.log('results >> ', results);
+			});
+		},
 		hide:function() {
 			this.$el.fadeOut('fast');
 			this.$el.remove();	
-		}
+		},
 	});
 	var EnrichView = Backbone.View.extend({
 		events : {

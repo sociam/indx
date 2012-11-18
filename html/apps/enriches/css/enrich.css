@@ -42,6 +42,7 @@ h4 {
 .selectable {
   position: relative;
   overflow: none;
+  margin-bottom: 14px;
 }
 .selectable .highlight {
   position: absolute;
@@ -53,4 +54,15 @@ h4 {
 .select-location {
   background-color: rgba(255, 255, 255, 0.1);
   z-index: 10;
+}
+.map_canvas {
+  height: 200px;
+  width: 400px;
+}
+.map-result {
+  cursor: hand !important;
+  border: 1px solid white;
+}
+.map-result:hover {
+  border: 1px solid black;
 }
