@@ -128,25 +128,34 @@ class EnrichHandler(BaseHandler):
         self.get_unprocessed_statement(store, persona).addCallback(got_statement)
 
         
-    def save_entity_from_round(self, abbrv, full, table_name, request):
+    def save_entity_from_round(self, abbrv, full, table_name, request, store):
        
         result_d = Deferred()
         
         def get_entities(entities):
+            logging.debug('entities ' + repr(entities))
+            
+            new_entities = []
+            
             found = False
-	    for entity_id, entity_info in entities.items():
-		if entity_id[0] != "@":
-		    if abbrv == entity_info["abbrv"][0]["@value"] and full == entity_info["full"][0]["@value"]:
-			entity_info["count"][0]["@value"] = str(int(entity_info["count"][0]["@value"]) + 1)
-			found = True
-	
-	    if not found:
-            entities.append({"abbrv": [{"@value":abbrv}], "full": [{"@value": full}], "count": [{"@value": "1"}]})
-		
-	    def write_back(version_info):
-	        result_d.callback(None)
+            for entity_id, entity_info in entities.items():
+                if entity_id[0] != "@":
+                    if abbrv == entity_info["abbrv"][0]["@value"] and full == entity_info["full"][0]["@value"]:
+                        entity_info["count"][0]["@value"] = str(int(entity_info["count"][0]["@value"]) + 1)
+                        found = True
+                    entity_info["@id"] = entity_id
+                    new_entities.append(entity_info)
+
+            if not found:
+                id = str(uuid.uuid1())
+                new_entity = {"@id": id, "abbrv": [{"@value":abbrv}], "full": [{"@value": full}], "count": [{"@value": "1"}]}
+                new_entities.append(new_entity)
+
+            def write_back(version_info):
+                result_d.callback(None)
 	    
-	    store.add_graph_version(table_name, entities, entities["@version"]).addCallback(write_back)
+            logging.debug("About to save entitites: "+repr(new_entities))
+            store.add_graph_version(table_name, new_entities, entities["@version"][0]).addCallback(write_back)
 
         store.get_latest(table_name).addCallback(get_entities)
         return result_d
@@ -162,17 +171,17 @@ class EnrichHandler(BaseHandler):
         r = json.loads(self.get_post_args(request)['round'][0]) # request.args['round'][0]
         logging.debug(' r ' + repr(r))
         
-        def save_establishment():
+        def save_establishment(variable):
             if not (r["place-full"] == "_NOT_SPECIFIED_" or r["place-abbrv"] == "_NOT_SPECIFIED_"):
-                self.save_entity_from_round(r["establishment-abbrv"], r["establishment-full"], "establishments", request).addCallback(lambda x: self.return_ok(request))
+                self.save_entity_from_round(r["establishment-abbrv"], r["establishment-full"], "establishments", request, store).addCallback(lambda x: self.return_ok(request))
             else:
                 self.return_ok(request)
 
      
         if not (r["establishment-full"] == "_NOT_SPECIFIED_" or r["establishment-abbrv"] == "_NOT_SPECIFIED_"):
-            self.save_entity_from_round(r["place-abbrv"], r["place-full"], "places", request).addCallback(save_establishment)
+            self.save_entity_from_round(r["place-abbrv"], r["place-full"], "places", request, store).addCallback(save_establishment)
         else:
-            save_establishment()
+            save_establishment(None)
             
 
     def get_establishments(self, request):
