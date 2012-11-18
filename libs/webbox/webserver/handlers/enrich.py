@@ -48,6 +48,7 @@ class EnrichHandler(BaseHandler):
             for uri in keys:
                 if uri[0] != "@":
                     obj = objs[uri]
+                    obj["@id"] = uri
                     logging.debug("object "+repr(obj))
                     if 'user' in obj and obj['user'][0]["@value"] == persona and ('place_id' not in obj or 'establishment_id' not in obj):
                         result_d.callback(obj)
@@ -57,6 +58,7 @@ class EnrichHandler(BaseHandler):
             for uri in keys:
                 if uri[0] != "@":
                     obj = objs[uri]
+                    obj["@id"] = uri
                     if ('place_id' not in obj or 'establishment_id' not in obj):
                         result_d.callback(obj)
                         return
@@ -82,6 +84,7 @@ class EnrichHandler(BaseHandler):
  
             user = persona
             owner = obj['user'][0]["@value"]
+            statement_id = obj["@id"]
            
             if "field_cc_transaction_description" in obj:
                 desc = obj['field_cc_transaction_description'][0]["@value"]
@@ -105,6 +108,7 @@ class EnrichHandler(BaseHandler):
                 "type":             "round",
                 "user":             user,
                 "statement":        desc,
+                "statement_id":     statement_id,
                 "isOwn":            owner == user
             }
            
@@ -184,11 +188,15 @@ class EnrichHandler(BaseHandler):
             new_statements = []
             for stat_id, stat_info in statements.items():
                 if stat_id[0] != "@":
-                    if stat_id == r["@id"]:
-                        if "places" in ids_to_save:
-                            stat_info["place_id"] = {"@value": ids_to_save["places"]}
-                        if "establishments" in ids_to_save:
-                            stat_info["establishment_id"] = {"@value": ids_to_save["establishments"]}
+                    logging.debug("IDS: "+stat_id+" - "+r["statement_id"])
+                    if stat_id == r["statement_id"]:
+                        logging.debug("FOUND MATCHING STATEMENT ID: "+repr(ids_to_save))
+                        for item in ids_to_save:
+                            if "places" in item:
+                                stat_info["place_id"] = [{"@value": item["places"]}]
+                            if "establishments" in item:
+                                stat_info["establishment_id"] = [{"@value": item["establishments"]}]
+                        logging.debug("TRYING TO UPDATE STATEMENT: "+repr(stat_info))
                     stat_info["@id"] = stat_id
                     new_statements.append(stat_info)
 
@@ -450,7 +458,7 @@ class EnrichHandler(BaseHandler):
             for entity_id, entity_info in entities.items():
                 if entity_id[0] != "@":
                     if "full" in entity_info and "count" in entity_info:
-                        d.append({"id": entity_id, "name": entity_info["full"][0]["@value"], "count": entity_info["count"][0]["@value"]})
+                        d.append({"@id": entity_id, "name": entity_info["full"][0]["@value"], "count": entity_info["count"][0]["@value"]})
 
             return_d.callback(d)
 
