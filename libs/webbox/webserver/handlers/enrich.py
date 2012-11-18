@@ -398,6 +398,52 @@ class EnrichHandler(BaseHandler):
             for j in range(i+1, n):
                 yield l[i:j]
                 
+    def get_all_transactions(self, request):
+        token = self.get_token(request)
+        if not token:
+            return self.return_forbidden(request)
+        store = token.store
+        
+        persona = request.args['persona'][0]
+
+        def got_latest(entities):
+            d = []
+            for entity_id, entity_info in entities.items():
+                if entity_id[0] != "@":
+                    if entity_info['user'][0]["@value"] == persona:
+                        if "field_cc_transaction_description" in entity_info:
+                            desc = entity_info['field_cc_transaction_description'][0]["@value"]
+                        elif "field_ba_transaction_description" in entity_info:
+                            desc = entity_info['field_ba_transaction_description'][0]["@value"]
+                        if "field_cc_transaction_value" in entity_info:
+                            amount = entity_info['field_cc_transaction_value'][0]["@value"]
+                        elif "field_ba_transaction_value" in entity_info:
+                            amount = entity_info['field_ba_transaction_value'][0]["@value"]
+                        if "field_cc_transaction_date" in entity_info:
+                            date = entity_info['field_cc_transaction_date'][0]["@value"]
+                        elif "field_ba_transaction_date" in entity_info:
+                            date = entity_info['field_ba_transaction_date'][0]["@value"]
+                            
+                        
+                        row = {
+                            "id": entity_id,
+                            "description": desc,
+                            "amount": amount,
+                            "date": date,
+                        }
+                        
+                        if "place_id" in entity_info:
+                            row["place_id"] = entity_info["place_id"][0]["@value"]
+                        if "place_id" in entity_info:
+                            row["establishment_id"] = entity_info["establishment_id"][0]["@value"]
+                            
+                        d.append(row)
+
+            self.return_ok(request, {'data': d})
+
+        store.get_latest('statements').addCallback(got_latest)
+        
+                
 # aggregations
 
     def get_spendings_all_establishments(self, request):

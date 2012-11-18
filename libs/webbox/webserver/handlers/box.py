@@ -91,6 +91,10 @@ class BoxHandler(BaseHandler):
         eh = EnrichHandler(self.webserver, base_path=self.base_path, register=False)
         return eh.save_round(request)
 
+    def get_all_transactions(self, request):
+        eh = EnrichHandler(self.webserver, base_path=self.base_path, register=False)
+        return eh.get_all_transactions(request)
+
 
     # ## @TODO ::
     # def handle_update(self,request):
@@ -160,6 +164,15 @@ BoxHandler.subhandlers = [
         'require_auth': True,
         'require_token': True,
         'handler': BoxHandler.save_round,
+        'content-type':'text/plain', # optional
+        'accept':['application/json']                
+    },
+    {
+        'prefix': 'get_all_transactions',
+        'methods': ['GET'],
+        'require_auth': True,
+        'require_token': True,
+        'handler': BoxHandler.get_all_transactions,
         'content-type':'text/plain', # optional
         'accept':['application/json']                
     },
