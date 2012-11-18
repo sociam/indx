@@ -16,7 +16,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging, psycopg2, os, txpostgres
+import logging, psycopg2, os, txpostgres, types
 from twisted.internet.defer import Deferred
 
 class ObjectStoreAsync:
@@ -250,6 +250,13 @@ class ObjectStoreAsync:
     def add_graph_version(self, graph_uri, objs, version):
         """ Add new version of a graph.
         """
+
+        # FIXME workaround passing version as a Tuple and/or String
+        if type(version) == types.TupleType:
+            version = version[0]
+        if type(version) == types.StringType:
+            version = int(version)
+
 
         result_d = Deferred()
         logging.debug("Objectstore add_graph_version")
