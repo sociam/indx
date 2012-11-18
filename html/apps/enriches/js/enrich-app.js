@@ -2,7 +2,14 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 	console.log('foo');
 
 	var assert = u.assert, deferred = u.deferred, defined = u.defined;
-
+	$.fn.textWidth = function(){
+		var html_org = $(this).html();
+		var html_calc = '<span>' + html_org + '</span>';
+		$(this).html(html_calc);
+		var width = $(this).find('span:first').width();
+		$(this).html(html_org);
+		return width;
+	};
 	var example_round = {
 		statement: "M & S Kings X",
 		name: { begin: 0, end: 4 },
@@ -27,6 +34,9 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 		},
 		render:function() { return this; }
 	});
+
+	var CHARWIDTH = 8.1;
+	
 	var RoundView = Backbone.View.extend({
 		template:round,
 		tagClass:'round',
@@ -52,6 +62,14 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 				});			
 			// this.loc_matches_view.update([val]);
 			this.loc_abbrv = val;
+			
+			// position back div
+			$('.location-highlight').css(this._pink_offsets(start,end));
+			
+		},
+		_pink_offsets: function(start,end) {
+			var x = CHARWIDTH * start, width= CHARWIDTH * (end-start);
+			return { left: x, top: 0, bottom: 0, width:width };
 		},
 		_cb_name_input_selection:function(evt) {
 			var start = evt.target.selectionStart, end = evt.target.selectionEnd;
@@ -66,6 +84,9 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 				});
 			// this.name_matches_view.update([val]);
 			this.name_abbrv = val;
+			
+			// position back div			
+			$('.name-highlight').css(this._pink_offsets(start,end));
 		},		
 		render:function() {
 			var this_ = this;
