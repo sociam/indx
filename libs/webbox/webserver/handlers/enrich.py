@@ -123,6 +123,8 @@ class EnrichHandler(BaseHandler):
         
     def save_entity_from_round(self, abbrv, full, table_name, request):
        
+        result_d = Deferred()
+        
         def get_entities(entities):
             found = False
 	    for entity_id, entity_info in entities.items():
@@ -132,14 +134,15 @@ class EnrichHandler(BaseHandler):
 			found = True
 	
 	    if not found:
-		entities.append({"abbrv": [{"@value":abbrv}], "full": [{"@value": full}], "count": [{"@value": "1"}]})
+            entities.append({"abbrv": [{"@value":abbrv}], "full": [{"@value": full}], "count": [{"@value": "1"}]})
 		
 	    def write_back(version_info):
-	        pass
+	        result_d.callback(None)
 	    
 	    store.add_graph_version(table_name, entities, entities["@version"]).addCallback(write_back)
 
         store.get_latest(table_name).addCallback(get_entities)
+        return result_d
 
     def save_round(self, request):
         token = self.get_token(request)
@@ -152,14 +155,17 @@ class EnrichHandler(BaseHandler):
         r = json.loads(self.get_post_args(request)['round'][0]) # request.args['round'][0]
         logging.debug(' r ' + repr(r))
         
+        def save_establishment():
+            if not (r["establishment-full"]["@value"] == "_NOT_SPECIFIED_" or r["establishment-abbrv"]["@value"] == "_NOT_SPECIFIED_"):
+                self.save_entity_from_round(r["establishment-abbrv"]["@value"], r["establishment-full"]["@value"], "establishments", request).addCallback(lambda x: self.return_ok(request))
+            else:
+                self.return_ok(request)
+        
         if not (r["place-full"]["@value"] == "_NOT_SPECIFIED_" or r["place-abbrv"]["@value"] == "_NOT_SPECIFIED_"):
-	    self.save_entity_from_round(r["place-abbrv"]["@value"], r["place-full"]["@value"], "places", request)
-        
-        if not (r["establishment-full"]["@value"] == "_NOT_SPECIFIED_" or r["establishment-abbrv"]["@value"] == "_NOT_SPECIFIED_"):
-	    self.save_entity_from_round(r["establishment-abbrv"]["@value"], r["establishment-full"]["@value"], "establishments", request)      
-        
-        self.return_ok(request)
-        
+            self.save_entity_from_round(r["place-abbrv"]["@value"], r["place-full"]["@value"], "places", request).addCallback(save_establishment)
+        else:
+            save_establishment()
+            
 
     def get_establishments(self, request):
         token = self.get_token(request)
