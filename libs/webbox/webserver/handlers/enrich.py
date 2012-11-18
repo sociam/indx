@@ -45,7 +45,8 @@ class EnrichHandler(BaseHandler):
             for uri in keys:
                 if uri[0] != "@":
                     obj = objs[uri]
-                    if obj['user'][0]["@value"] == persona and ('place_id' not in obj or 'establishment_id' not in obj):
+                    logging.debug("object "+repr(obj))
+                    if obj['user'] != None and obj['user'][0]["@value"] == persona and ('place_id' not in obj or 'establishment_id' not in obj):
                         result_d.callback(obj)
                         return
 
@@ -132,7 +133,7 @@ class EnrichHandler(BaseHandler):
        
         result_d = Deferred()
         
-        def get_entities(entities):
+        def save_entities(entities):
             logging.debug('entities ' + repr(entities))
             
             new_entities = []
@@ -157,7 +158,7 @@ class EnrichHandler(BaseHandler):
             logging.debug("About to save entitites: "+repr(new_entities))
             store.add_graph_version(table_name, new_entities, entities["@version"][0]).addCallback(write_back)
 
-        store.get_latest(table_name).addCallback(get_entities)
+        store.get_latest(table_name).addCallback(save_entities)
         return result_d
 
     def save_round(self, request):
@@ -171,17 +172,17 @@ class EnrichHandler(BaseHandler):
         r = json.loads(self.get_post_args(request)['round'][0]) # request.args['round'][0]
         logging.debug(' r ' + repr(r))
         
-        def save_establishment(variable):
+        def save_place(variable):
             if not (r["place-full"] == "_NOT_SPECIFIED_" or r["place-abbrv"] == "_NOT_SPECIFIED_"):
-                self.save_entity_from_round(r["establishment-abbrv"], r["establishment-full"], "establishments", request, store).addCallback(lambda x: self.return_ok(request))
+                self.save_entity_from_round(r["place-abbrv"], r["place-full"], "places", request, store).addCallback(lambda x: self.return_ok(request))
             else:
                 self.return_ok(request)
 
      
         if not (r["establishment-full"] == "_NOT_SPECIFIED_" or r["establishment-abbrv"] == "_NOT_SPECIFIED_"):
-            self.save_entity_from_round(r["place-abbrv"], r["place-full"], "places", request, store).addCallback(save_establishment)
+            self.save_entity_from_round(r["establishment-abbrv"], r["establishment-full"], "establishments", request, store).addCallback(save_place)
         else:
-            save_establishment(None)
+            save_place(None)
             
 
     def get_establishments(self, request):
