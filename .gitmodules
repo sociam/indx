@@ -1,0 +1,3 @@
+[submodule "apps/pinchart"]
+	path = apps/pinchart
+	url = ssh://mvk@login.ecs.soton.ac.uk/home/mvk/git-repo/pinchart
