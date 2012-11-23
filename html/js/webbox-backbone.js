@@ -382,7 +382,7 @@
 	
 	var Store = ObjectStore.Store = Backbone.Model.extend({
 		defaults: {
-			server_url: "http://"+host+":8211/",
+			server_url: "http://"+host+"/",
 			appid:"--default-app-id--"
 		},
 		initialize: function(attributes, options){
