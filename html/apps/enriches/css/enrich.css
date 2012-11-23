@@ -32,7 +32,6 @@ h4 {
   text-align: right;
 }
 .round-holder {
-  position: relative;
   padding: 10px;
   border: 1px solid #eeeeee;
 }
@@ -60,8 +59,9 @@ h4 {
   width: 400px;
 }
 .map-result {
-  cursor: hand !important;
+  padding: 4px;
   border: 1px solid white;
+  cursor: pointer;
 }
 .map-result:hover {
   border: 1px solid black;

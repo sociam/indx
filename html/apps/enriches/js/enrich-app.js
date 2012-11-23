@@ -199,6 +199,7 @@ define(['js/utils','text!apps/enriches/round_template.html'], function(u,round) 
 			});
 		},
 		hide:function() {
+			this.$el.find('.map_canvas').remove();			
 			this.$el.fadeOut('fast');
 			this.$el.remove();	
 		},
