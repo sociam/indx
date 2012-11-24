@@ -41,7 +41,12 @@
     }
 
 	var host = document.location.host;
-	if (host.indexOf(':') >= 0) { host = host.slice(0,host.indexOf(':'));	}
+	var port = 80;
+	if (host.indexOf(':') >= 0) {
+		port = parseInt(host.slice(host.indexOf(':')+1));
+		host = host.slice(0,host.indexOf(':'));
+	}
+	
 
 	// utilities -----------------
 	var isInteger = function(n) { return n % 1 === 0; };
@@ -382,7 +387,7 @@
 	
 	var Store = ObjectStore.Store = Backbone.Model.extend({
 		defaults: {
-			server_url: "http://"+host+"/",
+			server_url: "http://"+host+":"+port+"/",
 			appid:"--default-app-id--"
 		},
 		initialize: function(attributes, options){

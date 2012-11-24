@@ -212,8 +212,13 @@ class BaseHandler(Resource):
         return parse_qs(request.content.read())
     
     def set_cors_headers(self,request):
-        request.setHeader("Access-Control-Allow-Origin", ' '.join(self.get_cors_origin(request)) )
-        request.setHeader("Access-Control-Allow-Methods", ', '.join( self.get_cors_methods(request)))
-        request.setHeader("Access-Control-Allow-Headers", ', '.join( self.get_cors_headers(request)) )
-        request.setHeader("Access-Control-Allow-Credentials", 'true')
+        if self.get_cors_origin(request):
+            # logging.debug('setting allow origin {0}'.format(' '.join(self.get_cors_origin(request))))
+            request.setHeader("Access-Control-Allow-Origin", ' '.join(self.get_cors_origin(request)) )
+            request.setHeader("Access-Control-Allow-Methods", ', '.join( self.get_cors_methods(request)))
+            request.setHeader("Access-Control-Allow-Headers", ', '.join( self.get_cors_headers(request)) )
+            request.setHeader("Access-Control-Allow-Credentials", 'true')
+        else:
+            #logging.debug('local request - skipping cors')
+            pass
 
