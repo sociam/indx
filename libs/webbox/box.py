@@ -89,7 +89,6 @@ class WebBox:
         if self.object_store is None:
             self.reconnect_object_store()
 
-
     def reconnect_object_store(self):
         """ Try to reconnect to the object store using the username/password/db in self.config['webbox']['db'].
             This is done when the configuration has changed at runtime (e.g. when the user has given the database details when they first init their webbox.
@@ -106,17 +105,13 @@ class WebBox:
             logging.debug("Exception reconnecting object store, setting to None. Exception: {0}".format(str(e)))
             self.object_store = None
 
-
     def get_base_url(self):
         """ Get the server URL without the /webbox suffix. """
         return self.server_url
 
-
     def stop(self):
         """ Shut down the web box. """
         pass
-
-
 
     def add_to_journal(self, graphuri):
         """ This Graph URI was added or changed, add to the journal. """

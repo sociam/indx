@@ -45,31 +45,26 @@ class WebServer:
         self.config_filename = config_filename
 
         # enable ssl (or not)
-        try:
-            ssl_off = config['server']['ssl_off']
-        except Exception as e:
-            ssl_off = False
+        self.ssl_off = config['server'].get('ssl_off') or False
 
-        # generate the base URL
-        self.server_url = config['server']['hostname']
-        if ssl_off:
+        # generate the base URLs
+        self.server_url = self.config['server']['hostname']
+        if self.ssl_off:
             self.server_url = "http://" + self.server_url
-            if config['server']['port'] != 80:
-                self.server_url = self.server_url + ":" + str(config['server']['port'])
+            if self.config['server']['port'] != 80:
+                self.server_url = self.server_url + ":" + str(self.config['server']['port'])
         else:
             self.server_url = "https://" + self.server_url
-            if config['server']['port'] != 443:
-                self.server_url = self.server_url + ":" + str(config['server']['port'])
+            if self.config['server']['port'] != 443:
+                self.server_url = self.server_url + ":" + str(self.config['server']['port'])
 
         # get values to pass to web server
-        server_address = config['server']['address']
-        if server_address == "":
-            server_address = "0.0.0.0"
-        server_port = int(config['server']['port'])
-        server_hostname = config['server']['hostname']
-        server_cert = os.path.join(base_dir,config['server']['ssl_cert'])
-        server_private_key = os.path.join(base_dir,config['server']['ssl_private_key'])
+        self.server_address = self.config['server']['address']
+        if self.server_address == "":
+            self.server_address = "0.0.0.0"
 
+        self.base_dir = base_dir
+            
         # TODO set up twisted to use gzip compression
 
         # set up the twisted web resource object
@@ -81,25 +76,51 @@ class WebServer:
         class FileNoDirectoryListings(File):
             def directoryListing(self):
                 return ForbiddenResource()
-
         # root handler is a static web server
-        root = FileNoDirectoryListings(os.path.abspath(config['server']["html_dir"]))
-        root.processors = {'.rpy': script.ResourceScript}
-        root.ignoreExt('.rpy')
-
-        factory = Site(root)
-
-        self.root = root
-
-        # TODO: config rdflib first
+        self.root = FileNoDirectoryListings(os.path.abspath(self.config['server']["html_dir"]))
+        self.root.processors = {'.rpy': script.ResourceScript}
+        self.root.ignoreExt('.rpy')
+        
+        # TODO: config rdflib some day
         # register("json-ld", Serializer, "rdfliblocal.jsonld", "JsonLDSerializer")
 
-        for handler in handlers.HANDLERS:
-            handler(self)
+        ## initialize handlers
+        [handler(self) for handler in handlers.HANDLERS]
 
-        self.start_boxes()
+        ## start boxes
+        self.register_boxes(self.root)
+        self.start()
+        
+        # load a web browser once the server has started
+        def on_start(arg):
+            logging.debug("Server started successfully.")
+            try:
+                if self.config['server']['load_browser']:
+                    import webbrowser
+                    webbrowser.open(self.server_url)
+            except Exception as e:
+                logging.debug("Couldnt load webbrowser.")
+        def start_failed(arg):
+            logging.debug("start_failed: "+str(arg))
 
-        if ssl_off:
+        # calls the web browser opening function above when the reactor has finished starting up
+        d = Deferred()
+        d.addCallbacks(on_start, start_failed)
+        reactor.callWhenRunning(d.callback, "WebBox HTTP startup") #@UndefinedVariable
+        reactor.addSystemEventTrigger("during", "shutdown", lambda *x: self.shutdown()) #@UndefinedVariable
+
+    def shutdown(self):
+        ## todo put more cleanup stuff here        
+        logging.debug("Got reactor quit trigger, so closing down webbox.")
+        pass
+    
+    def start(self):        
+        factory = Site(self.root)        
+        server_port = int(self.config['server']['port'])
+        server_hostname = self.config['server']['hostname']
+        server_cert = os.path.join(self.base_dir,self.config['server'].get('ssl_cert'))
+        server_private_key = os.path.join(self.base_dir,self.config['server'].get('ssl_private_key'))        
+        if self.ssl_off:
             logging.debug("SSL is OFF, connections to this WebBox are not encrypted.")
             reactor.listenTCP(server_port, factory) #@UndefinedVariable
         else:
@@ -108,41 +129,17 @@ class WebServer:
             sslContext = ssl.DefaultOpenSSLContextFactory(server_private_key, server_cert)
             reactor.listenSSL(server_port, factory, contextFactory=sslContext) #@UndefinedVariable
 
-        # load a web browser once the server has started
-        def on_start(arg):
-            logging.debug("Server started successfully.")
-            try:
-                if config['server']['load_browser']:
-                    import webbrowser
-                    webbrowser.open(self.server_url)
-            except Exception as e:
-                logging.debug("Couldnt load webbrowser.")
-                
-        def start_failed(arg):
-            logging.debug("start_failed: "+str(arg))
-
-        # calls the web browser opening function above when the reactor has finished starting up
-        d = Deferred()
-        d.addCallbacks(on_start, start_failed)
-        reactor.callWhenRunning(d.callback, "WebBox HTTP startup") #@UndefinedVariable
-
-        # setup triggers on quit
-        def onShutDown():
-            logging.debug("Got reactor quit trigger, so closing down webbox.")
-
-        reactor.addSystemEventTrigger("during", "shutdown", onShutDown) #@UndefinedVariable
-
-    def start_boxes(self):
+    def register_boxes(self, parent):
         """ Add the webboxes to the server. """
         database.list_boxes(
             self.config['webbox']['db']['user'],
-            self.config['webbox']['db']['password'])
-        .addCallback(lambda boxes: [self.start_box(box) for box in boxes])
+            self.config['webbox']['db']['password']
+            ).addCallback(lambda boxes: [ self.register_box(boxname, parent) for boxname in boxes])
 
-    def start_box(self, name):
+    def register_box(self, name, parent):
         """ Add a single webbox to the server. """
         box = BoxHandler(self, name) # e.g. /webbox
-        self.root.putChild(name, box); # e.g. /webbox
+        parent.putChild(name, box); # e.g. /webbox
 
     def run(self):
         """ Run the server. """
