@@ -1,10 +1,13 @@
 <div class="navbar-inner">
   <a class="brand" href="#">webbox</a>
   <ul class="nav">
-    <li class="active"><a href="#">Home</a></li>
-    <li><a href="#">Link</a></li>
-    <li><a href="#">Link</a></li>
+	<li class="btn-group">
+	  <button class="btn selected-box">select a box</button>
+	  <button class="btn dropdown-toggle boxes" data-toggle="dropdown">
+		<span class="caret"></span>
+	  </button>
+	  <ul class="dropdown-menu boxlist"></ul>
+	</li>
 	<li class="login_display"><a href="#login_dialog" role="button" data-toggle="modal"><i>not logged in</i></a></li>
-	<li class="username_display"><a href="#logout_dialog" role="button" data-toggle="modal"><i></i></a></li>	
-  </ul>
+	<li class="username_display"><a href="#logout_dialog" role="button" data-toggle="modal"><i></i></a></li>	  </ul>
 </div>

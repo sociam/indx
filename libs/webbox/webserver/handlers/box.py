@@ -21,6 +21,7 @@ import logging, urllib2, uuid, rdflib, os, traceback, mimetypes, shutil, json
 from twisted.web.resource import Resource
 from webbox.webserver.session import WebBoxSession, ISession
 from webbox.webserver.handlers.base import BaseHandler
+from webbox.webserver.handlers.enrich import EnrichHandler
 from webbox.objectstore_async import IncorrectPreviousVersionException
 
 class BoxHandler(BaseHandler):
@@ -69,7 +70,28 @@ class BoxHandler(BaseHandler):
             # single object put
             return self.return_bad_request(request,"Single object PUT not supported, PUT an array to create/replace a named graph instead")
         pass
-    
+   
+    def get_establishments(self, request):
+        eh = EnrichHandler(self.webserver, base_path=self.base_path, register=False)
+        return eh.get_establishments(request)
+
+    def get_places(self, request):
+        eh = EnrichHandler(self.webserver, base_path=self.base_path, register=False)
+        return eh.get_places(request)
+
+    def get_next_round(self, request):
+        eh = EnrichHandler(self.webserver, base_path=self.base_path, register=False)
+        return eh.get_next_round(request)
+
+    def save_round(self, request):
+        eh = EnrichHandler(self.webserver, base_path=self.base_path, register=False)
+        return eh.save_round(request)
+
+    def get_all_transactions(self, request):
+        eh = EnrichHandler(self.webserver, base_path=self.base_path, register=False)
+        return eh.get_all_transactions(request)
+
+
     # ## @TODO ::
     # def handle_update(self,request):
     #     """ Handle calls to the Journal update URL. """
@@ -105,6 +127,51 @@ class BoxHandler(BaseHandler):
     #     pass
 
 BoxHandler.subhandlers = [
+    {
+        'prefix': 'get_establishments',
+        'methods': ['GET'],
+        'require_auth': True,
+        'require_token': True,
+        'handler': BoxHandler.get_establishments,
+        'content-type':'text/plain', # optional
+        'accept':['application/json']                
+    },
+    {
+        'prefix': 'get_places',
+        'methods': ['GET'],
+        'require_auth': True,
+        'require_token': True,
+        'handler': BoxHandler.get_places,
+        'content-type':'text/plain', # optional
+        'accept':['application/json']                
+    },
+    {
+        'prefix': 'get_next_round',
+        'methods': ['GET'],
+        'require_auth': True,
+        'require_token': True,
+        'handler': BoxHandler.get_next_round,
+        'content-type':'text/plain', # optional
+        'accept':['application/json']                
+    },
+    {
+        'prefix': 'save_round',
+        'methods': ['POST'],
+        'require_auth': True,
+        'require_token': True,
+        'handler': BoxHandler.save_round,
+        'content-type':'text/plain', # optional
+        'accept':['application/json']                
+    },
+    {
+        'prefix': 'get_all_transactions',
+        'methods': ['GET'],
+        'require_auth': True,
+        'require_token': True,
+        'handler': BoxHandler.get_all_transactions,
+        'content-type':'text/plain', # optional
+        'accept':['application/json']                
+    },
     {
         "prefix": "*",            
         'methods': ['GET'],

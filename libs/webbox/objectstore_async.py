@@ -16,7 +16,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging, psycopg2, os, txpostgres
+import logging, psycopg2, os, txpostgres, types
 from twisted.internet.defer import Deferred
 
 class ObjectStoreAsync:
@@ -252,6 +252,13 @@ class ObjectStoreAsync:
         """ Add new version of a graph.
         """
 
+        # FIXME workaround passing version as a Tuple and/or String
+        if type(version) == types.TupleType:
+            version = version[0]
+        if type(version) == types.StringType:
+            version = int(version)
+
+
         result_d = Deferred()
         logging.debug("Objectstore add_graph_version")
 
@@ -267,6 +274,8 @@ class ObjectStoreAsync:
             triple_order = 0 # for the whole graph
             queries = []
             for obj in objs:
+                
+                logging.debug("Trying to add object: "+str(obj)+"\t\tprev version: "+repr(version))
                 
                 if "@id" in obj:
                     uri = obj["@id"]
@@ -295,14 +304,15 @@ class ObjectStoreAsync:
                             datatype = object["@type"]
 
                         triple_order += 1
-                        queries.append( ("SELECT * FROM wb_add_triple_to_graphvers(%s, %s, %s, %s, %s, %s, %s, %s)", [id_graphver, uri, predicate, value, type, language, datatype, triple_order]) )
+                        queries.append( ("SELECT * FROM wb_add_triple_to_graphvers(%s, %s, %s, %s, %s, %s, %s, %s)", [id_graphver, uri, predicate, str(value), type, language, datatype, triple_order]) )
     
             def exec_queries(var):
                 #logging.debug("Objectstore add_graph_version exec_queries")
                 # TODO do as one call
 
                 if len(queries) < 1:
-                    result_d.callback((version+1, graph_uri))
+                    logging.debug("version: "+str(version)+"\tgraph uri: "+repr(graph_uri))
+                    result_d.callback({"@graph" : graph_uri, "@version": version+1})
                     return
                 
                 (query, params) = queries.pop(0)
