@@ -134,12 +134,10 @@ class WebServer:
 
     def start_boxes(self):
         """ Add the webboxes to the server. """
-
-        def boxes(boxes):
-            for boxname in boxes:
-                self.start_box(boxname)
-
-        database.list_boxes(self.config['webbox']['db']['user'], self.config['webbox']['db']['password']).addCallback(boxes)
+        database.list_boxes(
+            self.config['webbox']['db']['user'],
+            self.config['webbox']['db']['password'])
+        .addCallback(lambda boxes: [self.start_box(box) for box in boxes])
 
     def start_box(self, name):
         """ Add a single webbox to the server. """
@@ -181,6 +179,7 @@ class WebServer:
         if name in self.config['webboxes']:
             raise ResponseOverride(403, "Forbidden")
 
+        ## wat is this?
         self.config['webboxes'].append(name)
         self.save_config()
         self.start_box(name)
