@@ -75,7 +75,7 @@ class AdminHandler(BaseHandler):
         def check(result):
             try :
                 logging.debug(' result > {0} '.format(result))
-                return do_create() if result else request.return_forbidden(request)
+                return do_create() if result else self.return_forbidden(request)
             except Exception as e :
                 logging.debug('{0}'.format(e))
         self._is_box_name_okay(box_name)\
