@@ -16,11 +16,12 @@
 #    You should have received a copy of the GNU General Public License
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging, traceback, json
+import logging, traceback, json, re
 from twisted.web.resource import Resource
 from webbox.webserver.handlers.base import BaseHandler
 import webbox.webbox_pg2 as database
 from webbox.objectstore_async import ObjectStoreAsync
+from twisted.internet.defer import Deferred
 
 class AdminHandler(BaseHandler):
     """ Add/remove boxes, add/remove users, change config. """
@@ -29,63 +30,74 @@ class AdminHandler(BaseHandler):
         """ Initialise database, with specified postgres root credentials. """
         root_user = request.args['input_user'][0]
         root_password = request.args['input_password'][0]
-
-        ObjectStoreAsync.initialise(self.webserver.config['webbox']['db']['name'], root_user, root_password, self.webserver.config['webbox']['db']['user'], self.webserver.config['webbox']['db']['password'])
-
+        ObjectStoreAsync.initialise(self.webserver.config['webbox']['db']['name'], root_user,  root_password,
+                                    *self.webserver.get_webbox_user_password())
         # send them back to the webbox start page
         # request.redirect(str(self.webbox.get_base_url()))
         # request.finish()
         self.return_ok(request)
-        pass
     
     def info(self, request):
         """ Information about the webbox. """
         return self.return_ok(request, data = {"webbox_uri": self.webserver.server_url} )
 
-    def create_box(self, request):
+    def invalid_name(self, name):
+        """ Check if this name is safe (only contains a-z0-9_-). """ 
+        return re.match("^[a-z0-9_-]*$", name) is None and name not in BOX_NAME_BLACKLIST
+
+    def _is_box_name_okay(self, name):
+        """ checks new box, listening on /name. """
+        d = Deferred()
+        if self.invalid_name(name): return d.callback(False)
+        def cont(boxes):
+            logging.debug('boxes {0}, {1}'.format(boxes, not name in boxes))
+            return d.callback(not name in boxes)
+        self.webserver.get_master_box_list().addCallback(cont).addErrback(d.errback)
+        return d
+    
+    def create_box_handler(self, request):
         """ Create a new box. """
         args = self.get_post_args(request)
-        name = args['name'][0]
-        username = self.get_session(request).username
-        password = self.get_session(request).password
-        logging.debug("Creating box {0} for user {1}".format(name,username))
-        try:
-            database.create_box(name,username,password)
-            self.webserver.start_box(name)
+        box_name = args['name'][0]
+        username,password = self.get_session(request).username, self.get_session(request).password
+        logging.debug('asking to create box ' + box_name)
+        def start():
+            self.webserver.register_box(box_name,self.webserver.root)
             self.return_created(request)
-        except Exception as e:
-            logging.error('Error creating box {0} {1} '.format(name,e))
-            self.return_internal_error(request)
+        def do_create():
+            logging.debug("Creating box {0} for user {1}".format(box_name,username))
+            try:
+                database.create_box(box_name,username,password) ## TODO make this nonblocking
+                return start()
+            except Exception as e:
+                logging.debug(' error creating box {0} '.format(e))
+                return self.return_internal_error(request)
+        def check(result):
+            try :
+                logging.debug(' result > {0} '.format(result))
+                return do_create() if result else request.return_forbidden(request)
+            except Exception as e :
+                logging.debug('{0}'.format(e))
+        self._is_box_name_okay(box_name)\
+            .addCallback(check)\
+            .addErrback(lambda *er: logging.debug('{0}'.format(er)) and self.return_forbidden(request))        
 
-    def list_boxes(self,request):
-        username = self.get_session(request).username
-        password = self.get_session(request).password
-
+    def list_boxes_handler(self,request):
+        username,password = self.get_session(request).username, self.get_session(request).password
         def boxes(db_list):
             return self.return_ok(request, data={"list": db_list})
+        database.list_boxes(username, password)\
+            .addCallback(boxes)\
+            .addErrback(lambda *x: self.return_internal_error(request))
 
-        database.list_boxes(username, password).addCallback(boxes)
-
-    def create_user(self, request):
+    def create_user_handler(self, request):
         args = self.get_post_args(request)
-        new_username = args['username'][0]
-        new_password = args['password'][0]
-
-        # postgres webbox user
-        username = self.webserver.config['webbox']['db']['user']
-        username = self.webserver.config['webbox']['db']['password']
-
+        new_username, new_password = args['username'][0],  args['password'][0]
+        username,password = self.webserver.get_webbox_user_password()
         logging.debug("Creating new user with username: {0}".format(new_username))
-        try:
-            def created(result):
-                return self.return_ok()
-
-            d = database.create_user(new_username, new_password, username, password)
-            d.addCallback(created)
-        except Exception as e:
-            logging.error("Error creating new user {0}".format(new_username))
-            self.return_internal_error(request)
-
+        database.create_user(new_username, new_password, username, password)\
+            .addCallback(lambda *x: self.return_ok())\
+            .addErrback(lambda *x: self.return_internal_error())
         
 AdminHandler.subhandlers = [
     {
@@ -102,7 +114,7 @@ AdminHandler.subhandlers = [
         'methods': ['GET'],
         'require_auth': True,
         'require_token': False,
-        'handler': AdminHandler.list_boxes,
+        'handler': AdminHandler.list_boxes_handler,
         'content-type':'text/plain', # optional
         'accept':['application/json']
     },    
@@ -111,7 +123,7 @@ AdminHandler.subhandlers = [
         'methods': ['POST'],
         'require_auth': True,
         'require_token': False,
-        'handler': AdminHandler.create_box,
+        'handler': AdminHandler.create_box_handler,
         'content-type':'text/plain', # optional
         'accept':['application/json']
     },
@@ -129,7 +141,7 @@ AdminHandler.subhandlers = [
         'methods': ['POST'],
         'require_auth': True,
         'require_token': False,
-        'handler': AdminHandler.create_user,
+        'handler': AdminHandler.create_user_handler,
         'content-type':'text/plain', # optional
         'accept':['application/json']
     },

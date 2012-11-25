@@ -34,6 +34,18 @@ from webbox.webserver.handlers.box import BoxHandler
 from webbox.webserver import token
 import webbox.webbox_pg2 as database
 
+BOX_NAME_BLACKLIST = [
+    "admin",
+    "html",
+    "static",
+    "lrdd",
+    "webbox",
+    ".well-known",
+    "openid",
+    "auth"
+]
+
+
 class WebServer:
     """ Twisted web server for running WebBox. """
 
@@ -129,13 +141,22 @@ class WebServer:
             sslContext = ssl.DefaultOpenSSLContextFactory(server_private_key, server_cert)
             reactor.listenSSL(server_port, factory, contextFactory=sslContext) #@UndefinedVariable
 
+    def get_webbox_user_password(self):
+        return self.config['webbox']['db']['user'],self.config['webbox']['db']['password']
+
+    def get_master_box_list(self):
+        ## returns _all_ boxes in this server
+        user,password = self.config['webbox']['db']['user'], self.config['webbox']['db']['password']
+        return database.list_boxes(user,password)
+
     def register_boxes(self, parent):
         """ Add the webboxes to the server. """
-        database.list_boxes(
-            self.config['webbox']['db']['user'],
-            self.config['webbox']['db']['password']
-            ).addCallback(lambda boxes: [ self.register_box(boxname, parent) for boxname in boxes])
-
+        d = Deferred()
+        def registerem(boxes):
+            [self.register_box(boxname, parent) for boxname in boxes]
+            d.callback(boxes)
+        self.get_master_box_list().addCallback(registerem).addErrback(d.errback)
+        
     def register_box(self, name, parent):
         """ Add a single webbox to the server. """
         box = BoxHandler(self, name) # e.g. /webbox
@@ -144,42 +165,6 @@ class WebServer:
     def run(self):
         """ Run the server. """
         reactor.run() #@UndefinedVariable
-
-    def invalid_name(self, name):
-        """ Check if this name is safe (only contains a-z0-9_-). """ 
-        return re.match("^[a-z0-9_-]*$", name) is None
-
-    # @emax - how does this method relate to create_box in handlers/admin.py 
-    def create_box(self, name):
-        """ Create a new box, listening on /name. """
-
-        # check name is valid        
-        if self.invalid_name(name):
-            raise ResponseOverride(403, "Forbidden")
-    
-        # can't be any of these, we already use them for things
-        # @eMax - these should be loaded dynamically from the handlers
-        blacklist = [
-            "admin",
-            "html",
-            "static",
-            "lrdd",
-            "webbox",
-            ".well-known",
-            "openid",
-            "auth"
-        ]
-        if name in blacklist:
-            raise ResponseOverride(403, "Forbidden")
-        
-        # already exists?
-        if name in self.config['webboxes']:
-            raise ResponseOverride(403, "Forbidden")
-
-        ## wat is this?
-        self.config['webboxes'].append(name)
-        self.save_config()
-        self.start_box(name)
 
     def save_config(self):
         """ Save the current configuration to disk. """
