@@ -1,0 +1,52 @@
+#!/usr/bin/env python
+import os, sys, time, subprocess
+
+def file_filter(name):
+    return True # (not name.startswith(".")) and (not name.endswith(".swp"))
+
+def file_times(path):
+    for top_level in filter(file_filter, os.listdir(path)):
+        for root, dirs, files in os.walk(top_level):
+            for f in filter(file_filter, files):
+                yield os.stat(os.path.join(root, f)).st_mtime
+
+
+def spawn():
+    pid = os.fork()
+    if pid == 0:
+        os.setsid()
+        os.umask(0) 
+        pid2 = os.fork() 
+        if (pid2 == 0):  # Second child
+            # YOUR CODE HERE
+            import run # run run runnnnnnn!
+            sys.exit()
+        else:
+            return pid2 # sys.exit()    #First child exists
+        ## we're the child
+    else:
+        sys.exit()
+
+# The path to watch
+path = '.'
+# How often we check the filesystem for changes (in seconds)
+wait = 1
+
+# The process to autoreload
+pid = spawn()
+
+# The current maximum file modified time under the watched directory
+last_mtime = max(file_times(path))
+
+while True:
+    max_mtime = max(file_times(path))
+    if max_mtime > last_mtime:
+        if pid:
+            print 'Killing process ' + repr(pid)
+            os.kill(pid, 9)
+            time.sleep(1) # wait for thread exit
+        pid = spawn()
+        last_mtime = max_mtime # max(file_times(path))
+    else:
+        pass # print "sleeping zzz"
+    time.sleep(wait)
