@@ -127,7 +127,7 @@ class WebServer:
         pass
     
     def start(self):        
-        factory = Site(self.root)        
+        factory = Site(self.root)
         server_port = int(self.config['server']['port'])
         server_hostname = self.config['server']['hostname']
         server_cert = os.path.join(self.base_dir,self.config['server'].get('ssl_cert'))
@@ -146,7 +146,7 @@ class WebServer:
 
     def get_master_box_list(self):
         ## returns _all_ boxes in this server
-        user,password = self.config['webbox']['db']['user'], self.config['webbox']['db']['password']
+        user,password = self.get_webbox_user_password()
         return database.list_boxes(user,password)
 
     def register_boxes(self, parent):
@@ -159,8 +159,7 @@ class WebServer:
         
     def register_box(self, name, parent):
         """ Add a single webbox to the server. """
-        box = BoxHandler(self, name) # e.g. /webbox
-        parent.putChild(name, box); # e.g. /webbox
+        parent.putChild(name, BoxHandler(self, name)) # e.g. /webbox
 
     def run(self):
         """ Run the server. """
