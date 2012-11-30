@@ -17,7 +17,8 @@
 import os, sys, time, subprocess
 
 def file_filter(name):
-    return (not name.startswith(".")) # and (not name.endswith(".swp"))
+    
+    return (not name.startswith(".") or name.endswith('.js') or name.endswith('.less') or name.endswith('.html') or name.endswith('css'))  # and (not name.endswith(".swp"))
 
 def file_times(path):
     for top_level in filter(file_filter, os.listdir(path)):

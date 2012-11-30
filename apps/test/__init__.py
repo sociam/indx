@@ -31,15 +31,16 @@ class TestApp(BaseHandler):
         self.return_ok(request, { data: "hello" })
 
 TestApp.submodules = [
-    { 
-        'prefix':'hello',
-        'methods': ['GET'],
-        'require_auth': False,
-        'require_token': False,
-        'handler': BaseHandler.return_ok,
-        'content-type':'text/plain', # optional
-        'accept':['application/json']
-   }
+   # TODO: dispatching with apps doesn't seem to work yet
+   #  { 
+   #      'prefix':'hello',
+   #      'methods': ['GET'],
+   #      'require_auth': False,
+   #      'require_token': False,
+   #      'handler': BaseHandler.return_ok,
+   #      'content-type':'text/plain', # optional
+   #      'accept':['application/json']
+   # }
 ]
 
 APP = TestApp
