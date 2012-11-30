@@ -31,6 +31,7 @@ from twisted.internet.defer import Deferred
 from webbox.exception import ResponseOverride
 import webbox.webserver.handlers as handlers
 from webbox.webserver.handlers.box import BoxHandler
+from webbox.webserver.handlers.app import AppsHandler
 from webbox.webserver import token
 import webbox.webbox_pg2 as database
 
@@ -101,6 +102,7 @@ class WebServer:
 
         ## start boxes
         self.register_boxes(self.root)
+        self.root.putChild('apps', AppsHandler(self))        
         self.start()
         
         # load a web browser once the server has started
@@ -156,6 +158,7 @@ class WebServer:
             [self.register_box(boxname, parent) for boxname in boxes]
             d.callback(boxes)
         self.get_master_box_list().addCallback(registerem).addErrback(d.errback)
+
         
     def register_box(self, name, parent):
         """ Add a single webbox to the server. """

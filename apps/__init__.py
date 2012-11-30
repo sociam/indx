@@ -1,7 +1,7 @@
 ## module loader, goes to see which submodules have 'html' directories
 ## and declares them at the toplevel
 
-import os
+import os,importlib
 
 def find_module_dirs():
     curdir = os.path.dirname(os.path.abspath(__file__))
@@ -15,5 +15,5 @@ def find_html_dirs():
 
 MODULES = {}
 _html_dirs = find_html_dirs()
-[ MODULES.update({m_name:{'app':__import__('.'.join(['apps',m_name])), 'html':html_dirs.get(m_name)}}) for m_name in find_module_dirs() ]
+[ MODULES.update({m_name:{'module':importlib.import_module('.'.join(['apps',m_name])), 'html':_html_dirs.get(m_name)}}) for m_name in find_module_dirs() ]
 

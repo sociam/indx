@@ -12,3 +12,4 @@ env
 osx_app/build
 osx_app/*.dmg
 osx_app/*.egg
+*~
