@@ -1,7 +1,7 @@
 
 /** toolbar */ 
 define(['js/utils', 'text!components/toolbar/t_template.html', 'text!components/toolbar/login_template.html'], function(u,t_templ,l_templ) {
-	console.log('toolbar --', t_templ);
+	// console.log('toolbar --', t_templ);
 	var ToolbarView = Backbone.View.extend({
 		tagClass:"div",
 		events: {
