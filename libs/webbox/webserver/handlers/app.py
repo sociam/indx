@@ -1,0 +1,77 @@
+#    This file is part of WebBox.
+#
+#    Copyright 2011-2012 Max Van Kleek
+#    Copyright 2011-2012 University of Southampton
+#
+#    WebBox is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    WebBox is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
+
+import logging, traceback
+import logging, urllib2, uuid, rdflib, os, traceback, mimetypes, shutil, json
+import apps
+from twisted.web.resource import Resource
+from webbox.webserver.session import WebBoxSession, ISession
+from webbox.webserver.handlers.base import BaseHandler
+from webbox.webserver.handlers.enrich import EnrichHandler
+from webbox.objectstore_async import IncorrectPreviousVersionException
+from twisted.web.static import File
+from twisted.web.resource import NoResource
+
+# map apps/modulename/x -> handler
+# map apps/modulename/html/x  -> static
+
+class AppsHandler(Resource):
+
+    def __init__(self,webserver):
+        Resource.__init__(self)
+        self.isLeaf = False
+        self.apps = {}
+        self.index = File('html/index.html')
+        self._register_apps_debug(webserver)
+
+    def getChild(self, path, request):
+        logging.debug('get child ' + path ) # type(path) + " " + repr(request))
+        return self.apps.get(path) or NoResource()
+
+    def _register_apps(self, server):
+        logging.debug(' apps dir {0}'.format(repr(dir(apps))))
+        for appname, vals in apps.MODULES.iteritems():
+            logging.debug("registering app {0}".format(appname))
+            module,html = vals['module'],vals['html']
+            # logging.debug(' module dir {0}'.format(repr(dir(module))))
+            if getattr(module, 'APP', None):
+                self.apps[appname] = module.APP(server)
+                if html:
+                    logging.debug('putting html static {0} '.format(html))
+                    self.apps[appname].putChild('html', File(html))
+                    pass
+                pass
+            
+    def _register_apps_debug(self, server):
+        logging.debug(' apps dir {0}'.format(repr(dir(apps))))
+        for appname, vals in apps.MODULES.iteritems():
+            logging.debug("registering app {0}".format(appname))
+            module,html = vals['module'],vals['html']
+            # logging.debug(' module dir {0}'.format(repr(dir(module))))
+            self.putChild(appname,File(html))
+
+    def get_apps(self):
+        return dict([(k,v['module']) for k,v in apps.MODULES.iteritems()])            
+    
+    def options(self, request):
+        self.return_ok(request)
+
+    def render(self, request):
+        ## nothing necessary here
+        logging.debug('render request for apps ')
+        return self.index.render(request)
