@@ -59,7 +59,9 @@ class BaseHandler(Resource):
 
     def _matches_request(self, request, subhandler):
         path_fields = request.path.split("/")
-        sub_path = path_fields[2] if len(path_fields) >= 3 else ''
+        sub_path = '/'.join(path_fields[2:]) if len(path_fields) >= 3 else ''
+
+        logging.debug('sub_path {0}'.format(sub_path))
 
         # if the subhandler supports content negotiation, then determine the best one
         assert subhandler['accept'], 'No accept clause in subhandler %s ' % subhandler['prefix']
@@ -110,10 +112,9 @@ class BaseHandler(Resource):
         return request.getHeader('origin')
     
     def _matches_token_requirements(self, request, subhandler):
-        if not subhandler['require_token']:
-            return True
+        if not subhandler['require_token']: return True
         token = self.get_token(request)
-        boxname = self.base_path
+        boxname = self.base_path # this is not good. :< box might not be the path at all
         return token and token.verify(boxname, self.get_origin(request))
     
     def get_session(self,request):
@@ -127,7 +128,7 @@ class BaseHandler(Resource):
 
     def render(self, request):
         """ Twisted resource handler."""
-        logging.debug("Calling base render() - " + '/'.join(request.path.split("/")) + " " + repr( self.__class__)  )
+        logging.debug("Calling base render() - " + '/'.join(request.path.split("/")) + " " + repr( self.__class__)  + ' _ subhandlers::' + repr(len(self.subhandlers)))
         try:
             self.set_cors_headers(request)            
             matching_handlers = filter(lambda h: self._matches_request(request,h), self.subhandlers)

@@ -16,9 +16,8 @@
 #    You should have received a copy of the GNU General Public License
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging, traceback
-import logging, urllib2, uuid, rdflib, os, traceback, mimetypes, shutil, json
-import apps
+import logging, traceback, urllib2, uuid, rdflib, os, traceback, mimetypes, shutil, json
+
 from twisted.web.resource import Resource
 from webbox.webserver.session import WebBoxSession, ISession
 from webbox.webserver.handlers.base import BaseHandler
@@ -27,10 +26,12 @@ from webbox.objectstore_async import IncorrectPreviousVersionException
 from twisted.web.static import File
 from twisted.web.resource import NoResource
 
+import apps
+
 # map apps/modulename/x -> handler
 # map apps/modulename/html/x  -> static
 
-class AppsHandler(Resource):
+class AppsMetaHandler(Resource):
 
     def __init__(self,webserver):
         Resource.__init__(self)
@@ -50,6 +51,7 @@ class AppsHandler(Resource):
             module,html = vals['module'],vals['html']
             # logging.debug(' module dir {0}'.format(repr(dir(module))))
             if getattr(module, 'APP', None):
+                ## instantiate the app
                 self.apps[appname] = module.APP(server)
                 if html:
                     logging.debug('putting html static {0} '.format(html))
@@ -58,12 +60,22 @@ class AppsHandler(Resource):
                 pass
             
     def _register_apps_debug(self, server):
-        logging.debug(' apps dir {0}'.format(repr(dir(apps))))
         for appname, vals in apps.MODULES.iteritems():
             logging.debug("registering app {0}".format(appname))
             module,html = vals['module'],vals['html']
-            # logging.debug(' module dir {0}'.format(repr(dir(module))))
-            self.putChild(appname,File(html))
+            logging.debug(' module dir {0}'.format(html))
+            if not html:
+                # TODO: handle this case
+                continue 
+            if getattr(module, 'APP', None):
+                app = module.APP(server)
+                self.apps[appname] = app                
+                file_handler = File(html)
+                logging.debug('registering api child {0}'.format(repr(app)))
+                file_handler.putChild('api', app)
+                self.putChild(appname,file_handler) ## this puts things at the base -- rather than putting the app handler
+            else:
+                file_handler.putChild(appname,File(html))
 
     def get_apps(self):
         return dict([(k,v['module']) for k,v in apps.MODULES.iteritems()])            
