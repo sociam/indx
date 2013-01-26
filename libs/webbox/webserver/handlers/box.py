@@ -28,7 +28,11 @@ class BoxHandler(BaseHandler):
     base_path = ''
     def options(self, request):
         self.return_ok(request)
-        
+ 
+    # current protocol impl:
+    # 
+    # HTTP GET
+    #   @param graph: if specified, returns 
     def do_GET(self,request):
         token = self.get_token(request)
         if not token:
@@ -70,27 +74,27 @@ class BoxHandler(BaseHandler):
             # single object put
             return self.return_bad_request(request,"Single object PUT not supported, PUT an array to create/replace a named graph instead")
         pass
-   
-    def get_establishments(self, request):
-        eh = EnrichHandler(self.webserver, base_path=self.base_path, register=False)
-        return eh.get_establishments(request)
 
-    def get_places(self, request):
-        eh = EnrichHandler(self.webserver, base_path=self.base_path, register=False)
-        return eh.get_places(request)
+    # this stuff does not belong in the box handler >> move to EnrichHandler
+    # def get_establishments(self, request):
+    #     eh = EnrichHandler(self.webserver, base_path=self.base_path, register=False)
+    #     return eh.get_establishments(request)
 
-    def get_next_round(self, request):
-        eh = EnrichHandler(self.webserver, base_path=self.base_path, register=False)
-        return eh.get_next_round(request)
+    # def get_places(self, request):
+    #     eh = EnrichHandler(self.webserver, base_path=self.base_path, register=False)
+    #     return eh.get_places(request)
 
-    def save_round(self, request):
-        eh = EnrichHandler(self.webserver, base_path=self.base_path, register=False)
-        return eh.save_round(request)
+    # def get_next_round(self, request):
+    #     eh = EnrichHandler(self.webserver, base_path=self.base_path, register=False)
+    #     return eh.get_next_round(request)
 
-    def get_all_transactions(self, request):
-        eh = EnrichHandler(self.webserver, base_path=self.base_path, register=False)
-        return eh.get_all_transactions(request)
+    # def save_round(self, request):
+    #     eh = EnrichHandler(self.webserver, base_path=self.base_path, register=False)
+    #     return eh.save_round(request)
 
+    # def get_all_transactions(self, request):
+    #     eh = EnrichHandler(self.webserver, base_path=self.base_path, register=False)
+    #     return eh.get_all_transactions(request)
 
     # ## @TODO ::
     # def handle_update(self,request):
@@ -127,51 +131,6 @@ class BoxHandler(BaseHandler):
     #     pass
 
 BoxHandler.subhandlers = [
-    {
-        'prefix': 'get_establishments',
-        'methods': ['GET'],
-        'require_auth': True,
-        'require_token': True,
-        'handler': BoxHandler.get_establishments,
-        'content-type':'text/plain', # optional
-        'accept':['application/json']                
-    },
-    {
-        'prefix': 'get_places',
-        'methods': ['GET'],
-        'require_auth': True,
-        'require_token': True,
-        'handler': BoxHandler.get_places,
-        'content-type':'text/plain', # optional
-        'accept':['application/json']                
-    },
-    {
-        'prefix': 'get_next_round',
-        'methods': ['GET'],
-        'require_auth': True,
-        'require_token': True,
-        'handler': BoxHandler.get_next_round,
-        'content-type':'text/plain', # optional
-        'accept':['application/json']                
-    },
-    {
-        'prefix': 'save_round',
-        'methods': ['POST'],
-        'require_auth': True,
-        'require_token': True,
-        'handler': BoxHandler.save_round,
-        'content-type':'text/plain', # optional
-        'accept':['application/json']                
-    },
-    {
-        'prefix': 'get_all_transactions',
-        'methods': ['GET'],
-        'require_auth': True,
-        'require_token': True,
-        'handler': BoxHandler.get_all_transactions,
-        'content-type':'text/plain', # optional
-        'accept':['application/json']                
-    },
     {
         "prefix": "*",            
         'methods': ['GET'],

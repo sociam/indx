@@ -91,30 +91,28 @@ class BaseHandler(Resource):
         #    raise ForbiddenResource()
         return True
 
-    def get_token(self,request):
+    def _get_arg(self,request,argname):
         if request.method == 'GET':
-            try:
-                tid = request.args['token'][0]
-                return self.webserver.tokens.get(tid)
-            except Exception as e:
-                return None
+            return request.args.get(argname) and request.args[argname][0]
         if request.method in ['POST', 'PUT']:
-            try:
-                logging.debug(self.get_post_args(request)['token'])
-                tid = self.get_post_args(request)['token'][0]
-                return self.webserver.tokens.get(tid)
-            except Exception as e:
-                logging.debug('exception {0}'.format(e))
-                return None
+            post_args = self.get_post_args(request)
+            return post_args.get(argname) and post_args[argname][0]
         return None
+
+    def get_token(self,request):
+        tid = self._get_arg(request,'token')
+        return self.webserver.tokens.get(tid) if tid else None
 
     def get_origin(self,request):
         return request.getHeader('origin')
+
+    def get_request_box(self,request):
+        return self._get_arg(request,'box')
     
+    # revision to protocol
     def _matches_token_requirements(self, request, subhandler):
         if not subhandler['require_token']: return True
-        token = self.get_token(request)
-        boxname = self.base_path # this is not good. :< box might not be the path at all
+        token,boxname = self.get_token(request), self.get_request_box(request)
         return token and token.verify(boxname, self.get_origin(request))
     
     def get_session(self,request):

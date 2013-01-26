@@ -72,8 +72,7 @@ class EnrichHandler(BaseHandler):
 
     def get_next_round(self, request):
         token = self.get_token(request)
-        if not token:
-            return self.return_forbidden(request)
+        if not token: return self.return_forbidden(request)
         store = token.store
 
         persona = request.args['persona'][0]
@@ -245,10 +244,8 @@ class EnrichHandler(BaseHandler):
 
     def get_establishments(self, request):
         token = self.get_token(request)
-        if not token:
-            return self.return_forbidden(request)
-        store = token.store
-        
+        if not token: return self.return_forbidden(request)
+        store = token.store        
         # the highlighted string from user: "Kings X"
         q = request.args['q'][0]
         startswith = 'startswith' in request.args
@@ -548,4 +545,49 @@ class EnrichHandler(BaseHandler):
         return return_d
         
 EnrichHandler.subhandlers = [
+    {
+        'prefix': 'get_establishments',
+        'methods': ['GET'],
+        'require_auth': True,
+        'require_token': True,
+        'handler': EnrichHandler.get_establishments,
+        'content-type':'text/plain', # optional
+        'accept':['application/json']                
+    },
+    {
+        'prefix': 'get_places',
+        'methods': ['GET'],
+        'require_auth': True,
+        'require_token': True,
+        'handler': EnrichHandler.get_places,
+        'content-type':'text/plain', # optional
+        'accept':['application/json']                
+    },
+    {
+        'prefix': 'get_next_round',
+        'methods': ['GET'],
+        'require_auth': True,
+        'require_token': True,
+        'handler': EnrichHandler.get_next_round,
+        'content-type':'text/plain', # optional
+        'accept':['application/json']                
+    },
+    {
+        'prefix': 'save_round',
+        'methods': ['POST'],
+        'require_auth': True,
+        'require_token': True,
+        'handler': EnrichHandler.save_round,
+        'content-type':'text/plain', # optional
+        'accept':['application/json']                
+    },
+    {
+        'prefix': 'get_all_transactions',
+        'methods': ['GET'],
+        'require_auth': True,
+        'require_token': True,
+        'handler': EnrichHandler.get_all_transactions,
+        'content-type':'text/plain', # optional
+        'accept':['application/json']                
+    }    
 ]

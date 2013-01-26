@@ -72,11 +72,8 @@
         var uri = obj.id;
         var out_obj = {};
         $.each(obj.attributes, function(pred, vals){
-            if (pred[0] == "_"){
-                return;
-            }
-            if (pred[0] == "@"){ // don't expand @id etc.
-                // out_obj[pred] = vals;
+            if (pred[0] == "_" || pred[0] == "@"){
+				// don't expand @id etc.
                 return;
             }
             var obj_vals = [];
@@ -301,10 +298,27 @@
 				}
 			}
 		},
+		_set_token:function(token) { this.token = token; }
+		load:function() {
+			var this_ = this;
+			var d = deferred();
+			// get token for this box ---
+			authajax(this.store, 'auth/get_token', {
+				data: { appid: this.store.options.appid, boxid: this.id },
+				type: "POST"
+			}).then(function(data) {
+				this_._set_token( data.token );
+				this_.fetch().then(function() { d.resolve(this_); }).fail(function(err) {
+					console.error(' error fetching ', buri, err);
+					d.reject(err);					
+				});
+			return d.promise();			
+		},
+		_get_token_helper : function() {
+			return 
+	    },		
 		ajax : function( path, type, data ) {
 			var url = this.store.options.server_url + this.id + path;
-			// console.log('token ', this.options.token);
-			// console.log('boxajax call ', data );
 			var options = {
 				type: type,
 				url : url,
@@ -374,8 +388,8 @@
 			var d = deferred();			
 			authajax(store, 'admin/list_boxes')
 				.success(function(data) {
-					var boxes = data.boxes.map(function(boxname) {
-						return new Box({"@id":boxname, name:boxname}, { store: store });
+					var boxes = data.boxes.map(function(boxid) {
+						return this_.get(boxname) || new Box({"@id":boxname, name:boxname}, {store: store});
 					});
 					this_.reset(boxes);
 					d.resolve(boxes);
@@ -398,34 +412,9 @@
         },
 		fetch_boxes:function() { return this.boxes().fetch(); },
 		boxes:function() { return this.attributes.boxes;  },
-		get: function(buri) {
-			return this.boxes().get(buri);
-		},
-		checkLogin:function() {
-			return authajax(this, 'auth/whoami');
-		},
-		getInfo:function() {
-			return authajax(this, 'admin/info');
-		},
-		load_box:function(buri) {
-			var this_ = this;
-			var d = deferred();
-			this.get_token(buri,this.options.appid).then(function(data) {
-				console.log(buri + ' access token ', data.token);
-				var box = new Box({"@id" : buri}, { store: this_, token: data.token });
-				this_.boxes().add(box);
-				box.fetch().then(function() {
-					d.resolve(box);
-				}).fail(function(err) {
-					console.error(' error fetching ', buri, err);
-					d.reject(err);
-				});				
-			}).fail(function(err) {
-				console.error(' error getting token for box ', buri, err);
-				d.reject(err);
-			});
-			return d.promise();
-		},
+		get: function(buri) { return this.boxes().get(buri); },
+		checkLogin:function() { return authajax(this, 'auth/whoami'); },
+		getInfo:function() { return authajax(this, 'admin/info');},
 		login : function(username,password) {
 			var d = deferred();
 			var this_ = this;
@@ -442,15 +431,12 @@
 				.fail(function(l) { d.reject(l); });
 			return d.promise();			
 	    },		
-		get_token : function(boxid,appid) {
-			return authajax(this, 'auth/get_token', { data: { appid: appid, boxid: boxid },  type: "POST" });
-	    },
 		create_box:function(boxid) {
 			// actually creates the box above
 			var d = deferred();
 			var this_ = this;
 			authajax(this, 'admin/create_box', { data: { name: boxid },  type: "POST" })
-				.then(function() {
+				.then(function() {					
 					this_.load_box(boxid).then(function(box) { d.resolve(box); });
 				}).fail(function(err) { d.reject(); });
 			return d.promise();
