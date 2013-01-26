@@ -30,6 +30,7 @@
 
 (function(){
 	// intentional fall-through to window if running in a browser
+
     var root = this;
 	
     // The top-level namespace
@@ -62,7 +63,7 @@
             crossDomain: true,
             jsonp: false,
             contentType: "application/json",
-            dataType: "json",			
+            dataType: "json",
 			xhrFields: { withCredentials: true }
 		};
 		options = _(_(options || {}).clone()).extend(passed_options);
@@ -298,8 +299,10 @@
 				}
 			}
 		},
-		_set_token:function(token) { this.token = token; }
+		_set_token:function(token) { this.token = token; },
 		load:function() {
+			// this method retrieves an auth token and proceeds to 
+			// load up the graphs
 			var this_ = this;
 			var d = deferred();
 			// get token for this box ---
@@ -312,11 +315,9 @@
 					console.error(' error fetching ', buri, err);
 					d.reject(err);					
 				});
+			});
 			return d.promise();			
 		},
-		_get_token_helper : function() {
-			return 
-	    },		
 		ajax : function( path, type, data ) {
 			var url = this.store.options.server_url + this.id + path;
 			var options = {
@@ -341,7 +342,7 @@
             this.graphs().add(model);
             return model;
         },
-		_list_graphs : function(box){
+		_load_graphs : function(){
 			var d = deferred();
 			assert(box.options.token, "No token associated with this box", box);
 			authajax(box.options.store, box.id, { data: { token:box.options.token } })
@@ -363,7 +364,7 @@
 				console.warn('box.create() : not implemented yet');				
 				break;
             case "read":
-                return this._list_graphs(model);
+                return model._load_graphs(); // this._load_graphs(model);
             case "update":
 				console.warn('box.update() : not implemented yet');
 				break;
@@ -422,7 +423,7 @@
 				.then(function(l) { this_.trigger('login', username); d.resolve(l); })
 				.fail(function(l) { d.reject(l); });			
 			return d.promise();
-	    },
+		},
 		logout : function() {
 			var d = deferred();
 			var this_ = this;
@@ -430,7 +431,7 @@
 				.then(function(l) { this_.trigger('logout'); d.resolve(l); })
 				.fail(function(l) { d.reject(l); });
 			return d.promise();			
-	    },		
+		},		
 		create_box:function(boxid) {
 			// actually creates the box above
 			var d = deferred();
@@ -444,6 +445,6 @@
 		list_boxes : function() {
 			var this_ = this;
 			return authajax(this, 'admin/list_boxes', { type: "GET" });
-	    }		
+		}		
     });
 }).call(this);
