@@ -1,11 +1,23 @@
+/*global $,_,document,window,console,escape,Backbone,exports,require,assert */
+/*jslint vars:true */
 if (typeof define !== 'function') {
-	var define = require('amdefine')(module),
-	    Backbone = require('backbone'),
-        $ = require('jquery'),
-        _ = require('underscore');
+	// requirejs is not present, assume running on NodeJS /* todo */
+	if (typeof require === 'function') {
+		// is NODEJS 
+		var define = require('amdefine')(module),
+	        Backbone = require('backbone'),
+            $ = require('jquery'),
+            _ = require('underscore');
+	} else {
+		// hi.
+		this.define = function(reqs, then) {
+			var dfds = reqs.map(function(script) { return $.getScript(script); });
+			$.when.apply($,dfds).then(function() {	return then(); });
+		};
+	}
 }
-
 define([],function() {
+	"use strict";
 	return {
 		isInteger:function(n) { return n % 1 === 0; },
 		deferred:function() { return new $.Deferred(); },
