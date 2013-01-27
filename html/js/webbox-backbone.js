@@ -46,13 +46,13 @@
 	var dict = function(pairs) { var o = {};	pairs.map(function(pair) { o[pair[0]] = pair[1]; }); return o; };
 	var defined = function(x) { return (!_.isUndefined(x)) && x !== null; };
 
-	var host = document.location.host;
-	var port = 80;
-	if (host.indexOf(':') >= 0) {
-		port = parseInt(host.slice(host.indexOf(':')+1), 10);
-		host = host.slice(0,host.indexOf(':'));
-	}	
-	
+	// set up our parameters for webbox -
+	// default is that we're loading from an _app_ hosted within
+	// webbox. 
+	var dlh = document.location.host;
+	var DEFAULT_HOST = dlh.indexOf(':') < 0 ? dlh : dlh.slice(0,dlh.indexOf(':'));
+	var DEFAULT_PORT = dlh.indexOf(':') < 0 ? 80 : parseInt(dlh.slice(dlh.indexOf(':')+1), 10);
+
 	var authajax = function(store, path, passed_options) {
 		var url = store.options.server_url + path;
 		var options = {
@@ -131,21 +131,23 @@
 		},
 		sync: function(method, model, options){
 			var d = new $.Deferred();
-			switch(method){
-				case "create":
-					console.log("CREATE ", model.id);
-					break;
-				case "read":
-					d.resolve();
-					break;
-				case "update":
-					// delegate to the graph
-					console.debug("SAVE -- Update to Obj: ",model.id);
-					return model.graph.sync("update", model.graph, options);
-				case "delete":
-					break;
-				default:
-					break;
+			switch (method) {
+			case "create":
+				console.log("CREATE ", model.id);
+				break;
+			case "read":
+				d.resolve();
+				break;
+			case "update":
+				// delegate to the graph
+				// console.debug("SAVE -- Update to Obj: ",model.id);
+				assert(false, "Individual OBJ sync not implemented yet.");
+				// return model.graph.sync("update", model.graph, options);
+				break;
+			case "delete":
+				break;
+			default:
+				break;
 			}
 			return d.promise();
 		},
@@ -168,7 +170,7 @@
 		set:function(k,v,options) {
 			// set is tricky because it can be called like
 			// set('foo',123) or set({foo:123})
-			if (typeof k == 'string') {
+			if (typeof k === 'string') {
 				v = this._value_to_array(k,v);
 			} else {
 				k = this._all_values_to_arrays(k);
@@ -179,6 +181,7 @@
 
 	// GRAPH ==========================================================
 	var ObjCollection = Backbone.Collection.extend({ model: Obj });
+	
 	var Graph = WebBox.Graph = Backbone.Model.extend({
 		idAttribute: "@id", // the URI attribute is '@id' in JSON-LD
 		initialize: function(attributes, options) {
@@ -194,9 +197,7 @@
 			}
 		},
 		objs:function() { return this.attributes.objs; },
-		get_or_create:function(uri) {
-			return this.objs().get(uri) || this.create(uri);
-		},
+		get_or_create:function(uri) { return this.objs().get(uri) || this.create(uri);	},
 		create: function(object_attrs){
 			// add a new object to this graph (WebBox.GraphCollection will create an Obj from this)
 			// pad string into an object with a URI
@@ -224,12 +225,13 @@
 			// return a list of models (each of type WebBox.Object) to populate a GraphCollection
 			graph.box.ajax("/", "GET", {"graph": uri})
 				.then(function(data){
-					var graph_collection = graph.objs(), version = 0, objdata = data.data;
-					
+					var graph_collection = graph.objs();
+					var version = 0;
+					var objdata = data.data;					
 					$.each(objdata, function(uri, obj){
 						// top level keys
-						if (uri === "@version"){ version = obj; }
-						if (uri[0] === "@"){  return; } // ignore "@id" etc					
+						if (uri === "@version") { version = obj; }
+						if (uri[0] === "@") { return; } // ignore "@id" etc					
 						// not one of those, so must be a
 						// < uri > : { prop1 .. prop2 ... }
 						var obj_model = graph.get_or_create(uri);
@@ -253,25 +255,21 @@
 					console.log(">>> setting graph version ", graph.id, " ", version);
 					graph.version = version;
 					d.resolve(graph);
-				}).fail(function(data) {
-					d.reject(graph);
-				});
+				}).fail(function(data) { d.reject(graph);});
 			return d.promise();
 		},
 		sync: function(method, model, options){
 			switch(method){
-				case "create":
-					break;
-				case "read":
-					var graph = model;
-					return this._fetch_graph(graph);
-				case "update":
-					console.debug("Update graph called on graph:",model);
-					return this._update_graph(model);
-				case "delete":
-					break;
-				default:
-					break;
+			case "create":
+				break;
+			case "read":
+				return this._fetch_graph(model);
+			case "update":
+				return this._update_graph(model);
+			case "delete":
+				break;
+			default:
+				break;
 			}
 		}
 	});	
@@ -335,30 +333,30 @@
 			this.graphs().add(model);
 			return model;
 		},
-		_load_graphs : function(){
+		_fetch : function(){
 			var d = deferred();
 			var this_ = this;
 			assert(this.token, "No token associated with this this", this);
 			authajax(this.options.store, this.id, { data: { token:this.token } })
 				.then(function(data) {
 					var graph_uris = data.data;
-					console.log('graph uris ', typeof graph_uris); 
+					var old_graphs = this_.graphs();
 					var graphs = graph_uris.map(function(graph_uri){
-						var graph = new Graph({"@id": graph_uri}, {box: this_});
+						var graph = old_graphs.get(graph_uri) || new Graph({"@id": graph_uri}, {box: this_});
 						return graph;
 					});
-					this_.graphs().reset(graphs);
+					old_graphs.reset(graphs);
 					d.resolve(graphs);
 				}).fail(function(err) { d.reject(err); });
 			return d.promise();
-		},		
+		},
 		sync: function(method, model, options){
 			switch(method){
 			case "create":
 				console.warn('box.create() : not implemented yet');				
 				break;
 			case "read":
-				return model._load_graphs(); // this._load_graphs(model);
+				return model._fetch(); 
 			case "update":
 				console.warn('box.update() : not implemented yet');
 				break;
@@ -369,7 +367,8 @@
 				break;
 			}
 		}
-	});	
+	});
+	
 	var BoxCollection = Backbone.Collection.extend({
 		model: Box,
 		initialize:function(models,options) {
@@ -396,7 +395,7 @@
 	
 	var Store = WebBox.Store = Backbone.Model.extend({
 		defaults: {
-			server_url: "http://"+host+":"+port+"/",
+			server_url: "http://"+DEFAULT_HOST+":"+DEFAULT_PORT+"/",
 			appid:"--default-app-id--"
 		},
 		initialize: function(attributes, options){
