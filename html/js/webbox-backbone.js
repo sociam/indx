@@ -1,5 +1,5 @@
 /*global $,_,document,window,console,escape,Backbone,exports,require,assert */
-/*jslint vars:true */
+/*jslint vars:true, todo:true */
 /*
   This file is part of WebBox.
   Copyright 2012 Max Van Kleek, Daniel Alexander Smith
@@ -128,27 +128,32 @@
 			// pass graph
 			assert(options.graph, "must provide a graph");
 			this.graph = options.graph;
-		},
+		},		
 		sync: function(method, model, options){
 			var d = new $.Deferred();
-			switch (method) {
-			case "create":
-				console.log("CREATE ", model.id);
-				break;
-			case "read":
-				d.resolve();
-				break;
-			case "update":
-				// delegate to the graph
-				// console.debug("SAVE -- Update to Obj: ",model.id);
-				assert(false, "Individual OBJ sync not implemented yet.");
-				// return model.graph.sync("update", model.graph, options);
-				break;
-			case "delete":
-				break;
-			default:
-				break;
-			}
+			// TODO: make this do something to support
+			// individual access
+			/*
+			  switch (method) {
+			  case "create":
+			  console.log("CREATE ", model.id);
+			  break;
+			  case "read":
+			  d.resolve();
+			  break;
+			  case "update":
+			  // delegate to the graph
+			  // console.debug("SAVE -- Update to Obj: ",model.id);
+			  assert(false, "Individual OBJ sync not implemented yet.");
+			  // return model.graph.sync("update", model.graph, options);
+			  break;
+			  case "delete":
+			  break;
+			  default:
+			  break;
+			  }
+			*/			
+			d.resolve();
 			return d.promise();
 		},
 		_value_to_array:function(k,v) {
@@ -215,12 +220,11 @@
 			graph.box.ajax("/update",
 					"PUT", { graph : escape(graph.id),  version: escape(graph.version), data : JSON.stringify(graph_objs) }).then(function(response) {
 						graph.version = response.data["@version"];
-						console.log(">>> SAVE setting graph version ", graph.id, " ", response.data, graph.version);
 						d.resolve(graph);
 					}).fail(function(err) {	d.reject(err);});
 			return d.promise();
 		},
-		_fetch_graph : function(graph){
+		_fetch : function(graph){
 			var store = graph.box.store, uri = graph.id, d = deferred();
 			// return a list of models (each of type WebBox.Object) to populate a GraphCollection
 			graph.box.ajax("/", "GET", {"graph": uri})
@@ -263,7 +267,7 @@
 			case "create":
 				break;
 			case "read":
-				return this._fetch_graph(model);
+				return this._fetch(model);
 			case "update":
 				return this._update_graph(model);
 			case "delete":
@@ -290,7 +294,7 @@
 				}
 			}
 		},
-		_set_token:function(token) { this.token = token; },
+		_set_token:function(token) { this.set("token", token); },
 		load:function() {
 			// this method retrieves an auth token and proceeds to 
 			// load up the graphs
@@ -309,20 +313,6 @@
 			});
 			return d.promise();			
 		},
-		ajax : function( path, type, data ) {
-			var url = this.store.options.server_url + this.id + path;
-			var options = {
-				type: type,
-				url : url,
-				crossDomain: true,
-				jsonp: false,
-				contentType: "application/json",
-				dataType: "json",
-				data: _({ token:this.options.token }).extend(data),
-				xhrFields: { withCredentials: true }
-			};
-			return $.ajax( options ); // returns a deferred		
-		},		
 		graphs:function() { return this.attributes.graphs; },
 		get_or_create:function(uri) { return this.graphs().get(uri) || this.create(uri); },
 		create: function(attrs){
@@ -353,14 +343,17 @@
 		sync: function(method, model, options){
 			switch(method){
 			case "create":
-				console.warn('box.create() : not implemented yet');				
+				// TODO:
+				console.warn('box.update() : not implemented yet');
 				break;
 			case "read":
 				return model._fetch(); 
 			case "update":
+				// TODO: 
 				console.warn('box.update() : not implemented yet');
 				break;
 			case "delete":
+				// TODO: 
 				console.warn('box.delete() : not implemented yet');
 				break;
 			default:
@@ -404,9 +397,8 @@
 			// get the boxes list from the server
 			this.attributes.boxes = new BoxCollection((options && options.boxes) || [], {store: this});
 		},
-		fetch_boxes:function() { return this.boxes().fetch(); },
+		fetch:function() { return this.boxes().fetch(); },
 		boxes:function() { return this.attributes.boxes;  },
-		get: function(buri) { return this.boxes().get(buri); },
 		checkLogin:function() { return authajax(this, 'auth/whoami'); },
 		getInfo:function() { return authajax(this, 'admin/info');},
 		login : function(username,password) {
@@ -430,8 +422,10 @@
 			var d = deferred();
 			var this_ = this;
 			authajax(this, 'admin/create_box', { data: { name: boxid },  type: "POST" })
-				.then(function() {					
-					this_.load_box(boxid).then(function(box) { d.resolve(box); });
+				.then(function() {
+					this_.boxes().fetch()
+						.then(function(box) { d.resolve(box); })
+						.fail(function(err) { d.reject(err); });
 				}).fail(function(err) { d.reject(); });
 			return d.promise();
 		},
@@ -442,3 +436,23 @@
 	});
 	
 }).call(this);
+
+
+/**
+   moved from box >> 
+   ajax : function( path, type, data ) {
+   var url = this.store.options.server_url + this.id + path;
+   var this_ = this;
+   var options = {
+   type: type,
+   url : url,
+   crossDomain: true,
+   jsonp: false,
+   contentType: "application/json",
+   dataType: "json",
+   data: _({ token:this_.get('token') }).extend(data),
+   xhrFields: { withCredentials: true }
+   };
+   return $.ajax( options ); // returns a deferred		
+   },		
+*/
