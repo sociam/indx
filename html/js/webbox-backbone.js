@@ -1,5 +1,6 @@
 /*global $,_,document,window,console,escape,Backbone,exports,require,assert */
 /*jslint vars:true, todo:true */
+
 /*
   This file is part of WebBox.
   Copyright 2012 Max Van Kleek, Daniel Alexander Smith
