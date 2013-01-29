@@ -106,14 +106,21 @@ class BaseHandler(Resource):
     def get_origin(self,request):
         return request.getHeader('origin')
 
+    ## new in apps-refactor version - requires box name to be
+    ## provided in the request.
+    ## what we _used_ to do is require
+    ##   "apps/enriches/get_next_round" !== "box/url" -> fail.
+    ## ?? 
     def get_request_box(self,request):
         return self._get_arg(request,'box')
+    def get_request_app(self,request):
+        return self._get_arg(request,'app')
     
     # revision to protocol
     def _matches_token_requirements(self, request, subhandler):
         if not subhandler['require_token']: return True
-        token,boxname = self.get_token(request), self.get_request_box(request)
-        return token and token.verify(boxname, self.get_origin(request))
+        token,boxid,appid = self.get_token(request), self.get_request_box(request), self.get_request_app(request)
+        return token and token.verify(boxid, appid, self.get_origin(request))
     
     def get_session(self,request):
         session = request.getSession()

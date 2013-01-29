@@ -121,7 +121,6 @@
 		sync: function(method, model, options){
 			error('object sync methods individually not implemented yet'); // TODO
 			var d = new $.Deferred();
-			// TODO: make this do something to support individual access
 			d.resolve();
 			return d.promise();
 		},
@@ -309,8 +308,9 @@
 		},
 		ajax:function(method, path, data) {
 			var url = [this.get('server_url'), path].join('/');
+			var default_data = { app: this.get('app') };
 			var options = _(_(this.ajax_defaults).clone()).extend(
-				{ url: url, method : method, crossDomain: !this.is_same_domain(), data: data || {} }
+				{ url: url, method : method, crossDomain: !this.is_same_domain(), data: _(default_data).extend(data) }
 			);
 			return $.ajax( options ); // returns a deferred		
 		},
