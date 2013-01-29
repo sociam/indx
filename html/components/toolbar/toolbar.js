@@ -1,7 +1,8 @@
+/*global $,_,document,window,console,escape,Backbone,exports,require,assert,define */
+/*jslint vars:true, todo:true */
 
-/** toolbar */ 
 define(['js/utils', 'text!components/toolbar/t_template.html', 'text!components/toolbar/login_template.html'], function(u,t_templ,l_templ) {
-	// console.log('toolbar --', t_templ);
+	'use strict';
 	var ToolbarView = Backbone.View.extend({
 		tagClass:"div",
 		events: {
@@ -65,11 +66,7 @@ define(['js/utils', 'text!components/toolbar/t_template.html', 'text!components/
 		},
 		set_selected_box:function(b) {
 			this.trigger('change:box', b);
-			if (b === undefined) {
-				$('.selected-box').html(' no box selected ');
-			} else {
-				$('.selected-box').html(b);
-			}
+			$('.selected-box').html(b === undefined ? ' no box selected ' : b);
 			this.selected_box = b;
 		},
 		_box_selected:function(d) {

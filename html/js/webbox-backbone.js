@@ -46,7 +46,11 @@
 	var deferred = function() { return new $.Deferred(); };
 	var dict = function(pairs) { var o = {};	pairs.map(function(pair) { o[pair[0]] = pair[1]; }); return o; };
 	var defined = function(x) { return (!_.isUndefined(x)) && x !== null; };
-
+	var log = function() { try { console.log.apply(console,arguments);  } catch(e) { }};
+	var warn = function() { try { console.warn.apply(console,arguments);  } catch(e) { }};
+	var debug = function() { try { console.debug.apply(console,arguments);  } catch(e) { }};
+	var error = function() { try { console.error.apply(console,arguments);  } catch(e) { }};	
+	
 	// set up our parameters for webbox -
 	// default is that we're loading from an _app_ hosted within
 	// webbox. 
@@ -54,20 +58,6 @@
 	var DEFAULT_HOST = dlh.indexOf(':') < 0 ? dlh : dlh.slice(0,dlh.indexOf(':'));
 	var DEFAULT_PORT = dlh.indexOf(':') < 0 ? 80 : parseInt(dlh.slice(dlh.indexOf(':')+1), 10);
 
-	var authajax = function(store, path, passed_options) {
-		var url = store.options.server_url + path;
-		var options = {
-			type:'GET',
-			url : url,
-			crossDomain: true,
-			jsonp: false,
-			contentType: "application/json",
-			dataType: "json",
-			xhrFields: { withCredentials: true }
-		};
-		options = _(_(options || {}).clone()).extend(passed_options);
-		return $.ajax( options ); // returns a deferred		
-	};
 	var serialize_obj = function(obj) {
 		var uri = obj.id;
 		var out_obj = {};
@@ -98,7 +88,7 @@
 				} else if (_.isBoolean(val)) {
 					obj_vals.push({"@value": val.toString(), "@type":"http://www.w3.org/2001/XMLSchema#boolean"});
 				} else {
-					console.warn("Could not determine type of val ", val);
+					warn("Could not determine type of val ", val);
 					obj_vals.push({"@value": val.toString()});
 				}
 			});
@@ -126,34 +116,12 @@
 	var Obj = WebBox.Obj = Backbone.Model.extend({
 		idAttribute: "@id", // the URI attribute is '@id' in JSON-LD
 		initialize:function(attrs, options) {
-			// pass graph
-			assert(options.graph, "must provide a graph");
 			this.graph = options.graph;
 		},		
 		sync: function(method, model, options){
+			error('object sync methods individually not implemented yet'); // TODO
 			var d = new $.Deferred();
-			// TODO: make this do something to support
-			// individual access
-			/*
-			  switch (method) {
-			  case "create":
-			  console.log("CREATE ", model.id);
-			  break;
-			  case "read":
-			  d.resolve();
-			  break;
-			  case "update":
-			  // delegate to the graph
-			  // console.debug("SAVE -- Update to Obj: ",model.id);
-			  assert(false, "Individual OBJ sync not implemented yet.");
-			  // return model.graph.sync("update", model.graph, options);
-			  break;
-			  case "delete":
-			  break;
-			  default:
-			  break;
-			  }
-			*/			
+			// TODO: make this do something to support individual access
 			d.resolve();
 			return d.promise();
 		},
@@ -187,30 +155,19 @@
 
 	// GRAPH ==========================================================
 	var ObjCollection = Backbone.Collection.extend({ model: Obj });
-	
 	var Graph = WebBox.Graph = Backbone.Model.extend({
 		idAttribute: "@id", // the URI attribute is '@id' in JSON-LD
 		initialize: function(attributes, options) {
 			assert(options.box, "no box provided");
+			this.set({version: 0, objs:new ObjCollection()});
 			this.box = options.box;
-			this.options = options;
-			this.version = 0; // starts at 0
-			if (!(attributes.objs instanceof ObjCollection)) {
-				this.attributes.objs = new ObjCollection();
-				if (attributes.objs) {
-					this.attributes.objs.add(attributes.objs.models || attributes.objs);
-				}
-			}
 		},
-		objs:function() { return this.attributes.objs; },
-		get_or_create:function(uri) { return this.objs().get(uri) || this.create(uri);	},
-		create: function(object_attrs){
-			// add a new object to this graph (WebBox.GraphCollection will create an Obj from this)
-			// pad string into an object with a URI
-			if (typeof object_attrs === 'string'){
-				object_attrs = {"@id": object_attrs};
-			} 
-			var model = new Obj(object_attrs, {graph : this});
+		objs:function() { return this.get('objs'); },
+		get_or_create:function(uri) {
+			return this.objs().get(uri) || this.create(uri);
+		},
+		create: function(id){
+			var model = new Obj({"@id":id}, {graph:this});
 			this.objs().add(model);
 			return model;
 		},
@@ -257,7 +214,7 @@
 						});
 						obj_model.change();
 					});
-					console.log(">>> setting graph version ", graph.id, " ", version);
+					log(">>> setting graph version ", graph.id, " ", version);
 					graph.version = version;
 					d.resolve(graph);
 				}).fail(function(data) { d.reject(graph);});
@@ -265,16 +222,10 @@
 		},
 		sync: function(method, model, options){
 			switch(method){
-			case "create":
-				break;
-			case "read":
-				return this._fetch(model);
-			case "update":
-				return this._update_graph(model);
-			case "delete":
-				break;
-			default:
-				break;
+			case "create": return warn('graph.create not implemented yet'); // TODO
+			case "read": return this._fetch(model);
+			case "update":return this._update_graph(model);
+			case "delete": return warn('graph.delete not implemented yet'); // TODO
 			}
 		}
 	});	
@@ -287,13 +238,7 @@
 		initialize:function(attributes, options) {
 			assert(options.store, "no store provided");
 			this.store = options.store;
-			this.options = _(options).clone();
-			if (!(attributes.graphs instanceof GraphCollection)) {
-				this.attributes.graphs = new GraphCollection();
-				if (attributes.graphs) {
-					this.attributes.graphs.add(attributes.graphs.models || attributes.graphs);
-				}
-			}
+			this.set({graphs: new GraphCollection()});
 		},
 		_set_token:function(token) { this.set("token", token); },
 		load:function() {
@@ -302,34 +247,32 @@
 			var this_ = this;
 			var d = deferred();
 			// get token for this box ---
-			authajax(this.store, 'auth/get_token', {
-				data: { appid: this.store.options.appid, boxid: this.id },
-				type: "POST"
-			}).then(function(data) {
-				this_._set_token( data.token );
-				this_.fetch().then(function() { d.resolve(this_); }).fail(function(err) {
-					console.error(' error fetching ', this_.id, err);
-					d.reject(err);					
+			this.ajax('GET', 'auth/get_token', { app: this.store.get('app') })
+				.then(function(data) {
+					this_._set_token( data.token );
+					this_.fetch().then(function() { d.resolve(this_); }).fail(function(err) {
+						console.error(' error fetching ', this_.id, err);
+						d.reject(err);					
+					});
 				});
-			});
 			return d.promise();			
+		},
+		ajax:function(method, path, data) {
+			return this.store.ajax(method,path, _(_(data).clone()).extend({box: this.id, token:this.get('token')}));
 		},
 		graphs:function() { return this.attributes.graphs; },
 		get_or_create:function(uri) { return this.graphs().get(uri) || this.create(uri); },
-		create: function(attrs){
+		create: function(id){
 			// add a new object to this graph (WebBox.GraphCollection will create an Obj from this)
 			// pad string into an object with a URI
-			if (typeof attrs === 'string'){ attrs = {"@id": attrs}; } 
-			var model = new Graph(attrs, {box: this});
+			var model = new Graph({'@id':id}, {box:this});
 			this.graphs().add(model);
 			return model;
 		},
 		_fetch : function(){
 			var d = deferred();
 			var this_ = this;
-			assert(this.token, "No token associated with this this", this);
-			authajax(this.options.store, this.id, { data: { token:this.token } })
-				.then(function(data) {
+			this.ajax('GET', this.id).then(function(data) {
 					var graph_uris = data.data;
 					var old_graphs = this_.graphs();
 					var graphs = graph_uris.map(function(graph_uri){
@@ -343,69 +286,45 @@
 		},
 		sync: function(method, model, options){
 			switch(method){
-			case "create":
-				// TODO:
-				console.warn('box.update() : not implemented yet');
-				break;
-			case "read":
-				return model._fetch(); 
-			case "update":
-				// TODO: 
-				console.warn('box.update() : not implemented yet');
-				break;
-			case "delete":
-				// TODO: 
-				console.warn('box.delete() : not implemented yet');
-				break;
-			default:
-				break;
+			case "create": return warn('box.update() : not implemented yet');
+			case "read": return model._fetch(); 
+			case "update": return warn('box.update() : not implemented yet');
+			case "delete": return warn('box.delete() : not implemented yet');
 			}
 		}
 	});
 	
-	var BoxCollection = Backbone.Collection.extend({
-		model: Box,
-		initialize:function(models,options) {
-			assert(options.store, "dont know where my store is ");
-			this.options = options;
-		},
-		fetch:function() {
-			// fetches list of boxes
-			var this_ = this,
-			store = this.options.store,
-			d = deferred();			
-			authajax(store, 'admin/list_boxes')
-				.success(function(data) {
-					var boxes = data.boxes.map(function(boxid) {
-						return this_.get(boxid) || new Box({"@id":boxid, name:boxid}, {store: store});
-					});
-					this_.reset(boxes);
-					d.resolve(boxes);
-				})
-				.error(function(e) { d.reject(e); });
-			return d.promise();
-		}
-	});
-	
+	var BoxCollection = Backbone.Collection.extend({ model: Box });
 	var Store = WebBox.Store = Backbone.Model.extend({
 		defaults: {
 			server_url: "http://"+DEFAULT_HOST+":"+DEFAULT_PORT+"/",
-			appid:"--default-app-id--"
+			app:"--default-app-id--"
+		},
+		ajax_defaults : {
+			jsonp: false,	contentType: "application/json",
+			xhrFields: { withCredentials: true }
 		},
 		initialize: function(attributes, options){
-			this.options = _(_(this.defaults).clone()).extend(options);
-			console.log('setting server url ', this.options.server_url);						
-			// get the boxes list from the server
-			this.attributes.boxes = new BoxCollection((options && options.boxes) || [], {store: this});
+			this.set({boxes : new BoxCollection(undefined, {store: this})});
 		},
-		fetch:function() { return this.boxes().fetch(); },
+		ajax:function(method, path, data) {
+			var url = [this.get('server_url'), path].join('/');
+			var options = _(_(this.ajax_defaults).clone()).extend(
+				{ url: url, method : method, crossDomain: !this.is_same_domain(), data: data || {} }
+			);
+			return $.ajax( options ); // returns a deferred		
+		},
+		is_same_domain:function() {
+			return this.get('server_url').indexOf(document.location.host) >= 0 &&
+				(document.location.port === (this.get('server_port') || ''));
+		},
 		boxes:function() { return this.attributes.boxes;  },
-		checkLogin:function() { return authajax(this, 'auth/whoami'); },
-		getInfo:function() { return authajax(this, 'admin/info');},
+		checkLogin:function() { return this.ajax('GET', 'auth/whoami'); },
+		getInfo:function() { return this.ajax('GET', 'admin/info');},
 		login : function(username,password) {
 			var d = deferred();
 			var this_ = this;
-			authajax(this, 'auth/login', { data: { username: username, password: password },  type: "POST" })
+			this.ajax('POST', 'auth/login', { username: username, password: password })
 				.then(function(l) { this_.trigger('login', username); d.resolve(l); })
 				.fail(function(l) { d.reject(l); });			
 			return d.promise();
@@ -413,7 +332,7 @@
 		logout : function() {
 			var d = deferred();
 			var this_ = this;
-			authajax(this, 'auth/logout', { type: "POST" })
+			this.ajax('POST', 'auth/logout')
 				.then(function(l) { this_.trigger('logout'); d.resolve(l); })
 				.fail(function(l) { d.reject(l); });
 			return d.promise();			
@@ -422,7 +341,7 @@
 			// actually creates the box above
 			var d = deferred();
 			var this_ = this;
-			authajax(this, 'admin/create_box', { data: { name: boxid },  type: "POST" })
+			this.ajax('POST', 'admin/create_box', { name: boxid })
 				.then(function() {
 					this_.boxes().fetch()
 						.then(function(box) { d.resolve(box); })
@@ -430,10 +349,31 @@
 				}).fail(function(err) { d.reject(); });
 			return d.promise();
 		},
-		list_boxes : function() {
-			var this_ = this;
-			return authajax(this, 'admin/list_boxes', { type: "GET" });
-		}		
+		_fetch:function() {
+			// fetches list of boxes
+			var this_ = this, d = deferred();			
+			this.store.
+				ajax('GET','/admin/list_boxes')
+				.success(function(data) {
+					var boxes =	data.boxes
+						.map(function(boxid) {
+							return this_.get(boxid) || new Box({'@id': boxid}, {store: this_.store});
+						});
+					this_.reset(boxes);
+					d.resolve(boxes);
+				})
+				.error(function(e) { d.reject(e); });
+			return d.promise();
+		},
+		sync: function(method, model, options){
+			switch(method){
+			case "create": return warn('store.update() : not implemented yet'); // TODO
+			case "read"  : return model._fetch(); 
+			case "update": return warn('store.update() : not implemented yet'); // TODO
+			case "delete": return warn('store.delete() : not implemented yet'); // tODO
+			}
+		}
+			
 	});
 	
 }).call(this);
