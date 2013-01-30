@@ -1,7 +1,7 @@
 #    This file is part of WebBox.
 #
-#    Copyright 2011-2012 Daniel Alexander Smith
-#    Copyright 2011-2012 University of Southampton
+#    Copyright 2011-2013 Daniel Alexander Smith
+#    Copyright 2011-2013 University of Southampton
 #
 #    WebBox is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -36,7 +36,7 @@ from exception import ResponseOverride
 from webbox.webserver.session import WebBoxSession, ISession
 from webbox.webserver.wsupdateserver import WSUpdateServer
 from webbox.webserver.websocketclient import WebSocketClient
-from webbox.objectstore import ObjectStore, RDFObjectStore, IncorrectPreviousVersionException
+from webbox.objectstore_async import ObjectStoreASync, RDFObjectStore, IncorrectPreviousVersionException
 
 class WebBox:
     # to use like WebBox.to_predicate
@@ -83,7 +83,7 @@ class WebBox:
             return
 
         # create the new database
-        ObjectStore.initialise(self.config['db']['name'], root_user, root_pass, self.config['db']['user'], self.config['db']['password'])
+        ObjectStoreAsync.initialise(self.config['db']['name'], root_user, root_pass, self.config['db']['user'], self.config['db']['password'])
 
         # now it's all set up, we can reconnect it
         if self.object_store is None:
@@ -100,7 +100,7 @@ class WebBox:
             self.objectstore_db_conn = psycopg2.connect(database = self.config['db']['name'],
                                          user = self.config['db']['user'],
                                          password = self.config['db']['password'])
-            self.object_store = ObjectStore(self.objectstore_db_conn)
+            self.object_store = ObjectStoreAsync(self.objectstore_db_conn)
             self.query_store = RDFObjectStore(self.object_store) # handles RDF to object conversion
         except Exception as e:
             logging.debug("Exception reconnecting object store, setting to None. Exception: {0}".format(str(e)))
@@ -356,7 +356,7 @@ class WebBox:
 
         # send file to query store
         logging.debug("replacing graph %s with rdf" % graph)
-        response1 = self.query_store.put_rdf(file, content_type, graph)
+        response1 = self.query_store.put_rdf(file, content_type)
 
         return response1
 
@@ -366,7 +366,7 @@ class WebBox:
 
         # send file to query store (store)
         logging.debug("POST to query store.")
-        response1 = self.query_store.post_rdf(file, content_type, graph)
+        response1 = self.query_store.post_rdf(file, content_type)
 
         return response1
 

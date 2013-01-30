@@ -53,18 +53,7 @@ class BoxHandler(BaseHandler):
         if not token:
             return self.return_forbidden(request)
         store = token.store
-        if "graph" in request.args:
-            # graph URI specified, so return the objects in that graph
-            graph_uri = request.args["graph"][0]
-            return store.get_latest(graph_uri).addCallback(lambda obj: self.return_ok(request, {"data":json.dumps(obj, indent=2)}))
-        else:
-            # no graph URI specified, so return the list of graph URIs
-            def callback(uris):
-                jsondata = json.dumps(uris, indent=2)
-                return self.return_ok(request, {"data": jsondata})
-            store.get_graphs().addCallback(callback)
-            pass
-        pass
+        return store.get_latest().addCallback(lambda obj: self.return_ok(request, {"data":json.dumps(obj, indent=2)}))
     
     def do_PUT(self,request):
         token = self.get_token(request)
@@ -77,14 +66,11 @@ class BoxHandler(BaseHandler):
         objs = json.loads(jsondata)
         if type(objs) == type([]):
             # multi object put            
-            if "graph" not in args:
-                return self.return_bad_request(request,"Specify a graph URI with &graph=")
             if "version" not in args:
                 return self.return_bad_request(request,"Specify a previous version with &version=")
-            graph_uri = args['graph'][0]
             prev_version = int(args['version'][0])
             try:
-                store.add(graph_uri, objs, prev_version).addCallback(lambda new_version_info: self.return_created(request,{"data":new_version_info}))
+                store.add(objs, prev_version).addCallback(lambda new_version_info: self.return_created(request,{"data":new_version_info}))
             except IncorrectPreviousVersionException as ipve:
                 logging.debug("Incorrect previous version")
                 actual_version = ipve.version

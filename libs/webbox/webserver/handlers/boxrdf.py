@@ -362,19 +362,9 @@ class BoxHandler(BaseHandler):
 
         # ObjectStore GET
         if "json" in accept: #FIXME do this better
-            if "graph" in request.args:
-                # graph URI specified, so return the objects in that graph
-                graph_uri = request.args["graph"][0]
-
-                obj = self.webbox.object_store.get_latest(graph_uri)
-                jsondata = json.dumps(obj, indent=2)        
-                return {"data": jsondata, "status": 200, "reason": "OK"}
-            else:
-                # no graph URI specified, so return the list of graph URIs
-                uris = self.webbox.object_store.get_graphs()
-                jsondata = json.dumps(uris, indent=2)
-
-                return {"data": jsondata, "status": 200, "reason": "OK"}
+            obj = self.webbox.object_store.get_latest() # FIXME needs callback here
+            jsondata = json.dumps(obj, indent=2)        
+            return {"data": jsondata, "status": 200, "reason": "OK"}
 
 
 

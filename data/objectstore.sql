@@ -142,39 +142,57 @@ INSERT INTO wb_users (username, pw_salted_hash, email, name) VALUES ('anonymous'
 
 
 
-CREATE TABLE wb_graphvers
+-- CREATE TABLE wb_graphvers
+-- (
+--   id_graphver serial NOT NULL,
+--   graph_version integer NOT NULL,
+--   graph_uri integer NOT NULL,
+--   change_timestamp time with time zone NOT NULL,
+--   change_user integer NOT NULL,
+--   CONSTRAINT pk_graphver PRIMARY KEY (id_graphver),
+--   CONSTRAINT fk_changeuser FOREIGN KEY (change_user)
+--       REFERENCES wb_users (id_user) MATCH SIMPLE
+--       ON UPDATE NO ACTION ON DELETE NO ACTION,
+--   CONSTRAINT fk_graph_uri FOREIGN KEY (graph_uri)
+--       REFERENCES wb_strings (id_string) MATCH SIMPLE
+--       ON UPDATE NO ACTION ON DELETE NO ACTION,
+--   CONSTRAINT uq_ver_uri UNIQUE (graph_version, graph_uri)
+-- )
+-- WITH (
+--   OIDS=FALSE
+-- );
+-- ALTER TABLE wb_graphvers
+--   OWNER TO webbox;
+
+
+
+-- CREATE TABLE wb_graphver_triples
+-- (
+--   graphver integer NOT NULL,
+--   triple integer NOT NULL,
+--   triple_order integer NOT NULL,
+--   CONSTRAINT pk_graphver_triple_order PRIMARY KEY (graphver, triple, triple_order),
+--   CONSTRAINT fk_graphver FOREIGN KEY (graphver)
+--       REFERENCES wb_graphvers (id_graphver) MATCH SIMPLE
+--       ON UPDATE NO ACTION ON DELETE NO ACTION,
+--   CONSTRAINT fk_triple FOREIGN KEY (triple)
+--       REFERENCES wb_triples (id_triple) MATCH SIMPLE
+--       ON UPDATE NO ACTION ON DELETE NO ACTION
+-- )
+-- WITH (
+--   OIDS=FALSE
+-- );
+-- ALTER TABLE wb_graphver_triples
+--   OWNER TO webbox;
+
+CREATE TABLE wb_triple_vers
 (
-  id_graphver serial NOT NULL,
-  graph_version integer NOT NULL,
-  graph_uri integer NOT NULL,
-  change_timestamp time with time zone NOT NULL,
-  change_user integer NOT NULL,
-  CONSTRAINT pk_graphver PRIMARY KEY (id_graphver),
-  CONSTRAINT fk_changeuser FOREIGN KEY (change_user)
-      REFERENCES wb_users (id_user) MATCH SIMPLE
-      ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT fk_graph_uri FOREIGN KEY (graph_uri)
-      REFERENCES wb_strings (id_string) MATCH SIMPLE
-      ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT uq_ver_uri UNIQUE (graph_version, graph_uri)
-)
-WITH (
-  OIDS=FALSE
-);
-ALTER TABLE wb_graphvers
-  OWNER TO webbox;
-
-
-
-CREATE TABLE wb_graphver_triples
-(
-  graphver integer NOT NULL,
+  version integer NOT NULL,
   triple integer NOT NULL,
   triple_order integer NOT NULL,
-  CONSTRAINT pk_graphver_triple_order PRIMARY KEY (graphver, triple, triple_order),
-  CONSTRAINT fk_graphver FOREIGN KEY (graphver)
-      REFERENCES wb_graphvers (id_graphver) MATCH SIMPLE
-      ON UPDATE NO ACTION ON DELETE NO ACTION,
+  change_timestamp time with time zone NOT NULL,
+  change_user integer NOT NULL,
+  CONSTRAINT pk_version_triple_order PRIMARY KEY (version, triple, triple_order),
   CONSTRAINT fk_triple FOREIGN KEY (triple)
       REFERENCES wb_triples (id_triple) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE NO ACTION
@@ -182,9 +200,8 @@ CREATE TABLE wb_graphver_triples
 WITH (
   OIDS=FALSE
 );
-ALTER TABLE wb_graphver_triples
+ALTER TABLE wb_triple_vers
   OWNER TO webbox;
-
 
 
 
@@ -200,19 +217,17 @@ ALTER TABLE wb_graphver_triples
 -- DROP VIEW wb_v_all_triples;
 
 CREATE OR REPLACE VIEW wb_v_all_triples AS 
- SELECT j_graphuri.string AS graph_uri, wb_graphvers.graph_version, 
-    wb_graphver_triples.triple_order, j_subject.string AS subject, 
+ SELECT wb_triple_vers.version, 
+    wb_triple_vers.triple_order, j_subject.string AS subject, 
     j_predicate.string AS predicate, j_object.string AS obj_value, 
     wb_objects.obj_type, wb_objects.obj_lang, wb_objects.obj_datatype
-   FROM wb_graphvers
-   JOIN wb_strings j_graphuri ON j_graphuri.id_string = wb_graphvers.graph_uri
-   JOIN wb_graphver_triples ON wb_graphvers.id_graphver = wb_graphver_triples.graphver
-   JOIN wb_triples ON wb_triples.id_triple = wb_graphver_triples.triple
+   FROM wb_triple_vers
+   JOIN wb_triples ON wb_triples.id_triple = wb_triple_vers.triple
    JOIN wb_objects ON wb_objects.id_object = wb_triples.object
    JOIN wb_strings j_subject ON j_subject.id_string = wb_triples.subject
    JOIN wb_strings j_predicate ON j_predicate.id_string = wb_triples.predicate
    JOIN wb_strings j_object ON j_object.id_string = wb_objects.obj_value
-  ORDER BY wb_graphvers.graph_uri, wb_graphvers.graph_version, j_subject.string, wb_graphver_triples.triple_order;
+  ORDER BY wb_triple_vers.version, wb_triple_vers.triple_order;
 
 ALTER TABLE wb_v_all_triples
   OWNER TO webbox;
@@ -220,18 +235,15 @@ ALTER TABLE wb_v_all_triples
 
 
 
--- View: wb_v_latest_graphvers
+-- View: wb_v_latest_version
 
--- DROP VIEW wb_v_latest_graphvers;
+-- DROP VIEW wb_v_latest_version;
 
-CREATE OR REPLACE VIEW wb_v_latest_graphvers AS 
- SELECT max(wb_graphvers.graph_version) AS latest_version, 
-    wb_strings.string AS graph_uri
-   FROM wb_graphvers
-   JOIN wb_strings ON wb_strings.id_string = wb_graphvers.graph_uri
-  GROUP BY wb_strings.string;
+CREATE OR REPLACE VIEW wb_v_latest_version AS 
+ SELECT max(wb_triple_vers.graph_version) AS latest_version
+   FROM wb_triple_vers;
 
-ALTER TABLE wb_v_latest_graphvers
+ALTER TABLE wb_v_latest_version
   OWNER TO webbox;
 
 
@@ -240,14 +252,14 @@ ALTER TABLE wb_v_latest_graphvers
 -- DROP VIEW wb_v_latest_triples;
 
 CREATE OR REPLACE VIEW wb_v_latest_triples AS 
- SELECT wb_v_latest_graphvers.graph_uri, wb_v_all_triples.graph_version, 
+ SELECT wb_v_all_triples.version, 
     wb_v_all_triples.triple_order, wb_v_all_triples.subject, 
     wb_v_all_triples.predicate, wb_v_all_triples.obj_value, 
     wb_v_all_triples.obj_type, wb_v_all_triples.obj_lang, 
     wb_v_all_triples.obj_datatype
-   FROM wb_v_latest_graphvers
-   JOIN wb_v_all_triples ON wb_v_all_triples.graph_uri = wb_v_latest_graphvers.graph_uri AND wb_v_all_triples.graph_version = wb_v_latest_graphvers.latest_version
-  ORDER BY wb_v_latest_graphvers.graph_uri, wb_v_all_triples.graph_version, wb_v_all_triples.subject, wb_v_all_triples.triple_order;
+   FROM wb_v_latest_version
+   JOIN wb_v_all_triples ON wb_v_all_triples.version = wb_v_latest_version.latest_version
+  ORDER BY wb_v_all_triples.version, wb_v_all_triples.triple_order;
 
 ALTER TABLE wb_v_latest_triples
   OWNER TO webbox;
@@ -256,52 +268,55 @@ ALTER TABLE wb_v_latest_triples
 -- Functions
 
 
-CREATE OR REPLACE FUNCTION wb_add_triple_to_graphvers(input_graphvers_id integer, input_subject text, input_predicate text, input_object_value text, input_object_type object_type, input_object_language character varying, input_object_datatype character varying, input_triple_order integer)
+CREATE OR REPLACE FUNCTION wb_add_triple_to_version(input_version integer, input_user_id integer, input_subject text, input_predicate text, input_object_value text, input_object_type object_type, input_object_language character varying, input_object_datatype character varying, input_triple_order integer)
   RETURNS boolean AS
 $BODY$DECLARE
     triple_result integer;
 BEGIN
     SELECT * INTO triple_result FROM wb_get_triple_id(input_subject, input_predicate, input_object_value, input_object_type, input_object_language, input_object_datatype);
 
-    INSERT INTO wb_graphver_triples (graphver, triple, triple_order) VALUES (input_graphvers_id, triple_result, input_triple_order);
+    INSERT INTO wb_triple_vers (version, triple, triple_order, change_timestamp, change_user) VALUES (input_version, triple_result, input_triple_order, CURRENT_TIMESTAMP, input_user_id);
     RETURN true;
 END;$BODY$
   LANGUAGE plpgsql VOLATILE
   COST 100;
-ALTER FUNCTION wb_add_triple_to_graphvers(integer, text, text, text, object_type, character varying, character varying, integer)
+ALTER FUNCTION wb_add_triple_to_version(integer, text, text, text, object_type, character varying, character varying, integer)
   OWNER TO webbox;
 
-CREATE OR REPLACE FUNCTION wb_get_graphvers_id(input_graph_version integer, input_graph_uri text, input_user_id integer)
-  RETURNS integer AS
-$BODY$DECLARE
-    graph_uri_value_id integer;
-    graphvers_result integer;
-    graphvers_new_ver integer;
-    graph_prev_ver integer;
-BEGIN
-    SELECT * INTO graph_uri_value_id FROM wb_get_string_id(input_graph_uri);
 
-    SELECT MAX(wb_graphvers.graph_version) INTO graph_prev_ver FROM wb_graphvers WHERE
-        (wb_graphvers.graph_uri = graph_uri_value_id) GROUP BY wb_graphvers.graph_uri;
 
-    IF NOT FOUND THEN
-        graph_prev_ver = 0;
-    END IF;
+-- CREATE OR REPLACE FUNCTION wb_get_graphvers_id(input_graph_version integer, input_graph_uri text, input_user_id integer)
+--   RETURNS integer AS
+-- $BODY$DECLARE
+--     graph_uri_value_id integer;
+--     graphvers_result integer;
+--     graphvers_new_ver integer;
+--     graph_prev_ver integer;
+-- BEGIN
+--     SELECT * INTO graph_uri_value_id FROM wb_get_string_id(input_graph_uri);
+-- 
+--     SELECT MAX(wb_graphvers.graph_version) INTO graph_prev_ver FROM wb_graphvers WHERE
+--         (wb_graphvers.graph_uri = graph_uri_value_id) GROUP BY wb_graphvers.graph_uri;
+-- 
+--     IF NOT FOUND THEN
+--         graph_prev_ver = 0;
+--     END IF;
+-- 
+--     IF input_graph_version != graph_prev_ver THEN
+--         RETURN NULL;
+--     END IF;
+-- 
+--     graphvers_new_ver = input_graph_version + 1;
+-- 
+--     INSERT INTO wb_graphvers (graph_version, graph_uri, change_timestamp, change_user) VALUES (graphvers_new_ver, graph_uri_value_id, CURRENT_TIMESTAMP, input_user_id) RETURNING id_graphver INTO graphvers_result;
+-- 
+--     RETURN graphvers_result;
+-- END;$BODY$
+--   LANGUAGE plpgsql VOLATILE
+--   COST 100;
+-- ALTER FUNCTION wb_get_graphvers_id(integer, text, integer)
+--   OWNER TO webbox;
 
-    IF input_graph_version != graph_prev_ver THEN
-        RETURN NULL;
-    END IF;
-
-    graphvers_new_ver = input_graph_version + 1;
-
-    INSERT INTO wb_graphvers (graph_version, graph_uri, change_timestamp, change_user) VALUES (graphvers_new_ver, graph_uri_value_id, CURRENT_TIMESTAMP, input_user_id) RETURNING id_graphver INTO graphvers_result;
-
-    RETURN graphvers_result;
-END;$BODY$
-  LANGUAGE plpgsql VOLATILE
-  COST 100;
-ALTER FUNCTION wb_get_graphvers_id(integer, text, integer)
-  OWNER TO webbox;
 
 
 CREATE OR REPLACE FUNCTION wb_get_object_id(input_obj_type object_type, input_obj_value text, input_obj_lang character varying, input_obj_datatype character varying)
