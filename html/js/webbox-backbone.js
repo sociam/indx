@@ -35,12 +35,12 @@
 	// intentional fall-through to window if running in a browser
 	"use strict";
 	var root = this, WebBox;
-	
 	// The top-level namespace
-	if (typeof exports !== 'undefined'){ WebBox = exports;	}
+	if (typeof exports !== 'undefined'){ WebBox = exports.WebBox = {};	}
 	else { WebBox = root.WebBox = {}; }
 
 	// utilities -----------------> should move out to utils
+	var u; // to be filled in by dependency
 	var isInteger = function(n) { return n % 1 === 0; };
 	var assert = function(t,s) { if (!t) { throw new Error(s); } };
 	var deferred = function() { return new $.Deferred(); };
@@ -54,9 +54,7 @@
 	// set up our parameters for webbox -
 	// default is that we're loading from an _app_ hosted within
 	// webbox. 
-	var dlh = document.location.host;
-	var DEFAULT_HOST = dlh.indexOf(':') < 0 ? dlh : dlh.slice(0,dlh.indexOf(':'));
-	var DEFAULT_PORT = dlh.indexOf(':') < 0 ? 80 : parseInt(dlh.slice(dlh.indexOf(':')+1), 10);
+	var DEFAULT_HOST = document.location.host;
 
 	var serialize_obj = function(obj) {
 		var uri = obj.id;
@@ -296,19 +294,23 @@
 	var BoxCollection = Backbone.Collection.extend({ model: Box });
 	var Store = WebBox.Store = Backbone.Model.extend({
 		defaults: {
-			server_url: "http://"+DEFAULT_HOST+":"+DEFAULT_PORT+"/",
-			app:"--default-app-id--"
+			server_url: "http://"+DEFAULT_HOST,
+			app:"--default-app-id--",
+			toolbar:true
 		},
 		ajax_defaults : {
-			jsonp: false,	contentType: "application/json",
+			jsonp: false, contentType: "application/json",
 			xhrFields: { withCredentials: true }
 		},
 		initialize: function(attributes, options){
+			console.log(" server ", this.get('server_url'));
 			this.set({boxes : new BoxCollection(undefined, {store: this})});
+			// load and launch the toolbar
+			if (this.get('toolbar')) { this._load_toolbar(); }
 		},
 		ajax:function(method, path, data) {
 			var url = [this.get('server_url'), path].join('/');
-			var default_data = { app: this.get('app') };
+			var default_data = {}; // // { app: this.get('app') };
 			var options = _(_(this.ajax_defaults).clone()).extend(
 				{ url: url, method : method, crossDomain: !this.is_same_domain(), data: _(default_data).extend(data) }
 			);
@@ -317,6 +319,12 @@
 		is_same_domain:function() {
 			return this.get('server_url').indexOf(document.location.host) >= 0 &&
 				(document.location.port === (this.get('server_port') || ''));
+		},
+		_load_toolbar:function() {
+			console.log('loading toolbar');
+			var el = $('<div></div>').addClass('unloaded_toolbar').appendTo('body');
+			this.toolbar = new WebBox.Toolbar({el: el, store: this});
+			this.toolbar.render();
 		},
 		boxes:function() { return this.attributes.boxes;  },
 		checkLogin:function() { return this.ajax('GET', 'auth/whoami'); },
@@ -352,8 +360,7 @@
 		_fetch:function() {
 			// fetches list of boxes
 			var this_ = this, d = deferred();			
-			this.store.
-				ajax('GET','/admin/list_boxes')
+			this.ajax('GET','admin/list_boxes')
 				.success(function(data) {
 					var boxes =	data.boxes
 						.map(function(boxid) {
@@ -372,10 +379,23 @@
 			case "update": return warn('store.update() : not implemented yet'); // TODO
 			case "delete": return warn('store.delete() : not implemented yet'); // tODO
 			}
-		}
-			
+		}			
 	});
-	
+
+	var dependencies = [ '/js/utils.js','/components/toolbar/toolbar.js'];
+	WebBox.load = function(base_url) {
+		if (base_url === undefined) {
+			base_url = ['http:/', document.location.host].join('/');
+		}
+		console.log('laoding from base url ', base_url);		
+		var _load_d = new $.Deferred(); 
+		var ds = dependencies.map(function(s) { return $.getScript(base_url + s); });
+		$.when.apply($,ds).then(function() {
+			u = WebBox.utils;
+			_load_d.resolve(root);
+		});
+		return _load_d.promise();
+	};
 }).call(this);
 
 

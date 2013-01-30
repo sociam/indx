@@ -1,24 +1,13 @@
 /*global $,_,document,window,console,escape,Backbone,exports,require,assert */
-/*jslint vars:true */
-if (typeof define !== 'function') {
-	// requirejs is not present, assume running on NodeJS /* todo */
-	if (typeof require === 'function') {
-		// is NODEJS 
-		var define = require('amdefine')(module),
-	        Backbone = require('backbone'),
-            $ = require('jquery'),
-            _ = require('underscore');
-	} else {
-		// hi.
-		this.define = function(reqs, then) {
-			var dfds = reqs.map(function(script) { return $.getScript(script); });
-			$.when.apply($,dfds).then(function() {	return then(); });
-		};
-	}
-}
-define([],function() {
-	"use strict";
-	return {
+/*jslint vars:true, sloppy:true */
+
+(function() {
+	// get a handle to the namespace
+	var root = this, WebBox;
+	if (typeof exports !== 'undefined'){ WebBox = exports.WebBox; }
+	else { WebBox = root.WebBox; }
+	
+	WebBox.utils = { 
 		isInteger:function(n) { return n % 1 === 0; },
 		deferred:function() { return new $.Deferred(); },
 		whend:function(deferred_array) { return $.when.apply($,deferred_array); },
@@ -38,14 +27,11 @@ define([],function() {
 			var regexS = "[\\?&]" + name + "=([^&#]*)";
 			var regex = new RegExp(regexS);
 			var results = regex.exec(window.location.search);
-			if(results == null)
+			if (results === null)
 				return "";
 			else
 				return decodeURIComponent(results[1].replace(/\+/g, " "));
 		},		
-		indexOf_us_zipcode:function(s) {
-			// TODO::
-		},
 		range:function(l,h) {
 			var a = [];
 			if (_.isUndefined(h)) { h = l; l = 0; }
@@ -84,4 +70,4 @@ define([],function() {
 			return hash;
 		}
 	};
-});
+}).call(this);
