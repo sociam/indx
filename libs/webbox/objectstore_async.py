@@ -226,6 +226,9 @@ class ObjectStoreAsync:
             else:
                 actual_prev_version = row[0][0]
 
+            if actual_prev_version is None:
+                actual_prev_version = 0
+
             if actual_prev_version != specified_prev_version:
                 ipve = IncorrectPreviousVersionException("Actual previous version is {0}, specified previous version is: {1}".format(actual_prev_version, specified_prev_version))
                 ipve.version = actual_prev_version
@@ -297,7 +300,7 @@ class ObjectStoreAsync:
             d.addCallback(exec_queries)
 
         exec_queries(None)
-
+        return result_d
 
 
 

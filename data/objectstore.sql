@@ -240,7 +240,7 @@ ALTER TABLE wb_v_all_triples
 -- DROP VIEW wb_v_latest_version;
 
 CREATE OR REPLACE VIEW wb_v_latest_version AS 
- SELECT max(wb_triple_vers.graph_version) AS latest_version
+ SELECT max(wb_triple_vers.version) AS latest_version
    FROM wb_triple_vers;
 
 ALTER TABLE wb_v_latest_version
@@ -280,7 +280,7 @@ BEGIN
 END;$BODY$
   LANGUAGE plpgsql VOLATILE
   COST 100;
-ALTER FUNCTION wb_add_triple_to_version(integer, text, text, text, object_type, character varying, character varying, integer)
+ALTER FUNCTION wb_add_triple_to_version(integer, integer, text, text, text, object_type, character varying, character varying, integer)
   OWNER TO webbox;
 
 
