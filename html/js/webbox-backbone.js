@@ -253,7 +253,8 @@
 			return (NAMEPREFIX ? 'box:' : '') + this.id;
 		},
 		ajax:function(method, path, data) {
-			return this.store.ajax(method,path, _(_(data).clone()).extend({box: this.id, token:this.get('token')}));
+			console.log('this ajax ', this.store, method, path, this.get('token'));
+			return this.store.ajax(method, path, _(_(data).clone()).extend({box: this.id, token:this.get('token')}));
 		},
 		graphs:function() { return this.attributes.graphs; },
 		get_or_create:function(uri) { return this.graphs().get(uri) || this.create(uri); },
@@ -267,16 +268,18 @@
 		_fetch : function(){
 			var d = u.deferred();
 			var this_ = this;
+			console.log('fetch!! ', this.id);
 			this.ajax('GET', this.id).then(function(data) {
-					var graph_uris = data.data;
-					var old_graphs = this_.graphs();
-					var graphs = graph_uris.map(function(graph_uri){
-						var graph = old_graphs.get(graph_uri) || new Graph({"@id": graph_uri}, {box: this_});
-						return graph;
-					});
-					old_graphs.reset(graphs);
-					d.resolve(graphs);
-				}).fail(function(err) { d.reject(err); });
+				console.log('fetch data ', data);
+				var graph_uris = data.data;
+				var old_graphs = this_.graphs();
+				var graphs = graph_uris.map(function(graph_uri){
+					var graph = old_graphs.get(graph_uri) || new Graph({"@id": graph_uri}, {box: this_});
+					return graph;
+				});
+				old_graphs.reset(graphs);
+				d.resolve(graphs);
+			}).fail(function(err) { d.reject(err); });
 			return d.promise();
 		},
 		sync: function(method, model, options){
@@ -308,6 +311,7 @@
 		},
 		ajax:function(method, path, data) {
 			var url = [this.get('server_url'), path].join('/');
+			u.log(' store ajax ', method, url);
 			var default_data = {}; // // { app: this.get('app') };
 			var options = _(_(this.ajax_defaults).clone()).extend(
 				{ url: url, method : method, crossDomain: !this.is_same_domain(), data: _(default_data).extend(data) }
