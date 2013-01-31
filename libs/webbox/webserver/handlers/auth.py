@@ -81,8 +81,8 @@ class AuthHandler(BaseHandler):
         try:
             args = self.get_post_args(request)
             logging.debug(" request args {0} ".format(args))            
-            appid = args['appid'][0]
-            boxid = args['boxid'][0]
+            appid = args['app'][0]
+            boxid = args['box'][0]
         except Exception as e:
             return self.return_bad_request(request)
 

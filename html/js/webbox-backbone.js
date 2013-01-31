@@ -229,19 +229,17 @@
 			this.store = options.store;
 			this.set({graphs: new GraphCollection()});
 		},
-		_set_token:function(token) { this.set("token", token); },
+		_set_token:function(token) { this.set("token", token);	},
 		load:function() {
 			// this method retrieves an auth token and proceeds to 
 			// load up the graphs
 			var this_ = this;
 			var d = u.deferred();
 			// get token for this box ---
-			this.ajax('GET', 'auth/get_token', { app: this.store.get('app') })
+			this.ajax('POST', 'auth/get_token', { app: this.store.get('app') })
 				.then(function(data) {
 					this_._set_token( data.token );
-					this_.fetch().then(function() {
-						d.resolve(this_);
-					}).fail(function(err) {
+					this_.fetch().then(function() {	d.resolve(this_);}).fail(function(err) {
 						console.error(' error fetching ', this_.id, err);
 						d.reject(err);					
 					});
@@ -253,8 +251,9 @@
 			return (NAMEPREFIX ? 'box:' : '') + this.id;
 		},
 		ajax:function(method, path, data) {
-			console.log('this ajax ', this.store, method, path, this.get('token'));
-			return this.store.ajax(method, path, _(_(data).clone()).extend({box: this.id, token:this.get('token')}));
+			var data = _(_(data||{}).clone()).extend({box: this.id, token:this.get('token')});
+			console.log('this ajax ', this.store, method, path, this.get('token'), data);			
+			return this.store.ajax(method, path, data);
 		},
 		graphs:function() { return this.attributes.graphs; },
 		get_or_create:function(uri) { return this.graphs().get(uri) || this.create(uri); },
@@ -274,6 +273,7 @@
 				var graph_uris = data.data;
 				var old_graphs = this_.graphs();
 				var graphs = graph_uris.map(function(graph_uri){
+					u.log(graph_uri);
 					var graph = old_graphs.get(graph_uri) || new Graph({"@id": graph_uri}, {box: this_});
 					return graph;
 				});
@@ -307,12 +307,14 @@
 			console.log(" server ", this.get('server_url'));
 			this.set({boxes : new BoxCollection(undefined, {store: this})});
 			// load and launch the toolbar
-			if (this.get('toolbar')) { this._load_toolbar(); }
+			if (this.get('toolbar')) {
+				this._load_toolbar();
+			}
 		},
 		ajax:function(method, path, data) {
 			var url = [this.get('server_url'), path].join('/');
 			u.log(' store ajax ', method, url);
-			var default_data = {}; // // { app: this.get('app') };
+			var default_data = { app: this.get('app') };
 			var options = _(_(this.ajax_defaults).clone()).extend(
 				{ url: url, method : method, crossDomain: !this.is_same_domain(), data: _(default_data).extend(data) }
 			);
@@ -323,7 +325,6 @@
 				(document.location.port === (this.get('server_port') || ''));
 		},
 		_load_toolbar:function() {
-			console.log('loading toolbar');
 			var el = $('<div></div>').addClass('unloaded_toolbar').appendTo('body');
 			this.toolbar = new WebBox.Toolbar({el: el, store: this});
 			this.toolbar.render();

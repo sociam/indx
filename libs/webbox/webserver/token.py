@@ -37,10 +37,10 @@ class Token:
         self.origin = origin
         self.store = store
         self.id = str(uuid.uuid1())
-    def verify(self,boxname,origin):
+    def verify(self,boxname,appname,origin):
         logging.debug("Verify token ({0}) with boxid: {1} and origin {2}, to request boxid: {3} and request origin: {4}".format(self.id, self.boxid, self.origin, boxname, origin))
         # origin is None means we're same origin
-        return self.boxid == boxname and origin is None or self.origin == origin
+        return self.boxid == boxname and origin is None or self.origin == origin and appname # APPNAME CHECK TODO
         
 class TokenKeeper:
     # handles token garbage collection at some time in the future!
