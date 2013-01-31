@@ -1,4 +1,4 @@
-/*global $,_,document,window,console,escape,Backbone,exports,require,assert */
+/*global $,_,document,window,console,escape,Backbone,exports */
 /*jslint vars:true, todo:true */
 
 /*
@@ -35,6 +35,7 @@
 	// intentional fall-through to window if running in a browser
 	"use strict";
 	var root = this, WebBox;
+	var NAMEPREFIX = true;
 	// The top-level namespace
 	if (typeof exports !== 'undefined'){ WebBox = exports.WebBox = {};	}
 	else { WebBox = root.WebBox = {}; }
@@ -196,7 +197,7 @@
 									// otherwise return the value as-is
 									return val;
 								}
-								assert(false, "cannot unpack value ", val);
+								u.assert(false, "cannot unpack value ", val);
 							});
 							obj_model.set(key,obj_vals,{silent:true});
 						});
@@ -224,7 +225,7 @@
 	var Box = WebBox.Box = Backbone.Model.extend({
 		idAttribute:"@id",
 		initialize:function(attributes, options) {
-			assert(options.store, "no store provided");
+			u.assert(options.store, "no store provided");
 			this.store = options.store;
 			this.set({graphs: new GraphCollection()});
 		},
@@ -238,12 +239,18 @@
 			this.ajax('GET', 'auth/get_token', { app: this.store.get('app') })
 				.then(function(data) {
 					this_._set_token( data.token );
-					this_.fetch().then(function() { d.resolve(this_); }).fail(function(err) {
+					this_.fetch().then(function() {
+						d.resolve(this_);
+					}).fail(function(err) {
 						console.error(' error fetching ', this_.id, err);
 						d.reject(err);					
 					});
 				});
 			return d.promise();			
+		},
+		toString:function() {
+			if (this.get('name')) { return (NAMEPREFIX ? 'box:' : '') + this.get('name'); }
+			return (NAMEPREFIX ? 'box:' : '') + this.id;
 		},
 		ajax:function(method, path, data) {
 			return this.store.ajax(method,path, _(_(data).clone()).extend({box: this.id, token:this.get('token')}));
@@ -353,11 +360,11 @@
 			var this_ = this, d = u.deferred();			
 			this.ajax('GET','admin/list_boxes')
 				.success(function(data) {
-					var boxes =	data.boxes
+					var boxes =	data.list
 						.map(function(boxid) {
-							return this_.get(boxid) || new Box({'@id': boxid}, {store: this_.store});
+							return this_.get(boxid) || new Box({'@id': boxid}, {store: this_});
 						});
-					this_.reset(boxes);
+					this_.boxes().reset(boxes);
 					d.resolve(boxes);
 				})
 				.error(function(e) { d.reject(e); });

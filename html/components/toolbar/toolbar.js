@@ -1,9 +1,9 @@
-/*global $,_,document,window,console,escape,Backbone,exports,require,assert,define,u */
+/*global $,_,document,window,console,escape,Backbone */
 /*jslint vars:true, todo:true, sloppy:true */
 
 var root = this, WebBox;
 // The top-level namespace
-if (typeof exports !== 'undefined'){ WebBox = exports.WebBox;	}
+if (typeof exports !== 'undefined'){ WebBox = exports.WebBox;}
 else { WebBox = root.WebBox; }
 
 (function() {
@@ -36,10 +36,12 @@ else { WebBox = root.WebBox; }
 				this_.trigger('login', username);
 			});
 			store.on('logout', function(username) {
-				this_.set_selected_box(); // clear selected box
+				this_.set_selected_box_id(); // clear selected box
 				delete this_.username; this_.render();
 				this_.trigger('logout');				
 			});
+			store.on('change:boxes', function() { this_._update_boxlist(); });
+			store.on('change:selected-box', function(bid) { this_.set_selected_box_id(bid); });
 			store.checkLogin().then(function(response) {
 				if (response.is_authenticated) {
 					this_.username = response.user;
@@ -48,41 +50,43 @@ else { WebBox = root.WebBox; }
 					delete this_.username;
 					this_.trigger('logout');
 				}
-				this_._post_login_setup();
+				this_._update_boxlist();
 			});
-			// console.log('appending ', l_templ);
 			$('body').append(this.$el);
 			$('body').append(l_templ);
 			$('#login_dialog .loginbtn').click(function() {
 				var username = $('#login_dialog .username_field').val();
 				var password = $('#login_dialog .password_field').val();
 				store.login(username,password).then(function() {
-					this_._post_login_setup(store);
+					this_._update_boxlist(store);
 				});
 			});
 			$('#logout_dialog .logoutbtn').click(function() {
 				store.logout();
 			});			
 		},
-		_post_login_setup:function() {
+		_update_boxlist:function() {
 			// get boxes
-			var store = this.options.store, this_ = this;
-			store.fetch().then(function() {
+			var store = this.options.store, this_ = this, boxlist_el = this_.$el.find('.boxlist');
+			store.fetch().then(function(boxlist) {
 				var boxes = store.boxes();
-				$('.boxlist').children().remove();
+				boxlist_el.children().remove();
 				boxlist.map(function(box) {
-					$('.boxlist').append(_('<li><a data-id="<%= id %>" href="#"><%= id %></a></li>').template({id:box.id}));
+					boxlist_el.append(_('<li><a data-id="<%= id %>" href="#"><%= name %></a></li>').template({id:box.id,name:box.toString()}));
 				});
 				this_.render();				
 			});
 		},
-		set_selected_box:function(b) {
-			this.trigger('change:box', b);
-			$('.selected-box').html(b === undefined ? ' no box selected ' : b);
-			this.selected_box = b;
+		set_selected_box_id:function(bid) {
+			var store = this.options.store, this_ = this;
+			var box = store.boxes().get(bid);
+			u.assert(box, 'internal error - box is not defined ' + bid);
+			this.trigger('select-box', bid);			
+			this.$el.find('.selected-box').html(box === undefined ? ' no box selected ' : box.toString());
+			this.selected_box = box;
 		},
 		_box_selected:function(d) {
-			this.set_selected_box($(d.currentTarget).attr('data-id'));
+			this.set_selected_box_id($(d.currentTarget).attr('data-id'));
 		},
 		_render_update:function() {
 			if (this.username) {
