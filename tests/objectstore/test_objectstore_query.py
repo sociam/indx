@@ -44,23 +44,8 @@ def cb_connected(conn):
     logging.debug("callback, objectstore connected")
     store = ObjectStoreAsync(conn)
 
-    def get_graphs():
-        logging.debug("get_graphs()")
-
-        def callback(uris):
-            logging.debug("callback")
-            jsondata = json.dumps(uris, indent=2)
-            print jsondata
-
-            do_queries(store)
-
-
-        logging.debug("about to call get_graphs")
-        store.get_graphs().addCallback(callback)
-        
-
     to_add = [
-        ("facebook", [  {"name": [{"@value": "Daniel"}], "height":[{"@value": '100'}], "@id": "person1"},
+        ([  {"name": [{"@value": "Daniel"}], "height":[{"@value": '100'}], "@id": "person1"},
                         {"name": [{"@value": "Daniel"}], "height":[{"@value": '150'}], "@id": "person2"},
                         {"name": [{"@value": "Max"}], "height":[{"@value": '100'}], "@id": "person3"},
                         {"name": [{"@value": "Max"}], "height":[{"@value": '150'}], "@id": "person4"}], 0),
@@ -71,11 +56,15 @@ def cb_connected(conn):
 
         if len(to_add) < 1:
             # all added, carry on
-            get_graphs()
+            def latest_cb(data):
+                print "Latest:" + str(data) + "\n"
+                do_queries(store)
+
+            store.get_latest().addCallback(latest_cb)
             return
 
-        graph, objs, version = to_add.pop(0)
-        store.add(graph, objs, version).addCallback(cb)
+        objs, version = to_add.pop(0)
+        store.add(objs, version).addCallback(cb)
 
     cb(None)
 
