@@ -21,15 +21,10 @@ else { WebBox = root.WebBox; }
 				[server_url, 'components/toolbar/login_template.html'].join('/')
 			].map(function(tname) {
 				var d = u.deferred();
-				console.log('tname ', tname);
-				$.get(tname).then(function(t) {
-					console.log('resolving ', t);
-					d.resolve(t);
-				});
+				$.get(tname).then(function(t) {	d.resolve(t); });
 				return d.promise();
 			})).then(function(t1, t2) {
-				console.log('OMG ', t1, t2);
-				d.resolve(this_.first_render());
+				d.resolve(this_.first_render(t1,t2));
 			});
 			return d.promise();
 		},
@@ -37,24 +32,19 @@ else { WebBox = root.WebBox; }
 			var store = this.options.store, this_ = this;
 			this.$el.html(t_templ).addClass('toolbar navbar-fixed-top navbar');
 			store.on('login', function(username) {
-				// console.log('login');
 				this_.username = username; this_.render();
 				this_.trigger('login', username);
 			});
 			store.on('logout', function(username) {
-				// console.log('logout');
 				this_.set_selected_box(); // clear selected box
 				delete this_.username; this_.render();
 				this_.trigger('logout');				
 			});
 			store.checkLogin().then(function(response) {
-				// console.log('response >> ', response);
 				if (response.is_authenticated) {
-					// console.log('authenticated - as user ', response.user);
 					this_.username = response.user;
 					this_.trigger('login', response.user);					
 				} else {
-					// console.log('not authenticated ', response.user);
 					delete this_.username;
 					this_.trigger('logout');
 				}
@@ -108,10 +98,9 @@ else { WebBox = root.WebBox; }
 		},														
 		render:function() {
 			var this_ = this;
+			u.log('this el ', this.el);
 			if (!this.$el.hasClass('toolbar')) {
-				return this.load_templates().then(function() {
-					this_._render_update();
-				});
+				return this.load_templates().then(function(t1,t2) { this_._render_update();	});
 			}
 			this._render_update();
 			return this;

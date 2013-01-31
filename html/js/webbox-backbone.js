@@ -41,15 +41,6 @@
 
 	// utilities -----------------> should move out to utils
 	var u; // to be filled in by dependency
-	var isInteger = function(n) { return n % 1 === 0; };
-	var assert = function(t,s) { if (!t) { throw new Error(s); } };
-	var deferred = function() { return new $.Deferred(); };
-	var dict = function(pairs) { var o = {};	pairs.map(function(pair) { o[pair[0]] = pair[1]; }); return o; };
-	var defined = function(x) { return (!_.isUndefined(x)) && x !== null; };
-	var log = function() { try { console.log.apply(console,arguments);  } catch(e) { }};
-	var warn = function() { try { console.warn.apply(console,arguments);  } catch(e) { }};
-	var debug = function() { try { console.debug.apply(console,arguments);  } catch(e) { }};
-	var error = function() { try { console.error.apply(console,arguments);  } catch(e) { }};	
 	
 	// set up our parameters for webbox -
 	// default is that we're loading from an _app_ hosted within
@@ -79,14 +70,14 @@
 					obj_vals.push({"@value": val});
 				} else if (_.isDate(val)) {
 					obj_vals.push({"@value": val.toISOString(), "@type":"http://www.w3.org/2001/XMLSchema#dateTime"});
-				} else if (_.isNumber(val) && isInteger(val)) {
+				} else if (_.isNumber(val) && u.isInteger(val)) {
 					obj_vals.push({"@value": val.toString(), "@type":"http://www.w3.org/2001/XMLSchema#integer"});
 				} else if (_.isNumber(val)) {
 					obj_vals.push({"@value": val.toString(), "@type":"http://www.w3.org/2001/XMLSchema#float"});
 				} else if (_.isBoolean(val)) {
 					obj_vals.push({"@value": val.toString(), "@type":"http://www.w3.org/2001/XMLSchema#boolean"});
 				} else {
-					warn("Could not determine type of val ", val);
+					u.warn("Could not determine type of val ", val);
 					obj_vals.push({"@value": val.toString()});
 				}
 			});
@@ -117,7 +108,7 @@
 			this.graph = options.graph;
 		},		
 		sync: function(method, model, options){
-			error('object sync methods individually not implemented yet'); // TODO
+			u.error('object sync methods individually not implemented yet'); // TODO
 			var d = new $.Deferred();
 			d.resolve();
 			return d.promise();
@@ -133,10 +124,10 @@
 			if (!_(o).isObject()) {	console.error(' not an object', o); return o; }
 			var this_ = this;
 			// ?!?! this isn't doing anything (!!)
-			return dict(_(o).map(function(v,k) {
+			return u.dict(_(o).map(function(v,k) {
 				var val = this_._value_to_array(k,v);
-				if (defined(val)) { return [k,val]; }
-			}).filter(defined));
+				if (u.defined(val)) { return [k,val]; }
+			}).filter(u.defined));
 		},
 		set:function(k,v,options) {
 			// set is tricky because it can be called like
@@ -169,7 +160,7 @@
 			return model;
 		},
 		_update_graph : function(graph){
-			var d = deferred(),
+			var d = u.deferred(),
 			graph_objs = graph.objs().map(function(obj){ return serialize_obj(obj);	}),
 			box = graph.box;			
 			graph.box.ajax("/update",
@@ -180,7 +171,7 @@
 			return d.promise();
 		},
 		_fetch : function(graph){
-			var store = graph.box.store, uri = graph.id, d = deferred();
+			var store = graph.box.store, uri = graph.id, d = u.deferred();
 			// return a list of models (each of type WebBox.Object) to populate a GraphCollection
 			graph.box.ajax("/", "GET", {"graph": uri})
 				.then(function(data){
@@ -211,7 +202,7 @@
 						});
 						obj_model.change();
 					});
-					log(">>> setting graph version ", graph.id, " ", version);
+					u.log(">>> setting graph version ", graph.id, " ", version);
 					graph.version = version;
 					d.resolve(graph);
 				}).fail(function(data) { d.reject(graph);});
@@ -219,10 +210,10 @@
 		},
 		sync: function(method, model, options){
 			switch(method){
-			case "create": return warn('graph.create not implemented yet'); // TODO
+			case "create": return u.warn('graph.create not implemented yet'); // TODO
 			case "read": return this._fetch(model);
 			case "update":return this._update_graph(model);
-			case "delete": return warn('graph.delete not implemented yet'); // TODO
+			case "delete": return u.warn('graph.delete not implemented yet'); // TODO
 			}
 		}
 	});	
@@ -242,7 +233,7 @@
 			// this method retrieves an auth token and proceeds to 
 			// load up the graphs
 			var this_ = this;
-			var d = deferred();
+			var d = u.deferred();
 			// get token for this box ---
 			this.ajax('GET', 'auth/get_token', { app: this.store.get('app') })
 				.then(function(data) {
@@ -267,7 +258,7 @@
 			return model;
 		},
 		_fetch : function(){
-			var d = deferred();
+			var d = u.deferred();
 			var this_ = this;
 			this.ajax('GET', this.id).then(function(data) {
 					var graph_uris = data.data;
@@ -283,10 +274,10 @@
 		},
 		sync: function(method, model, options){
 			switch(method){
-			case "create": return warn('box.update() : not implemented yet');
+			case "create": return u.warn('box.update() : not implemented yet');
 			case "read": return model._fetch(); 
-			case "update": return warn('box.update() : not implemented yet');
-			case "delete": return warn('box.delete() : not implemented yet');
+			case "update": return u.warn('box.update() : not implemented yet');
+			case "delete": return u.warn('box.delete() : not implemented yet');
 			}
 		}
 	});
@@ -330,7 +321,7 @@
 		checkLogin:function() { return this.ajax('GET', 'auth/whoami'); },
 		getInfo:function() { return this.ajax('GET', 'admin/info');},
 		login : function(username,password) {
-			var d = deferred();
+			var d = u.deferred();
 			var this_ = this;
 			this.ajax('POST', 'auth/login', { username: username, password: password })
 				.then(function(l) { this_.trigger('login', username); d.resolve(l); })
@@ -338,7 +329,7 @@
 			return d.promise();
 		},
 		logout : function() {
-			var d = deferred();
+			var d = u.deferred();
 			var this_ = this;
 			this.ajax('POST', 'auth/logout')
 				.then(function(l) { this_.trigger('logout'); d.resolve(l); })
@@ -347,7 +338,7 @@
 		},		
 		create_box:function(boxid) {
 			// actually creates the box above
-			var d = deferred();
+			var d = u.deferred();
 			var this_ = this;
 			this.ajax('POST', 'admin/create_box', { name: boxid })
 				.then(function() {
@@ -359,7 +350,7 @@
 		},
 		_fetch:function() {
 			// fetches list of boxes
-			var this_ = this, d = deferred();			
+			var this_ = this, d = u.deferred();			
 			this.ajax('GET','admin/list_boxes')
 				.success(function(data) {
 					var boxes =	data.boxes
@@ -374,15 +365,21 @@
 		},
 		sync: function(method, model, options){
 			switch(method){
-			case "create": return warn('store.update() : not implemented yet'); // TODO
+			case "create": return u.warn('store.update() : not implemented yet'); // TODO
 			case "read"  : return model._fetch(); 
-			case "update": return warn('store.update() : not implemented yet'); // TODO
-			case "delete": return warn('store.delete() : not implemented yet'); // tODO
+			case "update": return u.warn('store.update() : not implemented yet'); // TODO
+			case "delete": return u.warn('store.delete() : not implemented yet'); // tODO
 			}
 		}			
 	});
 
-	var dependencies = [ '/js/utils.js','/components/toolbar/toolbar.js'];
+	var dependencies = [
+		'/js/vendor/bootstrap.min.js',
+		'/js/vendor/lesscss.min.js',
+		'/js/utils.js',
+		'/components/toolbar/toolbar.js'
+	];
+	
 	WebBox.load = function(base_url) {
 		if (base_url === undefined) {
 			base_url = ['http:/', document.location.host].join('/');

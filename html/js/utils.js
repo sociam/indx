@@ -7,7 +7,11 @@
 	if (typeof exports !== 'undefined'){ WebBox = exports.WebBox; }
 	else { WebBox = root.WebBox; }
 	
-	WebBox.utils = { 
+	WebBox.utils = {
+		log : function() { try { console.log.apply(console,arguments);  } catch(e) { }},
+		warn : function() { try { console.warn.apply(console,arguments);  } catch(e) { }},
+		debug : function() { try { console.debug.apply(console,arguments);  } catch(e) { }},
+		error : function() { try { console.error.apply(console,arguments);  } catch(e) { }},		
 		isInteger:function(n) { return n % 1 === 0; },
 		deferred:function() { return new $.Deferred(); },
 		whend:function(deferred_array) { return $.when.apply($,deferred_array); },
