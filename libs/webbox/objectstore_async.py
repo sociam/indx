@@ -182,6 +182,7 @@ class ObjectStoreAsync:
         result_d = Deferred()
 
         def row_cb(rows, version):
+            logging.debug("get_latest row_cb: version={0}, rows={1}".format(version, rows))
             obj_out = self.rows_to_json(rows)
             obj_out["@version"] = version
             result_d.callback(obj_out)
@@ -190,9 +191,9 @@ class ObjectStoreAsync:
             logging.debug("get_latest rows_cb: "+str(rows))
             if rows is None or len(rows) < 1:
                 return result_d.callback({"@version": 0 })
-            version = rows[0]
+            version = rows[0][0]
             rowd = self.conn.runQuery("SELECT version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples", []) # order is implicit, defined by the view, so no need to override it here
-            rowd.addCallback(lambda rows: row_cb(rows,version))
+            rowd.addCallback(lambda rows2: row_cb(rows2,version))
 
         d = self.conn.runQuery("SELECT latest_version FROM wb_v_latest_version", [])
         d.addCallback(lambda rows: rows_cb(rows))
@@ -214,8 +215,8 @@ class ObjectStoreAsync:
         logging.debug("Objectstore add")
 
         def added_cb(info): # self is the deferred
-            new_version = info[0]
-            logging.debug("added_cb")
+            new_version = info
+            logging.debug("added_cb: info="+str(info))
             result_d.callback({"@version": new_version})
 
         def row_cb(row):
@@ -234,7 +235,7 @@ class ObjectStoreAsync:
                 ipve.version = actual_prev_version
                 raise ipve
 
-            d = self.add_version(objs, actual_prev_version)
+            d = self.add_version(objs, actual_prev_version+1)
             d.addCallback(added_cb)
 
         d = self.conn.runQuery("SELECT latest_version FROM wb_v_latest_version", [])
@@ -245,6 +246,9 @@ class ObjectStoreAsync:
 
     def add_version(self, objs, version):
         """ Add new version of the db.
+
+            objs Objects to add
+            version The new version to add to
         """
 
         result_d = Deferred()
@@ -292,7 +296,7 @@ class ObjectStoreAsync:
             logging.debug("Objectstore add_version exec_queries")
 
             if len(queries) < 1:
-                result_d.callback((version+1))
+                result_d.callback((version))
                 return
             
             (query, params) = queries.pop(0)
