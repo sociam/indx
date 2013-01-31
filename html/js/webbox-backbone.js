@@ -396,13 +396,19 @@
 		if (base_url === undefined) {
 			base_url = ['http:/', document.location.host].join('/');
 		}
-		console.log('laoding from base url ', base_url);		
+		console.log('loading from base url ', base_url);		
 		var _load_d = new $.Deferred(); 
-		var ds = dependencies.map(function(s) { return $.getScript(base_url + s); });
-		$.when.apply($,ds).then(function() {
-			u = WebBox.utils;
-			_load_d.resolve(root);
+		var ds = dependencies.map(function(s) {
+			console.log('getting script ', base_url + s);
+			return $.getScript(base_url + s);
 		});
+		$.when.apply($,ds).then(function() {
+			console.log('LOADING TOOLBAR');
+			WebBox.Toolbar.load_templates(base_url).then(function() {
+				u = WebBox.utils;
+				_load_d.resolve(root);
+			}).fail(function(err) { console.error(err); _load_d.reject(root);   });
+		}).fail(function(err) { console.error(err); _load_d.reject(root); });
 		return _load_d.promise();
 	};
 }).call(this);

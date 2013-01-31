@@ -7,28 +7,16 @@ if (typeof exports !== 'undefined'){ WebBox = exports.WebBox;}
 else { WebBox = root.WebBox; }
 
 (function() {
-	var u = WebBox.utils;
+	var u = WebBox.utils, templates;
 	var ToolbarView = WebBox.Toolbar = Backbone.View.extend({
 		tagClass:"div",
 		events: { 'click .boxlist a' : '_box_selected'	},
 		initialize:function(options) {
 			u.assert(this.options.store, "must pass in store");
 		},
-		load_templates:function () {
-			var d = u.deferred(), server_url = this.options.store.get('server_url'), this_ = this;
-			u.when([
-				[server_url, 'components/toolbar/t_template.html'].join('/'),
-				[server_url, 'components/toolbar/login_template.html'].join('/')
-			].map(function(tname) {
-				var d = u.deferred();
-				$.get(tname).then(function(t) {	d.resolve(t); });
-				return d.promise();
-			})).then(function(t1, t2) {
-				d.resolve(this_.first_render(t1,t2));
-			});
-			return d.promise();
-		},
-		first_render:function(t_templ,l_templ) {
+		first_render:function() {
+			var t_templ = templates.main.template, l_templ = templates.login.template;
+			console.log('t_templ ', t_templ);
 			var store = this.options.store, this_ = this;
 			this.$el.html(t_templ).addClass('toolbar navbar-fixed-top navbar');
 			store.on('login', function(username) {
@@ -102,12 +90,28 @@ else { WebBox = root.WebBox; }
 		},														
 		render:function() {
 			var this_ = this;
-			u.log('this el ', this.el);
 			if (!this.$el.hasClass('toolbar')) {
-				return this.load_templates().then(function(t1,t2) { this_._render_update();	});
+				this.first_render();
+				return this_._render_update();
 			}
 			this._render_update();
 			return this;
 		}
 	});
-})();
+	ToolbarView.load_templates = function(server_url) {
+		console.log('load template ... ' + server_url);
+		templates = {
+			main: { url: [server_url, 'components/toolbar/t_template.html'].join('/') },
+			login:{ url: [server_url, 'components/toolbar/login_template.html'].join('/')}
+		};		
+		var ds = $.when.apply($, _(templates).keys().map(function(tname) {
+			var d = new $.Deferred();
+			$.get(templates[tname].url).then(function(t) {
+				templates[tname].template = t;
+				d.resolve(t);
+			});
+			return d.promise();
+		}));
+		return $.when.apply($,ds);
+	};	
+}());
