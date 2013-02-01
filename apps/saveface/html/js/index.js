@@ -1,7 +1,8 @@
+/*global $,_,document,window,console,escape,Backbone,exports */
+/*jslint vars:true, todo:true, sloppy:true */
+
 var host = document.location.host;
-if (host.indexOf(':') >= 0) {
-	host = host.slice(0,host.indexOf(':'));
-}
+if (host.indexOf(':') >= 0) { host = host.slice(0,host.indexOf(':')); }
 var channelURL = '//'+host+'/channel.html';
 console.log('checking for channel file at ', channelURL);
 // Additional JS functions here
@@ -12,55 +13,35 @@ window.fbAsyncInit = function() {
 		status	 : true, // check login status
 		cookie	 : true, // enable cookies to allow the server to access the session
 		xfbml	  : true  // parse XFBML
-	});
-	// Additional init code here
-	var path = document.location.pathname;
-	var basepath = path.slice(0,path.lastIndexOf('/')); // chop off 2 /'s
-	basepath = basepath.slice(0,Math.max(0,basepath.lastIndexOf('/'))) || '/';
-	basepath = basepath.slice(0,Math.max(0,basepath.lastIndexOf('/'))) || '/';	
-	console.log('setting baseurl to ', document.location.pathname, '-', basepath);
-	require.config({ baseUrl:  basepath });
-	require(['apps/saveface/js/saveface-app', 'components/toolbar/toolbar'], function(saveface, tbcomponent) {
-		$.getScript('http://'+host+':8211/js/webbox-backbone.js', function() {
-	  		var store = new ObjectStore.Store();
-			window.store = store;
-			var graphname = 'facebook';
-			console.log('toolbar >> ', tbcomponent);
-			var toolbar = tbcomponent.init(store);
-			var router = undefined;
-			var get_graph = function(boxname) {
-				var d = new $.Deferred();
-				var get_graph = function(box) {					
-					var graph = box.get_or_create(graphname);
-					graph.fetch().then(function(graph) {
-						console.log('graph loaded ', graph.objs().length, ' items already in it');
-						d.resolve(graph);
-					});
-				};
-				var load_box = function() {
-					store.load_box(boxname)
-						.then(function() { get_graph(store.get(boxname));})
-						.fail(function(err) { console.error('fail loading box ', err); });
-				};
-				store.create_box(boxname).then(load_box).fail(load_box);
-				return d.promise();
-			};
-			toolbar.on('change:box', function(b) {
-				if (b !== undefined) {
-					get_graph(b).then(function(graph) {
-						router = saveface.init(graph);
-						router.show();
+	});	
+	require(['apps/saveface/js/saveface-app'], function(saveface) {
+		var graphname = 'facebook';
+		var router;
+		WebBox.load().then(function() {
+			// Additional init code here
+			var path = document.location.pathname;
+			var basepath = path.slice(0,path.lastIndexOf('/')); // chop off 2 /'s
+			basepath = basepath.slice(0,Math.max(0,basepath.lastIndexOf('/'))) || '/';
+			basepath = basepath.slice(0,Math.max(0,basepath.lastIndexOf('/'))) || '/';	
+			require.config({ baseUrl: basepath });
+			var store = window.store = new WebBox.Store();
+			store.toolbar.on('change:selected-box', function(bid) {
+				if (bid !== undefined) {
+					var box = store.boxes().get(bid);
+					box.fetch().then(function() {
+						var g = box.get_or_create('facebook');
+						g.fetch().then(function() {
+							router = saveface.init(g);
+							router.show();
+						});						
 					});
 				} else {
-					if (router !== undefined) {	router.hide();	}
-					router = undefined;
+					if (router === undefined) { router.hide(); }
+					router = undefined; 
 				}
 			});
-			toolbar.on('logout', function() {
-				console.log('toolbar logout');
-				if (router !== undefined) {
-					router.hide();
-				}
+			store.toolbar.on('logout', function() {
+				if (router !== undefined) { router.hide();	}
 				router = undefined;
 			});
 		});

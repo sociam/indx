@@ -1,3 +1,5 @@
+/*global $,_,document,window,console,escape,Backbone,exports */
+/*jslint vars:true, todo:true */
 
 $('#loader').width($(document).width());
 WebBox.load().then(function(exports) {

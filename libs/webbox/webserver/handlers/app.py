@@ -64,18 +64,20 @@ class AppsMetaHandler(Resource):
             logging.debug("registering app {0}".format(appname))
             module,html = vals['module'],vals['html']
             logging.debug(' module dir {0}'.format(html))
-            if not html:
+            if not html: 
                 # TODO: handle this case
-                continue 
+                continue            
+            file_handler = File(html)                        
             if getattr(module, 'APP', None):
                 app = module.APP(server)
-                self.apps[appname] = app                
-                file_handler = File(html)
+                self.apps[appname] = app
                 logging.debug('registering api child {0}'.format(repr(app)))
                 file_handler.putChild('api', app)
-                self.putChild(appname,file_handler) ## this puts things at the base -- rather than putting the app handler
             else:
+                logging.debug('static content only {0}'.format(html))   
                 file_handler.putChild(appname,File(html))
+            self.putChild(appname,file_handler) ## this puts things at the base -- rather than putting the app handler
+                
 
     def get_apps(self):
         return dict([(k,v['module']) for k,v in apps.MODULES.iteritems()])            
