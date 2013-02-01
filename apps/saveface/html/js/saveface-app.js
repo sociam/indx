@@ -5,7 +5,8 @@
 // see js/fb.js for low-level data scrobbling
 //
 // 
-define(['apps/saveface/js/saveface-grab','js/utils'],function(fb,u) {
+define(['js/saveface-grab'],function(fb) {
+	var u = WebBox.utils;
 	var Router = Backbone.Router.extend({
 		routes: {
 			'login' : 'login',

@@ -1,5 +1,6 @@
-define(['js/utils','apps/saveface/js/savewatcher'], function(u, savewatcher) {
-	
+define(['js/savewatcher'], function(savewatcher) {
+	var u = WebBox.utils;
+	console.log("U >>>>>>>>>> ", u, WebBox);
 	var DEBUG = false;
 	var debug_subset = function(l) {
 		if (DEBUG) { return l.slice(0,5); }

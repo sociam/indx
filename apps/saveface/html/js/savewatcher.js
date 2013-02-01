@@ -1,4 +1,5 @@
-define(['js/utils'], function(u) {
+define([], function() {
+	var u = WebBox.utils;
 	return {
 		SaveWatcher: Backbone.Model.extend({
 			initialize:function() {

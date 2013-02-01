@@ -403,9 +403,9 @@
 			return $.getScript(base_url + s);
 		});
 		$.when.apply($,ds).then(function() {
+			u = WebBox.utils;
 			console.log('LOADING TOOLBAR');
 			WebBox.Toolbar.load_templates(base_url).then(function() {
-				u = WebBox.utils;
 				_load_d.resolve(root);
 			}).fail(function(err) { console.error(err); _load_d.reject(root);   });
 		}).fail(function(err) { console.error(err); _load_d.reject(root); });

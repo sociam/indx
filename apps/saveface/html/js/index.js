@@ -2,7 +2,7 @@
 /*jslint vars:true, todo:true, sloppy:true */
 
 var host = document.location.host;
-if (host.indexOf(':') >= 0) { host = host.slice(0,host.indexOf(':')); }
+// if (host.indexOf(':') >= 0) { host = host.slice(0,host.indexOf(':')); }
 var channelURL = '//'+host+'/channel.html';
 console.log('checking for channel file at ', channelURL);
 // Additional JS functions here
@@ -14,10 +14,10 @@ window.fbAsyncInit = function() {
 		cookie	 : true, // enable cookies to allow the server to access the session
 		xfbml	  : true  // parse XFBML
 	});	
-	require(['apps/saveface/js/saveface-app'], function(saveface) {
-		var graphname = 'facebook';
-		var router;
-		WebBox.load().then(function() {
+	WebBox.load().then(function() {
+		require(['js/saveface-app'], function(saveface) {
+			var graphname = 'facebook';
+			var router;
 			// Additional init code here
 			var path = document.location.pathname;
 			var basepath = path.slice(0,path.lastIndexOf('/')); // chop off 2 /'s
