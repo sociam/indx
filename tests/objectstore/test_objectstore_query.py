@@ -38,6 +38,7 @@ def do_queries(store):
     store.query({"name": "Max", "height": "100"}).addCallback(lambda objs: logging.debug("name=Max, height=100: "+str(objs)+"\n\n"))
     store.query({"height": "100"}).addCallback(lambda objs: logging.debug("height=100: "+str(objs)+"\n\n"))
     store.query({"height": "150"}).addCallback(lambda objs: logging.debug("height=150: "+str(objs)+"\n\n"))
+    reactor.stop()
 
 
 def cb_connected(conn):
