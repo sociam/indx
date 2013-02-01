@@ -171,6 +171,11 @@ class WebBoxTests:
 
         logging.debug("Adding data to box: '{0}' on server '{1}'".format(self.args['box'], self.args['server']))
         status = self.put(url, values)
-        logging.info(str(status))
+        if status['code'] != 201:
+            raise Exception("Adding to box {0} failed. Response is {1} with code {2}".format(self.args['box'], status['message'], status['code']))
+        else:
+            logging.info("Add to box {0} sucessful, new version is: {1}".format(self.args['box'], status['data']['@version']))
+            
+            
 
 
