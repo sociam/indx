@@ -147,7 +147,7 @@
 	var Graph = WebBox.Graph = Backbone.Model.extend({
 		idAttribute: "@id", // the URI attribute is '@id' in JSON-LD
 		initialize: function(attributes, options) {
-			assert(options.box, "no box provided");
+			u.assert(options.box, "no box provided");
 			this.set({version: 0, objs:new ObjCollection()});
 			this.box = options.box;
 		},
@@ -171,12 +171,12 @@
 					}).fail(function(err) {	d.reject(err);});
 			return d.promise();
 		},
-		_fetch : function(graph){
-			var store = graph.box.store, uri = graph.id, d = u.deferred();
+		_fetch : function(){
+			var store = this.box.store, uri = this.id, d = u.deferred(), this_=this;
 			// return a list of models (each of type WebBox.Object) to populate a GraphCollection
-			graph.box.ajax("/", "GET", {"graph": uri})
+			this.box.ajax("GET", this.box.id, {"graph": uri})
 				.then(function(data){
-					var graph_collection = graph.objs();
+					var graph_collection = this_.objs();
 					var version = 0;
 					var objdata = data.data;					
 					$.each(objdata, function(uri, obj){
@@ -185,11 +185,11 @@
 						if (uri[0] === "@") { return; } // ignore "@id" etc					
 						// not one of those, so must be a
 						// < uri > : { prop1 .. prop2 ... }
-						var obj_model = graph.get_or_create(uri);
+						var obj_model = this_.get_or_create(uri);
 						$.each(obj, function(key, vals){
 							var obj_vals = vals.map(function(val) {
 								// it's an object, so return that
-								if (val.hasOwnProperty("@id")) { return graph.get_or_create(val["@id"]); }
+								if (val.hasOwnProperty("@id")) { return this_.get_or_create(val["@id"]); }
 								// it's a non-object
 								if (val.hasOwnProperty("@value")) {
 									// if the string has no language or datatype, turn it just into a string
@@ -203,16 +203,16 @@
 						});
 						obj_model.change();
 					});
-					u.log(">>> setting graph version ", graph.id, " ", version);
-					graph.version = version;
-					d.resolve(graph);
-				}).fail(function(data) { d.reject(graph);});
+					u.log(">>> setting graph version ", this_.id, " ", version);
+					this_.version = version;
+					d.resolve(this_);
+				}).fail(function(err) { d.reject(err, this_);});
 			return d.promise();
 		},
 		sync: function(method, model, options){
 			switch(method){
 			case "create": return u.warn('graph.create not implemented yet'); // TODO
-			case "read": return this._fetch(model);
+			case "read": return model._fetch();
 			case "update":return this._update_graph(model);
 			case "delete": return u.warn('graph.delete not implemented yet'); // TODO
 			}
@@ -230,19 +230,18 @@
 			this.set({graphs: new GraphCollection()});
 		},
 		_set_token:function(token) { this.set("token", token);	},
-		load:function() {
+		get_token:function() {
 			// this method retrieves an auth token and proceeds to 
 			// load up the graphs
-			var this_ = this;
-			var d = u.deferred();
+			var this_ = this, d = u.deferred();
 			// get token for this box ---
 			this.ajax('POST', 'auth/get_token', { app: this.store.get('app') })
 				.then(function(data) {
 					this_._set_token( data.token );
-					this_.fetch().then(function() {	d.resolve(this_);}).fail(function(err) {
-						console.error(' error fetching ', this_.id, err);
-						d.reject(err);					
-					});
+					d.resolve(this_);
+				}).fail(function(err) {
+					console.error(' error fetching ', this_.id, err);
+					d.reject(err);					
 				});
 			return d.promise();			
 		},
@@ -264,10 +263,8 @@
 			this.graphs().add(model);
 			return model;
 		},
-		_fetch : function(){
-			var d = u.deferred();
-			var this_ = this;
-			console.log('fetch!! ', this.id);
+		_fetch_continue: function() {
+			var d = u.deferred(), this_ = this;
 			this.ajax('GET', this.id).then(function(data) {
 				console.log('fetch data ', data);
 				var graph_uris = data.data;
@@ -281,6 +278,20 @@
 				d.resolve(graphs);
 			}).fail(function(err) { d.reject(err); });
 			return d.promise();
+		},
+		_fetch : function(){			
+			var this_ = this;
+			console.log('fetch!! ', this.id);
+			if (this.get('token') === undefined) {
+				var d = u.deferred();
+				this.get_token().then(function() {
+					this_._fetch_continue().then(d.resolve).fail(d.reject);
+				}).fail(function(err) {
+					d.reject(err); u.error("FAIL ");
+				});
+				return d.promise();
+			}
+			return this_._fetch_continue();			
 		},
 		sync: function(method, model, options){
 			switch(method){

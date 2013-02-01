@@ -15,6 +15,7 @@ window.fbAsyncInit = function() {
 		xfbml	  : true  // parse XFBML
 	});	
 	WebBox.load().then(function() {
+		var u = WebBox.utils;
 		require(['js/saveface-app'], function(saveface) {
 			var graphname = 'facebook';
 			var router;
@@ -29,11 +30,15 @@ window.fbAsyncInit = function() {
 				if (bid !== undefined) {
 					var box = store.boxes().get(bid);
 					box.fetch().then(function() {
+						console.log("done box fetch next GRAPHHHHHHHHHHHHHHHHHHHHHH ");
 						var g = box.get_or_create('facebook');
 						g.fetch().then(function() {
+							u.log("saveface iniiiiiiiiiiiit ");
 							router = saveface.init(g);
 							router.show();
-						});						
+						}).fail(function(err, b) {
+							u.error(' ERROR ', err, b);
+						});
 					});
 				} else {
 					if (router === undefined) { router.hide(); }
