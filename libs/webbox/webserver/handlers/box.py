@@ -69,12 +69,22 @@ class BoxHandler(BaseHandler):
             if "version" not in args:
                 return self.return_bad_request(request,"Specify a previous version with &version=")
             prev_version = int(args['version'][0])
-            try:
-                store.add(objs, prev_version).addCallback(lambda new_version_info: self.return_created(request,{"data":new_version_info}))
-            except IncorrectPreviousVersionException as ipve:
-                logging.debug("Incorrect previous version")
-                actual_version = ipve.version
-                return self.return_obsolete(request,{"description": "Document obsolete. Please update before putting", '@version':actual_version})            
+            d = store.add(objs, prev_version)
+
+            def handle_add_error(failure):
+                """ Handle an error on add (this is the errback). """ #TODO move this somewhere else?
+                failure.trap(IncorrectPreviousVersionException, Exception)
+                err = failure.value
+                if isinstance(err, IncorrectPreviousVersionException):
+                    logging.debug("Incorrect previous version")
+                    actual_version = err.version
+                    return self.return_obsolete(request,{"description": "Document obsolete. Please update before putting", '@version':actual_version})            
+                else:
+                    logging.debug("Exception trying to add to store.")
+                    return self.return_internal_error(request)
+
+            d.addCallbacks(lambda new_version_info: self.return_created(request,{"data":new_version_info}), # callback
+                handle_add_error) #errback
         else:
             # single object put
             return self.return_bad_request(request,"Single object PUT not supported, PUT an array to create/replace a named graph instead")

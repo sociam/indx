@@ -18,6 +18,7 @@
 
 import logging, psycopg2, os, txpostgres
 from twisted.internet.defer import Deferred
+from twisted.python.failure import Failure
 from webbox.objectstore_query import ObjectStoreQuery
 
 class ObjectStoreAsync:
@@ -233,10 +234,13 @@ class ObjectStoreAsync:
             if actual_prev_version != specified_prev_version:
                 ipve = IncorrectPreviousVersionException("Actual previous version is {0}, specified previous version is: {1}".format(actual_prev_version, specified_prev_version))
                 ipve.version = actual_prev_version
-                raise ipve
-
-            d = self.add_version(objs, actual_prev_version+1)
-            d.addCallback(added_cb)
+                failure = Failure(ipve)
+                result_d.errback(failure)
+                return
+            else:
+                d = self.add_version(objs, actual_prev_version+1)
+                d.addCallback(added_cb)
+                return
 
         d = self.conn.runQuery("SELECT latest_version FROM wb_v_latest_version", [])
         d.addCallback(row_cb)
