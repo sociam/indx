@@ -25,6 +25,7 @@ class WebBoxTests:
         self.tests = {'create_box': self.create_box,
                       'add_data': self.add_data,
                       'list_boxes': self.list_boxes,
+                      'get_object_ids': self.get_object_ids,
                      }
 
         self.token = None
@@ -63,6 +64,8 @@ class WebBoxTests:
     def get(self, url, values):
         """ Do a GET, decode the result JSON and return it. """
         if self.token is not None:
+            if values is None:
+                values = {}
             values['token'] = self.token
         if values is not None and len(values.keys()) > 0:
             data = urllib.urlencode(values)
@@ -77,6 +80,8 @@ class WebBoxTests:
     def put(self, url, values, content_type="application/json"):
         """ Do a PUT, decode the result JSON and return it. """
         if self.token is not None:
+            if values is None:
+                values = {}
             values['token'] = self.token
         data = urllib.urlencode(values)
         req = urllib2.Request(url, data)
@@ -90,6 +95,8 @@ class WebBoxTests:
     def post(self, url, values):
         """ Do a POST, decode the result JSON and return it. """
         if self.token is not None:
+            if values is None:
+                values = {}
             values['token'] = self.token
         data = urllib.urlencode(values)
         req = urllib2.Request(url, data)
@@ -159,6 +166,22 @@ class WebBoxTests:
             raise Exception("Listing boxes failed, response is {0} with code {1}".format(status['message'], status['code']))
         else:
             logging.info("Listing of boxes successful, the boxes are: \n" + "\n".join(status['list']))
+
+    def get_object_ids(self):
+        """ Get the IDs of every object in this box. """
+        self.check_args(['server', 'box'])
+        self.auth()
+        self.get_token()
+
+        url = "{0}{1}/get_object_ids".format(self.args['server'], self.args['box'])
+
+        logging.debug("Getting a list of object IDs on server '{0}' in box '{1}'".format(self.args['server'], self.args['box']))
+        status = self.get(url, None)
+
+        if status['code'] != 200:
+            raise Exception("Listing object IDs failed, response is {0} with code {1}".format(status['message'], status['code']))
+        else:
+            logging.info("Listing of objects successful, the object IDs are: \n" + "\n".join(status['uris']))
 
     def add_data(self):
         """ Test to add data to a box. """

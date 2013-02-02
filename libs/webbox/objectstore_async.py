@@ -176,6 +176,33 @@ class ObjectStoreAsync:
  
         return result_d
     
+    def get_object_ids(self):
+        """ Get a list of IDs (URIs) of objects in this box.
+        """
+        result_d = Deferred()
+
+        def row_cb(rows, version):
+            logging.debug("get_object_ids row_cb: version={0}, rows={1}".format(version, rows))
+            uris = []
+            for row in rows:
+                uris.append(row[0])
+
+            obj_out = {"uris": uris, "@version": version}
+            result_d.callback(obj_out)
+
+        def rows_cb(rows):
+            logging.debug("get_object_ids rows_cb: "+str(rows))
+            if rows is None or len(rows) < 1:
+                return result_d.callback({"@version": 0 })
+            version = rows[0][0]
+            rowd = self.conn.runQuery("SELECT DISTINCT subject FROM wb_v_latest_triples", [])
+            rowd.addCallback(lambda rows2: row_cb(rows2,version))
+
+        d = self.conn.runQuery("SELECT latest_version FROM wb_v_latest_version", [])
+        d.addCallback(lambda rows: rows_cb(rows))
+
+        return result_d
+
 
     def get_latest(self):
         """ Get the latest version of the box, as expanded JSON-LD notation.
