@@ -1,3 +1,6 @@
+/*global $,_,document,window,console,escape,Backbone,exports */
+/*jslint vars:true, todo:true, sloppy:true */
+
 //
 // 
 // demo saveface webbox app --
@@ -7,103 +10,91 @@
 // 
 define(['js/saveface-grab'],function(fb) {
 	var u = WebBox.utils;
+	var switchTo = function(toshow) {
+		console.log("SWITCH TO ", toshow, $('.box').not(toshow).length, $('.modes ' + toshow).length);
+		$('#modes .box').not(toshow).hide('slow', function() {
+			$('#modes ' + toshow).fadeIn();
+		});
+	};
 	var Router = Backbone.Router.extend({
 		routes: {
-			'login' : 'login',
-			'store' : 'store',
+			'save' : 'save',
 			'denied' : 'denied',
-			'': 'start',
+			'start' : 'start',			
+			'' : 'start'
 		},
 		initialize:function(options) {
 			console.log('router initialize >> ', options.graph && options.graph.id);
 			this.graph = options.graph;
-		},
-		init_controls:function() {
 			var graph = this.graph || models.get_graph('facebook');
-            console.debug("Init controls");
 			_(fb.actions).map(function(action, mode) {
-                console.debug("Init controls::fb_actions for action: ",action,", mode:",mode);
 				$('#'+mode)
 					.attr("disabled",false)
 					.on("click", function() {
 						var this_ = this;
-						console.log('click on ', mode, ' using graph ', graph.id);
+						u.log('click on ', mode, ' using graph ', graph.id);
 						$(this_).attr('disabled',true);
 						fb.exec_action(graph,action).then(function() {
 							console.log('done with action > saving graph ', mode);
 							graph.save().then(function() {
-								console.log('graph save successful.');
+								u.log('graph save successful.');
 								$(this_).attr('disabled',false);
 							}).fail(function(err) {
-								console.error('graph save unsuccessful.', err);
+								u.error('graph save unsuccessful.', err);
 							});
 						}).fail(function(err) {
-							console.error('FAIL on action ', mode, err);
+							u.error('FAIL on action ', mode, err);
 						});
 					});
 			});			
 		},
 		start:function() {
-			console.log('>> mode start--');
-			var this_ = this;
+			var router = this;			
 			FB.getLoginStatus(function(response) {
 				if (response.status === 'connected') {
-					// connected
-					console.log('connected -- proceeding to navigate ');
-					this_.init_controls();
-					this_.nav('store');
-				} else { // if (response.status === 'not_authorized') {
-					this_.nav('login');
-				} 
+					// everything is OK, let's save
+					u.log('FBLoginStatus:connected ');
+					router.nav('save');
+				} else if (response.status === 'not_authorized') {
+					u.log('FBLoginStatus:notauthorised');					
+					router.nav('denied');
+				} else {
+					u.log('FBLoginStatus:notloggedin');										
+					// not logged into facebook, so let's help them there
+					switchTo('.startbox');
+				}
 			});			
 		},
-		login:function() {
-			console.log('>> mode login --');
-			var this_ = this;
-			$('.box').not('.loginbox').fadeOut('slow', function(){ $('.loginbox').fadeIn(); });
-		},
-		store:function() {
-			console.log('>> mode store --');
-			var this_ = this;
-			FB.getLoginStatus(function(response) {
-				if (response.status === 'connected') { this_.init_controls();} else { this_.nav(''); }
-			});
-			$('.box').not('.controls').fadeOut('slow', function() { $('.controls').fadeIn('slow');  });
+		save:function() {
+			switchTo('.controls');
 		},
 		denied:function() {
-			console.log('>> mode denied --');
-			var this_ = this;
-			$('.box').not('.denied').fadeOut('slow', function() { $('.denied').fadeIn();  });
+			switchTo('.denied');
 		},
 		nav:function(state) {
 			this.navigate(state, {trigger:true});
-		},
-		hide:function() {
-			$('.box').hide();
-		},
-		show:function() {
-			$('.box').show();
-		}		
+		}
 	});
 	
-	var router = undefined;	
+	
 	var init = function(graph) {
-		if (router === undefined) {
-			router = (new Router({graph: graph}));
-			$('#loginbtn').on('click', function() {
-				FB.login(function(resp) {
-					if (resp.authResponse) { router.nav('store'); } else { router.nav('denied');	}
-				}, { perms:'read_stream,read_mailbox,offline_access'});
-			});	
-			$('#logoff').click('click', function() {
-				console.log('logging out');
-				FB.logout(); router.nav('login');
-			});
-			Backbone.history.start({root:document.location.pathname});
-			return router;
-		}
+		var router = window.router = (new Router({graph: graph}));
+		$('#loginbtn').on('click', function() {
+			FB.login(function(response) {
+				console.log("FB login resp ", response);
+				if (response.authResponse) { router.nav('save'); } else {
+					router.nav('start');
+				}
+			}, { perms:'read_stream,read_mailbox,offline_access'});
+		});		
+		$('#logoff').click('click', function() {
+			console.log('logging out');
+			fb.watcher.reset();
+			FB.logout(function() {	router.nav('start');});
+		});		
+		Backbone.history.start({root:document.location.pathname});
 		router.graph = graph; 
-		router.nav('login')
+		router.nav('start');
 		return router;
 	};	
 	return { init : init };

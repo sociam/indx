@@ -164,8 +164,13 @@
 			var d = u.deferred(),
 			graph_objs = graph.objs().map(function(obj){ return serialize_obj(obj);	}),
 			box = graph.box;			
-			graph.box.ajax("/update",
-					"PUT", { graph : escape(graph.id),  version: escape(graph.version), data : JSON.stringify(graph_objs) }).then(function(response) {
+			graph.box.ajax("PUT",
+						   box.id + "/update",
+						   {
+							   graph : escape(graph.id),
+							   version: escape(graph.version),
+							   data : JSON.stringify(graph_objs)
+						   }).then(function(response) {
 						graph.version = response.data["@version"];
 						d.resolve(graph);
 					}).fail(function(err) {	d.reject(err);});
@@ -318,9 +323,7 @@
 			console.log(" server ", this.get('server_url'));
 			this.set({boxes : new BoxCollection(undefined, {store: this})});
 			// load and launch the toolbar
-			if (this.get('toolbar')) {
-				this._load_toolbar();
-			}
+			if (this.get('toolbar')) { this._load_toolbar(); }
 		},
 		ajax:function(method, path, data) {
 			var url = [this.get('server_url'), path].join('/');

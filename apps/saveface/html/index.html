@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
   <link href="../../css/bootstrap.css" rel="stylesheet">
-  <link href="css/fb.css" rel="stylesheet">  
+  <link rel="stylesheet/less" type="text/css" href="css/fb.less">
   <head><title>save face :: social network profile aggregator</title> </head>
   <body>
 	<div>
 	  <div id="modes">
-		<div class="box loginbox" style="display:none">
-		  <div class="span12 header">save<br>face</div>
+		<div class="box startbox" style="display:none">
+		  <div class="welcome"><h1>save<br>face</h1></div>
 		  <div id="loginbtn" class="btn">log in to facebook - <i class="icon-play"></i></div>
 		</div>
 		<div class="box controls" style="display:none">
@@ -23,7 +23,8 @@
 		  <div id="stats"></div>
 		</div>
 		<div class="box denied" style="display:none">
-		  Access denied. Did you give save face permission to access your fb?
+		  <h1>Oops: not allowed</h1>
+		  Please give save face permission to access your fb?
 		</div>
 	  </div>
 	  <div id="counter"></div>	
