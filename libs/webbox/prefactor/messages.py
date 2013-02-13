@@ -19,7 +19,7 @@
 
 import rdflib, logging, traceback, uuid
 from httputils import resolve_uri
-from webbox.webbox import WebBox
+from webbox.box import WebBox
 from rdflib.graph import Graph
 from time import strftime
 

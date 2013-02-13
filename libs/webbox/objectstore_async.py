@@ -1,7 +1,7 @@
 #    This file is part of WebBox.
 #
-#    Copyright 2011-2012 Daniel Alexander Smith
-#    Copyright 2011-2012 University of Southampton
+#    Copyright 2011-2013 Daniel Alexander Smith
+#    Copyright 2011-2013 University of Southampton
 #
 #    WebBox is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -16,8 +16,10 @@
 #    You should have received a copy of the GNU General Public License
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging, psycopg2, os, txpostgres, types
+import logging, psycopg2, os, types
 from twisted.internet.defer import Deferred
+from twisted.python.failure import Failure
+from webbox.objectstore_query import ObjectStoreQuery
 
 class ObjectStoreAsync:
     """ Stores objects in a database, handling import, export and versioning.
@@ -102,6 +104,23 @@ class ObjectStoreAsync:
 
         self.conn.autocommit = value
 
+    def query(self, q):
+        """ Perform a query and return results. """
+        results_d = Deferred()
+
+        query = ObjectStoreQuery()
+        sql, params = query.to_sql(q)
+
+        def results(rows):
+            objs_out = self.rows_to_json(rows)
+            results_d.callback(objs_out)
+
+        d = self.conn.runQuery(sql, params)
+        d.addCallback(results)
+
+        return results_d
+
+
     def rows_to_json(self, rows):
         """ Serialise results from database view as JSON-LD
 
@@ -110,10 +129,10 @@ class ObjectStoreAsync:
 
         obj_out = {}
         for row in rows:
-            (graph_uri_sel, graph_version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype) = row
+            (version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype) = row
 
             if "@version" not in obj_out:
-                obj_out["@version"] = graph_version
+                obj_out["@version"] = version
 
             if subject not in obj_out:
                 obj_out[subject] = {}
@@ -141,29 +160,8 @@ class ObjectStoreAsync:
 
         return obj_out
 
-
-    def get_graphs(self):
-        """ Get a list of the graph URIs.
-        """
-        results_d = Deferred()
-        logging.debug("Objectstore get_graphs")
-
-        def rows_cb(rows):
-            logging.debug("Objectstore get_graphs rows_cb")
-            objs_out = []
-            for row in rows:
-                graph_uri = row[0]
-                objs_out.append(graph_uri)
-            results_d.callback(objs_out)
-
-        d = self.conn.runQuery("SELECT DISTINCT graph_uri FROM wb_v_latest_triples")
-        d.addCallback(rows_cb)
-
-        return results_d
-
-    def get_latest_obj(self, graph_uri, object_uri):
-        """ Get the latest version of an object in agraph, as expanded JSON-LD notation.
-            graph_uri of the named graph
+    def get_latest_obj(self, object_uri):
+        """ Get the latest version of an object in the box, as expanded JSON-LD notation.
             object_uri of the object
         """
 
@@ -171,47 +169,84 @@ class ObjectStoreAsync:
 
         def rows_cb(rows):
             obj_out = self.rows_to_json(rows)
-            obj_out["@graph"] = graph_uri
             result_d.callback(obj_out)
         
-        d = self.conn.runQuery("SELECT graph_uri, graph_version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples WHERE graph_uri = %s AND subject = %s", [graph_uri, object_uri]) # order is implicit, defined by the view, so no need to override it here
+        d = self.conn.runQuery("SELECT version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples WHERE subject = %s", [object_uri]) # order is implicit, defined by the view, so no need to override it here
         d.addCallback(rows_cb)
  
         return result_d
     
-
-    def get_latest(self, graph_uri):
-        """ Get the latest version of a graph, as expanded JSON-LD notation.
-            uri of the named graph
+    def get_object_ids(self):
+        """ Get a list of IDs (URIs) of objects in this box.
         """
         result_d = Deferred()
 
         def row_cb(rows, version):
+            logging.debug("get_object_ids row_cb: version={0}, rows={1}".format(version, rows))
+            uris = []
+            for row in rows:
+                uris.append(row[0])
+
+            obj_out = {"uris": uris, "@version": version}
+            result_d.callback(obj_out)
+
+        def rows_cb(rows):
+            logging.debug("get_object_ids rows_cb: "+str(rows))
+            if rows is None or len(rows) < 1:
+                return result_d.callback({"@version": 0 })
+            version = rows[0][0]
+            rowd = self.conn.runQuery("SELECT DISTINCT subject FROM wb_v_latest_triples", [])
+            rowd.addCallback(lambda rows2: row_cb(rows2,version))
+
+        d = self.conn.runQuery("SELECT latest_version FROM wb_v_latest_version", [])
+        d.addCallback(lambda rows: rows_cb(rows))
+
+        return result_d
+
+
+    def get_latest(self):
+        """ Get the latest version of the box, as expanded JSON-LD notation.
+        """
+        result_d = Deferred()
+
+        def row_cb(rows, version):
+            logging.debug("get_latest row_cb: version={0}, rows={1}".format(version, rows))
             obj_out = self.rows_to_json(rows)
-            obj_out["@graph"] = graph_uri
             obj_out["@version"] = version
             result_d.callback(obj_out)
 
         def rows_cb(rows):
             logging.debug("get_latest rows_cb: "+str(rows))
             if rows is None or len(rows) < 1:
-                return result_d.callback({"@graph" : graph_uri, "@version": 0 })
-            version = rows[0]
-            rowd = self.conn.runQuery("SELECT graph_uri, graph_version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples WHERE graph_uri = %s", [graph_uri]) # order is implicit, defined by the view, so no need to override it here
-            rowd.addCallback(lambda rows: row_cb(rows,version))
+                return result_d.callback({"@version": 0 })
+            version = rows[0][0]
+            rowd = self.conn.runQuery("SELECT version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples", []) # order is implicit, defined by the view, so no need to override it here
+            rowd.addCallback(lambda rows2: row_cb(rows2,version))
 
-        d = self.conn.runQuery("SELECT latest_version FROM wb_v_latest_graphvers WHERE graph_uri = %s", [graph_uri])
-        d.addCallback(lambda rows: rows_cb(rows)) 
+        d = self.conn.runQuery("SELECT latest_version FROM wb_v_latest_version", [])
+        d.addCallback(lambda rows: rows_cb(rows))
 
         return result_d
 
 
-    def add(self, graph_uri, objs, specified_prev_version):
-        """ Add new objects, or new versions of objects, to a graph in the database.
+    def add_objects(self, objs, specified_prev_version):
+        """ Create a new version of the database, and add/replace only the objects references in the 'objs' dict. All other objects remain as they are in the specified_prev_version of the db.
 
-            graph_uri of the named graph,
-            objs, json expanded notation of objects in the graph,
-            specified_prev_version of the named graph (must match max(version) of the graph, or zero if the object doesn't exist, or the store will return a IncorrectPreviousVersionException
+            objs, json expanded notation of objects,
+            specified_prev_version of the databse (must match max(version) of the db, or zero if the object doesn't exist, or the store will return a IncorrectPreviousVersionException
+
+            returns information about the new version
+        """
+        pass
+
+
+    def replace(self, objs, specified_prev_version):
+        """ Add new objects, or new versions of objects, to the database.
+
+            Completely replaces specified_prev_version with objs.
+
+            objs, json expanded notation of objects,
+            specified_prev_version of the databse (must match max(version) of the db, or zero if the object doesn't exist, or the store will return a IncorrectPreviousVersionException
 
             returns information about the new version
         """
@@ -221,9 +256,9 @@ class ObjectStoreAsync:
         logging.debug("Objectstore add")
 
         def added_cb(info): # self is the deferred
-            new_version, graph_uri = info
-            logging.debug("added_cb")
-            result_d.callback({"@version": new_version, "@graph": graph_uri})
+            new_version = info
+            logging.debug("added_cb: info="+str(info))
+            result_d.callback({"@version": new_version})
 
         def row_cb(row):
             logging.debug("Objectstore add row_cb, row: " + str(row))
@@ -233,23 +268,31 @@ class ObjectStoreAsync:
             else:
                 actual_prev_version = row[0][0]
 
+            if actual_prev_version is None:
+                actual_prev_version = 0
+
             if actual_prev_version != specified_prev_version:
                 ipve = IncorrectPreviousVersionException("Actual previous version is {0}, specified previous version is: {1}".format(actual_prev_version, specified_prev_version))
                 ipve.version = actual_prev_version
-                return result_d.errback(ipve)
-                #raise ipve
+                failure = Failure(ipve)
+                result_d.errback(failure)
+                return
+            else:
+                d = self.create_version(objs, actual_prev_version+1)
+                d.addCallback(added_cb)
+                return
 
-            d = self.add_graph_version(graph_uri, objs, actual_prev_version)
-            d.addCallback(added_cb)
-
-        d = self.conn.runQuery("SELECT latest_version FROM wb_v_latest_graphvers WHERE graph_uri = %s", [graph_uri])
+        d = self.conn.runQuery("SELECT latest_version FROM wb_v_latest_version", [])
         d.addCallback(row_cb)
 
         return result_d
 
 
-    def add_graph_version(self, graph_uri, objs, version):
-        """ Add new version of a graph.
+    def create_version(self, objs, version):
+        """ Add new version of the db.
+
+            objs Objects to add
+            version The new version to add to
         """
 
         # FIXME workaround passing version as a Tuple and/or String
@@ -260,72 +303,59 @@ class ObjectStoreAsync:
 
 
         result_d = Deferred()
-        logging.debug("Objectstore add_graph_version")
+        logging.debug("Objectstore add_version")
 
         # TODO FIXME XXX lock the table(s) as appropriate inside a transaction (PL/pgspl?) here
 
         # TODO add this
         id_user = 1
 
-        def row_cb(result):
-            logging.debug("Objectstore add_graph_version row_cb")
-            id_graphver = result[0]
+        triple_order = 0 # for all triples
+        queries = []
+        for obj in objs:
+            
+            if "@id" in obj:
+                uri = obj["@id"]
+            else:
+                raise Exception("@id required in all objects")
 
-            triple_order = 0 # for the whole graph
-            queries = []
-            for obj in objs:
-                
-                logging.debug("Trying to add object: "+str(obj)+"\t\tprev version: "+repr(version))
-                
-                if "@id" in obj:
-                    uri = obj["@id"]
-                else:
-                    raise Exception("@id required in all objects")
+            for predicate in obj:
+                if predicate[0] == "@":
+                    continue # skip over json_ld predicates
 
-                for predicate in obj:
-                    if predicate[0] == "@":
-                        continue # skip over json_ld predicates
+                sub_objs = obj[predicate]
+                for object in sub_objs:
+                    if "@value" in object:
+                        thetype = "literal"
+                        value = object["@value"]
+                    elif "@id" in object:
+                        thetype = "resource"
+                        value = object["@id"]
 
-                    sub_objs = obj[predicate]
-                    for object in sub_objs:
-                        if "@value" in object:
-                            type = "literal"
-                            value = object["@value"]
-                        elif "@id" in object:
-                            type = "resource"
-                            value = object["@id"]
+                    language = ''
+                    if "@language" in object:
+                        language = object["@language"]
 
-                        language = ''
-                        if "@language" in object:
-                            language = object["@language"]
+                    datatype = ''
+                    if "@type" in object:
+                        datatype = object["@type"]
 
-                        datatype = ''
-                        if "@type" in object:
-                            datatype = object["@type"]
+                    triple_order += 1
+                    queries.append( ("SELECT * FROM wb_add_triple_to_version(%s, %s, %s, %s, %s, %s, %s, %s, %s)", [version, id_user, uri, predicate, value, thetype, language, datatype, triple_order]) )
 
-                        triple_order += 1
-                        queries.append( ("SELECT * FROM wb_add_triple_to_graphvers(%s, %s, %s, %s, %s, %s, %s, %s)", [id_graphver, uri, predicate, str(value), type, language, datatype, triple_order]) )
-    
-            def exec_queries(var):
-                #logging.debug("Objectstore add_graph_version exec_queries")
-                # TODO do as one call
+        def exec_queries(var):
+            logging.debug("Objectstore add_version exec_queries")
 
-                if len(queries) < 1:
-                    logging.debug("version: "+str(version)+"\tgraph uri: "+repr(graph_uri))
-                    result_d.callback({"@graph" : graph_uri, "@version": version+1})
-                    return
-                
-                (query, params) = queries.pop(0)
-                d = self.conn.runQuery(query, params)
-                d.addCallback(exec_queries)
+            if len(queries) < 1:
+                result_d.callback((version))
+                return
+            
+            (query, params) = queries.pop(0)
+            d = self.conn.runQuery(query, params)
+            d.addCallback(exec_queries)
 
-            exec_queries(None)
-
-        d = self.conn.runQuery("SELECT * FROM wb_get_graphvers_id(%s, %s, %s)", [version, graph_uri, id_user])
-        d.addCallback(row_cb)
-
+        exec_queries(None)
         return result_d
-
 
 
 
@@ -354,12 +384,12 @@ class RDFObjectStore:
             "text/json": "json-ld",
         }
 
-    def put_rdf(self, rdf, content_type, graph):
-        """ Public method to PUT RDF into the store - where PUT replaces a graph. """
+    def put_rdf(self, rdf, content_type):
+        """ Public method to PUT RDF into the store - where PUT replaces. """
 
         version = 0 # FIXME XXX
         objs = self.rdf_to_objs(rdf, content_type)
-        self.objectstore.add(graph, objs, version)
+        self.objectstore.add(objs, version)
 
         return {"data": "", "status": 200, "reason": "OK"} 
         
@@ -409,10 +439,10 @@ class RDFObjectStore:
         return objs
 
 
-    def post_rdf(self, rdf, content_type, graph):
-        """ Public method to POST RDF into the store - where POST appends to a graph. """
+    def post_rdf(self, rdf, content_type):
+        """ Public method to POST RDF into the store - where POST appends. """
 
-        latest = self.objectstore.get_latest(graph)
+        latest = self.objectstore.get_latest()
         version = latest["@version"] # FIXME ok?
 
         objs = self.rdf_to_objs(rdf, content_type)
@@ -424,7 +454,7 @@ class RDFObjectStore:
                 obj["@id"] = key
                 objs.append(obj)
 
-        self.objectstore.add(graph, objs, version)
+        self.objectstore.add(objs, version)
 
         return {"data": "", "status": 200, "reason": "OK"} 
 

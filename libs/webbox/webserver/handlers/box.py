@@ -16,39 +16,56 @@
 #    You should have received a copy of the GNU General Public License
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging, traceback
-import logging, urllib2, uuid, rdflib, os, traceback, mimetypes, shutil, json
-from twisted.web.resource import Resource
-from webbox.webserver.session import WebBoxSession, ISession
+import logging, json
 from webbox.webserver.handlers.base import BaseHandler
-from webbox.webserver.handlers.enrich import EnrichHandler
 from webbox.objectstore_async import IncorrectPreviousVersionException
 
 class BoxHandler(BaseHandler):
     base_path = ''
     def options(self, request):
         self.return_ok(request)
- 
-    # current protocol impl:
-    # 
-    # HTTP GET
-    #   @param graph: if specified, returns 
+
+    def get_object_ids(self, request):
+        """ Get a list of object IDs in this box. """
+        token = self.get_token(request)
+        if not token:
+            return self.return_forbidden(request)
+
+#        store = token.store
+
+        try:
+            logging.debug("calling get_object_ids on store")
+            token.store.get_object_ids().addCallback(lambda results: self.return_ok(request, results))
+        except Exception as e:
+            return self.return_internal_error(request)
+
+    def query(self, request):
+        """ Perform a query against the box, and return matching objects. """
+        token = self.get_token(request)
+        if not token:
+            return self.return_forbidden(request)
+
+#        store = token.store
+
+        try:
+            q = json.loads(request.args['q'][0])
+        except Exception as e:
+            return self.return_bad_request(request, "Specify query as query string parameter 'q' as valid JSON")
+
+        try:
+            logging.debug("querying store with q: "+str(q))
+            token.store.query(q).addCallback(lambda results: self.return_ok(request, {"data": results}))
+        except Exception as e:
+            return self.return_internal_error(request)
+
+
     def do_GET(self,request):
         token = self.get_token(request)
         if not token:
             return self.return_forbidden(request)
         store = token.store
-        if "graph" in request.args:
-            # graph URI specified, so return the objects in that graph
-            graph_uri = request.args["graph"][0]
-            return store.get_latest(graph_uri).addCallback(lambda obj: self.return_ok(request, {"data": obj}))
-        else:
-            # no graph URI specified, so return the list of graph URIs
-            def callback(uris):
-                return self.return_ok(request, {"data": uris})
-            store.get_graphs().addCallback(callback)
-            pass
-        pass
+
+        return store.get_latest().addCallback(lambda obj: self.return_ok(request, {"data":json.dumps(obj, indent=2)}))
     
     def do_PUT(self,request):
         token = self.get_token(request)
@@ -61,15 +78,25 @@ class BoxHandler(BaseHandler):
         objs = json.loads(jsondata)
         if type(objs) == type([]):
             # multi object put            
-            if "graph" not in args:
-                return self.return_bad_request(request,"Specify a graph URI with &graph=")
             if "version" not in args:
                 return self.return_bad_request(request,"Specify a previous version with &version=")
-            graph_uri = args['graph'][0]
             prev_version = int(args['version'][0])
-            d = store.add(graph_uri, objs, prev_version)
-            d.addCallback(lambda new_version_info: self.return_created(request,{"data":new_version_info}))
-            d.addErrback(lambda fail: self.return_obsolete(request,{"description": "Document obsolete. Please update before putting", '@version':fail.value.version}))
+            d = store.replace(objs, prev_version)
+
+            def handle_add_error(failure):
+                """ Handle an error on add (this is the errback). """ #TODO move this somewhere else?
+                failure.trap(IncorrectPreviousVersionException, Exception)
+                err = failure.value
+                if isinstance(err, IncorrectPreviousVersionException):
+                    logging.debug("Incorrect previous version")
+                    actual_version = err.version
+                    return self.return_obsolete(request,{"description": "Document obsolete. Please update before putting", '@version':actual_version})            
+                else:
+                    logging.debug("Exception trying to add to store.")
+                    return self.return_internal_error(request)
+
+            d.addCallbacks(lambda new_version_info: self.return_created(request,{"data":new_version_info}), # callback
+                handle_add_error) #errback
         else:
             # single object put
             return self.return_bad_request(request,"Single object PUT not supported, PUT an array to create/replace a named graph instead")
@@ -131,6 +158,24 @@ class BoxHandler(BaseHandler):
     #     pass
 
 BoxHandler.subhandlers = [
+    {
+        "prefix": "get_object_ids",
+        'methods': ['GET'],
+        'require_auth': True,
+        'require_token': True,
+        'handler': BoxHandler.get_object_ids,
+        'accept':['application/json'],
+        'content-type':'application/json'
+        },
+    {
+        "prefix": "query",
+        'methods': ['GET'],
+        'require_auth': True,
+        'require_token': True,
+        'handler': BoxHandler.query,
+        'accept':['application/json'],
+        'content-type':'application/json'
+        },
     {
         "prefix": "*",            
         'methods': ['GET'],

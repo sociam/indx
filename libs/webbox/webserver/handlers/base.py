@@ -20,9 +20,9 @@ import logging, traceback, json
 from twisted.web.resource import Resource
 from twisted.web.server import NOT_DONE_YET
 from webbox.webserver.session import WebBoxSession, ISession
-from webbox.exception import AbstractException,ResponseOverride
+from webbox.exception import ResponseOverride
 from mimeparse import quality
-from urlparse import urlparse, parse_qs
+from urlparse import parse_qs
 try:
     import cjson
     logging.debug("Using CJSON.")

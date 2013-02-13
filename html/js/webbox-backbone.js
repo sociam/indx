@@ -259,6 +259,17 @@
 			console.log('this ajax ', this.store, method, path, this.get('token'), data);			
 			return this.store.ajax(method, path, data);
 		},
+        query: function(q){
+			var d = deferred();
+			// return a list of models (each of type ObjectStore.Object) to populate a GraphCollection
+			boxajax(this, "/query", "GET", {"q": JSON.stringify(q)})
+				.then(function(data){
+                    console.debug("query results:",data);
+				}).fail(function(data) {
+                    console.debug("fail query");
+				});
+			return d.promise();
+        },
 		graphs:function() { return this.attributes.graphs; },
 		get_or_create:function(uri) { return this.graphs().get(uri) || this.create(uri); },
 		create: function(id){

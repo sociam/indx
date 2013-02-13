@@ -16,10 +16,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging, traceback
-from urlparse import parse_qs
-from twisted.web.resource import Resource
-from webbox.webserver.session import WebBoxSession, ISession
+import logging
 from webbox.webserver.handlers.base import BaseHandler
 from webbox.objectstore_async import ObjectStoreAsync
 import webbox.webbox_pg2 as database
@@ -41,6 +38,7 @@ class AuthHandler(BaseHandler):
             user = args['username'][0]
             pwd = args['password'][0]
         except Exception as e:
+            logging.error("Error  {0}".format(e))
             return self.return_bad_request(request)
 
         def win():
@@ -84,6 +82,7 @@ class AuthHandler(BaseHandler):
             appid = args['app'][0]
             boxid = args['box'][0]
         except Exception as e:
+            logging.error("Error parsing arguments: {0}".format(e))
             return self.return_bad_request(request)
 
         wbSession = self.get_session(request)

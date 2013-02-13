@@ -16,6 +16,16 @@ db_user = "webbox"
 db_pass = "foobar"
 
 # create a box
+try:
+    root_conn = psycopg2.connect(user=db_user, password=db_pass, database="postgres")
+    root_conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
+    root_cur = root_conn.cursor()
+    root_cur.execute("DROP DATABASE IF EXISTS wb_%s" % boxid)
+    root_cur.close()
+    root_conn.close()
+except Exception as e:
+    print "Tried to remove database, exception: {0}".format(e)
+
 database.create_box(boxid, db_user, db_pass)
 
 def connect_fail():
@@ -26,21 +36,9 @@ def cb_connected(conn):
     logging.debug("callback, objectstore connected")
     store = ObjectStoreAsync(conn)
 
-    def get_graphs():
-        logging.debug("get_graphs()")
-
-        def callback(uris):
-            logging.debug("callback")
-            jsondata = json.dumps(uris, indent=2)
-            print jsondata
-
-        logging.debug("about to call get_graphs")
-        store.get_graphs().addCallback(callback)
-        
-
     to_add = [
-        ("facebook", [{"foo": [{"@value": "bar"}], "@id": "id1"}], 0),
-        ("twitter", [{"baz": [{"@value": "qux"}], "@id": "id2"}], 0)
+        ([{"foo": [{"@value": "bar"}], "@id": "id1"}], 0),
+        ([{"baz": [{"@value": "qux"}], "@id": "id2"}], 1)
     ]
 
     def cb(added_info):
@@ -48,16 +46,21 @@ def cb_connected(conn):
 
         if len(to_add) < 1:
             # all added, carry on
-            get_graphs()
+
+            def latest_cb(data):
+                print "Latest:"
+                print str(data)
+                reactor.stop()
+
+            store.get_latest().addCallback(latest_cb)
             return
 
-        graph, objs, version = to_add.pop(0)
-        store.add(graph, objs, version).addCallback(cb)
+        objs, version = to_add.pop(0)
+        store.add(objs, version).addCallback(cb)
 
     cb(None)
 
 # connect to box
 database.connect_box(boxid, db_user, db_pass).addCallbacks(cb_connected, connect_fail)
-
 reactor.run()
 
