@@ -83,7 +83,7 @@ class BoxHandler(BaseHandler):
             if "version" not in args:
                 return self.return_bad_request(request,"Specify a previous version with &version=")
             prev_version = int(args['version'][0])
-            d = store.add(objs, prev_version)
+            d = store.replace(objs, prev_version)
 
             def handle_add_error(failure):
                 """ Handle an error on add (this is the errback). """ #TODO move this somewhere else?

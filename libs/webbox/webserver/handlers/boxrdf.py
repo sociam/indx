@@ -561,7 +561,7 @@ class BoxHandler(BaseHandler):
                 prev_version = int(request.args['version'][0])
 
                 try:
-                    new_version_info = self.webbox.object_store.add(graph_uri, objs, prev_version)
+                    new_version_info = self.webbox.object_store.replace(graph_uri, objs, prev_version)
                 except IncorrectPreviousVersionException as ipve:
                     logging.debug("Incorrect previous version")
                     actual_version = ipve.version

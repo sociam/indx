@@ -229,8 +229,21 @@ class ObjectStoreAsync:
         return result_d
 
 
-    def add(self, objs, specified_prev_version):
+    def add_objects(self, objs, specified_prev_version):
+        """ Create a new version of the database, and add/replace only the objects references in the 'objs' dict. All other objects remain as they are in the specified_prev_version of the db.
+
+            objs, json expanded notation of objects,
+            specified_prev_version of the databse (must match max(version) of the db, or zero if the object doesn't exist, or the store will return a IncorrectPreviousVersionException
+
+            returns information about the new version
+        """
+        pass
+
+
+    def replace(self, objs, specified_prev_version):
         """ Add new objects, or new versions of objects, to the database.
+
+            Completely replaces specified_prev_version with objs.
 
             objs, json expanded notation of objects,
             specified_prev_version of the databse (must match max(version) of the db, or zero if the object doesn't exist, or the store will return a IncorrectPreviousVersionException
@@ -265,7 +278,7 @@ class ObjectStoreAsync:
                 result_d.errback(failure)
                 return
             else:
-                d = self.add_version(objs, actual_prev_version+1)
+                d = self.create_version(objs, actual_prev_version+1)
                 d.addCallback(added_cb)
                 return
 
@@ -275,7 +288,7 @@ class ObjectStoreAsync:
         return result_d
 
 
-    def add_version(self, objs, version):
+    def create_version(self, objs, version):
         """ Add new version of the db.
 
             objs Objects to add
