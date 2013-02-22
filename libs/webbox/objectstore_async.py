@@ -158,6 +158,9 @@ class ObjectStoreAsync:
 
             obj_out[subject][predicate].append(obj_struct)
 
+            # add _id key to the object
+            obj_out[subject]['_id'] = subject
+
         return obj_out
 
     def get_latest_obj(self, object_uri):

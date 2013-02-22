@@ -16,7 +16,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
-import urllib, urllib2, logging, cookielib, json
+import urllib, urllib2, logging, cookielib, json, pprint
 
 class WebBoxTests:
 
@@ -26,6 +26,7 @@ class WebBoxTests:
                       'add_data': self.add_data,
                       'list_boxes': self.list_boxes,
                       'get_object_ids': self.get_object_ids,
+                      'get_latest': self.get_latest,
                      }
 
         self.token = None
@@ -79,6 +80,9 @@ class WebBoxTests:
         req = urllib2.Request(url)
         response = urllib2.urlopen(req)
         the_page = response.read()
+
+        logging.debug("GET raw results: \n{0}\n".format(the_page))
+
         status = json.loads(the_page)
         return status
 
@@ -99,6 +103,9 @@ class WebBoxTests:
         req.get_method = lambda: "PUT"
         response = urllib2.urlopen(req)
         the_page = response.read()
+
+        logging.debug("PUT raw results: \n{0}\n".format(the_page))
+
         status = json.loads(the_page)
         return status
 
@@ -117,6 +124,9 @@ class WebBoxTests:
         req = urllib2.Request(url, data)
         response = urllib2.urlopen(req)
         the_page = response.read()
+
+        logging.debug("POST raw results: \n{0}\n".format(the_page))
+
         status = json.loads(the_page)
         return status
 
@@ -214,6 +224,22 @@ class WebBoxTests:
         else:
             logging.info("Add to box {0} sucessful, new version is: {1}".format(self.args['box'], status['data']['@version']))
             
+    def get_latest(self):
+        """ Get the latest version of every object in this box. """
+        self.check_args(['server', 'box'])
+        self.auth()
+        self.get_token()
+
+        url = "{0}{1}/get_latest".format(self.args['server'], self.args['box'])
+
+        logging.debug("Getting latest objects on server '{0}' in box '{1}'".format(self.args['server'], self.args['box']))
+        status = self.get(url, None)
+
+        if status['code'] != 200:
+            raise Exception("Getting latest failed, response is {0} with code {1}".format(status['message'], status['code']))
+        else:
+            pretty = pprint.pformat(status['data'], indent=2, width=80)
+            logging.info("Getting latest successful, the objects are: \n" + pretty)
             
 
 

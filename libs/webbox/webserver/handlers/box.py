@@ -25,6 +25,20 @@ class BoxHandler(BaseHandler):
     def options(self, request):
         self.return_ok(request)
 
+    def get_latest(self, request):
+        """ Get a latest JSON of all objects in this box. """
+        token = self.get_token(request)
+        if not token:
+            return self.return_forbidden(request)
+
+#        store = token.store
+
+        try:
+            logging.debug("calling get_latest on store")
+            token.store.get_latest().addCallback(lambda results: self.return_ok(request, {"data": results}))
+        except Exception as e:
+            return self.return_internal_error(request)
+
     def get_object_ids(self, request):
         """ Get a list of object IDs in this box. """
         token = self.get_token(request)
@@ -158,6 +172,15 @@ class BoxHandler(BaseHandler):
     #     pass
 
 BoxHandler.subhandlers = [
+    {
+        "prefix": "get_latest",
+        'methods': ['GET'],
+        'require_auth': True,
+        'require_token': True,
+        'handler': BoxHandler.get_latest,
+        'accept':['application/json'],
+        'content-type':'application/json'
+        },
     {
         "prefix": "get_object_ids",
         'methods': ['GET'],
