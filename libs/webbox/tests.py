@@ -27,6 +27,7 @@ class WebBoxTests:
                       'list_boxes': self.list_boxes,
                       'get_object_ids': self.get_object_ids,
                       'get_latest': self.get_latest,
+                      'query': self.query,
                      }
 
         self.token = None
@@ -241,5 +242,21 @@ class WebBoxTests:
             pretty = pprint.pformat(status['data'], indent=2, width=80)
             logging.info("Getting latest successful, the objects are: \n" + pretty)
             
+    def query(self):
+        """ Query this box. """
+        self.check_args(['server', 'box', 'query'])
+        self.auth()
+        self.get_token()
+
+        url = "{0}{1}/query".format(self.args['server'], self.args['box'])
+
+        logging.debug("Querying server '{0}' in box '{1}'".format(self.args['server'], self.args['box']))
+        status = self.get(url, {'q': self.args['query']})
+
+        if status['code'] != 200:
+            raise Exception("Querying failed, response is {0} with code {1}".format(status['message'], status['code']))
+        else:
+            pretty = pprint.pformat(status['data'], indent=2, width=80)
+            logging.info("Querying successful, the objects are: \n" + pretty)
 
 

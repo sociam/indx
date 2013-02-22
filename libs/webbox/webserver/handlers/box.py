@@ -64,12 +64,23 @@ class BoxHandler(BaseHandler):
         try:
             q = json.loads(request.args['q'][0])
         except Exception as e:
+            logging.error("Exception in box.query getting 'q': {0}".format(e))
             return self.return_bad_request(request, "Specify query as query string parameter 'q' as valid JSON")
 
         try:
             logging.debug("querying store with q: "+str(q))
-            token.store.query(q).addCallback(lambda results: self.return_ok(request, {"data": results}))
+
+            def handle_add_error(failure):
+                """ Handle an error on add (this is the errback). """ #TODO move this somewhere else?
+                failure.trap(Exception)
+                #err = failure.value
+                logging.debug("Exception trying to add to query.")
+                return self.return_internal_error(request)
+
+            token.store.query(q).addCallbacks(lambda results: self.return_ok(request, {"data": results}), # callback
+                    handle_add_error) # errback
         except Exception as e:
+            logging.error("Exception in box.query: {0}".format(e))
             return self.return_internal_error(request)
 
 

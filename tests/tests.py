@@ -26,6 +26,7 @@ parser.add_argument('username', metavar='USERNAME', type=str, nargs=1, help='Use
 parser.add_argument('password', metavar='PASSWORD', type=str, nargs=1, help='Password')
 parser.add_argument('test', metavar='TEST', type=str, nargs=1, choices=wbtests.tests.keys(), help='Run a named test, one of: '+", ".join(wbtests.tests.keys()))
 parser.add_argument('--box', action="store", type=str, help='Name of the Box (for tests that required it)')
+parser.add_argument('--query', action="store", type=str, help='Query string (for tests that required it)')
 parser.add_argument('--data', action="store", type=argparse.FileType('r'), help="Data file (e.g., JSON to import)")
 parser.add_argument('--version', action="store", help="Current version of the box (or 0 if the box is empty)")
 parser.add_argument('--debug', action="store_true", default=False, help="Enable output of debug logging")

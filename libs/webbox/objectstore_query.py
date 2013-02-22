@@ -40,17 +40,23 @@ class ObjectStoreQuery:
         for predicate, val in q.items():
             if type(val) in self.exact_types:
                 # exact match, so JOIN in the view
-                join_counter += 1
-                join_name = "j_{0}".format(join_counter)
+                if predicate == "_id": # _id is not in the db, it's the subject column
+                    wheres.append("wb_v_latest_triples.subject = %s")
+                    params.extend([val]) 
 
-                join_table1 = "wb_v_latest_triples.subject"
-                join_table2 = "{0}.subject".format(join_name)
+                else:
 
-                join = "JOIN wb_v_latest_triples AS {0} ON ({1} = {2}) ".format(join_name, join_table1, join_table2)
-                joins.append(join)
+                    join_counter += 1
+                    join_name = "j_{0}".format(join_counter)
 
-                wheres.append("{0}.predicate = %s AND {0}.obj_value = %s".format(join_name))
-                params.extend([predicate, val])
+                    join_table1 = "wb_v_latest_triples.subject"
+                    join_table2 = "{0}.subject".format(join_name)
+
+                    join = "JOIN wb_v_latest_triples AS {0} ON ({1} = {2}) ".format(join_name, join_table1, join_table2)
+                    joins.append(join)
+
+                    wheres.append("{0}.predicate = %s AND {0}.obj_value = %s".format(join_name))
+                    params.extend([predicate, val])
 
         # same order as table
         selects = [
@@ -64,7 +70,7 @@ class ObjectStoreQuery:
             "wb_v_latest_triples.obj_datatype"
         ]
 
-        sql = "SELECT {0} FROM wb_v_latest_triples {1} WHERE {2}".format(", ".join(selects), " ".join(joins), " AND ".join(wheres)) 
+        sql = "SELECT DISTINCT {0} FROM wb_v_latest_triples {1} WHERE {2}".format(", ".join(selects), " ".join(joins), " AND ".join(wheres)) 
         return (sql, params)
 
 
