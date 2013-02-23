@@ -115,7 +115,7 @@
 			if (!_(v).isUndefined() && !_(v).isArray()) {
 				return [v];
 			}
-			return v;			
+			return v;
 		},		
 		_all_values_to_arrays:function(o) {
 			if (!_(o).isObject()) {	console.error(' not an object', o); return o; }
@@ -185,22 +185,23 @@
 			return d.promise();
 		},
 		get_or_create:function(uri) {
-			return this.objs().get(uri) || this.create(uri);
+			return this.objs().get(uri) || this._create(uri);
 		},
 		_fetch:function() {
 			var box = this.id, d = u.deferred(), this_ = this;
 			// return a list of models (each of type WebBox.Object) to populate a GraphCollection
 			this.ajax("GET", box).then(function(data){
+				console.log(' data ', typeof data, data);
 				var graph_collection = this_.objs();
 				var version = 0;
-				var objdata = data.data;					
+				var objdata = JSON.parse(data.data);					
 				$.each(objdata, function(uri, obj){
 					// top level keys
 					if (uri === "@version") { version = obj; }
 					if (uri[0] === "@") { return; } // ignore "@id" etc					
 					// not one of those, so must be a
 					// < uri > : { prop1 .. prop2 ... }
-					var obj_model = this_.get_or_create_obj(uri);
+					var obj_model = this_.get_or_create(uri);
 					$.each(obj, function(key, vals){
 						var obj_vals = vals.map(function(val) {
 							// it's an object, so return that
@@ -232,7 +233,7 @@
 					.fail(function(err) { d.reject(err); u.error("FAIL "); });
 				return d.promise();
 			}
-			return this_._fetch_objects();			
+			return this_._fetch();			
 		},
 		_update:function() {
 			var d = u.deferred(), version = this.get('version'), this_ = this,
@@ -243,6 +244,9 @@
 					d.resolve(this_);
 				}).fail(function(err) {	d.reject(err);});
 			return d.promise();
+		},
+		_create_box:function() {
+			// TODO 
 		},
 		sync: function(method, model, options){
 			switch(method)
