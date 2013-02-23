@@ -28,8 +28,6 @@
 	underscore.js 1.4.2 or higher
 */
 
-
-
 (function(){
 	// intentional fall-through to window if running in a browser
 	"use strict";
@@ -39,14 +37,13 @@
 	if (typeof exports !== 'undefined'){ WebBox = exports.WebBox = {};	}
 	else { WebBox = root.WebBox = {}; }
 
-	// utilities -----------------> should move out to utils
+	 // utilities -----------------> should move out to utils
 	var u; // to be filled in by dependency
-	
+	 
 	// set up our parameters for webbox -
 	// default is that we're loading from an _app_ hosted within
 	// webbox. 
 	var DEFAULT_HOST = document.location.host;
-
 	var serialize_obj = function(obj) {
 		var uri = obj.id;
 		var out_obj = {};
@@ -125,10 +122,10 @@
 			var this_ = this;
 			// ?!?! this isn't doing anything (!!)
 			return u.dict(_(o).map(function(v,k) {
-				                       var val = this_._value_to_array(k,v);
-				                       if (u.defined(val)) { return [k,val]; }
-				                       return undefined;
-			                       }).filter(u.defined));
+						       var val = this_._value_to_array(k,v);
+						       if (u.defined(val)) { return [k,val]; }
+						       return undefined;
+					       }).filter(u.defined));
 		},
 		set:function(k,v,options) {
 			// set is tricky because it can be called like
@@ -175,18 +172,18 @@
 			data = _(_(data||{}).clone()).extend({box: this.id, token:this.get('token')});
 			return this.store.ajax(method, path, data);
 		},
-        query: function(q){
-			var d = u.deferred();
-	        // TODO everywhere
-			// return a list of models (each of type ObjectStore.Object) to populate a GraphCollection
-			this.ajax(this, "/query", "GET", {"q": JSON.stringify(q)})
-				.then(function(data){
-                    console.debug("query results:",data);
-				}).fail(function(data) {
-                    console.debug("fail query");
-				});
-			return d.promise();
-        },
+		                                             query: function(q){
+			                                             var d = u.deferred();
+			                                             // TODO everywhere
+			                                             // return a list of models (each of type ObjectStore.Object) to populate a GraphCollection
+			                                             this.ajax(this, "/query", "GET", {"q": JSON.stringify(q)})
+				                                             .then(function(data){
+					                                                   console.debug("query results:",data);
+				                                                   }).fail(function(data) {
+					                                                           console.debug("fail query");
+				                                                           });
+			                                             return d.promise();
+		                                             },
 		get_or_create:function(uri) { return this.graphs().get(uri) || this.create(uri); },
 		_fetch : function() {
 			var this_ = this;
@@ -199,14 +196,23 @@
 			}
 			return this_._fetch_objects();			
 		},
-        _update:function() {
-	        
-        },
-		sync: function(method, model, options){
+       _update:function() {
+	       var d = u.deferred(),
+				graph_objs = this.objs().map(function(obj){ return serialize_obj(obj);	}),
+				box = graph.box;
+	       
+	       graph.box.ajax("PUT",  box.id + "/update",  {  graph : escape(graph.id), version: escape(graph.version),     data : JSON.stringify(graph_objs) })
+		       .then(function(response) {
+			             this_.version = response.data["@version"];
+			             d.resolve(graph);
+		             }).fail(function(err) {	d.reject(err);});
+	       return d.promise();	       
+       },
+       sync: function(method, model, options){
 			switch(method){
 			case "create": return u.warn('box.update() : not implemented yet');
 			case "read": return model._fetch(); 
-			case "update": return u.warn('box.update() : not implemented yet');
+			case "update": return model._update(); 
 			case "delete": return u.warn('box.delete() : not implemented yet');
 			}
 		}
