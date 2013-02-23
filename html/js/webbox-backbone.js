@@ -151,7 +151,7 @@
 			this.set({objs: new ObjCollection()});
 		},
 		objs:function() { return this.attributes.objs; },
-		create: function(id){
+		_create: function(id){
 			var model = new Obj({"@id":id}, {graph:this});
 			this.objs().add(model);
 			return model;
@@ -172,46 +172,83 @@
 			data = _(_(data||{}).clone()).extend({box: this.id, token:this.get('token')});
 			return this.store.ajax(method, path, data);
 		},
-		                                             query: function(q){
-			                                             var d = u.deferred();
-			                                             // TODO everywhere
-			                                             // return a list of models (each of type ObjectStore.Object) to populate a GraphCollection
-			                                             this.ajax(this, "/query", "GET", {"q": JSON.stringify(q)})
-				                                             .then(function(data){
-					                                                   console.debug("query results:",data);
-				                                                   }).fail(function(data) {
-					                                                           console.debug("fail query");
-				                                                           });
-			                                             return d.promise();
-		                                             },
-		get_or_create:function(uri) { return this.graphs().get(uri) || this.create(uri); },
-		_fetch : function() {
+		query: function(q){
+			var d = u.deferred();
+			// TODO everywhere
+			// return a list of models (each of type ObjectStore.Object) to populate a GraphCollection
+			this.ajax(this, "/query", "GET", {"q": JSON.stringify(q)})
+				.then(function(data){
+					console.debug("query results:",data);
+				}).fail(function(data) {
+					console.debug("fail query");
+				});
+			return d.promise();
+		},
+		get_or_create:function(uri) {
+			return this.objs().get(uri) || this.create(uri);
+		},
+		_fetch:function() {
+			var box = this.id, d = u.deferred(), this_ = this;
+			// return a list of models (each of type WebBox.Object) to populate a GraphCollection
+			this.ajax("GET", box).then(function(data){
+				var graph_collection = this_.objs();
+				var version = 0;
+				var objdata = data.data;					
+				$.each(objdata, function(uri, obj){
+					// top level keys
+					if (uri === "@version") { version = obj; }
+					if (uri[0] === "@") { return; } // ignore "@id" etc					
+					// not one of those, so must be a
+					// < uri > : { prop1 .. prop2 ... }
+					var obj_model = this_.get_or_create_obj(uri);
+					$.each(obj, function(key, vals){
+						var obj_vals = vals.map(function(val) {
+							// it's an object, so return that
+							if (val.hasOwnProperty("@id")) { return this_.get_or_create(val["@id"]); }
+							// it's a non-object
+							if (val.hasOwnProperty("@value")) {
+								// if the string has no language or datatype, turn it just into a string
+								if (val["@language"] === "" && val["@type"] === "") { return val["@value"];}
+								// otherwise return the value as-is
+								return val;
+							}
+							u.assert(false, "cannot unpack value ", val);
+						});
+						obj_model.set(key,obj_vals,{silent:true});
+					});
+					obj_model.change();
+				});
+				this_.set('version', version);
+				d.resolve(this_);
+			}).fail(function(err) { d.reject(err, this_);});
+			return d.promise();
+		},
+		_check_token_and_fetch : function() {
 			var this_ = this;
 			if (this.get('token') === undefined) {
 				var d = u.deferred();
 				this.get_token()
-					.then(function() {	this_._fetch_objects().then(d.resolve).fail(d.reject);	})
+					.then(function() {	this_._fetch().then(d.resolve).fail(d.reject);	})
 					.fail(function(err) { d.reject(err); u.error("FAIL "); });
 				return d.promise();
 			}
 			return this_._fetch_objects();			
 		},
-       _update:function() {
-	       var d = u.deferred(),
-				graph_objs = this.objs().map(function(obj){ return serialize_obj(obj);	}),
-				box = graph.box;
-	       
-	       graph.box.ajax("PUT",  box.id + "/update",  {  graph : escape(graph.id), version: escape(graph.version),     data : JSON.stringify(graph_objs) })
-		       .then(function(response) {
-			             this_.version = response.data["@version"];
-			             d.resolve(graph);
-		             }).fail(function(err) {	d.reject(err);});
-	       return d.promise();	       
-       },
-       sync: function(method, model, options){
-			switch(method){
+		_update:function() {
+			var d = u.deferred(), version = this.get('version'), this_ = this,
+			objs = this.objs().map(function(obj){ return serialize_obj(obj); });
+			this.ajax("PUT",  this.id + "/update", { version: escape(version), data : JSON.stringify(objs)  })
+				.then(function(response) {
+					this_.set('version', response.data["@version"]);
+					d.resolve(this_);
+				}).fail(function(err) {	d.reject(err);});
+			return d.promise();
+		},
+		sync: function(method, model, options){
+			switch(method)
+			{
 			case "create": return u.warn('box.update() : not implemented yet');
-			case "read": return model._fetch(); 
+			case "read": return model._check_token_and_fetch(); 
 			case "update": return model._update(); 
 			case "delete": return u.warn('box.delete() : not implemented yet');
 			}
