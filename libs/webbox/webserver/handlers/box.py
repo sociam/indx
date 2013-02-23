@@ -69,13 +69,12 @@ class BoxHandler(BaseHandler):
     
     def do_PUT(self,request):
         token = self.get_token(request)
-        logging.debug('token {0}'.format(token))
         if not token:
             return self.return_forbidden(request)
-        args = self.get_post_args(request)
-        store = token.store
+        # TODO validate the token?
+        store, args = token.store, self.get_post_args(request)
         jsondata = args['data'][0]
-        objs = json.loads(jsondata)
+        objs = json.loads(jsondata)        
         if type(objs) == type([]):
             # multi object put            
             if "version" not in args:
