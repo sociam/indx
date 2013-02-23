@@ -255,14 +255,14 @@
 			return (NAMEPREFIX ? 'box:' : '') + this.id;
 		},
 		ajax:function(method, path, data) {
-			var data = _(_(data||{}).clone()).extend({box: this.id, token:this.get('token')});
-			console.log('this ajax ', this.store, method, path, this.get('token'), data);			
+			data = _(_(data||{}).clone()).extend({box: this.id, token:this.get('token')});
+			// u.log('this ajax ', this.store, method, path, this.get('token'), data);			
 			return this.store.ajax(method, path, data);
 		},
         query: function(q){
-			var d = deferred();
+			var d = u.deferred();
 			// return a list of models (each of type ObjectStore.Object) to populate a GraphCollection
-			boxajax(this, "/query", "GET", {"q": JSON.stringify(q)})
+			this.ajax(this, "/query", "GET", {"q": JSON.stringify(q)})
 				.then(function(data){
                     console.debug("query results:",data);
 				}).fail(function(data) {
