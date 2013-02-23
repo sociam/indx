@@ -73,8 +73,7 @@ class BoxHandler(BaseHandler):
             return self.return_forbidden(request)
         # TODO validate the token?
         store, args = token.store, self.get_post_args(request)
-        jsondata = args['data'][0]
-        objs = json.loads(jsondata)        
+        objs = json.loads(args['data'][0])
         if type(objs) == type([]):
             # multi object put            
             if "version" not in args:

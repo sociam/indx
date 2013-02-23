@@ -1,6 +1,5 @@
 /*global $,_,document,window,console,escape,Backbone,exports */
 /*jslint vars:true, todo:true */
-
 /*
   This file is part of WebBox.
   Copyright 2012 Max Van Kleek, Daniel Alexander Smith
@@ -126,9 +125,10 @@
 			var this_ = this;
 			// ?!?! this isn't doing anything (!!)
 			return u.dict(_(o).map(function(v,k) {
-				var val = this_._value_to_array(k,v);
-				if (u.defined(val)) { return [k,val]; }
-			}).filter(u.defined));
+				                       var val = this_._value_to_array(k,v);
+				                       if (u.defined(val)) { return [k,val]; }
+				                       return undefined;
+			                       }).filter(u.defined));
 		},
 		set:function(k,v,options) {
 			// set is tricky because it can be called like
@@ -142,112 +142,29 @@
 		}
 	});
 
-	// GRAPH ==========================================================
-	var ObjCollection = Backbone.Collection.extend({ model: Obj });
-	var Graph = WebBox.Graph = Backbone.Model.extend({
-		idAttribute: "@id", // the URI attribute is '@id' in JSON-LD
-		initialize: function(attributes, options) {
-			u.assert(options.box, "no box provided");
-			this.set({version: 0, objs:new ObjCollection()});
-			this.box = options.box;
-		},
-		objs:function() { return this.get('objs'); },
-		get_or_create:function(uri) {
-			return this.objs().get(uri) || this.create(uri);
-		},
-		create: function(id){
-			var model = new Obj({"@id":id}, {graph:this});
-			this.objs().add(model);
-			return model;
-		},
-		_update_graph : function(graph){
-			var d = u.deferred(),
-			graph_objs = graph.objs().map(function(obj){ return serialize_obj(obj);	}),
-			box = graph.box;			
-			graph.box.ajax("PUT",
-						   box.id + "/update",
-						   {
-							   graph : escape(graph.id),
-							   version: escape(graph.version),
-							   data : JSON.stringify(graph_objs)
-						   }).then(function(response) {
-						graph.version = response.data["@version"];
-						d.resolve(graph);
-					}).fail(function(err) {	d.reject(err);});
-			return d.promise();
-		},
-		_fetch : function(){
-			var store = this.box.store, uri = this.id, d = u.deferred(), this_=this;
-			// return a list of models (each of type WebBox.Object) to populate a GraphCollection
-			this.box.ajax("GET", this.box.id, {"graph": uri})
-				.then(function(data){
-					var graph_collection = this_.objs();
-					var version = 0;
-					var objdata = data.data;					
-					$.each(objdata, function(uri, obj){
-						// top level keys
-						if (uri === "@version") { version = obj; }
-						if (uri[0] === "@") { return; } // ignore "@id" etc					
-						// not one of those, so must be a
-						// < uri > : { prop1 .. prop2 ... }
-						var obj_model = this_.get_or_create(uri);
-						$.each(obj, function(key, vals){
-							var obj_vals = vals.map(function(val) {
-								// it's an object, so return that
-								if (val.hasOwnProperty("@id")) { return this_.get_or_create(val["@id"]); }
-								// it's a non-object
-								if (val.hasOwnProperty("@value")) {
-									// if the string has no language or datatype, turn it just into a string
-									if (val["@language"] === "" && val["@type"] === "") { return val["@value"];}
-									// otherwise return the value as-is
-									return val;
-								}
-								u.assert(false, "cannot unpack value ", val);
-							});
-							obj_model.set(key,obj_vals,{silent:true});
-						});
-						obj_model.change();
-					});
-					u.log(">>> setting graph version ", this_.id, " ", version);
-					this_.version = version;
-					d.resolve(this_);
-				}).fail(function(err) { d.reject(err, this_);});
-			return d.promise();
-		},
-		sync: function(method, model, options){
-			switch(method){
-			case "create": return u.warn('graph.create not implemented yet'); // TODO
-			case "read": return model._fetch();
-			case "update":return this._update_graph(model);
-			case "delete": return u.warn('graph.delete not implemented yet'); // TODO
-			}
-		}
-	});	
 
 	// Box =================================================
 	// WebBox.GraphCollection is the list of WebBox.Objs in a WebBox.Graph
-	var GraphCollection = Backbone.Collection.extend({ model: Graph });
+	var ObjCollection = Backbone.Collection.extend({ model: Obj });
 	var Box = WebBox.Box = Backbone.Model.extend({
 		idAttribute:"@id",
 		initialize:function(attributes, options) {
 			u.assert(options.store, "no store provided");
 			this.store = options.store;
-			this.set({graphs: new GraphCollection()});
+			this.set({objs: new ObjCollection()});
 		},
+		objs:function() { return this.attributes.objs; },
+		create: function(id){
+			var model = new Obj({"@id":id}, {graph:this});
+			this.objs().add(model);
+			return model;
+		},		                                             
 		_set_token:function(token) { this.set("token", token);	},
 		get_token:function() {
-			// this method retrieves an auth token and proceeds to 
-			// load up the graphs
 			var this_ = this, d = u.deferred();
-			// get token for this box ---
 			this.ajax('POST', 'auth/get_token', { app: this.store.get('app') })
-				.then(function(data) {
-					this_._set_token( data.token );
-					d.resolve(this_);
-				}).fail(function(err) {
-					console.error(' error fetching ', this_.id, err);
-					d.reject(err);					
-				});
+				.then(function(data) { this_._set_token( data.token ); d.resolve(this_); })
+				.fail(function(err) { u.error(' error fetching ', this_.id, err); d.reject(err); });
 			return d.promise();			
 		},
 		toString:function() {
@@ -256,11 +173,11 @@
 		},
 		ajax:function(method, path, data) {
 			data = _(_(data||{}).clone()).extend({box: this.id, token:this.get('token')});
-			// u.log('this ajax ', this.store, method, path, this.get('token'), data);			
 			return this.store.ajax(method, path, data);
 		},
         query: function(q){
 			var d = u.deferred();
+	        // TODO everywhere
 			// return a list of models (each of type ObjectStore.Object) to populate a GraphCollection
 			this.ajax(this, "/query", "GET", {"q": JSON.stringify(q)})
 				.then(function(data){
@@ -270,45 +187,21 @@
 				});
 			return d.promise();
         },
-		graphs:function() { return this.attributes.graphs; },
 		get_or_create:function(uri) { return this.graphs().get(uri) || this.create(uri); },
-		create: function(id){
-			// add a new object to this graph (WebBox.GraphCollection will create an Obj from this)
-			// pad string into an object with a URI
-			var model = new Graph({'@id':id}, {box:this});
-			this.graphs().add(model);
-			return model;
-		},
-		_fetch_continue: function() {
-			var d = u.deferred(), this_ = this;
-			this.ajax('GET', this.id).then(function(data) {
-				console.log('fetch data ', data);
-				var graph_uris = data.data;
-				var old_graphs = this_.graphs();
-				var graphs = graph_uris.map(function(graph_uri){
-					u.log(graph_uri);
-					var graph = old_graphs.get(graph_uri) || new Graph({"@id": graph_uri}, {box: this_});
-					return graph;
-				});
-				old_graphs.reset(graphs);
-				d.resolve(graphs);
-			}).fail(function(err) { d.reject(err); });
-			return d.promise();
-		},
-		_fetch : function(){			
+		_fetch : function() {
 			var this_ = this;
-			console.log('fetch!! ', this.id);
 			if (this.get('token') === undefined) {
 				var d = u.deferred();
-				this.get_token().then(function() {
-					this_._fetch_continue().then(d.resolve).fail(d.reject);
-				}).fail(function(err) {
-					d.reject(err); u.error("FAIL ");
-				});
+				this.get_token()
+					.then(function() {	this_._fetch_objects().then(d.resolve).fail(d.reject);	})
+					.fail(function(err) { d.reject(err); u.error("FAIL "); });
 				return d.promise();
 			}
-			return this_._fetch_continue();			
+			return this_._fetch_objects();			
 		},
+        _update:function() {
+	        
+        },
 		sync: function(method, model, options){
 			switch(method){
 			case "create": return u.warn('box.update() : not implemented yet');
