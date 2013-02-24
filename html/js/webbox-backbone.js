@@ -83,6 +83,18 @@
 		out_obj['@id'] = uri;
 		return out_obj;
 	};
+
+	var literal_deserializers = {
+		'': function(o) { return o['@value']; },
+		"http://www.w3.org/2001/XMLSchema#integer": function(o) { return parseInt(o['@value'], 10); },
+		"http://www.w3.org/2001/XMLSchema#float": function(o) { return parseFloat(o['@value'], 10); },
+		"http://www.w3.org/2001/XMLSchema#double": function(o) { return parseFloat(o['@value'], 10); },
+		"http://www.w3.org/2001/XMLSchema#boolean": function(o) { return o['@value'].toLowerCase() === 'true'; },
+		"http://www.w3.org/2001/XMLSchema#dateTime": function(o) { return new Date(Date.parse(o['@value'])); }
+	};
+	var deserialize_literal = function(obj) {
+		return obj['@value'] ? literal_deserializers[ obj['@type'] || '' ](obj) : obj;
+	};	
 	
 
 	// MAP OF THIS MODUULE :::::::::::::: -----
@@ -102,10 +114,10 @@
 	var Obj = WebBox.Obj = Backbone.Model.extend({
 		idAttribute: "@id", // the URI attribute is '@id' in JSON-LD
 		initialize:function(attrs, options) {
-			this.graph = options.graph;
+			this.box = options.box;
 		},		
 		sync: function(method, model, options){
-			u.error('object sync methods individually not implemented yet'); // TODO
+			u.error('object sync methods individually not implemented yet - use box methods'); // TODO
 			var d = new $.Deferred();
 			d.resolve();
 			return d.promise();
@@ -152,7 +164,7 @@
 		},
 		objs:function() { return this.attributes.objs; },
 		_create: function(id){
-			var model = new Obj({"@id":id}, {graph:this});
+			var model = new Obj({"@id":id}, {box:this});
 			this.objs().add(model);
 			return model;
 		},		                                             
@@ -208,10 +220,7 @@
 							if (val.hasOwnProperty("@id")) { return this_.get_or_create(val["@id"]); }
 							// it's a non-object
 							if (val.hasOwnProperty("@value")) {
-								// if the string has no language or datatype, turn it just into a string
-								if (val["@language"] === "" && val["@type"] === "") { return val["@value"];}
-								// otherwise return the value as-is
-								return val;
+								return deserialize_literal(val);
 							}
 							u.assert(false, "cannot unpack value ", val);
 						});
@@ -236,7 +245,7 @@
 			return this_._fetch();			
 		},
 		_update:function() {
-			var d = u.deferred(), version = this.get('version'), this_ = this,
+			var d = u.deferred(), version = this.get('version') || 0, this_ = this,
 			objs = this.objs().map(function(obj){ return serialize_obj(obj); });
 			this.ajax("PUT",  this.id + "/update", { version: escape(version), data : JSON.stringify(objs)  })
 				.then(function(response) {
