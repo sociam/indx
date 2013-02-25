@@ -232,14 +232,16 @@ class ObjectStoreAsync:
         return result_d
 
 
-    def add_objects(self, objs, specified_prev_version):
-        """ Create a new version of the database, and add/replace only the objects references in the 'objs' dict. All other objects remain as they are in the specified_prev_version of the db.
+    def update(self, objs, specified_prev_version):
+        """ Create a new version of the database, and insert only the objects references in the 'objs' dict. All other objects remain as they are in the specified_prev_version of the db.
 
             objs, json expanded notation of objects,
             specified_prev_version of the databse (must match max(version) of the db, or zero if the object doesn't exist, or the store will return a IncorrectPreviousVersionException
 
             returns information about the new version
         """
+
+
         pass
 
 
