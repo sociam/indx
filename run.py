@@ -17,7 +17,7 @@
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
 # import core modules
-import sys, os, logging, json, shutil, getpass, re
+import os, logging, getpass
 from webbox.setup import WebBoxSetup
 from webbox.server import WebServer
 
