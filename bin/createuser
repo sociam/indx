@@ -1,0 +1,3 @@
+#!/bin/bash
+echo 'CREATE ROLE '$1' LOGIN CREATEDB INHERIT;' | psql -U postgres -h localhost;
+

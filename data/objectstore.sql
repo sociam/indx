@@ -27,8 +27,6 @@ CREATE TABLE wb_strings
 WITH (
   OIDS=FALSE
 );
-ALTER TABLE wb_strings
-  OWNER TO webbox;
 
 CREATE INDEX idx_id_string
   ON wb_strings
@@ -58,8 +56,6 @@ CREATE TABLE wb_objects
 WITH (
   OIDS=FALSE
 );
-ALTER TABLE wb_objects
-  OWNER TO webbox;
 
 -- Index: idx_otv
 
@@ -114,8 +110,6 @@ CREATE TABLE wb_triples
 WITH (
   OIDS=FALSE
 );
-ALTER TABLE wb_triples
-  OWNER TO webbox;
 
 
 
@@ -134,8 +128,6 @@ CREATE TABLE wb_users
 WITH (
   OIDS=FALSE
 );
-ALTER TABLE wb_users
-  OWNER TO webbox;
 
 
 INSERT INTO wb_users (username, pw_salted_hash, email, name) VALUES ('anonymous', 'temporary', 'anonymous@localhost', 'Anonymous User');
@@ -200,8 +192,6 @@ CREATE TABLE wb_triple_vers
 WITH (
   OIDS=FALSE
 );
-ALTER TABLE wb_triple_vers
-  OWNER TO webbox;
 
 
 
@@ -229,8 +219,6 @@ CREATE OR REPLACE VIEW wb_v_all_triples AS
    JOIN wb_strings j_object ON j_object.id_string = wb_objects.obj_value
   ORDER BY wb_triple_vers.version, wb_triple_vers.triple_order;
 
-ALTER TABLE wb_v_all_triples
-  OWNER TO webbox;
 
 
 
@@ -243,8 +231,6 @@ CREATE OR REPLACE VIEW wb_v_latest_version AS
  SELECT max(wb_triple_vers.version) AS latest_version
    FROM wb_triple_vers;
 
-ALTER TABLE wb_v_latest_version
-  OWNER TO webbox;
 
 
 -- View: wb_v_latest_triples
@@ -261,8 +247,6 @@ CREATE OR REPLACE VIEW wb_v_latest_triples AS
    JOIN wb_v_all_triples ON wb_v_all_triples.version = wb_v_latest_version.latest_version
   ORDER BY wb_v_all_triples.version, wb_v_all_triples.triple_order;
 
-ALTER TABLE wb_v_latest_triples
-  OWNER TO webbox;
 
 
 -- Functions
@@ -280,8 +264,6 @@ BEGIN
 END;$BODY$
   LANGUAGE plpgsql VOLATILE
   COST 100;
-ALTER FUNCTION wb_add_triple_to_version(integer, integer, text, text, text, object_type, character varying, character varying, integer)
-  OWNER TO webbox;
 
 
 
@@ -335,8 +317,6 @@ BEGIN
 END;$BODY$
   LANGUAGE plpgsql VOLATILE
   COST 100;
-ALTER FUNCTION wb_get_object_id(object_type, text, character varying, character varying)
-  OWNER TO webbox;
 
 
 CREATE OR REPLACE FUNCTION wb_get_string_id(input_string text)
@@ -352,8 +332,6 @@ BEGIN
 END;$BODY$
   LANGUAGE plpgsql VOLATILE
   COST 100;
-ALTER FUNCTION wb_get_string_id(text)
-  OWNER TO webbox;
 
 
 CREATE OR REPLACE FUNCTION wb_get_triple_id(input_subject text, input_predicate text, input_object_value text, input_object_type object_type, input_object_language character varying, input_object_datatype character varying)
@@ -379,8 +357,6 @@ BEGIN
 END;$BODY$
   LANGUAGE plpgsql VOLATILE
   COST 100;
-ALTER FUNCTION wb_get_triple_id(text, text, text, object_type, character varying, character varying)
-  OWNER TO webbox;
 
 
 
