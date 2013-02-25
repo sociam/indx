@@ -79,6 +79,7 @@ def create_user(new_username, new_password, db_user, db_pass):
 
 
 def create_box(box_name, db_user, db_pass):
+    # create the database
     db_name = WBPREFIX + box_name 
     root_conn = psycopg2.connect(dbname = POSTGRES_DB, user = db_user, password = db_pass) # have to specify a db that exists
     root_conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
@@ -86,17 +87,21 @@ def create_box(box_name, db_user, db_pass):
     root_cur.execute("CREATE DATABASE %s WITH ENCODING='UTF8' OWNER=%s CONNECTION LIMIT=-1" % (db_name, db_user))
     root_conn.commit()
     root_cur.close()
-    root_conn.close()    
+    root_conn.close()
 
-    # load in definition from data/objectstore.sql
-    fh_objsql = open(os.path.join(os.path.dirname(__file__),"..","..","data","objectstore.sql")) # FIXME put into config
-    objsql = fh_objsql.read()
-    fh_objsql.close()
-
+    # load in definition from data/objectstore-*.sql
     root_conn = psycopg2.connect(database = db_name, user = db_user, password = db_pass) # reconnect to this new db, and without the isolation level set
     root_cur = root_conn.cursor()
-    root_cur.execute(objsql)
-    root_conn.commit()
+
+    # ordered list of source database creation files
+    source_files = ['objectstore-schema.sql', 'objectstore-views.sql', 'objectstore-functions.sql']
+    for src_file in source_files:
+        fh_objsql = open(os.path.join(os.path.dirname(__file__),"..","..","data",src_file)) # FIXME put into config
+        objsql = fh_objsql.read()
+        fh_objsql.close()
+        root_cur.execute(objsql) # execute the sql from each file
+        root_conn.commit() # commit per file
+
     root_cur.close()
     root_conn.close()
     return
