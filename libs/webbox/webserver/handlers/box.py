@@ -25,20 +25,6 @@ class BoxHandler(BaseHandler):
     def options(self, request):
         self.return_ok(request)
 
-    def get_latest(self, request):
-        """ Get a latest JSON of all objects in this box. """
-        token = self.get_token(request)
-        if not token:
-            return self.return_forbidden(request)
-
-#        store = token.store
-
-        try:
-            logging.debug("calling get_latest on store")
-            token.store.get_latest().addCallback(lambda results: self.return_ok(request, {"data": results}))
-        except Exception as e:
-            return self.return_internal_error(request)
-
     def get_object_ids(self, request):
         """ Get a list of object IDs in this box. """
         token = self.get_token(request)
@@ -90,7 +76,15 @@ class BoxHandler(BaseHandler):
             return self.return_forbidden(request)
         store = token.store
 
-        return store.get_latest().addCallback(lambda obj: self.return_ok(request, {"data":json.dumps(obj, indent=2)}))
+        def handle_error(failure):
+            """ Handle an error on get (this is the errback). """ #TODO move this somewhere else?
+            failure.trap(Exception)
+            #err = failure.value
+            logging.debug("Exception trying to get latest.")
+            return self.return_internal_error(request)
+
+        return store.get_latest().addCallbacks(lambda obj: self.return_ok(request, {"data": obj}),
+                handle_error)
    
 
     def do_PUT(self,request):
@@ -129,15 +123,6 @@ class BoxHandler(BaseHandler):
 
 BoxHandler.subhandlers = [
     {
-        "prefix": "get_latest",
-        'methods': ['GET'],
-        'require_auth': True,
-        'require_token': True,
-        'handler': BoxHandler.get_latest,
-        'accept':['application/json'],
-        'content-type':'application/json'
-        },
-    {
         "prefix": "get_object_ids",
         'methods': ['GET'],
         'require_auth': True,
@@ -156,6 +141,7 @@ BoxHandler.subhandlers = [
         'content-type':'application/json'
         },
     {
+        # get_latest
         "prefix": "*",            
         'methods': ['GET'],
         'require_auth': False,
@@ -165,6 +151,7 @@ BoxHandler.subhandlers = [
         'content-type':'application/json'
         },
     {
+        # update
         "prefix": "*",            
         'methods': ['PUT'],
         'require_auth': False,

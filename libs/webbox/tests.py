@@ -233,7 +233,7 @@ class WebBoxTests:
         self.auth()
         self.get_token()
 
-        url = "{0}{1}/get_latest".format(self.args['server'], self.args['box'])
+        url = "{0}{1}/".format(self.args['server'], self.args['box'])
 
         logging.debug("Getting latest objects on server '{0}' in box '{1}'".format(self.args['server'], self.args['box']))
         status = self.get(url, None)
