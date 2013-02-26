@@ -23,10 +23,10 @@ class WebBoxTests:
     def __init__(self, appid="WebBoxTests"):
         """ Associate command-line test names with test functions. """
         self.tests = {'create_box': self.create_box,
-                      'add_data': self.add_data,
                       'list_boxes': self.list_boxes,
                       'get_object_ids': self.get_object_ids,
                       'get_latest': self.get_latest,
+                      'update': self.update,
                       'query': self.query,
                      }
 
@@ -209,8 +209,9 @@ class WebBoxTests:
         else:
             logging.info("Listing of objects successful, the object IDs are: \n" + "\n".join(status['uris']))
 
-    def add_data(self):
-        """ Test to add data to a box. """
+
+    def update(self):
+        """ Test to update objects in a box. """
         self.check_args(['server','box','data','version'])
         self.auth()
         self.get_token()
@@ -225,6 +226,7 @@ class WebBoxTests:
         else:
             logging.info("Add to box {0} sucessful, new version is: {1}".format(self.args['box'], status['data']['@version']))
             
+
     def get_latest(self):
         """ Get the latest version of every object in this box. """
         self.check_args(['server', 'box'])

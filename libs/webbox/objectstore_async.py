@@ -98,10 +98,11 @@ class ObjectStoreAsync:
 
             obj_out[subject][predicate].append(obj_struct)
 
-            # add _id key to the object
-            obj_out[subject]['_id'] = subject
+            # add @id key to the object
+            obj_out[subject]['@id'] = subject
 
         return obj_out
+
 
     def get_latest_obj(self, object_uri):
         """ Get the latest version of an object in the box, as expanded JSON-LD notation.
@@ -118,7 +119,8 @@ class ObjectStoreAsync:
         d.addCallback(rows_cb)
  
         return result_d
-    
+
+
     def get_object_ids(self):
         """ Get a list of IDs (URIs) of objects in this box.
         """
@@ -172,6 +174,19 @@ class ObjectStoreAsync:
         return result_d
 
 
+    def ids_from_objs(self, objs):
+        """ Return the object IDs from a set of objects.
+        """
+
+        ids = []
+        for obj in objs:
+            if "@id" in obj:
+                uri = obj["@id"]
+                ids.append(uri)
+
+        return ids
+
+
     def update(self, objs, specified_prev_version):
         """ Create a new version of the database, and insert only the objects references in the 'objs' dict. All other objects remain as they are in the specified_prev_version of the db.
 
@@ -181,41 +196,43 @@ class ObjectStoreAsync:
             returns information about the new version
         """
 
-
-        pass
-
-
-    def replace(self, objs, specified_prev_version):
-        """ Add new objects, or new versions of objects, to the database.
-
-            Completely replaces specified_prev_version with objs.
-
-            objs, json expanded notation of objects,
-            specified_prev_version of the databse (must match max(version) of the db, or zero if the object doesn't exist, or the store will return a IncorrectPreviousVersionException
-
-            returns information about the new version
-        """
-
         # TODO FIXME XXX lock the table(s) as appropriate inside a transaction (PL/pgspl?) here
         result_d = Deferred()
-        logging.debug("Objectstore add")
+        logging.debug("Objectstore update")
+    
+        # TODO add this
+        id_user = 1
 
-        def added_cb(info): # self is the deferred
-            new_version = info
-            logging.debug("added_cb: info="+str(info))
-            result_d.callback({"@version": new_version})
+        def err_cb(failure):
+            logging.error("Objectstore update err_cb, failure: " + str(failure))
+            result_d.errback(failure)
 
-        def row_cb(row):
-            logging.debug("Objectstore add row_cb, row: " + str(row))
+        def cloned_cb(row): # self is the deferred
+            logging.debug("Objectstore update, cloned_cb row: " + str(row))
 
+            def added_cb(info):
+                # added object successfully
+                new_version = info
+                logging.debug("added_cb: info="+str(info))
+                result_d.callback({"@version": new_version})
+                return
+
+            d = self._add_objs_to_version(objs, specified_prev_version + 1, id_user)
+            d.addCallbacks(added_cb, err_cb)
+            return
+
+        def ver_cb(row):
+            logging.debug("Objectstore add ver_cb, row: " + str(row))
+
+            # check for no existing version, and set to 0
             if row is None or len(row) < 1:
                 actual_prev_version = 0
             else:
                 actual_prev_version = row[0][0]
-
             if actual_prev_version is None:
                 actual_prev_version = 0
 
+            # check user specified the current version
             if actual_prev_version != specified_prev_version:
                 ipve = IncorrectPreviousVersionException("Actual previous version is {0}, specified previous version is: {1}".format(actual_prev_version, specified_prev_version))
                 ipve.version = actual_prev_version
@@ -223,22 +240,87 @@ class ObjectStoreAsync:
                 result_d.errback(failure)
                 return
             else:
-                d = self.create_version(objs, actual_prev_version+1)
-                d.addCallback(added_cb)
+                parameters = [specified_prev_version, specified_prev_version + 1, id_user]
+                # excludes these object IDs when it clones the previous version
+                ids = self.ids_from_objs(objs)
+                parameters.extend(ids)
+
+                query = "SELECT * FROM wb_clone_version("
+                for i in range(len(parameters)):
+                    if i > 0:
+                        query += ", "
+                    query += "%s"
+                query += ")"
+
+                d = self.conn.runQuery(query, parameters)
+                d.addCallbacks(cloned_cb, err_cb) # worked or errored
                 return
 
         d = self.conn.runQuery("SELECT latest_version FROM wb_v_latest_version", [])
-        d.addCallback(row_cb)
+        d.addCallbacks(ver_cb, err_cb)
 
         return result_d
 
 
-    def create_version(self, objs, version):
-        """ Add new version of the db.
 
-            objs Objects to add
-            version The new version to add to
+#    def replace(self, objs, specified_prev_version):
+#        """ Completely replaces box of specified_prev_version with new version, made up only of objs.
+#
+#            objs, json expanded notation of objects,
+#            specified_prev_version of the databse (must match max(version) of the db, or zero if the box doesn't exist, or the store will return a IncorrectPreviousVersionException
+#
+#            returns information about the new version
+#        """
+#
+#        # TODO FIXME XXX lock the table(s) as appropriate inside a transaction (PL/pgspl?) here
+#        result_d = Deferred()
+#        logging.debug("Objectstore add")
+#
+#        def added_cb(info): # self is the deferred
+#            new_version = info
+#            logging.debug("added_cb: info="+str(info))
+#            result_d.callback({"@version": new_version})
+#
+#        def row_cb(row):
+#            logging.debug("Objectstore add row_cb, row: " + str(row))
+#
+#            if row is None or len(row) < 1:
+#                actual_prev_version = 0
+#            else:
+#                actual_prev_version = row[0][0]
+#
+#            if actual_prev_version is None:
+#                actual_prev_version = 0
+#
+#            if actual_prev_version != specified_prev_version:
+#                ipve = IncorrectPreviousVersionException("Actual previous version is {0}, specified previous version is: {1}".format(actual_prev_version, specified_prev_version))
+#                ipve.version = actual_prev_version
+#                failure = Failure(ipve)
+#                result_d.errback(failure)
+#                return
+#            else:
+#                d = self.create_version(objs, actual_prev_version+1)
+#                d.addCallback(added_cb)
+#                return
+#
+#        d = self.conn.runQuery("SELECT latest_version FROM wb_v_latest_version", [])
+#        d.addCallback(row_cb)
+#
+#        return result_d
+
+
+    def _add_objs_to_version(self, objs, version, id_user):
+        """ Add objects to a specific version of the db.
+
+            The function used in postgres now automatically increments the triple_order based on the order of insertion.
+
+            objs -- Objects to add
+            version -- The version to add to
+            id_user -- The id of the user that is making the change
         """
+        # TODO FIXME XXX lock the table(s) as appropriate inside a transaction (PL/pgspl?) here
+        logging.debug("Objectstore _add_objs_to_version")
+
 
         # FIXME workaround passing version as a Tuple and/or String
         if type(version) == types.TupleType:
@@ -246,16 +328,8 @@ class ObjectStoreAsync:
         if type(version) == types.StringType:
             version = int(version)
 
-
         result_d = Deferred()
-        logging.debug("Objectstore add_version")
 
-        # TODO FIXME XXX lock the table(s) as appropriate inside a transaction (PL/pgspl?) here
-
-        # TODO add this
-        id_user = 1
-
-        triple_order = 0 # for all triples
         queries = []
         for obj in objs:
             
@@ -265,7 +339,7 @@ class ObjectStoreAsync:
                 raise Exception("@id required in all objects")
 
             for predicate in obj:
-                if predicate[0] == "@":
+                if predicate[0] == "@" or predicate[0] == "_":
                     continue # skip over json_ld predicates
 
                 sub_objs = obj[predicate]
@@ -285,8 +359,7 @@ class ObjectStoreAsync:
                     if "@type" in object:
                         datatype = object["@type"]
 
-                    triple_order += 1
-                    queries.append( ("SELECT * FROM wb_add_triple_to_version(%s, %s, %s, %s, %s, %s, %s, %s, %s)", [version, id_user, uri, predicate, value, thetype, language, datatype, triple_order]) )
+                    queries.append( ("SELECT * FROM wb_add_triple_to_version(%s, %s, %s, %s, %s, %s, %s, %s)", [version, id_user, uri, predicate, value, thetype, language, datatype]) )
 
         def exec_queries(var):
             logging.debug("Objectstore add_version exec_queries")
@@ -309,7 +382,7 @@ class IncorrectPreviousVersionException(BaseException):
     pass
 
 
-from rdflib import Graph, URIRef, Literal
+from rdflib import Graph, Literal
 
 class RDFObjectStore:
     """ Uses the query store interface (e.g. as a drop-in replacement for fourstore).

@@ -1,0 +1,37 @@
+{
+  "@id": "http://example.com/QUX",
+  "http://xmlns.com/foaf/0.1/name": [
+    {
+      "@value": "Test A Testman"
+    }
+  ], 
+  "http://xmlns.com/foaf/0.1/homePage": [
+    {
+      "@id": "http://testman.com"
+    }, 
+    {
+      "@id": "http://testplace.edu/users/tat"
+    }
+  ], 
+  "http://xmlns.com/foaf/0.1/knows": [
+    {
+      "@id": "http://testplace.edu/person/12345"
+    }
+  ], 
+  "http://www.w3.org/1999/02/22-rdf-syntax-ns#type": [
+    {
+      "@id": "http://xmlns.com/foaf/0.1/Person"
+    }
+  ], 
+  "http://www.w3.org/2000/01/rdf-schema#label": [
+    {
+      "@value": "Test A Testman"
+    }, 
+    {
+      "@value": "Test Alex Testman"
+    }, 
+    {
+      "@value": "Dr Test Alex Testman"
+    }
+  ]
+}

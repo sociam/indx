@@ -40,7 +40,7 @@ class ObjectStoreQuery:
         for predicate, val in q.items():
             if type(val) in self.exact_types:
                 # exact match, so JOIN in the view
-                if predicate == "_id": # _id is not in the db, it's the subject column
+                if predicate == "@id": # _id is not in the db, it's the subject column
                     wheres.append("wb_v_latest_triples.subject = %s")
                     params.extend([val]) 
 

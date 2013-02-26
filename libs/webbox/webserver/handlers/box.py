@@ -91,94 +91,41 @@ class BoxHandler(BaseHandler):
         store = token.store
 
         return store.get_latest().addCallback(lambda obj: self.return_ok(request, {"data":json.dumps(obj, indent=2)}))
-    
+   
+
     def do_PUT(self,request):
         token = self.get_token(request)
         if not token:
             return self.return_forbidden(request)
-        # TODO validate the token?
+
         store, args = token.store, self.get_post_args(request)
+
+        if "version" not in args:
+            return self.return_bad_request(request,"Specify a previous version with &version=")
+        prev_version = int(args['version'][0])
+
         objs = json.loads(args['data'][0])
-        if type(objs) == type([]):
-            # multi object put            
-            if "version" not in args:
-                return self.return_bad_request(request,"Specify a previous version with &version=")
-            prev_version = int(args['version'][0])
-            d = store.replace(objs, prev_version)
 
-            def handle_add_error(failure):
-                """ Handle an error on add (this is the errback). """ #TODO move this somewhere else?
-                failure.trap(IncorrectPreviousVersionException, Exception)
-                err = failure.value
-                if isinstance(err, IncorrectPreviousVersionException):
-                    logging.debug("Incorrect previous version")
-                    actual_version = err.version
-                    return self.return_obsolete(request,{"description": "Document obsolete. Please update before putting", '@version':actual_version})            
-                else:
-                    logging.debug("Exception trying to add to store.")
-                    return self.return_internal_error(request)
+        if type(objs) != type([]):
+            objs = [objs]
+            
+        d = store.update(objs, prev_version)
 
-            d.addCallbacks(lambda new_version_info: self.return_created(request,{"data":new_version_info}), # callback
-                handle_add_error) #errback
-        else:
-            # single object put
-            return self.return_bad_request(request,"Single object PUT not supported, PUT an array to create/replace a named graph instead")
-        pass
+        def handle_add_error(failure):
+            """ Handle an error on add (this is the errback). """ #TODO move this somewhere else?
+            failure.trap(IncorrectPreviousVersionException, Exception)
+            err = failure.value
+            if isinstance(err, IncorrectPreviousVersionException):
+                logging.debug("Incorrect previous version")
+                actual_version = err.version
+                return self.return_obsolete(request,{"description": "Document obsolete. Please update before putting", '@version':actual_version})            
+            else:
+                logging.debug("Exception trying to add to store.")
+                return self.return_internal_error(request)
 
-    # this stuff does not belong in the box handler >> move to EnrichHandler
-    # def get_establishments(self, request):
-    #     eh = EnrichHandler(self.webserver, base_path=self.base_path, register=False)
-    #     return eh.get_establishments(request)
+        d.addCallbacks(lambda new_version_info: self.return_created(request,{"data":new_version_info}), # callback
+            handle_add_error) #errback
 
-    # def get_places(self, request):
-    #     eh = EnrichHandler(self.webserver, base_path=self.base_path, register=False)
-    #     return eh.get_places(request)
-
-    # def get_next_round(self, request):
-    #     eh = EnrichHandler(self.webserver, base_path=self.base_path, register=False)
-    #     return eh.get_next_round(request)
-
-    # def save_round(self, request):
-    #     eh = EnrichHandler(self.webserver, base_path=self.base_path, register=False)
-    #     return eh.save_round(request)
-
-    # def get_all_transactions(self, request):
-    #     eh = EnrichHandler(self.webserver, base_path=self.base_path, register=False)
-    #     return eh.get_all_transactions(request)
-
-    # ## @TODO ::
-    # def handle_update(self,request):
-    #     """ Handle calls to the Journal update URL. """
-    #     since_repository_hash = None
-    #     if "since" in request.args:
-    #        since_repository_hash = request.args['since'][0]                        
-    #     journal = Journal(os.path.join(self.config['webbox_dir'], self.config['journal']))
-    #     uris_changed = journal.since(since_repository_hash)
-    #     logging.debug("URIs changed: %s" % str(uris_changed))
-
-    #     if len(uris_changed) > 0:
-
-    #         ntrips = ""
-    #         for uri in uris_changed:
-    #             query = "CONSTRUCT {?s ?p ?o} WHERE { GRAPH <%s> {?s ?p ?o}}" % uri
-    #             logging.debug("Sending query for triples as: %s " % query)
-
-    #             result = self.webbox.query_store.query(query, {"Accept": "text/plain"})
-    #             # graceful fail per U
-
-    #             rdf = result['data']
-    #             ntrips += rdf + "\n"
-
-    #         # TODO conneg
-    #         rdf_type = "text/plain" # text/plain is n-triples (really)
-
-    #         return {"data": ntrips, "status": 200, "reason": "OK", "type": rdf_type}
-
-    #     else:
-    #         # no update
-    #         logging.debug("Client is up to date")
-    #         return {"data": "", "status": 204, "reason": "No Content"}
-    #     pass
 
 BoxHandler.subhandlers = [
     {
