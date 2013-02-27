@@ -119,13 +119,59 @@ class BoxHandler(BaseHandler):
 
         d.addCallbacks(lambda new_version_info: self.return_created(request,{"data":new_version_info}), # callback
             handle_add_error) #errback
+        return
 
+
+    def do_DELETE(self,request):
+        """ Handle DELETE calls. Requires a JSON array of object IDs in the body as the 'data' argument:
+            e.g.,
+
+            ['obj_123','obj_456']
+
+            and the current box version as the 'version' argument. If the version is incorrect, a 409 Obsolete is returned.
+
+            request -- The twisted request object
+        """
+
+        # get validated token
+        token = self.get_token(request)
+        if not token:
+            return self.return_forbidden(request)
+
+        store, args = token.store, self.get_post_args(request)
+
+        if "version" not in args:
+            return self.return_bad_request(request,"Specify a previous version in the body with &version=")
+        prev_version = int(args['version'][0])
+
+        id_list = json.loads(args['data'][0])
+
+        if type(id_list) != type([]):
+            id_list = [id_list]
+
+        d = store.delete(id_list, prev_version)
+
+        def handle_add_error(failure):
+            """ Handle an error on add (this is the errback). """ #TODO move this somewhere else?
+            failure.trap(IncorrectPreviousVersionException, Exception)
+            err = failure.value
+            if isinstance(err, IncorrectPreviousVersionException):
+                logging.debug("Incorrect previous version")
+                actual_version = err.version
+                return self.return_obsolete(request,{"description": "Document obsolete. Please update before putting", '@version':actual_version})            
+            else:
+                logging.debug("Exception trying to add to store.")
+                return self.return_internal_error(request)
+
+        d.addCallbacks(lambda new_version_info: self.return_created(request,{"data":new_version_info}), # callback
+            handle_add_error) #errback
+        return
 
 BoxHandler.subhandlers = [
     {
         "prefix": "get_object_ids",
         'methods': ['GET'],
-        'require_auth': True,
+        'require_auth': False,
         'require_token': True,
         'handler': BoxHandler.get_object_ids,
         'accept':['application/json'],
@@ -134,7 +180,7 @@ BoxHandler.subhandlers = [
     {
         "prefix": "query",
         'methods': ['GET'],
-        'require_auth': True,
+        'require_auth': False,
         'require_token': True,
         'handler': BoxHandler.query,
         'accept':['application/json'],
@@ -157,6 +203,15 @@ BoxHandler.subhandlers = [
         'require_auth': False,
         'require_token': True,
         'handler': BoxHandler.do_PUT,
+        'accept':['application/json'],
+        'content-type':'application/json'        
+        },
+    {
+        "prefix": "*",       
+        'methods': ['DELETE'],
+        'require_auth': False,
+        'require_token': True,
+        'handler': BoxHandler.do_DELETE,
         'accept':['application/json'],
         'content-type':'application/json'        
         },

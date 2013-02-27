@@ -186,6 +186,130 @@ class ObjectStoreAsync:
 
         return ids
 
+    def delete(self, id_list, specified_prev_version):
+        """ Create a new version of the database, excluding those objects in the id list.
+
+            id_list -- list of object IDs to exclude from the new version
+            specified_prev_version -- the current version of the box, error returned if this isn't the current version
+
+            returns information about the new version
+        """
+
+        # TODO FIXME XXX lock the table(s) as appropriate inside a transaction (PL/pgspl?) here
+        result_d = Deferred()
+        logging.debug("Objectstore delete")
+    
+        # TODO add this
+        id_user = 1
+
+        def err_cb(failure):
+            logging.error("Objectstore delete, err_cb, failure: " + str(failure))
+            result_d.errback(failure)
+
+        def cloned_cb(new_ver):
+            # has been cloned to a new version, and the objects in id_list were excluded, so we're done.
+            logging.debug("Objectstore delete, cloned_cb new_ver: " + str(new_ver))
+            result_d.callback({"@version": new_ver})
+            return
+
+        # _clone checks the previous version, so no need to do that here
+        d = self._clone(specified_prev_version, id_user, id_list)
+        d.addCallbacks(cloned_cb, err_cb)
+        return result_d
+
+
+    def _check_ver(self, specified_prev_version):
+        """ Find the current version, and check it matches the specified version.
+            Returns a deferred, which receives either the current version if it matches the specified version,
+            or an errback if it didn't match (with the Failure carrying a value of an IncorrectPreviousVersionException),
+            or an errback if there was an error with the query.
+
+            specified_prev_version -- The incoming version from the request.
+        """
+
+        # TODO FIXME XXX lock the table(s) as appropriate inside a transaction (PL/pgspl?) here
+        result_d = Deferred()
+        logging.debug("Objectstore _check_ver")
+
+        def err_cb(failure):
+            logging.error("Objectstore _check_ver err_cb, failure: " + str(failure))
+            result_d.errback(failure)
+            return
+        
+        def ver_cb(row):
+            logging.debug("Objectstore add ver_cb, row: " + str(row))
+
+            # check for no existing version, and set to 0
+            if row is None or len(row) < 1:
+                actual_prev_version = 0
+            else:
+                actual_prev_version = row[0][0]
+            if actual_prev_version is None:
+                actual_prev_version = 0
+
+            # check user specified the current version
+            if actual_prev_version != specified_prev_version:
+                logging.debug("In objectstore _check_ver, the previous version of the box '{0}' didn't match the actual '{1}".format(specified_prev_version, actual_prev_version))
+                ipve = IncorrectPreviousVersionException("Actual previous version is {0}, specified previous version is: {1}".format(actual_prev_version, specified_prev_version))
+                ipve.version = actual_prev_version
+                failure = Failure(ipve)
+                result_d.errback(failure)
+                return
+            else:
+                # success, return the new version in a callback to the deferred
+                result_d.callback(actual_prev_version)
+                return
+
+        d = self.conn.runQuery("SELECT latest_version FROM wb_v_latest_version", [])
+        d.addCallbacks(ver_cb, err_cb)
+        return result_d
+
+
+    def _clone(self, specified_prev_version, id_user, id_list = []):
+        """ Make a new version of the database, excluding objects with the ids specified.
+
+            specified_prev_version -- the current version of the box, error returned if this isn't the current version
+            id_user -- the ID of the user making the new version
+            id_list -- list of object IDs to exclude from the new version (optional)
+        """
+
+        # TODO FIXME XXX lock the table(s) as appropriate inside a transaction (PL/pgspl?) here
+        result_d = Deferred()
+        logging.debug("Objectstore _clone")
+    
+        def err_cb(failure):
+            logging.error("Objectstore _clone err_cb, failure: " + str(failure))
+            result_d.errback(failure)
+            return
+
+        def cloned_cb(row): # self is the deferred
+            logging.debug("Objectstore _clone, cloned_cb row: " + str(row))
+            result_d.callback(specified_prev_version + 1)
+            return
+
+        def ver_cb(row):
+            logging.debug("Objectstore add ver_cb, row: " + str(row))
+
+            parameters = [specified_prev_version, specified_prev_version + 1, id_user]
+            # excludes these object IDs when it clones the previous version
+            parameters.extend(id_list)
+
+            query = "SELECT * FROM wb_clone_version("
+            for i in range(len(parameters)):
+                if i > 0:
+                    query += ", "
+                query += "%s"
+            query += ")"
+
+            d = self.conn.runQuery(query, parameters)
+            d.addCallbacks(cloned_cb, err_cb) # worked or errored
+            return
+
+        d = self._check_ver(specified_prev_version)
+        d.addCallbacks(ver_cb, err_cb)
+        return result_d
+        
+
 
     def update(self, objs, specified_prev_version):
         """ Create a new version of the database, and insert only the objects references in the 'objs' dict. All other objects remain as they are in the specified_prev_version of the db.
@@ -204,109 +328,27 @@ class ObjectStoreAsync:
         id_user = 1
 
         def err_cb(failure):
-            logging.error("Objectstore update err_cb, failure: " + str(failure))
+            logging.error("Objectstore update, err_cb, failure: " + str(failure))
             result_d.errback(failure)
 
-        def cloned_cb(row): # self is the deferred
-            logging.debug("Objectstore update, cloned_cb row: " + str(row))
+        def cloned_cb(new_ver):
+            logging.debug("Objectstore update, cloned_cb new_ver: " + str(new_ver))
 
             def added_cb(info):
                 # added object successfully
-                new_version = info
-                logging.debug("added_cb: info="+str(info))
-                result_d.callback({"@version": new_version})
+                logging.debug("Objectstore update, added_cb info: "+str(info))
+                result_d.callback({"@version": new_ver})
                 return
 
-            d = self._add_objs_to_version(objs, specified_prev_version + 1, id_user)
+            d = self._add_objs_to_version(objs, new_ver, id_user)
             d.addCallbacks(added_cb, err_cb)
             return
 
-        def ver_cb(row):
-            logging.debug("Objectstore add ver_cb, row: " + str(row))
-
-            # check for no existing version, and set to 0
-            if row is None or len(row) < 1:
-                actual_prev_version = 0
-            else:
-                actual_prev_version = row[0][0]
-            if actual_prev_version is None:
-                actual_prev_version = 0
-
-            # check user specified the current version
-            if actual_prev_version != specified_prev_version:
-                ipve = IncorrectPreviousVersionException("Actual previous version is {0}, specified previous version is: {1}".format(actual_prev_version, specified_prev_version))
-                ipve.version = actual_prev_version
-                failure = Failure(ipve)
-                result_d.errback(failure)
-                return
-            else:
-                parameters = [specified_prev_version, specified_prev_version + 1, id_user]
-                # excludes these object IDs when it clones the previous version
-                ids = self.ids_from_objs(objs)
-                parameters.extend(ids)
-
-                query = "SELECT * FROM wb_clone_version("
-                for i in range(len(parameters)):
-                    if i > 0:
-                        query += ", "
-                    query += "%s"
-                query += ")"
-
-                d = self.conn.runQuery(query, parameters)
-                d.addCallbacks(cloned_cb, err_cb) # worked or errored
-                return
-
-        d = self.conn.runQuery("SELECT latest_version FROM wb_v_latest_version", [])
-        d.addCallbacks(ver_cb, err_cb)
-
+        id_list = self.ids_from_objs(objs)
+        # _clone checks the previous version, so no need to do that here
+        d = self._clone(specified_prev_version, id_user, id_list)
+        d.addCallbacks(cloned_cb, err_cb)
         return result_d
-
-
-
-#    def replace(self, objs, specified_prev_version):
-#        """ Completely replaces box of specified_prev_version with new version, made up only of objs.
-#
-#            objs, json expanded notation of objects,
-#            specified_prev_version of the databse (must match max(version) of the db, or zero if the box doesn't exist, or the store will return a IncorrectPreviousVersionException
-#
-#            returns information about the new version
-#        """
-#
-#        # TODO FIXME XXX lock the table(s) as appropriate inside a transaction (PL/pgspl?) here
-#        result_d = Deferred()
-#        logging.debug("Objectstore add")
-#
-#        def added_cb(info): # self is the deferred
-#            new_version = info
-#            logging.debug("added_cb: info="+str(info))
-#            result_d.callback({"@version": new_version})
-#
-#        def row_cb(row):
-#            logging.debug("Objectstore add row_cb, row: " + str(row))
-#
-#            if row is None or len(row) < 1:
-#                actual_prev_version = 0
-#            else:
-#                actual_prev_version = row[0][0]
-#
-#            if actual_prev_version is None:
-#                actual_prev_version = 0
-#
-#            if actual_prev_version != specified_prev_version:
-#                ipve = IncorrectPreviousVersionException("Actual previous version is {0}, specified previous version is: {1}".format(actual_prev_version, specified_prev_version))
-#                ipve.version = actual_prev_version
-#                failure = Failure(ipve)
-#                result_d.errback(failure)
-#                return
-#            else:
-#                d = self.create_version(objs, actual_prev_version+1)
-#                d.addCallback(added_cb)
-#                return
-#
-#        d = self.conn.runQuery("SELECT latest_version FROM wb_v_latest_version", [])
-#        d.addCallback(row_cb)
-#
-#        return result_d
 
 
     def _add_objs_to_version(self, objs, version, id_user):

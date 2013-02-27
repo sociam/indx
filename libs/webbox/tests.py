@@ -27,6 +27,7 @@ class WebBoxTests:
                       'get_object_ids': self.get_object_ids,
                       'get_latest': self.get_latest,
                       'update': self.update,
+                      'delete': self.delete,
                       'query': self.query,
                      }
 
@@ -87,8 +88,10 @@ class WebBoxTests:
         status = json.loads(the_page)
         return status
 
-    def put(self, url, values, content_type="application/json"):
-        """ Do a PUT, decode the result JSON and return it. """
+
+    def req_body(self, url, values, method, content_type):
+        """ Do an HTTP request with arguments in the body (POST/PUT/DELETE etc), using the specified method.
+        """
         if values is None:
             values = {}
         if 'box' in self.args:
@@ -97,39 +100,38 @@ class WebBoxTests:
 
         if self.token is not None:
             values['token'] = self.token
+
+        logging.debug("Sending request to {0} with body {1}".format(url, values))
 
         data = urllib.urlencode(values)
         req = urllib2.Request(url, data)
         req.add_header("Content-Type", content_type)
-        req.get_method = lambda: "PUT"
+        req.get_method = lambda: method
         response = urllib2.urlopen(req)
         the_page = response.read()
 
-        logging.debug("PUT raw results: \n{0}\n".format(the_page))
+        logging.debug("Request ({1}) raw results: \n{0}\n".format(the_page, method))
 
         status = json.loads(the_page)
         return status
 
-    def post(self, url, values):
+
+    def delete_(self, url, values, content_type="application/json"):
+        """ Do a DELETE, decode the result JSON and return it.
+        """
+        return self.req_body(url, values, "DELETE", content_type)
+
+
+    def put(self, url, values, content_type="application/json"):
+        """ Do a PUT, decode the result JSON and return it.
+        """
+        return self.req_body(url, values, "PUT", content_type)
+
+
+    def post(self, url, values, content_type="application/json"):
         """ Do a POST, decode the result JSON and return it. """
-        if values is None:
-            values = {}
-        if 'box' in self.args:
-            values['box'] = self.args['box']
-        values['app'] = self.appid
+        return self.req_body(url, values, "POST", content_type)
 
-        if self.token is not None:
-            values['token'] = self.token
-
-        data = urllib.urlencode(values)
-        req = urllib2.Request(url, data)
-        response = urllib2.urlopen(req)
-        the_page = response.read()
-
-        logging.debug("POST raw results: \n{0}\n".format(the_page))
-
-        status = json.loads(the_page)
-        return status
 
     def auth(self):
         """ Authenticate to the webbox server. """
@@ -219,12 +221,32 @@ class WebBoxTests:
         url = "{0}{1}/".format(self.args['server'], self.args['box'])
         values = {"data": self.args['data'].read(), "version": self.args['version'], "box": self.args['box'], "app": self.appid}
 
-        logging.debug("Adding data to box: '{0}' on server '{1}'".format(self.args['box'], self.args['server']))
+        logging.debug("Updating data to box: '{0}' on server '{1}'".format(self.args['box'], self.args['server']))
         status = self.put(url, values)
         if status['code'] != 201:
-            raise Exception("Adding to box {0} failed. Response is {1} with code {2}".format(self.args['box'], status['message'], status['code']))
+            raise Exception("Updating box {0} failed. Response is {1} with code {2}".format(self.args['box'], status['message'], status['code']))
         else:
-            logging.info("Add to box {0} sucessful, new version is: {1}".format(self.args['box'], status['data']['@version']))
+            logging.info("Update on box {0} sucessful, new version is: {1}".format(self.args['box'], status['data']['@version']))
+
+
+    def delete(self):
+        """ Test to delete objects from a box.
+        
+            'query' argument should be a JSON string of an array of object IDs.
+        """
+        self.check_args(['server','box','query','version'])
+        self.auth()
+        self.get_token()
+
+        url = "{0}{1}/".format(self.args['server'], self.args['box'])
+        values = {"data": self.args['query'], "version": self.args['version'], "box": self.args['box'], "app": self.appid}
+
+        logging.debug("Deleting data to box: '{0}' on server '{1}'".format(self.args['box'], self.args['server']))
+        status = self.delete_(url, values)
+        if status['code'] != 201:
+            raise Exception("Deleting from box {0} failed. Response is {1} with code {2}".format(self.args['box'], status['message'], status['code']))
+        else:
+            logging.info("Delete from box {0} sucessful, new version is: {1}".format(self.args['box'], status['data']['@version']))
             
 
     def get_latest(self):

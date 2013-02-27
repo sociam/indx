@@ -78,7 +78,7 @@ class BaseHandler(Resource):
             # logging.debug("__NOT in subhandler " + request.method)
             logging.debug('method type mismatch ' + request.method + ' ' + repr(subhandler["methods"]))            
             return False
-        # logging.debug("MATCH " + sub_path )
+        logging.debug("MATCH path: {0}, method: {1}".format(sub_path, request.method))
         return True
 
     def _get_best_content_type_match_score(self,request,subhandler):
@@ -97,7 +97,7 @@ class BaseHandler(Resource):
     def _get_arg(self,request,argname):
         if request.method == 'GET':
             return request.args.get(argname) and request.args[argname][0]
-        if request.method in ['POST', 'PUT']:
+        if request.method in ['POST', 'PUT', 'DELETE', 'COPY', 'MOVE']:
             post_args = self.get_post_args(request)
             return post_args.get(argname) and post_args[argname][0]
         return None
