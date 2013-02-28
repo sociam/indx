@@ -122,4 +122,21 @@ END;$BODY$
   COST 100;
 
 
+CREATE OR REPLACE FUNCTION wb_diff(input_version_from integer, input_version_to integer)
+  RETURNS text[] AS
+$BODY$DECLARE
+	results_ids text[];
+BEGIN
+	SELECT array(SELECT DISTINCT subject FROM (
+
+			SELECT 'VerA' as version, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_all_triples WHERE version = input_version_from
+			UNION ALL
+			SELECT 'VerB' as version, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_all_triples WHERE version = input_version_to
+
+		) AS COMPARISON GROUP BY subject, predicate, obj_value, obj_type, obj_lang, obj_datatype HAVING COUNT(*) = 1)
+		INTO results_ids;
+	RETURN results_ids;
+END;$BODY$
+  LANGUAGE plpgsql VOLATILE
+  COST 100;
 
