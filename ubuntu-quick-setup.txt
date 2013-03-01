@@ -18,8 +18,17 @@ Quick start on Ubuntu (Tested on 12.10 Quantal)
     psql 
     \password <username>
 
-(and assign a password)
+    and remember the password you specify until #7 below
 
+6.  create a ~/.webbox directory and copy webbox/webbox.json.default
+    to ~/.webbox/webbox.json
+
+7.  Edit ~/.webbox/webbox.json, 
+    Set the ssl_diabled: flag accordingly
+    Set your "user" and "name" fields to the username above
+    and "password" to the password you assigned
+
+8.  Run ~/webbox/run.sh
 
 
 

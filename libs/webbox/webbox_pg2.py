@@ -1,7 +1,7 @@
 
 
 
-import logging, urllib2, uuid, rdflib, os, traceback, mimetypes, shutil, json
+import logging, urllib2, uuid, os, traceback, mimetypes, shutil, json
 import psycopg2
 from txpostgres import txpostgres
 from twisted.internet.defer import Deferred

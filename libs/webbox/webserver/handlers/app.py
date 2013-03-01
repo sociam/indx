@@ -16,7 +16,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging, traceback, urllib2, uuid, rdflib, os, traceback, mimetypes, shutil, json
+import logging, traceback, urllib2, uuid, os, traceback, mimetypes, shutil, json
 
 from twisted.web.resource import Resource
 from webbox.webserver.session import WebBoxSession, ISession
