@@ -1,0 +1,7 @@
+python-dev
+pip
+virtualenv
+postgresql
+postgresql-server-dev-9.1
+libpq-dev
+

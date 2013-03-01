@@ -1,13 +1,7 @@
-rdflib>=3.1.0
-rdfextras
-elementtree
-celementtree
-lxml
 autobahn
 twisted
 mimeparse
 pyopenssl
-pystache
 psutil
 psycopg2
 txpostgres

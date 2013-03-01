@@ -1,0 +1,26 @@
+
+Quick start on Ubuntu (Tested on 12.10 Quantal)
+
+1.  Install ubuntu system-level requirements
+    apt-get install each of the packages in ubuntu-requirements.txt
+    
+2.  Set up virtualenv. Run
+    webbox/setup_env.sh
+
+3.  Create a webbox user, replace <username> with your preferred username
+    sudo -u postgres createuser <username>
+
+4.  Create a base db for your new user
+    sudo -u postgres createdb -O <username> <username>
+
+5.  Set a password for your user:
+
+    psql 
+    \password <username>
+
+(and assign a password)
+
+
+
+
+
