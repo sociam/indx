@@ -29,6 +29,9 @@ parser.add_argument('--box', action="store", type=str, help='Name of the Box (fo
 parser.add_argument('--query', action="store", type=str, help='Query string (for tests that required it)')
 parser.add_argument('--data', action="store", type=argparse.FileType('r'), help="Data file (e.g., JSON to import)")
 parser.add_argument('--version', action="store", help="Current version of the box (or 0 if the box is empty)")
+parser.add_argument('--from', action="store", help="From version (e.g., for 'diff')")
+parser.add_argument('--to', action="store", help="To version (e.g., for 'diff')")
+parser.add_argument('--return_objs', action="store_true", default=False, help="Enable return of full objs (e.g., for 'diff')")
 parser.add_argument('--debug', action="store_true", default=False, help="Enable output of debug logging")
 
 args = vars(parser.parse_args())

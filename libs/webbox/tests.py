@@ -26,6 +26,7 @@ class WebBoxTests:
                       'list_boxes': self.list_boxes,
                       'get_object_ids': self.get_object_ids,
                       'get_latest': self.get_latest,
+                      'diff': self.diff,
                       'update': self.update,
                       'delete': self.delete,
                       'query': self.query,
@@ -146,6 +147,7 @@ class WebBoxTests:
             raise Exception("Authentication failed, response is {0} with code {1}".format(status['message'], status['code']))
         else:
             logging.info("Authentication successful.")
+
     
     def get_token(self):
         """ Get a token for this box. """
@@ -265,7 +267,8 @@ class WebBoxTests:
         else:
             pretty = pprint.pformat(status['data'], indent=2, width=80)
             logging.info("Getting latest successful, the objects are: \n" + pretty)
-            
+        
+    
     def query(self):
         """ Query this box. """
         self.check_args(['server', 'box', 'query'])
@@ -282,5 +285,29 @@ class WebBoxTests:
         else:
             pretty = pprint.pformat(status['data'], indent=2, width=80)
             logging.info("Querying successful, the objects are: \n" + pretty)
+
+
+    def diff(self):
+        """ Query this box. """
+        self.check_args(['server', 'box', 'from', 'to', 'return_objs'])
+        self.auth()
+        self.get_token()
+
+        url = "{0}{1}/diff".format(self.args['server'], self.args['box'])
+
+        logging.debug("Calling diff on server '{0}' in box '{1}'".format(self.args['server'], self.args['box']))
+
+        params = {'from_version': self.args['from'], 'to_version': self.args['to']}
+        if self.args['return_objs']:
+            logging.debug("Set return_objs to true.")
+            params['return_objs'] = True # value not strictly necessary, presence of key is all that is checked
+
+        status = self.get(url, params)
+
+        if status['code'] != 200:
+            raise Exception("Diff failed, response is {0} with code {1}".format(status['message'], status['code']))
+        else:
+            pretty = pprint.pformat(status['data'], indent=2, width=80)
+            logging.info("Diff successful, return is: \n" + pretty)
 
 

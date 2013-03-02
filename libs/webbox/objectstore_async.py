@@ -186,6 +186,60 @@ class ObjectStoreAsync:
 
         return ids
 
+
+    def diff(self, from_version, to_version, return_objs):
+        """ Return the differences between two versions of the database.
+
+            from_version -- The earliest version to check from
+            to_version -- The most recent version to check up to
+            return_objs -- (boolean) If true, full objects will be returned, otherwise a list of IDs will be returned
+        """
+
+        # TODO FIXME XXX lock the table(s) as appropriate inside a transaction (PL/pgspl?) here
+        result_d = Deferred()
+
+        def objs_cb(rows):
+            # callback used if we queried for full objects
+            logging.debug("diff objs_cb: rows={0}".format(rows))
+            obj_out = self.rows_to_json(rows)
+
+            def ver_cb(rows):
+                logging.debug("diff ver_cb: "+str(rows))
+                if rows is None or len(rows) < 1:
+                    version = 0
+                else:
+                    version = rows[0][0]
+                obj_out["@version"] = version
+                result_d.callback({"data": obj_out})
+                return
+
+            # grab the latest version number also
+            d = self.conn.runQuery("SELECT latest_version FROM wb_v_latest_version", [])
+            d.addCallback(ver_cb)
+            return
+
+        def ids_cb(rows):
+            # callback used if we queried for the ids of changed objects only
+            logging.debug("diff ids_cb: rows={0}".format(rows))
+            id_list = []
+            for row in rows:
+                logging.debug("row: {0}".format(row))
+                id_list.append(row[0])
+            result_d.callback({"data": id_list})
+            return
+
+        if return_objs:
+            query = "SELECT version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples WHERE subject = ANY(SELECT wb_diff(2, 4))" # order is implicit, defined by the view, so no need to override it here
+            d = self.conn.runQuery(query, [from_version, to_version])
+            d.addCallback(lambda rows: objs_cb(rows))
+        else:
+            query = "SELECT wb_diff(%s, %s)"
+            d = self.conn.runQuery(query, [from_version, to_version])
+            d.addCallback(lambda rows: ids_cb(rows))
+
+        return result_d
+        
+
     def delete(self, id_list, specified_prev_version):
         """ Create a new version of the database, excluding those objects in the id list.
 

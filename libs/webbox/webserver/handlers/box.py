@@ -22,16 +22,42 @@ from webbox.objectstore_async import IncorrectPreviousVersionException
 
 class BoxHandler(BaseHandler):
     base_path = ''
+
     def options(self, request):
         self.return_ok(request)
 
-    def get_object_ids(self, request):
-        """ Get a list of object IDs in this box. """
+    def diff(self, request):
+        """ Return the objects (or ids of objects) that have changes between two versions of the objectstore.
+        """
         token = self.get_token(request)
         if not token:
             return self.return_forbidden(request)
 
-#        store = token.store
+        try:
+            from_version = request.args['from_version'][0]
+            to_version = request.args['to_version'][0]
+        except Exception as e:
+            logging.error("Exception in box.diff getting argument: {0}".format(e))
+            return self.return_bad_request(request, "Specify the following arguments in query string: from_version, to_version.")
+
+        # return IDs of changed object, or return full objects
+        return_objs = False
+        if "return_objs" in request.args:
+            return_objs = True
+
+        try:
+            logging.debug("calling diff on store")
+            token.store.diff(from_version, to_version, return_objs).addCallback(lambda results: self.return_ok(request, results))
+        except Exception as e:
+            return self.return_internal_error(request)
+
+
+    def get_object_ids(self, request):
+        """ Get a list of object IDs in this box.
+        """
+        token = self.get_token(request)
+        if not token:
+            return self.return_forbidden(request)
 
         try:
             logging.debug("calling get_object_ids on store")
@@ -40,12 +66,11 @@ class BoxHandler(BaseHandler):
             return self.return_internal_error(request)
 
     def query(self, request):
-        """ Perform a query against the box, and return matching objects. """
+        """ Perform a query against the box, and return matching objects.
+        """
         token = self.get_token(request)
         if not token:
             return self.return_forbidden(request)
-
-#        store = token.store
 
         try:
             q = json.loads(request.args['q'][0])
@@ -174,6 +199,15 @@ BoxHandler.subhandlers = [
         'require_auth': False,
         'require_token': True,
         'handler': BoxHandler.get_object_ids,
+        'accept':['application/json'],
+        'content-type':'application/json'
+        },
+    {
+        "prefix": "diff",
+        'methods': ['GET'],
+        'require_auth': False,
+        'require_token': True,
+        'handler': BoxHandler.diff,
         'accept':['application/json'],
         'content-type':'application/json'
         },
