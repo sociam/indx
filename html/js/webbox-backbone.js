@@ -1,6 +1,20 @@
 /*global $,_,document,window,console,escape,Backbone,exports */
 /*jslint vars:true, todo:true */
 /*
+
+  WebBox.js is the JS Client SDK for WebBox WebBox
+  which builds upon Backbone's Model architecture.
+
+  CURRENT TODOs:
+  	- update only supports updating the entire box
+    - Box.fetch() retrieves _entire box contents_
+	  ... which is a really bad idea.
+
+  @prerequisites:
+	jquery 1.8.0 or higher
+	backbone.js 0.9.2 or higher
+	underscore.js 1.4.2 or higher
+
   This file is part of WebBox.
   Copyright 2012 Max Van Kleek, Daniel Alexander Smith
   Copyright 2012 University of Southampton
@@ -17,15 +31,6 @@
 
   You should have received a copy of the GNU General Public License
   along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
-*/
-/*
-  WebBox.js is the JS Client SDK for WebBox WebBox
-  which builds upon Backbone's Model architecture.
-
-  @prerequisites:
-	jquery 1.8.0 or higher
-	backbone.js 0.9.2 or higher
-	underscore.js 1.4.2 or higher
 */
 
 (function(){
@@ -115,12 +120,6 @@
 		idAttribute: "@id", // the URI attribute is '@id' in JSON-LD
 		initialize:function(attrs, options) {
 			this.box = options.box;
-		},		
-		sync: function(method, model, options){
-			u.error('object sync methods individually not implemented yet - use box methods'); // TODO
-			var d = new $.Deferred();
-			d.resolve();
-			return d.promise();
 		},
 		_value_to_array:function(k,v) {
 			if (k === '@id') { return v; }
@@ -148,7 +147,18 @@
 				k = this._all_values_to_arrays(k);
 			}
 			return Backbone.Model.prototype.set.apply(this,[k,v,options]);
-		}
+		},
+		_delete:function() {
+			return this.box._delete_models([this]);
+		},
+		sync: function(method, model, options){
+			switch(method){
+			case "create": return u.warn('obj.create() : not implemented yet'); // TODO
+			case "read"  : return model._fetch(); 
+			case "update": return u.warn('obj.update() : not implemented yet'); // TODO
+			case "delete": return this._delete(); 
+			}
+		}		
 	});
 
 
@@ -255,7 +265,12 @@
 			return d.promise();
 		},
 		_create_box:function() {
-			// TODO 
+			// TODO next 
+		},
+		_delete_models:function(models) {
+			var version = this.get('version') || 0; 
+			var m_ids = models.map(function(x) { return x.id; });
+			return this.ajax('DELETE', this.id+'/', { version:version, data: JSON.stringify(m_ids) });
 		},
 		sync: function(method, model, options){
 			switch(method)
@@ -269,6 +284,7 @@
 	});
 	
 	var BoxCollection = Backbone.Collection.extend({ model: Box });
+	
 	var Store = WebBox.Store = Backbone.Model.extend({
 		defaults: {
 			server_url: "http://"+DEFAULT_HOST,
