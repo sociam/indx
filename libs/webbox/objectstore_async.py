@@ -478,98 +478,98 @@ class IncorrectPreviousVersionException(BaseException):
     pass
 
 
-from rdflib import Graph, Literal
+# from rdflib import Graph, Literal
 
-class RDFObjectStore:
-    """ Uses the query store interface (e.g. as a drop-in replacement for fourstore).
-        but asserts/reads data from the objectstore.
-    """
+# class RDFObjectStore:
+#     """ Uses the query store interface (e.g. as a drop-in replacement for fourstore).
+#         but asserts/reads data from the objectstore.
+#     """
 
-    def __init__(self, objectstore):
-        self.objectstore = objectstore
+#     def __init__(self, objectstore):
+#         self.objectstore = objectstore
 
-        # mime type to rdflib formats
-        self.rdf_formats = {
-            "application/rdf+xml": "xml",
-            "application/n3": "n3",
-            "text/turtle": "n3", # no turtle-specific parser in rdflib ATM, using N3 one because N3 is a superset of turtle
-            "text/plain": "nt",
-            "application/json": "json-ld",
-            "text/json": "json-ld",
-        }
+#         # mime type to rdflib formats
+#         self.rdf_formats = {
+#             "application/rdf+xml": "xml",
+#             "application/n3": "n3",
+#             "text/turtle": "n3", # no turtle-specific parser in rdflib ATM, using N3 one because N3 is a superset of turtle
+#             "text/plain": "nt",
+#             "application/json": "json-ld",
+#             "text/json": "json-ld",
+#         }
 
-    def put_rdf(self, rdf, content_type):
-        """ Public method to PUT RDF into the store - where PUT replaces. """
+#     def put_rdf(self, rdf, content_type):
+#         """ Public method to PUT RDF into the store - where PUT replaces. """
 
-        version = 0 # FIXME XXX
-        objs = self.rdf_to_objs(rdf, content_type)
-        self.objectstore.add(objs, version)
+#         version = 0 # FIXME XXX
+#         objs = self.rdf_to_objs(rdf, content_type)
+#         self.objectstore.add(objs, version)
 
-        return {"data": "", "status": 200, "reason": "OK"} 
+#         return {"data": "", "status": 200, "reason": "OK"} 
         
 
 
-    def rdf_to_objs(self, rdf, content_type):
-        """ Convert rdf string of a content_type to an array of objects in JSON-LD expanded format as used in objectstore. """
+#     def rdf_to_objs(self, rdf, content_type):
+#         """ Convert rdf string of a content_type to an array of objects in JSON-LD expanded format as used in objectstore. """
 
-        rdf_type = self.rdf_formats[content_type]
-        rdfgraph = Graph()
-        rdfgraph.parse(data=rdf, format=rdf_type) # format = xml, n3 etc
+#         rdf_type = self.rdf_formats[content_type]
+#         rdfgraph = Graph()
+#         rdfgraph.parse(data=rdf, format=rdf_type) # format = xml, n3 etc
 
-        all_obj = {}
-        for (s, p, o) in rdfgraph:
-            subject = unicode(s)
-            predicate = unicode(p)
+#         all_obj = {}
+#         for (s, p, o) in rdfgraph:
+#             subject = unicode(s)
+#             predicate = unicode(p)
 
-            if subject not in all_obj:
-                all_obj[subject] = {}
-            if predicate not in all_obj[subject]:
-                all_obj[subject][predicate] = []
+#             if subject not in all_obj:
+#                 all_obj[subject] = {}
+#             if predicate not in all_obj[subject]:
+#                 all_obj[subject][predicate] = []
 
-            object_value = unicode(o)
-            object = {}
+#             object_value = unicode(o)
+#             object = {}
 
-            if type(o) is type(Literal("")):
-                typekey = "@value"
+#             if type(o) is type(Literal("")):
+#                 typekey = "@value"
 
-                if o.language is not None:
-                    object["@language"] = o.language
-                if o.datatype is not None:
-                    object["@type"] = o.datatype
-            else:
-                typekey = "@id"
+#                 if o.language is not None:
+#                     object["@language"] = o.language
+#                 if o.datatype is not None:
+#                     object["@type"] = o.datatype
+#             else:
+#                 typekey = "@id"
             
-            object[typekey] = object_value
+#             object[typekey] = object_value
 
 
-            all_obj[subject][predicate].append(object)
+#             all_obj[subject][predicate].append(object)
        
-        objs = []
-        for subject in all_obj:
-            obj = all_obj[subject]
-            obj["@id"] = subject
-            objs.append(obj)
+#         objs = []
+#         for subject in all_obj:
+#             obj = all_obj[subject]
+#             obj["@id"] = subject
+#             objs.append(obj)
 
-        return objs
+#         return objs
 
 
-    def post_rdf(self, rdf, content_type):
-        """ Public method to POST RDF into the store - where POST appends. """
+#     def post_rdf(self, rdf, content_type):
+#         """ Public method to POST RDF into the store - where POST appends. """
 
-        latest = self.objectstore.get_latest()
-        version = latest["@version"] # FIXME ok?
+#         latest = self.objectstore.get_latest()
+#         version = latest["@version"] # FIXME ok?
 
-        objs = self.rdf_to_objs(rdf, content_type)
+#         objs = self.rdf_to_objs(rdf, content_type)
 
-        # include existing objs
-        for key in latest:
-            if key[0] != "@":
-                obj = latest[key]
-                obj["@id"] = key
-                objs.append(obj)
+#         # include existing objs
+#         for key in latest:
+#             if key[0] != "@":
+#                 obj = latest[key]
+#                 obj["@id"] = key
+#                 objs.append(obj)
 
-        self.objectstore.add(objs, version)
+#         self.objectstore.add(objs, version)
 
-        return {"data": "", "status": 200, "reason": "OK"} 
+#         return {"data": "", "status": 200, "reason": "OK"} 
 
 
