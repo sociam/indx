@@ -235,6 +235,7 @@ class WebBoxTests:
         """ Test to delete objects from a box.
         
             'query' argument should be a JSON string of an array of object IDs.
+            e.g., query="['id1','id2','id3']"
         """
         self.check_args(['server','box','query','version'])
         self.auth()
@@ -270,7 +271,11 @@ class WebBoxTests:
         
     
     def query(self):
-        """ Query this box. """
+        """ 
+           Query this box.
+             e.g., query="{ '@id': 2983 }"
+             or query="{ 'firstname': 'dan' }"           
+        """
         self.check_args(['server', 'box', 'query'])
         self.auth()
         self.get_token()

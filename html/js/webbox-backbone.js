@@ -205,23 +205,23 @@
 			this.ajax("GET", box).then(function(data){
 				console.log(' data ', typeof data, data);
 				var graph_collection = this_.objs();
-				var version = 0;
-				var objdata = JSON.parse(data.data);					
+				var version = null;
+				var objdata = data.data; 
 				$.each(objdata, function(uri, obj){
-					// top level keys
+					// top level keys - corresponding to box level properties
 					if (uri === "@version") { version = obj; }
-					if (uri[0] === "@") { return; } // ignore "@id" etc					
+					if (uri[0] === "@") { return; } // ignore "@id" etc
 					// not one of those, so must be a
 					// < uri > : { prop1 .. prop2 ... }
 					var obj_model = this_.get_or_create(uri);
 					$.each(obj, function(key, vals){
+						if (key.indexOf('@') === 0) { return; } // ignore "@id" etc
 						var obj_vals = vals.map(function(val) {
 							// it's an object, so return that
 							if (val.hasOwnProperty("@id")) { return this_.get_or_create(val["@id"]); }
 							// it's a non-object
-							if (val.hasOwnProperty("@value")) {
-								return deserialize_literal(val);
-							}
+							if (val.hasOwnProperty("@value")) {	return deserialize_literal(val); }
+							// don't know what it is!
 							u.assert(false, "cannot unpack value ", val);
 						});
 						obj_model.set(key,obj_vals,{silent:true});
