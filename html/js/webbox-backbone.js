@@ -187,11 +187,10 @@
 			return d.promise();			
 		},
 		toString:function() {
-			if (this.get('name')) { return (NAMEPREFIX ? 'box:' : '') + this.get('name'); }
-			return (NAMEPREFIX ? 'box:' : '') + this.id;
-		},
+			return this.id || this.cid;
+		},	
 		ajax:function(method, path, data) {
-			data = _(_(data||{}).clone()).extend({box: this.id, token:this.get('token')});
+			data = _(_(data||{}).clone()).extend({box: this.id || this.cid, token:this.get('token')});
 			return this.store.ajax(method, path, data);
 		},
 		query: function(q){
@@ -210,7 +209,7 @@
 			return this.objs().get(uri) || this._create(uri);
 		},
 		_fetch:function() {
-			var box = this.id, d = u.deferred(), this_ = this;
+			var box = this.id || this.cid, d = u.deferred(), this_ = this;
 			// return a list of models (each of type WebBox.Object) to populate a GraphCollection
 			this.ajax("GET", box).then(function(data){
 				console.log(' data ', typeof data, data);
@@ -219,7 +218,11 @@
 				var objdata = data.data; 
 				$.each(objdata, function(uri, obj){
 					// top level keys - corresponding to box level properties
-					if (uri === "@version") { version = obj; }
+					if (uri === '@id') {
+						console.log('box id ', obj); 
+						return this_.set('@id', obj);
+					}
+					if (uri === "@version") { version = obj; return; }
 					if (uri[0] === "@") { return; } // ignore "@id" etc
 					// not one of those, so must be a
 					// < uri > : { prop1 .. prop2 ... }
@@ -265,7 +268,13 @@
 			return d.promise();
 		},
 		_create_box:function() {
-			// TODO next 
+			var d = u.deferred();
+			var this_ = this;
+			this.store.ajax('POST', 'admin/create_box', { name: this.id || this.cid } )
+				.then(function() {
+					this_.fetch().then(function() { d.resolve(); }).fail(function(err) { d.reject(err); });
+				}).fail(function(err) { d.reject(err); });
+			return d.promise();
 		},
 		_delete_models:function(models) {
 			var version = this.get('version') || 0; 
@@ -273,9 +282,10 @@
 			return this.ajax('DELETE', this.id+'/', { version:version, data: JSON.stringify(m_ids) });
 		},
 		sync: function(method, model, options){
+			console.log('method ', method, model.id);
 			switch(method)
 			{
-			case "create": return u.warn('box.update() : not implemented yet');
+			case "create": return model._create_box();
 			case "read": return model._check_token_and_fetch(); 
 			case "update": return model._update(); 
 			case "delete": return u.warn('box.delete() : not implemented yet');
@@ -283,8 +293,12 @@
 		}
 	});
 	
-	var BoxCollection = Backbone.Collection.extend({ model: Box });
+
+	var BoxCollection = Backbone.Collection.extend({
+		model: Box
+	});
 	
+
 	var Store = WebBox.Store = Backbone.Model.extend({
 		defaults: {
 			server_url: "http://"+DEFAULT_HOST,
@@ -320,6 +334,10 @@
 			this.toolbar.render();
 		},
 		boxes:function() { return this.attributes.boxes;  },
+		get_or_create_box:function(boxid) {
+			var boxes = this.boxes();
+			return boxes.get(boxid) || this._create(boxid);
+		},
 		checkLogin:function() { return this.ajax('GET', 'auth/whoami'); },
 		getInfo:function() { return this.ajax('GET', 'admin/info');},
 		login : function(username,password) {
@@ -337,18 +355,12 @@
 				.then(function(l) { this_.trigger('logout'); d.resolve(l); })
 				.fail(function(l) { d.reject(l); });
 			return d.promise();			
-		},		
-		create_box:function(boxid) {
-			// actually creates the box above
-			var d = u.deferred();
-			var this_ = this;
-			this.ajax('POST', 'admin/create_box', { name: boxid })
-				.then(function() {
-					this_.boxes().fetch()
-						.then(function(box) { d.resolve(box); })
-						.fail(function(err) { d.reject(err); });
-				}).fail(function(err) { d.reject(); });
-			return d.promise();
+		},
+		_create:function(boxid) {
+			var b = new Box({}, {store: this});
+			b.cid = boxid;
+			this.boxes().add(b);
+			return b;
 		},
 		_fetch:function() {
 			// fetches list of boxes
@@ -356,9 +368,7 @@
 			this.ajax('GET','admin/list_boxes')
 				.success(function(data) {
 					var boxes =	data.list
-						.map(function(boxid) {
-							return this_.get(boxid) || new Box({'@id': boxid}, {store: this_});
-						});
+						.map(function(boxid) { return this_.get_or_create_box(boxid); });
 					this_.boxes().reset(boxes);
 					d.resolve(boxes);
 				})
@@ -367,12 +377,12 @@
 		},
 		sync: function(method, model, options){
 			switch(method){
-			case "create": return u.warn('store.update() : not implemented yet'); // TODO
+			case "create": return u.error('store.create() : cannot create a store'); // TODO
 			case "read"  : return model._fetch(); 
-			case "update": return u.warn('store.update() : not implemented yet'); // TODO
-			case "delete": return u.warn('store.delete() : not implemented yet'); // tODO
+			case "update": return u.error('store.update() : cannot update a store'); // TODO
+			case "delete": return u.error('store.delete() : cannot delete a store'); // tODO
 			}
-		}			
+		}
 	});
 
 	var dependencies = [

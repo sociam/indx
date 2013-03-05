@@ -60,7 +60,9 @@ else { WebBox = root.WebBox; }
 				var boxes = store.boxes();
 				boxlist_el.children().remove();
 				boxlist.map(function(box) {
-					boxlist_el.append(_('<li><a data-id="<%= id %>" href="#"><%= name %></a></li>').template({id:box.id,name:box.toString()}));
+					boxlist_el.append(_('<li><a data-id="<%= id %>" href="#"><%= name %></a></li>').template({
+						id:box.toString(),name:box.toString()
+					}));
 				});
 				this_.render();				
 			});
@@ -69,7 +71,7 @@ else { WebBox = root.WebBox; }
 			var store = this.options.store, this_ = this;
 			var box = store.boxes().get(bid);
 			u.assert(box, 'internal error - box is not defined ' + bid);
-			this.trigger('change:selected-box', bid);			
+			this.trigger('change:selected-box', bid);
 			this.$el.find('.selected-box').html(box === undefined ? ' no box selected ' : box.toString());
 			this.selected_box = box;
 		},
