@@ -61,24 +61,24 @@ class BaseHandler(Resource):
         path_fields = request.path.split("/")
         sub_path = '/'.join(path_fields[2:]) if len(path_fields) >= 3 else ''
 
-        logging.debug('sub_path {0} {1}'.format(sub_path, subhandler['prefix']))
+        #logging.debug('sub_path {0} {1}'.format(sub_path, subhandler['prefix']))
 
         # if the subhandler supports content negotiation, then determine the best one
         assert subhandler['accept'], 'No accept clause in subhandler %s ' % subhandler['prefix']
 
         if not (subhandler["prefix"] == sub_path or subhandler["prefix"] == '*'):
             # logging.debug("__PREFIX mismatch " + sub_path + "  "  + subhandler["prefix"])
-            logging.debug('prefix mismatch')
+            #logging.debug('prefix mismatch')
             return False
         if self._get_best_content_type_match_score(request,subhandler) <= 0:
             # logging.debug("__NOT content type match " + self._get_best_content_type_match_score(request,subhandler))
-            logging.debug('content type mismatch ')
+            #logging.debug('content type mismatch ')
             return False
         if not request.method in subhandler["methods"]:
             # logging.debug("__NOT in subhandler " + request.method)
-            logging.debug('method type mismatch ' + request.method + ' ' + repr(subhandler["methods"]))            
+            #logging.debug('method type mismatch ' + request.method + ' ' + repr(subhandler["methods"]))            
             return False
-        logging.debug("MATCH path: {0}, method: {1}".format(sub_path, request.method))
+        logging.debug("Handler match where path={0} and method={1}".format(sub_path, request.method))
         return True
 
     def _get_best_content_type_match_score(self,request,subhandler):

@@ -16,7 +16,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging, psycopg2, os, types
+import logging, types
 from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
 from webbox.objectstore_query import ObjectStoreQuery
@@ -72,6 +72,8 @@ class ObjectStoreAsync:
             (version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype) = row
 
             if "@version" not in obj_out:
+                if version is None:
+                    version = 0
                 obj_out["@version"] = version
 
             if subject not in obj_out:
@@ -135,16 +137,15 @@ class ObjectStoreAsync:
             obj_out = {"uris": uris, "@version": version}
             result_d.callback(obj_out)
 
-        def rows_cb(rows):
-            logging.debug("get_object_ids rows_cb: "+str(rows))
-            if rows is None or len(rows) < 1:
+        def ver_cb(version):
+            logging.debug("get_object_ids ver_cb: "+str(version))
+            if version == 0:
                 return result_d.callback({"@version": 0 })
-            version = rows[0][0]
             rowd = self.conn.runQuery("SELECT DISTINCT subject FROM wb_v_latest_triples", [])
-            rowd.addCallback(lambda rows2: row_cb(rows2,version))
+            rowd.addCallback(lambda rows2: row_cb(rows2, version))
 
-        d = self.conn.runQuery("SELECT latest_version FROM wb_v_latest_version", [])
-        d.addCallback(lambda rows: rows_cb(rows))
+        d = self._get_latest_ver()
+        d.addCallback(ver_cb)
 
         return result_d
 
@@ -157,20 +158,20 @@ class ObjectStoreAsync:
         def row_cb(rows, version):
             logging.debug("get_latest row_cb: version={0}, rows={1}".format(version, rows))
             obj_out = self.rows_to_json(rows)
+            if version is None:
+                version = 0
             obj_out["@version"] = version
             result_d.callback(obj_out)
+            return
 
-        def rows_cb(rows):
-            logging.debug("get_latest rows_cb: "+str(rows))
-            if rows is None or len(rows) < 1:
-                return result_d.callback({"@version": 0 })
-            version = rows[0][0]
+        def ver_cb(version):
+            logging.debug("get_latest ver_cb: "+str(version))
             rowd = self.conn.runQuery("SELECT version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples", []) # order is implicit, defined by the view, so no need to override it here
-            rowd.addCallback(lambda rows2: row_cb(rows2,version))
+            rowd.addCallback(lambda rows2: row_cb(rows2, version))
+            return
 
-        d = self.conn.runQuery("SELECT latest_version FROM wb_v_latest_version", [])
-        d.addCallback(lambda rows: rows_cb(rows))
-
+        d = self._get_latest_ver()
+        d.addCallback(ver_cb)
         return result_d
 
 
@@ -203,18 +204,14 @@ class ObjectStoreAsync:
             logging.debug("diff objs_cb: rows={0}".format(rows))
             obj_out = self.rows_to_json(rows)
 
-            def ver_cb(rows):
-                logging.debug("diff ver_cb: "+str(rows))
-                if rows is None or len(rows) < 1:
-                    version = 0
-                else:
-                    version = rows[0][0]
+            def ver_cb(version):
+                logging.debug("diff ver_cb: "+str(version))
                 obj_out["@version"] = version
                 result_d.callback({"data": obj_out})
                 return
 
             # grab the latest version number also
-            d = self.conn.runQuery("SELECT latest_version FROM wb_v_latest_version", [])
+            d = self._get_latest_ver()
             d.addCallback(ver_cb)
             return
 
@@ -229,7 +226,7 @@ class ObjectStoreAsync:
             return
 
         if return_objs:
-            query = "SELECT version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples WHERE subject = ANY(SELECT wb_diff(2, 4))" # order is implicit, defined by the view, so no need to override it here
+            query = "SELECT version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples WHERE subject = ANY(SELECT wb_diff(%s, %s))" # order is implicit, defined by the view, so no need to override it here
             d = self.conn.runQuery(query, [from_version, to_version])
             d.addCallback(lambda rows: objs_cb(rows))
         else:
@@ -272,6 +269,38 @@ class ObjectStoreAsync:
         return result_d
 
 
+    def _get_latest_ver(self):
+        """ Get the latest version of the database and return it to the deferred.
+        """
+
+        result_d = Deferred()
+        logging.debug("Objectstore _get_latest_ver")
+
+        def err_cb(failure):
+            logging.error("Objectstore _get_latest_ver err_cb, failure: " + str(failure))
+            result_d.errback(failure)
+            return
+
+        def ver_cb(row):
+            logging.debug("Objectstore _get_latest_ver ver_cb, row: " + str(row))
+
+            # check for no existing version, and set to 0
+            if row is None or len(row) < 1:
+                version = 0
+            else:
+                version = row[0][0]
+            if version is None:
+                version = 0
+
+            result_d.callback(version)
+            return
+
+        d = self.conn.runQuery("SELECT latest_version FROM wb_v_latest_version", [])
+        d.addCallbacks(ver_cb, err_cb)
+
+        return result_d
+
+
     def _check_ver(self, specified_prev_version):
         """ Find the current version, and check it matches the specified version.
             Returns a deferred, which receives either the current version if it matches the specified version,
@@ -290,16 +319,8 @@ class ObjectStoreAsync:
             result_d.errback(failure)
             return
         
-        def ver_cb(row):
-            logging.debug("Objectstore add ver_cb, row: " + str(row))
-
-            # check for no existing version, and set to 0
-            if row is None or len(row) < 1:
-                actual_prev_version = 0
-            else:
-                actual_prev_version = row[0][0]
-            if actual_prev_version is None:
-                actual_prev_version = 0
+        def ver_cb(actual_prev_version):
+            logging.debug("Objectstore _check_ver ver_cb, version: " + str(actual_prev_version))
 
             # check user specified the current version
             if actual_prev_version != specified_prev_version:
@@ -314,7 +335,7 @@ class ObjectStoreAsync:
                 result_d.callback(actual_prev_version)
                 return
 
-        d = self.conn.runQuery("SELECT latest_version FROM wb_v_latest_version", [])
+        d = self._get_latest_ver()
         d.addCallbacks(ver_cb, err_cb)
         return result_d
 
@@ -342,7 +363,7 @@ class ObjectStoreAsync:
             return
 
         def ver_cb(row):
-            logging.debug("Objectstore add ver_cb, row: " + str(row))
+            logging.debug("Objectstore _clone ver_cb, row: " + str(row))
 
             parameters = [specified_prev_version, specified_prev_version + 1, id_user]
             # excludes these object IDs when it clones the previous version
@@ -354,6 +375,8 @@ class ObjectStoreAsync:
                     query += ", "
                 query += "%s"
             query += ")"
+
+            logging.debug("Objectstore _clone, query: {0} params: {1}".format(query, parameters))
 
             d = self.conn.runQuery(query, parameters)
             d.addCallbacks(cloned_cb, err_cb) # worked or errored
