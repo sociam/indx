@@ -226,7 +226,7 @@ class ObjectStoreAsync:
             return
 
         if return_objs:
-            query = "SELECT version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples WHERE subject = ANY(SELECT wb_diff(2, 4))" # order is implicit, defined by the view, so no need to override it here
+            query = "SELECT version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples WHERE subject = ANY(SELECT wb_diff(%s, %s))" # order is implicit, defined by the view, so no need to override it here
             d = self.conn.runQuery(query, [from_version, to_version])
             d.addCallback(lambda rows: objs_cb(rows))
         else:
@@ -363,7 +363,7 @@ class ObjectStoreAsync:
             return
 
         def ver_cb(row):
-            logging.debug("Objectstore add ver_cb, row: " + str(row))
+            logging.debug("Objectstore _clone ver_cb, row: " + str(row))
 
             parameters = [specified_prev_version, specified_prev_version + 1, id_user]
             # excludes these object IDs when it clones the previous version
@@ -375,6 +375,8 @@ class ObjectStoreAsync:
                     query += ", "
                 query += "%s"
             query += ")"
+
+            logging.debug("Objectstore _clone, query: {0} params: {1}".format(query, parameters))
 
             d = self.conn.runQuery(query, parameters)
             d.addCallbacks(cloned_cb, err_cb) # worked or errored
