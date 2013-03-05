@@ -173,8 +173,8 @@
 			this.set({objs: new ObjCollection()});
 		},
 		objs:function() { return this.attributes.objs; },
-		_create: function(id){
-			var model = new Obj({"@id":id}, {box:this});
+		_create: function(obj_id){
+			var model = new Obj({"@id":obj_id}, {box:this});
 			this.objs().add(model);
 			return model;
 		},		                                             
@@ -186,7 +186,7 @@
 				.fail(function(err) { u.error(' error fetching ', this_.id, err); d.reject(err); });
 			return d.promise();			
 		},
-		toString:function() {
+		getId:function() {
 			return this.id || this.cid;
 		},	
 		ajax:function(method, path, data) {
@@ -209,17 +209,16 @@
 			return this.objs().get(uri) || this._create(uri);
 		},
 		_fetch:function() {
-			var box = this.id || this.cid, d = u.deferred(), this_ = this;
+			var box = this.getId(), d = u.deferred(), this_ = this;
 			// return a list of models (each of type WebBox.Object) to populate a GraphCollection
 			this.ajax("GET", box).then(function(data){
-				console.log(' data ', typeof data, data);
 				var graph_collection = this_.objs();
 				var version = null;
 				var objdata = data.data; 
 				$.each(objdata, function(uri, obj){
 					// top level keys - corresponding to box level properties
 					if (uri === '@id') {
-						console.log('box id ', obj); 
+						console.log('box        setting id -------------->  ', obj); 
 						return this_.set('@id', obj);
 					}
 					if (uri === "@version") { version = obj; return; }
@@ -270,7 +269,7 @@
 		_create_box:function() {
 			var d = u.deferred();
 			var this_ = this;
-			this.store.ajax('POST', 'admin/create_box', { name: this.id || this.cid } )
+			this.store.ajax('POST', 'admin/create_box', { name: this.getId() } )
 				.then(function() {
 					this_.fetch().then(function() { d.resolve(); }).fail(function(err) { d.reject(err); });
 				}).fail(function(err) { d.reject(err); });
@@ -293,12 +292,8 @@
 		}
 	});
 	
-
-	var BoxCollection = Backbone.Collection.extend({
-		model: Box
-	});
+	var BoxCollection = Backbone.Collection.extend({ model: Box });
 	
-
 	var Store = WebBox.Store = Backbone.Model.extend({
 		defaults: {
 			server_url: "http://"+DEFAULT_HOST,
@@ -311,7 +306,7 @@
 		},
 		initialize: function(attributes, options){
 			console.log(" server ", this.get('server_url'));
-			this.set({boxes : new BoxCollection(undefined, {store: this})});
+			this.set({boxes : new BoxCollection([], {store: this})});
 			// load and launch the toolbar
 			if (this.get('toolbar')) { this._load_toolbar(); }
 		},
@@ -333,7 +328,9 @@
 			this.toolbar = new WebBox.Toolbar({el: el, store: this});
 			this.toolbar.render();
 		},
-		boxes:function() { return this.attributes.boxes;  },
+		boxes:function() {
+			return this.attributes.boxes;
+		},
 		get_or_create_box:function(boxid) {
 			var boxes = this.boxes();
 			return boxes.get(boxid) || this._create(boxid);
@@ -367,8 +364,7 @@
 			var this_ = this, d = u.deferred();			
 			this.ajax('GET','admin/list_boxes')
 				.success(function(data) {
-					var boxes =	data.list
-						.map(function(boxid) { return this_.get_or_create_box(boxid); });
+					var boxes =	data.list.map(function(boxid) { return this_.get_or_create_box(boxid); });
 					this_.boxes().reset(boxes);
 					d.resolve(boxes);
 				})
