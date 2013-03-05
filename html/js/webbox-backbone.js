@@ -49,6 +49,7 @@
 	// default is that we're loading from an _app_ hosted within
 	// webbox. 
 	var DEFAULT_HOST = document.location.host;
+	
 	var serialize_obj = function(obj) {
 		var uri = obj.id;
 		var out_obj = {};
@@ -105,22 +106,20 @@
 	// MAP OF THIS MODUULE :::::::::::::: -----
 	// 
 	// An Obj is a single instance, thing in WebBox.
-	// Graph contains an attribute called 'objects'
-	// ... which is a collection of Obj objects
 	// 
-	// A Box is a model that has an attribute called 'graphs'.
+	// A Box is a model that has an attribute called 'Objs'.
 	// ...  which is a Backbone.Collection of Graph objects.
 	// 
 	// A _Store_ represents a single WebBox server, which has an
 	//	 attribute called 'boxes' - 
 	// ... which is a collection of Box objects
 
-	// OBJ =================================================
 	var Obj = WebBox.Obj = Backbone.Model.extend({
 		idAttribute: "@id", // the URI attribute is '@id' in JSON-LD
 		initialize:function(attrs, options) {
 			this.box = options.box;
 		},
+		get_id:function() { return this.id;	},			
 		_value_to_array:function(k,v) {
 			if (k === '@id') { return v; }
 			if (!_(v).isUndefined() && !_(v).isArray()) {
@@ -173,32 +172,28 @@
 			this.set({objs: new ObjCollection()});
 		},
 		objs:function() { return this.attributes.objs; },
-		_create: function(id){
-			var model = new Obj({"@id":id}, {box:this});
+		_create: function(obj_id){
+			var model = new Obj({"@id":obj_id}, {box:this});
 			this.objs().add(model);
 			return model;
 		},		                                             
 		_set_token:function(token) { this.set("token", token);	},
 		get_token:function() {
 			var this_ = this, d = u.deferred();
-			this.ajax('POST', 'auth/get_token', { app: this.store.get('app') })
+			this._ajax('POST', 'auth/get_token', { app: this.store.get('app') })
 				.then(function(data) { this_._set_token( data.token ); d.resolve(this_); })
 				.fail(function(err) { u.error(' error fetching ', this_.id, err); d.reject(err); });
 			return d.promise();			
 		},
-		toString:function() {
-			if (this.get('name')) { return (NAMEPREFIX ? 'box:' : '') + this.get('name'); }
-			return (NAMEPREFIX ? 'box:' : '') + this.id;
-		},
-		ajax:function(method, path, data) {
-			data = _(_(data||{}).clone()).extend({box: this.id, token:this.get('token')});
-			return this.store.ajax(method, path, data);
+		get_id:function() { return this.id || this.cid;	},	
+		_ajax:function(method, path, data) {
+			data = _(_(data||{}).clone()).extend({box: this.id || this.cid, token:this.get('token')});
+			return this.store._ajax(method, path, data);
 		},
 		query: function(q){
+			// @TODO ::::::::::::::::::::::::::
 			var d = u.deferred();
-			// TODO everywhere
-			// return a list of models (each of type ObjectStore.Object) to populate a GraphCollection
-			this.ajax(this, "/query", "GET", {"q": JSON.stringify(q)})
+			this._ajax(this, "/query", "GET", {"q": JSON.stringify(q)})
 				.then(function(data){
 					console.debug("query results:",data);
 				}).fail(function(data) {
@@ -206,37 +201,35 @@
 				});
 			return d.promise();
 		},
-		get_or_create:function(uri) {
-			return this.objs().get(uri) || this._create(uri);
-		},
+		get_or_create_obj:function(objid) { return this.get_obj(objid) || this._create(objid); },
+		get_obj:function(objid) { return this.objs().get(objid);	},
 		_fetch:function() {
-			var box = this.id, d = u.deferred(), this_ = this;
+			var box = this.get_id(), d = u.deferred(), this_ = this;
 			// return a list of models (each of type WebBox.Object) to populate a GraphCollection
-			this.ajax("GET", box).then(function(data){
-				console.log(' data ', typeof data, data);
+			this._ajax("GET", box).then(function(data){
 				var graph_collection = this_.objs();
 				var version = null;
 				var objdata = data.data; 
 				$.each(objdata, function(uri, obj){
 					// top level keys - corresponding to box level properties
-					if (uri === "@version") { version = obj; }
+					if (this_.id !== this_.get_id()) { return this_.set('@id', this_.get_id()); }
+					if (uri === "@version") { version = obj; return; }
 					if (uri[0] === "@") { return; } // ignore "@id" etc
 					// not one of those, so must be a
 					// < uri > : { prop1 .. prop2 ... }
-					var obj_model = this_.get_or_create(uri);
+					var obj_model = this_.get_or_create_obj(uri);
 					$.each(obj, function(key, vals){
 						if (key.indexOf('@') === 0) { return; } // ignore "@id" etc
 						var obj_vals = vals.map(function(val) {
 							// it's an object, so return that
-							if (val.hasOwnProperty("@id")) { return this_.get_or_create(val["@id"]); }
+							if (val.hasOwnProperty("@id")) { return this_.get_or_create_obj(val["@id"]); }
 							// it's a non-object
 							if (val.hasOwnProperty("@value")) {	return deserialize_literal(val); }
 							// don't know what it is!
 							u.assert(false, "cannot unpack value ", val);
 						});
-						obj_model.set(key,obj_vals,{silent:true});
+						obj_model.set(key,obj_vals);
 					});
-					obj_model.change();
 				});
 				this_.set('version', version);
 				d.resolve(this_);
@@ -257,7 +250,7 @@
 		_update:function() {
 			var d = u.deferred(), version = this.get('version') || 0, this_ = this,
 			objs = this.objs().map(function(obj){ return serialize_obj(obj); });
-			this.ajax("PUT",  this.id + "/update", { version: escape(version), data : JSON.stringify(objs)  })
+			this._ajax("PUT",  this.id + "/update", { version: escape(version), data : JSON.stringify(objs)  })
 				.then(function(response) {
 					this_.set('version', response.data["@version"]);
 					d.resolve(this_);
@@ -265,22 +258,30 @@
 			return d.promise();
 		},
 		_create_box:function() {
-			// TODO next 
+			var d = u.deferred();
+			var this_ = this;
+			this.store._ajax('POST', 'admin/create_box', { name: this.get_id() } )
+				.then(function() {
+					this_.fetch().then(function() { d.resolve(); }).fail(function(err) { d.reject(err); });
+				}).fail(function(err) { d.reject(err); });
+			return d.promise();
 		},
 		_delete_models:function(models) {
 			var version = this.get('version') || 0; 
 			var m_ids = models.map(function(x) { return x.id; });
-			return this.ajax('DELETE', this.id+'/', { version:version, data: JSON.stringify(m_ids) });
+			return this._ajax('DELETE', this.id+'/', { version:version, data: JSON.stringify(m_ids) });
 		},
 		sync: function(method, model, options){
+			console.log('method ', method, model.id);
 			switch(method)
 			{
-			case "create": return u.warn('box.update() : not implemented yet');
+			case "create": return model._create_box();
 			case "read": return model._check_token_and_fetch(); 
 			case "update": return model._update(); 
 			case "delete": return u.warn('box.delete() : not implemented yet');
 			}
-		}
+		},
+		toString: function() { return 'box:' + this.get_id(); }		
 	});
 	
 	var BoxCollection = Backbone.Collection.extend({ model: Box });
@@ -297,18 +298,9 @@
 		},
 		initialize: function(attributes, options){
 			console.log(" server ", this.get('server_url'));
-			this.set({boxes : new BoxCollection(undefined, {store: this})});
+			this.set({boxes : new BoxCollection([], {store: this})});
 			// load and launch the toolbar
 			if (this.get('toolbar')) { this._load_toolbar(); }
-		},
-		ajax:function(method, path, data) {
-			var url = [this.get('server_url'), path].join('/');
-			u.log(' store ajax ', method, url);
-			var default_data = { app: this.get('app') };
-			var options = _(_(this.ajax_defaults).clone()).extend(
-				{ url: url, method : method, crossDomain: !this.is_same_domain(), data: _(default_data).extend(data) }
-			);
-			return $.ajax( options ); // returns a deferred		
 		},
 		is_same_domain:function() {
 			return this.get('server_url').indexOf(document.location.host) >= 0 &&
@@ -319,13 +311,15 @@
 			this.toolbar = new WebBox.Toolbar({el: el, store: this});
 			this.toolbar.render();
 		},
-		boxes:function() { return this.attributes.boxes;  },
-		checkLogin:function() { return this.ajax('GET', 'auth/whoami'); },
-		getInfo:function() { return this.ajax('GET', 'admin/info');},
+		boxes:function() {	return this.attributes.boxes;	},
+		get_box: function(boxid) {	return this.boxes().get(boxid);	},
+		get_or_create_box:function(boxid) { return this.boxes().get(boxid) || this._create(boxid);	},
+		checkLogin:function() { return this._ajax('GET', 'auth/whoami'); },
+		getInfo:function() { return this._ajax('GET', 'admin/info'); },
 		login : function(username,password) {
 			var d = u.deferred();
 			var this_ = this;
-			this.ajax('POST', 'auth/login', { username: username, password: password })
+			this._ajax('POST', 'auth/login', { username: username, password: password })
 				.then(function(l) { this_.trigger('login', username); d.resolve(l); })
 				.fail(function(l) { d.reject(l); });			
 			return d.promise();
@@ -333,46 +327,46 @@
 		logout : function() {
 			var d = u.deferred();
 			var this_ = this;
-			this.ajax('POST', 'auth/logout')
+			this._ajax('POST', 'auth/logout')
 				.then(function(l) { this_.trigger('logout'); d.resolve(l); })
 				.fail(function(l) { d.reject(l); });
 			return d.promise();			
-		},		
-		create_box:function(boxid) {
-			// actually creates the box above
-			var d = u.deferred();
-			var this_ = this;
-			this.ajax('POST', 'admin/create_box', { name: boxid })
-				.then(function() {
-					this_.boxes().fetch()
-						.then(function(box) { d.resolve(box); })
-						.fail(function(err) { d.reject(err); });
-				}).fail(function(err) { d.reject(); });
-			return d.promise();
+		},
+		_create:function(boxid) {
+			var b = new Box({}, {store: this});
+			b.cid = boxid;
+			this.boxes().add(b);
+			return b;
 		},
 		_fetch:function() {
 			// fetches list of boxes
 			var this_ = this, d = u.deferred();			
-			this.ajax('GET','admin/list_boxes')
+			this._ajax('GET','admin/list_boxes')
 				.success(function(data) {
-					var boxes =	data.list
-						.map(function(boxid) {
-							return this_.get(boxid) || new Box({'@id': boxid}, {store: this_});
-						});
+					var boxes =	data.list.map(function(boxid) { return this_.get_or_create_box(boxid); });
 					this_.boxes().reset(boxes);
 					d.resolve(boxes);
 				})
 				.error(function(e) { d.reject(e); });
 			return d.promise();
 		},
+		_ajax:function(method, path, data) {
+			var url = [this.get('server_url'), path].join('/');
+			u.log(' store ajax ', method, url);
+			var default_data = { app: this.get('app') };
+			var options = _(_(this.ajax_defaults).clone()).extend(
+				{ url: url, method : method, crossDomain: !this.is_same_domain(), data: _(default_data).extend(data) }
+			);
+			return $.ajax( options ); // returns a deferred		
+		},		
 		sync: function(method, model, options){
 			switch(method){
-			case "create": return u.warn('store.update() : not implemented yet'); // TODO
+			case "create": return u.error('store.create() : cannot create a store'); // TODO
 			case "read"  : return model._fetch(); 
-			case "update": return u.warn('store.update() : not implemented yet'); // TODO
-			case "delete": return u.warn('store.delete() : not implemented yet'); // tODO
+			case "update": return u.error('store.update() : cannot update a store'); // TODO
+			case "delete": return u.error('store.delete() : cannot delete a store'); // tODO
 			}
-		}			
+		}
 	});
 
 	var dependencies = [
