@@ -43,7 +43,7 @@ else { WebBox = root.WebBox; }
 			});			
 			$('body').append(this.$el).append(l_templ);			
 			$('#login_dialog .loginbtn').click(function() {
-				var u, p = $('#login_dialog .username_field').val(), $('#login_dialog .password_field').val();
+				var u = $('#login_dialog .username_field').val(), p = $('#login_dialog .password_field').val();
 				store.login(u,p).then(function() { this_._update_boxlist(store); });
 			});
 			$('#logout_dialog .logoutbtn').click(function() { store.logout(); });			
@@ -67,7 +67,7 @@ else { WebBox = root.WebBox; }
 			var box = store.boxes().get(bid);
 			u.assert(box, 'internal error - box is not defined ' + bid);
 			this.trigger('change:selected-box', bid);
-			this.$el.find('.selected-box').html(box === undefined ? ' no box selected ' : box.toString());
+			this.$el.find('.selected-box').html(box === undefined ? ' no box selected ' : box.getId());
 			this.selected_box = box;
 		},
 		_box_selected:function(d) {

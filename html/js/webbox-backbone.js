@@ -217,10 +217,7 @@
 				var objdata = data.data; 
 				$.each(objdata, function(uri, obj){
 					// top level keys - corresponding to box level properties
-					if (uri === '@id') {
-						console.log('box        setting id -------------->  ', obj); 
-						return this_.set('@id', obj);
-					}
+					if (this_.id !== this_.getId()) { return this_.set('@id', this_.getId()); }
 					if (uri === "@version") { version = obj; return; }
 					if (uri[0] === "@") { return; } // ignore "@id" etc
 					// not one of those, so must be a
@@ -236,9 +233,8 @@
 							// don't know what it is!
 							u.assert(false, "cannot unpack value ", val);
 						});
-						obj_model.set(key,obj_vals,{silent:true});
+						obj_model.set(key,obj_vals);
 					});
-					obj_model.change();
 				});
 				this_.set('version', version);
 				d.resolve(this_);
@@ -289,7 +285,10 @@
 			case "update": return model._update(); 
 			case "delete": return u.warn('box.delete() : not implemented yet');
 			}
-		}
+		},
+		toString: function() {
+			return 'box:' + this.getId()
+		}		
 	});
 	
 	var BoxCollection = Backbone.Collection.extend({ model: Box });
