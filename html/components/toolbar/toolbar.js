@@ -15,21 +15,22 @@ else { WebBox = root.WebBox; }
 			u.assert(this.options.store, "must pass in store");
 		},
 		first_render:function() {
-			var t_templ = templates.main.template, l_templ = templates.login.template;
-			console.log('t_templ ', t_templ);
-			var store = this.options.store, this_ = this;
+			var t_templ = templates.main.template, l_templ = templates.login.template, store = this.options.store, this_ = this;
 			this.$el.html(t_templ).addClass('toolbar navbar-fixed-top navbar');
+			// set up listeners from store
 			store.on('login', function(username) {
 				this_.username = username; this_.render();
 				this_.trigger('login', username);
-			});
-			store.on('logout', function(username) {
+			}).on('logout', function(username) {
 				this_.set_selected_box_id(); // clear selected box
 				delete this_.username; this_.render();
 				this_.trigger('logout');				
+			}).on('change:boxes', function() {
+				this_._update_boxlist();
+			}).on('change:selected-box', function(bid) {
+				this_.set_selected_box_id(bid);
 			});
-			store.on('change:boxes', function() { this_._update_boxlist(); });
-			store.on('change:selected-box', function(bid) { this_.set_selected_box_id(bid); });
+			// check to see if already logged in 
 			store.checkLogin().then(function(response) {
 				if (response.is_authenticated) {
 					this_.username = response.user;
@@ -39,19 +40,13 @@ else { WebBox = root.WebBox; }
 					this_.trigger('logout');
 				}
 				this_._update_boxlist();
-			});
-			$('body').append(this.$el);
-			$('body').append(l_templ);
-			$('#login_dialog .loginbtn').click(function() {
-				var username = $('#login_dialog .username_field').val();
-				var password = $('#login_dialog .password_field').val();
-				store.login(username,password).then(function() {
-					this_._update_boxlist(store);
-				});
-			});
-			$('#logout_dialog .logoutbtn').click(function() {
-				store.logout();
 			});			
+			$('body').append(this.$el).append(l_templ);			
+			$('#login_dialog .loginbtn').click(function() {
+				var u, p = $('#login_dialog .username_field').val(), $('#login_dialog .password_field').val();
+				store.login(u,p).then(function() { this_._update_boxlist(store); });
+			});
+			$('#logout_dialog .logoutbtn').click(function() { store.logout(); });			
 		},
 		_update_boxlist:function() {
 			// get boxes
@@ -61,7 +56,7 @@ else { WebBox = root.WebBox; }
 				boxlist_el.children().remove();
 				boxlist.map(function(box) {
 					boxlist_el.append(_('<li><a data-id="<%= id %>" href="#"><%= name %></a></li>').template({
-						id:box.toString(),name:box.toString()
+						id:box.getId(),name:box.getId()
 					}));
 				});
 				this_.render();				
@@ -101,7 +96,6 @@ else { WebBox = root.WebBox; }
 		}
 	});
 	ToolbarView.load_templates = function(server_url) {
-		console.log('load template ... ' + server_url);
 		templates = {
 			main: { url: [server_url, 'components/toolbar/t_template.html'].join('/') },
 			login:{ url: [server_url, 'components/toolbar/login_template.html'].join('/')}
