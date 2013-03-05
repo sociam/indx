@@ -33,6 +33,7 @@ parser.add_argument('--from', action="store", help="From version (e.g., for 'dif
 parser.add_argument('--to', action="store", help="To version (e.g., for 'diff')")
 parser.add_argument('--return_objs', action="store_true", default=False, help="Enable return of full objs (e.g., for 'diff')")
 parser.add_argument('--debug', action="store_true", default=False, help="Enable output of debug logging")
+parser.add_argument('--id', action="store", nargs="+", help="Limit to specific IDs (e.g., for get_by_ids)")
 
 args = vars(parser.parse_args())
 

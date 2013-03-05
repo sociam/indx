@@ -104,11 +104,19 @@ class BoxHandler(BaseHandler):
         def handle_error(failure):
             """ Handle an error on get (this is the errback). """ #TODO move this somewhere else?
             failure.trap(Exception)
-            #err = failure.value
-            logging.debug("Exception trying to get latest.")
+            logging.debug("Exception trying to get latest: {0}".format(failure.value))
             return self.return_internal_error(request)
 
-        return store.get_latest().addCallbacks(lambda obj: self.return_ok(request, {"data": obj}),
+        if "id" in request.args:
+            # return the objects listed in in the id arguments, e.g.:
+                # GET /box/?id=item1&id=item2&id=item3
+            id_list = request.args['id']
+            # return the whole box
+            return store.get_latest_objs(id_list).addCallbacks(lambda obj: self.return_ok(request, {"data": obj}),
+                handle_error)   
+        else:
+            # return the whole box
+            return store.get_latest().addCallbacks(lambda obj: self.return_ok(request, {"data": obj}),
                 handle_error)
    
 
