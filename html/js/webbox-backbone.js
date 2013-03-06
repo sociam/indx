@@ -172,6 +172,7 @@
 			this.store = options.store;
 			this.set({objs: new ObjCollection()});
 		},
+		obj_at:function(i) { return this.objs().at(i); },
 		objs:function() { return this.attributes.objs; },
 		_create: function(obj_id){
 			var model = new Obj({"@id":obj_id}, {box:this});
@@ -186,7 +187,7 @@
 				.fail(function(err) { u.error(' error fetching ', this_.id, err); d.reject(err); });
 			return d.promise();			
 		},
-		get_id:function() { return this.id || this.cid;	},	
+		get_id:function() { return this.id || this.cid;	},
 		_ajax:function(method, path, data) {
 			data = _(_(data||{}).clone()).extend({box: this.id || this.cid, token:this.get('token')});
 			return this.store._ajax(method, path, data);
@@ -207,18 +208,18 @@
 		_fetch:function() {
 			var box = this.get_id(), d = u.deferred(), this_ = this;
 			// return a list of models (each of type WebBox.Object) to populate a GraphCollection
-			this._ajax("GET", box).then(function(data){
-				var graph_collection = this_.objs();
+			this._ajax("GET", box).then(function(response){
 				var version = null;
-				var objdata = data.data; 
+				var objdata = response.data;
+				if (this_.id !== this_.get_id()) { return this_.set('@id', this_.get_id()); }								
 				$.each(objdata, function(uri, obj){
 					// top level keys - corresponding to box level properties
-					if (this_.id !== this_.get_id()) { return this_.set('@id', this_.get_id()); }
+					// set the box id cos 
 					if (uri === "@version") { version = obj; return; }
 					if (uri[0] === "@") { return; } // ignore "@id" etc
 					// not one of those, so must be a
 					// < uri > : { prop1 .. prop2 ... }
-					var obj_model = this_.get_or_create_obj(uri);
+					var obj_model = this_.get_or_create_obj(uri);					
 					$.each(obj, function(key, vals){
 						if (key.indexOf('@') === 0) { return; } // ignore "@id" etc
 						var obj_vals = vals.map(function(val) {
