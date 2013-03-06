@@ -223,8 +223,10 @@
 		get_token:function() {
 			var this_ = this, d = u.deferred();
 			this._ajax('POST', 'auth/get_token', { app: this.store.get('app') })
-				.then(function(data) { this_._set_token( data.token ); d.resolve(this_); })
-				.fail(function(err) { u.error(' error fetching ', this_.id, err); d.reject(err); });
+				.then(function(data) {
+					this_._set_token( data.token );
+					d.resolve(this_);
+				}).fail(function(err) { u.error(' error fetching ', this_.id, err); d.reject(err); });
 			return d.promise();			
 		},
 		get_id:function() { return this.id || this.cid;	},
@@ -265,15 +267,12 @@
 						u.assert(deleted_ids !== undefined, 'deleted _ids not provided');
 						
 						this_._set_version(latest_version);
+						this_._update_object_list(all_ids);						
 						
 						var cached_changed =
 							this_._objcache().filter(function(m) { return changed_ids.indexOf(m.id) >= 0; });
-
-						this_._update_object_list(all_ids);						
-						
 						u.when(cached_changed.map(function(m) { return m.fetch(); }))
-							.then(d.resolve).fail(d.reject);
-						
+							.then(d.resolve).fail(d.reject);						
 					});
 			}
 			return d.promise();			
