@@ -141,7 +141,7 @@ class ObjectStoreAsync:
             for row in rows:
                 uris.append(row[0])
 
-            obj_out = {"uris": uris, "@version": version}
+            obj_out = {"ids": uris, "@version": version}
             result_d.callback(obj_out)
 
         def ver_cb(version):
