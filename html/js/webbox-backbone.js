@@ -152,9 +152,10 @@
 		},
 		sync: function(method, model, options){
 			switch(method){
-			case "create": return u.warn('obj.create() : not implemented yet'); // TODO
+			case "create": return u.assert(false, "create is never used for Objs"); 
 			case "read"  : return model._fetch(); 
-			case "update": return u.warn('obj.update() : not implemented yet'); // TODO
+			case "update":
+				return model.box._update(model.id);
 			case "delete": return this._delete(); 
 			}
 		}		
@@ -228,8 +229,15 @@
 							// don't know what it is!
 							u.assert(false, "cannot unpack value ", val);
 						});
-						obj_model.set(key,obj_vals);
-					});
+						// only update keys that have changed
+						var prev_vals = obj_model.get(key);
+						if ( prev_vals === undefined ||
+							 obj_vals.length !== prev_vals.length ||
+							  _(obj_vals).difference(prev_vals).length > 0 ||
+							  _(prev_vals).difference(obj_vals).length > 0) {
+							obj_model.set(key,obj_vals);
+						}
+					});							
 				});
 				this_.set('version', version);
 				d.resolve(this_);
@@ -247,14 +255,21 @@
 			}
 			return this_._fetch();			
 		},
-		_update:function() {
+		_update:function(ids) {
+			ids = ids !== undefined ? (_.isArray(ids) ? ids.slice() : [ids]) : undefined;			
 			var d = u.deferred(), version = this.get('version') || 0, this_ = this,
-			objs = this.objs().map(function(obj){ return serialize_obj(obj); });
+			objs = this.objs().
+				filter(function(x) {
+					return ids === undefined || ids.indexOf(x.id) >= 0; 
+				}).map(function(obj){ return serialize_obj(obj); });			
 			this._ajax("PUT",  this.id + "/update", { version: escape(version), data : JSON.stringify(objs)  })
 				.then(function(response) {
 					this_.set('version', response.data["@version"]);
 					d.resolve(this_);
-				}).fail(function(err) {	d.reject(err);});
+				}).fail(function(err) {
+					// catch obsolete error	- then automatically refetch?
+					d.reject(err);
+				});
 			return d.promise();
 		},
 		_create_box:function() {
