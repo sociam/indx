@@ -187,7 +187,8 @@ class WebBoxTests:
         if not (status['code'] != 200 or status['code'] != 201):
             raise Exception("Box creation failed, response is {0} with code {1}".format(status['message'], status['code']))
         else:
-            logging.info("Creation of box '{0}' successful.".format(self.args['box']))
+            pretty = pprint.pformat(status, indent=2, width=80)
+            logging.info("Creation of box successful, return is: {0}".format(pretty))
 
     def list_boxes(self):
         """ List the boxes on the webbox server. """
@@ -202,7 +203,8 @@ class WebBoxTests:
         if status['code'] != 200:
             raise Exception("Listing boxes failed, response is {0} with code {1}".format(status['message'], status['code']))
         else:
-            logging.info("Listing of boxes successful, the boxes are: \n" + "\n".join(status['list']))
+            pretty = pprint.pformat(status, indent=2, width=80)
+            logging.info("Listing of boxes successful, return is: {0}".format(pretty))
 
     def get_object_ids(self):
         """ Get the IDs of every object in this box. """
@@ -218,7 +220,8 @@ class WebBoxTests:
         if status['code'] != 200:
             raise Exception("Listing object IDs failed, response is {0} with code {1}".format(status['message'], status['code']))
         else:
-            logging.info("Listing of objects successful, the object IDs are: \n" + "\n".join(status['uris']))
+            pretty = pprint.pformat(status, indent=2, width=80)
+            logging.info("Listing of objects successful, return is: {0}".format(pretty))
 
 
     def update(self):
@@ -227,7 +230,7 @@ class WebBoxTests:
         self.auth()
         self.get_token()
 
-        url = "{0}{1}/".format(self.args['server'], self.args['box'])
+        url = "{0}{1}".format(self.args['server'], self.args['box'])
         values = {"data": self.args['data'].read(), "version": self.args['version'], "box": self.args['box'], "app": self.appid}
 
         logging.debug("Updating data to box: '{0}' on server '{1}'".format(self.args['box'], self.args['server']))
@@ -235,7 +238,8 @@ class WebBoxTests:
         if status['code'] != 201:
             raise Exception("Updating box {0} failed. Response is {1} with code {2}".format(self.args['box'], status['message'], status['code']))
         else:
-            logging.info("Update on box {0} sucessful, new version is: {1}".format(self.args['box'], status['data']['@version']))
+            pretty = pprint.pformat(status, indent=2, width=80)
+            logging.info("Update on box {0} sucessful, return is: {1}".format(self.args['box'], pretty))
 
 
     def delete(self):
@@ -248,7 +252,7 @@ class WebBoxTests:
         self.auth()
         self.get_token()
 
-        url = "{0}{1}/".format(self.args['server'], self.args['box'])
+        url = "{0}{1}".format(self.args['server'], self.args['box'])
         values = {"data": self.args['query'], "version": self.args['version'], "box": self.args['box'], "app": self.appid}
 
         logging.debug("Deleting data to box: '{0}' on server '{1}'".format(self.args['box'], self.args['server']))
@@ -256,7 +260,8 @@ class WebBoxTests:
         if status['code'] != 201:
             raise Exception("Deleting from box {0} failed. Response is {1} with code {2}".format(self.args['box'], status['message'], status['code']))
         else:
-            logging.info("Delete from box {0} sucessful, new version is: {1}".format(self.args['box'], status['data']['@version']))
+            pretty = pprint.pformat(status, indent=2, width=80)
+            logging.info("Delete from box {0} sucessful, return is: {1}".format(self.args['box'], pretty))
             
 
     def get_latest(self):
@@ -265,7 +270,7 @@ class WebBoxTests:
         self.auth()
         self.get_token()
 
-        url = "{0}{1}/".format(self.args['server'], self.args['box'])
+        url = "{0}{1}".format(self.args['server'], self.args['box'])
 
         logging.debug("Getting latest objects on server '{0}' in box '{1}'".format(self.args['server'], self.args['box']))
         status = self.get(url, None)
@@ -273,7 +278,7 @@ class WebBoxTests:
         if status['code'] != 200:
             raise Exception("Getting latest failed, response is {0} with code {1}".format(status['message'], status['code']))
         else:
-            pretty = pprint.pformat(status['data'], indent=2, width=80)
+            pretty = pprint.pformat(status, indent=2, width=80)
             logging.info("Getting latest successful, the objects are: \n" + pretty)
         
 
@@ -283,7 +288,7 @@ class WebBoxTests:
         self.auth()
         self.get_token()
 
-        url = "{0}{1}/".format(self.args['server'], self.args['box'])
+        url = "{0}{1}".format(self.args['server'], self.args['box'])
 
         logging.debug("Getting latest objects on server '{0}' in box '{1}'".format(self.args['server'], self.args['box']))
 
@@ -300,7 +305,7 @@ class WebBoxTests:
         if status['code'] != 200:
             raise Exception("Getting by IDs failed, response is {0} with code {1}".format(status['message'], status['code']))
         else:
-            pretty = pprint.pformat(status['data'], indent=2, width=80)
+            pretty = pprint.pformat(status, indent=2, width=80)
             logging.info("Getting latest by IDs successful, the objects are: \n" + pretty)
     
 
@@ -322,7 +327,7 @@ class WebBoxTests:
         if status['code'] != 200:
             raise Exception("Querying failed, response is {0} with code {1}".format(status['message'], status['code']))
         else:
-            pretty = pprint.pformat(status['data'], indent=2, width=80)
+            pretty = pprint.pformat(status, indent=2, width=80)
             logging.info("Querying successful, the objects are: \n" + pretty)
 
 
@@ -339,7 +344,7 @@ class WebBoxTests:
         params = {'from_version': self.args['from']}
 
         # to_version is optional
-        if "to" in self.args:
+        if "to" in self.args and self.args['to'] is not None:
             params['to_version'] = self.args['to']
 
         if self.args['return_objs']:
@@ -351,7 +356,7 @@ class WebBoxTests:
         if status['code'] != 200:
             raise Exception("Diff failed, response is {0} with code {1}".format(status['message'], status['code']))
         else:
-            pretty = pprint.pformat(status['data'], indent=2, width=80)
+            pretty = pprint.pformat(status, indent=2, width=80)
             logging.info("Diff successful, return is: \n" + pretty)
 
 

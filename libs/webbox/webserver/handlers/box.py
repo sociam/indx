@@ -29,6 +29,8 @@ class BoxHandler(BaseHandler):
     def diff(self, request):
         """ Return the objects (or ids of objects) that have changes between two versions of the objectstore.
         """
+        logging.debug("BoxHandler diff, args are: {0}".format(request.args))
+
         token = self.get_token(request)
         if not token:
             return self.return_forbidden(request)
