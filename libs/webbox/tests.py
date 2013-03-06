@@ -218,7 +218,7 @@ class WebBoxTests:
         if status['code'] != 200:
             raise Exception("Listing object IDs failed, response is {0} with code {1}".format(status['message'], status['code']))
         else:
-            logging.info("Listing of objects successful, the object IDs are: \n" + "\n".join(status['uris']))
+            logging.info("Listing of objects successful, the object IDs are: \n" + "\n".join(status['ids']))
 
 
     def update(self):
