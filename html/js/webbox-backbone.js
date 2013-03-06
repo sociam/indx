@@ -218,8 +218,8 @@
 		_objlist:function() { return this.attributes.objlist; },
 		_set_objlist:function(ol) { return this.set({objlist:ol}); },
 		_set_token:function(token) { this.set("token", token);	},
-		_set_version:function(v) { this.set("version", v); },
-		_get_version:function(v) { this.get("version"); },		
+		_set_version:function(v) { this.set("version", v);	},
+		_get_version:function(v) { return this.get("version"); },		
 		get_token:function() {
 			var this_ = this, d = u.deferred();
 			this._ajax('POST', 'auth/get_token', { app: this.store.get('app') })
@@ -252,6 +252,7 @@
 				d.resolve();
 			} else {
 				// otherwise we launch a diff
+				console.log('cur version ', cur_version, box);
 				this._ajax("GET", [box,'diff'].join('/'), {from_version:cur_version,return_objs:false}).then(
 					function(response) {
 						// update version
@@ -306,7 +307,7 @@
 			// diff em
 			var news = _(current).difference(olds), died = _(olds).difference(current);
 			this.set({objlist:current});
-			news.map(function(aid) { this.trigger('obj-add', aid); });
+			news.map(function(aid) { this_.trigger('obj-add', aid); });
 			news.map(function(rid) {
 				this_.trigger('obj-remove', rid);
 				this_._objcache().remove(rid);
@@ -319,7 +320,8 @@
 			this._ajax("GET", [box,'get_object_ids'].join('/')).then(
 				function(response){
 					u.assert(response['@version'] !== undefined, 'no version provided');
-					this_._set_version(response['@version']);					
+					console.log(' BOX FETCH VERSION ', response['@version']);
+					this_._set_version(response['@version']);
 					this_._update_object_list(response.ids);
 					d.resolve(this_);
 				}).fail(function(err) { d.reject(err, this_);});
