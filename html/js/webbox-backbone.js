@@ -152,9 +152,10 @@
 		},
 		sync: function(method, model, options){
 			switch(method){
-			case "create": return u.warn('obj.create() : not implemented yet'); // TODO
+			case "create": return u.assert(false, "create is never used for Objs"); 
 			case "read"  : return model._fetch(); 
-			case "update": return u.warn('obj.update() : not implemented yet'); // TODO
+			case "update":
+				return model.box._update(model.id);
 			case "delete": return this._delete(); 
 			}
 		}		
@@ -171,6 +172,7 @@
 			this.store = options.store;
 			this.set({objs: new ObjCollection()});
 		},
+		obj_at:function(i) { return this.objs().at(i); },
 		objs:function() { return this.attributes.objs; },
 		_create: function(obj_id){
 			var model = new Obj({"@id":obj_id}, {box:this});
@@ -185,7 +187,7 @@
 				.fail(function(err) { u.error(' error fetching ', this_.id, err); d.reject(err); });
 			return d.promise();			
 		},
-		get_id:function() { return this.id || this.cid;	},	
+		get_id:function() { return this.id || this.cid;	},
 		_ajax:function(method, path, data) {
 			data = _(_(data||{}).clone()).extend({box: this.id || this.cid, token:this.get('token')});
 			return this.store._ajax(method, path, data);
@@ -206,18 +208,18 @@
 		_fetch:function() {
 			var box = this.get_id(), d = u.deferred(), this_ = this;
 			// return a list of models (each of type WebBox.Object) to populate a GraphCollection
-			this._ajax("GET", box).then(function(data){
-				var graph_collection = this_.objs();
+			this._ajax("GET", box).then(function(response){
 				var version = null;
-				var objdata = data.data; 
+				var objdata = response.data;
+				if (this_.id !== this_.get_id()) { return this_.set('@id', this_.get_id()); }								
 				$.each(objdata, function(uri, obj){
 					// top level keys - corresponding to box level properties
-					if (this_.id !== this_.get_id()) { return this_.set('@id', this_.get_id()); }
+					// set the box id cos 
 					if (uri === "@version") { version = obj; return; }
 					if (uri[0] === "@") { return; } // ignore "@id" etc
 					// not one of those, so must be a
 					// < uri > : { prop1 .. prop2 ... }
-					var obj_model = this_.get_or_create_obj(uri);
+					var obj_model = this_.get_or_create_obj(uri);					
 					$.each(obj, function(key, vals){
 						if (key.indexOf('@') === 0) { return; } // ignore "@id" etc
 						var obj_vals = vals.map(function(val) {
@@ -228,8 +230,15 @@
 							// don't know what it is!
 							u.assert(false, "cannot unpack value ", val);
 						});
-						obj_model.set(key,obj_vals);
-					});
+						// only update keys that have changed
+						var prev_vals = obj_model.get(key);
+						if ( prev_vals === undefined ||
+							 obj_vals.length !== prev_vals.length ||
+							  _(obj_vals).difference(prev_vals).length > 0 ||
+							  _(prev_vals).difference(obj_vals).length > 0) {
+							obj_model.set(key,obj_vals);
+						}
+					});							
 				});
 				this_.set('version', version);
 				d.resolve(this_);
@@ -247,14 +256,21 @@
 			}
 			return this_._fetch();			
 		},
-		_update:function() {
+		_update:function(ids) {
+			ids = ids !== undefined ? (_.isArray(ids) ? ids.slice() : [ids]) : undefined;			
 			var d = u.deferred(), version = this.get('version') || 0, this_ = this,
-			objs = this.objs().map(function(obj){ return serialize_obj(obj); });
+			objs = this.objs().
+				filter(function(x) {
+					return ids === undefined || ids.indexOf(x.id) >= 0; 
+				}).map(function(obj){ return serialize_obj(obj); });			
 			this._ajax("PUT",  this.id + "/update", { version: escape(version), data : JSON.stringify(objs)  })
 				.then(function(response) {
 					this_.set('version', response.data["@version"]);
 					d.resolve(this_);
-				}).fail(function(err) {	d.reject(err);});
+				}).fail(function(err) {
+					// catch obsolete error	- then automatically refetch?
+					d.reject(err);
+				});
 			return d.promise();
 		},
 		_create_box:function() {
