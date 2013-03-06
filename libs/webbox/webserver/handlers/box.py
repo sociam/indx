@@ -35,10 +35,15 @@ class BoxHandler(BaseHandler):
 
         try:
             from_version = request.args['from_version'][0]
-            to_version = request.args['to_version'][0]
         except Exception as e:
             logging.error("Exception in box.diff getting argument: {0}".format(e))
-            return self.return_bad_request(request, "Specify the following arguments in query string: from_version, to_version.")
+            return self.return_bad_request(request, "Specify the following arguments in query string: from_version.")
+
+        # to_version is optional, if unspecified, the latest version is used.
+        if "to_version" in request.args:
+            to_version = request.args['to_version'][0]
+        else:
+            to_version = None
 
         # return IDs of changed object, or return full objects
         return_objs = False

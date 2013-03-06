@@ -199,22 +199,22 @@ class ObjectStoreAsync:
         """ Return the differences between two versions of the database.
 
             from_version -- The earliest version to check from
-            to_version -- The most recent version to check up to
+            to_version -- The most recent version to check up to (can be None, in which can the latest version will be used)
             return_objs -- (boolean) If true, full objects will be returned, otherwise a list of IDs will be returned
         """
 
         # TODO FIXME XXX lock the table(s) as appropriate inside a transaction (PL/pgspl?) here
         result_d = Deferred()
 
-        def objs_cb(rows):
+        def objs_cb(rows, to_version_used):
             # callback used if we queried for full objects
             logging.debug("diff objs_cb: rows={0}".format(rows))
             obj_out = self.rows_to_json(rows)
 
             def ver_cb(version):
-                logging.debug("diff ver_cb: "+str(version))
-                obj_out["@version"] = version
-                result_d.callback({"data": obj_out})
+                logging.debug("diff obs_cb - ver_cb: "+str(version))
+                obj_out["@version"] = to_version_used
+                result_d.callback({"data": obj_out, "@latest_version": version, "@from_version": from_version, "@to_version": to_version_used})
                 return
 
             # grab the latest version number also
@@ -222,24 +222,43 @@ class ObjectStoreAsync:
             d.addCallback(ver_cb)
             return
 
-        def ids_cb(rows):
+        def ids_cb(rows, to_version_used):
             # callback used if we queried for the ids of changed objects only
             logging.debug("diff ids_cb: rows={0}".format(rows))
             id_list = []
             for row in rows:
                 logging.debug("row: {0}".format(row))
                 id_list.append(row[0])
-            result_d.callback({"data": id_list})
+
+            def ver_cb(version):
+                logging.debug("diff ids_cb - ver_cb: "+str(version))
+                result_d.callback({"data": id_list, "@latest_version": version, "@from_version": from_version, "@to_version": to_version_used})
+                return
+
+            # grab the latest version number also
+            d = self._get_latest_ver()
+            d.addCallback(ver_cb)
             return
 
-        if return_objs:
-            query = "SELECT version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples WHERE subject = ANY(SELECT wb_diff(%s, %s))" # order is implicit, defined by the view, so no need to override it here
-            d = self.conn.runQuery(query, [from_version, to_version])
-            d.addCallback(lambda rows: objs_cb(rows))
+        def got_versions(to_version_used):
+            # first callback once we have the to_verion
+            if return_objs:
+                query = "SELECT version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples WHERE subject = ANY(SELECT wb_diff(%s, %s))" # order is implicit, defined by the view, so no need to override it here
+                d = self.conn.runQuery(query, [from_version, to_version_used])
+                d.addCallback(lambda rows: objs_cb(rows, to_version_used))
+            else:
+                query = "SELECT wb_diff(%s, %s)"
+                d = self.conn.runQuery(query, [from_version, to_version_used])
+                d.addCallback(lambda rows: ids_cb(rows, to_version_used))
+            return
+
+        if to_version is None:
+            # if to_version is None, we get the latest version first
+            d = self._get_latest_ver()
+            d.addCallback(got_versions)
         else:
-            query = "SELECT wb_diff(%s, %s)"
-            d = self.conn.runQuery(query, [from_version, to_version])
-            d.addCallback(lambda rows: ids_cb(rows))
+            # else just call got_versions immediately
+            got_versions(to_version)
 
         return result_d
         

@@ -328,7 +328,7 @@ class WebBoxTests:
 
     def diff(self):
         """ Query this box. """
-        self.check_args(['server', 'box', 'from', 'to', 'return_objs'])
+        self.check_args(['server', 'box', 'from', 'return_objs'])
         self.auth()
         self.get_token()
 
@@ -336,7 +336,12 @@ class WebBoxTests:
 
         logging.debug("Calling diff on server '{0}' in box '{1}'".format(self.args['server'], self.args['box']))
 
-        params = {'from_version': self.args['from'], 'to_version': self.args['to']}
+        params = {'from_version': self.args['from']}
+
+        # to_version is optional
+        if "to_version" in self.args:
+            params['to_version'] = self.args['to']
+
         if self.args['return_objs']:
             logging.debug("Set return_objs to true.")
             params['return_objs'] = True # value not strictly necessary, presence of key is all that is checked
