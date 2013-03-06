@@ -230,7 +230,7 @@ class WebBoxTests:
         self.auth()
         self.get_token()
 
-        url = "{0}{1}/".format(self.args['server'], self.args['box'])
+        url = "{0}{1}".format(self.args['server'], self.args['box'])
         values = {"data": self.args['data'].read(), "version": self.args['version'], "box": self.args['box'], "app": self.appid}
 
         logging.debug("Updating data to box: '{0}' on server '{1}'".format(self.args['box'], self.args['server']))
@@ -252,7 +252,7 @@ class WebBoxTests:
         self.auth()
         self.get_token()
 
-        url = "{0}{1}/".format(self.args['server'], self.args['box'])
+        url = "{0}{1}".format(self.args['server'], self.args['box'])
         values = {"data": self.args['query'], "version": self.args['version'], "box": self.args['box'], "app": self.appid}
 
         logging.debug("Deleting data to box: '{0}' on server '{1}'".format(self.args['box'], self.args['server']))
@@ -270,7 +270,7 @@ class WebBoxTests:
         self.auth()
         self.get_token()
 
-        url = "{0}{1}/".format(self.args['server'], self.args['box'])
+        url = "{0}{1}".format(self.args['server'], self.args['box'])
 
         logging.debug("Getting latest objects on server '{0}' in box '{1}'".format(self.args['server'], self.args['box']))
         status = self.get(url, None)
@@ -288,7 +288,7 @@ class WebBoxTests:
         self.auth()
         self.get_token()
 
-        url = "{0}{1}/".format(self.args['server'], self.args['box'])
+        url = "{0}{1}".format(self.args['server'], self.args['box'])
 
         logging.debug("Getting latest objects on server '{0}' in box '{1}'".format(self.args['server'], self.args['box']))
 
