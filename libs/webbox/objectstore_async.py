@@ -130,19 +130,33 @@ class ObjectStoreAsync:
         return result_d
 
 
+    def _ids_in_version(self, version):
+        """ Get a list of IDs of objects in a specific version of the box.
+        """
+        result_d = Deferred()
+
+        def rows_cb(rows):
+            logging.debug("_ids_in_version rows_cb: rows={0}".format(rows))
+            ids = map(lambda row: row[0], rows)
+            result_d.callback(ids)
+            return
+
+        d = self.conn.runQuery("SELECT DISTINCT subject FROM wb_v_all_triples WHERE version = %s", [version])
+        d.addCallback(rows_cb)
+        return result_d
+
+
     def get_object_ids(self):
-        """ Get a list of IDs (URIs) of objects in this box.
+        """ Get a list of IDs of objects in this box.
         """
         result_d = Deferred()
 
         def row_cb(rows, version):
             logging.debug("get_object_ids row_cb: version={0}, rows={1}".format(version, rows))
-            uris = []
-            for row in rows:
-                uris.append(row[0])
-
-            obj_out = {"ids": uris, "@version": version}
+            ids = map(lambda row: row[0], rows)
+            obj_out = {"ids": ids, "@version": version}
             result_d.callback(obj_out)
+            return
 
         def ver_cb(version):
             logging.debug("get_object_ids ver_cb: "+str(version))
@@ -150,10 +164,10 @@ class ObjectStoreAsync:
                 return result_d.callback({"@version": 0 })
             rowd = self.conn.runQuery("SELECT DISTINCT subject FROM wb_v_latest_triples", [])
             rowd.addCallback(lambda rows2: row_cb(rows2, version))
+            return
 
         d = self._get_latest_ver()
         d.addCallback(ver_cb)
-
         return result_d
 
 
@@ -224,20 +238,42 @@ class ObjectStoreAsync:
 
         def ids_cb(rows, to_version_used):
             # callback used if we queried for the ids of changed objects only
-            logging.debug("diff ids_cb: rows={0}".format(rows))
-            id_list = []
-            for row in rows:
-                logging.debug("row: {0}".format(row))
-                id_list.append(row[0])
+            logging.debug("diff ids_cb: rows: {0}, to_version_used: {1}".format(rows, to_version_used))
+            diff_id_list = map(lambda row: row[0], rows)
 
-            def ver_cb(version):
-                logging.debug("diff ids_cb - ver_cb: "+str(version))
-                result_d.callback({"data": id_list, "@latest_version": version, "@from_version": from_version, "@to_version": to_version_used})
+            def from_ver(from_ids):
+                logging.debug("diff from_vers: from_ids: {0}".format(from_ids))
+
+                def to_ver(to_ids): 
+                    logging.debug("diff to_vers: to_ids: {0}".format(to_ids))
+
+                    def ver_cb(latest_version):
+                        logging.debug("diff ver_cb: version: {0}".format(latest_version))
+
+                        changed_id_list, added_id_list, deleted_id_list = [], [], []
+
+                        for item in diff_id_list:
+                            if item in from_ids and item in to_ids:
+                                changed_id_list.append(item)
+                            elif item in from_ids and item not in to_ids:
+                                deleted_id_list.append(item)
+                            elif item not in from_ids and item in to_ids:
+                                added_id_list.append(item)
+
+                        result_d.callback({"all_ids": diff_id_list, "added_ids": added_id_list, "deleted_ids": deleted_id_list, "changed_ids": changed_id_list, "@latest_version": latest_version, "@from_version": from_version, "@to_version": to_version_used})
+                        return
+
+                    # grab the latest version number also
+                    d = self._get_latest_ver()
+                    d.addCallback(ver_cb)
+                    return
+
+                d = self._ids_in_version(to_version_used)
+                d.addCallback(to_ver)
                 return
 
-            # grab the latest version number also
-            d = self._get_latest_ver()
-            d.addCallback(ver_cb)
+            d = self._ids_in_version(from_version)
+            d.addCallback(from_ver)
             return
 
         def got_versions(to_version_used):
@@ -252,14 +288,16 @@ class ObjectStoreAsync:
                 d.addCallback(lambda rows: ids_cb(rows, to_version_used))
             return
 
-        logging.debug("diff to version: {0}".format(to_version))
+        logging.debug("diff to version: {0} type({1})".format(to_version, type(to_version)))
 
         if to_version is None:
             # if to_version is None, we get the latest version first
             d = self._get_latest_ver()
+            logging.debug("diff to version is None, so getting latest.")
             d.addCallback(got_versions)
         else:
             # else just call got_versions immediately
+            logging.debug("diff to version not None, so using version {0}.".format(to_version))
             got_versions(to_version)
 
         return result_d
