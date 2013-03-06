@@ -243,14 +243,16 @@ class ObjectStoreAsync:
         def got_versions(to_version_used):
             # first callback once we have the to_verion
             if return_objs:
-                query = "SELECT version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples WHERE subject = ANY(SELECT wb_diff(%s, %s))" # order is implicit, defined by the view, so no need to override it here
-                d = self.conn.runQuery(query, [from_version, to_version_used])
+                query = "SELECT version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_all_triples WHERE subject = ANY(SELECT wb_diff(%s, %s)) AND version = %s" # order is implicit, defined by the view, so no need to override it here
+                d = self.conn.runQuery(query, [from_version, to_version_used, to_version_used])
                 d.addCallback(lambda rows: objs_cb(rows, to_version_used))
             else:
                 query = "SELECT wb_diff(%s, %s)"
                 d = self.conn.runQuery(query, [from_version, to_version_used])
                 d.addCallback(lambda rows: ids_cb(rows, to_version_used))
             return
+
+        logging.debug("diff to version: {0}".format(to_version))
 
         if to_version is None:
             # if to_version is None, we get the latest version first

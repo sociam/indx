@@ -339,7 +339,7 @@ class WebBoxTests:
         params = {'from_version': self.args['from']}
 
         # to_version is optional
-        if "to_version" in self.args:
+        if "to" in self.args:
             params['to_version'] = self.args['to']
 
         if self.args['return_objs']:
