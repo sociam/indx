@@ -30,6 +30,7 @@ class WebBoxTests:
                       'update': self.update,
                       'delete': self.delete,
                       'query': self.query,
+                      'get_by_ids': self.get_by_ids,
                      }
 
         self.token = None
@@ -68,17 +69,23 @@ class WebBoxTests:
 
     def get(self, url, values):
         """ Do a GET, decode the result JSON and return it. """
-        if values is None:
-            values = {}
+
+        our_values = {}
         if 'box' in self.args:
-            values['box'] = self.args['box']
-        values['app'] = self.appid
+            our_values['box'] = self.args['box']
+        our_values['app'] = self.appid
 
         if self.token is not None:
-            values['token'] = self.token
+            our_values['token'] = self.token
 
-        data = urllib.urlencode(values)
+        data = urllib.urlencode(our_values)
         url += "?" + data
+
+        # encode separately, because it might be a list of tuples, not a dict
+        if values is not None and len(values) > 0:
+            url += "&" + urllib.urlencode(values)
+
+        logging.debug("GET on url: {0}".format(url))
 
         req = urllib2.Request(url)
         response = urllib2.urlopen(req)
@@ -269,7 +276,34 @@ class WebBoxTests:
             pretty = pprint.pformat(status['data'], indent=2, width=80)
             logging.info("Getting latest successful, the objects are: \n" + pretty)
         
+
+    def get_by_ids(self):
+        """ Get the latest version of specific objects in this box. """
+        self.check_args(['server', 'box', 'id'])
+        self.auth()
+        self.get_token()
+
+        url = "{0}{1}/".format(self.args['server'], self.args['box'])
+
+        logging.debug("Getting latest objects on server '{0}' in box '{1}'".format(self.args['server'], self.args['box']))
+
+        id_list = self.args['id']
+        if type(id_list) != type([]):
+            id_list = [id_list]
+
+        id_tuples = []
+        for id in id_list:
+            id_tuples.append( ("id", id) )
+
+        status = self.get(url, id_tuples)
+
+        if status['code'] != 200:
+            raise Exception("Getting by IDs failed, response is {0} with code {1}".format(status['message'], status['code']))
+        else:
+            pretty = pprint.pformat(status['data'], indent=2, width=80)
+            logging.info("Getting latest by IDs successful, the objects are: \n" + pretty)
     
+
     def query(self):
         """ 
            Query this box.

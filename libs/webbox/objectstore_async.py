@@ -106,9 +106,10 @@ class ObjectStoreAsync:
         return obj_out
 
 
-    def get_latest_obj(self, object_uri):
-        """ Get the latest version of an object in the box, as expanded JSON-LD notation.
-            object_uri of the object
+    def get_latest_objs(self, object_ids):
+        """ Get the latest version of objects in the box, as expanded JSON-LD notation.
+
+            object_ids -- ids of the objects to return
         """
 
         result_d = Deferred()
@@ -116,10 +117,16 @@ class ObjectStoreAsync:
         def rows_cb(rows):
             obj_out = self.rows_to_json(rows)
             result_d.callback(obj_out)
-        
-        d = self.conn.runQuery("SELECT version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples WHERE subject = %s", [object_uri]) # order is implicit, defined by the view, so no need to override it here
-        d.addCallback(rows_cb)
+       
+        query = "SELECT version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples WHERE subject = ANY(ARRAY["
+        for i in range(len(object_ids)):
+            if i > 0:
+                query += ", "
+            query += "%s"
+        query += "])"
  
+        d = self.conn.runQuery(query, object_ids)
+        d.addCallback(rows_cb)
         return result_d
 
 
