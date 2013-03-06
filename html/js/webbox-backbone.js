@@ -44,7 +44,7 @@
 
 	 // utilities -----------------> should move out to utils
 	var u; // to be filled in by dependency
-	 
+
 	// set up our parameters for webbox -
 	// default is that we're loading from an _app_ hosted within
 	// webbox. 
@@ -140,23 +140,61 @@
 		set:function(k,v,options) {
 			// set is tricky because it can be called like
 			// set('foo',123) or set({foo:123})
-			if (typeof k === 'string') {
-				v = this._value_to_array(k,v);
-			} else {
-				k = this._all_values_to_arrays(k);
-			}
+			if (typeof k === 'string') { v = this._value_to_array(k,v);	}
+			else {	k = this._all_values_to_arrays(k);	}
 			return Backbone.Model.prototype.set.apply(this,[k,v,options]);
 		},
 		_delete:function() {
 			return this.box._delete_models([this]);
 		},
+		_fetch:function() {
+			var this_ = this, d = u.deferred(), box = this.box.get_id();
+			this.box._ajax('GET', box, {'id':this.id}).then(function(response) {
+				u.log('query response ::: ', response);
+				var version = null;
+				var objdata = response.data;
+				if (this_.id !== this_.get_id()) { return this_.set('@id', this_.get_id()); }
+				$.each(objdata, function(uri, obj){
+					// top level keys - corresponding to box level properties
+					// set the box id cos 
+					if (uri === "@version") { version = obj; return; }
+					if (uri[0] === "@") { return; } // ignore "@id" etc
+					// not one of those, so must be a
+					// < uri > : { prop1 .. prop2 ... }
+					$.each(obj, function(key, vals){
+						if (key.indexOf('@') === 0) { return; } // ignore "@id" etc
+						var obj_vals = vals.map(function(val) {
+							// it's an object, so return that
+							if (val.hasOwnProperty("@id")) { return this_.get_or_create_obj(val["@id"]); }
+							// it's a non-object
+							if (val.hasOwnProperty("@value")) {	return deserialize_literal(val); }
+							// don't know what it is!
+							u.assert(false, "cannot unpack value ", val);
+						});
+						// only update keys that have changed
+						var prev_vals = this_.get(key);
+						if ( prev_vals === undefined ||
+							 obj_vals.length !== prev_vals.length ||
+							  _(obj_vals).difference(prev_vals).length > 0 ||
+							  _(prev_vals).difference(obj_vals).length > 0) {
+							this_.set(key,obj_vals);
+						}
+					});
+					// we need to ensure our box is up to date otherwise version skew!
+					this_.box._update_version_to(version)
+						.then(function() { d.resolve(this_); })
+						.fail(function(err) { d.reject(err); });
+				});
+
+			});
+			return d.promise();
+		},
 		sync: function(method, model, options){
 			switch(method){
 			case "create": return u.assert(false, "create is never used for Objs"); 
 			case "read"  : return model._fetch(); 
-			case "update":
-				return model.box._update(model.id);
-			case "delete": return this._delete(); 
+			case "update": return model.box._update(model.id);
+			case "delete": return model._delete(); 
 			}
 		}		
 	});
@@ -165,21 +203,23 @@
 	// Box =================================================
 	// WebBox.GraphCollection is the list of WebBox.Objs in a WebBox.Graph
 	var ObjCollection = Backbone.Collection.extend({ model: Obj });
+
+	// new client: fetch is always lazy, only gets ids, and
+	// lazily get objects as you go
 	var Box = WebBox.Box = Backbone.Model.extend({
 		idAttribute:"@id",
 		initialize:function(attributes, options) {
 			u.assert(options.store, "no store provided");
 			this.store = options.store;
-			this.set({objs: new ObjCollection()});
+			this.set({objcache: new ObjCollection(), objlist: []});
 		},
-		obj_at:function(i) { return this.objs().at(i); },
-		objs:function() { return this.attributes.objs; },
-		_create: function(obj_id){
-			var model = new Obj({"@id":obj_id}, {box:this});
-			this.objs().add(model);
-			return model;
-		},		                                             
+		get_cache_size:function(i) { return this._objcache().length; },
+		_objcache:function() { return this.attributes.objcache; },
+		_objlist:function() { return this.attributes.objlist; },
+		_set_objlist:function(ol) { return this.set({objlist:ol}); },
 		_set_token:function(token) { this.set("token", token);	},
+		_set_version:function(v) { this.set("version", v); },
+		_get_version:function(v) { this.get("version"); },		
 		get_token:function() {
 			var this_ = this, d = u.deferred();
 			this._ajax('POST', 'auth/get_token', { app: this.store.get('app') })
@@ -203,54 +243,96 @@
 				});
 			return d.promise();
 		},
-		get_or_create_obj:function(objid) { return this.get_obj(objid) || this._create(objid); },
-		get_obj:function(objid) { return this.objs().get(objid);	},
-		_fetch:function() {
-			var box = this.get_id(), d = u.deferred(), this_ = this;
-			// return a list of models (each of type WebBox.Object) to populate a GraphCollection
-			this._ajax("GET", box).then(function(response){
-				var version = null;
-				var objdata = response.data;
-				if (this_.id !== this_.get_id()) { return this_.set('@id', this_.get_id()); }								
-				$.each(objdata, function(uri, obj){
-					// top level keys - corresponding to box level properties
-					// set the box id cos 
-					if (uri === "@version") { version = obj; return; }
-					if (uri[0] === "@") { return; } // ignore "@id" etc
-					// not one of those, so must be a
-					// < uri > : { prop1 .. prop2 ... }
-					var obj_model = this_.get_or_create_obj(uri);					
-					$.each(obj, function(key, vals){
-						if (key.indexOf('@') === 0) { return; } // ignore "@id" etc
-						var obj_vals = vals.map(function(val) {
-							// it's an object, so return that
-							if (val.hasOwnProperty("@id")) { return this_.get_or_create_obj(val["@id"]); }
-							// it's a non-object
-							if (val.hasOwnProperty("@value")) {	return deserialize_literal(val); }
-							// don't know what it is!
-							u.assert(false, "cannot unpack value ", val);
-						});
-						// only update keys that have changed
-						var prev_vals = obj_model.get(key);
-						if ( prev_vals === undefined ||
-							 obj_vals.length !== prev_vals.length ||
-							  _(obj_vals).difference(prev_vals).length > 0 ||
-							  _(prev_vals).difference(obj_vals).length > 0) {
-							obj_model.set(key,obj_vals);
-						}
-					});							
-				});
-				this_.set('version', version);
-				d.resolve(this_);
-			}).fail(function(err) { d.reject(err, this_);});
+		_update_version_to:function(version) {
+			var d = u.deferred(), box = this.get_id(), this_ = this, cur_version = this._get_version();
+			if (version !== undefined && cur_version === version) {
+				// if we're already at current version, we have no work to do
+				d.resolve();
+			} else {
+				// otherwise we launch a diff
+				this._ajax("GET", [box,'diff'].join('/'), {from_version:cur_version,return_objs:false}).then(
+					function(response) {
+						// update version
+						var latest_version = response['@latest_version'],
+							added_ids  = response['@added_ids'],
+							changed_ids = response['@changed_ids'],
+						    deleted_ids = response['@deleted_ids'],
+							all_ids = response['@all_ids'];						
+						
+						u.assert(latest_version !== undefined, 'latest version not provided');
+						u.assert(added_ids !== undefined, 'added_ids not provided');
+						u.assert(changed_ids !== undefined, 'changed_ids not provided');
+						u.assert(deleted_ids !== undefined, 'deleted _ids not provided');
+						
+						this_._set_version(latest_version);
+						
+						var cached_changed =
+							this_._objcache().filter(function(m) { return changed_ids.indexOf(m.id) >= 0; });
+
+						this_._update_object_list(all_ids);						
+						
+						u.when(cached_changed.map(function(m) { return m.fetch(); }))
+							.then(d.resolve).fail(d.reject);
+						
+					});
+			}
+			return d.promise();			
+		},
+		_create_model_for_id: function(obj_id){
+			var model = new Obj({"@id":obj_id}, {box:this});
+			this._objcache().add(model);
+			return model;
+		},		
+		get_obj:function(objid) {
+			// get_obj always returns a promise
+			var d = u.deferred(), hasmodel = this._objcache().get(objid), this_ = this;
+			if (hasmodel !== undefined) {
+				d.resolve(hasmodel);
+			} else {
+				var model = this_._create_model_for_id(objid);
+				// if the serve knows about it, then we fetch its definition
+				if (this._objlist().indexOf(objid) >= 0) {
+					model.fetch().then(d.resolve).fail(d.reject);
+				} else {
+					// otherwise it must be new!
+					model.is_new = true;
+					d.resolve(model);
+				}
+			}
 			return d.promise();
 		},
+		// ----------------------------------------------------
+		_update_object_list:function(updated_obj_ids) {
+			var current = updated_obj_ids, olds = this.get('objlist').slice(), this_ = this;
+			// diff em
+			var news = _(current).difference(olds), died = _(olds).difference(current);
+			this.set({objlist:current});
+			news.map(function(aid) { this.trigger('obj-add', aid); });
+			news.map(function(rid) {
+				this_.trigger('obj-remove', rid);
+				this_._objcache().remove(rid);
+			});
+		},		
+		_fetch:function() {
+			// new client :: this now _only_ fetches object ids
+			var box = this.get_id(), d = u.deferred(), this_ = this;
+			// return a list of models (each of type WebBox.Object) to populate a GraphCollection
+			this._ajax("GET", [box,'get_object_ids'].join('/')).then(
+				function(response){
+					u.assert(response['@version'] !== undefined, 'no version provided');
+					this_._set_version(response['@version']);					
+					this_._update_object_list(response.ids);
+					d.resolve(this_);
+				}).fail(function(err) { d.reject(err, this_);});
+			return d.promise();
+		},
+		// -----------------------------------------------
 		_check_token_and_fetch : function() {
 			var this_ = this;
 			if (this.get('token') === undefined) {
 				var d = u.deferred();
 				this.get_token()
-					.then(function() {	this_._fetch().then(d.resolve).fail(d.reject);	})
+					.then(function() { this_._fetch().then(d.resolve).fail(d.reject);	})
 					.fail(function(err) { d.reject(err); u.error("FAIL "); });
 				return d.promise();
 			}
@@ -259,9 +341,8 @@
 		_update:function(ids) {
 			ids = ids !== undefined ? (_.isArray(ids) ? ids.slice() : [ids]) : undefined;			
 			var d = u.deferred(), version = this.get('version') || 0, this_ = this,
-			objs = this.objs().
-				filter(function(x) {
-					return ids === undefined || ids.indexOf(x.id) >= 0; 
+				objs = this._objcache().filter(function(x) {
+					return ids === undefined || ids.indexOf(x.id) >= 0;
 				}).map(function(obj){ return serialize_obj(obj); });			
 			this._ajax("PUT",  this.id + "/update", { version: escape(version), data : JSON.stringify(objs)  })
 				.then(function(response) {
