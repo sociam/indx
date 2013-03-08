@@ -214,6 +214,7 @@
 			this.set({objcache: new ObjCollection(), objlist: []});
 		},
 		get_cache_size:function(i) { return this._objcache().length; },
+		get_obj_ids:function() { return this._objlist().slice(); },
 		_objcache:function() { return this.attributes.objcache; },
 		_objlist:function() { return this.attributes.objlist; },
 		_set_objlist:function(ol) { return this.set({objlist:ol}); },
@@ -226,7 +227,7 @@
 				.then(function(data) {
 					this_._set_token( data.token );
 					d.resolve(this_);
-				}).fail(function(err) { u.error(' error fetching ', this_.id, err); d.reject(err); });
+				}).fail(d.reject);
 			return d.promise();			
 		},
 		get_id:function() { return this.id || this.cid;	},
@@ -334,7 +335,7 @@
 				var d = u.deferred();
 				this.get_token()
 					.then(function() { this_._fetch().then(d.resolve).fail(d.reject);	})
-					.fail(function(err) { d.reject(err); u.error("FAIL "); });
+					.fail(d.reject);
 				return d.promise();
 			}
 			return this_._fetch();			
@@ -474,22 +475,20 @@
 		'/components/toolbar/toolbar.js'
 	];
 	
-	WebBox.load = function(base_url) {
-		if (base_url === undefined) {
-			base_url = ['http:/', document.location.host].join('/');
-		}
-		console.log('loading from base url ', base_url);		
+	WebBox.load = function(options) {
+		var base_url = options && options.base_url;
+		if (!base_url) { base_url = ['http:/', document.location.host].join('/'); }
 		var _load_d = new $.Deferred(); 
-		var ds = dependencies.map(function(s) {
-			console.log('getting script ', base_url + s);
-			return $.getScript(base_url + s);
-		});
+		var ds = dependencies.map(function(s) {	return $.getScript(base_url + s);});
 		$.when.apply($,ds).then(function() {
 			u = WebBox.utils;
-			console.log('LOADING TOOLBAR');
-			WebBox.Toolbar.load_templates(base_url).then(function() {
+			if (!options || !(options.load_toolbar == false)) {
+				WebBox.Toolbar.load_templates(base_url)
+					.then(function() {	_load_d.resolve(root);	})
+					.fail(function(err) { console.error(err); _load_d.reject(root); });
+			} else {
 				_load_d.resolve(root);
-			}).fail(function(err) { console.error(err); _load_d.reject(root);   });
+			}
 		}).fail(function(err) { console.error(err); _load_d.reject(root); });
 		return _load_d.promise();
 	};
