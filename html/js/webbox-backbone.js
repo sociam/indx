@@ -148,46 +148,58 @@
 			return this.box._delete_models([this]);
 		},
 		_fetch:function() {
-			var this_ = this, d = u.deferred(), box = this.box.get_id();
+			var this_ = this, fd = u.deferred(), box = this.box.get_id();
 			this.box._ajax('GET', box, {'id':this.id}).then(function(response) {
 				u.log('query response ::: ', response);
 				var version = null;
 				var objdata = response.data;
 				if (this_.id !== this_.get_id()) { return this_.set('@id', this_.get_id()); }
-				$.each(objdata, function(uri, obj){
+				_(objdata).map(function(obj,uri) {
 					// top level keys - corresponding to box level properties
 					// set the box id cos 
 					if (uri === "@version") { version = obj; return; }
 					if (uri[0] === "@") { return; } // ignore "@id" etc
 					// not one of those, so must be a
 					// < uri > : { prop1 .. prop2 ... }
-					$.each(obj, function(key, vals){
+					return _(obj).map(function(vals, key) {
+						var kd = u.deferred();
 						if (key.indexOf('@') === 0) { return; } // ignore "@id" etc
-						var obj_vals = vals.map(function(val) {
+						var val_dfds = vals.map(function(val) {
+							var d = u.deferred();
 							// it's an object, so return that
-							if (val.hasOwnProperty("@id")) { return this_.get_or_create_obj(val["@id"]); }
+							if (val.hasOwnProperty("@id")) {
+								this_.get_obj(val["@id"]).then(d.resolve).fail(d.reject);
+							}
 							// it's a non-object
-							if (val.hasOwnProperty("@value")) {	return deserialize_literal(val); }
+							if (val.hasOwnProperty("@value")) {
+								d.resolve(deserialize_literal(val));
+							}
 							// don't know what it is!
-							u.assert(false, "cannot unpack value ", val);
-						});
-						// only update keys that have changed
-						var prev_vals = this_.get(key);
-						if ( prev_vals === undefined ||
-							 obj_vals.length !== prev_vals.length ||
-							  _(obj_vals).difference(prev_vals).length > 0 ||
-							  _(prev_vals).difference(obj_vals).length > 0) {
-							this_.set(key,obj_vals);
-						}
-					});
-					// we need to ensure our box is up to date otherwise version skew!
-					this_.box._update_version_to(version)
-						.then(function() { d.resolve(this_); })
-						.fail(function(err) { d.reject(err); });
-				});
-
+							d.reject('cannot unpack value ', val);
+							return d.promise();							
+						});						
+						u.when(val_dfds).then(function(obj_vals) {
+							// only update keys that have changed
+							var prev_vals = this_.get(key);
+							if ( prev_vals === undefined ||
+								 obj_vals.length !== prev_vals.length ||
+								 _(obj_vals).difference(prev_vals).length > 0 ||
+								 _(prev_vals).difference(obj_vals).length > 0) {
+								this_.set(key,obj_vals);
+							}
+							kd.resolve();
+						}).fail(kd.reject);
+						return kd.promise();
+					}).filter(function(x) { return x !== undefined; });
+				}).filter(function(x) { return x !== undefined;})
+					.then(function() {
+						// we need to ensure our box is up to date otherwise version skew!
+						this_.box._update_version_to(version)
+							.then(function() { fd.resolve(this_); })
+							.fail(function(err) { fd.reject(err); });
+					}).fail(fd.reject);
 			});
-			return d.promise();
+			return fd.promise();
 		},
 		sync: function(method, model, options){
 			switch(method){
