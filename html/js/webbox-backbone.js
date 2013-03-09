@@ -195,8 +195,7 @@
 					})
 					.flatten()
 					.filter(function(x) { return x !== undefined;})
-					.value();
-				
+					.value();				
 				u.when(obj_save_dfds).then(function() {
 					// we need to ensure our box is up to date otherwise version skew!
 					this_.box._update_version_to(version)
@@ -261,6 +260,8 @@
 				}).fail(function(data) {
 					console.debug("fail query");
 				});
+
+
 			return d.promise();
 		},
 		_update_version_to:function(version) {
@@ -367,7 +368,8 @@
 				}).map(function(obj){ return serialize_obj(obj); });			
 			this._ajax("PUT",  this.id + "/update", { version: escape(version), data : JSON.stringify(objs)  })
 				.then(function(response) {
-					this_.set('version', response.data["@version"]);
+					u.debug('DEBUG :::: setting version to ', response.data["@version"]);
+					this_._set_version(response.data["@version"]);
 					d.resolve(this_);
 				}).fail(function(err) {
 					// catch obsolete error	- then automatically refetch?
