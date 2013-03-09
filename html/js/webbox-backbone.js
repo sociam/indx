@@ -154,50 +154,55 @@
 				var version = null;
 				var objdata = response.data;
 				if (this_.id !== this_.get_id()) { return this_.set('@id', this_.get_id()); }
-				_(objdata).map(function(obj,uri) {
-					// top level keys - corresponding to box level properties
-					// set the box id cos 
-					if (uri === "@version") { version = obj; return; }
-					if (uri[0] === "@") { return; } // ignore "@id" etc
-					// not one of those, so must be a
-					// < uri > : { prop1 .. prop2 ... }
-					return _(obj).map(function(vals, key) {
-						var kd = u.deferred();
-						if (key.indexOf('@') === 0) { return; } // ignore "@id" etc
-						var val_dfds = vals.map(function(val) {
-							var d = u.deferred();
-							// it's an object, so return that
-							if (val.hasOwnProperty("@id")) {
-								this_.get_obj(val["@id"]).then(d.resolve).fail(d.reject);
-							}
-							// it's a non-object
-							if (val.hasOwnProperty("@value")) {
-								d.resolve(deserialize_literal(val));
-							}
-							// don't know what it is!
-							d.reject('cannot unpack value ', val);
-							return d.promise();							
-						});						
-						u.when(val_dfds).then(function(obj_vals) {
-							// only update keys that have changed
-							var prev_vals = this_.get(key);
-							if ( prev_vals === undefined ||
-								 obj_vals.length !== prev_vals.length ||
-								 _(obj_vals).difference(prev_vals).length > 0 ||
-								 _(prev_vals).difference(obj_vals).length > 0) {
-								this_.set(key,obj_vals);
-							}
-							kd.resolve();
-						}).fail(kd.reject);
-						return kd.promise();
-					}).filter(function(x) { return x !== undefined; });
-				}).filter(function(x) { return x !== undefined;})
-					.then(function() {
-						// we need to ensure our box is up to date otherwise version skew!
-						this_.box._update_version_to(version)
-							.then(function() { fd.resolve(this_); })
-							.fail(function(err) { fd.reject(err); });
-					}).fail(fd.reject);
+				var obj_save_dfds = _(objdata).chain()
+					.map(function(obj,uri) {
+						// top level keys - corresponding to box level properties
+						// set the box id cos 
+						if (uri === "@version") { version = obj; return; }
+						if (uri[0] === "@") { return; } // ignore "@id" etc
+						// not one of those, so must be a
+						// < uri > : { prop1 .. prop2 ... }
+						return _(obj).map(function(vals, key) {
+							var kd = u.deferred();
+							if (key.indexOf('@') === 0) { return; } // ignore "@id" etc
+							var val_dfds = vals.map(function(val) {
+								var d = u.deferred();
+								// it's an object, so return that
+								if (val.hasOwnProperty("@id")) {
+									this_.get_obj(val["@id"]).then(d.resolve).fail(d.reject);
+								}
+								// it's a non-object
+								if (val.hasOwnProperty("@value")) {
+									d.resolve(deserialize_literal(val));
+								}
+								// don't know what it is!
+								d.reject('cannot unpack value ', val);
+								return d.promise();							
+							});						
+							u.when(val_dfds).then(function(obj_vals) {
+								// only update keys that have changed
+								var prev_vals = this_.get(key);
+								if ( prev_vals === undefined ||
+									 obj_vals.length !== prev_vals.length ||
+									 _(obj_vals).difference(prev_vals).length > 0 ||
+									 _(prev_vals).difference(obj_vals).length > 0) {
+									this_.set(key,obj_vals);
+								}
+								kd.resolve();
+							}).fail(kd.reject);
+							return kd.promise();
+						});
+					})
+					.flatten()
+					.filter(function(x) { return x !== undefined;})
+					.value();
+				
+				u.when(obj_save_dfds).then(function() {
+					// we need to ensure our box is up to date otherwise version skew!
+					this_.box._update_version_to(version)
+						.then(function() { fd.resolve(this_); })
+						.fail(function(err) { fd.reject(err); });
+				}).fail(fd.reject);
 			});
 			return fd.promise();
 		},
@@ -223,12 +228,12 @@
 		initialize:function(attributes, options) {
 			u.assert(options.store, "no store provided");
 			this.store = options.store;
-			this.set({objcache: new ObjCollection(), objlist: []});
+			this.set({objcache: new ObjCollection(), objlist: [] });
 		},
 		get_cache_size:function(i) { return this._objcache().length; },
 		get_obj_ids:function() { return this._objlist().slice(); },
 		_objcache:function() { return this.attributes.objcache; },
-		_objlist:function() { return this.attributes.objlist; },
+		_objlist:function() { return this.attributes.objlist || []; },
 		_set_objlist:function(ol) { return this.set({objlist:ol}); },
 		_set_token:function(token) { this.set("token", token);	},
 		_set_version:function(v) { this.set("version", v);	},
@@ -259,6 +264,7 @@
 			return d.promise();
 		},
 		_update_version_to:function(version) {
+			u.log(' debug :: - update-version to() ', version);
 			var d = u.deferred(), box = this.get_id(), this_ = this, cur_version = this._get_version();
 			if (version !== undefined && cur_version === version) {
 				// if we're already at current version, we have no work to do
@@ -316,7 +322,7 @@
 		},
 		// ----------------------------------------------------
 		_update_object_list:function(updated_obj_ids) {
-			var current = updated_obj_ids, olds = this.get('objlist').slice(), this_ = this;
+			var current = updated_obj_ids, olds = this._objlist().slice(), this_ = this;
 			// diff em
 			var news = _(current).difference(olds), died = _(olds).difference(current);
 			this.set({objlist:current});
@@ -334,6 +340,7 @@
 				function(response){
 					u.assert(response['@version'] !== undefined, 'no version provided');
 					console.log(' BOX FETCH VERSION ', response['@version']);
+					this_.id = this_.get_id();
 					this_._set_version(response['@version']);
 					this_._update_object_list(response.ids);
 					d.resolve(this_);
