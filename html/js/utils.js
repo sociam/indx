@@ -2,6 +2,7 @@
 /*jslint vars:true, sloppy:true */
 
 (function() {
+	console.log("UTILS >>>>> ");
 	// get a handle to the namespace
 	var root = this, WebBox;
 	if (typeof exports !== 'undefined'){ WebBox = exports.WebBox; }
@@ -74,4 +75,7 @@
 			return hash;
 		}
 	};
+
+	WebBox.loader_dependencies.utils.dfd.resolve(WebBox.utils);
+	
 }).call(this);

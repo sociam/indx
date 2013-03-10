@@ -472,8 +472,7 @@
 					var boxes =	data.list.map(function(boxid) { return this_.get_or_create_box(boxid); });
 					this_.boxes().reset(boxes);
 					d.resolve(boxes);
-				})
-				.error(function(e) { d.reject(e); });
+				}).error(function(e) { d.reject(e); });
 			return d.promise();
 		},
 		_ajax:function(method, path, data) {
@@ -495,23 +494,36 @@
 		}
 	});
 
-	var dependencies = [
-		'/js/vendor/bootstrap.min.js',
-		'/js/vendor/lesscss.min.js',
-		'/js/utils.js',
-		'/components/toolbar/toolbar.js'
-	];
+	WebBox.loader_dependencies = {
+		utils : { path: '/js/utils.js', dfd : new $.Deferred()  },
+		toolbar : { path: '/components/toolbar/toolbar.js', dfd : new $.Deferred()  }
+	};
 	
 	WebBox.load = function(options) {
 		var base_url = options && options.base_url;
-		if (!base_url) { base_url = ['http:/', document.location.host].join('/'); }
-		var _load_d = new $.Deferred(); 
-		var ds = dependencies.map(function(s) {	return $.getScript(base_url + s);});
-		$.when.apply($,ds).then(function() {
+		if (!base_url) { base_url = ['http:/', document.location.host].join('/'); }		
+		var loadfns = _(WebBox.loader_dependencies).map(function(dependency,name) {
+			return function() {
+				$.getScript(base_url + dependency.path);
+				return dependency.dfd;
+			};
+		});
+		var recursive_loader = function(rest) {
+			if (rest.length === 0) { return (new $.Deferred()).resolve().promise(); }
+			var now = rest[0], dp = new $.Deferred();
+			now().then(function() {
+				recursive_loader(rest.slice(1)).then(dp.resolve).fail(dp.reject);
+			}).fail(dp.reject);
+			return dp.promise();
+		};		
+		var _load_d = new $.Deferred();		
+		recursive_loader(loadfns).then(function() {
 			u = WebBox.utils;
-			if (!options || !(options.load_toolbar == false)) {
+			console.log("everything's loaded! > ");
+			if (!options || !(options.load_toolbar === false)) {
+				console.log('loading templates ... ');
 				WebBox.Toolbar.load_templates(base_url)
-					.then(function() {	_load_d.resolve(root);	})
+					.then(function() {	_load_d.resolve(root);			})
 					.fail(function(err) { console.error(err); _load_d.reject(root); });
 			} else {
 				_load_d.resolve(root);

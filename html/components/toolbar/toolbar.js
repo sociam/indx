@@ -7,6 +7,7 @@ if (typeof exports !== 'undefined'){ WebBox = exports.WebBox;}
 else { WebBox = root.WebBox; }
 
 (function() {
+	console.log("TOOLBAR >>>>> ");	
 	var u = WebBox.utils, templates;
 	var ToolbarView = WebBox.Toolbar = Backbone.View.extend({
 		tagClass:"div",
@@ -19,15 +20,19 @@ else { WebBox = root.WebBox; }
 			this.$el.html(t_templ).addClass('toolbar navbar-fixed-top navbar');
 			// set up listeners from store
 			store.on('login', function(username) {
+				u.debug('toolbar :: login ');
 				this_.username = username; this_.render();
 				this_.trigger('login', username);
 			}).on('logout', function(username) {
+				u.debug('toolbar :: logout ');				
 				this_.set_selected_box_id(); // clear selected box
 				delete this_.username; this_.render();
 				this_.trigger('logout');				
 			}).on('change:boxes', function() {
+				u.debug('toolbar :: change boxes ');								
 				this_._update_boxlist();
 			}).on('change:selected-box', function(bid) {
+				u.debug('toolbar :: selected box ');												
 				this_.set_selected_box_id(bid);
 			});
 			// check to see if already logged in 
@@ -109,5 +114,6 @@ else { WebBox = root.WebBox; }
 			return d.promise();
 		}));
 		return $.when.apply($,ds);
-	};	
+	};
+	WebBox.loader_dependencies.toolbar.dfd.resolve(WebBox.Toolbar);	
 }());

@@ -7,9 +7,9 @@ WebBox.load().then(function(exports) {
 		$('.loaded').slideDown('slow');
 		window.store = new WebBox.Store();
 		store.login('electronic','foo').then(function() {
-			console.log('ok');
+			console.log('log in ok');
 			store.toolbar.on('change:selected-box', function(b) {
-				console.log('changed ----------------- ', b, store.boxes().get(b));
+				console.log('change:selected-box ----------------- ', b, store.boxes().get(b));
 				var box = store.boxes().get(b);
 				box.fetch().then(function(box) {
 					console.log('loaded --- ', box);
