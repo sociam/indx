@@ -76,19 +76,23 @@ def list_boxes(db_user, db_pass):
 
 
 def create_user(new_username, new_password, db_user, db_pass):
-
+    """ Create a new user, and connect as the specified user.
+    """
     return_d = Deferred()
 
-    def created(row):
+    def created(conn, row):
+        conn.close() # close the connection
         return_d.callback(None)
+        return
 
     def connected(conn):
         cursor = conn.cursor()
         d = cursor.execute("CREATE ROLE %s LOGIN ENCRYPTED PASSWORD '%s' NOSUPERUSER INHERIT CREATEDB NOCREATEROLE" % (new_username, new_password))
-        d.addCallback(lambda _: cursor.fetchone())
-        d.addCallback(created)
+        d.addCallbacks(lambda _: cursor.fetchone(), lambda failure: return_d.errback(failure))
+        d.addCallbacks(lambda row: created(conn, row), lambda failure: return_d.errback(failure))
+        return
 
-    connect("postgres", db_user, db_pass).addCallback(connected)
+    connect("postgres", db_user, db_pass).addCallbacks(connected, lambda failure: return_d.errback(failure))
     return return_d
 
 
