@@ -23,13 +23,11 @@ from webbox.objectstore_query import ObjectStoreQuery
 
 class ObjectStoreAsync:
     """ Stores objects in a database, handling import, export and versioning.
-
-        Each ObjectStore has single cursor, so create a new ObjectStore object per thread.
     """
 
     def __init__(self, conn):
         """
-            conn is a postgresql psycopg2 database connection
+            conn is a postgresql psycopg2 database connection, or connection pool.
         """
         self.conn = conn
         # TODO FIXME determine if autocommit has to be off for PL/pgsql support

@@ -25,11 +25,26 @@ from twisted.internet.defer import Deferred
 
 POSTGRES_DB = "postgres" # default db fallback if db name is none
 WBPREFIX = "wb_"
+POOLS = {} # dict of txpostgres.ConnectionPools, one pool for each box/user combo
 
 def connect(db_name,db_user,db_pass):
-    conn = txpostgres.Connection()
     conn_str = ("dbname='{0}' user='{1}' password='{2}'".format(db_name or POSTGRES_DB, db_user, db_pass))    
-    return conn.connect(conn_str)
+
+    result_d = Deferred()
+    if conn_str in POOLS:
+        pool = POOLS[conn_str]
+        # already connected, so just return a defered with itself
+        result_d.callback(pool)
+    else:
+        pool = txpostgres.ConnectionPool(None, conn_str)
+        POOLS[conn_str] = pool
+        # not connected yet, so return after start() finished
+        pool.start().addCallback(lambda ready: result_d.callback(pool))
+
+    return result_d
+
+#    conn = txpostgres.Connection()
+#    return conn.connect(conn_str)
 
 def connect_box(box_name,db_user,db_pass):
     return connect(WBPREFIX + box_name, db_user, db_pass)
@@ -50,10 +65,7 @@ def list_databases(db_user, db_pass):
         return_d.callback(dbs)
 
     def connected(conn):
-        cursor = conn.cursor()
-        d = cursor.execute("SELECT datname FROM pg_database WHERE datname LIKE %s", [WBPREFIX+"%"])
-        d.addCallback(lambda _: cursor.fetchall())
-        d.addCallback(db_list)
+        conn.runQuery("SELECT datname FROM pg_database WHERE datname LIKE %s", [WBPREFIX+"%"]).addCallback(db_list)
 
     connect("postgres", db_user, db_pass).addCallback(connected)
     return return_d
@@ -80,16 +92,14 @@ def create_user(new_username, new_password, db_user, db_pass):
     """
     return_d = Deferred()
 
-    def created(conn, row):
+    def created(conn, rows):
         conn.close() # close the connection
         return_d.callback(None)
         return
 
     def connected(conn):
-        cursor = conn.cursor()
-        d = cursor.execute("CREATE ROLE %s LOGIN ENCRYPTED PASSWORD '%s' NOSUPERUSER INHERIT CREATEDB NOCREATEROLE" % (new_username, new_password))
-        d.addCallbacks(lambda _: cursor.fetchone(), lambda failure: return_d.errback(failure))
-        d.addCallbacks(lambda row: created(conn, row), lambda failure: return_d.errback(failure))
+        d = conn.runQuery("CREATE ROLE %s LOGIN ENCRYPTED PASSWORD '%s' NOSUPERUSER INHERIT CREATEDB NOCREATEROLE" % (new_username, new_password))
+        d.addCallbacks(lambda rows: created(conn, rows), lambda failure: return_d.errback(failure))
         return
 
     connect("postgres", db_user, db_pass).addCallbacks(connected, lambda failure: return_d.errback(failure))
