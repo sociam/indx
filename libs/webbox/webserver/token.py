@@ -16,17 +16,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
-import os, logging, time, traceback, json, re, uuid
-from urlparse import urlparse, parse_qs
-from twisted.web import script
-from twisted.internet import reactor
-from twisted.web.resource import ForbiddenResource, Resource
-from twisted.web.server import Site
-from twisted.web.util import Redirect
-from twisted.web.static import File, Registry
-from twisted.web.wsgi import WSGIResource
-from twisted.internet import reactor, ssl
-from twisted.internet.defer import Deferred
+import logging, uuid
 
 class Token:
     def __init__(self, username, password, boxid, appid, origin, store):
@@ -37,6 +27,7 @@ class Token:
         self.origin = origin
         self.store = store
         self.id = str(uuid.uuid1())
+
     def verify(self,boxname,appname,origin):
         logging.debug("Verify token ({0}) with boxid: {1} and origin {2}, to request boxid: {3} and request origin: {4}".format(self.id, self.boxid, self.origin, boxname, origin))
         # origin is None means we're same origin
@@ -55,11 +46,4 @@ class TokenKeeper:
         token = Token(username,password,boxid,appid,origin,store)
         self.add(token)
         return token
-    
-
-    
-    
-    
-        
-    
-        
+ 
