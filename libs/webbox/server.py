@@ -16,19 +16,14 @@
 #    You should have received a copy of the GNU General Public License
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
-import os, logging, time, traceback, json, re
-from urlparse import urlparse, parse_qs
+import os, logging, json
 from twisted.web import script
-from twisted.internet import reactor
-from twisted.web.resource import ForbiddenResource, Resource
+from twisted.web.resource import ForbiddenResource
 from twisted.web.server import Site
-from twisted.web.util import Redirect
-from twisted.web.static import File, Registry
-from twisted.web.wsgi import WSGIResource
+from twisted.web.static import File
 from twisted.internet import reactor, ssl
 from twisted.internet.defer import Deferred
 
-from webbox.exception import ResponseOverride
 import webbox.webserver.handlers as handlers
 from webbox.webserver.handlers.box import BoxHandler
 from webbox.webserver.handlers.app import AppsMetaHandler
@@ -131,7 +126,7 @@ class WebServer:
     def start(self):        
         factory = Site(self.root)
         server_port = int(self.config['server']['port'])
-        server_hostname = self.config['server']['hostname']
+        #server_hostname = self.config['server']['hostname']
         server_cert = os.path.join(self.base_dir,self.config['server'].get('ssl_cert'))
         server_private_key = os.path.join(self.base_dir,self.config['server'].get('ssl_private_key'))        
         if self.ssl_off:
