@@ -265,16 +265,18 @@
 			return d.promise();
 		},
 		_update_version_to:function(version) {
-			u.log(' debug :: - update-version to() ', version);
+			u.debug('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! debug :: - update-version to() ', version);
 			var d = u.deferred(), box = this.get_id(), this_ = this, cur_version = this._get_version();
 			if (version !== undefined && cur_version === version) {
 				// if we're already at current version, we have no work to do
+				u.debug('already at current version, proceeding >> ');
 				d.resolve();
 			} else {
 				// otherwise we launch a diff
-				console.log('cur version ', cur_version, box);
+				console.debug('updating-- getting diff ', cur_version, box);
 				this._ajax("GET", [box,'diff'].join('/'), {from_version:cur_version,return_objs:false}).then(
 					function(response) {
+						console.debug('diff response ', response);						
 						// update version
 						var latest_version = response['@latest_version'],
 							added_ids  = response['@added_ids'],
@@ -372,7 +374,11 @@
 					this_._set_version(response.data["@version"]);
 					d.resolve(this_);
 				}).fail(function(err) {
-					// catch obsolete error	- then automatically refetch?
+					// TODO TODO -- make sure that this doesn't clobber our local changes :(
+					// very dangerous for concurrent modification
+					this_.fetch()
+						.then(function() { this_.save().then(d.resolve).fail(d.reject); })
+						.fail(d.reject);
 					d.reject(err);
 				});
 			return d.promise();
