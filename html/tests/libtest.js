@@ -9,7 +9,7 @@ WebBox.load().then(function(exports) {
 		store.on('login', function() { console.log('log in ok'); });
 		store.toolbar.on('change:selected-box', function(b) {
 			if (b !== undefined) {
-				u.debug('libtest :: new box selected ', b);
+				console.debug('libtest :: new box selected ', b);
 				var box = store.boxes().get(b);
 				box.fetch().then(function(box) {
 					console.log('loaded --- ', box);

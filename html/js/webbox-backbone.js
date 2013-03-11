@@ -398,7 +398,6 @@
 			return this._ajax('DELETE', this.id+'/', { version:version, data: JSON.stringify(m_ids) });
 		},
 		sync: function(method, model, options){
-			console.log('method ', method, model.id);
 			switch(method)
 			{
 			case "create": return model._create_box();

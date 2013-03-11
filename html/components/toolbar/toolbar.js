@@ -82,12 +82,10 @@ else { WebBox = root.WebBox; }
 		},
 		_render_update:function() {
 			if (this.username) {
-				console.log('username - login');
 				this.$el.find('.username_display a').html(this.username);
 				this.$el.find('.username_display').show();
 				this.$el.find('.login_display').hide();				
 			} else {
-				console.log('no username - logout');
 				this.$el.find('.username_display').hide();
 				this.$el.find('.login_display').show();				
 			}		
