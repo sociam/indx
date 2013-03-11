@@ -38,7 +38,8 @@ BOX_NAME_BLACKLIST = [
     "webbox",
     ".well-known",
     "openid",
-    "auth"
+    "auth",
+    "files"
 ]
 
 
