@@ -68,11 +68,13 @@ else { WebBox = root.WebBox; }
 			});
 		},
 		set_selected_box_id:function(bid) {
-			var store = this.options.store, this_ = this;
-			var box = store.boxes().get(bid);
-			u.assert(box, 'internal error - box is not defined ' + bid);
-			this.trigger('change:selected-box', bid);
+			var store = this.options.store, this_ = this, box;
+			if (bid !== undefined) { 
+				box = store.boxes().get(bid);
+				u.assert(box, 'internal error - box is not defined ' + bid);
+			}
 			this.$el.find('.selected-box').html(box === undefined ? ' no box selected ' : box.get_id());
+			this.trigger('change:selected-box', bid);
 			this.selected_box = box;
 		},
 		_box_selected:function(d) {
