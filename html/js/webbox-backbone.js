@@ -274,8 +274,9 @@
 			} else {
 				// otherwise we launch a diff
 				console.debug('updating-- getting diff ', cur_version, box);
-				this._ajax("GET", [box,'diff'].join('/'), {from_version:cur_version,return_objs:false}).then(
+				this._ajax("GET", [box,'diff'].join('/'), {from_version:cur_version}).then(
 					function(response) {
+						// TODO: this has yet to be debugged (!) PROCEED WITH CAUTION
 						console.debug('diff response ', response);						
 						// update version
 						var latest_version = response['@latest_version'],
