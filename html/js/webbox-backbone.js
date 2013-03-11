@@ -339,7 +339,7 @@
 			// new client :: this now _only_ fetches object ids
 			var box = this.get_id(), d = u.deferred(), this_ = this;
 			// return a list of models (each of type WebBox.Object) to populate a GraphCollection
-			this._ajax("GET", [box,'get_object_ids'].join('/')).then(
+			this._ajax("GET",[box,'get_object_ids'].join('/')).then(
 				function(response){
 					u.assert(response['@version'] !== undefined, 'no version provided');
 					console.log(' BOX FETCH VERSION ', response['@version']);
@@ -347,7 +347,7 @@
 					this_._set_version(response['@version']);
 					this_._update_object_list(response.ids);
 					d.resolve(this_);
-				}).fail(function(err) { d.reject(err, this_);});
+				}).fail(d.reject);
 			return d.promise();
 		},
 		// -----------------------------------------------
