@@ -36,23 +36,27 @@ def connect(db_name,db_user,db_pass):
         # already connected, so just return a defered with itself
         result_d.callback(pool)
     else:
-        pool = txpostgres.ConnectionPool(None, conn_str)
-        POOLS[conn_str] = pool
         # not connected yet, so return after start() finished
-        pool.start().addCallback(lambda ready: result_d.callback(pool))
+
+        def success(pool):
+            POOLS[conn_str] = pool # only do this if successly connection
+            result_d.callback(pool)
+
+        pool = txpostgres.ConnectionPool(None, conn_str)
+        pool.start().addCallbacks(lambda ready: success(pool), lambda failure: result_d.errback(failure))
 
     return result_d
 
-#    conn = txpostgres.Connection()
-#    return conn.connect(conn_str)
 
 def connect_box(box_name,db_user,db_pass):
     return connect(WBPREFIX + box_name, db_user, db_pass)
+
 
 def auth(db_user,db_pass):
     d = Deferred()
     connect(None,db_user,db_pass).addCallbacks(lambda *x: d.callback(True), lambda *x: d.callback(False))
     return d
+
 
 def list_databases(db_user, db_pass):
     return_d = Deferred()
