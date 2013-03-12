@@ -150,7 +150,7 @@
 		_fetch:function() {
 			var this_ = this, fd = u.deferred(), box = this.box.get_id();
 			this.box._ajax('GET', box, {'id':this.id}).then(function(response) {
-				u.log('query response ::: ', response);
+				// u.log('query response ::: ', response);
 				var version = null;
 				var objdata = response.data;
 				if (this_.id !== this_.get_id()) { return this_.set('@id', this_.get_id()); }
@@ -265,15 +265,15 @@
 			return d.promise();
 		},
 		_update_version_to:function(version) {
-			u.debug('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! debug :: - update-version to() ', version);
+			// u.debug('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! debug :: - update-version to() ', version);
 			var d = u.deferred(), box = this.get_id(), this_ = this, cur_version = this._get_version();
 			if (version !== undefined && cur_version === version) {
 				// if we're already at current version, we have no work to do
-				u.debug('already at current version, proceeding >> ');
+				// u.debug('already at current version, proceeding >> ');
 				d.resolve();
 			} else {
 				// otherwise we launch a diff
-				console.debug('updating-- getting diff ', cur_version, box);
+				u.debug('updating-- getting diff ', cur_version, box);
 				this._ajax("GET", [box,'diff'].join('/'), {from_version:cur_version}).then(
 					function(response) {
 						// TODO: this has yet to be debugged (!) PROCEED WITH CAUTION
@@ -364,7 +364,8 @@
 			return this_._fetch();			
 		},
 		_update:function(ids) {
-			ids = ids !== undefined ? (_.isArray(ids) ? ids.slice() : [ids]) : undefined;			
+			ids = ids ? (_.isArray(ids) ? ids.slice() : [ids]) : undefined;
+			u.debug("UPDATE ", ids);
 			var d = u.deferred(), version = this.get('version') || 0, this_ = this,
 				objs = this._objcache().filter(function(x) {
 					return ids === undefined || ids.indexOf(x.id) >= 0;
@@ -376,10 +377,15 @@
 					d.resolve(this_);
 				}).fail(function(err) {
 					// TODO TODO -- make sure that this doesn't clobber our local changes :(
-					// very dangerous for concurrent modification
-					this_.fetch()
-						.then(function() { this_.save().then(d.resolve).fail(d.reject); })
-						.fail(d.reject);
+					// very dangerous for concurrent modification					
+					if (err.status === 409) {
+						u.debug("got an obsolete ------------- trying to fetch again ");						
+						return this_.fetch()
+							.then(function() {
+								console.log("FETCHED, trying to save again ");
+								this_._update(ids).then(d.resolve).fail(d.reject);
+							}).fail(d.reject);
+					}
 					d.reject(err);
 				});
 			return d.promise();
@@ -477,7 +483,7 @@
 		},
 		_ajax:function(method, path, data) {
 			var url = [this.get('server_url'), path].join('/');
-			u.log(' store ajax ', method, url);
+			// u.log(' store ajax ', method, url);
 			var default_data = { app: this.get('app') };
 			var options = _(_(this.ajax_defaults).clone()).extend(
 				{ url: url, method : method, crossDomain: !this.is_same_domain(), data: _(default_data).extend(data) }
