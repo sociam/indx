@@ -331,7 +331,7 @@
 			var news = _(current).difference(olds), died = _(olds).difference(current);
 			this.set({objlist:current});
 			news.map(function(aid) { this_.trigger('obj-add', aid); });
-			news.map(function(rid) {
+			died.map(function(rid) {
 				this_.trigger('obj-remove', rid);
 				this_._objcache().remove(rid);
 			});
@@ -347,6 +347,10 @@
 					this_.id = this_.get_id();
 					this_._set_version(response['@version']);
 					this_._update_object_list(response.ids);
+
+					// // --- dangerous -- if we have objcache already populated .... 
+					// DO SOMETHING like update the objcache contents!
+					
 					d.resolve(this_);
 				}).fail(d.reject);
 			return d.promise();
@@ -363,13 +367,13 @@
 			}
 			return this_._fetch();			
 		},
-		_update:function(ids) {
-			ids = ids ? (_.isArray(ids) ? ids.slice() : [ids]) : undefined;
+		_update:function(original_ids) {
+			var ids = original_ids ? (_.isArray(original_ids) ? original_ids.slice() : [original_ids]) : undefined;
 			u.debug("UPDATE ", ids);
 			var d = u.deferred(), version = this.get('version') || 0, this_ = this,
 				objs = this._objcache().filter(function(x) {
 					return ids === undefined || ids.indexOf(x.id) >= 0;
-				}).map(function(obj){ return serialize_obj(obj); });			
+				}).map(function(obj){ return serialize_obj(obj); });
 			this._ajax("PUT",  this.id + "/update", { version: escape(version), data : JSON.stringify(objs)  })
 				.then(function(response) {
 					u.debug('DEBUG :::: setting version to ', response.data["@version"]);
@@ -382,8 +386,8 @@
 						u.debug("got an obsolete ------------- trying to fetch again ");						
 						return this_.fetch()
 							.then(function() {
-								console.log("FETCHED, trying to save again ");
-								this_._update(ids).then(d.resolve).fail(d.reject);
+								console.log("FETCHED, trying to save again ", original_ids);
+								this_._update(original_ids).then(d.resolve).fail(d.reject);
 							}).fail(d.reject);
 					}
 					d.reject(err);
