@@ -433,12 +433,12 @@ class ObjectStoreAsync:
             # excludes these object IDs when it clones the previous version
             parameters.extend(id_list)
 
-            query = "SELECT * FROM wb_clone_version("
-            for i in range(len(parameters)):
+            query = "SELECT * FROM wb_clone_version(%s,%s,%s,ARRAY["
+            for i in range(len(id_list)):
                 if i > 0:
                     query += ", "
                 query += "%s"
-            query += ")"
+            query += "]::text[])"
 
             logging.debug("Objectstore _clone, query: {0} params: {1}".format(query, parameters))
 

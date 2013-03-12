@@ -86,18 +86,20 @@ $BODY$DECLARE
 	string_id integer;
 BEGIN
 	results_ids := '{}';
-	FOR i IN 1 .. array_upper(input_strings, 1) LOOP
-		input_string := input_strings[i];
-		SELECT * INTO string_id FROM wb_get_string_id(input_string);
-		results_ids := array_append(results_ids, string_id);
-	END LOOP;
+    IF array_length(input_strings,1) > 0 THEN
+        FOR i IN 1 .. array_upper(input_strings, 1) LOOP
+            input_string := input_strings[i];
+            SELECT * INTO string_id FROM wb_get_string_id(input_string);
+            results_ids := array_append(results_ids, string_id);
+        END LOOP;
+    END IF;
 	RETURN results_ids;
 END;$BODY$
   LANGUAGE plpgsql VOLATILE
   COST 100;
 
 
-CREATE OR REPLACE FUNCTION wb_clone_version(input_from_version integer, input_to_version integer, input_user_id integer, VARIADIC input_excludes_subjects text[])
+CREATE OR REPLACE FUNCTION wb_clone_version(input_from_version integer, input_to_version integer, input_user_id integer, input_excludes_subjects text[])
   RETURNS boolean AS
 $BODY$DECLARE
     subject_ids integer[];
