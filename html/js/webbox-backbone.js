@@ -501,7 +501,7 @@
 	
 	WebBox.load = function(options) {
 		var base_url = options && options.base_url;
-		if (!base_url) { base_url = ['http:/', document.location.host].join('/'); }		
+		if (!base_url) { base_url = ['/', document.location.host].join('/'); }		
 		var loadfns = _(WebBox.loader_dependencies).map(function(dependency,name) {
 			return function() {
 				$.getScript(base_url + dependency.path);
