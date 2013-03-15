@@ -141,13 +141,13 @@ END;$BODY$
 
 
 CREATE OR REPLACE FUNCTION wb_diff_changed(input_version_from integer, input_version_to integer)
-  RETURNS TABLE (version text, subject text, predicate text, obj_value text, obj_type text, obj_lang text, obj_datatype text) AS
+  RETURNS TABLE (version_out text[], subject_out text, predicate_out text, obj_value_out text, obj_type_out object_type, obj_lang_out character varying(128), obj_datatype_out character varying(2048)) AS
 $BODY$BEGIN
-    RETURN QUERY SELECT DISTINCT version, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM (
+    RETURN QUERY SELECT DISTINCT array_agg(ver), subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM (
 
-            SELECT 'from' as version, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_all_triples WHERE version = input_version_from
+            SELECT 'from' as ver, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_all_triples WHERE version = input_version_from
             UNION ALL
-            SELECT 'to' as version, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_all_triples WHERE version = input_version_to
+            SELECT 'to' as ver, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_all_triples WHERE version = input_version_to
 
         ) AS COMPARISON GROUP BY subject, predicate, obj_value, obj_type, obj_lang, obj_datatype HAVING COUNT(*) = 1;
 END;$BODY$
