@@ -7,7 +7,7 @@
 
         "html_dir": "html",
 
-        "ssl_off": false,
+        "ssl_off": true,
         "ssl_cert": "data/server.crt",
         "ssl_private_key": "data/server.key",
         
