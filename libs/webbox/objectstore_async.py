@@ -212,7 +212,7 @@ class ObjectStoreAsync:
 
             from_version -- The earliest version to check from
             to_version -- The most recent version to check up to (can be None, in which can the latest version will be used)
-            return_objs -- (boolean) If true, full objects will be returned, otherwise a list of IDs will be returned
+            return_objs -- ['diff','objects','ids'] Diff of objects will be return, full objects will be returned, or a list of IDs will be returned
         """
 
         # TODO FIXME XXX lock the table(s) as appropriate inside a transaction (PL/pgspl?) here
@@ -276,14 +276,18 @@ class ObjectStoreAsync:
 
         def got_versions(to_version_used):
             # first callback once we have the to_verion
-            if return_objs:
+            if return_objs == "diff":
+                pass
+            elif return_objs == "objects": 
                 query = "SELECT version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_all_triples WHERE subject = ANY(SELECT wb_diff(%s, %s)) AND version = %s" # order is implicit, defined by the view, so no need to override it here
                 d = self.conn.runQuery(query, [from_version, to_version_used, to_version_used])
                 d.addCallback(lambda rows: objs_cb(rows, to_version_used))
-            else:
+            elif return_objs == "ids":
                 query = "SELECT wb_diff(%s, %s)"
                 d = self.conn.runQuery(query, [from_version, to_version_used])
                 d.addCallback(lambda rows: ids_cb(rows, to_version_used))
+            else:
+                result_d.errback(Failure(Exception("Did not specify valid value of return_objs.")))
             return
 
         logging.debug("diff to version: {0} type({1})".format(to_version, type(to_version)))

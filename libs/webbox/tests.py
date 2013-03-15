@@ -347,10 +347,7 @@ class WebBoxTests:
         if "to" in self.args and self.args['to'] is not None:
             params['to_version'] = self.args['to']
 
-        if self.args['return_objs']:
-            logging.debug("Set return_objs to true.")
-            params['return_objs'] = True # value not strictly necessary, presence of key is all that is checked
-
+        params['return_objs'] = self.args['return_objs']
         status = self.get(url, params)
 
         if status['code'] != 200:

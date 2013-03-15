@@ -139,3 +139,19 @@ END;$BODY$
   COST 100;
 
 
+
+CREATE OR REPLACE FUNCTION wb_diff_changed(input_version_from integer, input_version_to integer)
+  RETURNS TABLE (version text, subject text, predicate text, obj_value text, obj_type text, obj_lang text, obj_datatype text) AS
+$BODY$BEGIN
+    RETURN QUERY SELECT DISTINCT version, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM (
+
+            SELECT 'from' as version, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_all_triples WHERE version = input_version_from
+            UNION ALL
+            SELECT 'to' as version, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_all_triples WHERE version = input_version_to
+
+        ) AS COMPARISON GROUP BY subject, predicate, obj_value, obj_type, obj_lang, obj_datatype HAVING COUNT(*) = 1;
+END;$BODY$
+  LANGUAGE plpgsql VOLATILE
+  COST 100;
+
+
