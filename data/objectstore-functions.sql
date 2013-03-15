@@ -80,12 +80,12 @@ END;$BODY$
 CREATE OR REPLACE FUNCTION wb_get_string_ids(input_strings text[])
   RETURNS integer[] AS
 $BODY$DECLARE
-	results_ids integer[];
-	i integer;
-	input_string text;
-	string_id integer;
+    results_ids integer[];
+    i integer;
+    input_string text;
+    string_id integer;
 BEGIN
-	results_ids := '{}';
+    results_ids := '{}';
     IF array_length(input_strings,1) > 0 THEN
         FOR i IN 1 .. array_upper(input_strings, 1) LOOP
             input_string := input_strings[i];
@@ -93,7 +93,7 @@ BEGIN
             results_ids := array_append(results_ids, string_id);
         END LOOP;
     END IF;
-	RETURN results_ids;
+    RETURN results_ids;
 END;$BODY$
   LANGUAGE plpgsql VOLATILE
   COST 100;
@@ -107,18 +107,18 @@ BEGIN
 
     SELECT * INTO subject_ids FROM wb_get_string_ids(input_excludes_subjects);
 
-	INSERT INTO wb_triple_vers (version, triple, triple_order, change_timestamp, change_user)
-        SELECT	input_to_version as version,
+    INSERT INTO wb_triple_vers (version, triple, triple_order, change_timestamp, change_user)
+        SELECT    input_to_version as version,
             wb_triples.id_triple as triple,
             wb_triple_vers.triple_order as triple_order,
             CURRENT_TIMESTAMP as change_timestamp,
             input_user_id as change_user
-        FROM	wb_triple_vers
-        JOIN	wb_triples ON (wb_triple_vers.triple = wb_triples.id_triple)
-        WHERE		wb_triple_vers.version = input_from_version
-                AND	NOT (wb_triples.subject = ANY(subject_ids));
+        FROM    wb_triple_vers
+        JOIN    wb_triples ON (wb_triple_vers.triple = wb_triples.id_triple)
+        WHERE        wb_triple_vers.version = input_from_version
+                AND    NOT (wb_triples.subject = ANY(subject_ids));
 
-	RETURN true;
+    RETURN true;
 END;$BODY$
   LANGUAGE plpgsql VOLATILE
   COST 100;
@@ -127,13 +127,13 @@ END;$BODY$
 CREATE OR REPLACE FUNCTION wb_diff(input_version_from integer, input_version_to integer)
   RETURNS TABLE (subject_id text) AS
 $BODY$BEGIN
-	RETURN QUERY SELECT DISTINCT subject FROM (
+    RETURN QUERY SELECT DISTINCT subject FROM (
 
-			SELECT 'VerA' as version, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_all_triples WHERE version = input_version_from
-			UNION ALL
-			SELECT 'VerB' as version, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_all_triples WHERE version = input_version_to
+            SELECT 'VerA' as version, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_all_triples WHERE version = input_version_from
+            UNION ALL
+            SELECT 'VerB' as version, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_all_triples WHERE version = input_version_to
 
-		) AS COMPARISON GROUP BY subject, predicate, obj_value, obj_type, obj_lang, obj_datatype HAVING COUNT(*) = 1;
+        ) AS COMPARISON GROUP BY subject, predicate, obj_value, obj_type, obj_lang, obj_datatype HAVING COUNT(*) = 1;
 END;$BODY$
   LANGUAGE plpgsql VOLATILE
   COST 100;
