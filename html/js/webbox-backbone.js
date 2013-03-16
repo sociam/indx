@@ -150,16 +150,26 @@
 		_fetch:function() {
 			var this_ = this, fd = u.deferred(), box = this.box.get_id();
 			this.box._ajax('GET', box, {'id':this.id}).then(function(response) {
-				// u.log('query response ::: ', response);
-				var version = null;
-				var objdata = response.data;
-				if (this_.id !== this_.get_id()) { return this_.set('@id', this_.get_id()); }
+				u.log('query response ::: ', response);
+				var objdata = response.data;				
+				if (this_.box._get_version() !== objdata['@version']) {
+					// our box is obsolete! let's tell box to update itself.
+					u.debug('telling box to update >> ', this_.box._get_version(), response['@version']);
+					// update entire box to latest version then continue
+					return this_.box.fetch().then(function(fetched_thingies) {
+						// recurse after done
+						// TODO: if you already fetched an update for this object
+						// then we really don't need to do it do we? --
+						// 
+						this_.fetch().then(fd.resolve).fail(fd.reject);
+					}).fail(fd.reject);
+				}
+				u.debug("fetching obj ", this_.id);
+				// we are at current known version as far as we know
 				var obj_save_dfds = _(objdata).chain()
 					.map(function(obj,uri) {
 						// top level keys - corresponding to box level properties
-						// set the box id cos 
-						if (uri === "@version") { version = obj; return; }
-						if (uri[0] === "@") { return; } // ignore "@id" etc
+						if (uri[0] === "@") { return; } // ignore "@id", "@version" etc
 						// not one of those, so must be a
 						// < uri > : { prop1 .. prop2 ... }
 						return _(obj).map(function(vals, key) {
@@ -195,13 +205,8 @@
 					})
 					.flatten()
 					.filter(function(x) { return x !== undefined;})
-					.value();				
-				u.when(obj_save_dfds).then(function() {
-					// we need to ensure our box is up to date otherwise version skew!
-					this_.box._update_version_to(version)
-						.then(function() { fd.resolve(this_); })
-						.fail(function(err) { fd.reject(err); });
-				}).fail(fd.reject);
+					.value();
+				u.when(obj_save_dfds).then(function(){ fd.resolve(this_); }).fail(fd.reject);
 			});
 			return fd.promise();
 		},
@@ -253,52 +258,46 @@
 		},
 		query: function(q){
 			// @TODO ::::::::::::::::::::::::::
-			var d = u.deferred();
-			this._ajax(this, "/query", "GET", {"q": JSON.stringify(q)})
-				.then(function(data){
-					console.debug("query results:",data);
-				}).fail(function(data) {
-					console.debug("fail query");
-				});
-
-
-			return d.promise();
+			u.NotImplementedYet();
+			// var d = u.deferred();
+			// this._ajax(this, "/query", "GET", {"q": JSON.stringify(q)})
+			// 	.then(function(data){
+			// 		console.debug("query results:",data);
+			// 	}).fail(function(data) {
+			// 		console.debug("fail query");
+			// 	});
+			// return d.promise();
 		},
-		_update_version_to:function(version) {
+		_diff_update:function() {
 			// u.debug('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! debug :: - update-version to() ', version);
 			var d = u.deferred(), box = this.get_id(), this_ = this, cur_version = this._get_version();
-			if (version !== undefined && cur_version === version) {
-				// if we're already at current version, we have no work to do
-				// u.debug('already at current version, proceeding >> ');
-				d.resolve();
-			} else {
-				// otherwise we launch a diff
-				u.debug('updating-- getting diff ', cur_version, box);
-				this._ajax("GET", [box,'diff'].join('/'), {from_version:cur_version}).then(
-					function(response) {
-						// TODO: this has yet to be debugged (!) PROCEED WITH CAUTION
-						console.debug('diff response ', response);						
-						// update version
-						var latest_version = response['@latest_version'],
-							added_ids  = response['@added_ids'],
-							changed_ids = response['@changed_ids'],
-						    deleted_ids = response['@deleted_ids'],
-							all_ids = response['@all_ids'];						
-						
-						u.assert(latest_version !== undefined, 'latest version not provided');
-						u.assert(added_ids !== undefined, 'added_ids not provided');
-						u.assert(changed_ids !== undefined, 'changed_ids not provided');
-						u.assert(deleted_ids !== undefined, 'deleted _ids not provided');
-						
-						this_._set_version(latest_version);
-						this_._update_object_list(all_ids);						
-						
-						var cached_changed =
-							this_._objcache().filter(function(m) { return changed_ids.indexOf(m.id) >= 0; });
-						u.when(cached_changed.map(function(m) { return m.fetch(); }))
-							.then(d.resolve).fail(d.reject);						
-					});
-			}
+			this._ajax("GET", [box,'diff'].join('/'), {from_version:cur_version}).then(
+				function(response) {
+					// TODO: this has yet to be debugged (!) PROCEED WITH CAUTION
+					console.debug('diff response ', response);						
+					// update version
+					var latest_version = response['@latest_version'],
+						added_ids  = response.added_ids,
+						changed_ids = response.changed_ids,
+						deleted_ids = response.deleted_ids,
+						all_ids = response.all_ids;
+					
+					u.assert(latest_version !== undefined, 'latest version not provided');
+					u.assert(added_ids !== undefined, 'added_ids not provided');
+					u.assert(changed_ids !== undefined, 'changed_ids not provided');
+					u.assert(deleted_ids !== undefined, 'deleted _ids not provided');
+
+					if (latest_version === this_._get_version()) {	return d.resolve(); }
+					
+					this_._set_version(latest_version);
+					this_._update_object_list(undefined, added_ids, deleted_ids);
+
+
+					var cached_changed =
+						this_._objcache().filter(function(m) { return changed_ids.indexOf(m.id) >= 0; });
+
+					u.when(cached_changed.map(function(m) { return m.fetch(); })).then(d.resolve).fail(d.reject);						
+				});
 			return d.promise();			
 		},
 		_create_model_for_id: function(obj_id){
@@ -325,36 +324,48 @@
 			return d.promise();
 		},
 		// ----------------------------------------------------
-		_update_object_list:function(updated_obj_ids) {
-			var current = updated_obj_ids, olds = this._objlist().slice(), this_ = this;
-			// diff em
-			var news = _(current).difference(olds), died = _(olds).difference(current);
+		_update_object_list:function(updated_obj_ids, added, deleted) {
+			
+			var current, olds = this._objlist().slice(), this_ = this, news, died;
+			if (updated_obj_ids === undefined) {
+				current = _(olds).chain().union(added).without(deleted).value();
+				u.log('new ids ', current);
+				news = added.slice(); died = deleted.slice();				
+			} else {
+				current = updated_obj_ids.slice();
+				news = _(current).difference(olds);
+				died = _(olds).difference(current);
+			}			
 			this.set({objlist:current});
 			news.map(function(aid) { this_.trigger('obj-add', aid); });
 			died.map(function(rid) {
 				this_.trigger('obj-remove', rid);
 				this_._objcache().remove(rid);
 			});
-		},		
+		},
+		_is_fetched: function() {
+			return this.id !== undefined;
+		},
 		_fetch:function() {
 			// new client :: this now _only_ fetches object ids
-			var box = this.get_id(), d = u.deferred(), this_ = this;
 			// return a list of models (each of type WebBox.Object) to populate a GraphCollection
+			if (this._is_fetched()) {
+				return this._diff_update();
+			}
+			// otherwise we aren't fetched, so we just do it
+			var box = this.get_id(), d = u.deferred(), this_ = this;
 			this._ajax("GET",[box,'get_object_ids'].join('/')).then(
 				function(response){
 					u.assert(response['@version'] !== undefined, 'no version provided');
 					console.log(' BOX FETCH VERSION ', response['@version']);
 					this_.id = this_.get_id();
 					this_._set_version(response['@version']);
-					this_._update_object_list(response.ids);
-
-					// // --- dangerous -- if we have objcache already populated .... 
-					// DO SOMETHING like update the objcache contents!
-					
+					this_._update_object_list(response.ids);					
 					d.resolve(this_);
 				}).fail(d.reject);
 			return d.promise();
 		},
+
 		// -----------------------------------------------
 		_check_token_and_fetch : function() {
 			var this_ = this;
