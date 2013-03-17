@@ -271,7 +271,8 @@
 		_diff_update:function() {
 			// u.debug('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! debug :: - update-version to() ', version);
 			var d = u.deferred(), box = this.get_id(), this_ = this, cur_version = this._get_version();
-			this._ajax("GET", [box,'diff'].join('/'), {from_version:cur_version}).then(
+
+			this._ajax("GET", [box,'diff'].join('/'), {from_version:cur_version,return_objs:'ids'}).then(
 				function(response) {
 					// TODO: this has yet to be debugged (!) PROCEED WITH CAUTION
 					console.debug('diff response ', response);						

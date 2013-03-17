@@ -16,8 +16,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import psycopg2
+import os, logging, psycopg2
 from txpostgres import txpostgres
 from twisted.internet.defer import Deferred
 
@@ -46,6 +45,18 @@ def connect(db_name,db_user,db_pass):
         pool.start().addCallbacks(lambda ready: success(pool), lambda failure: result_d.errback(failure))
 
     return result_d
+
+
+def connect_raw(db_name, db_user, db_pass):
+    """ Connect to the database bypassing the connection pool (e.g., for adding a notify observer). """
+
+    conn_str = ("dbname='{0}' user='{1}' password='{2}'".format(db_name or POSTGRES_DB, db_user, db_pass))    
+    conn = txpostgres.Connection()
+    return conn.connect(conn_str)
+
+
+def connect_box_raw(box_name, db_user, db_pass):
+    return connect_raw(WBPREFIX + box_name, db_user, db_pass)
 
 
 def connect_box(box_name,db_user,db_pass):
@@ -112,31 +123,36 @@ def create_user(new_username, new_password, db_user, db_pass):
 
 def create_box(box_name, db_user, db_pass):
     # create the database
-    db_name = WBPREFIX + box_name 
-    root_conn = psycopg2.connect(dbname = POSTGRES_DB, user = db_user, password = db_pass) # have to specify a db that exists
-    root_conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
-    root_cur = root_conn.cursor()
-    root_cur.execute("CREATE DATABASE %s WITH ENCODING='UTF8' OWNER=%s CONNECTION LIMIT=-1" % (db_name, db_user))
-    root_conn.commit()
-    root_cur.close()
-    root_conn.close()
+    try:
+        db_name = WBPREFIX + box_name 
+        root_conn = psycopg2.connect(dbname = POSTGRES_DB, user = db_user, password = db_pass) # have to specify a db that exists
+        root_conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
+        root_cur = root_conn.cursor()
+        root_cur.execute("CREATE DATABASE %s WITH ENCODING='UTF8' OWNER=%s CONNECTION LIMIT=-1" % (db_name, db_user))
+        root_conn.commit()
+        root_cur.close()
+        root_conn.close()
 
-    # load in definition from data/objectstore-*.sql
-    root_conn = psycopg2.connect(database = db_name, user = db_user, password = db_pass) # reconnect to this new db, and without the isolation level set
-    root_cur = root_conn.cursor()
+        # load in definition from data/objectstore-*.sql
+        root_conn = psycopg2.connect(database = db_name, user = db_user, password = db_pass) # reconnect to this new db, and without the isolation level set
+        root_cur = root_conn.cursor()
 
-    # ordered list of source database creation files
-    source_files = ['objectstore-schema.sql', 'objectstore-views.sql', 'objectstore-functions.sql']
-    for src_file in source_files:
-        fh_objsql = open(os.path.join(os.path.dirname(__file__),"..","..","data",src_file)) # FIXME put into config
-        objsql = fh_objsql.read()
-        fh_objsql.close()
-        root_cur.execute(objsql) # execute the sql from each file
-        root_conn.commit() # commit per file
+        # ordered list of source database creation files
+        source_files = ['objectstore-schema.sql', 'objectstore-views.sql', 'objectstore-functions.sql']
+        for src_file in source_files:
+            fh_objsql = open(os.path.join(os.path.dirname(__file__),"..","..","data",src_file)) # FIXME put into config
+            objsql = fh_objsql.read()
+            fh_objsql.close()
+            root_cur.execute(objsql) # execute the sql from each file
+            root_conn.commit() # commit per file
 
-    root_cur.close()
-    root_conn.close()
-    return
+        root_cur.close()
+        root_conn.close()
+    except Exception as e:
+        logging.error("Error creating box {0} as user {1}: {2}".format(box_name, db_user, e))
+        return False
+
+    return True
 
 def create_role():
     

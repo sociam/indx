@@ -35,11 +35,23 @@ class BoxHandler(BaseHandler):
         if not token:
             return self.return_forbidden(request)
 
+
+        # TODO replace this mess with a 'defaultdicts' of the default values
+
         try:
             from_version = request.args['from_version'][0]
         except Exception as e:
             logging.error("Exception in box.diff getting argument: {0}".format(e))
             return self.return_bad_request(request, "Specify the following arguments in query string: from_version.")
+
+        try:
+            # return IDs of changed object, full objects or a diff ['ids','objects','diff']
+            return_objs = request.args['return_objs'][0]
+            if return_objs not in ['objects', 'ids', 'diff']:
+                return self.return_bad_request(request, "Invalid version for 'return_objs', valid values are: ['objects','ids','diff'].") # TODO genericise this as above
+        except Exception as e:
+            logging.error("Exception in box.diff getting argument: {0}".format(e))
+            return self.return_bad_request(request, "Specify the following arguments in query string: return_objs.")
 
         # to_version is optional, if unspecified, the latest version is used.
         if "to_version" in request.args:
@@ -47,14 +59,16 @@ class BoxHandler(BaseHandler):
         else:
             to_version = None
 
-        # return IDs of changed object, or return full objects
-        return_objs = False
-        if "return_objs" in request.args:
-            return_objs = True
-
         try:
             logging.debug("calling diff on store")
-            token.store.diff(from_version, to_version, return_objs).addCallback(lambda results: self.return_ok(request, results))
+
+            def handle_add_error(failure):
+                failure.trap(Exception)
+                #err = failure.value
+                logging.debug("Exception trying to diff: {0}".format(failure.value))
+                return self.return_internal_error(request)
+
+            token.store.diff(from_version, to_version, return_objs).addCallbacks(lambda results: self.return_ok(request, results), handle_add_error)
         except Exception as e:
             return self.return_internal_error(request)
 
