@@ -47,12 +47,36 @@ class WebSocketsHandler(WebSocketHandler):
     def startListen(self):
         """ Start listening for changes to the database and send diffs when they occur. """
         logging.debug("WebSocketsHandler startListen().")
-        pass
+
+        def observer(notify):
+            """ Receive an update from the server. """
+            logging.debug("WebSocketsHandler startListen observer notified: {0}".format(notify))
+
+            def err_cb(failure):
+                logging.error("WebSocketsHandler startListen observer error from diff: {0}".format(failure))
+
+            def diff_cb(data):
+                logging.debug("WebSocketsHandler startListen observer diff: {0}".format(data))
+                self.sendJSON({"action": "diff", "data": data})
+
+            version = int(notify.payload)
+            old_version = version - 1 # TODO do this a better way?
+            self.token.store.diff(old_version, version, "diff").addCallbacks(diff_cb, err_cb)
+
+        def err_cb(failure):
+            logging.error("WebSocketsHandler startListen, error getting raw store: {0}".format(failure))
+            # TODO inform the client?
+
+        def raw_store_cb(raw_store):
+            logging.debug("WebSocketsHandler startListen, raw_store_cb: {0}".format(raw_store))
+            raw_store.listen(observer)
+
+        # To add a notify observer, we need a store that is directly connected, not using the connection pool
+        self.token.get_raw_store().addCallbacks(raw_store_cb, err_cb)
 
     def stopListen(self):
         """ Stop listening for database changes. """
         logging.debug("WebSocketsHandler stopListen().")
-        pass
 
     def frameReceived(self, frame):
         logging.debug("WebSocketsHandler frameReceived from peer: {0}, frame: {1}".format(self.transport.getPeer(), frame))
