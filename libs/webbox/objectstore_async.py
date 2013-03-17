@@ -364,7 +364,7 @@ class ObjectStoreAsync:
 
         def ids_cb(data):
             # callback used if we queried for the ids of changed objects only
-            result_d.callback({"all_ids": data['all'], "added_ids": data['added'], "deleted_ids": data['deleted'], "changed_ids": data['changed'], "@latest_version": data['latest_version'], "@from_version": data['from_version'], "@to_version": data['to_version_used']})
+            result_d.callback({"all_ids": data['all'], "added_ids": data['added'], "deleted_ids": data['deleted'], "changed_ids": data['changed'], "@latest_version": data['latest_version'], "@from_version": data['from_version'], "@to_version": data['to_version']})
             return
 
     
