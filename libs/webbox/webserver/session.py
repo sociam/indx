@@ -27,7 +27,7 @@ class WebBoxSession(object):
     """ Stored per user session to record if the user is authenticated etc. """
     implements(ISession)
 
-    def __init__(self, session):
+    def __init__(self, session, webserver):
         self.is_authenticated = False
         self.username = None
         self.password = None

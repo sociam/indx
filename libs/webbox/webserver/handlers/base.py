@@ -130,7 +130,7 @@ class BaseHandler(Resource):
         # persists for life of a session (based on the cookie set by the above)
         wbSession = session.getComponent(ISession)
         if not wbSession:
-            wbSession = WebBoxSession(session)
+            wbSession = WebBoxSession(session, self.webserver)
             session.setComponent(ISession, wbSession)
         return wbSession
 

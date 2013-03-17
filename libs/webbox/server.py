@@ -30,6 +30,9 @@ from webbox.webserver.handlers.app import AppsMetaHandler
 from webbox.webserver import token
 import webbox.webbox_pg2 as database
 
+from webbox.webserver.handlers.websockets import WebSocketsHandler
+from txWebSocket.websocket import WebSocketSite
+
 BOX_NAME_BLACKLIST = [
     "admin",
     "html",
@@ -38,7 +41,8 @@ BOX_NAME_BLACKLIST = [
     "webbox",
     ".well-known",
     "openid",
-    "auth"
+    "auth",
+    "ws"
 ]
 
 
@@ -108,7 +112,7 @@ class WebServer:
                     import webbrowser
                     webbrowser.open(self.server_url)
             except Exception as e:
-                logging.debug("Couldnt load webbrowser.")
+                logging.debug("Couldnt load webbrowser: {0}".format(e))
         def start_failed(arg):
             logging.debug("start_failed: "+str(arg))
 
@@ -124,7 +128,12 @@ class WebServer:
         pass
     
     def start(self):        
-        factory = Site(self.root)
+        factory = WebSocketSite(self.root)
+
+        ## WebSockets is a Handler that is created for each request, so we add it differently here:
+        factory.webserver = self;
+        factory.addHandler('/ws', WebSocketsHandler)
+
         server_port = int(self.config['server']['port'])
         #server_hostname = self.config['server']['hostname']
         server_cert = os.path.join(self.base_dir,self.config['server'].get('ssl_cert'))
