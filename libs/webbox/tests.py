@@ -17,6 +17,9 @@
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
 import urllib, urllib2, logging, cookielib, json, pprint
+from webbox.objectstore_async import ObjectStoreAsync
+import webbox.webbox_pg2 as database
+from twisted.internet import reactor
 
 class WebBoxTests:
 
@@ -31,6 +34,7 @@ class WebBoxTests:
                       'delete': self.delete,
                       'query': self.query,
                       'get_by_ids': self.get_by_ids,
+                      'listen': self.listen
                      }
 
         self.token = None
@@ -356,4 +360,23 @@ class WebBoxTests:
             pretty = pprint.pformat(status, indent=2, width=80)
             logging.info("Diff successful, return is: \n" + pretty)
 
+
+    def listen(self):
+        """ Listen to updates to the database (locally, not with HTTP) and print out the diff in realtime. """
+        self.check_args(['box', 'username', 'password'])
+
+        def observer(notify):
+            print "Version updated to: {0}".format(notify.payload)
+
+        def err_cb(failure):
+            logging.error("Error in test listen: {0}".format(failure))
+
+        def connected_cb(conn):
+            print "Listening..."
+            store = ObjectStoreAsync(conn)
+            store.listen(observer)
+
+        d = database.connect_box_raw(self.args['box'], self.args['username'], self.args['password'])
+        d.addCallbacks(connected_cb, err_cb)
+        reactor.run()
 

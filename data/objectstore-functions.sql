@@ -155,3 +155,13 @@ END;$BODY$
   COST 100;
 
 
+CREATE OR REPLACE FUNCTION wb_version_finished(input_version_to integer)
+  RETURNS boolean AS
+$BODY$BEGIN
+    PERFORM pg_notify('wb_new_version', input_version_to::TEXT);
+    RETURN TRUE;
+END;$BODY$
+  LANGUAGE plpgsql VOLATILE
+  COST 100;
+
+

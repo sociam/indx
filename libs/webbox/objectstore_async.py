@@ -33,6 +33,19 @@ class ObjectStoreAsync:
         # TODO FIXME determine if autocommit has to be off for PL/pgsql support
         self.conn.autocommit = True
 
+    def _notify(self, version):
+        """ Notify listeners (in postgres) of a new version (called after update/delete has completed). """
+        result_d = Deferred()
+
+        def err_cb(failure):
+            logging.error("Objectstore _notify, err_cb, failure: {0}".format(failure))
+            result_d.errback(failure)
+            return
+
+        self.conn.runQuery("SELECT wb_version_finished(%s)", [version]).addCallbacks(lambda success: result_d.callback(success), err_cb)
+        return result_d
+
+
     def autocommit(self, value):
         """ Set autocommit on/off, for speeding up large INSERTs. """
         if self.conn.autocommit is False and value is True:
@@ -40,6 +53,22 @@ class ObjectStoreAsync:
             self.conn.commit()
 
         self.conn.autocommit = value
+
+    def listen(self, observer):
+        """ Listen for updates to the box, and send callbacks when they occur.
+        
+            observer -- Function that is called when there is a notification.
+        """
+        result_d = Deferred()
+
+        def err_cb(failure):
+            logging.error("Objectstore listen, err_cb, failure: {0}".format(failure))
+            result_d.errback(failure)
+            return
+
+        self.conn.addNotifyObserver(observer)
+        self.conn.runOperation("LISTEN wb_new_version").addCallbacks(lambda _: result_d.callback(True), err_cb)
+        return result_d
 
     def query(self, q):
         """ Perform a query and return results. """
@@ -54,7 +83,7 @@ class ObjectStoreAsync:
             return
 
         def err_cb(failure):
-            logging.error("Objectstore query, err_cb, failure: " + str(failure))
+            logging.error("Objectstore query, err_cb, failure: {0}".format(failure))
             result_d.errback(failure)
             return
 
@@ -132,7 +161,7 @@ class ObjectStoreAsync:
         query += "])"
 
         def err_cb(failure):
-            logging.error("Objectstore get_latest_objs, err_cb, failure: " + str(failure))
+            logging.error("Objectstore get_latest_objs, err_cb, failure: {0}".format(failure))
             result_d.errback(failure)
             return
  
@@ -148,7 +177,7 @@ class ObjectStoreAsync:
         result_d = Deferred()
 
         def err_cb(failure):
-            logging.error("Objectstore _ids_in_versions, err_cb, failure: " + str(failure))
+            logging.error("Objectstore _ids_in_versions, err_cb, failure: {0}".format(failure))
             result_d.errback(failure)
             return
 
@@ -183,7 +212,7 @@ class ObjectStoreAsync:
             return
 
         def err_cb(failure):
-            logging.error("Objectstore _ids_in_version, err_cb, failure: " + str(failure))
+            logging.error("Objectstore _ids_in_version, err_cb, failure: {0}".format(failure))
             result_d.errback(failure)
             return
 
@@ -197,7 +226,7 @@ class ObjectStoreAsync:
         result_d = Deferred()
 
         def err_cb(failure):
-            logging.error("Objectstore get_object_ids, err_cb, failure: " + str(failure))
+            logging.error("Objectstore get_object_ids, err_cb, failure: {0}".format(failure))
             result_d.errback(failure)
             return
 
@@ -209,7 +238,7 @@ class ObjectStoreAsync:
             return
 
         def ver_cb(version):
-            logging.debug("get_object_ids ver_cb: "+str(version))
+            logging.debug("get_object_ids ver_cb: {0}".format(version))
             if version == 0:
                 return result_d.callback({"@version": 0 })
             self.conn.runQuery("SELECT DISTINCT subject FROM wb_v_latest_triples", []).addCallbacks(lambda rows2: row_cb(rows2, version), err_cb)
@@ -225,7 +254,7 @@ class ObjectStoreAsync:
         result_d = Deferred()
 
         def err_cb(failure):
-            logging.error("Objectstore get_latest, err_cb, failure: " + str(failure))
+            logging.error("Objectstore get_latest, err_cb, failure: {0}".format(failure))
             result_d.errback(failure)
             return
 
@@ -239,7 +268,7 @@ class ObjectStoreAsync:
             return
 
         def ver_cb(version):
-            logging.debug("get_latest ver_cb: "+str(version))
+            logging.debug("get_latest ver_cb: {0}".format(version))
             self.conn.runQuery("SELECT version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples", []).addCallbacks(lambda rows2: row_cb(rows2, version), err_cb) # ORDER BY is implicit, defined by the view, so no need to override it here
             return
 
@@ -269,7 +298,7 @@ class ObjectStoreAsync:
         # TODO FIXME XXX lock the table(s) as appropriate inside a transaction (PL/pgspl?) here
         result_d = Deferred()
         def err_cb(failure):
-            logging.error("Objectstore diff, err_cb, failure: " + str(failure))
+            logging.error("Objectstore diff, err_cb, failure: {0}".format(failure))
             result_d.errback(failure)
             return
 
@@ -324,7 +353,7 @@ class ObjectStoreAsync:
             obj_out = self.rows_to_json(rows)
 
             def ver_cb(version):
-                logging.debug("diff objs_cb - ver_cb: "+str(version))
+                logging.debug("diff objs_cb - ver_cb: {0}".format(version))
                 obj_out["@version"] = to_version_used
                 result_d.callback({"data": obj_out, "@latest_version": version, "@from_version": from_version, "@to_version": to_version_used})
                 return
@@ -422,12 +451,13 @@ class ObjectStoreAsync:
         id_user = 1
 
         def err_cb(failure):
-            logging.error("Objectstore delete, err_cb, failure: " + str(failure))
+            logging.error("Objectstore delete, err_cb, failure: {0}".format(failure))
             result_d.errback(failure)
 
         def cloned_cb(new_ver):
             # has been cloned to a new version, and the objects in id_list were excluded, so we're done.
-            logging.debug("Objectstore delete, cloned_cb new_ver: " + str(new_ver))
+            logging.debug("Objectstore delete, cloned_cb new_ver: {0}".format(new_ver))
+            self._notify(new_ver)
             result_d.callback({"@version": new_ver})
             return
 
@@ -443,12 +473,12 @@ class ObjectStoreAsync:
         logging.debug("Objectstore _get_latest_ver")
 
         def err_cb(failure):
-            logging.error("Objectstore _get_latest_ver err_cb, failure: " + str(failure))
+            logging.error("Objectstore _get_latest_ver err_cb, failure: {0}".format(failure))
             result_d.errback(failure)
             return
 
         def ver_cb(row):
-            logging.debug("Objectstore _get_latest_ver ver_cb, row: " + str(row))
+            logging.debug("Objectstore _get_latest_ver ver_cb, row: {0}".format(row))
 
             # check for no existing version, and set to 0
             if row is None or len(row) < 1:
@@ -478,12 +508,12 @@ class ObjectStoreAsync:
         logging.debug("Objectstore _check_ver")
 
         def err_cb(failure):
-            logging.error("Objectstore _check_ver err_cb, failure: " + str(failure))
+            logging.error("Objectstore _check_ver err_cb, failure: {0}".format(failure))
             result_d.errback(failure)
             return
         
         def ver_cb(actual_prev_version):
-            logging.debug("Objectstore _check_ver ver_cb, version: " + str(actual_prev_version))
+            logging.debug("Objectstore _check_ver ver_cb, version: {0}".format(actual_prev_version))
 
             # check user specified the current version
             if actual_prev_version != specified_prev_version:
@@ -514,17 +544,17 @@ class ObjectStoreAsync:
         logging.debug("Objectstore _clone")
     
         def err_cb(failure):
-            logging.error("Objectstore _clone err_cb, failure: " + str(failure))
+            logging.error("Objectstore _clone err_cb, failure: {0}".format(failure))
             result_d.errback(failure)
             return
 
         def cloned_cb(row): # self is the deferred
-            logging.debug("Objectstore _clone, cloned_cb row: " + str(row))
+            logging.debug("Objectstore _clone, cloned_cb row: {0}".format(row))
             result_d.callback(specified_prev_version + 1)
             return
 
         def ver_cb(row):
-            logging.debug("Objectstore _clone ver_cb, row: " + str(row))
+            logging.debug("Objectstore _clone ver_cb, row: {0}".format(row))
 
             parameters = [specified_prev_version, specified_prev_version + 1, id_user]
             # excludes these object IDs when it clones the previous version
@@ -563,15 +593,16 @@ class ObjectStoreAsync:
         id_user = 1
 
         def err_cb(failure):
-            logging.error("Objectstore update, err_cb, failure: " + str(failure))
+            logging.error("Objectstore update, err_cb, failure: {0}".format(failure))
             result_d.errback(failure)
 
         def cloned_cb(new_ver):
-            logging.debug("Objectstore update, cloned_cb new_ver: " + str(new_ver))
+            logging.debug("Objectstore update, cloned_cb new_ver: {0}".format(new_ver))
 
             def added_cb(info):
                 # added object successfully
-                logging.debug("Objectstore update, added_cb info: "+str(info))
+                logging.debug("Objectstore update, added_cb info: {0}".format(info))
+                self._notify(new_ver)
                 result_d.callback({"@version": new_ver})
                 return
 
@@ -597,7 +628,7 @@ class ObjectStoreAsync:
         logging.debug("Objectstore _add_objs_to_version")
 
         def err_cb(failure):
-            logging.error("Objectstore _add_objs_to_version, err_cb, failure: " + str(failure))
+            logging.error("Objectstore _add_objs_to_version, err_cb, failure: {0}".format(failure))
             result_d.errback(failure)
             return
 
