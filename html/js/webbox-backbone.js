@@ -164,7 +164,6 @@
 						this_.fetch().then(fd.resolve).fail(fd.reject);
 					}).fail(fd.reject);
 				}
-				u.debug("fetching obj ", this_.id);
 				// we are at current known version as far as we know
 				var obj_save_dfds = _(objdata).chain()
 					.map(function(obj,uri) {

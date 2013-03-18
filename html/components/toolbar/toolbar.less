@@ -1,0 +1,46 @@
+
+@import url('/components/toolbar/spinner.less');
+
+* {
+	box-sizing:border-box;
+}
+.toolbar {
+	position:relative;
+}
+.toolbar .brand {
+	position:relative;
+	margin-left:0px !important;
+	/*position:absolute; top:0px; left:0px; right:0px; */
+}
+.right-align{
+	text-align:right;
+}
+.modal-backdrop {
+	// -webkit-filter:	blur(10px) grayscale(.5) opacity(0.8) !important;
+}
+.modal {
+	// -webkit-filter:	blur(0.5px) grayscale(.5) opacity(0.9) !important;
+}
+.modal-footer {
+	vertical-align:middle;
+}
+#login_dialog div.error {
+	display:inline-block;
+	line-height:20px;
+	width:300px;
+	border:1px solid rgba(240,100,100,0.20);
+	color:rgba(240,100,100,1.0);
+	background-color: rgba(240,100,100,0.15);
+	text-align:left;
+	padding:2px 5px 2px 5px;
+	margin:0px 5px 0px 0px;
+}
+#login_dialog div.spinner {
+	display:inline-block;
+	position:relative;
+	width:30px !important; height:30px !important;
+	padding:4px 20px;
+	margin:-10px 6px -10px 10px;
+	opacity:0.7;
+}
+	

@@ -51,6 +51,9 @@ else { WebBox = root.WebBox; }
 				var u = $('#login_dialog .username_field').val(), p = $('#login_dialog .password_field').val();
 				store.login(u,p).then(function() { this_._update_boxlist(store); });
 			});
+			$('#login_dialog').on('show', function() {
+				console.log('show!');
+			});
 			$('#logout_dialog .logoutbtn').click(function() { store.logout(); });			
 		},
 		_update_boxlist:function() {
