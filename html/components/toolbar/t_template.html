@@ -1,30 +1,17 @@
-<div class="navbar-inner">
+<div ng-app="webbox" controller="toolbar" class="navbar-inner ng-cloak">
   <div class="brand">webbox
-	<div class="spinner">
-	  <div class="bar1"></div>
-	  <div class="bar2"></div>
-	  <div class="bar3"></div>
-	  <div class="bar4"></div>
-	  <div class="bar5"></div>
-	  <div class="bar6"></div>
-	  <div class="bar7"></div>
-	  <div class="bar8"></div>
-	  <div class="bar9"></div>
-	  <div class="bar10"></div>
-	  <div class="bar11"></div>
-	  <div class="bar12"></div>
-	</div>  
+	<div class="spinner"><div ng-repeat="i in u.range(12)" class="bar{{ i + 1 }}"></div></div>
   </div>
   <ul class="nav">
 	<li class="btn-group">
 	  <button class="btn selected-box">select a box</button>
-	  <button class="btn dropdown-toggle boxes" data-toggle="dropdown">
-		<span class="caret"></span>
-	  </button>
-	  <ul class="dropdown-menu boxlist"></ul>
+	  <button class="btn dropdown-toggle boxes" data-toggle="dropdown"><span class="caret"></span> </button>
+	  <ul class="dropdown-menu boxlist">
+		<li ng-repeat="box in boxlist" onclick="cb_box_selected(box)" >{{ box.id }}</li>
+	  </ul>
 	</li>
-	<li class="login_display"><a href="#login_dialog" role="button" data-toggle="modal"><i>not logged in</i></a></li>
-	<li class="username_display"><a href="#logout_dialog" role="button" data-toggle="modal"><i></i></a></li>
+	<li class="login_display">
+	  <a role="button" onclick="cb_login_logout_clicked">{{ username || not_logged_in }}</a>
+	</li>	
   </ul>
-</div>
 </div>
