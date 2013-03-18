@@ -144,8 +144,43 @@
 			else {	k = this._all_values_to_arrays(k);	}
 			return Backbone.Model.prototype.set.apply(this,[k,v,options]);
 		},
+		delete_properties:function(props)  {
+			var this_ = this;
+			props.map(function(p) { this_.unset(p); });
+		},
 		_delete:function() {
 			return this.box._delete_models([this]);
+		},
+		_deserialise_and_set:function(s_obj) {
+			// returns a promise
+			var d = u.deferred(), this_ = this;
+			var dfds = _(s_obj).map(function(vals, key) {
+				var kd = u.deferred();
+				if (key.indexOf('@') === 0) { return; } // ignore "@id" etc
+				var val_dfds = vals.map(function(val) {
+					var vd = u.deferred();
+					// it's an object, so return that
+					if (val.hasOwnProperty("@id")) { this_.box.get_obj(val["@id"]).then(vd.resolve).fail(vd.reject);}
+					// it's a non-object
+					if (val.hasOwnProperty("@value")) {	vd.resolve(deserialize_literal(val));}
+					// don't know what it is!
+					vd.reject('cannot unpack value ', val);
+					return vd.promise();							
+				});						
+				u.when(val_dfds).then(function(obj_vals) {
+					// only update keys that have changed
+					var prev_vals = this_.get(key);
+					if ( prev_vals === undefined || obj_vals.length !== prev_vals.length ||
+						 _(obj_vals).difference(prev_vals).length > 0 ||
+						 _(prev_vals).difference(obj_vals).length > 0) {
+						this_.set(key,obj_vals);
+					}
+					kd.resolve();
+				}).fail(kd.reject);
+				return kd.promise();
+			}).filter(function(x) { return x !== undefined; });
+			u.when(dfds).then(d.resolve).fail(d.reject);
+			return d.promise();
 		},
 		_fetch:function() {
 			var this_ = this, fd = u.deferred(), box = this.box.get_id();
@@ -165,46 +200,14 @@
 					}).fail(fd.reject);
 				}
 				// we are at current known version as far as we know
-				var obj_save_dfds = _(objdata).chain()
-					.map(function(obj,uri) {
+				var obj_save_dfds = _(objdata).map(function(obj,uri) {
 						// top level keys - corresponding to box level properties
 						if (uri[0] === "@") { return; } // ignore "@id", "@version" etc
 						// not one of those, so must be a
 						// < uri > : { prop1 .. prop2 ... }
-						return _(obj).map(function(vals, key) {
-							var kd = u.deferred();
-							if (key.indexOf('@') === 0) { return; } // ignore "@id" etc
-							var val_dfds = vals.map(function(val) {
-								var d = u.deferred();
-								// it's an object, so return that
-								if (val.hasOwnProperty("@id")) {
-									this_.get_obj(val["@id"]).then(d.resolve).fail(d.reject);
-								}
-								// it's a non-object
-								if (val.hasOwnProperty("@value")) {
-									d.resolve(deserialize_literal(val));
-								}
-								// don't know what it is!
-								d.reject('cannot unpack value ', val);
-								return d.promise();							
-							});						
-							u.when(val_dfds).then(function(obj_vals) {
-								// only update keys that have changed
-								var prev_vals = this_.get(key);
-								if ( prev_vals === undefined ||
-									 obj_vals.length !== prev_vals.length ||
-									 _(obj_vals).difference(prev_vals).length > 0 ||
-									 _(prev_vals).difference(obj_vals).length > 0) {
-									this_.set(key,obj_vals);
-								}
-								kd.resolve();
-							}).fail(kd.reject);
-							return kd.promise();
-						});
-					})
-					.flatten()
-					.filter(function(x) { return x !== undefined;})
-					.value();
+						u.assert(uri === this_.id, 'can only deserialise this object');
+						return this_._deserialise_and_set(obj);
+					});
 				u.when(obj_save_dfds).then(function(){ fd.resolve(this_); }).fail(fd.reject);
 			});
 			return fd.promise();
@@ -271,32 +274,47 @@
 			// u.debug('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! debug :: - update-version to() ', version);
 			var d = u.deferred(), box = this.get_id(), this_ = this, cur_version = this._get_version();
 
-			this._ajax("GET", [box,'diff'].join('/'), {from_version:cur_version,return_objs:'ids'}).then(
+			this._ajax("GET", [box,'diff'].join('/'), {from_version:cur_version,return_objs:'diff'}).then(
 				function(response) {
-					// TODO: this has yet to be debugged (!) PROCEED WITH CAUTION
 					console.debug('diff response ', response);						
+					// TODO: this has yet to be debugged (!) PROCEED WITH CAUTION
 					// update version
 					var latest_version = response['@latest_version'],
-						added_ids  = response.added_ids,
-						changed_ids = response.changed_ids,
-						deleted_ids = response.deleted_ids,
-						all_ids = response.all_ids;
+						added_ids  = _(response.data.added).keys(),
+						changed_ids = _(response.data.changed).keys(),
+						deleted_ids = _(response.data.deleted).keys(),
+						changed_objs = response.data.changed;
 					
 					u.assert(latest_version !== undefined, 'latest version not provided');
 					u.assert(added_ids !== undefined, 'added_ids not provided');
-					u.assert(changed_ids !== undefined, 'changed_ids not provided');
+					u.assert(changed_ids !== undefined, 'changed not provided');
 					u.assert(deleted_ids !== undefined, 'deleted _ids not provided');
 
-					if (latest_version === this_._get_version()) {	return d.resolve(); }
-					
+					if (latest_version === this_._get_version()) {
+						u.debug('asked to diff update, but already up to date, so just relax!');
+						return d.resolve();
+					}					
 					this_._set_version(latest_version);
+					u.debug('update object lists +', added_ids, ' -',  deleted_ids);
 					this_._update_object_list(undefined, added_ids, deleted_ids);
-
-
-					var cached_changed =
-						this_._objcache().filter(function(m) { return changed_ids.indexOf(m.id) >= 0; });
-
-					u.when(cached_changed.map(function(m) { return m.fetch(); })).then(d.resolve).fail(d.reject);						
+					var change_dfds = _(changed_objs).map(function(obj, uri) {
+						u.debug(' checking to see if in --- ', uri, this_._objcache().get(uri));
+						var cached_obj = this_._objcache().get(uri);
+						if (cached_obj) {
+							u.debug('updating properties of ', cached_obj.id, ' - ', obj);
+							// handle deletes
+							if (obj.deleted !== undefined) {
+								cached_obj.delete_properties(_(obj.deleted).keys());
+							}
+							return u.when(
+								[
+									cached_obj._deserialise_and_set(obj.added),
+									cached_obj._deserialise_and_set(obj.changed)
+								]
+							);
+						}
+					}).filter(u.defined);					
+					u.when(changed_ids).then(d.resolve).fail(d.reject);						
 				});
 			return d.promise();			
 		},
