@@ -472,9 +472,8 @@
 				(document.location.port === (this.get('server_port') || ''));
 		},
 		_load_toolbar:function() {
-			var el = $('<div></div>').addClass('unloaded_toolbar').appendTo('body');
-			this.toolbar = new WebBox.Toolbar({el: el, store: this});
-			this.toolbar.render();
+			var el = $('<div></div>').addClass('toolbar').appendTo('body');
+			this.toolbar = new WebBox.Toolbar.load(el[0], this);
 		},
 		boxes:function() {	return this.attributes.boxes;	},
 		get_box: function(boxid) {	return this.boxes().get(boxid);	},

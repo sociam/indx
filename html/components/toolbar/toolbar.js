@@ -9,6 +9,7 @@ else { WebBox = root.WebBox; }
 (function() {
 	console.log("TOOLBAR >>>>> ");
 	var u = WebBox.utils, templates, store;
+	var exports = WebBox.Toolbar = {};
 	
 	var ToolbarController = function($scope) {
 
@@ -80,7 +81,7 @@ else { WebBox = root.WebBox; }
 		};		
 	};
 
-	ToolbarView.load_templates = function(server_url) {
+	var load_templates = function(server_url) {
 		templates = {
 			main: { url: [server_url, 'components/toolbar/t_template.html'].join('/') },
 			login:{ url: [server_url, 'components/toolbar/login_template.html'].join('/')}
@@ -95,7 +96,19 @@ else { WebBox = root.WebBox; }
 		}));
 		return $.when.apply($,ds);
 	};
+
+	exports.load = function(dom_el, _store, server_url) {
+		var d = u.deferred();
+		store = _store;
+		angular.module('webbox.toolbar').controller('ToolbarController', ToolbarController);				
+		load_templates(_store.get('server_url')).then(function() {
+			$(dom_el).append(templates.main).append(templates.login);
+			angular.bootstrap(dom_el);
+			d.resolve();
+		}).fail(d.reject);
+		return d.promise();
+	};
 	
-	angular.module('webbox.toolbar').controller('ToolbarController', ToolbarController);		
+	
 	WebBox.loader_dependencies.toolbar.dfd.resolve(WebBox.Toolbar);	
 }());
