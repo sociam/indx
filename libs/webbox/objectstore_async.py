@@ -33,7 +33,7 @@ class ObjectStoreAsync:
         # TODO FIXME determine if autocommit has to be off for PL/pgsql support
         self.conn.autocommit = True
 
-    def _notify(self, version):
+    def _notify(self, cur, version):
         """ Notify listeners (in postgres) of a new version (called after update/delete has completed). """
         result_d = Deferred()
 
@@ -295,7 +295,6 @@ class ObjectStoreAsync:
             to_version -- The most recent version to check up to (can be None, in which can the latest version will be used)
             return_objs -- ['diff','objects','ids'] Diff of objects will be return, full objects will be returned, or a list of IDs will be returned
         """
-        # TODO FIXME XXX lock the table(s) as appropriate inside a transaction (PL/pgspl?) here
         result_d = Deferred()
         def err_cb(failure):
             logging.error("Objectstore diff, err_cb, failure: {0}".format(failure))
@@ -443,7 +442,6 @@ class ObjectStoreAsync:
 
             returns information about the new version
         """
-        # TODO FIXME XXX lock the table(s) as appropriate inside a transaction (PL/pgspl?) here
         result_d = Deferred()
         logging.debug("Objectstore delete")
     
@@ -454,15 +452,36 @@ class ObjectStoreAsync:
             logging.error("Objectstore delete, err_cb, failure: {0}".format(failure))
             result_d.errback(failure)
 
-        def cloned_cb(new_ver):
+        def cloned_cb(cur, new_ver):
             # has been cloned to a new version, and the objects in id_list were excluded, so we're done.
             logging.debug("Objectstore delete, cloned_cb new_ver: {0}".format(new_ver))
-            self._notify(new_ver)
-            result_d.callback({"@version": new_ver})
-            return
+            self._notify(cur, new_ver)
+            cloned_d = Deferred()
+            cloned_d.callback({"@version": new_ver})
+            return cloned_d
+
+
+        def interaction_cb(cur):
+            logging.debug("Objectstore delete, interaction_cb, cur: {0}".format(cur))
+            d2 = cur.execute("BEGIN") # start transaction
+            d2.addErrback(err_cb)
+            d2.addCallback(lambda _: cur.execute("LOCK TABLE wb_triple_vers IN EXCLUSIVE MODE")) # lock to other writes, but not reads
+            d2.addCallback(lambda _: cur.execute("LOCK TABLE wb_triples IN EXCLUSIVE MODE"))
+            d2.addCallback(lambda _: cur.execute("LOCK TABLE wb_objects IN EXCLUSIVE MODE"))
+            d2.addCallback(lambda _: cur.execute("LOCK TABLE wb_strings IN EXCLUSIVE MODE"))
+            d2.addCallback(lambda _: cur.execute("LOCK TABLE wb_users IN EXCLUSIVE MODE"))
+            d2.addCallback(lambda _: self._clone(cur, specified_prev_version, id_user, id_list))
+            d2.addCallback(lambda new_ver: cloned_cb(cur, new_ver))
+            d2.addCallback(lambda _: cur.execute("COMMIT"))
+#            d2.addCallback(lambda _: cur.close())
+            return d2
+
+        d = self.conn.runInteraction(interaction_cb)
+        new_ver = specified_prev_version + 1 # FIXME TODO GET FROM DB OR ADDED_CB ABOVE?
+        d.addCallbacks(lambda _: result_d.callback({"@version": new_ver}), err_cb)
 
         # _clone checks the previous version, so no need to do that here
-        self._clone(specified_prev_version, id_user, id_list).addCallbacks(cloned_cb, err_cb)
+#        self._clone(specified_prev_version, id_user, id_list).addCallbacks(cloned_cb, err_cb)
         return result_d
 
 
@@ -503,9 +522,8 @@ class ObjectStoreAsync:
 
             specified_prev_version -- The incoming version from the request.
         """
-        # TODO FIXME XXX lock the table(s) as appropriate inside a transaction (PL/pgspl?) here
         result_d = Deferred()
-        logging.debug("Objectstore _check_ver")
+        logging.debug("Objectstore _check_ver, specified_prev_version: {0}".format(specified_prev_version))
 
         def err_cb(failure):
             logging.error("Objectstore _check_ver err_cb, failure: {0}".format(failure))
@@ -517,7 +535,7 @@ class ObjectStoreAsync:
 
             # check user specified the current version
             if actual_prev_version != specified_prev_version:
-                logging.debug("In objectstore _check_ver, the previous version of the box '{0}' didn't match the actual '{1}".format(specified_prev_version, actual_prev_version))
+                logging.debug("In objectstore _check_ver, the previous version of the box {0} didn't match the actual {1}".format(specified_prev_version, actual_prev_version))
                 ipve = IncorrectPreviousVersionException("Actual previous version is {0}, specified previous version is: {1}".format(actual_prev_version, specified_prev_version))
                 ipve.version = actual_prev_version
                 failure = Failure(ipve)
@@ -532,24 +550,24 @@ class ObjectStoreAsync:
         return result_d
 
 
-    def _clone(self, specified_prev_version, id_user, id_list = []):
+    def _clone(self, cur, specified_prev_version, id_user, id_list = []):
         """ Make a new version of the database, excluding objects with the ids specified.
 
+            cur -- Cursor to execute the query in
             specified_prev_version -- the current version of the box, error returned if this isn't the current version
             id_user -- the ID of the user making the new version
             id_list -- list of object IDs to exclude from the new version (optional)
         """
-        # TODO FIXME XXX lock the table(s) as appropriate inside a transaction (PL/pgspl?) here
         result_d = Deferred()
-        logging.debug("Objectstore _clone")
-    
+        logging.debug("Objectstore _clone, specified_prev_version: {0}".format(specified_prev_version))
+   
         def err_cb(failure):
             logging.error("Objectstore _clone err_cb, failure: {0}".format(failure))
             result_d.errback(failure)
             return
 
-        def cloned_cb(row): # self is the deferred
-            logging.debug("Objectstore _clone, cloned_cb row: {0}".format(row))
+        def cloned_cb(cur): # self is the deferred
+            logging.debug("Objectstore _clone, cloned_cb cur: {0}".format(cur))
             result_d.callback(specified_prev_version + 1)
             return
 
@@ -569,13 +587,12 @@ class ObjectStoreAsync:
 
             logging.debug("Objectstore _clone, query: {0} params: {1}".format(query, parameters))
 
-            self.conn.runQuery(query, parameters).addCallbacks(cloned_cb, err_cb) # worked or errored
+            cur.execute(query, parameters).addCallbacks(cloned_cb, err_cb) # worked or errored
             return
 
         self._check_ver(specified_prev_version).addCallbacks(ver_cb, err_cb)
         return result_d
         
-
 
     def update(self, objs, specified_prev_version):
         """ Create a new version of the database, and insert only the objects references in the 'objs' dict. All other objects remain as they are in the specified_prev_version of the db.
@@ -585,9 +602,8 @@ class ObjectStoreAsync:
 
             returns information about the new version
         """
-        # TODO FIXME XXX lock the table(s) as appropriate inside a transaction (PL/pgspl?) here
         result_d = Deferred()
-        logging.debug("Objectstore update")
+        logging.debug("Objectstore update, specified_prev_version: {0}")
     
         # TODO add this
         id_user = 1
@@ -596,35 +612,57 @@ class ObjectStoreAsync:
             logging.error("Objectstore update, err_cb, failure: {0}".format(failure))
             result_d.errback(failure)
 
-        def cloned_cb(new_ver):
+        def cloned_cb(cur, new_ver):
             logging.debug("Objectstore update, cloned_cb new_ver: {0}".format(new_ver))
+            cloned_d = Deferred()
 
             def added_cb(info):
                 # added object successfully
                 logging.debug("Objectstore update, added_cb info: {0}".format(info))
-                self._notify(new_ver)
-                result_d.callback({"@version": new_ver})
+                self._notify(cur, new_ver) # TODO make sure this only runs on success
+                cloned_d.callback({"@version": new_ver})
                 return
 
-            self._add_objs_to_version(objs, new_ver, id_user).addCallbacks(added_cb, err_cb)
-            return
+            self._add_objs_to_version(cur, objs, new_ver, id_user).addCallbacks(added_cb, err_cb)
+            return cloned_d
 
         id_list = self.ids_from_objs(objs)
-        # _clone checks the previous version, so no need to do that here
-        self._clone(specified_prev_version, id_user, id_list).addCallbacks(cloned_cb, err_cb)
+        
+        def interaction_cb(cur):
+            logging.debug("Objectstore update, interaction_cb, cur: {0}".format(cur))
+            d2 = cur.execute("BEGIN") # start transaction
+            d2.addErrback(err_cb)
+            d2.addCallback(lambda _: cur.execute("LOCK TABLE wb_triple_vers IN EXCLUSIVE MODE")) # lock to other writes, but not reads
+            d2.addCallback(lambda _: cur.execute("LOCK TABLE wb_triples IN EXCLUSIVE MODE"))
+            d2.addCallback(lambda _: cur.execute("LOCK TABLE wb_objects IN EXCLUSIVE MODE"))
+            d2.addCallback(lambda _: cur.execute("LOCK TABLE wb_strings IN EXCLUSIVE MODE"))
+            d2.addCallback(lambda _: cur.execute("LOCK TABLE wb_users IN EXCLUSIVE MODE"))
+            d2.addCallback(lambda _: self._clone(cur, specified_prev_version, id_user, id_list))
+            d2.addCallback(lambda new_ver: cloned_cb(cur, new_ver))
+            d2.addCallback(lambda _: cur.execute("COMMIT"))
+#            d2.addCallback(lambda _: cur.close())
+            return d2
+
+        d = self.conn.runInteraction(interaction_cb)
+        new_ver = specified_prev_version + 1 # FIXME GET FROM DB, OR FROM ADDED_CB?
+        d.addCallbacks(lambda _: result_d.callback({"@version": new_ver}), err_cb)
+
+#        self._clone(specified_prev_version, id_user, id_list).addCallbacks(cloned_cb, err_cb)
         return result_d
 
 
-    def _add_objs_to_version(self, objs, version, id_user):
+    def _add_objs_to_version(self, cur, objs, version, id_user):
         """ Add objects to a specific version of the db.
 
             The function used in postgres now automatically increments the triple_order based on the order of insertion.
 
+            This should only be called by "update" above, which wraps it in a locking transaction.
+
+            cur -- Cursor to use to execute queries
             objs -- Objects to add
             version -- The version to add to
             id_user -- The id of the user that is making the change
         """
-        # TODO FIXME XXX lock the table(s) as appropriate inside a transaction (PL/pgspl?) here
         logging.debug("Objectstore _add_objs_to_version")
 
         def err_cb(failure):
@@ -680,7 +718,7 @@ class ObjectStoreAsync:
                 return
             
             (query, params) = queries.pop(0)
-            self.conn.runQuery(query, params).addCallbacks(exec_queries, err_cb)
+            cur.execute(query, params).addCallbacks(exec_queries, err_cb)
             return
 
         exec_queries(None)
