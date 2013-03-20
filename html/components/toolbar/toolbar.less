@@ -24,23 +24,40 @@
 .modal-footer {
 	vertical-align:middle;
 }
-#login_dialog div.error {
-	display:inline-block;
-	line-height:20px;
-	width:300px;
-	border:1px solid rgba(240,100,100,0.20);
-	color:rgba(240,100,100,1.0);
-	background-color: rgba(240,100,100,0.15);
-	text-align:left;
-	padding:2px 5px 2px 5px;
-	margin:0px 5px 0px 0px;
+.login_logout_btn {
+   position:absolute;
+   right:20px;  
 }
-#login_dialog div.spinner {
-	display:inline-block;
-	position:relative;
-	width:30px !important; height:30px !important;
-	padding:4px 20px;
-	margin:-10px 6px -10px 10px;
-	opacity:0.7;
+
+#login_dialog {
+	form {
+		margin: 0px;
+		.control-group {
+			margin-bottom:10px;
+		}
+		input {
+			font-size:12pt;
+			height:2.0em;
+		}		
+	}
+	div.error {
+		display:inline-block;
+		line-height:20px;
+		width:340px;
+		border:1px solid rgba(240,100,100,0.20);
+		color:rgba(240,100,100,1.0);
+		background-color: rgba(240,100,100,0.05);
+		border-radius:2px;
+		text-align:left;
+		padding:6px 11px 6px 11px;
+		margin:0px 15px 0px 0px;
+	}
+	div.spinner {
+		display:inline-block;
+		position:relative;
+		width:30px !important; height:30px !important;
+		padding:4px 20px;
+		margin:-10px 6px -10px 10px;
+		opacity:0.7;
+	}
 }
-	
