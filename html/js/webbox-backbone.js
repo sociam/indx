@@ -472,8 +472,9 @@
 				(document.location.port === (this.get('server_port') || ''));
 		},
 		_load_toolbar:function() {
-			var el = $('<div></div>').addClass('toolbar').appendTo('body');
-			this.toolbar = new WebBox.Toolbar.load(el[0], this);
+			var el = $('<div></div>').addClass('toolbar').appendTo('body'), this_ = this;
+			this.toolbar = WebBox.Toolbar;
+			this.toolbar.load(el[0], this).then(function() {u.debug('done loading toolbar, apparently');});
 		},
 		boxes:function() {	return this.attributes.boxes;	},
 		get_box: function(boxid) {	return this.boxes().get(boxid);	},
@@ -557,15 +558,7 @@
 		var _load_d = new $.Deferred();		
 		recursive_loader(loadfns).then(function() {
 			u = WebBox.utils;
-			console.log("everything's loaded! > ");
-			if (!options || !(options.load_toolbar === false)) {
-				console.log('loading templates ... ');
-				WebBox.Toolbar.load_templates(base_url)
-					.then(function() {	_load_d.resolve(root);			})
-					.fail(function(err) { console.error(err); _load_d.reject(root); });
-			} else {
-				_load_d.resolve(root);
-			}
+			_load_d.resolve(root);			
 		}).fail(function(err) { console.error(err); _load_d.reject(root); });
 		return _load_d.promise();
 	};

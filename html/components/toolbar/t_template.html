@@ -1,4 +1,4 @@
-<div ng-app="webbox.toolbar" controller="ToolbarController" class="navbar-inner ng-cloak">
+<div ng-app="WebboxToolbar" class="navbar-inner ng-cloak" ng-controller="ToolbarController">
   <div class="brand">webbox
 	<div class="spinner"><div ng-repeat="i in u.range(12)" class="bar{{ i + 1 }}"></div></div>
   </div>
@@ -11,7 +11,7 @@
 	  </ul>
 	</li>
 	<li class="login_display">
-	  <a role="button" onclick="cb_login_logout_clicked">{{ username || not_logged_in }}</a>
+	  <a role="button" ng-click="cb_login_logout_clicked()">{{ username || not_logged_in }}</a>
 	</li>	
   </ul>
 </div>
