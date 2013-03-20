@@ -97,11 +97,13 @@ else { WebBox = root.WebBox; }
 		};		
 		$scope.cb_login = function(username) {
 			$scope.username = username;
+			$scope.username_html = username + " &nbsp; <i class='icon-user'></i>";
 			update_boxlist();
 			event_model.trigger('login', username);
 		};		
 		$scope.cb_logout = function() {
 			delete $scope.username;
+			delete $scope.username_html;
 			delete $scope.box;
 			$scope.boxlist = [];
 			event_model.trigger('logout');			
