@@ -1,4 +1,4 @@
-/*global $,_,document,window,console,escape,Backbone,exports */
+/*global $,_,document,window,console,escape,Backbone,exports,WebSocket */
 /*jslint vars:true, todo:true */
 /*
 
@@ -48,7 +48,12 @@
 	// set up our parameters for webbox -
 	// default is that we're loading from an _app_ hosted within
 	// webbox. 
-	var DEFAULT_HOST = document.location.host;
+	var DEFAULT_HOST = document.location.host; // which may contain the port
+
+	var WS_MESSAGES_SEND = {
+		auth: function(token) { return JSON.stringify({action:'auth', token:token}); },
+		diff: function(token) { return JSON.stringify({action:'diff', operation:"start"}); }		
+	};
 	
 	var serialize_obj = function(obj) {
 		var uri = obj.id;
@@ -231,11 +236,53 @@
 	// lazily get objects as you go
 	var Box = WebBox.Box = Backbone.Model.extend({
 		idAttribute:"@id",
+		default_options: { use_websockets:true, ws_auto_reconnect:false	},
 		initialize:function(attributes, options) {
 			u.assert(options.store, "no store provided");
 			this.store = options.store;
 			this.set({objcache: new ObjCollection(), objlist: [] });
+			this.options = _(this.default_options).chain().clone().extend(options || {}).value();
+			console.log("OPTIONS >> ", this.options);			this.set_up_websocket();
 		},
+		set_up_websocket:function() {
+			var this_ = this, server_host = this.store.get('server_host');
+			if (! this.get_use_websockets() ) { return; }
+			this.on('new-token', function(token) {
+				var ws = this_._ws;
+				if (ws) {
+					try {
+						ws.close();
+						delete this_._ws;
+					} catch(e) { u.error(); }
+				}
+				var protocol = (document.location.protocol === 'https') ? 'wss:/' : 'ws:/';
+				var ws_url = [protocol,server_host,'ws'].join('/');
+				ws = new WebSocket(ws_url);
+				ws.onmessage = function(evt) {
+					u.debug('websocket :: incoming a message ', evt.data, typeof(evt.data));
+					var pdata = JSON.parse(evt.data);
+					if (pdata.action === 'diff') {
+						this_._diff_update(pdata.data)
+							.then(function() { /*  u.log('done diffing '); */ })
+							.fail(function(err) { u.error(err); /*  u.log('done diffing '); */ });
+					}
+				};
+				ws.onopen = function() {
+					var data = WS_MESSAGES_SEND.auth(this_.get('token'));
+					ws.send(data);
+					data = WS_MESSAGES_SEND.diff();
+					ws.send(data);					
+					this_._ws = ws;
+					this_.trigger('ws-connect');
+				};				
+				ws.onclose = function(evt) {
+					// what do we do now?!
+					u.error('websocket closed -- ');
+					// TODO
+				};				
+			});
+		},
+		get_use_websockets:function() { return this.options.use_websockets; },
 		get_cache_size:function(i) { return this._objcache().length; },
 		get_obj_ids:function() { return this._objlist().slice(); },
 		_objcache:function() { return this.attributes.objcache; },
@@ -249,6 +296,7 @@
 			this._ajax('POST', 'auth/get_token', { app: this.store.get('app') })
 				.then(function(data) {
 					this_._set_token( data.token );
+					this_.trigger('new-token', data.token);
 					d.resolve(this_);
 				}).fail(d.reject);
 			return d.promise();			
@@ -270,53 +318,52 @@
 			// 	});
 			// return d.promise();
 		},
-		_diff_update:function() {
-			// u.debug('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! debug :: - update-version to() ', version);
-			var d = u.deferred(), box = this.get_id(), this_ = this, cur_version = this._get_version();
+		_diff_update_poll:function() {
+			var d = u.deferred(), this_ = this, cur_version = this._get_version(), box = this.get_id();	
+			this._ajax("GET", [box,'diff'].join('/'), {from_version:cur_version,return_objs:'diff'})
+				.then(function(response) {
+					this_._diff_update(response).then(d.resolve).fail(d.reject);
+				}).fail(d.reject);
+			return d.promise();
+		},
+		_diff_update:function(response) {
+			var d = u.deferred(), this_ = this, latest_version = response['@latest_version'],
+			added_ids  = _(response.data.added).keys(),
+			changed_ids = _(response.data.changed).keys(),
+			deleted_ids = _(response.data.deleted).keys(),
+			changed_objs = response.data.changed;
+			
+			u.assert(latest_version !== undefined, 'latest version not provided');
+			u.assert(added_ids !== undefined, 'added_ids not provided');
+			u.assert(changed_ids !== undefined, 'changed not provided');
+			u.assert(deleted_ids !== undefined, 'deleted _ids not provided');
 
-			this._ajax("GET", [box,'diff'].join('/'), {from_version:cur_version,return_objs:'diff'}).then(
-				function(response) {
-					console.debug('diff response ', response);						
-					// TODO: this has yet to be debugged (!) PROCEED WITH CAUTION
-					// update version
-					var latest_version = response['@latest_version'],
-						added_ids  = _(response.data.added).keys(),
-						changed_ids = _(response.data.changed).keys(),
-						deleted_ids = _(response.data.deleted).keys(),
-						changed_objs = response.data.changed;
-					
-					u.assert(latest_version !== undefined, 'latest version not provided');
-					u.assert(added_ids !== undefined, 'added_ids not provided');
-					u.assert(changed_ids !== undefined, 'changed not provided');
-					u.assert(deleted_ids !== undefined, 'deleted _ids not provided');
-
-					if (latest_version === this_._get_version()) {
-						u.debug('asked to diff update, but already up to date, so just relax!');
-						return d.resolve();
-					}					
-					this_._set_version(latest_version);
-					u.debug('update object lists +', added_ids, ' -',  deleted_ids);
-					this_._update_object_list(undefined, added_ids, deleted_ids);
-					var change_dfds = _(changed_objs).map(function(obj, uri) {
-						u.debug(' checking to see if in --- ', uri, this_._objcache().get(uri));
-						var cached_obj = this_._objcache().get(uri);
-						if (cached_obj) {
-							u.debug('updating properties of ', cached_obj.id, ' - ', obj);
-							// handle deletes
-							if (obj.deleted !== undefined) {
-								cached_obj.delete_properties(_(obj.deleted).keys());
-							}
-							return u.when(
-								[
-									cached_obj._deserialise_and_set(obj.added),
-									cached_obj._deserialise_and_set(obj.changed)
-								]
-							);
-						}
-					}).filter(u.defined);					
-					u.when(changed_ids).then(d.resolve).fail(d.reject);						
-				});
-			return d.promise();			
+			if (latest_version === this_._get_version()) {
+				u.debug('asked to diff update, but already up to date, so just relax!');
+				return d.resolve();
+			}					
+			this_._set_version(latest_version);
+			u.debug('update object lists +', added_ids, ' -',  deleted_ids);
+			this_._update_object_list(undefined, added_ids, deleted_ids);
+			var change_dfds = _(changed_objs).map(function(obj, uri) {
+				u.debug(' checking to see if in --- ', uri, this_._objcache().get(uri));
+				var cached_obj = this_._objcache().get(uri);
+				if (cached_obj) {
+					u.debug('updating properties of ', cached_obj.id, ' - ', obj);
+					// handle deletes
+					if (obj.deleted !== undefined) {
+						cached_obj.delete_properties(_(obj.deleted).keys());
+					}
+					return u.when(
+						[
+							cached_obj._deserialise_and_set(obj.added),
+							cached_obj._deserialise_and_set(obj.changed)
+						]
+					);
+				}
+			}).filter(u.defined);					
+			u.when(changed_ids).then(d.resolve).fail(d.reject);
+			return d.promise();
 		},
 		_create_model_for_id: function(obj_id){
 			var model = new Obj({"@id":obj_id}, {box:this});
@@ -368,7 +415,7 @@
 			// new client :: this now _only_ fetches object ids
 			// return a list of models (each of type WebBox.Object) to populate a GraphCollection
 			if (this._is_fetched()) {
-				return this._diff_update();
+				return this._diff_update_poll();
 			}
 			// otherwise we aren't fetched, so we just do it
 			var box = this.get_id(), d = u.deferred(), this_ = this;
@@ -453,7 +500,7 @@
 	
 	var Store = WebBox.Store = Backbone.Model.extend({
 		defaults: {
-			server_url: "http://"+DEFAULT_HOST,
+			server_host:DEFAULT_HOST,
 			app:"--default-app-id--",
 			toolbar:true
 		},
@@ -462,14 +509,12 @@
 			xhrFields: { withCredentials: true }
 		},
 		initialize: function(attributes, options){
-			console.log(" server ", this.get('server_url'));
 			this.set({boxes : new BoxCollection([], {store: this})});
 			// load and launch the toolbar
 			if (this.get('toolbar')) { this._load_toolbar(); }
 		},
 		is_same_domain:function() {
-			return this.get('server_url').indexOf(document.location.host) >= 0 &&
-				(document.location.port === (this.get('server_port') || ''));
+			return this.get('server_host').indexOf(document.location.host) >= 0 && (document.location.port === (this.get('server_port') || ''));
 		},
 		_load_toolbar:function() {
 			var el = $('<div></div>').addClass('toolbar').appendTo('body'), this_ = this;
@@ -515,8 +560,8 @@
 			return d.promise();
 		},
 		_ajax:function(method, path, data) {
-			var url = [this.get('server_url'), path].join('/');
-			// u.log(' store ajax ', method, url);
+			// now uses relative url scheme '//blah:port/path';			
+			var url = ['/', this.get('server_host'), path].join('/');
 			var default_data = { app: this.get('app') };
 			var options = _(_(this.ajax_defaults).clone()).extend(
 				{ url: url, method : method, crossDomain: !this.is_same_domain(), data: _(default_data).extend(data) }
@@ -565,21 +610,3 @@
 }).call(this);
 
 
-/**
-   moved from box >> 
-   ajax : function( path, type, data ) {
-   var url = this.store.options.server_url + this.id + path;
-   var this_ = this;
-   var options = {
-   type: type,
-   url : url,
-   crossDomain: true,
-   jsonp: false,
-   contentType: "application/json",
-   dataType: "json",
-   data: _({ token:this_.get('token') }).extend(data),
-   xhrFields: { withCredentials: true }
-   };
-   return $.ajax( options ); // returns a deferred		
-   },		
-*/
