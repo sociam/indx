@@ -25,7 +25,7 @@
   (at your option) any later version.
 
   WebBox is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
+vvvvvvv  but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.
 
@@ -35,7 +35,6 @@
 
 (function(){
 	// intentional fall-through to window if running in a browser
-	"use strict";
 	var root = this, WebBox;
 	var NAMEPREFIX = true;
 	// The top-level namespace
@@ -158,18 +157,28 @@
 		},
 		_deserialise_and_set:function(s_obj, silent) {
 			// returns a promise
-			var d = u.deferred(), this_ = this;
+			var this_ = this;
 			var dfds = _(s_obj).map(function(vals, key) {
 				var kd = u.deferred();
-				if (key.indexOf('@') === 0) { return; } // ignore "@id" etc
+				if (key.indexOf('@') === 0) {
+					// ignore "@id" etc
+					return;
+				} 
 				var val_dfds = vals.map(function(val) {
 					var vd = u.deferred();
 					// it's an object, so return that
-					if (val.hasOwnProperty("@id")) { this_.box.get_obj(val["@id"]).then(vd.resolve).fail(vd.reject);}
-					// it's a non-object
-					if (val.hasOwnProperty("@value")) {	vd.resolve(deserialize_literal(val));}
-					// don't know what it is!
-					vd.reject('cannot unpack value ', val);
+					if (val.hasOwnProperty("@id")) {
+						// object
+						this_.box.get_obj(val["@id"]).then(vd.resolve).fail(vd.reject);
+					}
+					else if (val.hasOwnProperty("@value")) {
+						// literal
+						vd.resolve(deserialize_literal(val));
+					}
+					else {
+						// don't know what it is!
+						vd.reject('cannot unpack value ', val);
+					}
 					return vd.promise();							
 				});						
 				u.when(val_dfds).then(function(obj_vals) {
@@ -178,14 +187,13 @@
 					if ( prev_vals === undefined || obj_vals.length !== prev_vals.length ||
 						 _(obj_vals).difference(prev_vals).length > 0 ||
 						 _(prev_vals).difference(obj_vals).length > 0) {
-						this_.set(key,obj_vals,silent ? { silent:true } : {});
+						this_.set(key, obj_vals, { silent : silent });
 					}
 					kd.resolve();
 				}).fail(kd.reject);
 				return kd.promise();
-			}).filter(function(x) { return x !== undefined; });
-			u.when(dfds).then(d.resolve).fail(d.reject);
-			return d.promise();
+			}).filter(u.defined);
+			return u.when(dfds);
 		},
 		_fetch:function() {
 			var this_ = this, fd = u.deferred(), box = this.box.get_id();
@@ -279,6 +287,14 @@
 					// what do we do now?!
 					u.error('websocket closed -- ');
 					// TODO
+					var interval;
+					interval = setInterval(function() {
+						this_.store.reconnect().then(function() {
+							this_.get_token().then(function() {
+								clearInterval(interval);
+							});
+						});
+					},1000);
 				};				
 			});
 		},
@@ -349,31 +365,26 @@
 				// u.debug(' checking to see if in --- ', uri, this_._objcache().get(uri));
 				var cached_obj = this_._objcache().get(uri), cdfd = u.deferred();
 				if (cached_obj) {
-					// u.debug('updating properties of ', cached_obj.id, ' - ', obj);
-					// handle deletes
+					var deleted_keys =
+						_(obj.deleted !== undefined ? obj.deleted : {})
+						.chain().keys().without(_(obj.added || {}).keys()).value();
 					if (obj.deleted !== undefined) {
-						cached_obj.delete_properties(_(obj.deleted).keys(), true);
+						cached_obj.delete_properties(deleted_keys, true);
 					}
-					u.when(
-						[
-							cached_obj._deserialise_and_set(obj.added, true),
-							cached_obj._deserialise_and_set(obj.changed, true)
-						]
-					).then(function() {
-						// trigger change 					
-						var changed_properties =
-							_([obj.added,obj.changed,obj.deleted].map(function(x) { return _(x || {}).keys(); }))
-							.chain()
-							.flatten()
-							.uniq()
-							.value();
-						console.log('sdfljdslkjfsdklflks changed properties >> ', changed_properties);
-						changed_properties.map(function(k) {
-							console.log('triggering ', k);
-							cached_obj.trigger('change:'+k, cached_obj.get(k));
-						});
-						cdfd.resolve(obj);
-					}).fail(cdfd.reject);
+					cached_obj
+						._deserialise_and_set(_(obj.added).chain().clone().extend(obj.changed).value(), true)
+						.then(function() {
+							var changed_properties =
+								_([obj.added,obj.changed,obj.deleted].map(function(x) { return _(x || {}).keys(); }))
+								.chain()
+								.flatten()
+								.uniq()
+								.value();
+							changed_properties.map(function(k) {
+								cached_obj.trigger('change:'+k, (cached_obj.get(k) || []).slice());
+							});
+							cdfd.resolve(cached_obj);
+						}).fail(cdfd.reject);
 					return cdfd.promise();					
 				}
 			}).filter(u.defined);					
@@ -460,7 +471,7 @@
 		},
 		_update:function(original_ids) {
 			var ids = original_ids ? (_.isArray(original_ids) ? original_ids.slice() : [original_ids]) : undefined;
-			u.debug("UPDATE ", ids);
+			// u.debug("UPDATE ", ids);
 			var d = u.deferred(), version = this.get('version') || 0, this_ = this,
 				objs = this._objcache().filter(function(x) {
 					return ids === undefined || ids.indexOf(x.id) >= 0;
@@ -550,11 +561,15 @@
 		getInfo:function() { return this._ajax('GET', 'admin/info'); },
 		login : function(username,password) {
 			var d = u.deferred();
+			this.set({username:username,password:password});
 			var this_ = this;
 			this._ajax('POST', 'auth/login', { username: username, password: password })
 				.then(function(l) { this_.trigger('login', username); d.resolve(l); })
 				.fail(function(l) { d.reject(l); });			
 			return d.promise();
+		},
+		reconnect:function() {
+			return this.login(this.get('username'),this.get('password'));
 		},
 		logout : function() {
 			var d = u.deferred();

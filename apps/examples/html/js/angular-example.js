@@ -23,17 +23,17 @@ function AppController($scope) {
 
 						// prevent our incoming modifications from causing us to trigger
 						if (val === lastmodelval) {
-							console.log('viewchange :: skipping propagate ');
+							// console.log('viewchange :: skipping propagate ');
 							return;
 						}
 						
 						// silent updating
 						if (model.get('value') !== undefined &&	val === model.get('value')[0]) {
-							console.log('value still the same');
+							// console.log('value still the same');
 							return;
 						}						
 						
-						console.log('view -> model. SAVING ', val);
+						// console.log('view -> model. SAVING ', val);
 						lastinputval = val;
 						model.set('value', $scope.inputmodel);  // this is going to cause a trigger
 						try { model.save(); } catch(err) { console.error(err); }
@@ -42,11 +42,11 @@ function AppController($scope) {
 					var update_view = function() {
 						var val = model.get('value') !== undefined ? model.get('value')[0] : undefined;
 						if (val === lastinputval) {
-							console.log('modelchange :: skipping propagate');
+							// console.log('modelchange :: skipping propagate');
 							return;
 						}
 						if (val === $scope.inputmodel) { return; }
-						console.log('model -> VIEW ', val);		
+						// console.log('model -> VIEW ', val);		
 						lastmodelval = val;
 						$scope.$apply(function() {	$scope.inputmodel = val;	});
 					};
