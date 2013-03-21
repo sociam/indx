@@ -482,16 +482,16 @@ class ObjectStoreAsync:
 
         def interaction_cb(cur):
             self.debug("Objectstore delete, interaction_cb, cur: {0}".format(cur))
-            d2 = cur.execute("BEGIN") # start transaction
+            d2 = self._curexec(cur, "BEGIN") # start transaction
             d2.addErrback(err_cb)
-            d2.addCallback(lambda _: cur.execute("LOCK TABLE wb_triple_vers IN EXCLUSIVE MODE")) # lock to other writes, but not reads
-            d2.addCallback(lambda _: cur.execute("LOCK TABLE wb_triples IN EXCLUSIVE MODE"))
-            d2.addCallback(lambda _: cur.execute("LOCK TABLE wb_objects IN EXCLUSIVE MODE"))
-            d2.addCallback(lambda _: cur.execute("LOCK TABLE wb_strings IN EXCLUSIVE MODE"))
-            d2.addCallback(lambda _: cur.execute("LOCK TABLE wb_users IN EXCLUSIVE MODE"))
+            d2.addCallback(lambda _: self._curexec(cur, "LOCK TABLE wb_triple_vers IN EXCLUSIVE MODE")) # lock to other writes, but not reads
+            d2.addCallback(lambda _: self._curexec(cur, "LOCK TABLE wb_triples IN EXCLUSIVE MODE"))
+            d2.addCallback(lambda _: self._curexec(cur, "LOCK TABLE wb_objects IN EXCLUSIVE MODE"))
+            d2.addCallback(lambda _: self._curexec(cur, "LOCK TABLE wb_strings IN EXCLUSIVE MODE"))
+            d2.addCallback(lambda _: self._curexec(cur, "LOCK TABLE wb_users IN EXCLUSIVE MODE"))
             d2.addCallback(lambda _: self._clone(cur, specified_prev_version, id_user, id_list))
             d2.addCallback(lambda new_ver: cloned_cb(cur, new_ver))
-            d2.addCallback(lambda _: cur.execute("COMMIT"))
+            d2.addCallback(lambda _: self._curexec("COMMIT"))
 #            d2.addCallback(lambda _: cur.close())
             return d2
 
@@ -606,12 +606,18 @@ class ObjectStoreAsync:
 
             self.debug("Objectstore _clone, query: {0} params: {1}".format(query, parameters))
 
-            cur.execute(query, parameters).addCallbacks(cloned_cb, err_cb) # worked or errored
+            self._curexec(cur, query, parameters).addCallbacks(cloned_cb, err_cb) # worked or errored
             return
 
         self._check_ver(specified_prev_version).addCallbacks(ver_cb, err_cb)
         return result_d
-        
+       
+
+    def _curexec(self, cur, *args, **kwargs):
+        """ Execute a query on a Cursor, and log what we're going. """
+        self.debug("Objectstore _curexec, args: {0}, kwargs: {1}".format(args, kwargs))
+        return cur.execute(*args, **kwargs)
+
 
     def update(self, objs, specified_prev_version):
         """ Create a new version of the database, and insert only the objects references in the 'objs' dict. All other objects remain as they are in the specified_prev_version of the db.
@@ -649,16 +655,16 @@ class ObjectStoreAsync:
         
         def interaction_cb(cur):
             self.debug("Objectstore update, interaction_cb, cur: {0}".format(cur))
-            d2 = cur.execute("BEGIN") # start transaction
+            d2 = self._curexec(cur, "BEGIN") # start transaction
             d2.addErrback(err_cb)
-            d2.addCallback(lambda _: cur.execute("LOCK TABLE wb_triple_vers IN EXCLUSIVE MODE")) # lock to other writes, but not reads
-            d2.addCallback(lambda _: cur.execute("LOCK TABLE wb_triples IN EXCLUSIVE MODE"))
-            d2.addCallback(lambda _: cur.execute("LOCK TABLE wb_objects IN EXCLUSIVE MODE"))
-            d2.addCallback(lambda _: cur.execute("LOCK TABLE wb_strings IN EXCLUSIVE MODE"))
-            d2.addCallback(lambda _: cur.execute("LOCK TABLE wb_users IN EXCLUSIVE MODE"))
+            d2.addCallback(lambda _: self._curexec(cur, "LOCK TABLE wb_triple_vers IN EXCLUSIVE MODE")) # lock to other writes, but not reads
+            d2.addCallback(lambda _: self._curexec(cur, "LOCK TABLE wb_triples IN EXCLUSIVE MODE"))
+            d2.addCallback(lambda _: self._curexec(cur, "LOCK TABLE wb_objects IN EXCLUSIVE MODE"))
+            d2.addCallback(lambda _: self._curexec(cur, "LOCK TABLE wb_strings IN EXCLUSIVE MODE"))
+            d2.addCallback(lambda _: self._curexec(cur, "LOCK TABLE wb_users IN EXCLUSIVE MODE"))
             d2.addCallback(lambda _: self._clone(cur, specified_prev_version, id_user, id_list))
             d2.addCallback(lambda new_ver: cloned_cb(cur, new_ver))
-            d2.addCallback(lambda _: cur.execute("COMMIT"))
+            d2.addCallback(lambda _: self._curexec(cur, "COMMIT"))
 #            d2.addCallback(lambda _: cur.close())
             return d2
 
@@ -737,7 +743,7 @@ class ObjectStoreAsync:
                 return
             
             (query, params) = queries.pop(0)
-            cur.execute(query, params).addCallbacks(exec_queries, err_cb)
+            self._curexec(cur, query, params).addCallbacks(exec_queries, err_cb)
             return
 
         exec_queries(None)
