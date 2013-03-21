@@ -85,7 +85,7 @@
 				} else if (_.isBoolean(val)) {
 					obj_vals.push({"@value": val.toString(), "@type":"http://www.w3.org/2001/XMLSchema#boolean"});
 				} else {
-					u.warn("Could not determine type of val ", val);
+					u.warn("Could not determine type of val ", pred, val);
 					obj_vals.push({"@value": val.toString()});
 				}
 			});
@@ -104,7 +104,7 @@
 		"http://www.w3.org/2001/XMLSchema#dateTime": function(o) { return new Date(Date.parse(o['@value'])); }
 	};
 	var deserialize_literal = function(obj) {
-		return obj['@value'] ? literal_deserializers[ obj['@type'] || '' ](obj) : obj;
+		return obj['@value'] !== undefined ? literal_deserializers[ obj['@type'] || '' ](obj) : obj;
 	};	
 	
 
@@ -149,14 +149,14 @@
 			else {	k = this._all_values_to_arrays(k);	}
 			return Backbone.Model.prototype.set.apply(this,[k,v,options]);
 		},
-		delete_properties:function(props)  {
+		delete_properties:function(props, silent)  {
 			var this_ = this;
-			props.map(function(p) { this_.unset(p); });
+			props.map(function(p) { this_.unset(p, silent ? {silent:true} : {}); });
 		},
 		_delete:function() {
 			return this.box._delete_models([this]);
 		},
-		_deserialise_and_set:function(s_obj) {
+		_deserialise_and_set:function(s_obj, silent) {
 			// returns a promise
 			var d = u.deferred(), this_ = this;
 			var dfds = _(s_obj).map(function(vals, key) {
@@ -178,7 +178,7 @@
 					if ( prev_vals === undefined || obj_vals.length !== prev_vals.length ||
 						 _(obj_vals).difference(prev_vals).length > 0 ||
 						 _(prev_vals).difference(obj_vals).length > 0) {
-						this_.set(key,obj_vals);
+						this_.set(key,obj_vals,silent ? { silent:true } : {});
 					}
 					kd.resolve();
 				}).fail(kd.reject);
@@ -194,7 +194,7 @@
 				var objdata = response.data;				
 				if (this_.box._get_version() !== objdata['@version']) {
 					// our box is obsolete! let's tell box to update itself.
-					u.debug('telling box to update >> ', this_.box._get_version(), response['@version']);
+					// u.debug('telling box to update >> ', this_.box._get_version(), response['@version']);
 					// update entire box to latest version then continue
 					return this_.box.fetch().then(function(fetched_thingies) {
 						// recurse after done
@@ -242,7 +242,7 @@
 			this.store = options.store;
 			this.set({objcache: new ObjCollection(), objlist: [] });
 			this.options = _(this.default_options).chain().clone().extend(options || {}).value();
-			console.log("OPTIONS >> ", this.options);			this.set_up_websocket();
+			this.set_up_websocket();
 		},
 		set_up_websocket:function() {
 			var this_ = this, server_host = this.store.get('server_host');
@@ -259,7 +259,7 @@
 				var ws_url = [protocol,server_host,'ws'].join('/');
 				ws = new WebSocket(ws_url);
 				ws.onmessage = function(evt) {
-					u.debug('websocket :: incoming a message ', evt.data, typeof(evt.data));
+					u.debug('websocket :: incoming a message ', evt.data);
 					var pdata = JSON.parse(evt.data);
 					if (pdata.action === 'diff') {
 						this_._diff_update(pdata.data)
@@ -286,7 +286,7 @@
 		get_cache_size:function(i) { return this._objcache().length; },
 		get_obj_ids:function() { return this._objlist().slice(); },
 		_objcache:function() { return this.attributes.objcache; },
-		_objlist:function() { return this.attributes.objlist || []; },
+		_objlist:function() { return this.attributes.objlist !== undefined ? this.attributes.objlist : []; },
 		_set_objlist:function(ol) { return this.set({objlist:ol}); },
 		_set_token:function(token) { this.set("token", token);	},
 		_set_version:function(v) { this.set("version", v);	},
@@ -339,27 +339,42 @@
 			u.assert(deleted_ids !== undefined, 'deleted _ids not provided');
 
 			if (latest_version === this_._get_version()) {
-				u.debug('asked to diff update, but already up to date, so just relax!');
+				// u.debug('asked to diff update, but already up to date, so just relax!');
 				return d.resolve();
 			}					
 			this_._set_version(latest_version);
-			u.debug('update object lists +', added_ids, ' -',  deleted_ids);
+			// u.debug('update object lists +', added_ids, ' -',  deleted_ids);
 			this_._update_object_list(undefined, added_ids, deleted_ids);
 			var change_dfds = _(changed_objs).map(function(obj, uri) {
-				u.debug(' checking to see if in --- ', uri, this_._objcache().get(uri));
-				var cached_obj = this_._objcache().get(uri);
+				// u.debug(' checking to see if in --- ', uri, this_._objcache().get(uri));
+				var cached_obj = this_._objcache().get(uri), cdfd = u.deferred();
 				if (cached_obj) {
-					u.debug('updating properties of ', cached_obj.id, ' - ', obj);
+					// u.debug('updating properties of ', cached_obj.id, ' - ', obj);
 					// handle deletes
 					if (obj.deleted !== undefined) {
-						cached_obj.delete_properties(_(obj.deleted).keys());
+						cached_obj.delete_properties(_(obj.deleted).keys(), true);
 					}
-					return u.when(
+					u.when(
 						[
-							cached_obj._deserialise_and_set(obj.added),
-							cached_obj._deserialise_and_set(obj.changed)
+							cached_obj._deserialise_and_set(obj.added, true),
+							cached_obj._deserialise_and_set(obj.changed, true)
 						]
-					);
+					).then(function() {
+						// trigger change 					
+						var changed_properties =
+							_([obj.added,obj.changed,obj.deleted].map(function(x) { return _(x || {}).keys(); }))
+							.chain()
+							.flatten()
+							.uniq()
+							.value();
+						console.log('sdfljdslkjfsdklflks changed properties >> ', changed_properties);
+						changed_properties.map(function(k) {
+							console.log('triggering ', k);
+							cached_obj.trigger('change:'+k, cached_obj.get(k));
+						});
+						cdfd.resolve(obj);
+					}).fail(cdfd.reject);
+					return cdfd.promise();					
 				}
 			}).filter(u.defined);					
 			u.when(changed_ids).then(d.resolve).fail(d.reject);
@@ -392,15 +407,15 @@
 		_update_object_list:function(updated_obj_ids, added, deleted) {
 			
 			var current, olds = this._objlist().slice(), this_ = this, news, died;
-			if (updated_obj_ids === undefined) {
+			if (updated_obj_ids === undefined ) {
 				current = _(olds).chain().union(added).without(deleted).value();
-				u.log('new ids ', current);
-				news = added.slice(); died = deleted.slice();				
+				// u.log('new ids ', current);
+				news = (added || []).slice(); died = (deleted || []).slice();
 			} else {
 				current = updated_obj_ids.slice();
 				news = _(current).difference(olds);
 				died = _(olds).difference(current);
-			}			
+			}
 			this.set({objlist:current});
 			news.map(function(aid) { this_.trigger('obj-add', aid); });
 			died.map(function(rid) {
@@ -457,15 +472,22 @@
 					d.resolve(this_);
 				}).fail(function(err) {
 					// TODO TODO -- make sure that this doesn't clobber our local changes :(
-					// very dangerous for concurrent modification					
+					// very dangerous for concurrent modification
+
 					if (err.status === 409) {
-						u.debug("got an obsolete ------------- trying to fetch again ");						
-						return this_.fetch()
-							.then(function() {
-								console.log("FETCHED, trying to save again ", original_ids);
-								this_._update(original_ids).then(d.resolve).fail(d.reject);
-							}).fail(d.reject);
+						u.debug("got an obsolete ------------- trying to update again ");						
+						return this_._update(original_ids);
 					}
+										
+					// disable for websockets
+					// if (err.status === 409) {
+					// 	u.debug("got an obsolete ------------- trying to fetch again ");						
+					// 	return this_.fetch()
+					// 		.then(function() {
+					// 			console.log("FETCHED, trying to save again ", original_ids);
+					// 			this_._update(original_ids).then(d.resolve).fail(d.reject);
+					// 		}).fail(d.reject);
+					// }
 					d.reject(err);
 				});
 			return d.promise();
@@ -517,7 +539,7 @@
 			return this.get('server_host').indexOf(document.location.host) >= 0 && (document.location.port === (this.get('server_port') || ''));
 		},
 		_load_toolbar:function() {
-			var el = $('<div></div>').addClass('toolbar').appendTo('body'), this_ = this;
+			var el = $('<div></div>').addClass('toolbar').prependTo('body'), this_ = this;
 			this.toolbar = WebBox.Toolbar;
 			this.toolbar.load(el[0], this).then(function() {u.debug('done loading toolbar, apparently');});
 		},
