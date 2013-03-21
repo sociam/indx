@@ -31,7 +31,7 @@ for bindir in config['server']['bindirs']:
     os.environ['PATH'] = os.path.join(os.path.dirname(__file__), bindir) + ":" + os.environ['PATH']
 
 # show debug messages in log file
-formatter = logging.Formatter('%(asctime)s\t%(message)s')
+formatter = logging.Formatter('%(name)s\t%(levelname)s\t%(asctime)s\t%(message)s')
 
 log_handler = logging.FileHandler("/tmp/webbox.log", "a")
 log_handler.setLevel(logging.DEBUG)
