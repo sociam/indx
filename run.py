@@ -17,7 +17,7 @@
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
 # import core modules
-import os, logging, getpass
+import os, logging, getpass, sys
 from webbox.setup import WebBoxSetup
 from webbox.server import WebServer
 
@@ -27,19 +27,28 @@ webbox_dir = os.path.expanduser('~'+os.sep+".webbox")
 setup = WebBoxSetup()
 config = setup.setup(webbox_dir, "webbox.json.default", kbname) # directory, default config, kbname
 
-# add additional binary paths to the PATH
 for bindir in config['server']['bindirs']:
     os.environ['PATH'] = os.path.join(os.path.dirname(__file__), bindir) + ":" + os.environ['PATH']
 
 # show debug messages in log file
+formatter = logging.Formatter('%(asctime)s\t%(message)s')
+
 log_handler = logging.FileHandler("/tmp/webbox.log", "a")
 log_handler.setLevel(logging.DEBUG)
-logger = logging.getLogger() # root logger
-logger.addHandler(log_handler)
-logger.debug("Logger initialised")
-logger.setLevel(logging.DEBUG)
+log_handler.setFormatter(formatter)
 
-#
+stdout_handler = logging.StreamHandler(stream=sys.stdout)
+stdout_handler.setLevel(logging.DEBUG)
+stdout_handler.setFormatter(formatter)
+
+logger = logging.getLogger() # root logger
+logger.setLevel(logging.DEBUG)
+for handler in logger.handlers: # remove default handler
+    logger.removeHandler(handler)
+logger.addHandler(log_handler) # add out new handlers with their specific formatting
+logger.addHandler(stdout_handler)
+
+
 server = WebServer(config, setup.get_config_filename(), os.path.dirname(__file__))
 server.run()
 
