@@ -225,6 +225,7 @@ class BoxHandler(BaseHandler):
 
             def handle_add_error(failure):
                 """ Handle an error on add (this is the errback). """ #TODO move this somewhere else?
+                BoxHandler.error("BoxHandler do_PUT handle_add_error: {0}".format(failure), extra = {"request": request, "token": token})
                 failure.trap(IncorrectPreviousVersionException, Exception)
                 err = failure.value
                 if isinstance(err, IncorrectPreviousVersionException):

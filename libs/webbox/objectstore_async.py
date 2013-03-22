@@ -54,6 +54,7 @@ class ObjectStoreAsync:
 
     def _notify(self, cur, version):
         """ Notify listeners (in postgres) of a new version (called after update/delete has completed). """
+        self.debug("ObjectStoreAsync _notify, cur: {0}, version: {1}".format(cur, version))
         result_d = Deferred()
 
         def err_cb(failure):
@@ -61,7 +62,7 @@ class ObjectStoreAsync:
             result_d.errback(failure)
             return
 
-        self.conn.runQuery("SELECT wb_version_finished(%s)", [version]).addCallbacks(lambda success: result_d.callback(success), err_cb)
+        self._curexec(cur, "SELECT wb_version_finished(%s)", [version]).addCallbacks(lambda success: result_d.callback(success), err_cb)
         return result_d
 
 
@@ -461,40 +462,9 @@ class ObjectStoreAsync:
 
             returns information about the new version
         """
-        result_d = Deferred()
-        self.debug("Objectstore delete")
-    
-        # TODO add this
-        id_user = 1
-
-        def err_cb(failure):
-            self.error("Objectstore delete, err_cb, failure: {0}".format(failure))
-            result_d.errback(failure)
-
-        def cloned_cb(cur, new_ver):
-            # has been cloned to a new version, and the objects in id_list were excluded, so we're done.
-            self.debug("Objectstore delete, cloned_cb new_ver: {0}".format(new_ver))
-            self._notify(cur, new_ver)
-            cloned_d = Deferred()
-            cloned_d.callback({"@version": new_ver})
-            return cloned_d
-
-
-        def interaction_cb(cur):
-            self.debug("Objectstore delete, interaction_cb, cur: {0}".format(cur))
-            d2 = self._curexec(cur, "LOCK TABLE wb_triple_vers, wb_triples, wb_objects, wb_strings, wb_users IN EXCLUSIVE MODE") # lock to other writes, but not reads
-            d2.addErrback(err_cb)
-            d2.addCallback(lambda _: self._clone(cur, specified_prev_version, id_user, id_list))
-            d2.addCallback(lambda new_ver: cloned_cb(cur, new_ver))
-            return d2
-
-        d = self.conn.runInteraction(interaction_cb)
-        new_ver = specified_prev_version + 1 # FIXME TODO GET FROM DB OR ADDED_CB ABOVE?
-        d.addCallbacks(lambda _: result_d.callback({"@version": new_ver}), err_cb)
-
-        # _clone checks the previous version, so no need to do that here
-#        self._clone(specified_prev_version, id_user, id_list).addCallbacks(cloned_cb, err_cb)
-        return result_d
+        self.debug("Objectstore delete") 
+        # delegate the whole operation to update
+        return self.update([], specified_prev_version, delete_ids=id_list)
 
 
     def _log_connections(self):
@@ -539,7 +509,7 @@ class ObjectStoreAsync:
         return result_d
 
 
-    def _check_ver(self, specified_prev_version):
+    def _check_ver(self, cur, specified_prev_version):
         """ Find the current version, and check it matches the specified version.
             Returns a deferred, which receives either the current version if it matches the specified version,
             or an errback if it didn't match (with the Failure carrying a value of an IncorrectPreviousVersionException),
@@ -596,26 +566,20 @@ class ObjectStoreAsync:
             result_d.callback(specified_prev_version + 1)
             return
 
-        def ver_cb(row):
-            self.debug("Objectstore _clone ver_cb, row: {0}".format(row))
+        parameters = [specified_prev_version, specified_prev_version + 1, id_user]
+        # excludes these object IDs when it clones the previous version
+        parameters.extend(id_list)
 
-            parameters = [specified_prev_version, specified_prev_version + 1, id_user]
-            # excludes these object IDs when it clones the previous version
-            parameters.extend(id_list)
+        query = "SELECT * FROM wb_clone_version(%s,%s,%s,ARRAY["
+        for i in range(len(id_list)):
+            if i > 0:
+                query += ", "
+            query += "%s"
+        query += "]::text[])"
 
-            query = "SELECT * FROM wb_clone_version(%s,%s,%s,ARRAY["
-            for i in range(len(id_list)):
-                if i > 0:
-                    query += ", "
-                query += "%s"
-            query += "]::text[])"
+        self.debug("Objectstore _clone, query: {0} params: {1}".format(query, parameters))
+        self._curexec(cur, query, parameters).addCallbacks(cloned_cb, err_cb) # worked or errored
 
-            self.debug("Objectstore _clone, query: {0} params: {1}".format(query, parameters))
-
-            self._curexec(cur, query, parameters).addCallbacks(cloned_cb, err_cb) # worked or errored
-            return
-
-        self._check_ver(specified_prev_version).addCallbacks(ver_cb, err_cb)
         return result_d
        
 
@@ -625,7 +589,7 @@ class ObjectStoreAsync:
         return cur.execute(*args, **kwargs)
 
 
-    def update(self, objs, specified_prev_version):
+    def update(self, objs, specified_prev_version, delete_ids=[]):
         """ Create a new version of the database, and insert only the objects references in the 'objs' dict. All other objects remain as they are in the specified_prev_version of the db.
 
             objs, json expanded notation of objects,
@@ -643,35 +607,58 @@ class ObjectStoreAsync:
             self.error("Objectstore update, err_cb, failure: {0}".format(failure))
             result_d.errback(failure)
 
-        def cloned_cb(cur, new_ver):
-            self.debug("Objectstore update, cloned_cb new_ver: {0}".format(new_ver))
-            cloned_d = Deferred()
-
-            def added_cb(info):
-                # added object successfully
-                self.debug("Objectstore update, added_cb info: {0}".format(info))
-                self._notify(cur, new_ver) # TODO make sure this only runs on success
-                cloned_d.callback({"@version": new_ver})
-                return
-
-            self._add_objs_to_version(cur, objs, new_ver, id_user).addCallbacks(added_cb, err_cb)
-            return cloned_d
-
         id_list = self.ids_from_objs(objs)
+        id_list.extend(delete_ids)
         
         def interaction_cb(cur):
             self.debug("Objectstore update, interaction_cb, cur: {0}".format(cur))
+            interaction_d = Deferred()
+
+            def ver_err_cb(actual_prev_version):
+                self.debug("In objectstore update, the previous version of the box {0} didn't match the actual {1}".format(specified_prev_version, actual_prev_version))
+                ipve = IncorrectPreviousVersionException("Actual previous version is {0}, specified previous version is: {1}".format(actual_prev_version, specified_prev_version))
+                ipve.version = actual_prev_version
+                failure = Failure(ipve)
+                cur.execute("ROLLBACK").addCallbacks(lambda _: interaction_d.errback(failure), lambda _: interaction_d.errback(failure))
+
+            def interaction_err_cb(failure):
+                self.error("Objectstore update, interaction_err_cb, failure: {0}".format(failure))
+                cur.execute("ROLLBACK").addCallbacks(lambda _: interaction_d.errback(failure), lambda _: interaction_d.errback(failure))
+
+            def ver_cb(latest_ver):
+                self.debug("Objectstore update, ver_cb, latest_ver: {0}".format(latest_ver))
+                latest_ver = latest_ver[0][0]
+                def cloned_cb(new_ver):
+                    self.debug("Objectstore update, cloned_cb new_ver: {0}".format(new_ver))
+
+                    def added_cb(info):
+                        # added object successfully
+                        self.debug("Objectstore update, added_cb info: {0}".format(info))
+                        self._notify(cur, new_ver).addCallbacks(lambda _: interaction_d.callback({"@version": new_ver}), interaction_err_cb)
+
+                    if len(objs) > 0: # skip if we're just deleting
+                        self._add_objs_to_version(cur, objs, new_ver, id_user).addCallbacks(added_cb, interaction_err_cb)
+                    else:
+                        added_cb(new_ver)
+
+                if latest_ver == specified_prev_version:
+                    self._clone(cur, specified_prev_version, id_user, id_list).addCallbacks(cloned_cb, interaction_err_cb)
+                else:
+                    self.error("Objectstore update ver_cb, specified_prev_version mismatch, actual version: {0}".format(latest_ver))
+                    ver_err_cb(latest_ver)
+
             d2 = self._curexec(cur, "LOCK TABLE wb_triple_vers, wb_triples, wb_objects, wb_strings, wb_users IN EXCLUSIVE MODE") # lock to other writes, but not reads
-            d2.addErrback(err_cb)
-            d2.addCallback(lambda _: self._clone(cur, specified_prev_version, id_user, id_list))
-            d2.addCallback(lambda new_ver: cloned_cb(cur, new_ver))
-            return d2
+            d2.addCallbacks(lambda _: self._curexec(cur, "SELECT latest_version FROM wb_v_latest_version"), interaction_err_cb)
+            d2.addCallbacks(lambda _: cur.fetchall(), interaction_err_cb)
+            d2.addCallbacks(ver_cb, interaction_err_cb)
+            return interaction_d
+
+
+        def interaction_complete_d(ver_response):
+            self.conn.runOperation("VACUUM").addCallbacks(lambda _: result_d.callback(ver_response), err_cb)
 
         d = self.conn.runInteraction(interaction_cb)
-        new_ver = specified_prev_version + 1 # FIXME GET FROM DB, OR FROM ADDED_CB?
-        d.addCallbacks(lambda _: result_d.callback({"@version": new_ver}), err_cb)
-
-#        self._clone(specified_prev_version, id_user, id_list).addCallbacks(cloned_cb, err_cb)
+        d.addCallbacks(interaction_complete_d, err_cb)
         return result_d
 
 
@@ -738,6 +725,7 @@ class ObjectStoreAsync:
             self.debug("Objectstore add_version exec_queries")
 
             if len(queries) < 1:
+                self.debug("Objectstore add_version exec_queries finished, calling back")
                 result_d.callback((version))
                 return
             
