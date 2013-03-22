@@ -482,17 +482,10 @@ class ObjectStoreAsync:
 
         def interaction_cb(cur):
             self.debug("Objectstore delete, interaction_cb, cur: {0}".format(cur))
-            d2 = self._curexec(cur, "BEGIN") # start transaction
+            d2 = self._curexec(cur, "LOCK TABLE wb_triple_vers, wb_triples, wb_objects, wb_strings, wb_users IN EXCLUSIVE MODE") # lock to other writes, but not reads
             d2.addErrback(err_cb)
-            d2.addCallback(lambda _: self._curexec(cur, "LOCK TABLE wb_triple_vers IN EXCLUSIVE MODE")) # lock to other writes, but not reads
-            d2.addCallback(lambda _: self._curexec(cur, "LOCK TABLE wb_triples IN EXCLUSIVE MODE"))
-            d2.addCallback(lambda _: self._curexec(cur, "LOCK TABLE wb_objects IN EXCLUSIVE MODE"))
-            d2.addCallback(lambda _: self._curexec(cur, "LOCK TABLE wb_strings IN EXCLUSIVE MODE"))
-            d2.addCallback(lambda _: self._curexec(cur, "LOCK TABLE wb_users IN EXCLUSIVE MODE"))
             d2.addCallback(lambda _: self._clone(cur, specified_prev_version, id_user, id_list))
             d2.addCallback(lambda new_ver: cloned_cb(cur, new_ver))
-            d2.addCallback(lambda _: self._curexec("COMMIT"))
-#            d2.addCallback(lambda _: cur.close())
             return d2
 
         d = self.conn.runInteraction(interaction_cb)
@@ -502,6 +495,19 @@ class ObjectStoreAsync:
         # _clone checks the previous version, so no need to do that here
 #        self._clone(specified_prev_version, id_user, id_list).addCallbacks(cloned_cb, err_cb)
         return result_d
+
+
+    def _log_connections(self):
+        """ Log the state of the connection pool (for debugging disconnections). """
+        try:
+            self.debug("_log_connections: State of connection pool")
+            size = range(len(self.conn.connections))
+            count = 0
+            for connection in self.conn.connections:
+                count += 1
+                self.debug("_log_connections: connection {0}/{1}: {2}".format(count, size, vars(connection)))
+        except Exception as e:
+            self.error("_log_connections: could not check state of connections: {0}".format(e))
 
 
     def _get_latest_ver(self):
@@ -628,7 +634,7 @@ class ObjectStoreAsync:
             returns information about the new version
         """
         result_d = Deferred()
-        self.debug("Objectstore update, specified_prev_version: {0}")
+        self.debug("Objectstore update, specified_prev_version: {0}".format(specified_prev_version))
     
         # TODO add this
         id_user = 1
@@ -655,17 +661,10 @@ class ObjectStoreAsync:
         
         def interaction_cb(cur):
             self.debug("Objectstore update, interaction_cb, cur: {0}".format(cur))
-            d2 = self._curexec(cur, "BEGIN") # start transaction
+            d2 = self._curexec(cur, "LOCK TABLE wb_triple_vers, wb_triples, wb_objects, wb_strings, wb_users IN EXCLUSIVE MODE") # lock to other writes, but not reads
             d2.addErrback(err_cb)
-            d2.addCallback(lambda _: self._curexec(cur, "LOCK TABLE wb_triple_vers IN EXCLUSIVE MODE")) # lock to other writes, but not reads
-            d2.addCallback(lambda _: self._curexec(cur, "LOCK TABLE wb_triples IN EXCLUSIVE MODE"))
-            d2.addCallback(lambda _: self._curexec(cur, "LOCK TABLE wb_objects IN EXCLUSIVE MODE"))
-            d2.addCallback(lambda _: self._curexec(cur, "LOCK TABLE wb_strings IN EXCLUSIVE MODE"))
-            d2.addCallback(lambda _: self._curexec(cur, "LOCK TABLE wb_users IN EXCLUSIVE MODE"))
             d2.addCallback(lambda _: self._clone(cur, specified_prev_version, id_user, id_list))
             d2.addCallback(lambda new_ver: cloned_cb(cur, new_ver))
-            d2.addCallback(lambda _: self._curexec(cur, "COMMIT"))
-#            d2.addCallback(lambda _: cur.close())
             return d2
 
         d = self.conn.runInteraction(interaction_cb)

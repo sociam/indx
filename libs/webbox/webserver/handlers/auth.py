@@ -18,7 +18,6 @@
 
 import logging
 from webbox.webserver.handlers.base import BaseHandler
-from webbox.objectstore_async import ObjectStoreAsync
 import webbox.webbox_pg2 as database
 
 class AuthHandler(BaseHandler):
@@ -94,9 +93,10 @@ class AuthHandler(BaseHandler):
         origin = self.get_origin(request)
 
         def check_app_perms(conn):
-            token = self.webserver.tokens.new(username,password,boxid,appid,origin,ObjectStoreAsync(conn))
+            token = self.webserver.tokens.new(username,password,boxid,appid,origin)
             return self.return_ok(request, {"token":token.id})
 
+        # create a connection pool
         database.connect_box(boxid,username,password).addCallbacks(check_app_perms, lambda conn: self.return_forbidden(request))
 
 AuthHandler.subhandlers = [

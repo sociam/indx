@@ -31,6 +31,7 @@ def connect(db_name,db_user,db_pass):
 
     result_d = Deferred()
     if conn_str in POOLS:
+        logging.debug("webbox_pg2: returning existing pool for db: {0}, user: {1}".format(db_name, db_user))
         pool = POOLS[conn_str]
         # already connected, so just return a defered with itself
         result_d.callback(pool)
@@ -38,11 +39,12 @@ def connect(db_name,db_user,db_pass):
         # not connected yet, so return after start() finished
 
         def success(pool):
-            POOLS[conn_str] = pool # only do this if successly connection
+            logging.debug("webbox_pg2: returning new pool for db: {0}, user: {1}, pool: {2}".format(db_name, db_user, pool))
+            POOLS[conn_str] = pool # only do this if it successfully connects
             result_d.callback(pool)
 
-        pool = txpostgres.ConnectionPool(None, conn_str)
-        pool.start().addCallbacks(lambda ready: success(pool), lambda failure: result_d.errback(failure))
+        p = txpostgres.ConnectionPool(None, conn_str)
+        p.start().addCallbacks(success, lambda failure: result_d.errback(failure))
 
     return result_d
 

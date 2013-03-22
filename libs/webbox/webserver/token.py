@@ -27,44 +27,55 @@ class Token:
         An objectstore_async is also kept in the token.
     """
 
-    def __init__(self, username, password, boxid, appid, origin, store):
+    def __init__(self, username, password, boxid, appid, origin):
         self.username = username
         self.password = password
         self.boxid = boxid
         self.appid = appid
         self.origin = origin
-        self.store = store
         self.id = str(uuid.uuid1())
-        self.raw_store = None
+
+    def get_store(self):
+        """ Get a new ObjectStoreAsync using the connection pool. """
+        result_d = Deferred()
+
+        logging.debug("Token: Getting pooled store for box: {0}, token: {1}".format(self.boxid, self.id))
+
+        def connected_cb(conn):
+            logging.debug("Token get_store connected, returning it.")
+            store = ObjectStoreAsync(conn)
+            result_d.callback(store)
+
+        def err_cb(failure):
+            logging.error("Token get_store error on connection: {0}".format(failure))
+            result_d.errback(failure)
+
+        database.connect_box(self.boxid, self.username, self.password).addCallbacks(connected_cb, err_cb)
+        return result_d
 
     def get_raw_store(self):
         """ Get an ObjectStoreAsync that doesn't use the connection pool - used for listening for notifications. """
         result_d = Deferred()
         logging.debug("Token: Getting raw store for box: {0}, token: {1}".format(self.boxid, self.id))
 
-        if self.raw_store is not None:
-            logging.debug("Token get_raw_store, returning already existing raw store.")
-            result_d.callback(self.raw_store) # TODO check it is OK to share the store
-        else:
-            def connected_cb(conn):
-                logging.debug("Token get_raw_store connected, returning it.")
-                self.raw_store = ObjectStoreAsync(conn)
-                result_d.callback(self.raw_store)
+        def connected_cb(conn):
+            logging.debug("Token get_raw_store connected, returning it.")
+            raw_store = ObjectStoreAsync(conn)
+            result_d.callback(raw_store)
 
-            def err_cb(failure):
-                logging.error("Token get_raw_store error on connection: {0}".format(failure))
-                result_d.errback(failure)
+        def err_cb(failure):
+            logging.error("Token get_raw_store error on connection: {0}".format(failure))
+            result_d.errback(failure)
 
-            database.connect_box_raw(self.boxid, self.username, self.password).addCallbacks(connected_cb, err_cb)
-
+        database.connect_box_raw(self.boxid, self.username, self.password).addCallbacks(connected_cb, err_cb)
         return result_d
-
-        
+ 
     def verify(self,boxname,appname,origin):
         logging.debug("Verify token ({0}) with boxid: {1} and origin {2}, to request boxid: {3} and request origin: {4}".format(self.id, self.boxid, self.origin, boxname, origin))
         # origin is None means we're same origin
         return self.boxid == boxname and origin is None or self.origin == origin and appname # APPNAME CHECK TODO
-        
+
+
 class TokenKeeper:
     """ Keeps a set of tokens for the web server.
     """
@@ -87,8 +98,8 @@ class TokenKeeper:
         self.tokens[token.id] = token
         return token
 
-    def new(self,username,password,boxid,appid,origin,store):
-        token = Token(username,password,boxid,appid,origin,store)
+    def new(self,username,password,boxid,appid,origin):
+        token = Token(username,password,boxid,appid,origin)
         self.add(token)
         return token
  

@@ -59,44 +59,52 @@ class BoxHandler(BaseHandler):
             BoxHandler.log(logging.DEBUG, "BoxHandler diff request (token not valid), args are: {0}".format(request.args), extra = {"request": request})
             return self.return_forbidden(request)
 
-        token.store.setLoggerClass(BoxHandler, extra = {"token": token, "request": request})
-        BoxHandler.log(logging.DEBUG, "BoxHandler diff request, args are: {0}".format(request.args), extra = {"request": request, "token": token})
+        def err_cb(failure):
+            failure.trap(Exception)
+            BoxHandler.log(logging.ERROR, "BoxHandler diff err_cb: {0}".format(failure), extra = {"request": request, "token": token})
+            return self.return_internal_error(request)
 
-        # TODO replace this mess with a 'defaultdicts' of the default values
+        def store_cb(store):
+            store.setLoggerClass(BoxHandler, extra = {"token": token, "request": request})
+            BoxHandler.log(logging.DEBUG, "BoxHandler diff request, args are: {0}".format(request.args), extra = {"request": request, "token": token})
 
-        try:
-            from_version = request.args['from_version'][0]
-        except Exception as e:
-            BoxHandler.log(logging.ERROR, "Exception in box.diff getting argument: {0}".format(e), extra = {"request": request, "token": token})
-            return self.return_bad_request(request, "Specify the following arguments in query string: from_version.")
+            # TODO replace this mess with a 'defaultdicts' of the default values
 
-        try:
-            # return IDs of changed object, full objects or a diff ['ids','objects','diff']
-            return_objs = request.args['return_objs'][0]
-            if return_objs not in ['objects', 'ids', 'diff']:
-                return self.return_bad_request(request, "Invalid version for 'return_objs', valid values are: ['objects','ids','diff'].") # TODO genericise this as above
-        except Exception as e:
-            BoxHandler.log(logging.ERROR, "Exception in box.diff getting argument: {0}".format(e), extra = {"request": request, "token": token})
-            return self.return_bad_request(request, "Specify the following arguments in query string: return_objs.")
+            try:
+                from_version = request.args['from_version'][0]
+            except Exception as e:
+                BoxHandler.log(logging.ERROR, "Exception in box.diff getting argument: {0}".format(e), extra = {"request": request, "token": token})
+                return self.return_bad_request(request, "Specify the following arguments in query string: from_version.")
 
-        # to_version is optional, if unspecified, the latest version is used.
-        if "to_version" in request.args:
-            to_version = request.args['to_version'][0]
-        else:
-            to_version = None
+            try:
+                # return IDs of changed object, full objects or a diff ['ids','objects','diff']
+                return_objs = request.args['return_objs'][0]
+                if return_objs not in ['objects', 'ids', 'diff']:
+                    return self.return_bad_request(request, "Invalid version for 'return_objs', valid values are: ['objects','ids','diff'].") # TODO genericise this as above
+            except Exception as e:
+                BoxHandler.log(logging.ERROR, "Exception in box.diff getting argument: {0}".format(e), extra = {"request": request, "token": token})
+                return self.return_bad_request(request, "Specify the following arguments in query string: return_objs.")
 
-        try:
-            BoxHandler.log(logging.DEBUG, "BoxHandler calling diff on store", extra = {"request": request, "token": token})
+            # to_version is optional, if unspecified, the latest version is used.
+            if "to_version" in request.args:
+                to_version = request.args['to_version'][0]
+            else:
+                to_version = None
 
-            def handle_add_error(failure):
-                failure.trap(Exception)
-                #err = failure.value
-                BoxHandler.log(logging.DEBUG, "Exception trying to diff: {0}".format(failure.value), extra = {"request": request, "token": token})
+            try:
+                BoxHandler.log(logging.DEBUG, "BoxHandler calling diff on store", extra = {"request": request, "token": token})
+
+                def handle_add_error(failure):
+                    failure.trap(Exception)
+                    #err = failure.value
+                    BoxHandler.log(logging.DEBUG, "Exception trying to diff: {0}".format(failure.value), extra = {"request": request, "token": token})
+                    return self.return_internal_error(request)
+
+                store.diff(from_version, to_version, return_objs).addCallbacks(lambda results: self.return_ok(request, results), handle_add_error)
+            except Exception as e:
                 return self.return_internal_error(request)
 
-            token.store.diff(from_version, to_version, return_objs).addCallbacks(lambda results: self.return_ok(request, results), handle_add_error)
-        except Exception as e:
-            return self.return_internal_error(request)
+        token.get_store().addCallbacks(store_cb, err_cb)
 
 
     def get_object_ids(self, request):
@@ -106,13 +114,18 @@ class BoxHandler(BaseHandler):
         if not token:
             return self.return_forbidden(request)
 
-        token.store.setLoggerClass(BoxHandler, extra = {"token": token, "request": request})
-        try:
-            BoxHandler.log(logging.DEBUG, "calling get_object_ids on store", extra = {"request": request, "token": token})
-            token.store.get_object_ids().addCallback(lambda results: self.return_ok(request, results))
-        except Exception as e:
-            BoxHandler.log(logging.ERROR, "get_object_ids, error: {0}".format(e), extra = {"request": request, "token": token})
+        def err_cb(failure):
+            failure.trap(Exception)
+            BoxHandler.log(logging.ERROR, "BoxHandler get_object_ids err_cb: {0}".format(failure), extra = {"request": request, "token": token})
             return self.return_internal_error(request)
+
+        def store_cb(store):
+            store.setLoggerClass(BoxHandler, extra = {"token": token, "request": request})
+            BoxHandler.log(logging.DEBUG, "calling get_object_ids on store", extra = {"request": request, "token": token})
+            store.get_object_ids().addCallbacks(lambda results: self.return_ok(request, results), err_cb)
+
+        token.get_store().addCallbacks(store_cb, err_cb)
+
 
     def query(self, request):
         """ Perform a query against the box, and return matching objects.
@@ -121,95 +134,111 @@ class BoxHandler(BaseHandler):
         if not token:
             return self.return_forbidden(request)
 
-        token.store.setLoggerClass(BoxHandler, extra = {"token": token, "request": request})
-        BoxHandler.log(logging.DEBUG, "BoxHandler query request", extra = {"request": request, "token": token})
+        def err_cb(failure):
+            failure.trap(Exception)
+            BoxHandler.log(logging.ERROR, "BoxHandler query err_cb: {0}".format(failure), extra = {"request": request, "token": token})
+            return self.return_internal_error(request)
 
-        try:
-            q = json.loads(request.args['q'][0])
-        except Exception as e:
-            BoxHandler.log(logging.ERROR, "Exception in box.query getting 'q': {0}".format(e), extra = {"request": request, "token": token})
-            return self.return_bad_request(request, "Specify query as query string parameter 'q' as valid JSON")
+        def store_cb(store):
+            store.setLoggerClass(BoxHandler, extra = {"token": token, "request": request})
+            BoxHandler.log(logging.DEBUG, "BoxHandler query request", extra = {"request": request, "token": token})
 
-        try:
-            BoxHandler.log(logging.DEBUG, "BoxHandler querying store with q: "+str(q), extra = {"request": request, "token": token})
+            try:
+                q = json.loads(request.args['q'][0])
+            except Exception as e:
+                BoxHandler.log(logging.ERROR, "Exception in box.query getting 'q': {0}".format(e), extra = {"request": request, "token": token})
+                return self.return_bad_request(request, "Specify query as query string parameter 'q' as valid JSON")
 
-            def handle_add_error(failure):
-                """ Handle an error on add (this is the errback). """ #TODO move this somewhere else?
-                failure.trap(Exception)
-                #err = failure.value
-                BoxHandler.log(logging.DEBUG, "BoxHandler Exception trying to add to query.", extra = {"request": request, "token": token})
+            try:
+                BoxHandler.log(logging.DEBUG, "BoxHandler querying store with q: "+str(q), extra = {"request": request, "token": token})
+
+                def handle_add_error(failure):
+                    """ Handle an error on add (this is the errback). """ #TODO move this somewhere else?
+                    failure.trap(Exception)
+                    #err = failure.value
+                    BoxHandler.log(logging.DEBUG, "BoxHandler Exception trying to add to query.", extra = {"request": request, "token": token})
+                    return self.return_internal_error(request)
+
+                store.query(q).addCallbacks(lambda results: self.return_ok(request, {"data": results}), # callback
+                        handle_add_error) # errback
+            except Exception as e:
+                BoxHandler.log(logging.ERROR, "Exception in box.query: {0}".format(e), extra = {"request": request, "token": token})
                 return self.return_internal_error(request)
 
-            token.store.query(q).addCallbacks(lambda results: self.return_ok(request, {"data": results}), # callback
-                    handle_add_error) # errback
-        except Exception as e:
-            BoxHandler.log(logging.ERROR, "Exception in box.query: {0}".format(e), extra = {"request": request, "token": token})
-            return self.return_internal_error(request)
+        token.get_store().addCallbacks(store_cb, err_cb)
+
 
 
     def do_GET(self,request):
         token = self.get_token(request)
         if not token:
             return self.return_forbidden(request)
-        store = token.store
 
-        token.store.setLoggerClass(BoxHandler, extra = {"token": token, "request": request})
-        BoxHandler.log(logging.DEBUG, "BoxHandler GET request", extra = {"request": request, "token": token})
-
-        def handle_error(failure):
-            """ Handle an error on get (this is the errback). """ #TODO move this somewhere else?
+        def err_cb(failure):
             failure.trap(Exception)
-            BoxHandler.log(logging.ERROR, "Exception trying to get latest: {0}".format(failure.value), extra = {"request": request, "token": token})
+            BoxHandler.log(logging.ERROR, "BoxHandler do_GET err_cb: {0}".format(failure), extra = {"request": request, "token": token})
             return self.return_internal_error(request)
 
-        if "id" in request.args:
-            # return the objects listed in in the id arguments, e.g.:
-                # GET /box/?id=item1&id=item2&id=item3
-            id_list = request.args['id']
-            # return the whole box
-            return store.get_latest_objs(id_list).addCallbacks(lambda obj: self.return_ok(request, {"data": obj}),
-                handle_error)   
-        else:
-            # return the whole box
-            return store.get_latest().addCallbacks(lambda obj: self.return_ok(request, {"data": obj}),
-                handle_error)
+        def store_cb(store):
+            store.setLoggerClass(BoxHandler, extra = {"token": token, "request": request})
+            BoxHandler.log(logging.DEBUG, "BoxHandler GET request", extra = {"request": request, "token": token})
+
+            if "id" in request.args:
+                # return the objects listed in in the id arguments, e.g.:
+                    # GET /box/?id=item1&id=item2&id=item3
+                id_list = request.args['id']
+                # return ids of the whole box
+                return store.get_latest_objs(id_list).addCallbacks(lambda obj: self.return_ok(request, {"data": obj}), err_cb)   
+            else:
+                # return the whole box
+                return store.get_latest().addCallbacks(lambda obj: self.return_ok(request, {"data": obj}), err_cb)
+
+        token.get_store().addCallbacks(store_cb, err_cb)
    
 
     def do_PUT(self,request):
         token = self.get_token(request)
         if not token:
             return self.return_forbidden(request)
-        store, args = token.store, self.get_post_args(request)
 
-        token.store.setLoggerClass(BoxHandler, extra = {"token": token, "request": request})
-        BoxHandler.log(logging.DEBUG, "BoxHandler PUT request", extra = {"request": request, "token": token})
+        args = self.get_post_args(request)
 
-        if "version" not in args:
-            return self.return_bad_request(request,"Specify a previous version with &version=")
-        prev_version = int(args['version'][0])
+        def err_cb(failure):
+            failure.trap(Exception)
+            BoxHandler.log(logging.ERROR, "BoxHandler do_PUT err_cb: {0}".format(failure), extra = {"request": request, "token": token})
+            return self.return_internal_error(request)
 
-        objs = json.loads(args['data'][0])
+        def store_cb(store):
+            store.setLoggerClass(BoxHandler, extra = {"token": token, "request": request})
+            BoxHandler.log(logging.DEBUG, "BoxHandler PUT request", extra = {"request": request, "token": token})
 
-        if type(objs) != type([]):
-            objs = [objs]
-            
-        d = store.update(objs, prev_version)
+            if "version" not in args:
+                return self.return_bad_request(request,"Specify a previous version with &version=")
+            prev_version = int(args['version'][0])
 
-        def handle_add_error(failure):
-            """ Handle an error on add (this is the errback). """ #TODO move this somewhere else?
-            failure.trap(IncorrectPreviousVersionException, Exception)
-            err = failure.value
-            if isinstance(err, IncorrectPreviousVersionException):
-                BoxHandler.log(logging.DEBUG, "Incorrect previous version", extra = {"request": request, "token": token})
-                actual_version = err.version
-                return self.return_obsolete(request,{"description": "Document obsolete. Please update before putting", '@version':actual_version})            
-            else:
-                BoxHandler.log(logging.ERROR, "Exception trying to add to store: {0}".format(err), extra = {"request": request, "token": token})
-                return self.return_internal_error(request)
+            objs = json.loads(args['data'][0])
 
-        d.addCallbacks(lambda new_version_info: self.return_created(request,{"data":new_version_info}), # callback
-            handle_add_error) #errback
-        return
+            if type(objs) != type([]):
+                objs = [objs]
+                
+            d = store.update(objs, prev_version)
+
+            def handle_add_error(failure):
+                """ Handle an error on add (this is the errback). """ #TODO move this somewhere else?
+                failure.trap(IncorrectPreviousVersionException, Exception)
+                err = failure.value
+                if isinstance(err, IncorrectPreviousVersionException):
+                    BoxHandler.log(logging.DEBUG, "Incorrect previous version", extra = {"request": request, "token": token})
+                    actual_version = err.version
+                    return self.return_obsolete(request,{"description": "Document obsolete. Please update before putting", '@version':actual_version})            
+                else:
+                    BoxHandler.log(logging.ERROR, "Exception trying to add to store: {0}".format(err), extra = {"request": request, "token": token})
+                    return self.return_internal_error(request)
+
+            d.addCallbacks(lambda new_version_info: self.return_created(request,{"data":new_version_info}), # callback
+                handle_add_error) #errback
+
+        token.get_store().addCallbacks(store_cb, err_cb)
 
 
     def do_DELETE(self,request):
@@ -228,37 +257,45 @@ class BoxHandler(BaseHandler):
         if not token:
             return self.return_forbidden(request)
 
-        token.store.setLoggerClass(BoxHandler, extra = {"token": token, "request": request})
-        store, args = token.store, self.get_post_args(request)
+        def err_cb(failure):
+            failure.trap(Exception)
+            BoxHandler.log(logging.ERROR, "BoxHandler do_DELETE err_cb: {0}".format(failure), extra = {"request": request, "token": token})
+            return self.return_internal_error(request)
 
-        BoxHandler.log(logging.DEBUG, "BoxHandler DELETE request", extra = {"request": request, "token": token})
+        def store_cb(store):
+            store.setLoggerClass(BoxHandler, extra = {"token": token, "request": request})
+            args = self.get_post_args(request)
 
-        if "version" not in args:
-            return self.return_bad_request(request,"Specify a previous version in the body with &version=")
-        prev_version = int(args['version'][0])
+            BoxHandler.log(logging.DEBUG, "BoxHandler DELETE request", extra = {"request": request, "token": token})
 
-        id_list = json.loads(args['data'][0])
+            if "version" not in args:
+                return self.return_bad_request(request,"Specify a previous version in the body with &version=")
+            prev_version = int(args['version'][0])
 
-        if type(id_list) != type([]):
-            id_list = [id_list]
+            id_list = json.loads(args['data'][0])
 
-        d = store.delete(id_list, prev_version)
+            if type(id_list) != type([]):
+                id_list = [id_list]
 
-        def handle_add_error(failure):
-            """ Handle an error on add (this is the errback). """ #TODO move this somewhere else?
-            failure.trap(IncorrectPreviousVersionException, Exception)
-            err = failure.value
-            if isinstance(err, IncorrectPreviousVersionException):
-                BoxHandler.log(logging.DEBUG, "Incorrect previous version", extra = {"request": request, "token": token})
-                actual_version = err.version
-                return self.return_obsolete(request,{"description": "Document obsolete. Please update before putting", '@version':actual_version})            
-            else:
-                BoxHandler.log(logging.ERROR, "Exception trying to delete from store: {0}".format(err), extra = {"request": request, "token": token})
-                return self.return_internal_error(request)
+            d = store.delete(id_list, prev_version)
 
-        d.addCallbacks(lambda new_version_info: self.return_created(request,{"data":new_version_info}), # callback
-            handle_add_error) #errback
-        return
+            def handle_add_error(failure):
+                """ Handle an error on add (this is the errback). """ #TODO move this somewhere else?
+                failure.trap(IncorrectPreviousVersionException, Exception)
+                err = failure.value
+                if isinstance(err, IncorrectPreviousVersionException):
+                    BoxHandler.log(logging.DEBUG, "Incorrect previous version", extra = {"request": request, "token": token})
+                    actual_version = err.version
+                    return self.return_obsolete(request,{"description": "Document obsolete. Please update before putting", '@version':actual_version})            
+                else:
+                    BoxHandler.log(logging.ERROR, "Exception trying to delete from store: {0}".format(err), extra = {"request": request, "token": token})
+                    return self.return_internal_error(request)
+
+            d.addCallbacks(lambda new_version_info: self.return_created(request,{"data":new_version_info}), # callback
+                handle_add_error) #errback
+
+        token.get_store().addCallbacks(store_cb, err_cb)
+
 
 BoxHandler.subhandlers = [
     {
