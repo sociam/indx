@@ -263,7 +263,7 @@ vvvvvvv  but WITHOUT ANY WARRANTY; without even the implied warranty of
 						delete this_._ws;
 					} catch(e) { u.error(); }
 				}
-				var protocol = (document.location.protocol === 'https') ? 'wss:/' : 'ws:/';
+				var protocol = (document.location.protocol === 'https:') ? 'wss:/' : 'ws:/';
 				var ws_url = [protocol,server_host,'ws'].join('/');
 				ws = new WebSocket(ws_url);
 				ws.onmessage = function(evt) {
