@@ -25,7 +25,7 @@
   (at your option) any later version.
 
   WebBox is distributed in the hope that it will be useful,
-vvvvvvv  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.
 
@@ -491,7 +491,7 @@ vvvvvvv  but WITHOUT ANY WARRANTY; without even the implied warranty of
 			// u.log('queue flush () :: updating ', this._update_queue.indexOf(this.WHOLE_BOX) >= 0 ? 'whole box ' : ('only ' + this._update_queue));
 			// clear it in advance.... 
 			this_._update_queue = [];			
-			this_._update(update_arguments).then(function() {
+			this_._do_update(update_arguments).then(function() {
 				// keep it cleared
 			}).fail(function(err) {
 				if (err.status === 409) {
@@ -505,12 +505,10 @@ vvvvvvv  but WITHOUT ANY WARRANTY; without even the implied warranty of
 				}
 			});
 		},
-		_update:function(original_ids) {
-			var ids = original_ids ? (_.isArray(original_ids) ? original_ids.slice() : [original_ids]) : undefined;
+		_do_update:function(ids) {
+			// this actua
 			var d = u.deferred(), version = this.get('version') || 0, this_ = this,
-				objs = this._objcache().filter(function(x) {
-					return ids === undefined || ids.indexOf(x.id) >= 0;
-				}).map(function(obj){ return serialize_obj(obj); });			
+				objs = this._objcache().filter(function(x) { return ids === undefined || ids.indexOf(x.id) >= 0; }).map(function(obj){ return serialize_obj(obj); });
 			
 			this._ajax("PUT",  this.id + "/update", { version: escape(version), data : JSON.stringify(objs)  })
 				.then(function(response) {
@@ -522,6 +520,11 @@ vvvvvvv  but WITHOUT ANY WARRANTY; without even the implied warranty of
 					d.reject(err);
 				});
 			return d.promise();
+		},
+		_update:function(original_ids) {
+			// this is called by Backbone.save(),
+			this._add_to_update_queue(original_ids);
+			this._flush_update_queue();			
 		},
 		_create_box:function() {
 			var d = u.deferred();
@@ -542,7 +545,7 @@ vvvvvvv  but WITHOUT ANY WARRANTY; without even the implied warranty of
 			{
 			case "create": return model._create_box();
 			case "read": return model._check_token_and_fetch(); 
-			case "update": return model._update(); 
+			case "update": return model.update(); 
 			case "delete": return u.warn('box.delete() : not implemented yet');
 			}
 		},
