@@ -246,11 +246,14 @@ vvvvvvv  but WITHOUT ANY WARRANTY; without even the implied warranty of
 		idAttribute:"@id",
 		default_options: { use_websockets:true, ws_auto_reconnect:false	},
 		initialize:function(attributes, options) {
+			var this_ = this;
 			u.assert(options.store, "no store provided");
 			this.store = options.store;
 			this.set({objcache: new ObjCollection(), objlist: [] });
 			this.options = _(this.default_options).chain().clone().extend(options || {}).value();
 			this.set_up_websocket();
+			this._update_queue = [];
+			this.on('update-from-master', function() { this_._flush_update_queue(); });
 		},
 		set_up_websocket:function() {
 			var this_ = this, server_host = this.store.get('server_host');
@@ -271,7 +274,7 @@ vvvvvvv  but WITHOUT ANY WARRANTY; without even the implied warranty of
 					var pdata = JSON.parse(evt.data);
 					if (pdata.action === 'diff') {
 						this_._diff_update(pdata.data)
-							.then(function() { /*  u.log('done diffing '); */ })
+							.then(function() {  this_.trigger('update-from-master', this_._get_version());	})
 							.fail(function(err) { u.error(err); /*  u.log('done diffing '); */ });
 					}
 				};
@@ -440,23 +443,28 @@ vvvvvvv  but WITHOUT ANY WARRANTY; without even the implied warranty of
 		_fetch:function() {
 			// new client :: this now _only_ fetches object ids
 			// return a list of models (each of type WebBox.Object) to populate a GraphCollection
+			var d = u.deferred(), fd = u.deferred(), this_ = this;
 			if (this._is_fetched()) {
-				return this._diff_update_poll();
+				fd = this._diff_update_poll();
+			} else {
+				// otherwise we aren't fetched, so we just do it
+				var box = this.get_id(), this_ = this;
+				this._ajax("GET",[box,'get_object_ids'].join('/')).then(
+					function(response){
+						u.assert(response['@version'] !== undefined, 'no version provided');
+						console.log(' BOX FETCH VERSION ', response['@version']);
+						this_.id = this_.get_id();
+						this_._set_version(response['@version']);
+						this_._update_object_list(response.ids);					
+						fd.resolve(this_);
+					}).fail(fd.reject);
 			}
-			// otherwise we aren't fetched, so we just do it
-			var box = this.get_id(), d = u.deferred(), this_ = this;
-			this._ajax("GET",[box,'get_object_ids'].join('/')).then(
-				function(response){
-					u.assert(response['@version'] !== undefined, 'no version provided');
-					console.log(' BOX FETCH VERSION ', response['@version']);
-					this_.id = this_.get_id();
-					this_._set_version(response['@version']);
-					this_._update_object_list(response.ids);					
-					d.resolve(this_);
-				}).fail(d.reject);
+			fd.then(function() {
+				this_.trigger('update-from-master', this_._get_version());
+				d.resolve(this_);				
+			}).fail(d.reject);
 			return d.promise();
 		},
-
 		// -----------------------------------------------
 		_check_token_and_fetch : function() {
 			var this_ = this;
@@ -469,9 +477,19 @@ vvvvvvv  but WITHOUT ANY WARRANTY; without even the implied warranty of
 			}
 			return this_._fetch();			
 		},
+		WHOLE_BOX: { special: "UPDATE_WHOLE_BOX "},
+		_add_to_update_queue:function(ids_to_update) {
+			ids_to_update = ids_to_update === undefined ? [ this.WHOLE_BOX ] : ids_to_update;
+			this._update_queue = _(this._update_queue).union(ids_to_update);
+		},
+		_flush_update_queue:function() {
+			if (this._update_queue.length === 0) { return ; }
+			var this_ = this, update_arguments = this._update_queue.indexOf(this.WHOLE_BOX) >= 0 ? undefined : this._update_queue.concat();
+			u.log('queue flush () :: updating ', this._update_queue.indexOf(this.WHOLE_BOX) >= 0 ? 'whole box ' : ('only ' + this._update_queue.length));
+			this_._update(update_arguments).then(function() { this_._update_queue = [];	}).fail(u.error);
+		},
 		_update:function(original_ids) {
 			var ids = original_ids ? (_.isArray(original_ids) ? original_ids.slice() : [original_ids]) : undefined;
-			// u.debug("UPDATE ", ids);
 			var d = u.deferred(), version = this.get('version') || 0, this_ = this,
 				objs = this._objcache().filter(function(x) {
 					return ids === undefined || ids.indexOf(x.id) >= 0;
@@ -482,23 +500,10 @@ vvvvvvv  but WITHOUT ANY WARRANTY; without even the implied warranty of
 					this_._set_version(response.data["@version"]);
 					d.resolve(this_);
 				}).fail(function(err) {
-					// TODO TODO -- make sure that this doesn't clobber our local changes :(
-					// very dangerous for concurrent modification
-
 					if (err.status === 409) {
-						u.debug("got an obsolete ------------- trying to update again ");						
-						return this_._update(original_ids);
+						this_._add_to_update_queue(ids);
+						return d.resolve(this_);
 					}
-										
-					// disable for websockets
-					// if (err.status === 409) {
-					// 	u.debug("got an obsolete ------------- trying to fetch again ");						
-					// 	return this_.fetch()
-					// 		.then(function() {
-					// 			console.log("FETCHED, trying to save again ", original_ids);
-					// 			this_._update(original_ids).then(d.resolve).fail(d.reject);
-					// 		}).fail(d.reject);
-					// }
 					d.reject(err);
 				});
 			return d.promise();
