@@ -627,7 +627,7 @@ class ObjectStoreAsync:
 
             def ver_cb(latest_ver):
                 self.debug("Objectstore update, ver_cb, latest_ver: {0}".format(latest_ver))
-                latest_ver = latest_ver[0][0]
+                latest_ver = latest_ver[0][0] or 0
                 def cloned_cb(new_ver):
                     self.debug("Objectstore update, cloned_cb new_ver: {0}".format(new_ver))
 
