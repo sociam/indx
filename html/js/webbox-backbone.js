@@ -298,7 +298,7 @@ vvvvvvv  but WITHOUT ANY WARRANTY; without even the implied warranty of
 							});
 						});
 					},1000);
-				};				
+				};
 			});
 		},
 		get_use_websockets:function() { return this.options.use_websockets; },
@@ -346,7 +346,7 @@ vvvvvvv  but WITHOUT ANY WARRANTY; without even the implied warranty of
 			return d.promise();
 		},
 		_diff_update:function(response) {
-			var d = u.deferred(), this_ = this, latest_version = response['@latest_version'],
+			var d = u.deferred(), this_ = this, latest_version = response['@to_version'],
 			added_ids  = _(response.data.added).keys(),
 			changed_ids = _(response.data.changed).keys(),
 			deleted_ids = _(response.data.deleted).keys(),
@@ -357,8 +357,8 @@ vvvvvvv  but WITHOUT ANY WARRANTY; without even the implied warranty of
 			u.assert(changed_ids !== undefined, 'changed not provided');
 			u.assert(deleted_ids !== undefined, 'deleted _ids not provided');
 
-			if (latest_version === this_._get_version()) {
-				// u.debug('asked to diff update, but already up to date, so just relax!');
+			if (latest_version <= this_._get_version()) {
+				u.debug('asked to diff update, but already up to date, so just relax!');
 				return d.resolve();
 			}					
 			this_._set_version(latest_version);
@@ -484,26 +484,41 @@ vvvvvvv  but WITHOUT ANY WARRANTY; without even the implied warranty of
 		},
 		_flush_update_queue:function() {
 			if (this._update_queue.length === 0) { return ; }
+			
+			// make a copy
+			var update_queue_copy = this._update_queue.concat([]);
 			var this_ = this, update_arguments = this._update_queue.indexOf(this.WHOLE_BOX) >= 0 ? undefined : this._update_queue.concat();
-			u.log('queue flush () :: updating ', this._update_queue.indexOf(this.WHOLE_BOX) >= 0 ? 'whole box ' : ('only ' + this._update_queue.length));
-			this_._update(update_arguments).then(function() { this_._update_queue = [];	}).fail(u.error);
+			// u.log('queue flush () :: updating ', this._update_queue.indexOf(this.WHOLE_BOX) >= 0 ? 'whole box ' : ('only ' + this._update_queue));
+			// clear it in advance.... 
+			this_._update_queue = [];			
+			this_._update(update_arguments).then(function() {
+				// keep it cleared
+			}).fail(function(err) {
+				if (err.status === 409) {
+					// reinstate it with old :( since we failed
+					this_._update_queue = _(this_._update_queue).union(update_queue_copy);					
+					// u.debug('queuing for trying again ');
+					setTimeout(function() {
+						// u.debug('update flushing trying again... ');
+						this_._flush_update_queue();
+					}, 300);					
+				}
+			});
 		},
 		_update:function(original_ids) {
 			var ids = original_ids ? (_.isArray(original_ids) ? original_ids.slice() : [original_ids]) : undefined;
 			var d = u.deferred(), version = this.get('version') || 0, this_ = this,
 				objs = this._objcache().filter(function(x) {
 					return ids === undefined || ids.indexOf(x.id) >= 0;
-				}).map(function(obj){ return serialize_obj(obj); });
+				}).map(function(obj){ return serialize_obj(obj); });			
+			
 			this._ajax("PUT",  this.id + "/update", { version: escape(version), data : JSON.stringify(objs)  })
 				.then(function(response) {
-					u.debug('DEBUG :::: setting version to ', response.data["@version"]);
+					u.debug('Update response update version > ', response.data["@version"]);
 					this_._set_version(response.data["@version"]);
 					d.resolve(this_);
 				}).fail(function(err) {
-					if (err.status === 409) {
-						this_._add_to_update_queue(ids);
-						return d.resolve(this_);
-					}
+					if (err.status === 409) { this_._add_to_update_queue(ids); }
 					d.reject(err);
 				});
 			return d.promise();
