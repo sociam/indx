@@ -358,7 +358,7 @@
 			u.assert(deleted_ids !== undefined, 'deleted _ids not provided');
 
 			if (latest_version <= this_._get_version()) {
-				u.debug('asked to diff update, but already up to date, so just relax!');
+				u.debug('asked to diff update, but already up to date, so just relax!', latest_version, this_._get_version());
 				return d.resolve();
 			}					
 			this_._set_version(latest_version);
@@ -482,26 +482,32 @@
 			ids_to_update = ids_to_update === undefined ? [ this.WHOLE_BOX ] : ids_to_update;
 			this._update_queue = _(this._update_queue).union(ids_to_update);
 		},
+		_requeue_update:function() {
+			var this_ = this;
+			setTimeout(function() {
+				// u.debug('update flushing trying again... ');
+				this_._flush_update_queue();
+			}, 300);			
+		},
 		_flush_update_queue:function() {
-			if (this._update_queue.length === 0) { return ; }
-			
+			if (this._update_queue.length === 0) { return ; }			
+			if (this._updating)  {	return this._requeue_update(); 	}
 			// make a copy
+			var this_ = this;
 			var update_queue_copy = this._update_queue.concat([]);
-			var this_ = this, update_arguments = this._update_queue.indexOf(this.WHOLE_BOX) >= 0 ? undefined : this._update_queue.concat();
+			var update_arguments = this._update_queue.indexOf(this.WHOLE_BOX) >= 0 ? undefined : this._update_queue.concat();
 			// u.log('queue flush () :: updating ', this._update_queue.indexOf(this.WHOLE_BOX) >= 0 ? 'whole box ' : ('only ' + this._update_queue));
-			// clear it in advance.... 
-			this_._update_queue = [];			
+			// clear it in advance....
+			this_._updating = true;
+			this_._update_queue = [];
 			this_._do_update(update_arguments).then(function() {
+				delete this_._updating;
 				// keep it cleared
 			}).fail(function(err) {
+				delete this_._updating;
 				if (err.status === 409) {
 					// reinstate it with old :( since we failed
 					this_._update_queue = _(this_._update_queue).union(update_queue_copy);					
-					// u.debug('queuing for trying again ');
-					setTimeout(function() {
-						// u.debug('update flushing trying again... ');
-						this_._flush_update_queue();
-					}, 300);					
 				}
 			});
 		},
