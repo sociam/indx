@@ -41,6 +41,7 @@ angular.module('ui.directives').directive('uiAnimate', ['ui.config', '$timeout',
 
       element.addClass(opts['class']);
       $timeout(function () {
+		  console.log('removing class ', opts['class']);
         element.removeClass(opts['class']);
       }, 20, false);
     }

@@ -579,9 +579,9 @@
 			return this.get('server_host').indexOf(document.location.host) >= 0 && (document.location.port === (this.get('server_port') || ''));
 		},
 		_load_toolbar:function() {
-			var el = $('<div></div>').addClass('toolbar').prependTo('body'), this_ = this;
 			this.toolbar = WebBox.Toolbar;
-			this.toolbar.load(el[0], this).then(function() {u.debug('done loading toolbar, apparently');});
+			this.toolbar.setStore(this);
+			// this.toolbar.load(el[0], this).then(function() {u.debug('done loading toolbar, apparently');});
 		},
 		boxes:function() {	return this.attributes.boxes;	},
 		get_box: function(boxid) {	return this.boxes().get(boxid);	},

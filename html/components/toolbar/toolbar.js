@@ -8,18 +8,27 @@ else { WebBox = root.WebBox; }
 
 (function() {
 	console.log("TOOLBAR LOADING >>>>> ");
-	var u = WebBox.utils, templates, store;
+	var u = WebBox.utils, templates;
 	var toolbar_exports = WebBox.Toolbar = {};
-	var event_model = new Backbone.Model();
+	var event_model = new Backbone.Model(
+		{visible:true}
+	);
+	var safe_apply = function($scope, fn) {
+		if ($scope.$$phase) { return fn(); }
+		$scope.$apply(fn);
+	};	
 	toolbar_exports.on = function(msg, fn) {  return event_model.on(msg,fn); };
-	toolbar_exports.off = function(msg, fn) {  return event_model.off(msg,fn); };	
+	toolbar_exports.off = function(msg, fn) {  return event_model.off(msg,fn); };
+	toolbar_exports.setVisible = function(b) { event_model.set('visible', b); };
+	toolbar_exports.setStore = function(s) { event_model.set('store', s); };
+	var getStore = function() { return event_model.get('store'); };
 	
 	var ToolbarController = function($scope) {
-		u.log('toolbar controller!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-
-		var apply = function(g) { return $scope.$apply(g); };
+		
+		var apply = function(fn) { return safe_apply($scope, fn); };
 		
 		_($scope).extend({
+			visible: true,
 			u: WebBox.utils,
 			error:undefined,
 			username: undefined,
@@ -31,7 +40,6 @@ else { WebBox = root.WebBox; }
 			is_logged_in : function() { return $scope.username !== undefined; },
 			not_logged_in : "<i>log in to webbox</i>"
 		});
-
 		_($scope).map(function(val,k) {
 			// hook up scope to model changes
 			$scope.$watch(k, function() { event_model.trigger('change:'+k, $scope[k]); });
@@ -56,7 +64,7 @@ else { WebBox = root.WebBox; }
 			// get boxes
 			var this_ = this, d = u.deferred();
 			$scope.incr_loading();
-			store.fetch().then(function(boxlist) {
+			getStore().fetch().then(function(boxlist) {
 				apply(function() {
 					$scope.boxlist = boxlist.map(function(b) { return b.get_id(); });
 					if ($scope.box === undefined && $scope.boxlist.length > 0) {
@@ -74,7 +82,7 @@ else { WebBox = root.WebBox; }
 
 		$scope.loginbox_try_login = function(username,password) {
 			$scope.incr_loading();
-			store.login(username,password).then(function() {
+			getStore().login(username,password).then(function() {
 				$scope.decr_loading();				
 				$('#login_dialog').modal('hide');
 				setTimeout(function() {
@@ -110,10 +118,10 @@ else { WebBox = root.WebBox; }
 		};
 		$scope.do_logout = function() {
 			console.log('do logout');
-			store.logout();
-		};
-
-		$scope._initialise = function() {
+			getStore().logout();
+		};		
+		event_model.on('change:store', function() {
+			var store = getStore();
 			store.on('login', function(username) {
 				u.debug('store -> toolbar :: login ');
 				apply(function() { $scope.cb_login(username); });
@@ -123,9 +131,7 @@ else { WebBox = root.WebBox; }
 			}).on('change:boxes', function() {
 				u.debug('store -> toolbar :: change boxes ');
 				apply(function() { update_boxlist(); });
-			});
-			
-			// check to see if already logged in 
+			});			
 			store.checkLogin().then(function(response) {
 				u.debug('checklogin ', response);
 				if (response.is_authenticated) {
@@ -134,13 +140,14 @@ else { WebBox = root.WebBox; }
 					apply(function() { $scope.cb_logout();	});
 				}
 			});						
-		};		
+		});
+		event_model.on('change:visible',function(b) {
+			apply(function() { $scope.visible = event_model.get('visible');  });
+		});
 	};
-
-	var load_templates = function(server_url) {
+	var load_templates = function() {
 		templates = {
-			main: { url: [server_url, 'components/toolbar/t_template.html'].join('/') },
-			login:{ url: [server_url, 'components/toolbar/login_template.html'].join('/')}
+			main: { url: '/components/toolbar/t_template.html' }
 		};			
 		return $.when.apply($, _(templates).keys().map(function(tname) {
 			var d = new $.Deferred();
@@ -151,23 +158,17 @@ else { WebBox = root.WebBox; }
 			return d.promise();
 		})).promise();
 	};
-
-	toolbar_exports.load = function(dom_el, _store, server_url) {
-		var d = u.deferred();
-		store = _store;
-		
-		
-		load_templates(_store.get('server_url')).then(function() {
-			$(dom_el).append(templates.main.template).append(templates.login.template);
-			
-			var app =  angular.module('WebboxToolbar', []);
+	
+	(function() {
+		console.log('boo');
+		var this_ = this;
+		load_templates().then(function() {
+			var dom_el = $('<div></div>').addClass('toolbar').prependTo('body');			
+			$(dom_el).append(templates.main.template);
+			var app = angular.module('WebboxToolbar', []);
 			app.controller('ToolbarController', ToolbarController);
 			angular.bootstrap(dom_el, ["WebboxToolbar"]);
-			
-			d.resolve();
-		}).fail(d.reject);
-		return d.promise();
-	};
-
-	WebBox.loader_dependencies.toolbar.dfd.resolve(toolbar_exports);	
+			WebBox.loader_dependencies.toolbar.dfd.resolve(toolbar_exports);
+		}).fail(WebBox.loader_dependencies.toolbar.dfd.reject);
+	}());
 }());
