@@ -1,4 +1,4 @@
-/*global $,_,document,window,console,escape,Backbone,exports */
+/*global $,_,document,window,console,escape,Backbone,exports,WebSocket */
 /*jslint vars:true, todo:true */
 /*
 
@@ -35,7 +35,6 @@
 
 (function(){
 	// intentional fall-through to window if running in a browser
-	"use strict";
 	var root = this, WebBox;
 	var NAMEPREFIX = true;
 	// The top-level namespace
@@ -48,7 +47,12 @@
 	// set up our parameters for webbox -
 	// default is that we're loading from an _app_ hosted within
 	// webbox. 
-	var DEFAULT_HOST = document.location.host;
+	var DEFAULT_HOST = document.location.host; // which may contain the port
+
+	var WS_MESSAGES_SEND = {
+		auth: function(token) { return JSON.stringify({action:'auth', token:token}); },
+		diff: function(token) { return JSON.stringify({action:'diff', operation:"start"}); }		
+	};
 	
 	var serialize_obj = function(obj) {
 		var uri = obj.id;
@@ -80,7 +84,7 @@
 				} else if (_.isBoolean(val)) {
 					obj_vals.push({"@value": val.toString(), "@type":"http://www.w3.org/2001/XMLSchema#boolean"});
 				} else {
-					u.warn("Could not determine type of val ", val);
+					u.warn("Could not determine type of val ", pred, val);
 					obj_vals.push({"@value": val.toString()});
 				}
 			});
@@ -99,7 +103,7 @@
 		"http://www.w3.org/2001/XMLSchema#dateTime": function(o) { return new Date(Date.parse(o['@value'])); }
 	};
 	var deserialize_literal = function(obj) {
-		return obj['@value'] ? literal_deserializers[ obj['@type'] || '' ](obj) : obj;
+		return obj['@value'] !== undefined ? literal_deserializers[ obj['@type'] || '' ](obj) : obj;
 	};	
 	
 
@@ -144,64 +148,80 @@
 			else {	k = this._all_values_to_arrays(k);	}
 			return Backbone.Model.prototype.set.apply(this,[k,v,options]);
 		},
+		delete_properties:function(props, silent)  {
+			var this_ = this;
+			props.map(function(p) { this_.unset(p, silent ? {silent:true} : {}); });
+		},
 		_delete:function() {
 			return this.box._delete_models([this]);
+		},
+		_deserialise_and_set:function(s_obj, silent) {
+			// returns a promise
+			var this_ = this;
+			var dfds = _(s_obj).map(function(vals, key) {
+				var kd = u.deferred();
+				if (key.indexOf('@') === 0) {
+					// ignore "@id" etc
+					return;
+				} 
+				var val_dfds = vals.map(function(val) {
+					var vd = u.deferred();
+					// it's an object, so return that
+					if (val.hasOwnProperty("@id")) {
+						// object
+						this_.box.get_obj(val["@id"]).then(vd.resolve).fail(vd.reject);
+					}
+					else if (val.hasOwnProperty("@value")) {
+						// literal
+						vd.resolve(deserialize_literal(val));
+					}
+					else {
+						// don't know what it is!
+						vd.reject('cannot unpack value ', val);
+					}
+					return vd.promise();							
+				});						
+				u.when(val_dfds).then(function(obj_vals) {
+					// only update keys that have changed
+					var prev_vals = this_.get(key);
+					if ( prev_vals === undefined || obj_vals.length !== prev_vals.length ||
+						 _(obj_vals).difference(prev_vals).length > 0 ||
+						 _(prev_vals).difference(obj_vals).length > 0) {
+						this_.set(key, obj_vals, { silent : silent });
+					}
+					kd.resolve();
+				}).fail(kd.reject);
+				return kd.promise();
+			}).filter(u.defined);
+			return u.when(dfds);
 		},
 		_fetch:function() {
 			var this_ = this, fd = u.deferred(), box = this.box.get_id();
 			this.box._ajax('GET', box, {'id':this.id}).then(function(response) {
-				// u.log('query response ::: ', response);
-				var version = null;
-				var objdata = response.data;
-				if (this_.id !== this_.get_id()) { return this_.set('@id', this_.get_id()); }
-				var obj_save_dfds = _(objdata).chain()
-					.map(function(obj,uri) {
+				u.log('query response ::: ', response);
+				var objdata = response.data;				
+				if (this_.box._get_version() !== objdata['@version']) {
+					// our box is obsolete! let's tell box to update itself.
+					// u.debug('telling box to update >> ', this_.box._get_version(), response['@version']);
+					// update entire box to latest version then continue
+					return this_.box.fetch().then(function(fetched_thingies) {
+						// recurse after done
+						// TODO: if you already fetched an update for this object
+						// then we really don't need to do it do we? --
+						// 
+						this_.fetch().then(fd.resolve).fail(fd.reject);
+					}).fail(fd.reject);
+				}
+				// we are at current known version as far as we know
+				var obj_save_dfds = _(objdata).map(function(obj,uri) {
 						// top level keys - corresponding to box level properties
-						// set the box id cos 
-						if (uri === "@version") { version = obj; return; }
-						if (uri[0] === "@") { return; } // ignore "@id" etc
+						if (uri[0] === "@") { return; } // ignore "@id", "@version" etc
 						// not one of those, so must be a
 						// < uri > : { prop1 .. prop2 ... }
-						return _(obj).map(function(vals, key) {
-							var kd = u.deferred();
-							if (key.indexOf('@') === 0) { return; } // ignore "@id" etc
-							var val_dfds = vals.map(function(val) {
-								var d = u.deferred();
-								// it's an object, so return that
-								if (val.hasOwnProperty("@id")) {
-									this_.get_obj(val["@id"]).then(d.resolve).fail(d.reject);
-								}
-								// it's a non-object
-								if (val.hasOwnProperty("@value")) {
-									d.resolve(deserialize_literal(val));
-								}
-								// don't know what it is!
-								d.reject('cannot unpack value ', val);
-								return d.promise();							
-							});						
-							u.when(val_dfds).then(function(obj_vals) {
-								// only update keys that have changed
-								var prev_vals = this_.get(key);
-								if ( prev_vals === undefined ||
-									 obj_vals.length !== prev_vals.length ||
-									 _(obj_vals).difference(prev_vals).length > 0 ||
-									 _(prev_vals).difference(obj_vals).length > 0) {
-									this_.set(key,obj_vals);
-								}
-								kd.resolve();
-							}).fail(kd.reject);
-							return kd.promise();
-						});
-					})
-					.flatten()
-					.filter(function(x) { return x !== undefined;})
-					.value();				
-				u.when(obj_save_dfds).then(function() {
-					// we need to ensure our box is up to date otherwise version skew!
-					this_.box._update_version_to(version)
-						.then(function() { fd.resolve(this_); })
-						.fail(function(err) { fd.reject(err); });
-				}).fail(fd.reject);
+						u.assert(uri === this_.id, 'can only deserialise this object');
+						return this_._deserialise_and_set(obj);
+					});
+				u.when(obj_save_dfds).then(function(){ fd.resolve(this_); }).fail(fd.reject);
 			});
 			return fd.promise();
 		},
@@ -224,15 +244,68 @@
 	// lazily get objects as you go
 	var Box = WebBox.Box = Backbone.Model.extend({
 		idAttribute:"@id",
+		default_options: { use_websockets:true, ws_auto_reconnect:false	},
 		initialize:function(attributes, options) {
+			var this_ = this;
 			u.assert(options.store, "no store provided");
 			this.store = options.store;
 			this.set({objcache: new ObjCollection(), objlist: [] });
+			this.options = _(this.default_options).chain().clone().extend(options || {}).value();
+			this.set_up_websocket();
+			this._update_queue = [];
+			this.on('update-from-master', function() { this_._flush_update_queue(); });
 		},
+		set_up_websocket:function() {
+			var this_ = this, server_host = this.store.get('server_host');
+			if (! this.get_use_websockets() ) { return; }
+			this.on('new-token', function(token) {
+				var ws = this_._ws;
+				if (ws) {
+					try {
+						ws.close();
+						delete this_._ws;
+					} catch(e) { u.error(); }
+				}
+				var protocol = (document.location.protocol === 'https:') ? 'wss:/' : 'ws:/';
+				var ws_url = [protocol,server_host,'ws'].join('/');
+				ws = new WebSocket(ws_url);
+				ws.onmessage = function(evt) {
+					u.debug('websocket :: incoming a message ', evt.data);
+					var pdata = JSON.parse(evt.data);
+					if (pdata.action === 'diff') {
+						this_._diff_update(pdata.data)
+							.then(function() {  this_.trigger('update-from-master', this_._get_version());	})
+							.fail(function(err) { u.error(err); /*  u.log('done diffing '); */ });
+					}
+				};
+				ws.onopen = function() {
+					var data = WS_MESSAGES_SEND.auth(this_.get('token'));
+					ws.send(data);
+					data = WS_MESSAGES_SEND.diff();
+					ws.send(data);					
+					this_._ws = ws;
+					this_.trigger('ws-connect');
+				};				
+				ws.onclose = function(evt) {
+					// what do we do now?!
+					u.error('websocket closed -- ');
+					// TODO
+					var interval;
+					interval = setInterval(function() {
+						this_.store.reconnect().then(function() {
+							this_.get_token().then(function() {
+								clearInterval(interval);
+							});
+						});
+					},1000);
+				};
+			});
+		},
+		get_use_websockets:function() { return this.options.use_websockets; },
 		get_cache_size:function(i) { return this._objcache().length; },
 		get_obj_ids:function() { return this._objlist().slice(); },
 		_objcache:function() { return this.attributes.objcache; },
-		_objlist:function() { return this.attributes.objlist || []; },
+		_objlist:function() { return this.attributes.objlist !== undefined ? this.attributes.objlist : []; },
 		_set_objlist:function(ol) { return this.set({objlist:ol}); },
 		_set_token:function(token) { this.set("token", token);	},
 		_set_version:function(v) { this.set("version", v);	},
@@ -242,6 +315,7 @@
 			this._ajax('POST', 'auth/get_token', { app: this.store.get('app') })
 				.then(function(data) {
 					this_._set_token( data.token );
+					this_.trigger('new-token', data.token);
 					d.resolve(this_);
 				}).fail(d.reject);
 			return d.promise();			
@@ -253,53 +327,72 @@
 		},
 		query: function(q){
 			// @TODO ::::::::::::::::::::::::::
-			var d = u.deferred();
-			this._ajax(this, "/query", "GET", {"q": JSON.stringify(q)})
-				.then(function(data){
-					console.debug("query results:",data);
-				}).fail(function(data) {
-					console.debug("fail query");
-				});
-
-
+			u.NotImplementedYet();
+			// var d = u.deferred();
+			// this._ajax(this, "/query", "GET", {"q": JSON.stringify(q)})
+			// 	.then(function(data){
+			// 		console.debug("query results:",data);
+			// 	}).fail(function(data) {
+			// 		console.debug("fail query");
+			// 	});
+			// return d.promise();
+		},
+		_diff_update_poll:function() {
+			var d = u.deferred(), this_ = this, cur_version = this._get_version(), box = this.get_id();	
+			this._ajax("GET", [box,'diff'].join('/'), {from_version:cur_version,return_objs:'diff'})
+				.then(function(response) {
+					this_._diff_update(response).then(d.resolve).fail(d.reject);
+				}).fail(d.reject);
 			return d.promise();
 		},
-		_update_version_to:function(version) {
-			// u.debug('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! debug :: - update-version to() ', version);
-			var d = u.deferred(), box = this.get_id(), this_ = this, cur_version = this._get_version();
-			if (version !== undefined && cur_version === version) {
-				// if we're already at current version, we have no work to do
-				// u.debug('already at current version, proceeding >> ');
-				d.resolve();
-			} else {
-				// otherwise we launch a diff
-				u.debug('updating-- getting diff ', cur_version, box);
-				this._ajax("GET", [box,'diff'].join('/'), {from_version:cur_version}).then(
-					function(response) {
-						// TODO: this has yet to be debugged (!) PROCEED WITH CAUTION
-						console.debug('diff response ', response);						
-						// update version
-						var latest_version = response['@latest_version'],
-							added_ids  = response['@added_ids'],
-							changed_ids = response['@changed_ids'],
-						    deleted_ids = response['@deleted_ids'],
-							all_ids = response['@all_ids'];						
-						
-						u.assert(latest_version !== undefined, 'latest version not provided');
-						u.assert(added_ids !== undefined, 'added_ids not provided');
-						u.assert(changed_ids !== undefined, 'changed_ids not provided');
-						u.assert(deleted_ids !== undefined, 'deleted _ids not provided');
-						
-						this_._set_version(latest_version);
-						this_._update_object_list(all_ids);						
-						
-						var cached_changed =
-							this_._objcache().filter(function(m) { return changed_ids.indexOf(m.id) >= 0; });
-						u.when(cached_changed.map(function(m) { return m.fetch(); }))
-							.then(d.resolve).fail(d.reject);						
-					});
-			}
-			return d.promise();			
+		_diff_update:function(response) {
+			var d = u.deferred(), this_ = this, latest_version = response['@to_version'],
+			added_ids  = _(response.data.added).keys(),
+			changed_ids = _(response.data.changed).keys(),
+			deleted_ids = _(response.data.deleted).keys(),
+			changed_objs = response.data.changed;
+			
+			u.assert(latest_version !== undefined, 'latest version not provided');
+			u.assert(added_ids !== undefined, 'added_ids not provided');
+			u.assert(changed_ids !== undefined, 'changed not provided');
+			u.assert(deleted_ids !== undefined, 'deleted _ids not provided');
+
+			if (latest_version <= this_._get_version()) {
+				u.debug('asked to diff update, but already up to date, so just relax!', latest_version, this_._get_version());
+				return d.resolve();
+			}					
+			this_._set_version(latest_version);
+			// u.debug('update object lists +', added_ids, ' -',  deleted_ids);
+			this_._update_object_list(undefined, added_ids, deleted_ids);
+			var change_dfds = _(changed_objs).map(function(obj, uri) {
+				// u.debug(' checking to see if in --- ', uri, this_._objcache().get(uri));
+				var cached_obj = this_._objcache().get(uri), cdfd = u.deferred();
+				if (cached_obj) {
+					var deleted_keys =
+						_(obj.deleted !== undefined ? obj.deleted : {})
+						.chain().keys().without(_(obj.added || {}).keys()).value();
+					if (obj.deleted !== undefined) {
+						cached_obj.delete_properties(deleted_keys, true);
+					}
+					cached_obj
+						._deserialise_and_set(_(obj.added).chain().clone().extend(obj.changed).value(), true)
+						.then(function() {
+							var changed_properties =
+								_([obj.added,obj.changed,obj.deleted].map(function(x) { return _(x || {}).keys(); }))
+								.chain()
+								.flatten()
+								.uniq()
+								.value();
+							changed_properties.map(function(k) {
+								cached_obj.trigger('change:'+k, (cached_obj.get(k) || []).slice());
+							});
+							cdfd.resolve(cached_obj);
+						}).fail(cdfd.reject);
+					return cdfd.promise();					
+				}
+			}).filter(u.defined);					
+			u.when(changed_ids).then(d.resolve).fail(d.reject);
+			return d.promise();
 		},
 		_create_model_for_id: function(obj_id){
 			var model = new Obj({"@id":obj_id}, {box:this});
@@ -325,34 +418,51 @@
 			return d.promise();
 		},
 		// ----------------------------------------------------
-		_update_object_list:function(updated_obj_ids) {
-			var current = updated_obj_ids, olds = this._objlist().slice(), this_ = this;
-			// diff em
-			var news = _(current).difference(olds), died = _(olds).difference(current);
+		_update_object_list:function(updated_obj_ids, added, deleted) {
+			
+			var current, olds = this._objlist().slice(), this_ = this, news, died;
+			if (updated_obj_ids === undefined ) {
+				current = _(olds).chain().union(added).without(deleted).value();
+				// u.log('new ids ', current);
+				news = (added || []).slice(); died = (deleted || []).slice();
+			} else {
+				current = updated_obj_ids.slice();
+				news = _(current).difference(olds);
+				died = _(olds).difference(current);
+			}
 			this.set({objlist:current});
 			news.map(function(aid) { this_.trigger('obj-add', aid); });
 			died.map(function(rid) {
 				this_.trigger('obj-remove', rid);
 				this_._objcache().remove(rid);
 			});
-		},		
+		},
+		_is_fetched: function() {
+			return this.id !== undefined;
+		},
 		_fetch:function() {
 			// new client :: this now _only_ fetches object ids
-			var box = this.get_id(), d = u.deferred(), this_ = this;
 			// return a list of models (each of type WebBox.Object) to populate a GraphCollection
-			this._ajax("GET",[box,'get_object_ids'].join('/')).then(
-				function(response){
-					u.assert(response['@version'] !== undefined, 'no version provided');
-					console.log(' BOX FETCH VERSION ', response['@version']);
-					this_.id = this_.get_id();
-					this_._set_version(response['@version']);
-					this_._update_object_list(response.ids);
-
-					// // --- dangerous -- if we have objcache already populated .... 
-					// DO SOMETHING like update the objcache contents!
-					
-					d.resolve(this_);
-				}).fail(d.reject);
+			var d = u.deferred(), fd = u.deferred(), this_ = this;
+			if (this._is_fetched()) {
+				fd = this._diff_update_poll();
+			} else {
+				// otherwise we aren't fetched, so we just do it
+				var box = this.get_id(), this_ = this;
+				this._ajax("GET",[box,'get_object_ids'].join('/')).then(
+					function(response){
+						u.assert(response['@version'] !== undefined, 'no version provided');
+						console.log(' BOX FETCH VERSION ', response['@version']);
+						this_.id = this_.get_id();
+						this_._set_version(response['@version']);
+						this_._update_object_list(response.ids);					
+						fd.resolve(this_);
+					}).fail(fd.reject);
+			}
+			fd.then(function() {
+				this_.trigger('update-from-master', this_._get_version());
+				d.resolve(this_);				
+			}).fail(d.reject);
 			return d.promise();
 		},
 		// -----------------------------------------------
@@ -367,32 +477,60 @@
 			}
 			return this_._fetch();			
 		},
-		_update:function(original_ids) {
-			var ids = original_ids ? (_.isArray(original_ids) ? original_ids.slice() : [original_ids]) : undefined;
-			u.debug("UPDATE ", ids);
+		WHOLE_BOX: { special: "UPDATE_WHOLE_BOX "},
+		_add_to_update_queue:function(ids_to_update) {
+			ids_to_update = ids_to_update === undefined ? [ this.WHOLE_BOX ] : ids_to_update;
+			this._update_queue = _(this._update_queue).union(ids_to_update);
+		},
+		_requeue_update:function() {
+			var this_ = this;
+			setTimeout(function() {
+				// u.debug('update flushing trying again... ');
+				this_._flush_update_queue();
+			}, 300);			
+		},
+		_flush_update_queue:function() {
+			if (this._update_queue.length === 0) { return ; }			
+			if (this._updating)  {	return this._requeue_update(); 	}
+			// make a copy
+			var this_ = this;
+			var update_queue_copy = this._update_queue.concat([]);
+			var update_arguments = this._update_queue.indexOf(this.WHOLE_BOX) >= 0 ? undefined : this._update_queue.concat();
+			// u.log('queue flush () :: updating ', this._update_queue.indexOf(this.WHOLE_BOX) >= 0 ? 'whole box ' : ('only ' + this._update_queue));
+			// clear it in advance....
+			this_._updating = true;
+			this_._update_queue = [];
+			this_._do_update(update_arguments).then(function() {
+				delete this_._updating;
+				// keep it cleared
+			}).fail(function(err) {
+				delete this_._updating;
+				if (err.status === 409) {
+					// reinstate it with old :( since we failed
+					this_._update_queue = _(this_._update_queue).union(update_queue_copy);					
+				}
+			});
+		},
+		_do_update:function(ids) {
+			// this actua
 			var d = u.deferred(), version = this.get('version') || 0, this_ = this,
-				objs = this._objcache().filter(function(x) {
-					return ids === undefined || ids.indexOf(x.id) >= 0;
-				}).map(function(obj){ return serialize_obj(obj); });
+				objs = this._objcache().filter(function(x) { return ids === undefined || ids.indexOf(x.id) >= 0; }).map(function(obj){ return serialize_obj(obj); });
+			
 			this._ajax("PUT",  this.id + "/update", { version: escape(version), data : JSON.stringify(objs)  })
 				.then(function(response) {
-					u.debug('DEBUG :::: setting version to ', response.data["@version"]);
+					u.debug('Update response update version > ', response.data["@version"]);
 					this_._set_version(response.data["@version"]);
 					d.resolve(this_);
 				}).fail(function(err) {
-					// TODO TODO -- make sure that this doesn't clobber our local changes :(
-					// very dangerous for concurrent modification					
-					if (err.status === 409) {
-						u.debug("got an obsolete ------------- trying to fetch again ");						
-						return this_.fetch()
-							.then(function() {
-								console.log("FETCHED, trying to save again ", original_ids);
-								this_._update(original_ids).then(d.resolve).fail(d.reject);
-							}).fail(d.reject);
-					}
+					if (err.status === 409) { this_._add_to_update_queue(ids); }
 					d.reject(err);
 				});
 			return d.promise();
+		},
+		_update:function(original_ids) {
+			// this is called by Backbone.save(),
+			this._add_to_update_queue(original_ids);
+			this._flush_update_queue();			
 		},
 		_create_box:function() {
 			var d = u.deferred();
@@ -413,7 +551,7 @@
 			{
 			case "create": return model._create_box();
 			case "read": return model._check_token_and_fetch(); 
-			case "update": return model._update(); 
+			case "update": return model.update(); 
 			case "delete": return u.warn('box.delete() : not implemented yet');
 			}
 		},
@@ -424,7 +562,7 @@
 	
 	var Store = WebBox.Store = Backbone.Model.extend({
 		defaults: {
-			server_url: "http://"+DEFAULT_HOST,
+			server_host:DEFAULT_HOST,
 			app:"--default-app-id--",
 			toolbar:true
 		},
@@ -433,19 +571,17 @@
 			xhrFields: { withCredentials: true }
 		},
 		initialize: function(attributes, options){
-			console.log(" server ", this.get('server_url'));
 			this.set({boxes : new BoxCollection([], {store: this})});
 			// load and launch the toolbar
 			if (this.get('toolbar')) { this._load_toolbar(); }
 		},
 		is_same_domain:function() {
-			return this.get('server_url').indexOf(document.location.host) >= 0 &&
-				(document.location.port === (this.get('server_port') || ''));
+			return this.get('server_host').indexOf(document.location.host) >= 0 && (document.location.port === (this.get('server_port') || ''));
 		},
 		_load_toolbar:function() {
-			var el = $('<div></div>').addClass('unloaded_toolbar').appendTo('body');
-			this.toolbar = new WebBox.Toolbar({el: el, store: this});
-			this.toolbar.render();
+			this.toolbar = WebBox.Toolbar;
+			this.toolbar.setStore(this);
+			// this.toolbar.load(el[0], this).then(function() {u.debug('done loading toolbar, apparently');});
 		},
 		boxes:function() {	return this.attributes.boxes;	},
 		get_box: function(boxid) {	return this.boxes().get(boxid);	},
@@ -454,11 +590,15 @@
 		getInfo:function() { return this._ajax('GET', 'admin/info'); },
 		login : function(username,password) {
 			var d = u.deferred();
+			this.set({username:username,password:password});
 			var this_ = this;
 			this._ajax('POST', 'auth/login', { username: username, password: password })
 				.then(function(l) { this_.trigger('login', username); d.resolve(l); })
 				.fail(function(l) { d.reject(l); });			
 			return d.promise();
+		},
+		reconnect:function() {
+			return this.login(this.get('username'),this.get('password'));
 		},
 		logout : function() {
 			var d = u.deferred();
@@ -486,8 +626,8 @@
 			return d.promise();
 		},
 		_ajax:function(method, path, data) {
-			var url = [this.get('server_url'), path].join('/');
-			// u.log(' store ajax ', method, url);
+			// now uses relative url scheme '//blah:port/path';			
+			var url = ['/', this.get('server_host'), path].join('/');
 			var default_data = { app: this.get('app') };
 			var options = _(_(this.ajax_defaults).clone()).extend(
 				{ url: url, method : method, crossDomain: !this.is_same_domain(), data: _(default_data).extend(data) }
@@ -529,36 +669,10 @@
 		var _load_d = new $.Deferred();		
 		recursive_loader(loadfns).then(function() {
 			u = WebBox.utils;
-			console.log("everything's loaded! > ");
-			if (!options || !(options.load_toolbar === false)) {
-				console.log('loading templates ... ');
-				WebBox.Toolbar.load_templates(base_url)
-					.then(function() {	_load_d.resolve(root);			})
-					.fail(function(err) { console.error(err); _load_d.reject(root); });
-			} else {
-				_load_d.resolve(root);
-			}
+			_load_d.resolve(root);			
 		}).fail(function(err) { console.error(err); _load_d.reject(root); });
 		return _load_d.promise();
 	};
 }).call(this);
 
 
-/**
-   moved from box >> 
-   ajax : function( path, type, data ) {
-   var url = this.store.options.server_url + this.id + path;
-   var this_ = this;
-   var options = {
-   type: type,
-   url : url,
-   crossDomain: true,
-   jsonp: false,
-   contentType: "application/json",
-   dataType: "json",
-   data: _({ token:this_.get('token') }).extend(data),
-   xhrFields: { withCredentials: true }
-   };
-   return $.ajax( options ); // returns a deferred		
-   },		
-*/

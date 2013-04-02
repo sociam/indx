@@ -4,3 +4,6 @@
 [submodule "apps/construction"]
 	path = apps/construction
 	url = git@github.com:sociam/construction.git
+[submodule "apps/cdm"]
+	path = apps/cdm
+	url = git@github.com:electronicmax/cdm.git

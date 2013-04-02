@@ -54,7 +54,7 @@ class BaseHandler(Resource):
 
         self.isLeaf = True # stops twisted from seeking children resources from me
         if register:
-            logging.debug("Putting child " + (self.base_path or ''))
+            logging.debug("Adding web server handler to path: /" + (self.base_path or ''))
             webserver.root.putChild(self.base_path, self) # register path with webserver
 
     def _matches_request(self, request, subhandler):
@@ -130,7 +130,7 @@ class BaseHandler(Resource):
         # persists for life of a session (based on the cookie set by the above)
         wbSession = session.getComponent(ISession)
         if not wbSession:
-            wbSession = WebBoxSession(session)
+            wbSession = WebBoxSession(session, self.webserver)
             session.setComponent(ISession, wbSession)
         return wbSession
 
@@ -177,12 +177,16 @@ class BaseHandler(Resource):
         except Exception as e:
             responsejson = json.dumps(response)
             logging.debug("Encoding response with python json")
-        request.setResponseCode(code, message=message)
-        request.setHeader("Content-Type", "application/json")
-        request.setHeader("Content-Length", len(responsejson))
-        request.write(responsejson)
-        request.finish()
-        logging.debug(' just called request.finish() with code %d ' % code)
+
+        if not request._disconnected:
+            request.setResponseCode(code, message=message)
+            request.setHeader("Content-Type", "application/json")
+            request.setHeader("Content-Length", len(responsejson))
+            request.write(responsejson)
+            request.finish()
+            logging.debug(' just called request.finish() with code %d ' % code)
+        else:
+            logging.debug(' didnt call request.finish(), because it was already disconnected')
 
     def return_ok(self,request,data=None):
         self._respond(request, 200, "OK", data)

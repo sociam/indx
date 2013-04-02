@@ -16,12 +16,12 @@
 #    You should have received a copy of the GNU General Public License
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging, traceback, json, re
-from twisted.web.resource import Resource
+import logging, re
 from webbox.webserver.handlers.base import BaseHandler
 import webbox.webbox_pg2 as database
 from webbox.objectstore_async import ObjectStoreAsync
 from twisted.internet.defer import Deferred
+import webbox.server
 
 class AdminHandler(BaseHandler):
     """ Add/remove boxes, add/remove users, change config. """
@@ -43,7 +43,7 @@ class AdminHandler(BaseHandler):
 
     def invalid_name(self, name):
         """ Check if this name is safe (only contains a-z0-9_-). """ 
-        return re.match("^[a-z0-9_-]*$", name) is None and name not in BOX_NAME_BLACKLIST
+        return re.match("^[a-z0-9_-]*$", name) is None and name not in webbox.server.BOX_NAME_BLACKLIST
 
     def _is_box_name_okay(self, name):
         """ checks new box, listening on /name. """
@@ -67,8 +67,11 @@ class AdminHandler(BaseHandler):
         def do_create():
             logging.debug("Creating box {0} for user {1}".format(box_name,username))
             try:
-                database.create_box(box_name,username,password) ## TODO make this nonblocking
-                return start()
+                success = database.create_box(box_name,username,password) ## TODO make this nonblocking
+                if success:
+                    return start()
+                else:
+                    return self.return_internal_error(request)
             except Exception as e:
                 logging.debug(' error creating box {0} '.format(e))
                 return self.return_internal_error(request)

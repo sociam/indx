@@ -1,13 +1,63 @@
-<div class="navbar-inner">
-  <a class="brand" href="#">webbox</a>
-  <ul class="nav">
-	<li class="btn-group">
-	  <button class="btn selected-box">select a box</button>
-	  <button class="btn dropdown-toggle boxes" data-toggle="dropdown">
-		<span class="caret"></span>
-	  </button>
-	  <ul class="dropdown-menu boxlist"></ul>
-	</li>
-	<li class="login_display"><a href="#login_dialog" role="button" data-toggle="modal"><i>not logged in</i></a></li>
-	<li class="username_display"><a href="#logout_dialog" role="button" data-toggle="modal"><i></i></a></li>	  </ul>
+<div ng-app="WebboxToolbar" class="ng-cloak" ng-controller="ToolbarController" ng-show="visible">
+  <div class="navbar">
+	<div class="navbar-inner" ng-init="_initialise()">
+	  <div class="brand">webbox
+		<div class="spinner" ng-show="loading > 0">
+		  <div ng-repeat="i in u.range(12)" class="bar{{ i + 1 }}"></div>
+		</div>
+	  </div>
+	  <ul class="nav box-selector">
+		<li class="btn-group">
+		  <button class="btn selected-box" ng-bind-html-unsafe="box || 'select a box'">select a box</button>
+		  <button class="btn dropdown-toggle boxes" data-toggle="dropdown"><span class="caret"></span> </button>
+		  <ul class="dropdown-menu boxlist">
+			<li ng-repeat="boxid in boxlist" ng-click="cb_box_selected(boxid)" >{{ boxid }}</li>
+		  </ul>
+		</li>
+	  </ul>
+	  <div role="button" class="btn login_logout_btn" ng-click="cb_login_logout_clicked()" ng-bind-html-unsafe="username_html || not_logged_in"></div>
+	</div> <!-- navbar-inner -->
+	<!-- Modal -->
+	<div id="login_dialog" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="loginlabel" aria-hidden="true">
+	  <form class="form-horizontal">
+		<div class="modal-header">
+		  <a type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</a>
+		  <h3 id="loginlabel">log in to webbox</h3>
+		</div>
+		<div class="modal-body">
+		  <div class="control-group">
+			<label class="control-label" for="#login_username">username:</label>
+			<div class="controls">
+			  <input type="text" id="login_username" name="username" class="username_field" focus placeholder="< webbox username > " ng-model="_login_username"></input>
+			</div>
+		  </div>
+		  <div class="control-group">
+			<label class="control-label" for="#login_password">password:</label>
+			<div class="controls">
+			  <input type="password" id="login_password" name="password" class="password_field" placeholder="< webbox password >" ng-model="_login_password">
+			</div>
+		  </div>
+		</div>
+		<div class="modal-footer">
+		  <div class='error' ng-show='error' ng-bind-html-unsafe='error'></div>
+		  <div class="spinner" ng-show="loading > 0">
+			<div ng-repeat="i in u.range(12)" class="bar{{ i + 1 }}"></div>
+		  </div>		  
+		  <a class="btn" data-dismiss="modal" aria-hidden="true">Cancel</a>
+		  <input type="submit" class="btn btn-primary" value="Log in" ng-click="loginbox_try_login(_login_username,_login_password)"></input>
+		</div>
+	  </form>
+	</div>
+	
+	<div id="logout_dialog" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="logoutlabel" aria-hidden="true">
+	  <div class="modal-header">
+		<button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+		<h3 id="logoutlabel">log out of webbox?</h3>
+	  </div>
+	  <div class="modal-footer">
+		<button class="btn" data-dismiss="modal" aria-hidden="true">No</button>
+		<button class="logoutbtn btn btn-primary" data-dismiss="modal" ng-click="do_logout()">Yes</button>
+	  </div>
+	</div>
+  </div> <!-- navbar -->
 </div>

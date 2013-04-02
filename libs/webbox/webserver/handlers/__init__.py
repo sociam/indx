@@ -16,6 +16,8 @@ HANDLERS = [
     AuthHandler,
     AdminHandler
 
+    # WebSocketsHandler
+
 #    EnrichHandler
     # ('wellknown', WellKnownHandler),
     # ('lrdd', LRDDHandler),

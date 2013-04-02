@@ -32,31 +32,105 @@ class ObjectStoreAsync:
         self.conn = conn
         # TODO FIXME determine if autocommit has to be off for PL/pgsql support
         self.conn.autocommit = True
+        self.loggerClass = logging
+        self.loggerExtra = {}
+
+    def setLoggerClass(self, loggerClass, extra = None):
+        """ Set the class to call .log() on. """
+        self.loggerClass = loggerClass
+        if extra is not None:
+            self.loggerExtra = extra
+
+
+    def log(self, logLevel, message):
+        self.loggerClass.log(logLevel, message, extra = self.loggerExtra)
+    
+    def debug(self, message):
+        self.log(logging.DEBUG, message)
+
+    def error(self, message):
+        self.log(logging.ERROR, message)
+
+
+    def _notify(self, cur, version):
+        """ Notify listeners (in postgres) of a new version (called after update/delete has completed). """
+        self.debug("ObjectStoreAsync _notify, cur: {0}, version: {1}".format(cur, version))
+        result_d = Deferred()
+
+        def err_cb(failure):
+            self.error("Objectstore _notify, err_cb, failure: {0}".format(failure))
+            result_d.errback(failure)
+            return
+
+        self._curexec(cur, "SELECT wb_version_finished(%s)", [version]).addCallbacks(lambda success: result_d.callback(success), err_cb)
+        return result_d
+
 
     def autocommit(self, value):
         """ Set autocommit on/off, for speeding up large INSERTs. """
-
         if self.conn.autocommit is False and value is True:
             # if we were in a transaction and now are not, then commit first
             self.conn.commit()
 
         self.conn.autocommit = value
 
+    def listen(self, observer):
+        """ Listen for updates to the box, and send callbacks when they occur.
+        
+            observer -- Function that is called when there is a notification.
+        """
+        result_d = Deferred()
+
+        def err_cb(failure):
+            self.error("Objectstore listen, err_cb, failure: {0}".format(failure))
+            result_d.errback(failure)
+            return
+
+        self.conn.addNotifyObserver(observer)
+        self.conn.runOperation("LISTEN wb_new_version").addCallbacks(lambda _: result_d.callback(True), err_cb)
+        return result_d
+
     def query(self, q):
         """ Perform a query and return results. """
-        results_d = Deferred()
+        result_d = Deferred()
 
         query = ObjectStoreQuery()
         sql, params = query.to_sql(q)
 
         def results(rows):
             objs_out = self.rows_to_json(rows)
-            results_d.callback(objs_out)
+            result_d.callback(objs_out)
+            return
 
-        d = self.conn.runQuery(sql, params)
-        d.addCallback(results)
+        def err_cb(failure):
+            self.error("Objectstore query, err_cb, failure: {0}".format(failure))
+            result_d.errback(failure)
+            return
 
-        return results_d
+        self.conn.runQuery(sql, params).addCallbacks(results, err_cb)
+        return result_d
+
+
+    def value_to_json(self, obj_value, obj_type, obj_lang, obj_datatype):
+        """ Serialise a single value into the result format.
+        """
+        if obj_type == "resource":
+            obj_key = "@id"
+        elif obj_type == "literal":
+            obj_key = "@value"
+        else:
+            raise Exception("Unknown object type from database {0}".format(obj_type)) # TODO create a custom exception to throw
+
+        obj_struct = {}
+        obj_struct[obj_key] = obj_value
+
+        if obj_lang is not None:
+            obj_struct["@language"] = obj_lang
+
+        if obj_datatype is not None:
+            obj_struct["@type"] = obj_datatype
+
+        return obj_struct
 
 
     def rows_to_json(self, rows):
@@ -64,7 +138,6 @@ class ObjectStoreAsync:
 
             rows - The object(s) to serialise.
         """
-
         obj_out = {}
         for row in rows:
             (version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype) = row
@@ -80,22 +153,7 @@ class ObjectStoreAsync:
             if predicate not in obj_out[subject]:
                 obj_out[subject][predicate] = []
 
-            if obj_type == "resource":
-                obj_key = "@id"
-            elif obj_type == "literal":
-                obj_key = "@value"
-            else:
-                raise Exception("Unknown object type from database {0}".format(obj_type)) # TODO create a custom exception to throw
-
-            obj_struct = {}
-            obj_struct[obj_key] = obj_value
-
-            if obj_lang is not None:
-                obj_struct["@language"] = obj_lang
-
-            if obj_datatype is not None:
-                obj_struct["@type"] = obj_datatype
-
+            obj_struct = self.value_to_json(obj_value, obj_type, obj_lang, obj_datatype)
             obj_out[subject][predicate].append(obj_struct)
 
             # add @id key to the object
@@ -109,7 +167,6 @@ class ObjectStoreAsync:
 
             object_ids -- ids of the objects to return
         """
-
         result_d = Deferred()
 
         def rows_cb(rows):
@@ -122,25 +179,64 @@ class ObjectStoreAsync:
                 query += ", "
             query += "%s"
         query += "])"
+
+        def err_cb(failure):
+            self.error("Objectstore get_latest_objs, err_cb, failure: {0}".format(failure))
+            result_d.errback(failure)
+            return
  
-        d = self.conn.runQuery(query, object_ids)
-        d.addCallback(rows_cb)
+        self.conn.runQuery(query, object_ids).addCallbacks(rows_cb, err_cb)
+        return result_d
+
+
+    def _ids_in_versions(self, versions):
+        """ Get a list of IDs of objects in multiple versions of a box.
+
+            versions -- Keyed list of versions, like {"from": 1, "to": 3}
+        """
+        result_d = Deferred()
+
+        def err_cb(failure):
+            self.error("Objectstore _ids_in_versions, err_cb, failure: {0}".format(failure))
+            result_d.errback(failure)
+            return
+
+        id_lists = {}
+
+        def ver_cb(name, ids):
+            self.debug("_ids_in_versions ver_cb: name={0}, ids={1}".format(name, ids))
+            if name is not None:
+                id_lists[name] = ids
+
+            if len(versions) > 0: 
+                next_name, next_version = versions.popitem()
+                self._ids_in_version(next_version).addCallbacks(lambda next_ids: ver_cb(next_name, next_ids), err_cb)
+            else:
+                result_d.callback(id_lists)
+
+        ver_cb(None, None)
         return result_d
 
 
     def _ids_in_version(self, version):
         """ Get a list of IDs of objects in a specific version of the box.
+
+            version -- Version of box to get IDs for
         """
         result_d = Deferred()
 
         def rows_cb(rows):
-            logging.debug("_ids_in_version rows_cb: rows={0}".format(rows))
+            self.debug("_ids_in_version rows_cb: rows={0}".format(rows))
             ids = map(lambda row: row[0], rows)
             result_d.callback(ids)
             return
 
-        d = self.conn.runQuery("SELECT DISTINCT subject FROM wb_v_all_triples WHERE version = %s", [version])
-        d.addCallback(rows_cb)
+        def err_cb(failure):
+            self.error("Objectstore _ids_in_version, err_cb, failure: {0}".format(failure))
+            result_d.errback(failure)
+            return
+
+        self.conn.runQuery("SELECT DISTINCT subject FROM wb_v_all_triples WHERE version = %s", [version]).addCallbacks(rows_cb, err_cb)
         return result_d
 
 
@@ -149,23 +245,26 @@ class ObjectStoreAsync:
         """
         result_d = Deferred()
 
+        def err_cb(failure):
+            self.error("Objectstore get_object_ids, err_cb, failure: {0}".format(failure))
+            result_d.errback(failure)
+            return
+
         def row_cb(rows, version):
-            logging.debug("get_object_ids row_cb: version={0}, rows={1}".format(version, rows))
+            self.debug("get_object_ids row_cb: version={0}, rows={1}".format(version, rows))
             ids = map(lambda row: row[0], rows)
             obj_out = {"ids": ids, "@version": version}
             result_d.callback(obj_out)
             return
 
         def ver_cb(version):
-            logging.debug("get_object_ids ver_cb: "+str(version))
+            self.debug("get_object_ids ver_cb: {0}".format(version))
             if version == 0:
                 return result_d.callback({"@version": 0 })
-            rowd = self.conn.runQuery("SELECT DISTINCT subject FROM wb_v_latest_triples", [])
-            rowd.addCallback(lambda rows2: row_cb(rows2, version))
+            self.conn.runQuery("SELECT DISTINCT subject FROM wb_v_latest_triples", []).addCallbacks(lambda rows2: row_cb(rows2, version), err_cb)
             return
 
-        d = self._get_latest_ver()
-        d.addCallback(ver_cb)
+        self._get_latest_ver().addCallbacks(ver_cb, err_cb)
         return result_d
 
 
@@ -174,8 +273,13 @@ class ObjectStoreAsync:
         """
         result_d = Deferred()
 
+        def err_cb(failure):
+            self.error("Objectstore get_latest, err_cb, failure: {0}".format(failure))
+            result_d.errback(failure)
+            return
+
         def row_cb(rows, version):
-            logging.debug("get_latest row_cb: version={0}, rows={1}".format(version, rows))
+            self.debug("get_latest row_cb: version={0}, rows={1}".format(version, rows))
             obj_out = self.rows_to_json(rows)
             if version is None:
                 version = 0
@@ -184,20 +288,17 @@ class ObjectStoreAsync:
             return
 
         def ver_cb(version):
-            logging.debug("get_latest ver_cb: "+str(version))
-            rowd = self.conn.runQuery("SELECT version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples", []) # order is implicit, defined by the view, so no need to override it here
-            rowd.addCallback(lambda rows2: row_cb(rows2, version))
+            self.debug("get_latest ver_cb: {0}".format(version))
+            self.conn.runQuery("SELECT version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples", []).addCallbacks(lambda rows2: row_cb(rows2, version), err_cb) # ORDER BY is implicit, defined by the view, so no need to override it here
             return
 
-        d = self._get_latest_ver()
-        d.addCallback(ver_cb)
+        self._get_latest_ver().addCallbacks(ver_cb, err_cb)
         return result_d
 
 
     def ids_from_objs(self, objs):
         """ Return the object IDs from a set of objects.
         """
-
         ids = []
         for obj in objs:
             if "@id" in obj:
@@ -212,41 +313,95 @@ class ObjectStoreAsync:
 
             from_version -- The earliest version to check from
             to_version -- The most recent version to check up to (can be None, in which can the latest version will be used)
-            return_objs -- (boolean) If true, full objects will be returned, otherwise a list of IDs will be returned
+            return_objs -- ['diff','objects','ids'] Diff of objects will be return, full objects will be returned, or a list of IDs will be returned
         """
-
-        # TODO FIXME XXX lock the table(s) as appropriate inside a transaction (PL/pgspl?) here
         result_d = Deferred()
+        def err_cb(failure):
+            self.error("Objectstore diff, err_cb, failure: {0}".format(failure))
+            result_d.errback(failure)
+            return
+
+        def diff_cb(rows, to_version_used):
+            # callback used if we queried for diff of changed objects
+            self.debug("diff diff_cb: rows={0}".format(rows))
+
+            changes = {}
+
+            # triples in the "from" version have been deleted, triples in the "to" version have been added
+            translation = {"from": "deleted", "to": "added"}
+
+            for row in rows:
+                # version is either "from" or "to"
+                version, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype = row
+                version = version[0] # must be either 'from' or 'to', is an array because we have to
+                key = translation[version]
+                if subject not in changes:
+                    changes[subject] = {}
+                if key not in changes[subject]:
+                    changes[subject][key] = {}
+                if predicate not in changes[subject][key]:
+                    changes[subject][key][predicate] = []
+
+                changes[subject][key][predicate].append(self.value_to_json(obj_value, obj_type, obj_lang, obj_datatype)) 
+
+            def diff_ids_cb(data):
+                self.debug("diff diff_cb - diff_ids_cb: data={0}".format(data))
+
+                # return full objects that have been added
+                added_objs = {}
+                for item_id in changes.keys():
+                    if item_id in data['added']:
+                        added_objs[item_id] = changes.pop(item_id)['added'] # items that have been added will have the "to_version" of the full object under 'added'
+
+                # do not return the "deleted" changes for deleted objects
+                for item_id in changes.keys():
+                    if item_id in data['deleted']:
+                        changes.pop(item_id) # remove
+
+                obj_out = {"changed": changes, "added": added_objs, "deleted": data['deleted']}
+                result_d.callback({"data": obj_out, "@latest_version": data['latest_version'], "@from_version": data['from_version'], "@to_version": data['to_version']})
+                return
+
+            # grab the latest version number also
+            get_ids_diff(from_version, to_version_used).addCallbacks(diff_ids_cb, err_cb)
+            return
 
         def objs_cb(rows, to_version_used):
             # callback used if we queried for full objects
-            logging.debug("diff objs_cb: rows={0}".format(rows))
+            self.debug("diff objs_cb: rows={0}".format(rows))
             obj_out = self.rows_to_json(rows)
 
             def ver_cb(version):
-                logging.debug("diff obs_cb - ver_cb: "+str(version))
+                self.debug("diff objs_cb - ver_cb: {0}".format(version))
                 obj_out["@version"] = to_version_used
                 result_d.callback({"data": obj_out, "@latest_version": version, "@from_version": from_version, "@to_version": to_version_used})
                 return
 
             # grab the latest version number also
-            d = self._get_latest_ver()
-            d.addCallback(ver_cb)
+            self._get_latest_ver().addCallbacks(ver_cb, err_cb)
             return
 
-        def ids_cb(rows, to_version_used):
+        def ids_cb(data):
             # callback used if we queried for the ids of changed objects only
-            logging.debug("diff ids_cb: rows: {0}, to_version_used: {1}".format(rows, to_version_used))
-            diff_id_list = map(lambda row: row[0], rows)
+            result_d.callback({"all_ids": data['all'], "added_ids": data['added'], "deleted_ids": data['deleted'], "changed_ids": data['changed'], "@latest_version": data['latest_version'], "@from_version": data['from_version'], "@to_version": data['to_version']})
+            return
 
-            def from_ver(from_ids):
-                logging.debug("diff from_vers: from_ids: {0}".format(from_ids))
+    
+        def get_ids_diff(from_ver, to_ver):
+            self.debug("diff get_ids_diff: from_ver: {0}, to_ver: {1}".format(from_ver, to_ver))
+            get_ids_result_d = Deferred()
 
-                def to_ver(to_ids): 
-                    logging.debug("diff to_vers: to_ids: {0}".format(to_ids))
+            def get_ids_query_cb(rows):
+                self.debug("diff get_ids_query_cb: rows: {0}".format(rows))
+                diff_id_list = map(lambda row: row[0], rows)
+
+                def ids_vers_cb(id_lists):
+                    self.debug("diff ids_vers_cb: id_lists: {0}".format(id_lists))
+                    from_ids = id_lists['from']
+                    to_ids = id_lists['to']
 
                     def ver_cb(latest_version):
-                        logging.debug("diff ver_cb: version: {0}".format(latest_version))
+                        self.debug("diff ver_cb: version: {0}".format(latest_version))
 
                         changed_id_list, added_id_list, deleted_id_list = [], [], []
 
@@ -258,46 +413,44 @@ class ObjectStoreAsync:
                             elif item not in from_ids and item in to_ids:
                                 added_id_list.append(item)
 
-                        result_d.callback({"all_ids": diff_id_list, "added_ids": added_id_list, "deleted_ids": deleted_id_list, "changed_ids": changed_id_list, "@latest_version": latest_version, "@from_version": from_version, "@to_version": to_version_used})
+                        get_ids_result_d.callback({"all": diff_id_list, "added": added_id_list, "deleted": deleted_id_list, "changed": changed_id_list, "latest_version": latest_version, "from_version": from_ver, "to_version": to_ver})
                         return
 
                     # grab the latest version number also
-                    d = self._get_latest_ver()
-                    d.addCallback(ver_cb)
+                    self._get_latest_ver().addCallbacks(ver_cb, err_cb)
                     return
 
-                d = self._ids_in_version(to_version_used)
-                d.addCallback(to_ver)
+                self._ids_in_versions({"from": from_ver, "to": to_ver}).addCallbacks(ids_vers_cb, err_cb)
                 return
 
-            d = self._ids_in_version(from_version)
-            d.addCallback(from_ver)
-            return
+            query = "SELECT wb_diff(%s, %s)"
+            self.conn.runQuery(query, [from_ver, to_ver]).addCallbacks(get_ids_query_cb, err_cb)
+            return get_ids_result_d
 
         def got_versions(to_version_used):
-            # first callback once we have the to_verion
-            if return_objs:
+            # first callback once we have the to_version
+            if return_objs == "diff":
+                query = "SELECT * FROM wb_diff_changed(%s, %s)" # order is implicit, defined by the view, so no need to override it here
+                self.conn.runQuery(query, [from_version, to_version_used]).addCallbacks(lambda rows: diff_cb(rows, to_version_used), err_cb)
+            elif return_objs == "objects": 
                 query = "SELECT version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_all_triples WHERE subject = ANY(SELECT wb_diff(%s, %s)) AND version = %s" # order is implicit, defined by the view, so no need to override it here
-                d = self.conn.runQuery(query, [from_version, to_version_used, to_version_used])
-                d.addCallback(lambda rows: objs_cb(rows, to_version_used))
+                self.conn.runQuery(query, [from_version, to_version_used, to_version_used]).addCallbacks(lambda rows: objs_cb(rows, to_version_used), err_cb)
+            elif return_objs == "ids":
+                get_ids_diff(from_version, to_version_used).addCallbacks(ids_cb, err_cb)
             else:
-                query = "SELECT wb_diff(%s, %s)"
-                d = self.conn.runQuery(query, [from_version, to_version_used])
-                d.addCallback(lambda rows: ids_cb(rows, to_version_used))
+                result_d.errback(Failure(Exception("Did not specify valid value of return_objs.")))
             return
 
-        logging.debug("diff to version: {0} type({1})".format(to_version, type(to_version)))
+        self.debug("diff to version: {0} type({1})".format(to_version, type(to_version)))
 
         if to_version is None:
             # if to_version is None, we get the latest version first
-            d = self._get_latest_ver()
-            logging.debug("diff to version is None, so getting latest.")
-            d.addCallback(got_versions)
+            self.debug("diff to version is None, so getting latest.")
+            self._get_latest_ver().addCallbacks(got_versions, err_cb)
         else:
             # else just call got_versions immediately
-            logging.debug("diff to version not None, so using version {0}.".format(to_version))
+            self.debug("diff to version not None, so using version {0}.".format(to_version))
             got_versions(to_version)
-
         return result_d
         
 
@@ -309,44 +462,37 @@ class ObjectStoreAsync:
 
             returns information about the new version
         """
+        self.debug("Objectstore delete") 
+        # delegate the whole operation to update
+        return self.update([], specified_prev_version, delete_ids=id_list)
 
-        # TODO FIXME XXX lock the table(s) as appropriate inside a transaction (PL/pgspl?) here
-        result_d = Deferred()
-        logging.debug("Objectstore delete")
-    
-        # TODO add this
-        id_user = 1
 
-        def err_cb(failure):
-            logging.error("Objectstore delete, err_cb, failure: " + str(failure))
-            result_d.errback(failure)
-
-        def cloned_cb(new_ver):
-            # has been cloned to a new version, and the objects in id_list were excluded, so we're done.
-            logging.debug("Objectstore delete, cloned_cb new_ver: " + str(new_ver))
-            result_d.callback({"@version": new_ver})
-            return
-
-        # _clone checks the previous version, so no need to do that here
-        d = self._clone(specified_prev_version, id_user, id_list)
-        d.addCallbacks(cloned_cb, err_cb)
-        return result_d
+    def _log_connections(self):
+        """ Log the state of the connection pool (for debugging disconnections). """
+        try:
+            self.debug("_log_connections: State of connection pool")
+            size = range(len(self.conn.connections))
+            count = 0
+            for connection in self.conn.connections:
+                count += 1
+                self.debug("_log_connections: connection {0}/{1}: {2}".format(count, size, vars(connection)))
+        except Exception as e:
+            self.error("_log_connections: could not check state of connections: {0}".format(e))
 
 
     def _get_latest_ver(self):
         """ Get the latest version of the database and return it to the deferred.
         """
-
         result_d = Deferred()
-        logging.debug("Objectstore _get_latest_ver")
+        self.debug("Objectstore _get_latest_ver")
 
         def err_cb(failure):
-            logging.error("Objectstore _get_latest_ver err_cb, failure: " + str(failure))
+            self.error("Objectstore _get_latest_ver err_cb, failure: {0}".format(failure))
             result_d.errback(failure)
             return
 
         def ver_cb(row):
-            logging.debug("Objectstore _get_latest_ver ver_cb, row: " + str(row))
+            self.debug("Objectstore _get_latest_ver ver_cb, row: {0}".format(row))
 
             # check for no existing version, and set to 0
             if row is None or len(row) < 1:
@@ -359,13 +505,11 @@ class ObjectStoreAsync:
             result_d.callback(version)
             return
 
-        d = self.conn.runQuery("SELECT latest_version FROM wb_v_latest_version", [])
-        d.addCallbacks(ver_cb, err_cb)
-
+        self.conn.runQuery("SELECT latest_version FROM wb_v_latest_version", []).addCallbacks(ver_cb, err_cb)
         return result_d
 
 
-    def _check_ver(self, specified_prev_version):
+    def _check_ver(self, cur, specified_prev_version):
         """ Find the current version, and check it matches the specified version.
             Returns a deferred, which receives either the current version if it matches the specified version,
             or an errback if it didn't match (with the Failure carrying a value of an IncorrectPreviousVersionException),
@@ -373,22 +517,20 @@ class ObjectStoreAsync:
 
             specified_prev_version -- The incoming version from the request.
         """
-
-        # TODO FIXME XXX lock the table(s) as appropriate inside a transaction (PL/pgspl?) here
         result_d = Deferred()
-        logging.debug("Objectstore _check_ver")
+        self.debug("Objectstore _check_ver, specified_prev_version: {0}".format(specified_prev_version))
 
         def err_cb(failure):
-            logging.error("Objectstore _check_ver err_cb, failure: " + str(failure))
+            self.error("Objectstore _check_ver err_cb, failure: {0}".format(failure))
             result_d.errback(failure)
             return
         
         def ver_cb(actual_prev_version):
-            logging.debug("Objectstore _check_ver ver_cb, version: " + str(actual_prev_version))
+            self.debug("Objectstore _check_ver ver_cb, version: {0}".format(actual_prev_version))
 
             # check user specified the current version
             if actual_prev_version != specified_prev_version:
-                logging.debug("In objectstore _check_ver, the previous version of the box '{0}' didn't match the actual '{1}".format(specified_prev_version, actual_prev_version))
+                self.debug("In objectstore _check_ver, the previous version of the box {0} didn't match the actual {1}".format(specified_prev_version, actual_prev_version))
                 ipve = IncorrectPreviousVersionException("Actual previous version is {0}, specified previous version is: {1}".format(actual_prev_version, specified_prev_version))
                 ipve.version = actual_prev_version
                 failure = Failure(ipve)
@@ -399,60 +541,55 @@ class ObjectStoreAsync:
                 result_d.callback(actual_prev_version)
                 return
 
-        d = self._get_latest_ver()
-        d.addCallbacks(ver_cb, err_cb)
+        self._get_latest_ver().addCallbacks(ver_cb, err_cb)
         return result_d
 
 
-    def _clone(self, specified_prev_version, id_user, id_list = []):
+    def _clone(self, cur, specified_prev_version, id_user, id_list = []):
         """ Make a new version of the database, excluding objects with the ids specified.
 
+            cur -- Cursor to execute the query in
             specified_prev_version -- the current version of the box, error returned if this isn't the current version
             id_user -- the ID of the user making the new version
             id_list -- list of object IDs to exclude from the new version (optional)
         """
-
-        # TODO FIXME XXX lock the table(s) as appropriate inside a transaction (PL/pgspl?) here
         result_d = Deferred()
-        logging.debug("Objectstore _clone")
-    
+        self.debug("Objectstore _clone, specified_prev_version: {0}".format(specified_prev_version))
+   
         def err_cb(failure):
-            logging.error("Objectstore _clone err_cb, failure: " + str(failure))
+            self.error("Objectstore _clone err_cb, failure: {0}".format(failure))
             result_d.errback(failure)
             return
 
-        def cloned_cb(row): # self is the deferred
-            logging.debug("Objectstore _clone, cloned_cb row: " + str(row))
+        def cloned_cb(cur): # self is the deferred
+            self.debug("Objectstore _clone, cloned_cb cur: {0}".format(cur))
             result_d.callback(specified_prev_version + 1)
             return
 
-        def ver_cb(row):
-            logging.debug("Objectstore _clone ver_cb, row: " + str(row))
+        parameters = [specified_prev_version, specified_prev_version + 1, id_user]
+        # excludes these object IDs when it clones the previous version
+        parameters.extend(id_list)
 
-            parameters = [specified_prev_version, specified_prev_version + 1, id_user]
-            # excludes these object IDs when it clones the previous version
-            parameters.extend(id_list)
+        query = "SELECT * FROM wb_clone_version(%s,%s,%s,ARRAY["
+        for i in range(len(id_list)):
+            if i > 0:
+                query += ", "
+            query += "%s"
+        query += "]::text[])"
 
-            query = "SELECT * FROM wb_clone_version(%s,%s,%s,ARRAY["
-            for i in range(len(id_list)):
-                if i > 0:
-                    query += ", "
-                query += "%s"
-            query += "]::text[])"
+        self.debug("Objectstore _clone, query: {0} params: {1}".format(query, parameters))
+        self._curexec(cur, query, parameters).addCallbacks(cloned_cb, err_cb) # worked or errored
 
-            logging.debug("Objectstore _clone, query: {0} params: {1}".format(query, parameters))
-
-            d = self.conn.runQuery(query, parameters)
-            d.addCallbacks(cloned_cb, err_cb) # worked or errored
-            return
-
-        d = self._check_ver(specified_prev_version)
-        d.addCallbacks(ver_cb, err_cb)
         return result_d
-        
+       
+
+    def _curexec(self, cur, *args, **kwargs):
+        """ Execute a query on a Cursor, and log what we're going. """
+        self.debug("Objectstore _curexec, args: {0}, kwargs: {1}".format(args, kwargs))
+        return cur.execute(*args, **kwargs)
 
 
-    def update(self, objs, specified_prev_version):
+    def update(self, objs, specified_prev_version, delete_ids=[]):
         """ Create a new version of the database, and insert only the objects references in the 'objs' dict. All other objects remain as they are in the specified_prev_version of the db.
 
             objs, json expanded notation of objects,
@@ -460,49 +597,89 @@ class ObjectStoreAsync:
 
             returns information about the new version
         """
-
-        # TODO FIXME XXX lock the table(s) as appropriate inside a transaction (PL/pgspl?) here
         result_d = Deferred()
-        logging.debug("Objectstore update")
+        self.debug("Objectstore update, specified_prev_version: {0}".format(specified_prev_version))
     
         # TODO add this
         id_user = 1
 
         def err_cb(failure):
-            logging.error("Objectstore update, err_cb, failure: " + str(failure))
+            self.error("Objectstore update, err_cb, failure: {0}".format(failure))
             result_d.errback(failure)
 
-        def cloned_cb(new_ver):
-            logging.debug("Objectstore update, cloned_cb new_ver: " + str(new_ver))
-
-            def added_cb(info):
-                # added object successfully
-                logging.debug("Objectstore update, added_cb info: "+str(info))
-                result_d.callback({"@version": new_ver})
-                return
-
-            d = self._add_objs_to_version(objs, new_ver, id_user)
-            d.addCallbacks(added_cb, err_cb)
-            return
-
         id_list = self.ids_from_objs(objs)
-        # _clone checks the previous version, so no need to do that here
-        d = self._clone(specified_prev_version, id_user, id_list)
-        d.addCallbacks(cloned_cb, err_cb)
+        id_list.extend(delete_ids)
+        
+        def interaction_cb(cur):
+            self.debug("Objectstore update, interaction_cb, cur: {0}".format(cur))
+            interaction_d = Deferred()
+
+            def ver_err_cb(actual_prev_version):
+                self.debug("In objectstore update, the previous version of the box {0} didn't match the actual {1}".format(specified_prev_version, actual_prev_version))
+                ipve = IncorrectPreviousVersionException("Actual previous version is {0}, specified previous version is: {1}".format(actual_prev_version, specified_prev_version))
+                ipve.version = actual_prev_version
+                failure = Failure(ipve)
+                cur.execute("ROLLBACK").addCallbacks(lambda _: interaction_d.errback(failure), lambda _: interaction_d.errback(failure))
+
+            def interaction_err_cb(failure):
+                self.error("Objectstore update, interaction_err_cb, failure: {0}".format(failure))
+                cur.execute("ROLLBACK").addCallbacks(lambda _: interaction_d.errback(failure), lambda _: interaction_d.errback(failure))
+
+            def ver_cb(latest_ver):
+                self.debug("Objectstore update, ver_cb, latest_ver: {0}".format(latest_ver))
+                latest_ver = latest_ver[0][0] or 0
+                def cloned_cb(new_ver):
+                    self.debug("Objectstore update, cloned_cb new_ver: {0}".format(new_ver))
+
+                    def added_cb(info):
+                        # added object successfully
+                        self.debug("Objectstore update, added_cb info: {0}".format(info))
+                        self._notify(cur, new_ver).addCallbacks(lambda _: interaction_d.callback({"@version": new_ver}), interaction_err_cb)
+
+                    if len(objs) > 0: # skip if we're just deleting
+                        self._add_objs_to_version(cur, objs, new_ver, id_user).addCallbacks(added_cb, interaction_err_cb)
+                    else:
+                        added_cb(new_ver)
+
+                if latest_ver == specified_prev_version:
+                    self._clone(cur, specified_prev_version, id_user, id_list).addCallbacks(cloned_cb, interaction_err_cb)
+                else:
+                    self.error("Objectstore update ver_cb, specified_prev_version mismatch, actual version: {0}".format(latest_ver))
+                    ver_err_cb(latest_ver)
+
+            d2 = self._curexec(cur, "LOCK TABLE wb_triple_vers, wb_triples, wb_objects, wb_strings, wb_users IN EXCLUSIVE MODE") # lock to other writes, but not reads
+            d2.addCallbacks(lambda _: self._curexec(cur, "SELECT latest_version FROM wb_v_latest_version"), interaction_err_cb)
+            d2.addCallbacks(lambda _: cur.fetchall(), interaction_err_cb)
+            d2.addCallbacks(ver_cb, interaction_err_cb)
+            return interaction_d
+
+
+        def interaction_complete_d(ver_response):
+            self.conn.runOperation("VACUUM").addCallbacks(lambda _: result_d.callback(ver_response), err_cb)
+
+        d = self.conn.runInteraction(interaction_cb)
+        d.addCallbacks(interaction_complete_d, err_cb)
         return result_d
 
 
-    def _add_objs_to_version(self, objs, version, id_user):
+    def _add_objs_to_version(self, cur, objs, version, id_user):
         """ Add objects to a specific version of the db.
 
             The function used in postgres now automatically increments the triple_order based on the order of insertion.
 
+            This should only be called by "update" above, which wraps it in a locking transaction.
+
+            cur -- Cursor to use to execute queries
             objs -- Objects to add
             version -- The version to add to
             id_user -- The id of the user that is making the change
         """
-        # TODO FIXME XXX lock the table(s) as appropriate inside a transaction (PL/pgspl?) here
-        logging.debug("Objectstore _add_objs_to_version")
+        self.debug("Objectstore _add_objs_to_version")
+
+        def err_cb(failure):
+            self.error("Objectstore _add_objs_to_version, err_cb, failure: {0}".format(failure))
+            result_d.errback(failure)
+            return
 
 
         # FIXME workaround passing version as a Tuple and/or String
@@ -545,15 +722,16 @@ class ObjectStoreAsync:
                     queries.append( ("SELECT * FROM wb_add_triple_to_version(%s, %s, %s, %s, %s, %s, %s, %s)", [version, id_user, uri, predicate, value, thetype, language, datatype]) )
 
         def exec_queries(var):
-            logging.debug("Objectstore add_version exec_queries")
+            self.debug("Objectstore add_version exec_queries")
 
             if len(queries) < 1:
+                self.debug("Objectstore add_version exec_queries finished, calling back")
                 result_d.callback((version))
                 return
             
             (query, params) = queries.pop(0)
-            d = self.conn.runQuery(query, params)
-            d.addCallback(exec_queries)
+            self._curexec(cur, query, params).addCallbacks(exec_queries, err_cb)
+            return
 
         exec_queries(None)
         return result_d
