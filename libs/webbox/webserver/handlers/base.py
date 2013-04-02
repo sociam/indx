@@ -54,7 +54,7 @@ class BaseHandler(Resource):
 
         self.isLeaf = True # stops twisted from seeking children resources from me
         if register:
-            logging.debug("Putting child " + (self.base_path or ''))
+            logging.debug("Adding web server handler to path: /" + (self.base_path or ''))
             webserver.root.putChild(self.base_path, self) # register path with webserver
 
     def _matches_request(self, request, subhandler):
