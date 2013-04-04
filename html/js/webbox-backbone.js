@@ -240,7 +240,10 @@
 			switch(method){
 			case "create": return u.assert(false, "create is never used for Objs"); 
 			case "read"  : return model._fetch(); 
-			case "update": return model.box.update([model.id]);
+			case "update":
+				var dfd = model.box.update([model.id])[0];
+				console.log('returning dfd >>> ', dfd);
+				return dfd;
 			case "delete": return model._delete(); 
 			}
 		}		
@@ -263,7 +266,7 @@
 			this.set({objcache: new ObjCollection(), objlist: [] });
 			this.options = _(this.default_options).chain().clone().extend(options || {}).value();
 			this.set_up_websocket();
-			this._update_queue = [];
+			this._update_queue = {};
 			this.on('update-from-master', function() { this_._flush_update_queue(); });
 		},
 		set_up_websocket:function() {
@@ -506,35 +509,42 @@
 		},
 		
 		// =============== :: UPDATE ::  ======================
-		WHOLE_BOX: { special: "UPDATE_WHOLE_BOX "},
+		WHOLE_BOX: "__UPDATE__WHOLE__BOX__",
 		_add_to_update_queue:function(ids_to_update) {
+			var this_ = this, uq = this._update_queue;
+			// returns the deferreds
 			ids_to_update = ids_to_update === undefined ? [ this.WHOLE_BOX ] : ids_to_update;
-			this._update_queue = _(this._update_queue).union(ids_to_update);
+			return ids_to_update.map(function(id) {
+				uq[id] = uq[id] || u.deferred();
+				return uq[id];
+			});
 		},
 		_requeue_update:function() {
 			var this_ = this;
-			setTimeout(function() {	this_._flush_update_queue(); }, 300);			
+			if (!this._update_timeout) {
+				this._update_timeout = setTimeout(function() {
+					delete this_._update_timeout;
+					this_._flush_update_queue();
+				}, 300);
+			}
 		},
 		_flush_update_queue:function() {
 			if (this._update_queue.length === 0) { return ; }			
 			if (this._updating || this._deleting) { return this._requeue_update();  }
 			// make a copy
-			var this_ = this;
-			var update_queue_copy = this._update_queue.concat([]);
-			var update_arguments = this._update_queue.indexOf(this.WHOLE_BOX) >= 0 ? undefined : this._update_queue.concat();
-			// u.log('queue flush () :: updating ', this._update_queue.indexOf(this.WHOLE_BOX) >= 0 ? 'whole box ' : ('only ' + this._update_queue));
-			// clear it in advance....
+			var this_ = this, uq = this._update_queue;
+			var ids_to_update = _(uq).keys();
+			var update_arguments = ids_to_update.indexOf(this.WHOLE_BOX) >= 0 ? undefined : ids_to_update;
 			this_._updating = true;
-			this_._update_queue = [];
 			this_._do_update(update_arguments).then(function() {
 				delete this_._updating;
-				// keep it cleared
+				// TODO: resolve all of our deferreds now and delete them
+				ids_to_update.map(function(id) {
+					uq[id].resolve(); delete uq[id];
+				});
 			}).fail(function(err) {
 				delete this_._updating;
-				if (err.status === 409) {
-					// reinstate it with old :( since we failed
-					this_._update_queue = _(this_._update_queue).union(update_queue_copy);					
-				}
+				if (err.status === 409) { this_._requeue_update();	}
 			});
 		},
 		_do_update:function(ids) {
@@ -551,16 +561,15 @@
 					this_._update_object_list(undefined, obj_ids, []);
 					// 
 					d.resolve(this_);
-				}).fail(function(err) {
-					if (err.status === 409) { this_._add_to_update_queue(ids); }
-					d.reject(err);
-				});
+				}).fail(d.reject);
 			return d.promise();
 		},
 		update:function(original_ids) {
 			// this is called by Backbone.save(),
-			this._add_to_update_queue(original_ids);
-			this._flush_update_queue();			
+			var dfds = this._add_to_update_queue(original_ids);
+			this._flush_update_queue();
+			console.log('returning deferrrrrrrrrrrrreds ', dfds);
+			return dfds;
 		},
 		// =============== :: DELETE ::  ======================
 		_add_to_delete_queue:function(model_ids) {
@@ -612,7 +621,7 @@
 			{
 			case "create": return box._create_box();
 			case "read": return box._check_token_and_fetch(); 
-			case "update": return box.update();  // save whole box?
+			case "update": return box.update()[0];  // save whole box?
 			case "delete": return u.warn('box.delete() : not implemented yet');
 			}
 		},
