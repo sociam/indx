@@ -99,7 +99,6 @@ else { WebBox = root.WebBox; }
 		};
 		
 		$scope.cb_box_selected = function(bid) {
-			console.log('box selected ', bid);
 			$scope.box = bid;
 			event_model.trigger('change:box', bid);
 		};		

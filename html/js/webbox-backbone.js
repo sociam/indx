@@ -153,7 +153,7 @@
 			props.map(function(p) { this_.unset(p, silent ? {silent:true} : {}); });
 		},
 		_delete:function() {
-			return this.box._delete_models([this]);
+			return this.box._delete_models([this.id]);
 		},
 		_deserialise_and_set:function(s_obj, silent) {
 			// returns a promise
@@ -199,7 +199,17 @@
 			var this_ = this, fd = u.deferred(), box = this.box.get_id();
 			this.box._ajax('GET', box, {'id':this.id}).then(function(response) {
 				u.log('query response ::: ', response);
-				var objdata = response.data;				
+				var objdata = response.data;
+				if (objdata['@version'] === undefined) {
+					// according to the server, we're dead.
+					console.log('zombie detected ', this_.id);
+					this.cid = this.id;
+					this_.unset({});
+					delete this.id;
+					fd.resolve();
+					return;
+				}
+				/*
 				if (this_.box._get_version() !== objdata['@version']) {
 					// our box is obsolete! let's tell box to update itself.
 					// u.debug('telling box to update >> ', this_.box._get_version(), response['@version']);
@@ -212,6 +222,7 @@
 						this_.fetch().then(fd.resolve).fail(fd.reject);
 					}).fail(fd.reject);
 				}
+				*/
 				// we are at current known version as far as we know
 				var obj_save_dfds = _(objdata).map(function(obj,uri) {
 						// top level keys - corresponding to box level properties
@@ -229,7 +240,7 @@
 			switch(method){
 			case "create": return u.assert(false, "create is never used for Objs"); 
 			case "read"  : return model._fetch(); 
-			case "update": return model.box._update(model.id);
+			case "update": return model.box.update([model.id]);
 			case "delete": return model._delete(); 
 			}
 		}		
@@ -306,7 +317,7 @@
 		get_obj_ids:function() { return this._objlist().slice(); },
 		_objcache:function() { return this.attributes.objcache; },
 		_objlist:function() { return this.attributes.objlist !== undefined ? this.attributes.objlist : []; },
-		_set_objlist:function(ol) { return this.set({objlist:ol}); },
+		_set_objlist:function(ol) { return this.set({objlist:ol.slice()}); },
 		_set_token:function(token) { this.set("token", token);	},
 		_set_version:function(v) { this.set("version", v);	},
 		_get_version:function(v) { return this.get("version"); },		
@@ -338,12 +349,13 @@
 			// return d.promise();
 		},
 		_diff_update_poll:function() {
-			var d = u.deferred(), this_ = this, cur_version = this._get_version(), box = this.get_id();	
-			this._ajax("GET", [box,'diff'].join('/'), {from_version:cur_version,return_objs:'diff'})
-				.then(function(response) {
-					this_._diff_update(response).then(d.resolve).fail(d.reject);
-				}).fail(d.reject);
-			return d.promise();
+			throw new Error("shouldnt poll anymore ");
+			// var d = u.deferred(), this_ = this, cur_version = this._get_version(), box = this.get_id();	
+			// this._ajax("GET", [box,'diff'].join('/'), {from_version:cur_version,return_objs:'diff'})
+			// 	.then(function(response) {
+			// 		this_._diff_update(response).then(d.resolve).fail(d.reject);
+			// 	}).fail(d.reject);
+			// return d.promise();
 		},
 		_diff_update:function(response) {
 			var d = u.deferred(), this_ = this, latest_version = response['@to_version'],
@@ -362,7 +374,6 @@
 				return d.resolve();
 			}					
 			this_._set_version(latest_version);
-			// u.debug('update object lists +', added_ids, ' -',  deleted_ids);
 			this_._update_object_list(undefined, added_ids, deleted_ids);
 			var change_dfds = _(changed_objs).map(function(obj, uri) {
 				// u.debug(' checking to see if in --- ', uri, this_._objcache().get(uri));
@@ -419,20 +430,25 @@
 		},
 		// ----------------------------------------------------
 		_update_object_list:function(updated_obj_ids, added, deleted) {
-			
 			var current, olds = this._objlist().slice(), this_ = this, news, died;
+			u.debug('_update_object_list +', added ? added.length : ' ', '-', deleted ? deleted.length : ' ');
+			u.debug('_update_object_list +', added || ' ', deleted || ' ');			
 			if (updated_obj_ids === undefined ) {
-				current = _(olds).chain().union(added).without(deleted).value();
-				// u.log('new ids ', current);
+				current = _(olds).chain().union(added).difference(deleted).value();
 				news = (added || []).slice(); died = (deleted || []).slice();
 			} else {
 				current = updated_obj_ids.slice();
 				news = _(current).difference(olds);
 				died = _(olds).difference(current);
 			}
-			this.set({objlist:current});
-			news.map(function(aid) { this_.trigger('obj-add', aid); });
+			u.debug('old objlist had ', olds.length, ' new has ', current.length);
+			this._set_objlist(current);
+			news.map(function(aid) {
+				u.debug('>> webbox-backbone :: obj-add ', aid);
+				this_.trigger('obj-add', aid);
+			});
 			died.map(function(rid) {
+				u.debug('>> webbox-backbone :: obj-remove ', rid);
 				this_.trigger('obj-remove', rid);
 				this_._objcache().remove(rid);
 			});
@@ -522,12 +538,16 @@
 		_do_update:function(ids) {
 			// this actua
 			var d = u.deferred(), version = this.get('version') || 0, this_ = this,
-				objs = this._objcache().filter(function(x) { return ids === undefined || ids.indexOf(x.id) >= 0; }).map(function(obj){ return serialize_obj(obj); });
+			    obj_ids = this._objcache().filter(function(x) { return ids === undefined || ids.indexOf(x.id) >= 0; }),
+				objs = obj_ids.map(function(obj){ return serialize_obj(obj); });
 			
 			this._ajax("PUT",  this.id + "/update", { version: escape(version), data : JSON.stringify(objs)  })
 				.then(function(response) {
 					u.debug('Update response update version > ', response.data["@version"]);
 					this_._set_version(response.data["@version"]);
+					// now in case this resulted in the creation of things, we update our object list
+					this_._update_object_list(undefined, obj_ids, []);
+					// 
 					d.resolve(this_);
 				}).fail(function(err) {
 					if (err.status === 409) { this_._add_to_update_queue(ids); }
@@ -535,7 +555,7 @@
 				});
 			return d.promise();
 		},
-		_update:function(original_ids) {
+		update:function(original_ids) {
 			// this is called by Backbone.save(),
 			this._add_to_update_queue(original_ids);
 			this._flush_update_queue();			
@@ -544,8 +564,8 @@
 		_add_to_delete_queue:function(model_ids) {
 			this._delete_queue = _(this._delete_queue || []).union(model_ids);
 		},
-		_delete_models:function(models) {
-			this._add_to_delete_queue(models);
+		_delete_models:function(ids) {
+			this._add_to_delete_queue(ids);
 			this._flush_delete_queue();
 		},
 		_requeue_delete:function() {
@@ -570,27 +590,27 @@
 				}
 			});			
 		},
-		_do_delete:function(models) {
+		_do_delete:function(m_ids) {
 			var version = this.get('version') || 0, d = u.deferred(), this_ = this; 
-			var m_ids = models.map(function(x) { return x.id; });
 			this._ajax('DELETE', this.id+'/', { version:version, data: JSON.stringify(m_ids) })
 				.then(function(response) {
 					u.debug('DELETE response NEW version > ', response.data["@version"]);
 					this_._set_version(response.data["@version"]);
+					this_._update_object_list(undefined, [], m_ids); // update object list
 					d.resolve(this_);					
 				}).fail(function(err) {
-					if (err.status === 409) { this_._add_to_delete_queue(ids); }
+					if (err.status === 409) { this_._add_to_delete_queue(m_ids); }
 					d.reject(err);
 				});
 			return d.promise();			
 		},
 		// =============== :: SYNC ::  ======================
-		sync: function(method, model, options){
+		sync: function(method, box, options){
 			switch(method)
 			{
-			case "create": return model._create_box();
-			case "read": return model._check_token_and_fetch(); 
-			case "update": return model.update(); 
+			case "create": return box._create_box();
+			case "read": return box._check_token_and_fetch(); 
+			case "update": return box.update();  // save whole box?
 			case "delete": return u.warn('box.delete() : not implemented yet');
 			}
 		},

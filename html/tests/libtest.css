@@ -5,3 +5,11 @@
 	vertical-align:middle;
 	padding:0px;
 }
+li i {
+	cursor:pointer;
+}
+li.ui-animate {
+  opacity: 0;
+  max-height: 0;
+  padding: 0 5px;
+}
