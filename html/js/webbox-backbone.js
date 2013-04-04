@@ -152,9 +152,6 @@
 			var this_ = this;
 			props.map(function(p) { this_.unset(p, silent ? {silent:true} : {}); });
 		},
-		_delete:function() {
-			return this.box._delete_models([this.id]);
-		},
 		_deserialise_and_set:function(s_obj, silent) {
 			// returns a promise
 			var this_ = this;
@@ -241,10 +238,9 @@
 			case "create": return u.assert(false, "create is never used for Objs"); 
 			case "read"  : return model._fetch(); 
 			case "update":
-				var dfd = model.box.update([model.id])[0];
-				console.log('returning dfd >>> ', dfd);
-				return dfd;
-			case "delete": return model._delete(); 
+				return  model.box.update([model.id])[0];
+			case "delete":
+				return this.box._delete_models([this.id])[0];
 			}
 		}		
 	});
@@ -267,6 +263,7 @@
 			this.options = _(this.default_options).chain().clone().extend(options || {}).value();
 			this.set_up_websocket();
 			this._update_queue = {};
+			this._delete_queue = {};			
 			this.on('update-from-master', function() { this_._flush_update_queue(); });
 		},
 		set_up_websocket:function() {
@@ -434,8 +431,8 @@
 		// ----------------------------------------------------
 		_update_object_list:function(updated_obj_ids, added, deleted) {
 			var current, olds = this._objlist().slice(), this_ = this, news, died;
-			u.debug('_update_object_list +', added ? added.length : ' ', '-', deleted ? deleted.length : ' ');
-			u.debug('_update_object_list +', added || ' ', deleted || ' ');			
+			// u.debug('_update_object_list +', added ? added.length : ' ', '-', deleted ? deleted.length : ' ');
+			// u.debug('_update_object_list +', added || ' ', deleted || ' ');			
 			if (updated_obj_ids === undefined ) {
 				current = _(olds).chain().union(added).difference(deleted).value();
 				news = (added || []).slice(); died = (deleted || []).slice();
@@ -447,11 +444,11 @@
 			u.debug('old objlist had ', olds.length, ' new has ', current.length);
 			this._set_objlist(current);
 			news.map(function(aid) {
-				u.debug('>> webbox-backbone :: obj-add ', aid);
+				// u.debug('>> webbox-backbone :: obj-add ', aid);
 				this_.trigger('obj-add', aid);
 			});
 			died.map(function(rid) {
-				u.debug('>> webbox-backbone :: obj-remove ', rid);
+				// u.debug('>> webbox-backbone :: obj-remove ', rid);
 				this_.trigger('obj-remove', rid);
 				this_._objcache().remove(rid);
 			});
@@ -529,11 +526,10 @@
 			}
 		},
 		_flush_update_queue:function() {
-			if (this._update_queue.length === 0) { return ; }			
+			var this_ = this, uq = this._update_queue, ids_to_update = _(uq).keys();
+			if (ids_to_update.length === 0) { return ; }
 			if (this._updating || this._deleting) { return this._requeue_update();  }
-			// make a copy
-			var this_ = this, uq = this._update_queue;
-			var ids_to_update = _(uq).keys();
+			
 			var update_arguments = ids_to_update.indexOf(this.WHOLE_BOX) >= 0 ? undefined : ids_to_update;
 			this_._updating = true;
 			this_._do_update(update_arguments).then(function() {
@@ -555,11 +551,9 @@
 			
 			this._ajax("PUT",  this.id + "/update", { version: escape(version), data : JSON.stringify(objs)  })
 				.then(function(response) {
-					u.debug('Update response update version > ', response.data["@version"]);
+					// u.debug('Update response update version > ', response.data["@version"]);
 					this_._set_version(response.data["@version"]);
-					// now in case this resulted in the creation of things, we update our object list
-					this_._update_object_list(undefined, obj_ids, []);
-					// 
+					this_._update_object_list(undefined, obj_ids, []); // update object list
 					d.resolve(this_);
 				}).fail(d.reject);
 			return d.promise();
@@ -568,37 +562,43 @@
 			// this is called by Backbone.save(),
 			var dfds = this._add_to_update_queue(original_ids);
 			this._flush_update_queue();
-			console.log('returning deferrrrrrrrrrrrreds ', dfds);
 			return dfds;
 		},
 		// =============== :: DELETE ::  ======================
-		_add_to_delete_queue:function(model_ids) {
-			this._delete_queue = _(this._delete_queue || []).union(model_ids);
+		_add_to_delete_queue:function(ids) {
+			var this_ = this, dq = this._delete_queue;
+			return ids.map(function(id) {
+				dq[id] = dq[id] || u.deferred();
+				return dq[id];
+			});
 		},
 		_delete_models:function(ids) {
-			this._add_to_delete_queue(ids);
+			var dfds =  this._add_to_delete_queue(ids);
 			this._flush_delete_queue();
+			return dfds;
 		},
 		_requeue_delete:function() {
 			var this_ = this;
-			setTimeout(function() {	this_._flush_delete_queue(); }, 300);			
+			if (!this._delete_timeout) {
+				this._delete_timeout = setTimeout(function() {
+					delete this_._delete_timeout;
+					this_._flush_delete_queue();
+				}, 300);
+			}
 		},		
 		_flush_delete_queue:function() {
-			if (this._delete_queue === undefined || this._delete_queue.length === 0) { return ; }			
+			var this_ = this, dq = this._delete_queue, delete_ids = _(dq).keys();;
+			if (delete_ids.length === 0) { return ; }			
 			if (this._deleting || this._updating) { return this._requeue_delete();  }
-			// make a copy
-			var this_ = this;
-			var delete_arguments = this._delete_queue.concat([]);
 			this_._deleting = true;
-			this_._delete_queue = [];
-			this_._do_delete(delete_arguments).then(function() {
+			this_._do_delete(delete_ids).then(function() {
 				delete this_._deleting;
+				delete_ids.map(function(id) {
+					dq[id].resolve(); delete dq[id];
+				});				
 			}).fail(function(err) {
 				delete this_._deleting;
-				if (err.status === 409) {
-					// reinstate it with old :( since we failed
-					this_._delete_queue = _(this_._delete_queue).union(delete_queue_arguments);					
-				}
+				if (err.status === 409) { this_._requeue_delete();	}
 			});			
 		},
 		_do_delete:function(m_ids) {
@@ -609,10 +609,7 @@
 					this_._set_version(response.data["@version"]);
 					this_._update_object_list(undefined, [], m_ids); // update object list
 					d.resolve(this_);					
-				}).fail(function(err) {
-					if (err.status === 409) { this_._add_to_delete_queue(m_ids); }
-					d.reject(err);
-				});
+				}).fail(d.reject);
 			return d.promise();			
 		},
 		// =============== :: SYNC ::  ======================

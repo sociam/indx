@@ -37,7 +37,9 @@ function BoxView($scope, webbox) {
 	
 	$scope.delete = function(id) {
 		box.get_obj(id).then(function(obj) {
-			obj.destroy();
+			obj.destroy()
+				.then(function() { console.log("DONE DELETING ", obj.id); })
+				.fail(function(err) { console.error('ERROR DELETING', obj.id, err); });
 		});
 	};
 
