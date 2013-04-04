@@ -373,7 +373,7 @@ class WebBoxTests:
 
         def connected_cb(conn):
             print "Listening..."
-            store = ObjectStoreAsync(conn)
+            store = ObjectStoreAsync(conn, self.args['username'], self.appid, "127.0.0.1") # TODO get the IP a better way? does it matter here?
             store.listen(observer)
 
         d = database.connect_box_raw(self.args['box'], self.args['username'], self.args['password'])

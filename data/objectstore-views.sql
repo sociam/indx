@@ -13,8 +13,8 @@ CREATE OR REPLACE VIEW wb_v_all_triples AS
 
 
 CREATE OR REPLACE VIEW wb_v_latest_version AS 
- SELECT max(wb_triple_vers.version) AS latest_version
-   FROM wb_triple_vers;
+ SELECT max(wb_versions.version) AS latest_version
+   FROM wb_versions;
 
 
 CREATE OR REPLACE VIEW wb_v_latest_triples AS 

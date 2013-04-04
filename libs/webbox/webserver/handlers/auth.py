@@ -93,7 +93,7 @@ class AuthHandler(BaseHandler):
         origin = self.get_origin(request)
 
         def check_app_perms(conn):
-            token = self.webserver.tokens.new(username,password,boxid,appid,origin)
+            token = self.webserver.tokens.new(username,password,boxid,appid,origin,request.getClientIP())
             return self.return_ok(request, {"token":token.id})
 
         # create a connection pool

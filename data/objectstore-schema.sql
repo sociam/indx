@@ -81,20 +81,18 @@ WITH (
 
 CREATE TABLE wb_users
 (
-  id_user serial NOT NULL,
-  username character varying(128) NOT NULL,
-  pw_salted_hash text NOT NULL,
-  email character varying(1024) NOT NULL,
-  name character varying(1024) NOT NULL,
-  CONSTRAINT pk_user PRIMARY KEY (id_user),
-  CONSTRAINT u_user UNIQUE (username),
-  CONSTRAINT u_email UNIQUE (email)
+  username name NOT NULL,
+  email text NOT NULL,
+  name text NOT NULL,
+  CONSTRAINT pk_user PRIMARY KEY (username)
 )
 WITH (
   OIDS=FALSE
 );
 
-INSERT INTO wb_users (username, pw_salted_hash, email, name) VALUES ('anonymous', 'temporary', 'anonymous@localhost', 'Anonymous User');
+
+-- Remove this in future
+INSERT INTO wb_users (username, email, name) VALUES ('webbox', 'webbox@localhost', 'Webbox User');
 
 
 CREATE TABLE wb_triple_vers
@@ -102,8 +100,6 @@ CREATE TABLE wb_triple_vers
   version integer NOT NULL,
   triple integer NOT NULL,
   triple_order integer NOT NULL,
-  change_timestamp time with time zone NOT NULL,
-  change_user integer NOT NULL,
   CONSTRAINT pk_version_triple_order PRIMARY KEY (version, triple, triple_order),
   CONSTRAINT fk_triple FOREIGN KEY (triple)
       REFERENCES wb_triples (id_triple) MATCH SIMPLE
@@ -112,4 +108,19 @@ CREATE TABLE wb_triple_vers
 WITH (
   OIDS=FALSE
 );
+
+CREATE TABLE wb_versions
+(
+  version integer NOT NULL,
+  updated time with time zone NOT NULL,
+  username name NOT NULL,
+  appid text NOT NULL,
+  clientip inet NOT NULL,
+  CONSTRAINT pk_version PRIMARY KEY (version)
+)
+WITH (
+  OIDS=FALSE
+);
+
+
 

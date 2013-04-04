@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION wb_add_triple_to_version(input_version integer, input_user_id integer, input_subject text, input_predicate text, input_object_value text, input_object_type object_type, input_object_language character varying, input_object_datatype character varying)
+CREATE OR REPLACE FUNCTION wb_add_triple_to_version(input_version integer, input_subject text, input_predicate text, input_object_value text, input_object_type object_type, input_object_language character varying, input_object_datatype character varying)
   RETURNS boolean AS
 $BODY$DECLARE
     triple_result integer;
@@ -12,7 +12,7 @@ BEGIN
         max_order := 0;
     END IF;
 
-    INSERT INTO wb_triple_vers (version, triple, triple_order, change_timestamp, change_user) VALUES (input_version, triple_result, max_order + 1, CURRENT_TIMESTAMP, input_user_id);
+    INSERT INTO wb_triple_vers (version, triple, triple_order) VALUES (input_version, triple_result, max_order + 1);
     RETURN true;
 END;$BODY$
   LANGUAGE plpgsql VOLATILE
@@ -99,7 +99,7 @@ END;$BODY$
   COST 100;
 
 
-CREATE OR REPLACE FUNCTION wb_clone_version(input_from_version integer, input_to_version integer, input_user_id integer, input_excludes_subjects text[])
+CREATE OR REPLACE FUNCTION wb_clone_version(input_from_version integer, input_to_version integer, input_excludes_subjects text[])
   RETURNS boolean AS
 $BODY$DECLARE
     subject_ids integer[];
@@ -107,12 +107,10 @@ BEGIN
 
     SELECT * INTO subject_ids FROM wb_get_string_ids(input_excludes_subjects);
 
-    INSERT INTO wb_triple_vers (version, triple, triple_order, change_timestamp, change_user)
+    INSERT INTO wb_triple_vers (version, triple, triple_order)
         SELECT    input_to_version as version,
             wb_triples.id_triple as triple,
-            wb_triple_vers.triple_order as triple_order,
-            CURRENT_TIMESTAMP as change_timestamp,
-            input_user_id as change_user
+            wb_triple_vers.triple_order as triple_order
         FROM    wb_triple_vers
         JOIN    wb_triples ON (wb_triple_vers.triple = wb_triples.id_triple)
         WHERE        wb_triple_vers.version = input_from_version

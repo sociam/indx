@@ -25,11 +25,15 @@ class ObjectStoreAsync:
     """ Stores objects in a database, handling import, export and versioning.
     """
 
-    def __init__(self, conn):
+    def __init__(self, conn, username, appid, clientip):
         """
             conn is a postgresql psycopg2 database connection, or connection pool.
         """
         self.conn = conn
+        self.username = username
+        self.appid = appid
+        self.clientip = clientip
+
         # TODO FIXME determine if autocommit has to be off for PL/pgsql support
         self.conn.autocommit = True
         self.loggerClass = logging
@@ -62,7 +66,13 @@ class ObjectStoreAsync:
             result_d.errback(failure)
             return
 
-        self._curexec(cur, "SELECT wb_version_finished(%s)", [version]).addCallbacks(lambda success: result_d.callback(success), err_cb)
+        def new_ver_done(success):
+            self._curexec(cur, "SELECT wb_version_finished(%s)", [version]).addCallbacks(lambda success: result_d.callback(success), err_cb)
+
+        self._curexec(cur,
+                "INSERT INTO wb_versions (version, updated, username, appid, clientip) VALUES (%s, CURRENT_TIMESTAMP, %s, %s, %s)",
+                [version, self.username, self.appid, self.clientip]).addCallbacks(new_ver_done, err_cb)
+
         return result_d
 
 
@@ -566,11 +576,11 @@ class ObjectStoreAsync:
             result_d.callback(specified_prev_version + 1)
             return
 
-        parameters = [specified_prev_version, specified_prev_version + 1, id_user]
+        parameters = [specified_prev_version, specified_prev_version + 1]
         # excludes these object IDs when it clones the previous version
         parameters.extend(id_list)
 
-        query = "SELECT * FROM wb_clone_version(%s,%s,%s,ARRAY["
+        query = "SELECT * FROM wb_clone_version(%s,%s,ARRAY["
         for i in range(len(id_list)):
             if i > 0:
                 query += ", "
@@ -647,7 +657,7 @@ class ObjectStoreAsync:
                     self.error("Objectstore update ver_cb, specified_prev_version mismatch, actual version: {0}".format(latest_ver))
                     ver_err_cb(latest_ver)
 
-            d2 = self._curexec(cur, "LOCK TABLE wb_triple_vers, wb_triples, wb_objects, wb_strings, wb_users IN EXCLUSIVE MODE") # lock to other writes, but not reads
+            d2 = self._curexec(cur, "LOCK TABLE wb_versions, wb_triple_vers, wb_triples, wb_objects, wb_strings, wb_users IN EXCLUSIVE MODE") # lock to other writes, but not reads
             d2.addCallbacks(lambda _: self._curexec(cur, "SELECT latest_version FROM wb_v_latest_version"), interaction_err_cb)
             d2.addCallbacks(lambda _: cur.fetchall(), interaction_err_cb)
             d2.addCallbacks(ver_cb, interaction_err_cb)
@@ -719,7 +729,7 @@ class ObjectStoreAsync:
                     if "@type" in object:
                         datatype = object["@type"]
 
-                    queries.append( ("SELECT * FROM wb_add_triple_to_version(%s, %s, %s, %s, %s, %s, %s, %s)", [version, id_user, uri, predicate, value, thetype, language, datatype]) )
+                    queries.append( ("SELECT * FROM wb_add_triple_to_version(%s, %s, %s, %s, %s, %s, %s)", [version, uri, predicate, value, thetype, language, datatype]) )
 
         def exec_queries(var):
             self.debug("Objectstore add_version exec_queries")

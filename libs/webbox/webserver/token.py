@@ -27,13 +27,14 @@ class Token:
         An objectstore_async is also kept in the token.
     """
 
-    def __init__(self, username, password, boxid, appid, origin):
+    def __init__(self, username, password, boxid, appid, origin, clientip):
         self.username = username
         self.password = password
         self.boxid = boxid
         self.appid = appid
         self.origin = origin
         self.id = str(uuid.uuid1())
+        self.clientip = clientip
 
     def get_store(self):
         """ Get a new ObjectStoreAsync using the connection pool. """
@@ -43,7 +44,7 @@ class Token:
 
         def connected_cb(conn):
             logging.debug("Token get_store connected, returning it.")
-            store = ObjectStoreAsync(conn)
+            store = ObjectStoreAsync(conn, self.username, self.appid, self.clientip)
             result_d.callback(store)
 
         def err_cb(failure):
@@ -60,7 +61,7 @@ class Token:
 
         def connected_cb(conn):
             logging.debug("Token get_raw_store connected, returning it.")
-            raw_store = ObjectStoreAsync(conn)
+            raw_store = ObjectStoreAsync(conn, self.username, self.appid, self.clientip)
             result_d.callback(raw_store)
 
         def err_cb(failure):
@@ -98,8 +99,8 @@ class TokenKeeper:
         self.tokens[token.id] = token
         return token
 
-    def new(self,username,password,boxid,appid,origin):
-        token = Token(username,password,boxid,appid,origin)
+    def new(self,username,password,boxid,appid,origin,clientip):
+        token = Token(username,password,boxid,appid,origin,clientip)
         self.add(token)
         return token
  
