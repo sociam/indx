@@ -448,7 +448,7 @@
 				fd = this._diff_update_poll();
 			} else {
 				// otherwise we aren't fetched, so we just do it
-				var box = this.get_id(), this_ = this;
+				var box = this.get_id();
 				this._ajax("GET",[box,'get_object_ids'].join('/')).then(
 					function(response){
 						u.assert(response['@version'] !== undefined, 'no version provided');
@@ -477,6 +477,17 @@
 			}
 			return this_._fetch();			
 		},
+		_create_box:function() {
+			var d = u.deferred();
+			var this_ = this;
+			this.store._ajax('POST', 'admin/create_box', { name: this.get_id() } )
+				.then(function() {
+					this_.fetch().then(function() { d.resolve(); }).fail(function(err) { d.reject(err); });
+				}).fail(function(err) { d.reject(err); });
+			return d.promise();
+		},
+		
+		// =============== :: UPDATE ::  ======================
 		WHOLE_BOX: { special: "UPDATE_WHOLE_BOX "},
 		_add_to_update_queue:function(ids_to_update) {
 			ids_to_update = ids_to_update === undefined ? [ this.WHOLE_BOX ] : ids_to_update;
@@ -484,14 +495,11 @@
 		},
 		_requeue_update:function() {
 			var this_ = this;
-			setTimeout(function() {
-				// u.debug('update flushing trying again... ');
-				this_._flush_update_queue();
-			}, 300);			
+			setTimeout(function() {	this_._flush_update_queue(); }, 300);			
 		},
 		_flush_update_queue:function() {
 			if (this._update_queue.length === 0) { return ; }			
-			if (this._updating)  {	return this._requeue_update(); 	}
+			if (this._updating || this._deleting) { return this._requeue_update();  }
 			// make a copy
 			var this_ = this;
 			var update_queue_copy = this._update_queue.concat([]);
@@ -532,20 +540,51 @@
 			this._add_to_update_queue(original_ids);
 			this._flush_update_queue();			
 		},
-		_create_box:function() {
-			var d = u.deferred();
-			var this_ = this;
-			this.store._ajax('POST', 'admin/create_box', { name: this.get_id() } )
-				.then(function() {
-					this_.fetch().then(function() { d.resolve(); }).fail(function(err) { d.reject(err); });
-				}).fail(function(err) { d.reject(err); });
-			return d.promise();
+		// =============== :: DELETE ::  ======================
+		_add_to_delete_queue:function(model_ids) {
+			this._delete_queue = _(this._delete_queue || []).union(model_ids);
 		},
 		_delete_models:function(models) {
-			var version = this.get('version') || 0; 
-			var m_ids = models.map(function(x) { return x.id; });
-			return this._ajax('DELETE', this.id+'/', { version:version, data: JSON.stringify(m_ids) });
+			this._add_to_delete_queue(models);
+			this._flush_delete_queue();
 		},
+		_requeue_delete:function() {
+			var this_ = this;
+			setTimeout(function() {	this_._flush_delete_queue(); }, 300);			
+		},		
+		_flush_delete_queue:function() {
+			if (this._delete_queue === undefined || this._delete_queue.length === 0) { return ; }			
+			if (this._deleting || this._updating) { return this._requeue_delete();  }
+			// make a copy
+			var this_ = this;
+			var delete_arguments = this._delete_queue.concat([]);
+			this_._deleting = true;
+			this_._delete_queue = [];
+			this_._do_delete(delete_arguments).then(function() {
+				delete this_._deleting;
+			}).fail(function(err) {
+				delete this_._deleting;
+				if (err.status === 409) {
+					// reinstate it with old :( since we failed
+					this_._delete_queue = _(this_._delete_queue).union(delete_queue_arguments);					
+				}
+			});			
+		},
+		_do_delete:function(models) {
+			var version = this.get('version') || 0, d = u.deferred(), this_ = this; 
+			var m_ids = models.map(function(x) { return x.id; });
+			this._ajax('DELETE', this.id+'/', { version:version, data: JSON.stringify(m_ids) })
+				.then(function(response) {
+					u.debug('DELETE response NEW version > ', response.data["@version"]);
+					this_._set_version(response.data["@version"]);
+					d.resolve(this_);					
+				}).fail(function(err) {
+					if (err.status === 409) { this_._add_to_delete_queue(ids); }
+					d.reject(err);
+				});
+			return d.promise();			
+		},
+		// =============== :: SYNC ::  ======================
 		sync: function(method, model, options){
 			switch(method)
 			{
