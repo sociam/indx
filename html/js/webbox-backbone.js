@@ -461,7 +461,9 @@
 			// return a list of models (each of type WebBox.Object) to populate a GraphCollection
 			var d = u.deferred(), fd = u.deferred(), this_ = this;
 			if (this._is_fetched()) {
-				fd = this._diff_update_poll();
+				// don't do anything
+				// fd = this._diff_update_poll();
+				fd.resolve();
 			} else {
 				// otherwise we aren't fetched, so we just do it
 				var box = this.get_id();
