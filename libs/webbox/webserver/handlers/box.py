@@ -168,6 +168,32 @@ class BoxHandler(BaseHandler):
         token.get_store().addCallbacks(store_cb, err_cb)
 
 
+    
+    def files(self, request):
+        """ Handler for queries like /box/files?id=notes.txt&version=2
+
+            Handles GET, PUT and DELETE of files.
+            Sending current version in the request is required as in the JSON requests.
+
+            request -- Twisted request object.
+        """
+        token = self.get_token(request)
+        if not token:
+            return self.return_forbidden(request)
+        store = token.get_store()
+
+        # TODO unified argument checker in base handler
+        try:
+            file_id = request.args['id']
+        except Exception as e:
+            logging.debug("BoxHandler files: no 'id' argument in URL")
+            return self.return_bad_request(request, "You must specify the 'id' argument for the file.")
+
+        if request.method == 'GET':
+            pass #FIXME finish
+        elif request.method == 'POST':
+            pass #FIXME finish
+
 
     def do_GET(self,request):
         token = self.get_token(request)
@@ -299,6 +325,15 @@ class BoxHandler(BaseHandler):
 
 
 BoxHandler.subhandlers = [
+    {
+        "prefix": "files",
+        'methods': ['GET', 'PUT', 'DELETE'],
+        'require_auth': False,
+        'require_token': True,
+        'handler': BoxHandler.files,
+        'accept':['*/*'],
+        'content-type':'application/json'
+        },
     {
         "prefix": "get_object_ids",
         'methods': ['GET'],
