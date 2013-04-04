@@ -48,6 +48,12 @@ def connect(db_name,db_user,db_pass):
 
     return result_d
 
+def connect_sync(db_name, db_user, db_pass):
+    """ Connect synchronously to the database - only used for large object support. """
+    conn_str = ("dbname='{0}' user='{1}' password='{2}'".format(db_name or POSTGRES_DB, db_user, db_pass))    
+    conn = psycopg2.connect(conn_str)
+    return conn
+
 
 def connect_raw(db_name, db_user, db_pass):
     """ Connect to the database bypassing the connection pool (e.g., for adding a notify observer). """
@@ -56,6 +62,9 @@ def connect_raw(db_name, db_user, db_pass):
     conn = txpostgres.Connection()
     return conn.connect(conn_str)
 
+
+def connect_box_sync(box_name, db_user, db_pass):
+    return connect_sync(WBPREFIX + box_name, db_user, db_pass)
 
 def connect_box_raw(box_name, db_user, db_pass):
     return connect_raw(WBPREFIX + box_name, db_user, db_pass)

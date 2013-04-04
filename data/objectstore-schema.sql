@@ -122,5 +122,16 @@ WITH (
   OIDS=FALSE
 );
 
+CREATE TABLE wb_files
+(
+  id_file serial NOT NULL,
+  data oid NOT NULL,
+  version integer NOT NULL,
+  file_id text NOT NULL,
+  CONSTRAINT pk_id_files PRIMARY KEY (id_file)
+)
+WITH (
+  OIDS=FALSE
+);
 
 

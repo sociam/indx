@@ -163,3 +163,19 @@ END;$BODY$
   COST 100;
 
 
+CREATE OR REPLACE FUNCTION wb_clone_files_version(input_from_version integer, input_to_version integer, input_excludes_ids text[])
+  RETURNS boolean AS
+$BODY$BEGIN
+
+    INSERT INTO wb_files (data, version, file_id)
+        SELECT  wb_files.data as data,
+            input_to_version as version,
+            wb_files.file_id as file_id
+        FROM    wb_files
+        WHERE        wb_files.version = input_from_version
+                AND    NOT (wb_files.file_id = ANY(input_excludes_ids));
+
+    RETURN true;
+END;$BODY$
+  LANGUAGE plpgsql VOLATILE
+  COST 100;

@@ -34,7 +34,9 @@ class WebBoxTests:
                       'delete': self.delete,
                       'query': self.query,
                       'get_by_ids': self.get_by_ids,
-                      'listen': self.listen
+                      'listen': self.listen,
+                      'add_file_data': self.add_file_data,
+                      'get_file_data': self.get_file_data
                      }
 
         self.token = None
@@ -370,13 +372,54 @@ class WebBoxTests:
 
         def err_cb(failure):
             logging.error("Error in test listen: {0}".format(failure))
+            reactor.stop()
 
         def connected_cb(conn):
             print "Listening..."
-            store = ObjectStoreAsync(conn, self.args['username'], self.appid, "127.0.0.1") # TODO get the IP a better way? does it matter here?
+            conns = {"conn": conn}
+            store = ObjectStoreAsync(conns, self.args['username'], self.appid, "127.0.0.1") # TODO get the IP a better way? does it matter here?
             store.listen(observer)
 
         d = database.connect_box_raw(self.args['box'], self.args['username'], self.args['password'])
         d.addCallbacks(connected_cb, err_cb)
         reactor.run()
+
+
+    def add_file_data(self):
+        """ Add a file to the database. """
+        self.check_args(['box', 'username', 'password', 'data', 'id', 'version'])
+
+        def err_cb(failure):
+            logging.error("Error in test add_file_data: {0}".format(failure))
+            reactor.stop()
+
+        def connected_cb(conn):
+            print "Adding file..."
+
+            def added_cb(ver):
+                print "File added, ver: {0}".format(ver)
+                reactor.stop()
+
+            def get_sync():
+                return database.connect_box_sync(self.args['box'], self.args['username'], self.args['password'])
+
+            conns = {"conn": conn, "sync_conn": get_sync}
+            store = ObjectStoreAsync(conns, self.args['username'], self.appid, "127.0.0.1") # TODO get the IP a better way? does it matter here?
+            new_files = [ (self.args['id'], self.args['data'].read()) ]
+            store.update_files(int(self.args['version']), new_files = new_files).addCallbacks(added_cb, err_cb)
+
+        d = database.connect_box(self.args['box'], self.args['username'], self.args['password'])
+        d.addCallbacks(connected_cb, err_cb)
+        reactor.run()
+
+
+    def get_file_data(self):
+        """ Get a file from the database. """
+        self.check_args(['box', 'username', 'password', 'id'])
+
+        conn = database.connect_box_sync(self.args['box'], self.args['username'], self.args['password'])
+        conns = {"conn": conn}
+        store = ObjectStoreAsync(conns, self.args['username'], self.appid, "127.0.0.1") # TODO get the IP a better way? does it matter here?
+        data = store._get_file_data(int(self.args['id']))
+        print data
 

@@ -44,7 +44,12 @@ class Token:
 
         def connected_cb(conn):
             logging.debug("Token get_store connected, returning it.")
-            store = ObjectStoreAsync(conn, self.username, self.appid, self.clientip)
+
+            def get_sync():
+                return database.connect_box_sync(self.boxid, self.username, self.password)
+
+            conns = {"conn": conn, "sync_conn": get_sync}
+            store = ObjectStoreAsync(conns, self.username, self.appid, self.clientip)
             result_d.callback(store)
 
         def err_cb(failure):
@@ -61,7 +66,12 @@ class Token:
 
         def connected_cb(conn):
             logging.debug("Token get_raw_store connected, returning it.")
-            raw_store = ObjectStoreAsync(conn, self.username, self.appid, self.clientip)
+
+            def get_sync():
+                return database.connect_box_sync(self.boxid, self.username, self.password)
+
+            conns = {"conn": conn, "sync_conn": get_sync}
+            raw_store = ObjectStoreAsync(conns, self.username, self.appid, self.clientip)
             result_d.callback(raw_store)
 
         def err_cb(failure):

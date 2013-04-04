@@ -16,7 +16,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging, types
+import logging
 from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
 from webbox.objectstore_query import ObjectStoreQuery
@@ -25,11 +25,12 @@ class ObjectStoreAsync:
     """ Stores objects in a database, handling import, export and versioning.
     """
 
-    def __init__(self, conn, username, appid, clientip):
+    def __init__(self, conns, username, appid, clientip):
         """
             conn is a postgresql psycopg2 database connection, or connection pool.
         """
-        self.conn = conn
+        self.conn = conns['conn']
+        self.conns = conns
         self.username = username
         self.appid = appid
         self.clientip = clientip
@@ -555,13 +556,13 @@ class ObjectStoreAsync:
         return result_d
 
 
-    def _clone(self, cur, specified_prev_version, id_user, id_list = []):
+    def _clone(self, cur, specified_prev_version, id_list = [], files_id_list = []):
         """ Make a new version of the database, excluding objects with the ids specified.
 
             cur -- Cursor to execute the query in
             specified_prev_version -- the current version of the box, error returned if this isn't the current version
-            id_user -- the ID of the user making the new version
             id_list -- list of object IDs to exclude from the new version (optional)
+            files_id_list -- list of file OIDs to exclude from the new version of the wb_files table (optional)
         """
         result_d = Deferred()
         self.debug("Objectstore _clone, specified_prev_version: {0}".format(specified_prev_version))
@@ -573,7 +574,25 @@ class ObjectStoreAsync:
 
         def cloned_cb(cur): # self is the deferred
             self.debug("Objectstore _clone, cloned_cb cur: {0}".format(cur))
-            result_d.callback(specified_prev_version + 1)
+
+            def files_cloned_cb(cur):
+                self.debug("Objectstore _clone, files_cloned_cb cur: {0}".format(cur))
+                result_d.callback(specified_prev_version + 1)
+                return
+
+            files_parameters = [specified_prev_version, specified_prev_version + 1]
+            # excludes these file OIDs when it clones the previous version
+            files_parameters.extend(files_id_list)
+
+            files_query = "SELECT * FROM wb_clone_files_version(%s,%s,ARRAY["
+            for j in range(len(files_id_list)):
+                if j > 0:
+                    files_query += ", "
+                files_query += "%s"
+            files_query += "]::text[])"
+
+            self.debug("Objectstore _clone, files_query: {0} files_params: {1}".format(files_query, files_parameters))
+            self._curexec(cur, files_query, files_parameters).addCallbacks(files_cloned_cb, err_cb) # worked or errored
             return
 
         parameters = [specified_prev_version, specified_prev_version + 1]
@@ -599,26 +618,32 @@ class ObjectStoreAsync:
         return cur.execute(*args, **kwargs)
 
 
-    def update(self, objs, specified_prev_version, delete_ids=[]):
+    def update(self, objs, specified_prev_version, delete_ids=[], new_files_oids=[], delete_files_ids=[]):
         """ Create a new version of the database, and insert only the objects references in the 'objs' dict. All other objects remain as they are in the specified_prev_version of the db.
 
-            objs, json expanded notation of objects,
-            specified_prev_version of the databse (must match max(version) of the db, or zero if the object doesn't exist, or the store will return a IncorrectPreviousVersionException
+            objs -- json expanded notation of objects,
+            specified_prev_version -- ...of the database (must match max(version) of the db, or zero if the object doesn't exist, or the store will return a IncorrectPreviousVersionException
+            delete_ids -- remove these objects (array of integers)
+            new_files_oids -- array of tuples of (file_oid, file_id) of files to add/replace to this version
+            delete_files_ids -- array of integers (oids) of files to not include in this version
 
-            returns information about the new version
+            returns integer of the new version
         """
         result_d = Deferred()
         self.debug("Objectstore update, specified_prev_version: {0}".format(specified_prev_version))
     
-        # TODO add this
-        id_user = 1
-
         def err_cb(failure):
             self.error("Objectstore update, err_cb, failure: {0}".format(failure))
             result_d.errback(failure)
 
+        # subject ids to not include in the clone
         id_list = self.ids_from_objs(objs)
         id_list.extend(delete_ids)
+
+        # files to not include in the clone
+        files_id_list = []
+        files_id_list.extend(map(lambda x: x[1], new_files_oids)) # extract ids from the new files list
+        files_id_list.extend(delete_files_ids)
         
         def interaction_cb(cur):
             self.debug("Objectstore update, interaction_cb, cur: {0}".format(cur))
@@ -629,35 +654,41 @@ class ObjectStoreAsync:
                 ipve = IncorrectPreviousVersionException("Actual previous version is {0}, specified previous version is: {1}".format(actual_prev_version, specified_prev_version))
                 ipve.version = actual_prev_version
                 failure = Failure(ipve)
-                cur.execute("ROLLBACK").addCallbacks(lambda _: interaction_d.errback(failure), lambda _: interaction_d.errback(failure))
+                self._curexec(cur, "ROLLBACK").addCallbacks(lambda _: interaction_d.errback(failure), lambda _: interaction_d.errback(failure))
 
             def interaction_err_cb(failure):
                 self.error("Objectstore update, interaction_err_cb, failure: {0}".format(failure))
-                cur.execute("ROLLBACK").addCallbacks(lambda _: interaction_d.errback(failure), lambda _: interaction_d.errback(failure))
+                self._curexec(cur, "ROLLBACK").addCallbacks(lambda _: interaction_d.errback(failure), lambda _: interaction_d.errback(failure))
 
             def ver_cb(latest_ver):
                 self.debug("Objectstore update, ver_cb, latest_ver: {0}".format(latest_ver))
                 latest_ver = latest_ver[0][0] or 0
+
                 def cloned_cb(new_ver):
                     self.debug("Objectstore update, cloned_cb new_ver: {0}".format(new_ver))
 
                     def added_cb(info):
                         # added object successfully
                         self.debug("Objectstore update, added_cb info: {0}".format(info))
-                        self._notify(cur, new_ver).addCallbacks(lambda _: interaction_d.callback({"@version": new_ver}), interaction_err_cb)
+
+                        def files_added_cb(info):
+                            self.debug("Objectstore update, files_added_cb info: {0}".format(info))
+                            self._notify(cur, new_ver).addCallbacks(lambda _: interaction_d.callback({"@version": new_ver}), interaction_err_cb)
+
+                        self._add_files_to_version(cur, new_files_oids, new_ver).addCallbacks(files_added_cb, interaction_err_cb)
 
                     if len(objs) > 0: # skip if we're just deleting
-                        self._add_objs_to_version(cur, objs, new_ver, id_user).addCallbacks(added_cb, interaction_err_cb)
+                        self._add_objs_to_version(cur, objs, new_ver).addCallbacks(added_cb, interaction_err_cb)
                     else:
                         added_cb(new_ver)
 
                 if latest_ver == specified_prev_version:
-                    self._clone(cur, specified_prev_version, id_user, id_list).addCallbacks(cloned_cb, interaction_err_cb)
+                    self._clone(cur, specified_prev_version, id_list = id_list, files_id_list = files_id_list).addCallbacks(cloned_cb, interaction_err_cb)
                 else:
                     self.error("Objectstore update ver_cb, specified_prev_version mismatch, actual version: {0}".format(latest_ver))
                     ver_err_cb(latest_ver)
 
-            d2 = self._curexec(cur, "LOCK TABLE wb_versions, wb_triple_vers, wb_triples, wb_objects, wb_strings, wb_users IN EXCLUSIVE MODE") # lock to other writes, but not reads
+            d2 = self._curexec(cur, "LOCK TABLE wb_files, wb_versions, wb_triple_vers, wb_triples, wb_objects, wb_strings, wb_users IN EXCLUSIVE MODE") # lock to other writes, but not reads
             d2.addCallbacks(lambda _: self._curexec(cur, "SELECT latest_version FROM wb_v_latest_version"), interaction_err_cb)
             d2.addCallbacks(lambda _: cur.fetchall(), interaction_err_cb)
             d2.addCallbacks(ver_cb, interaction_err_cb)
@@ -671,8 +702,48 @@ class ObjectStoreAsync:
         d.addCallbacks(interaction_complete_d, err_cb)
         return result_d
 
+    def _add_files_to_version(self, cur, new_files_oids, version):
+        """ Add files to a specific version of the db, called after a clone (with exclusions for the new files) has already run.
 
-    def _add_objs_to_version(self, cur, objs, version, id_user):
+            It is wrapped in a locking transaction by "update" above.
+
+            cur -- Cursor to execute queries
+            new_files_oids -- array of tuples of (file_oid, file_id) of files to add/replace to this version
+            version -- The new version to add to
+        """
+        self.debug("Objectstore _add_files_to_version, version: {0}".format(version))
+        result_d = Deferred()
+
+        def err_cb(failure):
+            self.error("Objectstore _add_files_to_version, err_cb, failure: {0}".format(failure))
+            result_d.errback(failure)
+            return
+       
+        # do nothing if this is empty, clone would have created the new version entirely
+        if len(new_files_oids) == 0:
+            result_d.callback(version)
+            return result_d
+
+        query = "INSERT INTO wb_files (data, version, file_id) VALUES "
+        params = []
+        for fil in new_files_oids:
+            file_oid, file_id = fil
+
+            if len(params) != 0:
+                query += ", "
+
+            query += "(%s, %s, %s)"
+            params.extend([file_oid, version, file_id])
+
+        def added_cb(info):
+            self.debug("Objectstore _add_files_to_version, added_cb, info: {0}".format(info))
+            result_d.callback(info)
+
+        self._curexec(cur, query, params).addCallbacks(added_cb, err_cb)
+        return result_d
+
+
+    def _add_objs_to_version(self, cur, objs, version):
         """ Add objects to a specific version of the db.
 
             The function used in postgres now automatically increments the triple_order based on the order of insertion.
@@ -682,23 +753,14 @@ class ObjectStoreAsync:
             cur -- Cursor to use to execute queries
             objs -- Objects to add
             version -- The version to add to
-            id_user -- The id of the user that is making the change
         """
-        self.debug("Objectstore _add_objs_to_version")
+        self.debug("Objectstore _add_objs_to_version, version: {0}".format(version))
+        result_d = Deferred()
 
         def err_cb(failure):
             self.error("Objectstore _add_objs_to_version, err_cb, failure: {0}".format(failure))
             result_d.errback(failure)
             return
-
-
-        # FIXME workaround passing version as a Tuple and/or String
-        if type(version) == types.TupleType:
-            version = version[0]
-        if type(version) == types.StringType:
-            version = int(version)
-
-        result_d = Deferred()
 
         queries = []
         for obj in objs:
@@ -747,6 +809,68 @@ class ObjectStoreAsync:
         return result_d
 
 
+    def update_files(self, specified_prev_version, new_files=[], delete_files_ids=[]):
+        """ Create a new version of the database by adding files, or removing existing ones.
+
+            specified_prev_version -- The current version of the database, will error if this is incorrect
+            new_files -- Array of (file_id, file_data) tuples to add.
+            delete_files_ids -- File IDs to remove from the new version.
+
+            return a deferred
+        """
+        result_d = Deferred()
+        self.debug("ObjectStoreAsync update_file, specified_prev_version: {0}".format(specified_prev_version))
+
+        def err_cb(failure):
+            self.error("Objectstore update_files, err_cb, failure: {0}".format(failure))
+            result_d.errback(failure)
+
+        if len(new_files) == 0 and len(delete_files_ids) == 0:
+            self.debug("Objectstore update_files, new_files and delete_files_ids both empty, erroring.")
+            err = Exception("You must specify some new files or some oids to delete, neither were specified.")
+            failure = Failure(err)
+            result_d.errback(failure)
+            return result_d
+
+        sync_conn = self.conns['sync_conn']() # get a syncronous connection to the database without knowing the password
+        new_files_oids = []
+        for fil in new_files:
+            file_id, file_data = fil
+            oid = self._add_file_data(sync_conn, file_data)
+            new_files_oids.append((oid, file_id))
+        sync_conn.close() # close it immediately, to reduce the risk of running out of available connections (because we're outside of the pool here)
+
+        # punt the actual updating to the update function
+        self.update([], specified_prev_version, new_files_oids = new_files_oids, delete_files_ids = delete_files_ids).addCallbacks(lambda ver: result_d.callback(ver), err_cb)
+        return result_d
+
+
+    def _add_file_data(self, conn, data):
+        """ Add a new Large Object into the database with this data.
+
+            conn -- A synchronous connection (that has autocommit = False)
+            data -- File bytes
+            return the oid of the new object.
+        """
+        self.debug("ObjectStoreAsync add_file_data, opening new lobject with connection: {0}".format(self.conn))
+        lobj = conn.lobject()
+        lobj.write(data) # FIXME this is not async. txpostgres may not support this :(
+        oid = lobj.oid
+        lobj.close()
+        return oid
+
+    def _get_file_data(self, conn, oid):
+        """ Get a Large Object from the database with this id.
+
+            conn -- A synchronous connection (that has autocommit = False)
+            data -- File bytes
+            return the object's bytes.
+        """
+        self.debug("ObjectStoreAsync get_file_data, oid: {0}".format(oid))
+        lobj = conn.lobject(oid, "r")
+        obj = lobj.read() # FIXME this is not async. txpostgres may not support this :(
+        lobj.close()
+        return obj
 
 class IncorrectPreviousVersionException(BaseException):
     """ The specified previous version did not match the actual previous version. """
