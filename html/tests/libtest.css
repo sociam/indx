@@ -5,6 +5,10 @@
 	vertical-align:middle;
 	padding:0px;
 }
+.row {
+	line-height:12px !important;
+}
+	
 li i {
 	cursor:pointer;
 }

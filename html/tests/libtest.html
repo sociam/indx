@@ -12,7 +12,7 @@
 	<div class='boxview' ng-controller='BoxView'>
 	  <h4>{{ box.id }}</h4>
 	  <ul>
-		<li ng-repeat="el in box_object_ids"> {{ el }} <i ng-click="delete(el)" class="icon-trash" ng-animate></i>
+		<li ng-repeat="el in box_object_ids" class="row"><div class="span4">{{ el }}</div><div class="span1"><i ng-click="delete(el)" class="icon-trash" ng-animate></i></div>
 	  </ul>
 	</div>
   </body>
