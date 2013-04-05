@@ -18,6 +18,7 @@
 
 import logging
 from twisted.internet.defer import Deferred
+from twisted.internet import threads
 from twisted.python.failure import Failure
 from webbox.objectstore_query import ObjectStoreQuery
 
@@ -631,6 +632,8 @@ class ObjectStoreAsync:
         """
         result_d = Deferred()
         self.debug("Objectstore update, specified_prev_version: {0}".format(specified_prev_version))
+        from twisted.internet.defer import setDebugging
+        setDebugging(True)
     
         def err_cb(failure):
             self.error("Objectstore update, err_cb, failure: {0}".format(failure))
@@ -649,57 +652,79 @@ class ObjectStoreAsync:
             self.debug("Objectstore update, interaction_cb, cur: {0}".format(cur))
             interaction_d = Deferred()
 
-            def ver_err_cb(actual_prev_version):
-                self.debug("In objectstore update, the previous version of the box {0} didn't match the actual {1}".format(specified_prev_version, actual_prev_version))
-                ipve = IncorrectPreviousVersionException("Actual previous version is {0}, specified previous version is: {1}".format(actual_prev_version, specified_prev_version))
-                ipve.version = actual_prev_version
-                failure = Failure(ipve)
-                self._curexec(cur, "ROLLBACK").addCallbacks(lambda _: interaction_d.errback(failure), lambda _: interaction_d.errback(failure))
-
             def interaction_err_cb(failure):
-                self.error("Objectstore update, interaction_err_cb, failure: {0}".format(failure))
-                self._curexec(cur, "ROLLBACK").addCallbacks(lambda _: interaction_d.errback(failure), lambda _: interaction_d.errback(failure))
+                self.debug("Objectstore update, interaction_err_cb, failure: {0}".format(failure))
+                interaction_d.errback(failure) 
+
+            def cloned_cb(new_ver):
+                self.debug("Objectstore update, cloned_cb new_ver: {0}".format(new_ver))
+
+                def added_cb(info):
+                    # added object successfully
+                    self.debug("Objectstore update, added_cb info: {0}".format(info))
+
+                    def files_added_cb(info):
+                        self.debug("Objectstore update, files_added_cb info: {0}".format(info))
+                        self._notify(cur, new_ver).addCallbacks(lambda _: interaction_d.callback({"@version": new_ver}), interaction_err_cb)
+
+                    self._add_files_to_version(cur, new_files_oids, new_ver).addCallbacks(files_added_cb, interaction_err_cb)
+
+                if len(objs) > 0: # skip if we're just deleting
+                    self._add_objs_to_version(cur, objs, new_ver).addCallbacks(added_cb, interaction_err_cb)
+                else:
+                    added_cb(new_ver)
 
             def ver_cb(latest_ver):
                 self.debug("Objectstore update, ver_cb, latest_ver: {0}".format(latest_ver))
                 latest_ver = latest_ver[0][0] or 0
 
-                def cloned_cb(new_ver):
-                    self.debug("Objectstore update, cloned_cb new_ver: {0}".format(new_ver))
+                def do_check():
+                    self.debug("Objectstore do_check")
+                    if latest_ver == specified_prev_version:
 
-                    def added_cb(info):
-                        # added object successfully
-                        self.debug("Objectstore update, added_cb info: {0}".format(info))
+                        def check_err_cb(failure):
+                            self.debug("Objectstore check_err_cb, failure: {0}".format(failure))
+                            interaction_d.errback(failure)
 
-                        def files_added_cb(info):
-                            self.debug("Objectstore update, files_added_cb info: {0}".format(info))
-                            self._notify(cur, new_ver).addCallbacks(lambda _: interaction_d.callback({"@version": new_ver}), interaction_err_cb)
-
-                        self._add_files_to_version(cur, new_files_oids, new_ver).addCallbacks(files_added_cb, interaction_err_cb)
-
-                    if len(objs) > 0: # skip if we're just deleting
-                        self._add_objs_to_version(cur, objs, new_ver).addCallbacks(added_cb, interaction_err_cb)
+                        self._clone(cur, specified_prev_version, id_list = id_list, files_id_list = files_id_list).addCallbacks(cloned_cb, check_err_cb)
                     else:
-                        added_cb(new_ver)
+                        self.debug("In objectstore update, the previous version of the box {0} didn't match the actual {1}".format(specified_prev_version, latest_ver))
+                        ipve = IncorrectPreviousVersionException("Actual previous version is {0}, specified previous version is: {1}".format(latest_ver, specified_prev_version))
+                        ipve.version = latest_ver
+                        return Failure(ipve)
 
-                if latest_ver == specified_prev_version:
-                    self._clone(cur, specified_prev_version, id_list = id_list, files_id_list = files_id_list).addCallbacks(cloned_cb, interaction_err_cb)
-                else:
-                    self.error("Objectstore update ver_cb, specified_prev_version mismatch, actual version: {0}".format(latest_ver))
-                    ver_err_cb(latest_ver)
+                def ver_err_cb(failure):
+                    self.debug("Objectstore ver_err_cb, failure: {0}".format(failure))
+                    self.debug("ver_err_cb is calling errback on ver_d")
+                    interaction_d.errback(failure)
 
-            d2 = self._curexec(cur, "LOCK TABLE wb_files, wb_versions, wb_triple_vers, wb_triples, wb_objects, wb_strings, wb_users IN EXCLUSIVE MODE") # lock to other writes, but not reads
-            d2.addCallbacks(lambda _: self._curexec(cur, "SELECT latest_version FROM wb_v_latest_version"), interaction_err_cb)
-            d2.addCallbacks(lambda _: cur.fetchall(), interaction_err_cb)
-            d2.addCallbacks(ver_cb, interaction_err_cb)
+                def check_cb(value):
+                    self.debug("Objectstore check_cb, value: {0}".format(value))
+                    pass
+
+                d = threads.deferToThread(do_check)
+                d.addCallbacks(check_cb, ver_err_cb)
+
+            def lock_cb(val):
+                self.debug("Objectstore update, lock_cb, val: {0}".format(val))
+
+                def get_ver_cb(val2):
+                    self.debug("Objectstore update, get_ver_cb, val2: {0}".format(val2))
+                    rows = cur.fetchall()
+                    ver_cb(rows)
+
+                self._curexec(cur, "SELECT latest_version FROM wb_v_latest_version").addCallbacks(get_ver_cb, interaction_err_cb)
+
+            self._curexec(cur, "LOCK TABLE wb_files, wb_versions, wb_triple_vers, wb_triples, wb_objects, wb_strings, wb_users IN EXCLUSIVE MODE").addCallbacks(lock_cb, interaction_err_cb) # lock to other writes, but not reads
+            
             return interaction_d
 
 
         def interaction_complete_d(ver_response):
+            self.debug("Interaction_complete_d: {0}".format(ver_response))
             self.conn.runOperation("VACUUM").addCallbacks(lambda _: result_d.callback(ver_response), err_cb)
 
-        d = self.conn.runInteraction(interaction_cb)
-        d.addCallbacks(interaction_complete_d, err_cb)
+        self.conn.runInteraction(interaction_cb).addCallbacks(interaction_complete_d, err_cb)
         return result_d
 
     def _add_files_to_version(self, cur, new_files_oids, version):

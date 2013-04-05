@@ -94,16 +94,16 @@ class BaseHandler(Resource):
         #    raise ForbiddenResource()
         return True
 
-    def _get_arg(self,request,argname):
-        if request.method == 'GET':
+    def _get_arg(self,request,argname, force_get=False):
+        if request.method == 'GET' or force_get:
             return request.args.get(argname) and request.args[argname][0]
         if request.method in ['POST', 'PUT', 'DELETE', 'COPY', 'MOVE']:
             post_args = self.get_post_args(request)
             return post_args.get(argname) and post_args[argname][0]
         return None
 
-    def get_token(self,request):
-        tid = self._get_arg(request,'token')
+    def get_token(self,request, force_get=False):
+        tid = self._get_arg(request,'token', force_get = force_get)
         return self.webserver.tokens.get(tid) if tid else None
 
     def get_origin(self,request):
@@ -114,15 +114,22 @@ class BaseHandler(Resource):
     ## what we _used_ to do is require
     ##   "apps/enriches/get_next_round" !== "box/url" -> fail.
     ## ?? 
-    def get_request_box(self,request):
-        return self._get_arg(request,'box')
-    def get_request_app(self,request):
-        return self._get_arg(request,'app')
+    def get_request_box(self,request, force_get=False):
+        return self._get_arg(request,'box', force_get=force_get)
+
+    def get_request_app(self,request, force_get=False):
+        return self._get_arg(request,'app', force_get=force_get)
     
     # revision to protocol
     def _matches_token_requirements(self, request, subhandler):
         if not subhandler['require_token']: return True
-        token,boxid,appid = self.get_token(request), self.get_request_box(request), self.get_request_app(request)
+        if 'force_get' in subhandler:
+            force_get = subhandler['force_get']
+        else:
+            force_get = False
+        logging.debug("_matches_token_requirements, force_get: {0}".format(force_get))
+
+        token,boxid,appid = self.get_token(request, force_get=force_get), self.get_request_box(request, force_get=force_get), self.get_request_app(request, force_get=force_get)
         return token and token.verify(boxid, appid, self.get_origin(request))
     
     def get_session(self,request):
@@ -143,7 +150,7 @@ class BaseHandler(Resource):
             logging.debug('Matching handlers %d' % len(matching_handlers))
             matching_handlers.sort(key=lambda h: self._get_best_content_type_match_score(request,h),reverse=True)
             matching_auth_hs = filter(lambda h: self._matches_auth_requirements(request,h), matching_handlers)
-            logging.debug('Post-auth matching handlers %d' % len(matching_auth_hs))
+            logging.debug('Post-auth matching handlers: {0}'.format(matching_auth_hs))
             matching_token_hs = filter(lambda h: self._matches_token_requirements(request,h), matching_auth_hs)
             logging.debug('Post-token matching handlers %d' % len(matching_token_hs))
             

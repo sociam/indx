@@ -177,16 +177,22 @@ class BoxHandler(BaseHandler):
 
             request -- Twisted request object.
         """
-        token = self.get_token(request)
+        token = self.get_token(request, force_get=True)
         if not token:
             return self.return_forbidden(request)
 
         BoxHandler.log(logging.DEBUG, "BoxHandler files", extra = {"request": request, "token": token})
 
         def err_cb(failure):
-            failure.trap(Exception)
-            BoxHandler.log(logging.ERROR, "BoxHandler files err_cb: {0}".format(failure), extra = {"request": request, "token": token})
-            return self.return_internal_error(request)
+#            failure.trap(Exception)
+            e = failure.value
+            if isinstance(e, IncorrectPreviousVersionException):
+                BoxHandler.log(logging.DEBUG, "BoxHandler files, err_cb, Incorrect previous version", extra = {"request": request, "token": token})
+                actual_version = e.version
+                return self.return_obsolete(request,{"description": "Document obsolete. Please update before putting", '@version':actual_version})            
+            else:
+                BoxHandler.log(logging.ERROR, "BoxHandler files err_cb: {0}".format(failure), extra = {"request": request, "token": token})
+                return self.return_internal_error(request)
 
         def store_cb(store):
             store.setLoggerClass(BoxHandler, extra = {"token": token, "request": request})
@@ -196,28 +202,49 @@ class BoxHandler(BaseHandler):
             try:
                 file_id = request.args['id'][0]
             except Exception as e:
-                logging.debug("BoxHandler files: no 'id' argument in URL: {0}".format(e))
+                BoxHandler.log(logging.DEBUG, "BoxHandler files: no 'id' argument in URL: {0}".format(e))
                 return self.return_bad_request(request, "You must specify the 'id' argument for the file.")
 
             if request.method == 'GET':
-                BoxHandler.log(logging.DEBUG, "BoxHandler files GET request")
+                BoxHandler.log(logging.DEBUG, "BoxHandler files GET request", extra = {"request": request, "token": token})
+
                 def file_cb(info):
                     file_data, contenttype = info
-                    BoxHandler.log(logging.DEBUG, "BoxHandler files file_db, contenttype: {0}".format(contenttype))
+                    BoxHandler.log(logging.DEBUG, "BoxHandler files file_db, contenttype: {0}".format(contenttype), extra = {"request": request, "token": token})
                     return self.return_ok_file(request, file_data, contenttype)
 
                 store.get_latest_file(file_id).addCallbacks(file_cb, err_cb)
                 return
-            elif request.method == 'POST':
-                BoxHandler.log(logging.DEBUG, "BoxHandler files POST request")
-                pass #FIXME finish
-                return self.return_internal_error(request)
+            elif request.method == 'PUT':
+                BoxHandler.log(logging.DEBUG, "BoxHandler files POST request", extra = {"request": request, "token": token})
+                # TODO unified argument checker in base handler
+                try:
+                    version = int(request.args['version'][0])
+                except Exception as e:
+                    BoxHandler.log(logging.DEBUG, "BoxHandler files: no 'version' argument in URL: {0}".format(e), extra = {"request": request, "token": token})
+                    return self.return_bad_request(request, "You must specify the 'version' argument for the box.")
+
+                try:
+                    request.content.seek(0)
+                    new_files = [ (file_id, request.content.read(), request.getHeader("Content-Type")) ]
+
+                    store.update_files(version, new_files).addCallbacks(lambda obj: self.return_ok(request, {"data": obj}), err_cb)
+                    return
+                except Exception as e:
+                    if isinstance(e, IncorrectPreviousVersionException):
+                        BoxHandler.log(logging.DEBUG, "Incorrect previous version", extra = {"request": request, "token": token})
+                        actual_version = e.version
+                        return self.return_obsolete(request,{"description": "Document obsolete. Please update before putting", '@version':actual_version})            
+                    else:
+                        BoxHandler.log(logging.ERROR, "Exception trying to ", extra = {"request": request, "token": token})
+                        return self.return_internal_error(request);
+                return
             elif request.method == 'DELETE':
-                BoxHandler.log(logging.DEBUG, "BoxHandler files DELETE request")
+                BoxHandler.log(logging.DEBUG, "BoxHandler files DELETE request", extra = {"request": request, "token": token})
                 pass #FIXME finish
                 return self.return_internal_error(request)
             else:
-                BoxHandler.log(logging.DEBUG, "BoxHandler files UNKNOWN request")
+                BoxHandler.log(logging.DEBUG, "BoxHandler files UNKNOWN request", extra = {"request": request, "token": token})
                 pass #FIXME finish
                 return self.return_bad_request(request)
             return 
@@ -361,6 +388,7 @@ BoxHandler.subhandlers = [
         'methods': ['GET', 'PUT', 'DELETE'],
         'require_auth': False,
         'require_token': True,
+        'force_get': True, # force the token function to get it from the query string for every method
         'handler': BoxHandler.files,
         'accept':['*/*'],
         'content-type':'application/json'

@@ -134,6 +134,33 @@ class WebBoxTests:
         return status
 
 
+    def req_file(self, url, values, method, body, content_type):
+        """ Do an HTTP request with arguments in the body (POST/PUT/DELETE etc), using the specified method.
+        """
+        if values is None:
+            values = {}
+        if 'box' in self.args:
+            values['box'] = self.args['box']
+        values['app'] = self.appid
+
+        if self.token is not None:
+            values['token'] = self.token
+
+        url += "?" + urllib.urlencode(values)
+
+        logging.debug("Sending request to {0} with a file body.".format(url))
+        req = urllib2.Request(url, body)
+        req.add_header("Content-Type", content_type)
+        req.get_method = lambda: method
+        response = urllib2.urlopen(req)
+        the_page = response.read()
+
+        logging.debug("Request ({1}) raw results: \n{0}\n".format(the_page, method))
+
+        status = json.loads(the_page)
+        return status
+
+
     def delete_(self, url, values, content_type="application/json"):
         """ Do a DELETE, decode the result JSON and return it.
         """
@@ -392,29 +419,12 @@ class WebBoxTests:
     def add_file(self):
         """ Add a file to the database. """
         self.check_args(['box', 'username', 'password', 'data', 'id', 'version', 'contenttype'])
+        self.auth()
+        self.get_token()
 
-        def err_cb(failure):
-            logging.error("Error in test add_file: {0}".format(failure))
-            reactor.stop()
-
-        def connected_cb(conn):
-            print "Adding file..."
-
-            def added_cb(ver):
-                print "File added, ver: {0}".format(ver)
-                reactor.stop()
-
-            def get_sync():
-                return database.connect_box_sync(self.args['box'], self.args['username'], self.args['password'])
-
-            conns = {"conn": conn, "sync_conn": get_sync}
-            store = ObjectStoreAsync(conns, self.args['username'], self.appid, "127.0.0.1") # TODO get the IP a better way? does it matter here?
-            new_files = [ (self.args['id'], self.args['data'].read(), self.args['contenttype']) ]
-            store.update_files(int(self.args['version']), new_files = new_files).addCallbacks(added_cb, err_cb)
-
-        d = database.connect_box(self.args['box'], self.args['username'], self.args['password'])
-        d.addCallbacks(connected_cb, err_cb)
-        reactor.run()
+        url = "{0}{1}/files".format(self.args['server'], self.args['box'])
+        values = {"id": self.args['id'], "version": self.args['version']}
+        print self.req_file(url, values, "PUT", self.args['data'].read(), self.args['contenttype'])
 
 
     def get_file(self):
