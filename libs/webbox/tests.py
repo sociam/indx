@@ -97,12 +97,12 @@ class WebBoxTests:
         response = urllib2.urlopen(req)
         the_page = response.read()
 
-        logging.debug("GET raw results: \n{0}\n".format(the_page))
         logging.debug("GET response headers: \n{0}\n".format(response.info().headers))
 
         if raw:
             return the_page
         else:
+            logging.debug("GET raw results: \n{0}\n".format(the_page))
             status = json.loads(the_page)
             return status
 
