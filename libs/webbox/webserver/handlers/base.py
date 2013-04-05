@@ -191,7 +191,7 @@ class BaseHandler(Resource):
     def return_ok_file(self,request,fil,contenttype):
         if not request._disconnected:
             request.setResponseCode(200, message="OK")
-            request.setHeader("Content-Type", contenttype) # FIXME save in database?
+            request.setHeader("Content-Type", contenttype)
             request.setHeader("Content-Length", len(fil))
             request.write(fil)
             request.finish()
