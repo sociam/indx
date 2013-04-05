@@ -420,21 +420,12 @@ class WebBoxTests:
     def get_file(self):
         """ Get a file from the database. """
         self.check_args(['server', 'box', 'username', 'password', 'id'])
-
-#        conn = database.connect_box_sync(self.args['box'], self.args['username'], self.args['password'])
-#        conns = {"conn": conn}
-#        store = ObjectStoreAsync(conns, self.args['username'], self.appid, "127.0.0.1") # TODO get the IP a better way? does it matter here?
-#        data = store._get_file_data(int(self.args['id']))
-#        print data
-
         self.auth()
         self.get_token()
 
-        url = "{0}{1}/files".format(self.args['server'], self.args['box'])
-
         logging.debug("Calling get_file on server '{0}' in box '{1}'".format(self.args['server'], self.args['box']))
 
+        url = "{0}{1}/files".format(self.args['server'], self.args['box'])
         params = {'id': self.args['id']}
-        fil = self.get(url, params, raw = True)
-        print fil
+        print self.get(url, params, raw = True)
 
