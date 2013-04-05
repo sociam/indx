@@ -201,9 +201,10 @@ class BoxHandler(BaseHandler):
 
             if request.method == 'GET':
                 BoxHandler.log(logging.DEBUG, "BoxHandler files GET request")
-                def file_cb(file_data):
-                    BoxHandler.log(logging.DEBUG, "BoxHandler files file_db")
-                    return self.return_ok_file(request, file_data)
+                def file_cb(info):
+                    file_data, contenttype = info
+                    BoxHandler.log(logging.DEBUG, "BoxHandler files file_db, contenttype: {0}".format(contenttype))
+                    return self.return_ok_file(request, file_data, contenttype)
 
                 store.get_latest_file(file_id).addCallbacks(file_cb, err_cb)
                 return

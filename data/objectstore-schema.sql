@@ -128,6 +128,7 @@ CREATE TABLE wb_files
   data oid NOT NULL,
   version integer NOT NULL,
   file_id text NOT NULL,
+  contenttype text NOT NULL,
   CONSTRAINT pk_id_files PRIMARY KEY (id_file)
 )
 WITH (

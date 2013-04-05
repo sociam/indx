@@ -34,6 +34,7 @@ parser.add_argument('--to', action="store", help="To version (e.g., for 'diff')"
 parser.add_argument('--return_objs', action="store", default="ids", help="Enable return of 'objects', 'ids', 'diff' (e.g., for 'diff')")
 parser.add_argument('--debug', action="store_true", default=False, help="Enable output of debug logging")
 parser.add_argument('--id', action="store", nargs="+", help="Limit to specific IDs (e.g., for get_by_ids)")
+parser.add_argument('--contenttype', action="store", help="Specify content-type (e.g., for add_file)")
 
 args = vars(parser.parse_args())
 

@@ -35,8 +35,8 @@ class WebBoxTests:
                       'query': self.query,
                       'get_by_ids': self.get_by_ids,
                       'listen': self.listen,
-                      'add_file_data': self.add_file_data,
-                      'get_file_data': self.get_file_data
+                      'add_file': self.add_file,
+                      'get_file': self.get_file
                      }
 
         self.token = None
@@ -98,6 +98,7 @@ class WebBoxTests:
         the_page = response.read()
 
         logging.debug("GET raw results: \n{0}\n".format(the_page))
+        logging.debug("GET response headers: \n{0}\n".format(response.info().headers))
 
         if raw:
             return the_page
@@ -388,12 +389,12 @@ class WebBoxTests:
         reactor.run()
 
 
-    def add_file_data(self):
+    def add_file(self):
         """ Add a file to the database. """
-        self.check_args(['box', 'username', 'password', 'data', 'id', 'version'])
+        self.check_args(['box', 'username', 'password', 'data', 'id', 'version', 'contenttype'])
 
         def err_cb(failure):
-            logging.error("Error in test add_file_data: {0}".format(failure))
+            logging.error("Error in test add_file: {0}".format(failure))
             reactor.stop()
 
         def connected_cb(conn):
@@ -408,7 +409,7 @@ class WebBoxTests:
 
             conns = {"conn": conn, "sync_conn": get_sync}
             store = ObjectStoreAsync(conns, self.args['username'], self.appid, "127.0.0.1") # TODO get the IP a better way? does it matter here?
-            new_files = [ (self.args['id'], self.args['data'].read()) ]
+            new_files = [ (self.args['id'], self.args['data'].read(), self.args['contenttype']) ]
             store.update_files(int(self.args['version']), new_files = new_files).addCallbacks(added_cb, err_cb)
 
         d = database.connect_box(self.args['box'], self.args['username'], self.args['password'])
@@ -416,7 +417,7 @@ class WebBoxTests:
         reactor.run()
 
 
-    def get_file_data(self):
+    def get_file(self):
         """ Get a file from the database. """
         self.check_args(['server', 'box', 'username', 'password', 'id'])
 
@@ -431,7 +432,7 @@ class WebBoxTests:
 
         url = "{0}{1}/files".format(self.args['server'], self.args['box'])
 
-        logging.debug("Calling get_file_data on server '{0}' in box '{1}'".format(self.args['server'], self.args['box']))
+        logging.debug("Calling get_file on server '{0}' in box '{1}'".format(self.args['server'], self.args['box']))
 
         params = {'id': self.args['id']}
         fil = self.get(url, params, raw = True)

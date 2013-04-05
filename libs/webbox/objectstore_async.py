@@ -624,7 +624,7 @@ class ObjectStoreAsync:
             objs -- json expanded notation of objects,
             specified_prev_version -- ...of the database (must match max(version) of the db, or zero if the object doesn't exist, or the store will return a IncorrectPreviousVersionException
             delete_ids -- remove these objects (array of integers)
-            new_files_oids -- array of tuples of (file_oid, file_id) of files to add/replace to this version
+            new_files_oids -- array of tuples of (file_oid, file_id, contenttype) of files to add/replace to this version
             delete_files_ids -- array of integers (oids) of files to not include in this version
 
             returns integer of the new version
@@ -724,16 +724,16 @@ class ObjectStoreAsync:
             result_d.callback(version)
             return result_d
 
-        query = "INSERT INTO wb_files (data, version, file_id) VALUES "
+        query = "INSERT INTO wb_files (data, version, file_id, contenttype) VALUES "
         params = []
         for fil in new_files_oids:
-            file_oid, file_id = fil
+            file_oid, file_id, contenttype = fil
 
             if len(params) != 0:
                 query += ", "
 
-            query += "(%s, %s, %s)"
-            params.extend([file_oid, version, file_id])
+            query += "(%s, %s, %s, %s)"
+            params.extend([file_oid, version, file_id, contenttype])
 
         def added_cb(info):
             self.debug("Objectstore _add_files_to_version, added_cb, info: {0}".format(info))
@@ -813,7 +813,7 @@ class ObjectStoreAsync:
         """ Create a new version of the database by adding files, or removing existing ones.
 
             specified_prev_version -- The current version of the database, will error if this is incorrect
-            new_files -- Array of (file_id, file_data) tuples to add.
+            new_files -- Array of (file_id, file_data, contenttype) tuples to add.
             delete_files_ids -- File IDs to remove from the new version.
 
             return a deferred
@@ -835,9 +835,9 @@ class ObjectStoreAsync:
         sync_conn = self.conns['sync_conn']() # get a syncronous connection to the database without knowing the password
         new_files_oids = []
         for fil in new_files:
-            file_id, file_data = fil
+            file_id, file_data, contenttype = fil
             oid = self._add_file_data(sync_conn, file_data)
-            new_files_oids.append((oid, file_id))
+            new_files_oids.append((oid, file_id, contenttype))
         sync_conn.commit()
         sync_conn.close() # close it immediately, to reduce the risk of running out of available connections (because we're outside of the pool here)
 
@@ -878,6 +878,7 @@ class ObjectStoreAsync:
             self.debug("ObjectStoreAsync get_latest_file file_db, row: {0}".format(row))
             try:
                 file_oid = row[0][0]
+                contenttype = row[0][1]
             except Exception as e:
                 self.error("ObjectStoreAsync get_latest_file file_db error1: {0}".format(e))
                 failure = Failure(e)
@@ -893,9 +894,9 @@ class ObjectStoreAsync:
                 return result_d.errback(failure)
                 
             sync_conn.close()
-            result_d.callback(obj)
+            result_d.callback((obj, contenttype))
 
-        query = "SELECT data FROM wb_files WHERE version = (SELECT MAX(version) FROM wb_files) AND file_id = %s"
+        query = "SELECT data, contenttype FROM wb_files WHERE version = (SELECT MAX(version) FROM wb_files) AND file_id = %s"
         self.conn.runQuery(query, [file_id]).addCallbacks(file_cb, err_cb) 
         return result_d
 

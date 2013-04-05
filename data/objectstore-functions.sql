@@ -167,10 +167,11 @@ CREATE OR REPLACE FUNCTION wb_clone_files_version(input_from_version integer, in
   RETURNS boolean AS
 $BODY$BEGIN
 
-    INSERT INTO wb_files (data, version, file_id)
+    INSERT INTO wb_files (data, version, file_id, contenttype)
         SELECT  wb_files.data as data,
             input_to_version as version,
-            wb_files.file_id as file_id
+            wb_files.file_id as file_id,
+            wb_files.contenttype as contenttype
         FROM    wb_files
         WHERE        wb_files.version = input_from_version
                 AND    NOT (wb_files.file_id = ANY(input_excludes_ids));
