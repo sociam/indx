@@ -838,6 +838,7 @@ class ObjectStoreAsync:
             file_id, file_data = fil
             oid = self._add_file_data(sync_conn, file_data)
             new_files_oids.append((oid, file_id))
+        sync_conn.commit()
         sync_conn.close() # close it immediately, to reduce the risk of running out of available connections (because we're outside of the pool here)
 
         # punt the actual updating to the update function
@@ -859,6 +860,46 @@ class ObjectStoreAsync:
         lobj.close()
         return oid
 
+
+    def get_latest_file(self, file_id):
+        """ Get the latest version of a file with this file_id.
+
+            file_id -- The file_id of the file to retrieve.
+            Returns a deferred, which calls a callback with the file data.
+        """
+        self.debug("ObjectStoreAsync get_latest_file, file_id: {0}".format(file_id))
+        result_d = Deferred()
+
+        def err_cb(failure):
+            self.error("Objectstore get_latest_file, err_cb, failure: {0}".format(failure))
+            result_d.errback(failure)
+
+        def file_cb(row):
+            self.debug("ObjectStoreAsync get_latest_file file_db, row: {0}".format(row))
+            try:
+                file_oid = row[0][0]
+            except Exception as e:
+                self.error("ObjectStoreAsync get_latest_file file_db error1: {0}".format(e))
+                failure = Failure(e)
+                return result_d.errback(failure)
+
+            sync_conn = self.conns['sync_conn']() # get a syncronous connection to the database without knowing the password
+            try:
+                obj = self._get_file_data(sync_conn, file_oid)
+            except Exception as e:
+                self.error("ObjectStoreAsync get_latest_file file_db error2: {0}".format(e))
+                sync_conn.close()
+                failure = Failure(e)
+                return result_d.errback(failure)
+                
+            sync_conn.close()
+            result_d.callback(obj)
+
+        query = "SELECT data FROM wb_files WHERE version = (SELECT MAX(version) FROM wb_files) AND file_id = %s"
+        self.conn.runQuery(query, [file_id]).addCallbacks(file_cb, err_cb) 
+        return result_d
+
+
     def _get_file_data(self, conn, oid):
         """ Get a Large Object from the database with this id.
 
@@ -871,6 +912,7 @@ class ObjectStoreAsync:
         obj = lobj.read() # FIXME this is not async. txpostgres may not support this :(
         lobj.close()
         return obj
+
 
 class IncorrectPreviousVersionException(BaseException):
     """ The specified previous version did not match the actual previous version. """

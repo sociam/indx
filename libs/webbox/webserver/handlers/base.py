@@ -188,6 +188,17 @@ class BaseHandler(Resource):
         else:
             logging.debug(' didnt call request.finish(), because it was already disconnected')
 
+    def return_ok_file(self,request,fil):
+        if not request._disconnected:
+            request.setResponseCode(200, message="OK")
+            request.setHeader("Content-Type", "application/octet-stream") # FIXME save in database?
+            request.setHeader("Content-Length", len(fil))
+            request.write(fil)
+            request.finish()
+            logging.debug(' just called request.finish() with code %d ' % 200)
+        else:
+            logging.debug(' didnt call request.finish(), because it was already disconnected')
+
     def return_ok(self,request,data=None):
         self._respond(request, 200, "OK", data)
     def return_created(self,request,data=None):

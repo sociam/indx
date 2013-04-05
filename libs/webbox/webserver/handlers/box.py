@@ -180,19 +180,49 @@ class BoxHandler(BaseHandler):
         token = self.get_token(request)
         if not token:
             return self.return_forbidden(request)
-        store = token.get_store()
 
-        # TODO unified argument checker in base handler
-        try:
-            file_id = request.args['id']
-        except Exception as e:
-            logging.debug("BoxHandler files: no 'id' argument in URL")
-            return self.return_bad_request(request, "You must specify the 'id' argument for the file.")
+        BoxHandler.log(logging.DEBUG, "BoxHandler files", extra = {"request": request, "token": token})
 
-        if request.method == 'GET':
-            pass #FIXME finish
-        elif request.method == 'POST':
-            pass #FIXME finish
+        def err_cb(failure):
+            failure.trap(Exception)
+            BoxHandler.log(logging.ERROR, "BoxHandler files err_cb: {0}".format(failure), extra = {"request": request, "token": token})
+            return self.return_internal_error(request)
+
+        def store_cb(store):
+            store.setLoggerClass(BoxHandler, extra = {"token": token, "request": request})
+            BoxHandler.log(logging.DEBUG, "BoxHandler files request", extra = {"request": request, "token": token})
+
+            # TODO unified argument checker in base handler
+            try:
+                file_id = request.args['id'][0]
+            except Exception as e:
+                logging.debug("BoxHandler files: no 'id' argument in URL: {0}".format(e))
+                return self.return_bad_request(request, "You must specify the 'id' argument for the file.")
+
+            if request.method == 'GET':
+                BoxHandler.log(logging.DEBUG, "BoxHandler files GET request")
+                def file_cb(file_data):
+                    BoxHandler.log(logging.DEBUG, "BoxHandler files file_db")
+                    return self.return_ok_file(request, file_data)
+
+                store.get_latest_file(file_id).addCallbacks(file_cb, err_cb)
+                return
+            elif request.method == 'POST':
+                BoxHandler.log(logging.DEBUG, "BoxHandler files POST request")
+                pass #FIXME finish
+                return self.return_internal_error(request)
+            elif request.method == 'DELETE':
+                BoxHandler.log(logging.DEBUG, "BoxHandler files DELETE request")
+                pass #FIXME finish
+                return self.return_internal_error(request)
+            else:
+                BoxHandler.log(logging.DEBUG, "BoxHandler files UNKNOWN request")
+                pass #FIXME finish
+                return self.return_bad_request(request)
+            return 
+
+        token.get_store().addCallbacks(store_cb, err_cb)
+        return
 
 
     def do_GET(self,request):

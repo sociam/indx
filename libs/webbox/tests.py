@@ -73,7 +73,7 @@ class WebBoxTests:
         if len(not_set) > 0:
             raise Exception("The following values cannot be empty for this test: {0}".format(", ".join(not_set)))
 
-    def get(self, url, values):
+    def get(self, url, values, raw=False):
         """ Do a GET, decode the result JSON and return it. """
 
         our_values = {}
@@ -99,8 +99,11 @@ class WebBoxTests:
 
         logging.debug("GET raw results: \n{0}\n".format(the_page))
 
-        status = json.loads(the_page)
-        return status
+        if raw:
+            return the_page
+        else:
+            status = json.loads(the_page)
+            return status
 
 
     def req_body(self, url, values, method, content_type):
@@ -415,11 +418,22 @@ class WebBoxTests:
 
     def get_file_data(self):
         """ Get a file from the database. """
-        self.check_args(['box', 'username', 'password', 'id'])
+        self.check_args(['server', 'box', 'username', 'password', 'id'])
 
-        conn = database.connect_box_sync(self.args['box'], self.args['username'], self.args['password'])
-        conns = {"conn": conn}
-        store = ObjectStoreAsync(conns, self.args['username'], self.appid, "127.0.0.1") # TODO get the IP a better way? does it matter here?
-        data = store._get_file_data(int(self.args['id']))
-        print data
+#        conn = database.connect_box_sync(self.args['box'], self.args['username'], self.args['password'])
+#        conns = {"conn": conn}
+#        store = ObjectStoreAsync(conns, self.args['username'], self.appid, "127.0.0.1") # TODO get the IP a better way? does it matter here?
+#        data = store._get_file_data(int(self.args['id']))
+#        print data
+
+        self.auth()
+        self.get_token()
+
+        url = "{0}{1}/files".format(self.args['server'], self.args['box'])
+
+        logging.debug("Calling get_file_data on server '{0}' in box '{1}'".format(self.args['server'], self.args['box']))
+
+        params = {'id': self.args['id']}
+        fil = self.get(url, params, raw = True)
+        print fil
 
