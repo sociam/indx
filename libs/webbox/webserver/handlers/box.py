@@ -214,7 +214,6 @@ class BoxHandler(BaseHandler):
                     return self.return_ok_file(request, file_data, contenttype)
 
                 store.get_latest_file(file_id).addCallbacks(file_cb, err_cb)
-                return
             elif request.method == 'PUT':
                 BoxHandler.log(logging.DEBUG, "BoxHandler files POST request", extra = {"request": request, "token": token})
                 # TODO unified argument checker in base handler
@@ -229,7 +228,6 @@ class BoxHandler(BaseHandler):
                     new_files = [ (file_id, request.content.read(), request.getHeader("Content-Type")) ]
 
                     store.update_files(version, new_files).addCallbacks(lambda obj: self.return_ok(request, {"data": obj}), err_cb)
-                    return
                 except Exception as e:
                     if isinstance(e, IncorrectPreviousVersionException):
                         BoxHandler.log(logging.DEBUG, "Incorrect previous version", extra = {"request": request, "token": token})
@@ -238,19 +236,32 @@ class BoxHandler(BaseHandler):
                     else:
                         BoxHandler.log(logging.ERROR, "Exception trying to ", extra = {"request": request, "token": token})
                         return self.return_internal_error(request);
-                return
             elif request.method == 'DELETE':
                 BoxHandler.log(logging.DEBUG, "BoxHandler files DELETE request", extra = {"request": request, "token": token})
-                pass #FIXME finish
-                return self.return_internal_error(request)
+                # TODO unified argument checker in base handler
+                try:
+                    version = int(request.args['version'][0])
+                except Exception as e:
+                    BoxHandler.log(logging.DEBUG, "BoxHandler files: no 'version' argument in URL: {0}".format(e), extra = {"request": request, "token": token})
+                    return self.return_bad_request(request, "You must specify the 'version' argument for the box.")
+
+                try:
+                    # new version, with delete_files_ids as the effect we want to change
+                    store.update_files(version, new_files=[], delete_files_ids=[file_id]).addCallbacks(lambda obj: self.return_ok(request, {"data": obj}), err_cb)
+                except Exception as e:
+                    if isinstance(e, IncorrectPreviousVersionException):
+                        BoxHandler.log(logging.DEBUG, "Incorrect previous version", extra = {"request": request, "token": token})
+                        actual_version = e.version
+                        return self.return_obsolete(request,{"description": "Document obsolete. Please update before putting", '@version':actual_version})            
+                    else:
+                        BoxHandler.log(logging.ERROR, "Exception trying to ", extra = {"request": request, "token": token})
+                        return self.return_internal_error(request);
             else:
                 BoxHandler.log(logging.DEBUG, "BoxHandler files UNKNOWN request", extra = {"request": request, "token": token})
                 pass #FIXME finish
                 return self.return_bad_request(request)
-            return 
 
         token.get_store().addCallbacks(store_cb, err_cb)
-        return
 
 
     def do_GET(self,request):

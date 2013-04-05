@@ -36,7 +36,8 @@ class WebBoxTests:
                       'get_by_ids': self.get_by_ids,
                       'listen': self.listen,
                       'add_file': self.add_file,
-                      'get_file': self.get_file
+                      'get_file': self.get_file,
+                      'delete_file': self.delete_file
                      }
 
         self.token = None
@@ -73,7 +74,7 @@ class WebBoxTests:
         if len(not_set) > 0:
             raise Exception("The following values cannot be empty for this test: {0}".format(", ".join(not_set)))
 
-    def get(self, url, values, raw=False):
+    def get(self, url, values, raw=False, method="GET"):
         """ Do a GET, decode the result JSON and return it. """
 
         our_values = {}
@@ -94,6 +95,7 @@ class WebBoxTests:
         logging.debug("GET on url: {0}".format(url))
 
         req = urllib2.Request(url)
+        req.get_method = lambda: method
         response = urllib2.urlopen(req)
         the_page = response.read()
 
@@ -159,7 +161,6 @@ class WebBoxTests:
 
         status = json.loads(the_page)
         return status
-
 
     def delete_(self, url, values, content_type="application/json"):
         """ Do a DELETE, decode the result JSON and return it.
@@ -425,6 +426,22 @@ class WebBoxTests:
         url = "{0}{1}/files".format(self.args['server'], self.args['box'])
         values = {"id": self.args['id'], "version": self.args['version']}
         print self.req_file(url, values, "PUT", self.args['data'].read(), self.args['contenttype'])
+
+
+    def delete_file(self):
+        """ Delete a file from the database. """
+        self.check_args(['box', 'username', 'password', 'id', 'version'])
+        self.auth()
+        self.get_token()
+
+        url = "{0}{1}/files".format(self.args['server'], self.args['box'])
+        values = {"id": self.args['id'], "version": self.args['version']}
+        status = self.get(url, values, method = "DELETE")
+        if status['code'] != 200:
+            raise Exception("Deleting from box {0} failed. Response is {1} with code {2}".format(self.args['box'], status['message'], status['code']))
+        else:
+            pretty = pprint.pformat(status, indent=2, width=80)
+            logging.info("Delete from box {0} sucessful, return is: {1}".format(self.args['box'], pretty))
 
 
     def get_file(self):
