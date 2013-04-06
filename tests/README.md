@@ -51,6 +51,20 @@ To get the latest version of all objects from the box `newbox`, run the followin
     python tests/tests.py http://localhost:8211/ webbox foobar get_latest --box newbox
 
 
+### files
+
+    adding a file:: 
+
+    python tests/tests.py http://localhost:8211 webbox foobar --box < box_name > add_file --data < path_to_file > --id < file_id > --contenttype 'image/png' --version < current_box_version > --debug
+
+    getting it back :: 
+
+    python tests/tests.py http://localhost:8211 webbox webbox --box < box_name > get_file --id < file_id > 
+
+    deleting it ::
+
+    python tests/tests.py http://localhost:8211 webbox webbox --box < box_name>  delete_file --id < file_id >  --version < current_box_version >  --debug
+
 ### Todo
 
 Describe Delete, Query, Diff and their options.
