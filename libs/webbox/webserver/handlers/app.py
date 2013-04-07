@@ -74,8 +74,9 @@ class AppsMetaHandler(Resource):
                 logging.debug('registering api child {0}'.format(repr(app)))
                 file_handler.putChild('api', app)
             else:
-                logging.debug('static content only {0}'.format(html))   
-                file_handler.putChild(appname,File(html))
+                logging.debug('static content only {0}'.format(html))
+                pass
+                # file_handler.putChild(appname,File(html))
             self.putChild(appname,file_handler) ## this puts things at the base -- rather than putting the app handler
                 
 
@@ -88,4 +89,4 @@ class AppsMetaHandler(Resource):
     def render(self, request):
         ## nothing necessary here
         logging.debug('render request for apps ')
-        return self.index.render(request)
+        return self.render(request)
