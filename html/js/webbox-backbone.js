@@ -336,6 +336,22 @@
 			data = _(_(data||{}).clone()).extend({box: this.id || this.cid, token:this.get('token')});
 			return this.store._ajax(method, path, data);
 		},
+		put_file:function(id,file,contenttype) {
+			// now uses relative url scheme '//blah:port/path';
+			// all files must be PUT into boxname/files
+			// here the parameters are get encoded
+			// // 'http://' + this.store.get('server_host') + "/" +  boxid + "/" + 'files',
+			var boxid = this.id || this.cid,
+				base_url = ['/', this.store.get('server_host'), boxid, 'files'].join('/'), 
+				options = { app: this.store.get('app'), id: id, token:this.get('token'),  box: boxid, version: this._get_version() },
+			    option_params = $.param(options),
+				url = base_url+"?"+option_params;
+			
+			var ajax_args  = _(_(this.store.ajax_defaults).clone()).extend(
+				{ url: url, method : 'PUT', crossDomain:false, data:file, contentType: contenttype, processData:false }
+			);
+			return $.ajax( ajax_args );
+		},		
 		query: function(q){
 			// @TODO ::::::::::::::::::::::::::
 			u.NotImplementedYet();

@@ -83,7 +83,8 @@ class BaseHandler(Resource):
 
     def _get_best_content_type_match_score(self,request,subhandler):
         request_accept = request.getHeader('Accept') or '*/*'
-        return max(map(lambda handler_mimetype:quality(handler_mimetype,request_accept), subhandler["accept"]))        
+        logging.debug("subhandler accept {0} /// requestaccept {1} ".format(subhandler["accept"], request_accept))
+        return max(map(lambda handler_mimetype:quality(handler_mimetype,request_accept), subhandler["accept"]))
 
     def _matches_auth_requirements(self, request, subhandler):
         session = self.get_session(request)
