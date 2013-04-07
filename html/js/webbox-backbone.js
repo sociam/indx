@@ -364,15 +364,6 @@
 			// 	});
 			// return d.promise();
 		},
-		_diff_update_poll:function() {
-			throw new Error("shouldnt poll anymore ");
-			// var d = u.deferred(), this_ = this, cur_version = this._get_version(), box = this.get_id();	
-			// this._ajax("GET", [box,'diff'].join('/'), {from_version:cur_version,return_objs:'diff'})
-			// 	.then(function(response) {
-			// 		this_._diff_update(response).then(d.resolve).fail(d.reject);
-			// 	}).fail(d.reject);
-			// return d.promise();
-		},
 		_diff_update:function(response) {
 			var d = u.deferred(), this_ = this, latest_version = response['@to_version'],
 			added_ids  = _(response.data.added).keys(),
@@ -473,12 +464,12 @@
 			return this.id !== undefined;
 		},
 		_fetch:function() {
+			// all fetch really does is retrieve ids! 
 			// new client :: this now _only_ fetches object ids
 			// return a list of models (each of type WebBox.Object) to populate a GraphCollection
 			var d = u.deferred(), fd = u.deferred(), this_ = this;
 			if (this._is_fetched()) {
-				// don't do anything
-				// fd = this._diff_update_poll();
+				// Nope - don't do anything -- we just wait for websockets to update us.
 				fd.resolve();
 			} else {
 				// otherwise we aren't fetched, so we just do it
