@@ -69,7 +69,7 @@
 			$.each(vals, function(){
 				var val = this;
 				if (val instanceof WebBox.File) {
-					obj_vals.push({"@value": val.id, "@type":"webbox-file"});
+					obj_vals.push({"@value": val.id, "@type":"webbox-file", "@language":val.get('content-type')});
 				} else if (val instanceof WebBox.Obj) {
 					obj_vals.push({"@id": val.id });
 				} else if (typeof val === "object" && (val["@value"] || val["@id"])) {
@@ -102,7 +102,7 @@
 		"http://www.w3.org/2001/XMLSchema#double": function(o) { return parseFloat(o['@value'], 10); },
 		"http://www.w3.org/2001/XMLSchema#boolean": function(o) { return o['@value'].toLowerCase() === 'true'; },
 		"http://www.w3.org/2001/XMLSchema#dateTime": function(o) { return new Date(Date.parse(o['@value'])); },
-		"webbox-file": function(o,box) { return new File(o['@value'],{box:box}); }
+		"webbox-file": function(o,box) { return new File({"@id":o['@value'], "content-type":o['@language'] },{box:box}); }
 	};
 	var deserialize_literal = function(obj, box) {
 		return obj['@value'] !== undefined ? literal_deserializers[ obj['@type'] || '' ](obj, box) : obj;
@@ -111,17 +111,18 @@
 	var File = WebBox.File = Backbone.Model.extend({
 		idAttribute: "@id", // the URI attribute is '@id' in JSON-LD		
 		initialize:function(attrs, options) {
-			console.log('attributes ', attrs, 'options', options);
+			u.debug('options >> ', attrs, options );
 			this.box = options.box;
 		},
 		get_id:function() { return this.id;	},
 		get_url:function() {
 			var params = {
+				id:this.get_id(),
 				app:this.box.store.get('app'),
-				token:this.box.get_token(),
+				token:this.box.get('token'),
 				box:this.box.get_id()
-			}, url = [this.box.id, 'files', this.get_id()] + '?' + $.params(params);
-			u.debug("IMAGE URL IS ", url);
+			}, url = ['/', this.box.store.get('server_host'), this.box.id, 'files'].join('/') + '?' + $.param(params);
+			u.debug("IMAGE URL IS ", url, params);
 			return url;
 		}		
 	});
@@ -189,7 +190,7 @@
 					}
 					else if (val.hasOwnProperty("@value")) {
 						// literal
-						vd.resolve(deserialize_literal(val, this.box));
+						vd.resolve(deserialize_literal(val, this_.box));
 					}
 					else {
 						// don't know what it is!
@@ -283,12 +284,10 @@
 			this.set_up_websocket();
 			this._update_queue = {};
 			this._delete_queue = {};
-			this._put_queue = {};
 			this.on('update-from-master', function() {
 				// u.log("UPDATE FROM MASTER >> flushing ");
 				this_._flush_update_queue();
 				this_._flush_delete_queue();
-				// todo --- this_._flush_put_queue();
 			});
 		},
 		set_up_websocket:function() {
@@ -364,7 +363,27 @@
 			data = _(_(data||{}).clone()).extend({box: this.id || this.cid, token:this.get('token')});
 			return this.store._ajax(method, path, data);
 		},
-		put_file:function(id,file,contenttype) {
+		put_file:function(id,filedata,contenttype) {
+			// creates a File object and hands it back in the resolve
+			var d = u.deferred(), this_ = this, newFile = new File({"@id": id, "content-type": contenttype}, { box: this }); 
+			this._do_put_file(id,filedata,contenttype).then(function(){
+				u.debug('image put success ');
+				d.resolve(newFile);
+			}).fail(function(err) {
+				if (err.status === 409) {
+					var cb = function() {
+						this_.off('update-from-master', cb, newFile);
+						this_._put_file(id, filedata, contenttype).then(d.resolve).fail(d.reject);
+					};
+					this_.on('update-from-master', cb, newFile);
+				} else {
+					u.error('error putting, dammit ', err);
+					d.reject(err);
+				}				
+			});
+			return d.promise();
+		},
+		_do_put_file:function(id,file,contenttype) {
 			// now uses relative url scheme '//blah:port/path';
 			// all files must be PUT into boxname/files
 			// here the parameters are get encoded
@@ -375,19 +394,11 @@
 			    option_params = $.param(options),
 				url = base_url+"?"+option_params,
 				d = u.deferred();
+			console.log("PUTTING FILE ", url);
 			var ajax_args  = _(_(this.store.ajax_defaults).clone()).extend(
 				{ url: url, method : 'PUT', crossDomain:false, data:file, contentType: contenttype, processData:false }
 			);
-			$.ajax( ajax_args )
-				.then(function() { d.resolve(); })
-				.fail(function(err) {
-					if (err.status === 409) {
-						
-						return;
-					}
-					u.error('Error');
-				});
-				return d.promise();
+			return $.ajax( ajax_args );
 		},		
 		query: function(q){
 			// @TODO ::::::::::::::::::::::::::
@@ -597,7 +608,7 @@
 							this_._update_queue[id] = uq[id];
 						}
 					});
-					return;	// this_._requeue_update();
+					return this_._requeue_update();		
 				}				
 				// something bad happened, we'd better reject on those deferreds
 				u.error('UPDATE error ', err);
