@@ -901,6 +901,11 @@ class ObjectStoreAsync:
 
         def file_cb(row):
             self.debug("ObjectStoreAsync get_latest_file file_db, row: {0}".format(row))
+            if len(row) < 1:
+                # there is no file by that name in this box
+                e = FileNotFoundException()
+                return result_d.errback(Failure(e))
+
             try:
                 file_oid = row[0][0]
                 contenttype = row[0][1]
@@ -942,6 +947,10 @@ class ObjectStoreAsync:
 
 class IncorrectPreviousVersionException(BaseException):
     """ The specified previous version did not match the actual previous version. """
+    pass
+
+class FileNotFoundException(BaseException):
+    """ A file was requested, but no file by that name was found in the database. """
     pass
 
 

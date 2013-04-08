@@ -18,7 +18,7 @@
 
 import logging, json
 from webbox.webserver.handlers.base import BaseHandler
-from webbox.objectstore_async import IncorrectPreviousVersionException
+from webbox.objectstore_async import IncorrectPreviousVersionException, FileNotFoundException
 
 class BoxHandler(BaseHandler):
     base_path = ''
@@ -190,6 +190,9 @@ class BoxHandler(BaseHandler):
                 BoxHandler.log(logging.DEBUG, "BoxHandler files, err_cb, Incorrect previous version", extra = {"request": request, "token": token})
                 actual_version = e.version
                 return self.return_obsolete(request,{"description": "Document obsolete. Please update before putting", '@version':actual_version})            
+            elif isinstance(e, FileNotFoundException):
+                BoxHandler.log(logging.DEBUG, "BoxHandler files, err_cb, File not found", extra = {"request": request, "token": token})
+                return self.return_not_found(request)
             else:
                 BoxHandler.log(logging.ERROR, "BoxHandler files err_cb: {0}".format(failure), extra = {"request": request, "token": token})
                 return self.return_internal_error(request)
