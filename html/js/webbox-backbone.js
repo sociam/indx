@@ -68,10 +68,11 @@
 			}
 			$.each(vals, function(){
 				var val = this;
-				if (val instanceof WebBox.Obj) {
+				if (val instanceof WebBox.File) {
+					obj_vals.push({"@value": val.id, "@type":"webbox-file"});
+				} else if (val instanceof WebBox.Obj) {
 					obj_vals.push({"@id": val.id });
 				} else if (typeof val === "object" && (val["@value"] || val["@id"])) {
-					// not a WebBox.Obj, but a plan JS Obj
 					obj_vals.push(val); // fully expanded string, e.g. {"@value": "foo", "@language": "en" ... }
 				} else if (typeof val === "string" || val instanceof String ){
 					obj_vals.push({"@value": val});
@@ -100,11 +101,30 @@
 		"http://www.w3.org/2001/XMLSchema#float": function(o) { return parseFloat(o['@value'], 10); },
 		"http://www.w3.org/2001/XMLSchema#double": function(o) { return parseFloat(o['@value'], 10); },
 		"http://www.w3.org/2001/XMLSchema#boolean": function(o) { return o['@value'].toLowerCase() === 'true'; },
-		"http://www.w3.org/2001/XMLSchema#dateTime": function(o) { return new Date(Date.parse(o['@value'])); }
+		"http://www.w3.org/2001/XMLSchema#dateTime": function(o) { return new Date(Date.parse(o['@value'])); },
+		"webbox-file": function(o,box) { return new File(o['@value'],{box:box}); }
 	};
-	var deserialize_literal = function(obj) {
-		return obj['@value'] !== undefined ? literal_deserializers[ obj['@type'] || '' ](obj) : obj;
-	};	
+	var deserialize_literal = function(obj, box) {
+		return obj['@value'] !== undefined ? literal_deserializers[ obj['@type'] || '' ](obj, box) : obj;
+	};
+
+	var File = WebBox.File = Backbone.Model.extend({
+		idAttribute: "@id", // the URI attribute is '@id' in JSON-LD		
+		initialize:function(attrs, options) {
+			console.log('attributes ', attrs, 'options', options);
+			this.box = options.box;
+		},
+		get_id:function() { return this.id;	},
+		get_url:function() {
+			var params = {
+				app:this.box.store.get('app'),
+				token:this.box.get_token(),
+				box:this.box.get_id()
+			}, url = [this.box.id, 'files', this.get_id()] + '?' + $.params(params);
+			u.debug("IMAGE URL IS ", url);
+			return url;
+		}		
+	});
 	
 
 	// MAP OF THIS MODUULE :::::::::::::: -----
@@ -117,7 +137,6 @@
 	// A _Store_ represents a single WebBox server, which has an
 	//	 attribute called 'boxes' - 
 	// ... which is a collection of Box objects
-
 	var Obj = WebBox.Obj = Backbone.Model.extend({
 		idAttribute: "@id", // the URI attribute is '@id' in JSON-LD
 		initialize:function(attrs, options) {
@@ -170,7 +189,7 @@
 					}
 					else if (val.hasOwnProperty("@value")) {
 						// literal
-						vd.resolve(deserialize_literal(val));
+						vd.resolve(deserialize_literal(val, this.box));
 					}
 					else {
 						// don't know what it is!
@@ -263,8 +282,14 @@
 			this.options = _(this.default_options).chain().clone().extend(options || {}).value();
 			this.set_up_websocket();
 			this._update_queue = {};
-			this._delete_queue = {};			
-			this.on('update-from-master', function() { this_._flush_update_queue(); });
+			this._delete_queue = {};
+			this._put_queue = {};
+			this.on('update-from-master', function() {
+				// u.log("UPDATE FROM MASTER >> flushing ");
+				this_._flush_update_queue();
+				this_._flush_delete_queue();
+				// todo --- this_._flush_put_queue();
+			});
 		},
 		set_up_websocket:function() {
 			var this_ = this, server_host = this.store.get('server_host');
@@ -285,8 +310,11 @@
 					var pdata = JSON.parse(evt.data);
 					if (pdata.action === 'diff') {
 						this_._diff_update(pdata.data)
-							.then(function() {  this_.trigger('update-from-master', this_._get_version());	})
-							.fail(function(err) { u.error(err); /*  u.log('done diffing '); */ });
+							.then(function() {
+								this_.trigger('update-from-master', this_._get_version());
+							}).fail(function(err) {
+								u.error(err); /*  u.log('done diffing '); */
+							});
 					}
 				};
 				ws.onopen = function() {
@@ -345,12 +373,21 @@
 				base_url = ['/', this.store.get('server_host'), boxid, 'files'].join('/'), 
 				options = { app: this.store.get('app'), id: id, token:this.get('token'),  box: boxid, version: this._get_version() },
 			    option_params = $.param(options),
-				url = base_url+"?"+option_params;
-			
+				url = base_url+"?"+option_params,
+				d = u.deferred();
 			var ajax_args  = _(_(this.store.ajax_defaults).clone()).extend(
 				{ url: url, method : 'PUT', crossDomain:false, data:file, contentType: contenttype, processData:false }
 			);
-			return $.ajax( ajax_args );
+			$.ajax( ajax_args )
+				.then(function() { d.resolve(); })
+				.fail(function(err) {
+					if (err.status === 409) {
+						
+						return;
+					}
+					u.error('Error');
+				});
+				return d.promise();
 		},		
 		query: function(q){
 			// @TODO ::::::::::::::::::::::::::
@@ -534,19 +571,37 @@
 		_flush_update_queue:function() {
 			var this_ = this, uq = this._update_queue, ids_to_update = _(uq).keys();
 			if (ids_to_update.length === 0) { return ; }
-			if (this._updating || this._deleting) { return this._requeue_update();  }
-			
+			if (this._updating || this._deleting) {
+				return this._requeue_update();
+			}			
+
+			this._update_queue = {};
 			var update_arguments = ids_to_update.indexOf(this.WHOLE_BOX) >= 0 ? undefined : ids_to_update;
 			this_._updating = true;
+
 			this_._do_update(update_arguments).then(function() {
 				delete this_._updating;
 				// TODO: resolve all of our deferreds now and delete them
-				ids_to_update.map(function(id) {
-					uq[id].resolve(); delete uq[id];
-				});
+				ids_to_update.map(function(id) { uq[id].resolve();		});
 			}).fail(function(err) {
 				delete this_._updating;
-				if (err.status === 409) { this_._requeue_update();	}
+				if (err.status === 409) {
+					// add the defferds back in
+					_(uq).map(function(d,id) {
+						if (this_._update_queue[id]) {
+							// someone's already added one back in! let's chain them
+							u.debug('HEYYYYYYYYYYYYYYYYYYYYYY already added in - lets go');
+							this_._update_queue[id].then(uq[id].resolve).fail(uq[id].reject);
+						} else {
+							u.debug('sneaking him back in - lets go');
+							this_._update_queue[id] = uq[id];
+						}
+					});
+					return;	// this_._requeue_update();
+				}				
+				// something bad happened, we'd better reject on those deferreds
+				u.error('UPDATE error ', err);
+				ids_to_update.map(function(id) { uq[id].reject(err);});									
 			});
 		},
 		_do_update:function(ids) {
@@ -593,7 +648,7 @@
 			}
 		},		
 		_flush_delete_queue:function() {
-			var this_ = this, dq = this._delete_queue, delete_ids = _(dq).keys();;
+			var this_ = this, dq = this._delete_queue, delete_ids = _(dq).keys();
 			if (delete_ids.length === 0) { return ; }			
 			if (this._deleting || this._updating) { return this._requeue_delete();  }
 			this_._deleting = true;
