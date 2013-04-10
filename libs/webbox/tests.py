@@ -37,6 +37,7 @@ class WebBoxTests:
                       'listen': self.listen,
                       'add_file': self.add_file,
                       'get_file': self.get_file,
+                      'list_files': self.list_files,
                       'delete_file': self.delete_file
                      }
 
@@ -455,4 +456,16 @@ class WebBoxTests:
         url = "{0}{1}/files".format(self.args['server'], self.args['box'])
         params = {'id': self.args['id']}
         print self.get(url, params, raw = True)
+
+
+    def list_files(self):
+        """ Get a list of the files from the database. """
+        self.check_args(['server', 'box', 'username', 'password'])
+        self.auth()
+        self.get_token()
+
+        logging.debug("Calling list_files on server '{0}' in box '{1}'".format(self.args['server'], self.args['box']))
+
+        url = "{0}{1}/files".format(self.args['server'], self.args['box'])
+        print self.get(url, {}, raw = True)
 

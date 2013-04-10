@@ -202,11 +202,17 @@ class BoxHandler(BaseHandler):
             BoxHandler.log(logging.DEBUG, "BoxHandler files request", extra = {"request": request, "token": token})
 
             # TODO unified argument checker in base handler
-            try:
-                file_id = request.args['id'][0]
-            except Exception as e:
-                BoxHandler.log(logging.DEBUG, "BoxHandler files: no 'id' argument in URL: {0}".format(e))
-                return self.return_bad_request(request, "You must specify the 'id' argument for the file.")
+            if "id" not in request.args:
+                # list files
+
+                def file_list_cb(files):
+                    BoxHandler.log(logging.DEBUG, "BoxHandler files file_list_cb, files = {0}".format(files), extra = {"request": request, "token": token})
+                    self.return_ok(request, files)
+
+                store.list_files().addCallbacks(file_list_cb, err_cb)
+                return
+            
+            file_id = request.args['id'][0]
 
             if request.method == 'GET':
                 BoxHandler.log(logging.DEBUG, "BoxHandler files GET request", extra = {"request": request, "token": token})

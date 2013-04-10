@@ -834,6 +834,32 @@ class ObjectStoreAsync:
         return result_d
 
 
+    def list_files(self):
+        """ List all of the files in the latest version of the box.
+
+            return a deferred
+        """
+        result_d = Deferred()
+
+        def err_cb(failure):
+            self.error("Objectstore list_files, err_cb, failure: {0}".format(failure))
+            result_d.errback(failure)
+
+        def list_cb(rows):
+            out = {"data":[]}
+            for row in rows:
+                version, file_id, contenttype = row
+                if "@version" not in out:
+                    out["@version"] = version
+
+                out['data'].append({"@id": file_id, "content-type": contenttype})
+
+            result_d.callback(out)
+
+        query = "SELECT version, file_id, contenttype FROM wb_files WHERE version = (SELECT latest_version FROM wb_v_latest_version)"
+        self.conn.runQuery(query).addCallbacks(list_cb, err_cb)
+        return result_d
+
     def update_files(self, specified_prev_version, new_files=[], delete_files_ids=[]):
         """ Create a new version of the database by adding files, or removing existing ones.
 
