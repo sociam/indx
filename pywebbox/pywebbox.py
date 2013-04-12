@@ -115,7 +115,7 @@ class WebBox:
             return the_page
         else:
             status = json.loads(the_page)
-            self._debug("HTTP Request, returning JSON decodede results: {0}".format(status))
+            self._debug("HTTP Request, returning JSON decoded results: {0}".format(status))
             return status
 
 
