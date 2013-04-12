@@ -313,7 +313,7 @@ class WebBox:
         logging.debug("Called API: list_files")
 
         url = "{0}/files".format(self.base)
-        return self._get(url, raw = True)
+        return self._get(url)
 
 
 #    def listen(self):
