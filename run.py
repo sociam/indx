@@ -21,14 +21,9 @@ import os, logging, getpass, sys
 from webbox.setup import WebBoxSetup
 from webbox.server import WebServer
 
-# Initial Setup of ~/.webbox
-kbname = "webbox_" + getpass.getuser() # per user knowledge base
 webbox_dir = os.path.expanduser('~'+os.sep+".webbox")
 setup = WebBoxSetup()
-config = setup.setup(webbox_dir, "webbox.json.default", kbname) # directory, default config, kbname
-
-for bindir in config['server']['bindirs']:
-    os.environ['PATH'] = os.path.join(os.path.dirname(__file__), bindir) + ":" + os.environ['PATH']
+config = setup.setup("webbox.json.default") # directory, default config, kbname
 
 # show debug messages in log file
 formatter = logging.Formatter('%(name)s\t%(levelname)s\t%(asctime)s\t%(message)s')
