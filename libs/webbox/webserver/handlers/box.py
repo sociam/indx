@@ -141,12 +141,12 @@ class BoxHandler(BaseHandler):
 
         def store_cb(store):
             store.setLoggerClass(BoxHandler, extra = {"token": token, "request": request})
-            BoxHandler.log(logging.DEBUG, "BoxHandler query request", extra = {"request": request, "token": token})
+            BoxHandler.log(logging.DEBUG, "BoxHandler query request, args: {0}".format(request.args), extra = {"request": request, "token": token})
 
             try:
                 q = json.loads(request.args['q'][0])
             except Exception as e:
-                BoxHandler.log(logging.ERROR, "Exception in box.query getting 'q': {0}".format(e), extra = {"request": request, "token": token})
+                BoxHandler.log(logging.ERROR, "Exception in box.query decoding JSON in query, 'q': {0}".format(e), extra = {"request": request, "token": token})
                 return self.return_bad_request(request, "Specify query as query string parameter 'q' as valid JSON")
 
             try:
