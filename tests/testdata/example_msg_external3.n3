@@ -1,6 +1,0 @@
-@prefix webbox: <http://webbox.ecs.soton.ac.uk/ns#> .
-@prefix foaf: <http://xmlns.com/foaf/0.1/> .
-
-<http://www.bbc.co.uk/programmes/b017smql.rdf> <http://rdfs.org/sioc/ns#addressed_to> <http://danielsmith.eu/me#dan> .
-
-

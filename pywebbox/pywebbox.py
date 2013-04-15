@@ -18,6 +18,17 @@
 
 import logging, json, urllib, urllib2, cookielib
 
+
+# Decorator function to ensure that the webbox object has a token when the function requires one
+def require_token(function):
+    def wrapper(self, *args, **kwargs):
+        self._debug("require_token, token is: {0}".format(self.token))
+        if self.token is None:
+            self.get_token()
+        return function(self, *args, **kwargs)
+    return wrapper
+
+
 class WebBox:
     """ Authenticates and accesses a WebBox. """
 
@@ -41,12 +52,14 @@ class WebBox:
         opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
         urllib2.install_opener(opener)
 
-        if token is None:
-            self.auth()
         self.params = {"app": self.appid, "token": self.token, "box": self.box} # used in requests
+        self.auth()
 
     def _truncate(self, data, max_length = 255):
         """ Truncate a string before logging it (e.g. for file data). """
+        if data is None:
+            return data
+
         if len(data) > max_length:
             return data[:max_length] + "...[truncated, original length {0}]".format(len(data))
         else:
@@ -55,7 +68,7 @@ class WebBox:
     def _log(self, loglevel, message):
         """ Write a log message including the server and box information. """
         logger = logging.getLogger("pywebbox")
-        return logger.log(loglevel, "%s\t%s\t%s\t%s\t%s", self.address, self.box, self.username, self.token, message)
+        return logger.log(loglevel, u"%s\t%s\t%s\t%s\t%s", self.address, self.box, self.username, self.token, message)
     
     def _debug(self, message):
         return self._log(logging.DEBUG, message)
@@ -78,6 +91,7 @@ class WebBox:
 
         self._debug("Authentication successful")
 
+    def get_token(self):
         """ Get a token for this box. """
         url = "{0}auth/get_token".format(self.address)
         values = {"box": self.box, "app": self.appid}
@@ -90,9 +104,9 @@ class WebBox:
             self._error(errmsg)
             raise Exception(errmsg)
         else:
-            self._debug("Getting a token was successful")
+            self._debug("Getting a token was successful: {0}".format(status['token']))
+            self.params['token'] = status['token']
             self.token = status['token']
-        return self.token
 
     
     # Utility Functions
@@ -109,11 +123,11 @@ class WebBox:
         the_page = response.read()
 
         self._debug("HTTP Request: response headers: {0}".format(response.info().headers))
-        self._debug("HTTP Request, raw results: {0}".format(self._truncate(the_page)))
         if raw:
             self._debug("HTTP Request, returning raw results")
             return the_page
         else:
+            self._debug("HTTP Request, raw results: {0}".format(self._truncate(the_page)))
             status = json.loads(the_page)
             self._debug("HTTP Request, returning JSON decoded results: {0}".format(status))
             return status
@@ -139,7 +153,7 @@ class WebBox:
         """ Do a GET, decode the result JSON and return it. """
         self._debug("GET request with url: {0}, values: {1}".format(url, values))
         url += "?" + self._encode(values)
-        return self._req(method, url)
+        return self._req(method, url, raw = raw)
 
 
     def _req_body(self, url, values, method, content_type):
@@ -196,6 +210,7 @@ class WebBox:
         url = "{0}admin/list_boxes".format(self.address)
         return self._get(url)
 
+    @require_token
     def get_object_ids(self):
         """ Get the IDs of every object in this box. """
         self._debug("Called API: get_object_ids")
@@ -203,6 +218,7 @@ class WebBox:
         url = "{0}/get_object_ids".format(self.base)
         return self._get(url)
 
+    @require_token
     def update(self, version, objects):
         """ Update objects in a box.
         
@@ -214,6 +230,7 @@ class WebBox:
         values = {"data": json.dumps(objects), "version": version}
         return self._put(self.base, values)
 
+    @require_token
     def delete(self, version, object_id_list):
         """ Test to delete objects from a box.
         
@@ -225,12 +242,14 @@ class WebBox:
         values = {"data": json.dumps(object_id_list), "version": version}
         return self._delete(self.base, values)
 
+    @require_token
     def get_latest(self):
         """ Get the latest version of every object in this box. """
         self._debug("Called API: get_latest")
 
         return self._get(self.base)
 
+    @require_token
     def get_by_ids(self, object_id_list):
         """ Get the latest version of specific objects in this box.
         
@@ -241,6 +260,7 @@ class WebBox:
         id_tuples = map(lambda i: ("id", i), object_id_list)
         return self._get(self.base, id_tuples)
 
+    @require_token
     def query(self, query):
         """ Query a box with a filtering query
 
@@ -251,6 +271,7 @@ class WebBox:
         url = "{0}/query".format(self.base)
         return self._get(url, {'q': query})
 
+    @require_token
     def diff(self, return_objs, from_version, to_version = None):
         """ Get the difference between two versions of the objects in the box.
         
@@ -271,6 +292,7 @@ class WebBox:
 
         return self._get(url, params)
 
+    @require_token
     def add_file(self, version, file_id, file_data, contenttype):
         """ Add a file to the database.
         
@@ -285,6 +307,7 @@ class WebBox:
         values = {"id": file_id, "version": version}
         return self._req_file(url, values, "PUT", file_data, contenttype)
 
+    @require_token
     def delete_file(self, version, file_id):
         """ Delete a file from the database.
         
@@ -297,6 +320,7 @@ class WebBox:
         values = {"id": file_id, "version": version}
         return self._get(url, values, method = "DELETE")
 
+    @require_token
     def get_file(self, file_id):
         """ Get the latest version of a file from the database.
         
@@ -308,6 +332,7 @@ class WebBox:
         params = {'id': file_id}
         return self._get(url, params, raw = True)
 
+    @require_token
     def list_files(self):
         """ Get a list of the files in the latest version of the box. """
         logging.debug("Called API: list_files")
@@ -316,6 +341,7 @@ class WebBox:
         return self._get(url)
 
 
+#    @require_token
 #    def listen(self):
 #        """ Listen to updates to the database (locally, not with HTTP) and print out the diff in realtime. """
 #        self.check_args(['box', 'username', 'password'])
@@ -336,3 +362,4 @@ class WebBox:
 #        d = database.connect_box_raw(self.args['box'], self.args['username'], self.args['password'])
 #        d.addCallbacks(connected_cb, err_cb)
 #        reactor.run()
+

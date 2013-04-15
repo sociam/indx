@@ -1,7 +1,0 @@
-@prefix webbox: <http://webbox.ecs.soton.ac.uk/ns#> .
-@prefix foaf: <http://xmlns.com/foaf/0.1/> .
-
-
-<http://danielsmith.eu/me#dan> webbox:subscribe_to <http://localhost.dancak.es:8211/webbox/example_resource.n3> .
-
-
