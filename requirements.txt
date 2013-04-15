@@ -1,4 +1,3 @@
-autobahn
 twisted
 mimeparse
 pyopenssl
