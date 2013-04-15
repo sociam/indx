@@ -44,7 +44,7 @@ def setup_logger(logfile, stdout):
         stdout_handler.setFormatter(formatter)
         logger.addHandler(stdout_handler)
 
-
+""" Set up the arguments, and their defaults. """
 parser = argparse.ArgumentParser(description='Run a WebBox server.')
 parser.add_argument('user', type=str, help="PostgreSQL server username, e.g. webbox")
 parser.add_argument('hostname', type=str, help="Hostname of the server, e.g. webbox.example.com")
@@ -56,13 +56,15 @@ parser.add_argument('--ssl-cert', default="data/server.crt", type=str, help="Pat
 parser.add_argument('--ssl-key', default="data/server.key", type=str, help="Path to SSL private key")
 parser.add_argument('--no-browser', default=False, action="store_true", help="Don't load a web browser after the server has started")
 parser.add_argument('--address', default="", type=str, help="Specify IP address to bind to")
-
 args = vars(parser.parse_args())
-print str(args)
+
+""" Prompt the user for a password. """
 password = password_prompt()
 
+""" Set up the logging based on the user's options. """
 setup_logger(args['log'], args['log_stdout'])
 
+""" Set up the configuration structure. """
 config = {
     "db": {
         "user": args['user'],
@@ -80,6 +82,7 @@ config = {
     "no_browser": args['no_browser'],
 }
 
+""" Run the server using our configuration. """
 server = WebServer(config)
 server.run()
 
