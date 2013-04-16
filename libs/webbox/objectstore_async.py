@@ -789,11 +789,14 @@ class ObjectStoreAsync:
 
         queries = []
         for obj in objs:
-            
+            self.debug("Objectstore _add_objs_to_version, encoding an object: {0}".format(obj))
+
             if "@id" in obj:
                 uri = obj["@id"]
             else:
-                raise Exception("@id required in all objects")
+                result_d.errback(Failure(Exception("@id required in all objects")))
+                return result_d
+#                raise Exception("@id required in all objects")
 
             for predicate in obj:
                 if predicate[0] == "@" or predicate[0] == "_":
