@@ -26,8 +26,12 @@ POSTGRES_DB = "postgres" # default db fallback if db name is none
 WBPREFIX = "wb_"
 POOLS = {} # dict of txpostgres.ConnectionPools, one pool for each box/user combo
 
+# changed by server.py if necessary
+HOST = "localhost"
+PORT = "5432"
+
 def connect(db_name,db_user,db_pass):
-    conn_str = ("dbname='{0}' user='{1}' password='{2}'".format(db_name or POSTGRES_DB, db_user, db_pass))    
+    conn_str = ("dbname='{0}' user='{1}' password='{2}' host='{3}' port='{4}'".format(db_name or POSTGRES_DB, db_user, db_pass, HOST, PORT))
 
     result_d = Deferred()
     if conn_str in POOLS:
@@ -50,7 +54,7 @@ def connect(db_name,db_user,db_pass):
 
 def connect_sync(db_name, db_user, db_pass):
     """ Connect synchronously to the database - only used for large object support. """
-    conn_str = ("dbname='{0}' user='{1}' password='{2}'".format(db_name or POSTGRES_DB, db_user, db_pass))    
+    conn_str = ("dbname='{0}' user='{1}' password='{2}' host='{3}' port='{4}'".format(db_name or POSTGRES_DB, db_user, db_pass, HOST, PORT))
     conn = psycopg2.connect(conn_str)
     return conn
 
@@ -58,7 +62,7 @@ def connect_sync(db_name, db_user, db_pass):
 def connect_raw(db_name, db_user, db_pass):
     """ Connect to the database bypassing the connection pool (e.g., for adding a notify observer). """
 
-    conn_str = ("dbname='{0}' user='{1}' password='{2}'".format(db_name or POSTGRES_DB, db_user, db_pass))    
+    conn_str = ("dbname='{0}' user='{1}' password='{2}' host='{3}' port='{4}'".format(db_name or POSTGRES_DB, db_user, db_pass, HOST, PORT))
     conn = txpostgres.Connection()
     return conn.connect(conn_str)
 
@@ -136,7 +140,8 @@ def create_box(box_name, db_user, db_pass):
     # create the database
     try:
         db_name = WBPREFIX + box_name 
-        root_conn = psycopg2.connect(dbname = POSTGRES_DB, user = db_user, password = db_pass) # have to specify a db that exists
+        pg_conn_str = ("dbname='{0}' user='{1}' password='{2}' host='{3}' port='{4}'".format(POSTGRES_DB, db_user, db_pass, HOST, PORT))
+        root_conn = psycopg2.connect(pg_conn_str) # have to specify a db that exists
         root_conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
         root_cur = root_conn.cursor()
         root_cur.execute("CREATE DATABASE %s WITH ENCODING='UTF8' OWNER=%s CONNECTION LIMIT=-1" % (db_name, db_user))
@@ -145,7 +150,8 @@ def create_box(box_name, db_user, db_pass):
         root_conn.close()
 
         # load in definition from data/objectstore-*.sql
-        root_conn = psycopg2.connect(database = db_name, user = db_user, password = db_pass) # reconnect to this new db, and without the isolation level set
+        conn_str = ("dbname='{0}' user='{1}' password='{2}' host='{3}' port='{4}'".format(db_name, db_user, db_pass, HOST, PORT))
+        root_conn = psycopg2.connect(conn_str) # reconnect to this new db, and without the isolation level set
         root_cur = root_conn.cursor()
 
         # ordered list of source database creation files

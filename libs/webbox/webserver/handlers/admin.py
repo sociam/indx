@@ -26,16 +26,6 @@ import webbox.server
 class AdminHandler(BaseHandler):
     """ Add/remove boxes, add/remove users, change config. """
     base_path = 'admin'
-    def init_db(self, request):
-        """ Initialise database, with specified postgres root credentials. """
-        root_user = request.args['input_user'][0]
-        root_password = request.args['input_password'][0]
-        ObjectStoreAsync.initialise(self.webserver.config['webbox']['db']['name'], root_user,  root_password,
-                                    *self.webserver.get_webbox_user_password())
-        # send them back to the webbox start page
-        # request.redirect(str(self.webbox.get_base_url()))
-        # request.finish()
-        self.return_ok(request)
     
     def info(self, request):
         """ Information about the webbox. """
@@ -103,15 +93,6 @@ class AdminHandler(BaseHandler):
             .addErrback(lambda *x: self.return_internal_error())
         
 AdminHandler.subhandlers = [
-    {
-        'prefix': 'init_db',
-        'methods': ['POST'],
-        'require_auth': False,
-        'require_token': False,
-        'handler': AdminHandler.init_db,
-        'content-type':'text/plain', # optional
-        'accept':['application/json']                
-    },
     {
         'prefix': 'list_boxes',
         'methods': ['GET'],

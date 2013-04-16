@@ -1,7 +1,7 @@
 #    This file is part of WebBox.
 #
-#    Copyright 2012 Daniel Alexander Smith
-#    Copyright 2012 University of Southampton
+#    Copyright 2012-2013 Daniel Alexander Smith, Max Van Kleek
+#    Copyright 2012-2013 University of Southampton
 #
 #    WebBox is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -16,10 +16,9 @@
 #    You should have received a copy of the GNU General Public License
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
-import os, logging, json
+import os, logging
 from twisted.web import script
 from twisted.web.resource import ForbiddenResource
-from twisted.web.server import Site
 from twisted.web.static import File
 from twisted.internet import reactor, ssl
 from twisted.internet.defer import Deferred
@@ -49,19 +48,18 @@ BOX_NAME_BLACKLIST = [
 class WebServer:
     """ Twisted web server for running WebBox. """
 
-    def __init__(self, config, config_filename, base_dir):
+    def __init__(self, config):
         """ Set up the server with a webbox. """
 
         self.tokens = token.TokenKeeper()
         self.config = config
-        self.config_filename = config_filename
 
         # enable ssl (or not)
-        self.ssl_off = config['server'].get('ssl_off') or False
+        self.ssl = config['server'].get('ssl') or False
 
         # generate the base URLs
         self.server_url = self.config['server']['hostname']
-        if self.ssl_off:
+        if not self.ssl:
             self.server_url = "http://" + self.server_url
             if self.config['server']['port'] != 80:
                 self.server_url = self.server_url + ":" + str(self.config['server']['port'])
@@ -75,8 +73,9 @@ class WebServer:
         if self.server_address == "":
             self.server_address = "0.0.0.0"
 
-        self.base_dir = base_dir
-            
+        database.HOST = config['db']['host']
+        database.PORT = config['db']['port']
+
         # TODO set up twisted to use gzip compression
 
         # set up the twisted web resource object
@@ -108,11 +107,11 @@ class WebServer:
         def on_start(arg):
             logging.debug("Server started successfully.")
             try:
-                if self.config['server']['load_browser']:
+                if not self.config['no_browser']:
                     import webbrowser
                     webbrowser.open(self.server_url)
             except Exception as e:
-                logging.debug("Couldnt load webbrowser: {0}".format(e))
+                logging.debug("Couldn't load webbrowser: {0}".format(e))
         def start_failed(arg):
             logging.debug("start_failed: "+str(arg))
 
@@ -136,9 +135,9 @@ class WebServer:
 
         server_port = int(self.config['server']['port'])
         #server_hostname = self.config['server']['hostname']
-        server_cert = os.path.join(self.base_dir,self.config['server'].get('ssl_cert'))
-        server_private_key = os.path.join(self.base_dir,self.config['server'].get('ssl_private_key'))        
-        if self.ssl_off:
+        server_cert = self.config['server'].get('ssl_cert')
+        server_private_key = self.config['server'].get('ssl_private_key')
+        if not self.ssl:
             logging.debug("SSL is OFF, connections to this WebBox are not encrypted.")
             reactor.listenTCP(server_port, factory) #@UndefinedVariable
         else:
@@ -148,7 +147,7 @@ class WebServer:
             reactor.listenSSL(server_port, factory, contextFactory=sslContext) #@UndefinedVariable
 
     def get_webbox_user_password(self):
-        return self.config['webbox']['db']['user'],self.config['webbox']['db']['password']
+        return self.config['db']['user'],self.config['db']['password']
 
     def get_master_box_list(self):
         ## returns _all_ boxes in this server
@@ -172,9 +171,4 @@ class WebServer:
         """ Run the server. """
         reactor.run() #@UndefinedVariable
 
-    def save_config(self):
-        """ Save the current configuration to disk. """
-        conf_fh = open(self.config_filename, "w")
-        json.dump(self.config, conf_fh, indent=4)
-        conf_fh.close()
 
