@@ -1,6 +1,5 @@
 CREATE TYPE object_type AS ENUM ('resource', 'literal');
 
-
 CREATE TABLE wb_strings
 (
   id_string serial NOT NULL,
