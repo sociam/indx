@@ -16,7 +16,7 @@ Run `./setup-env.sh` to create a new `virtualenv` and install the webbox depende
 
 Next run the following to add the library directories to your virtualenv path:
 
-    echo 'export PYTHONPATH="$VIRTUAL_ENV/../libs:$VIRTUAL_ENV/../pywebbox:$PYTHONPATH' >> env/bin/activate
+    echo 'export PYTHONPATH="$VIRTUAL_ENV/../libs:$VIRTUAL_ENV/../pywebbox:$PYTHONPATH"' >> env/bin/activate
 
 Now, source the virtualenv:
 
