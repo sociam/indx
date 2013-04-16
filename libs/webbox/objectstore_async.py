@@ -799,6 +799,9 @@ class ObjectStoreAsync:
 #                raise Exception("@id required in all objects")
 
             for predicate in obj:
+                if len(predicate) < 1:
+                    continue
+
                 if predicate[0] == "@" or predicate[0] == "_":
                     continue # skip over json_ld predicates
 
