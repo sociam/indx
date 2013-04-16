@@ -47,8 +47,10 @@ def setup_logger(logfile, stdout):
 """ Set up the arguments, and their defaults. """
 parser = argparse.ArgumentParser(description='Run a WebBox server.')
 parser.add_argument('user', type=str, help="PostgreSQL server username, e.g. webbox")
-parser.add_argument('hostname', type=str, help="Hostname of the server, e.g. webbox.example.com")
-parser.add_argument('--log', default="/tmp/webbox.log", type=str, nargs=1, help="Location of logfile e.g. /tmp/webbox.log")
+parser.add_argument('hostname', type=str, help="Hostname of the webbox server, e.g. webbox.example.com")
+parser.add_argument('--db-host', default="localhost", type=str, help="PostgreSQL host, e.g. localhost")
+parser.add_argument('--db-port', default=5432, type=int, help="PostgreSQL port, e.g. 5432")
+parser.add_argument('--log', default="/tmp/webbox.log", type=str, help="Location of logfile e.g. /tmp/webbox.log")
 parser.add_argument('--port', default=8211, type=int, help="Override the server listening port")
 parser.add_argument('--log-stdout', default=False, action="store_true", help="Also log to stdout?")
 parser.add_argument('--ssl', default=False, action="store_true", help="Turn on SSL")
@@ -69,6 +71,8 @@ config = {
     "db": {
         "user": args['user'],
         "password": password,
+        "host": args['db_host'],
+        "port": args['db_port'],
     },
     "server": {
         "hostname": args['hostname'],

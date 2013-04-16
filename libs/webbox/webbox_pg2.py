@@ -26,8 +26,12 @@ POSTGRES_DB = "postgres" # default db fallback if db name is none
 WBPREFIX = "wb_"
 POOLS = {} # dict of txpostgres.ConnectionPools, one pool for each box/user combo
 
+# changed by server.py if necessary
+HOST = "localhost"
+PORT = "5432"
+
 def connect(db_name,db_user,db_pass):
-    conn_str = ("dbname='{0}' user='{1}' password='{2}'".format(db_name or POSTGRES_DB, db_user, db_pass))    
+    conn_str = ("dbname='{0}' user='{1}' password='{2}' host='{3}' port='{4}'".format(db_name or POSTGRES_DB, db_user, db_pass, HOST, PORT))
 
     result_d = Deferred()
     if conn_str in POOLS:

@@ -1,7 +1,7 @@
 #    This file is part of WebBox.
 #
-#    Copyright 2012 Daniel Alexander Smith
-#    Copyright 2012 University of Southampton
+#    Copyright 2012-2013 Daniel Alexander Smith, Max Van Kleek
+#    Copyright 2012-2013 University of Southampton
 #
 #    WebBox is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -72,6 +72,9 @@ class WebServer:
         self.server_address = self.config['server']['address']
         if self.server_address == "":
             self.server_address = "0.0.0.0"
+
+        database.HOST = config['db']['host']
+        database.PORT = config['db']['port']
 
         # TODO set up twisted to use gzip compression
 
