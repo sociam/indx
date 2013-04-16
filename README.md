@@ -28,5 +28,35 @@ Now, run webbox with your PostgreSQL authentication username and hostname:
 
 (It will prompt for your postgresql password).
 
+If you wish to specify additional configuration, you can get the list using `--help`:
+
+    python app.py --help
+
+Usage will be printed:
+
+    usage: app.py [-h] [--db-host DB_HOST] [--db-port DB_PORT] [--log LOG]
+                  [--port PORT] [--log-stdout] [--ssl] [--ssl-cert SSL_CERT]
+                  [--ssl-key SSL_KEY] [--no-browser] [--address ADDRESS]
+                  user hostname
+
+    Run a WebBox server.
+
+    positional arguments:
+      user                 PostgreSQL server username, e.g. webbox
+      hostname             Hostname of the webbox server, e.g. webbox.example.com
+
+    optional arguments:
+      -h, --help           show this help message and exit
+      --db-host DB_HOST    PostgreSQL host, e.g. localhost
+      --db-port DB_PORT    PostgreSQL port, e.g. 5432
+      --log LOG            Location of logfile e.g. /tmp/webbox.log
+      --port PORT          Override the server listening port
+      --log-stdout         Also log to stdout?
+      --ssl                Turn on SSL
+      --ssl-cert SSL_CERT  Path to SSL certificate
+      --ssl-key SSL_KEY    Path to SSL private key
+      --no-browser         Don't load a web browser after the server has started
+      --address ADDRESS    Specify IP address to bind to
+
 
 
