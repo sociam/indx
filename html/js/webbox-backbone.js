@@ -122,7 +122,7 @@
 				token:this.box.get('token'),
 				box:this.box.get_id()
 			}, url = ['/', this.box.store.get('server_host'), this.box.id, 'files'].join('/') + '?' + $.param(params);
-			u.debug("IMAGE URL IS ", url, params);
+			// u.debug("IMAGE URL IS ", url, params);
 			return url;
 		}		
 	});
@@ -467,6 +467,7 @@
 		},		
 		get_obj:function(objid) {
 			// get_obj always returns a promise
+			u.assert(typeof objid === 'string' || typeof objid === 'number', "objid has to be a number or string");
 			var d = u.deferred(), hasmodel = this._objcache().get(objid), this_ = this;
 			if (hasmodel !== undefined) {
 				d.resolve(hasmodel);
@@ -618,12 +619,11 @@
 		_do_update:function(ids) {
 			// this actua
 			var d = u.deferred(), version = this.get('version') || 0, this_ = this,
-			    obj_ids = this._objcache().filter(function(x) { return ids === undefined || ids.indexOf(x.id) >= 0; }),
-				objs = obj_ids.map(function(obj){ return serialize_obj(obj); });
-			
-			this._ajax("PUT",  this.id + "/update", { version: escape(version), data : JSON.stringify(objs)  })
+			    objs = this._objcache().filter(function(x) { return ids === undefined || ids.indexOf(x.id) >= 0; }),
+			    obj_ids = objs.map(function(x) { return x.id; }),
+				sobjs = objs.map(function(obj){ return serialize_obj(obj); });			
+			this._ajax("PUT",  this.id + "/update", { version: escape(version), data : JSON.stringify(sobjs)  })
 				.then(function(response) {
-					// u.debug('Update response update version > ', response.data["@version"]);
 					this_._set_version(response.data["@version"]);
 					this_._update_object_list(undefined, obj_ids, []); // update object list
 					d.resolve(this_);
