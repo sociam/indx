@@ -803,23 +803,34 @@ class ObjectStoreAsync:
                     continue # skip over json_ld predicates
 
                 sub_objs = obj[predicate]
-                for object in sub_objs:
-                    if "@value" in object:
-                        thetype = "literal"
-                        value = object["@value"]
-                    elif "@id" in object:
-                        thetype = "resource"
-                        value = object["@id"]
 
-                    language = ''
-                    if "@language" in object:
-                        language = object["@language"]
+                if sub_objs is not None:
+                    # turn single object into an array
+                    if type(sub_objs) != type([]):
+                        sub_objs = [sub_objs]
 
-                    datatype = ''
-                    if "@type" in object:
-                        datatype = object["@type"]
+                    for object in sub_objs:
+                        if type(object) != type({}):
+                            if type(object) != type(u"") and type(object) != type(""):
+                                object = unicode(object)
+                            object = {"@value": object} # turn single value into a literal
 
-                    queries.append( ("SELECT * FROM wb_add_triple_to_version(%s, %s, %s, %s, %s, %s, %s)", [version, uri, predicate, value, thetype, language, datatype]) )
+                        if "@value" in object:
+                            thetype = "literal"
+                            value = object["@value"]
+                        elif "@id" in object:
+                            thetype = "resource"
+                            value = object["@id"]
+
+                        language = ''
+                        if "@language" in object:
+                            language = object["@language"]
+
+                        datatype = ''
+                        if "@type" in object:
+                            datatype = object["@type"]
+
+                        queries.append( ("SELECT * FROM wb_add_triple_to_version(%s, %s, %s, %s, %s, %s, %s)", [version, uri, predicate, value, thetype, language, datatype]) )
 
         def exec_queries(var):
             self.debug("Objectstore add_version exec_queries")
