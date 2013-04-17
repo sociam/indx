@@ -101,7 +101,6 @@
 						
 						$scope.checkPropertyClass = function(propertyval) {
 							var result = propertyval.key.length > 0 ? 'valid' : 'invalid';
-							console.log('checkpropertyclass ', propertyval, result);
 							return result;
 						};				  
 						var find_invalid_uimodel_properties = function(uimodel) {
