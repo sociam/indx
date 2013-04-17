@@ -1,0 +1,24 @@
+<div class="modeltable container">
+  <table class="table table-condensed">
+	<tr>
+	  <th colspan="2">{{ model.name || model.id }}</th>
+	</tr>
+	<tr ng-repeat="kvobj in uimodel" ui-animate>
+	  <td class="delspan">
+		<i class="icon-remove" ng-click="delete_property(kvobj)"></i>
+	  </td>	  
+	  <td class="span3">
+		<input type="text" ng-model="kvobj.key" ng-class="checkPropertyClass(kvobj)" ui-event="{keyup: 'commit_model()'}">
+	  </td>
+	  <td>
+		<!-- <input type="text" ng-model="kvobj.value" ui-event="{keyup: 'commit_model()'}"> -->
+		<input class="select2"
+			   ui-select2="{tags:box_objs,width:'400px'}" ng-model="kvobj.value"
+			   ui-event="{keyup: 'commit_model()', click: 'commit_model()'}"></select>
+	  </td>
+	</tr>
+	<tr class="newpropertyrow" ng-click="new_row()">
+	  <td class="newproperty"><i class="icon-plus"></i></td><td>&nbsp;</td>
+	</tr>
+  </table>
+</div>
