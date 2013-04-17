@@ -20,7 +20,10 @@ else { WebBox = root.WebBox; }
 	toolbar_exports.on = function(msg, fn) {  return event_model.on(msg,fn); };
 	toolbar_exports.off = function(msg, fn) {  return event_model.off(msg,fn); };
 	toolbar_exports.setVisible = function(b) { event_model.set('visible', b); };
-	toolbar_exports.setStore = function(s) { event_model.set('store', s); };
+	toolbar_exports.setStore = function(s) {
+		console.log("_________________________________ SETTING STORE ", s);
+		event_model.set('store', s);
+	};
 	var getStore = function() { return event_model.get('store'); };
 	
 	var ToolbarController = function($scope) {

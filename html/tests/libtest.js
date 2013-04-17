@@ -6,33 +6,9 @@ var safe_apply = function($scope, fn) {
 	$scope.$apply(fn);
 };
 
+var app = angular.module('tests', ['ui', 'webbox-widgets']);
 
-var app = angular
-	.module('tests', ['ui', 'webbox-widgets'])
-	.factory('webboxdrv',function() {
-		var exports = {};
-		var d = exports.loaded = new $.Deferred();
-		WebBox.load().then(function() {
-			$('#loader').fadeOut('slow');			
-			exports.u = window.u = WebBox.utils;
-			var store = exports.store = window.store = new WebBox.Store();
-			store.on('login', function() { console.log('log in ok'); });
-			store.toolbar.on('change:box', function(b) {
-				if (b !== undefined) {
-					var box = store.get_box(b);
-					box.fetch().then(function() {
-						console.log('loaded --- ', box);
-						store.trigger('box-loaded', box);
-					});
-				}
-			});			
-			d.resolve(exports);
-		});
-		return exports;
-	});
-
-
-function BoxView($scope, webboxdrv) {
+function BoxView($scope, webbox) {
 	var box, u;
 	
 	$scope.delete = function(id) {
@@ -56,13 +32,24 @@ function BoxView($scope, webboxdrv) {
 	};
 
 	$scope.showEditor = {};
-	$scope.toggleEditor = function(edid) {
-		$scope.showEditor[edid] = !$scope.showEditor[edid];
-	};	
-	
-	webboxdrv.loaded.then(function() {
-		var store = webboxdrv.store;
-		u = window.u = webbox.u;
+	$scope.toggleEditor = function(edid) { $scope.showEditor[edid] = !$scope.showEditor[edid]; };	
+
+	webbox.loaded.then(function() {
+		u = webbox.u;
+		$('#loader').fadeOut('slow');					
+		var store = webbox.store;
+		store.on('login', function() {
+			console.log('log in ok ------------------------------------------ ');
+		});
+		store.toolbar.on('change:box', function(b) {
+			if (b !== undefined) {
+				var box = store.get_box(b);
+				box.fetch().then(function() {
+					console.log('loaded --- ', box);
+					store.trigger('box-loaded', box);
+				});
+			}
+		});		
 		store.on('box-loaded', function(_box) {
 			if (box !== undefined) { box.off(); }
 			box = _box;
@@ -70,7 +57,8 @@ function BoxView($scope, webboxdrv) {
 			safe_apply($scope, function() { $scope.box = box; });
 			update_els_list();			
 			box.on('obj-add obj-remove', function() { update_els_list(); });			
-		});		
+		});	
+		
 	});
 
 }

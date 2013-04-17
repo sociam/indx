@@ -19,12 +19,13 @@
 			WebBox.load().then(function() {
 				exports.u = window.u = WebBox.utils;
 				exports.store = window.store = new WebBox.Store();
-				window.store.fetch().then(function() {
-					d.resolve(exports);
-				}).fail(function() {
-					// TODO
-					u.error('Error fetching boxes');
-				});
+				window.store.fetch()
+					.then(function() { d.resolve(exports); })
+					.fail(function() {
+						// TODO
+						u.error('Warning: error fetching boxes - probably not logged in! thats ok');
+						d.resolve(exports);
+					});
 			});
 			return exports;
 		});	
