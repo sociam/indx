@@ -27,8 +27,13 @@
 						var resolve_fields = ['name', 'label', 'first_name'];
 						var modeltoview = function(m) {
 							// makes a ui model
+							if (m === undefined) { return []; }
 							window.__model__ = m;
-							if (m === undefined) { return {}; }				  
+							console.log(">>> m.attributes ", m.attributes);
+							if (m === undefined) {
+								console.log(" m is undefined ? ", m);
+								return [];
+							}
 							return _(m.attributes).map(function(vs,k) {
 								if (['@id'].indexOf(k) >= 0) { return; }
 								var vals = vs.map(_serialise).filter(u.defined);
@@ -42,7 +47,10 @@
 							}).filter(u.defined);
 						};				  
 						var update_uimodel = function() {
-							webbox.safe_apply($scope, function() { $scope.uimodel = modeltoview($scope.model); });
+							webbox.safe_apply($scope, function() {
+								$scope.uimodel = modeltoview($scope.model);
+								console.log('set ui model >> ', $scope.uimodel, $scope.model);
+							});
 						};
 						// model -> view
 						var _serialise = function(v) {
@@ -145,7 +153,7 @@
 								$scope.box_objs = box.get_obj_ids();
 								if (modelid) {
 									box.get_obj(modelid).then(function(model) {
-										console.log(' ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ setting model', model);										
+										console.log(' ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ setting model', model, _(model.attributes).keys().length);
 										$scope.model = model;										
 										update_uimodel();										
 									});

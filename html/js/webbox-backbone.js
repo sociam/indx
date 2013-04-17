@@ -282,6 +282,7 @@
 			this.set_up_websocket();
 			this._update_queue = {};
 			this._delete_queue = {};
+			this._fetching_queue = {};
 			this.on('update-from-master', function() {
 				// u.log("UPDATE FROM MASTER >> flushing ");
 				this_._flush_update_queue();
@@ -466,20 +467,34 @@
 		get_obj:function(objid) {
 			// get_obj always returns a promise
 			u.assert(typeof objid === 'string' || typeof objid === 'number', "objid has to be a number or string");
-			var d = u.deferred(), hasmodel = this._objcache().get(objid), this_ = this;
-			if (hasmodel !== undefined) {
-				d.resolve(hasmodel);
-			} else {
-				var model = this_._create_model_for_id(objid);
-				// if the serve knows about it, then we fetch its definition
-				if (this._objlist().indexOf(objid) >= 0) {
-					model.fetch().then(d.resolve).fail(d.reject);
-				} else {
-					// otherwise it must be new!
-					model.is_new = true;
-					d.resolve(model);
-				}
+			var d = u.deferred(),
+				cachemodel = this._objcache().get(objid),
+				fetching_dfd = this._fetching_queue[objid],
+				hasmodel = cachemodel && fetching_dfd === undefined,
+				this_ = this;
+
+			if (hasmodel) {	d.resolve(hasmodel); return d.promise(); }
+
+			// check to see if already fetching, then we can tag along 
+			if (fetching_dfd) {
+				fetching_dfd.then(d.resolve).fail(d.reject);
+				return d.promise();
 			}
+
+			// if not already fetching then we have to fetch
+			this._fetching_queue[objid] = d;
+			var model = this_._create_model_for_id(objid);
+			// if the serve knows about it, then we fetch its definition
+			if (this._objlist().indexOf(objid) >= 0) {
+				model.fetch().then(function() {
+					d.resolve(model);
+					delete this_._fetching_queue[objid];
+				}).fail(d.reject);
+			} else {
+				// otherwise it must be new!
+				model.is_new = true;
+				d.resolve(model);
+			}			
 			return d.promise();
 		},
 		// ----------------------------------------------------
