@@ -53,7 +53,6 @@ function BoxView($scope, webbox) {
 		store.on('box-loaded', function(_box) {
 			if (box !== undefined) { box.off(); }
 			box = _box;
-			console.log('box loooooooooaded ', box.id);
 			safe_apply($scope, function() { $scope.box = box; });
 			update_els_list();			
 			box.on('obj-add obj-remove', function() { update_els_list(); });			

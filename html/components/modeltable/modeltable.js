@@ -7,7 +7,7 @@
 		.directive('modeltable', function() {
 			return {
 				restrict: 'E',
-				scope:{ model:"=m" }, // these means the attribute 'm' has the name of the scope variable to use
+				scope:{},  // model:"=m" }, // these means the attribute 'm' has the name of the scope variable to use
 				templateUrl:'/components/modeltable/modeltable.html',
 				controller:function($scope, $attrs, webbox) {
 					webbox.loaded.then(function() {
@@ -20,6 +20,7 @@
 						console.log("MODELTABLE box >> ", $scope.$parent.$eval($attrs.boxideval));
 						console.log("MODELTABLE model >> ", $scope.$parent.$eval($attrs.modelideval));
 						
+						var modelid = $attrs.modelideval ? $scope.$parent.$eval($attrs.modelideval) : undefined;
 						var u = webbox.u; // backbone model
 						var parsechar = $attrs.parsechar || ',';
 						var boxname = $attrs.box || ($attrs.boxideval && $scope.$parent.$eval($attrs.boxideval)), box;
@@ -142,7 +143,16 @@
 							box.fetch().then(function() {
 								$scope.loaded = true;
 								$scope.box_objs = box.get_obj_ids();
-								update_uimodel();
+								if (modelid) {
+									box.get_obj(modelid).then(function(model) {
+										console.log(' ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ setting model', model);										
+										$scope.model = model;										
+										update_uimodel();										
+									});
+								} else {
+									// already have the model can update directly
+									update_uimodel();
+								}
 								$scope.$watch('model', update_uimodel);
 							}).fail(function(err) { $scope.error = err; });
 						}				  
