@@ -8,8 +8,8 @@ var safe_apply = function($scope, fn) {
 
 
 var app = angular
-	.module('tests', ['ui'])
-	.factory('webbox',function() {
+	.module('tests', ['ui', 'webbox-widgets'])
+	.factory('webboxdrv',function() {
 		var exports = {};
 		var d = exports.loaded = new $.Deferred();
 		WebBox.load().then(function() {
@@ -32,7 +32,7 @@ var app = angular
 	});
 
 
-function BoxView($scope, webbox) {
+function BoxView($scope, webboxdrv) {
 	var box, u;
 	
 	$scope.delete = function(id) {
@@ -46,11 +46,22 @@ function BoxView($scope, webbox) {
 	var update_els_list = function() {
 		if (box === undefined) { return; }
 		u.debug('updating elements ', box.get_obj_ids().length );
-		safe_apply($scope, function() { $scope.box_object_ids = box.get_obj_ids();	});
+		safe_apply($scope, function() {
+			$scope.box_object_ids = box.get_obj_ids();
+			u.when(box.get_obj_ids().map(function(id) { return box.get_obj(id); })).then(function() {
+				// then save a reference
+				$scope.box_objects = _(box._objcache()).clone();
+			});
+		});
 	};
+
+	$scope.showEditor = {};
+	$scope.toggleEditor = function(edid) {
+		$scope.showEditor[edid] = !$scope.showEditor[edid];
+	};	
 	
-	webbox.loaded.then(function() {
-		var store = webbox.store;
+	webboxdrv.loaded.then(function() {
+		var store = webboxdrv.store;
 		u = window.u = webbox.u;
 		store.on('box-loaded', function(_box) {
 			if (box !== undefined) { box.off(); }

@@ -177,7 +177,6 @@
 			var this_ = this;
 			var dfds = _(s_obj).map(function(vals, key) {
 				var kd = u.deferred();
-				console.log("pre-deserialised", this_.id, key, " >> ", vals);				
 				if (key.indexOf('@') === 0) { return; } 
 				var val_dfds = vals.map(function(val) {
 					var vd = u.deferred();
@@ -198,7 +197,6 @@
 				});						
 				u.when(val_dfds).then(function() {
 					var obj_vals = _.toArray(arguments);
-					console.log("deserialised", this_.id, key, " >> ", obj_vals);
 					// only update keys that have changed
 					var prev_vals = this_.get(key);
 					if ( prev_vals === undefined || obj_vals.length !== prev_vals.length ||

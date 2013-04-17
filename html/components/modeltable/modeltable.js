@@ -16,10 +16,13 @@
 						// @attrs:
 						//    box - box name
 						//    parsechar - character to use to parse
+
+						console.log("MODELTABLE box >> ", $scope.$parent.$eval($attrs.boxideval));
+						console.log("MODELTABLE model >> ", $scope.$parent.$eval($attrs.modelideval));
 						
 						var u = webbox.u; // backbone model
 						var parsechar = $attrs.parsechar || ',';
-						var boxname = $attrs.box, box;
+						var boxname = $attrs.box || ($attrs.boxideval && $scope.$parent.$eval($attrs.boxideval)), box;
 						var resolve_fields = ['name', 'label', 'first_name'];
 						var modeltoview = function(m) {
 							// makes a ui model
@@ -38,7 +41,7 @@
 							}).filter(u.defined);
 						};				  
 						var update_uimodel = function() {
-							webbox.safe_apply($scope,	function() { $scope.uimodel = modeltoview($scope.model); });
+							webbox.safe_apply($scope, function() { $scope.uimodel = modeltoview($scope.model); });
 						};
 						// model -> view
 						var _serialise = function(v) {
