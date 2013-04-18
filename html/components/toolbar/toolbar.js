@@ -20,10 +20,11 @@ else { WebBox = root.WebBox; }
 	toolbar_exports.on = function(msg, fn) {  return event_model.on(msg,fn); };
 	toolbar_exports.off = function(msg, fn) {  return event_model.off(msg,fn); };
 	toolbar_exports.setVisible = function(b) { event_model.set('visible', b); };
-	toolbar_exports.setStore = function(s) {
-		console.log("_________________________________ SETTING STORE ", s);
-		event_model.set('store', s);
-	};
+	toolbar_exports.setStore = function(s) { event_model.set('store', s);	};
+	toolbar_exports.get_selected_box = function() { return; };
+	toolbar_exports.is_logged_in = function() { return false; };	
+		
+	
 	var getStore = function() { return event_model.get('store'); };
 	
 	var ToolbarController = function($scope) {
@@ -51,7 +52,10 @@ else { WebBox = root.WebBox; }
 		$scope.incr_loading = function () {	$scope.loading++; };
 		$scope.decr_loading = function () {	$scope.loading--; };
 		var apply_incr_loading = function () {	apply($scope.incr_loading); };
-		var apply_decr_loading = function () {	apply($scope.decr_loading); };		
+		var apply_decr_loading = function () {	apply($scope.decr_loading); };
+		toolbar_exports.get_selected_box = function() { return  $scope.box; };
+		toolbar_exports.is_logged_in = function() { return $scope.is_logged_in(); };	
+		
 
 		$scope.cb_login_logout_clicked = function() {
 			if ($scope.is_logged_in()) {

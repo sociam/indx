@@ -32,15 +32,20 @@ function BoxView($scope, webbox) {
 	};
 
 	$scope.showEditor = {};
-	$scope.toggleEditor = function(edid) { $scope.showEditor[edid] = !$scope.showEditor[edid]; };	
+	$scope.toggleEditor = function(edid) { $scope.showEditor[edid] = !$scope.showEditor[edid]; };
+
+	var set_box = function(_box) {
+		if (box !== undefined) { box.off(); }
+		box = _box;
+		safe_apply($scope, function() { $scope.box = box; });
+		update_els_list();			
+		box.on('obj-add obj-remove', function() { update_els_list(); });
+	};
 
 	webbox.loaded.then(function() {
 		u = webbox.u;
 		$('#loader').fadeOut('slow');					
 		var store = webbox.store;
-		store.on('login', function() {
-			console.log('log in ok ------------------------------------------ ');
-		});
 		store.toolbar.on('change:box', function(b) {
 			if (b !== undefined) {
 				var box = store.get_box(b);
@@ -50,14 +55,11 @@ function BoxView($scope, webbox) {
 				});
 			}
 		});		
-		store.on('box-loaded', function(_box) {
-			if (box !== undefined) { box.off(); }
-			box = _box;
-			safe_apply($scope, function() { $scope.box = box; });
-			update_els_list();			
-			box.on('obj-add obj-remove', function() { update_els_list(); });			
-		});	
-		
+		store.on('box-loaded', set_box);
+		if (store.toolbar.is_logged_in() && store.toolbar.get_selected_box()) {
+			console.log('logged in already setting selected ');
+			set_box(store.toolbar.get_selected_box());
+		}
 	});
 
 }
