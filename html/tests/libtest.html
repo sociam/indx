@@ -16,10 +16,10 @@
 	  <ul>
 		<li ng-repeat="el in box_object_ids" class="row">
 		  <div ng-click="toggleEditor(el)" class="span4">{{ el }}</div>
-		  <div ng-show="showEditor[el]">
+		  <div ng-show="showEditor[el]" class="editor">
 			<modeltable boxideval="box.id" modelideval="el"></modeltable>
 		  </div>		  
-		  <div class="span1"><i ng-click="delete(el)" class="icon-trash" ng-animate></i></div>
+		  <div class="span1"><i ng-click="delete_object(el)" class="icon-trash" ng-animate></i></div>
 	  </ul>
 	</div>
   </body>

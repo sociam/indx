@@ -473,7 +473,7 @@
 				hasmodel = cachemodel && fetching_dfd === undefined,
 				this_ = this;
 
-			if (hasmodel) {	d.resolve(hasmodel); return d.promise(); }
+			if (hasmodel) {	d.resolve(cachemodel); return d.promise(); }
 
 			// check to see if already fetching, then we can tag along 
 			if (fetching_dfd) {

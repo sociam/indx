@@ -11,8 +11,10 @@ var app = angular.module('tests', ['ui', 'webbox-widgets']);
 function BoxView($scope, webbox) {
 	var box, u;
 	
-	$scope.delete = function(id) {
+	$scope.delete_object = function(id) {
 		box.get_obj(id).then(function(obj) {
+			console.log('trying to destroy ', obj);
+			window.__todestroy__ = obj;
 			obj.destroy()
 				.then(function() { console.log("DONE DELETING ", obj.id); })
 				.fail(function(err) { console.error('ERROR DELETING', obj.id, err); });
