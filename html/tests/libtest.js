@@ -38,8 +38,8 @@ function BoxView($scope, webbox) {
 		if (box !== undefined) { box.off(); }
 		box = _box;
 		safe_apply($scope, function() { $scope.box = box; });
-		update_els_list();			
 		box.on('obj-add obj-remove', function() { update_els_list(); });
+		update_els_list();
 	};
 
 	webbox.loaded.then(function() {
@@ -58,7 +58,8 @@ function BoxView($scope, webbox) {
 		store.on('box-loaded', set_box);
 		if (store.toolbar.is_logged_in() && store.toolbar.get_selected_box()) {
 			console.log('logged in already setting selected ');
-			set_box(store.toolbar.get_selected_box());
+			var sb = store.get_box(store.toolbar.get_selected_box());
+			sb.fetch().then(function() { set_box(sb); });
 		}
 	});
 
