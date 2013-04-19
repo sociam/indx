@@ -47,17 +47,22 @@
 							var new_keys = newmodel.omit(['@id', '@type'].concat(_($scope.uimodel).map(function(x) { return x.key; })));
 							console.log("ui model >> ", newmodel.keys().length, $scope.uimodel.length,_(new_keys).keys().length, new_keys);
 							var new_ui_objs = _(new_keys).map(function(v,k) { return make_uiobj(k,v); });
-							var dead_ui_objs = _($scope.uimodel).map(function(uio) {
-								if (newmodel.keys().indexOf(uio.key) < 0) { return uio; }
-							}).filter(u.defined);
+							var dead_ui_objs = _($scope.uimodel).map(function(uio) { if (newmodel.keys().indexOf(uio.key) < 0) { return uio; }	}).filter(u.defined);
 							_($scope.uimodel).difference(dead_ui_objs).map(function(uio) {
+								console.log('updating keys ', uio.key, newmodel.get(uio.key));
 								// update objects in place
-								var uik = uio.key, uivs = uio.value, mvs = newmodel.get(uik).map(_serialise);
-								var newvs = _(mvs).difference(uivs);
-								var oldvs = _(uivs).intersection(mvs);
-								uio.value = _(oldvs).concat(newvs);
-							});
-							$scope.uimodel = _($scope.uimodel).difference(dead_ui_objs).concat(new_ui_objs);
+								var uik = uio.key, mvs = newmodel.get(uik).map(_serialise);
+								var newvs = _(mvs)
+									.difference(uio.value.map(function(x) { return x.text; }))
+									.map(function(x) { return { id: x, text: x }; });
+								var remainingvs = uio.value.filter(function(x) {
+									return mvs.indexOf(x.text) >= 0;
+								});
+								console.log('mvs >> ', mvs, remainingvs, ' new value ', _(remainingvs).concat(newvs));
+								// uio.value = _(remainingvs).concat(newvs);
+								return uio;
+							}).concat(new_ui_objs);
+							console.log("NEW SCOPE UIMODEL IS ", $scope.uimodel);
 						};
 						var update_uimodel = function() {
 							if ($scope.model === undefined) { return console.warn('$scope.model is undefined'); };
@@ -67,7 +72,8 @@
 								$scope.uimodel = m2v;							
 							} else {
 								// update inplace!
-								// _update_in_place();
+								console.log("UPDATE IN PLACE >> ");
+								_update_in_place();
 							}
 						};
 						// model -> view

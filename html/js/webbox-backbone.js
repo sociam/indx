@@ -107,6 +107,24 @@
 	var deserialize_literal = function(obj, box) {
 		return obj['@value'] !== undefined ? literal_deserializers[ obj['@type'] || '' ](obj, box) : obj;
 	};
+	
+	var deserialize_value = function(s_val, box) {
+		var vd = u.deferred();
+		// it's an object, so return that
+		if (s_val.hasOwnProperty("@id")) {
+			// object
+			box.get_obj(s_val["@id"]).then(vd.resolve).fail(vd.reject);
+		}
+		else if (s_val.hasOwnProperty("@value")) {
+			// literal
+			vd.resolve(deserialize_literal(s_val, box));
+		}
+		else {
+			// don't know what it is!
+			vd.reject('cannot unpack value ', s_val);
+		}
+		return vd.promise();
+	};
 
 	var File = WebBox.File = Backbone.Model.extend({
 		idAttribute: "@id", // the URI attribute is '@id' in JSON-LD		
@@ -432,35 +450,45 @@
 			this_._update_object_list(undefined, added_ids, deleted_ids);
 			var change_dfds = _(changed_objs).map(function(obj, uri) {
 				u.debug(' checking to see if in --- ', uri, this_._objcache().get(uri));
+				u.debug('obj >> ', obj);
 				var cached_obj = this_._objcache().get(uri), cdfd = u.deferred();
 				if (cached_obj) {
-					var deleted_keys =
-						_(obj.deleted !== undefined ? obj.deleted : {})
-						.chain().keys().without(_(obj.added || {}).keys()).value();
-					if (obj.deleted !== undefined) {
-						cached_obj.delete_properties(deleted_keys, true);
-					}
-					cached_obj
-						._deserialise_and_set(_(obj.added).chain().clone().extend(obj.changed).value(), true)
-						.then(function() {
-							var changed_properties =
-								_([obj.added,obj.changed,obj.deleted].map(function(x) { return _(x || {}).keys(); }))
-								.chain()
-								.flatten()
-								.uniq()
-								.value();
-							u.debug("triggering changed properties ", changed_properties);
-							changed_properties.map(function(k) {
-								cached_obj.trigger('change:'+k, (cached_obj.get(k) || []).slice());
-								u.debug("trigger! change:"+k);
-							});
-							cached_obj.trigger('change', (changed_properties).slice());
-							cdfd.resolve(cached_obj);
-						}).fail(cdfd.reject);
-					return cdfd.promise();					
+					// { prop : [ {sval1 - @type:""}, {sval2 - @type} ... ]
+					var changed_properties = [];					
+					var deleted_propval_dfds = _(obj.deleted).map(function(vs, k) {
+						changed_properties = _(changed_properties).union([k]);
+						var dd = u.deferred();						
+						u.when(vs.map(function(v) {	return deserialize_value(v, this_);	})).then(function() {
+							var values = _.toArray(arguments);
+							var new_vals = _(cached_obj.get(k) || []).difference(values);
+							cached_obj.set(k,new_vals);
+							dd.resolve();
+						}).fail(dd.reject);
+						return dd.promise();
+					});
+					var added_propval_dfds = _(obj.added).map(function(vs, k) {
+						changed_properties = _(changed_properties).union([k]);
+						var dd = u.deferred();						
+						u.when(vs.map(function(v) {	return deserialize_value(v, this_);	})).then(function() {
+							var values = _.toArray(arguments);
+							var new_vals = (cached_obj.get(k) || []).concat(values);
+							cached_obj.set(k,new_vals);
+							dd.resolve();
+						}).fail(dd.reject);
+						return dd.promise();
+					});
+					u.when(added_propval_dfds.concat(deleted_propval_dfds)).then(function() {
+						// u.debug("triggering changed properties ", changed_properties);
+						changed_properties.map(function(k) {
+							cached_obj.trigger('change:'+k, (cached_obj.get(k) || []).slice());
+							u.debug("trigger! change:"+k);
+						});
+						cdfd.resolve(cached_obj);
+					}).fail(cdfd.reject);
+					return cdfd.promise();
 				}
-			}).filter(u.defined);					
-			u.when(changed_ids).then(d.resolve).fail(d.reject);
+			});
+			u.when(change_dfds).then(d.resolve).fail(d.reject);
 			return d.promise();
 		},
 		_create_model_for_id: function(obj_id){
