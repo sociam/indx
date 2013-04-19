@@ -42,39 +42,47 @@
 								return make_uiobj(k,vals);
 							}).filter(u.defined);
 						};
-						var _update_in_place = function() {
+
+
+						
+						$scope._update_in_place = function() {
 							var newmodel = $scope.model;
 							var new_keys = newmodel.omit(['@id', '@type'].concat(_($scope.uimodel).map(function(x) { return x.key; })));
 							console.log("ui model >> ", newmodel.keys().length, $scope.uimodel.length,_(new_keys).keys().length, new_keys);
 							var new_ui_objs = _(new_keys).map(function(v,k) { return make_uiobj(k,v); });
 							var dead_ui_objs = _($scope.uimodel).map(function(uio) { if (newmodel.keys().indexOf(uio.key) < 0) { return uio; }	}).filter(u.defined);
-							_($scope.uimodel).difference(dead_ui_objs).map(function(uio) {
-								console.log('updating keys ', uio.key, newmodel.get(uio.key));
+							var new_uimodel = _($scope.uimodel).difference(dead_ui_objs).map(function(uio) {
+								// console.log('updating keys ', uio.key, newmodel.get(uio.key));
+								var old_values = uio.value.map(function(x) { return x.text; });
+								// console.log('old values ', old_values);
 								// update objects in place
 								var uik = uio.key, mvs = newmodel.get(uik).map(_serialise);
 								var newvs = _(mvs)
 									.difference(uio.value.map(function(x) { return x.text; }))
 									.map(function(x) { return { id: x, text: x }; });
-								var remainingvs = uio.value.filter(function(x) {
-									return mvs.indexOf(x.text) >= 0;
-								});
-								console.log('mvs >> ', mvs, remainingvs, ' new value ', _(remainingvs).concat(newvs));
-								// uio.value = _(remainingvs).concat(newvs);
+								var remainingvs = uio.value.filter(function(x) { return mvs.indexOf(x.text) >= 0;});
+								if (remainingvs.length === old_values.length && newvs.length === 0) {
+									// console.log(uik, 'skipping since no updates ');
+									return uio;
+								} else {
+									// console.log('mvs >> ', mvs, remainingvs, ' new value ', _(remainingvs).concat(newvs));
+									uio.value = _(remainingvs).concat(newvs);
+									// console.log('new uio.value ', uio.value);
+								}
 								return uio;
 							}).concat(new_ui_objs);
-							console.log("NEW SCOPE UIMODEL IS ", $scope.uimodel);
+							console.log("NEW SCOPE UIMODEL IS ", new_uimodel);
+							webbox.safe_apply($scope, function() {
+								$scope.uimodel = new_uimodel;
+							});
 						};
-						var update_uimodel = function() {
+						$scope.update_uimodel = function() {
 							if ($scope.model === undefined) { return console.warn('$scope.model is undefined'); };
 							if ($scope.uimodel === undefined) {
 								var m2v = modeltoview();
-								console.log("modeltoview >> ", m2v, "from scope model ", $scope.model);
+								console.log("modeltoview >> ", m2v, " ~~~~~~~~~~~~ from scope model ", $scope.model);
 								$scope.uimodel = m2v;							
-							} else {
-								// update inplace!
-								console.log("UPDATE IN PLACE >> ");
-								_update_in_place();
-							}
+							} else { $scope._update_in_place(); }
 						};
 						// model -> view
 						var _serialise = function(v) {
@@ -101,7 +109,6 @@
 									if (matches.length > 0) {
 										d.resolve(matches[0]);
 									} else {
-										console.log("no matches, resolving with v ", v);
 										d.resolve(v);
 									}
 								}
@@ -122,20 +129,16 @@
 							u.when(viewobj.map(function(propertyval) {
 								var v = propertyval.value, k = propertyval.key;
 								var d = u.deferred();
-								console.log('v >> ', v, v.map(_select2_val_out));
+								// console.log('v >> ', v, v.map(_select2_val_out));
 								var parsed_and_resolved = v.map(_select2_val_out).filter(u.defined).map(parse);
 								u.when(parsed_and_resolved).then(function() {
-									var vals = _.toArray(arguments);
-									console.log('parsed & resolved ', vals);
-									model.set(k, vals);
-									d.resolve();
+									d.resolve([k,_.toArray(arguments)]);
 								}).fail(d.reject);
 								return d.promise();
-							})).then(function() { pdfd.resolve(model); }).fail(pdfd.reject);
+							})).then(function() { pdfd.resolve(u.dict(_.toArray(arguments))); }).fail(pdfd.reject);
 							return pdfd.promise();
 						};
 						$scope.new_row = function() {
-							console.log('new _ row ');
 							var idx = _($scope.uimodel).keys().length + 1;
 							var new_key = 'property '+idx;
 							$scope.uimodel.push({ key: new_key, old_key: new_key, value:'', old_val: ''});
@@ -153,9 +156,12 @@
 							if ($scope.model !== undefined) {
 								if (find_invalid_uimodel_properties($scope.uimodel).length === 0) {
 									console.log('calling parseview >> ');
-									parseview().then(function(vals) {
-										console.log('saving model >> ', $scope.model.attributes);
-										$scope.model.save();
+									parseview().then(function(value_obj) {
+										setTimeout(function() { 
+											console.log($scope.model.id, '~ parsed and resolved, saving model >> ',value_obj);
+											$scope.model.set(value_obj);
+											$scope.model.save();
+										},1);
 									}).fail(function(err) {
 										u.error('error committing model ', err);
 										d.reject(err);
@@ -188,17 +194,17 @@
 										// console.log(' ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ setting model',model, _(model.attributes).keys().length);
 										console.log('got model >> ', modelid, model);
 										$scope.model = model;
-										update_uimodel();
+										$scope.$apply($scope.update_uimodel);
 										$scope.model.on('change', function() {
-											console.log('MODEL CHANGE >> ', $scope.model.id);
-											update_uimodel();
+											console.log('TABLE ------------- MODEL CHANGE >> ', $scope.model.id);
+											$scope.update_uimodel();
 										});										
 									});
 								} else {
 									// already have the model can update directly
 									console.log('already have the model can update directly ');
-									update_uimodel();
-									$scope.$watch('model', update_uimodel);									
+									$scope.$apply($scope.update_uimodel);
+									$scope.$watch('model', $scope.update_uimodel);
 								}
 
 							}).fail(function(err) { $scope.error = err; });

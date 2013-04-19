@@ -913,6 +913,7 @@ angular.module('ui.directives').directive('uiSelect2', ['ui.config', '$timeout',
         isSelect = tElm.is('select'),
         isMultiple = (tAttrs.multiple !== undefined);
 
+
       // Enable watching of the options dataset if in use
       if (tElm.is('select')) {
         repeatOption = tElm.find('option[ng-repeat], option[data-ng-repeat]');
@@ -938,6 +939,7 @@ angular.module('ui.directives').directive('uiSelect2', ['ui.config', '$timeout',
         if (controller) {
           // Watch the model for programmatic changes
           controller.$render = function () {
+			  console.log("RENDER >>>>>>>>>>>>>>>>>>>>> ", controller.$modelValue);
             if (isSelect) {
               elm.select2('val', controller.$modelValue);
             } else {

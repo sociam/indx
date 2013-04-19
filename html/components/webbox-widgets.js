@@ -10,12 +10,26 @@
 		.factory('webbox',function() {
 			var exports = {};
 			var d = exports.loaded = new $.Deferred();
+			// exports.safe_apply = function($scope, fn) {
+			// 	if ($scope.$$phase) {
+			// 		console.warn("safe_apply() already in $scope.$$phase --- ");					
+			// 		return fn();
+			// 	}
+			// 	$scope.$apply(fn);
+			// };
+			
 			exports.safe_apply = function($scope, fn) {
-				if ($scope.$$phase !== undefined) {
-					return fn();
+				var phase = $scope.$$phase;
+				console.log('phase >> ', phase);
+				if(phase == '$apply' || phase == '$digest') {
+					if(fn && (typeof(fn) === 'function')) {
+						fn();
+					}
+				} else {
+					$scope.$apply(fn);
 				}
-				$scope.$apply(fn);
 			};			
+
 			WebBox.load().then(function() {
 				exports.u = window.u = WebBox.utils;
 				exports.store = window.store = new WebBox.Store();
