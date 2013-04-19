@@ -25,11 +25,13 @@
 						var parsechar = $attrs.parsechar || ',';
 						var boxname = $attrs.box || ($attrs.boxideval && $scope.$parent.$eval($attrs.boxideval)), box;
 						var resolve_fields = ['name', 'label', 'first_name'];
+						var make_uiobj = function(key,val) {
+							return { key: key, old_key: key, value: val, old_val : val };
+						};
 						var modeltoview = function(m) {
 							// makes a ui model
+							var m = $scope.model;
 							if (m === undefined) { return []; }
-							window.__model__ = m;
-							console.log(">>> m.attributes ", m.attributes);
 							if (m === undefined) {
 								console.log(" m is undefined ? ", m);
 								return [];
@@ -37,20 +39,36 @@
 							return _(m.attributes).map(function(vs,k) {
 								if (['@id'].indexOf(k) >= 0) { return; }
 								var vals = vs.map(_serialise).filter(u.defined);
-								console.log("vals >> ", vs, k, vals);
-								return ({
-									key: k,
-									old_key: k,
-									value: vals,
-									old_val : vals
-								});
+								return make_uiobj(k,vals);
 							}).filter(u.defined);
-						};				  
-						var update_uimodel = function() {
-							webbox.safe_apply($scope, function() {
-								$scope.uimodel = modeltoview($scope.model);
-								console.log('set ui model >> ', $scope.uimodel, $scope.model);
+						};
+						var _update_in_place = function() {
+							var newmodel = $scope.model;
+							var new_keys = newmodel.omit(['@id', '@type'].concat(_($scope.uimodel).map(function(x) { return x.key; })));
+							console.log("ui model >> ", newmodel.keys().length, $scope.uimodel.length,_(new_keys).keys().length, new_keys);
+							var new_ui_objs = _(new_keys).map(function(v,k) { return make_uiobj(k,v); });
+							var dead_ui_objs = _($scope.uimodel).map(function(uio) {
+								if (newmodel.keys().indexOf(uio.key) < 0) { return uio; }
+							}).filter(u.defined);
+							_($scope.uimodel).difference(dead_ui_objs).map(function(uio) {
+								// update objects in place
+								var uik = uio.key, uivs = uio.value, mvs = newmodel.get(uik).map(_serialise);
+								var newvs = _(mvs).difference(uivs);
+								var oldvs = _(uivs).intersection(mvs);
+								uio.value = _(oldvs).concat(newvs);
 							});
+							$scope.uimodel = _($scope.uimodel).difference(dead_ui_objs).concat(new_ui_objs);
+						};
+						var update_uimodel = function() {
+							if ($scope.model === undefined) { return console.warn('$scope.model is undefined'); };
+							if ($scope.uimodel === undefined) {
+								var m2v = modeltoview();
+								console.log("modeltoview >> ", m2v, "from scope model ", $scope.model);
+								$scope.uimodel = m2v;							
+							} else {
+								// update inplace!
+								// _update_in_place();
+							}
 						};
 						// model -> view
 						var _serialise = function(v) {
@@ -74,30 +92,36 @@
 										var fields = resolve_fields.map(function(f) { return obj.get(f); }).filter(u.defined).filter(function(x) { return x.length > 0; });
 										return fields.indexOf(stripstrv) >= 0; 
 									});
-									if (matches.length > 0) { d.resolve(matches[0]); } else {  d.resolve(v);	  }
+									if (matches.length > 0) {
+										d.resolve(matches[0]);
+									} else {
+										console.log("no matches, resolving with v ", v);
+										d.resolve(v);
+									}
 								}
 							}
 							return d.promise();
 						};
-						var _select2_val_out = function(v) { return v.text.trim(); };
-						var parseview = function(viewobj, model) {
-							// we need to take the textual representations out again
+						var _select2_val_out = function(v) { if (v.text) { return v.text.trim(); } };
+						var parseview = function() {
+							var viewobj = $scope.uimodel, model = $scope.model;
 							var pdfd = u.deferred();
-
 							// delete the changed keys
 							viewobj.filter(function(x) { return x.old_key !== x.key; })
 								.map(function(x) {
 									model.unset(x.old_key);
 									x.old_key = x.key; // update for next time!
-								});					  
+								});
 							// now parse out the val
 							u.when(viewobj.map(function(propertyval) {
 								var v = propertyval.value, k = propertyval.key;
-								console.log("VALUE >> ", v);
 								var d = u.deferred();
-								// u.when(v.split(parsechar).map(parse)).then(function() {
-								u.when(v.map(_select2_val_out).map(parse)).then(function() {
-									model.set(k, _.toArray(arguments));
+								console.log('v >> ', v, v.map(_select2_val_out));
+								var parsed_and_resolved = v.map(_select2_val_out).filter(u.defined).map(parse);
+								u.when(parsed_and_resolved).then(function() {
+									var vals = _.toArray(arguments);
+									console.log('parsed & resolved ', vals);
+									model.set(k, vals);
 									d.resolve();
 								}).fail(d.reject);
 								return d.promise();
@@ -122,7 +146,8 @@
 							var d = u.deferred();
 							if ($scope.model !== undefined) {
 								if (find_invalid_uimodel_properties($scope.uimodel).length === 0) {
-									parseview($scope.uimodel, $scope.model).then(function(vals) {
+									console.log('calling parseview >> ');
+									parseview().then(function(vals) {
 										console.log('saving model >> ', $scope.model.attributes);
 										$scope.model.save();
 									}).fail(function(err) {
@@ -152,16 +177,24 @@
 								$scope.loaded = true;
 								$scope.box_objs = box.get_obj_ids();
 								if (modelid) {
+									console.log(' getting  modelid ', modelid);									
 									box.get_obj(modelid).then(function(model) {
-										console.log(' ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ setting model', model, _(model.attributes).keys().length);
-										$scope.model = model;										
-										update_uimodel();										
+										// console.log(' ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ setting model',model, _(model.attributes).keys().length);
+										console.log('got model >> ', modelid, model);
+										$scope.model = model;
+										update_uimodel();
+										$scope.model.on('change', function() {
+											console.log('MODEL CHANGE >> ', $scope.model.id);
+											update_uimodel();
+										});										
 									});
 								} else {
 									// already have the model can update directly
+									console.log('already have the model can update directly ');
 									update_uimodel();
+									$scope.$watch('model', update_uimodel);									
 								}
-								$scope.$watch('model', update_uimodel);
+
 							}).fail(function(err) { $scope.error = err; });
 						}				  
 					});

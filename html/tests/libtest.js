@@ -63,6 +63,16 @@ function BoxView($scope, webbox) {
 			var sb = store.get_box(store.toolbar.get_selected_box());
 			sb.fetch().then(function() { set_box(sb); });
 		}
+		window.create_obj=function(id) {
+			var d = u.deferred();
+			var box = store.get_box(store.toolbar.get_selected_box());
+			box.get_obj(id).then(function(obj) {
+				obj.set({msg:['hello']});
+				obj.save();
+				d.resolve(obj);
+			}).fail(d.reject);
+			return d;
+		};
 	});
 
 }

@@ -426,11 +426,12 @@
 			if (latest_version <= this_._get_version()) {
 				u.debug('asked to diff update, but already up to date, so just relax!', latest_version, this_._get_version());
 				return d.resolve();
-			}					
+			}
+			u.debug('setting latest version >> ', latest_version, added_ids, changed_ids, deleted_ids);			
 			this_._set_version(latest_version);
 			this_._update_object_list(undefined, added_ids, deleted_ids);
 			var change_dfds = _(changed_objs).map(function(obj, uri) {
-				// u.debug(' checking to see if in --- ', uri, this_._objcache().get(uri));
+				u.debug(' checking to see if in --- ', uri, this_._objcache().get(uri));
 				var cached_obj = this_._objcache().get(uri), cdfd = u.deferred();
 				if (cached_obj) {
 					var deleted_keys =
@@ -448,9 +449,12 @@
 								.flatten()
 								.uniq()
 								.value();
+							u.debug("triggering changed properties ", changed_properties);
 							changed_properties.map(function(k) {
 								cached_obj.trigger('change:'+k, (cached_obj.get(k) || []).slice());
+								u.debug("trigger! change:"+k);
 							});
+							cached_obj.trigger('change', (changed_properties).slice());
 							cdfd.resolve(cached_obj);
 						}).fail(cdfd.reject);
 					return cdfd.promise();					
