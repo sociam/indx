@@ -11,13 +11,13 @@
 		<i class="icon-remove" ng-click="delete_property(kvobj)"></i>
 	  </td>	  
 	  <td class="span3">
-		<input type="text" ng-model="kvobj.key" ng-class="checkPropertyClass(kvobj)" ui-event="{keyup: 'commit_model()'}">
+		<input type="text" ng-model="kvobj.key" ng-class="checkPropertyClass(kvobj)" ui-event="{blur: 'commit_model()'}">
 	  </td>
 	  <td>
 		<!-- <input type="text" ng-model="kvobj.value" ui-event="{keyup: 'commit_model()'}"> -->
 		<input class="select2"
 			   ui-select2="{tags:box_objs,width:'400px'}" ng-model="kvobj.value"
-			   ui-event="{keyup: 'commit_model()', click: 'commit_model()'}"></select>
+			   ui-event="{blur: 'commit_model()', click: 'commit_model()'}"></select>
 	  </td>
 	</tr>
 </tbody>

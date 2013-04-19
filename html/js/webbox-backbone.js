@@ -462,6 +462,8 @@
 							var values = _.toArray(arguments);
 							var new_vals = _(cached_obj.get(k) || []).difference(values);
 							cached_obj.set(k,new_vals);
+							// semantics - if a property has no value then we delete it
+							if (new_vals.length === 0) { cached_obj.unset(k); }
 							dd.resolve();
 						}).fail(dd.reject);
 						return dd.promise();

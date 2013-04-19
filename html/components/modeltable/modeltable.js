@@ -48,7 +48,7 @@
 						$scope._update_in_place = function() {
 							var newmodel = $scope.model;
 							var new_keys = newmodel.omit(['@id', '@type'].concat(_($scope.uimodel).map(function(x) { return x.key; })));
-							console.log("ui model >> ", newmodel.keys().length, $scope.uimodel.length,_(new_keys).keys().length, new_keys);
+							console.log("ui model >> ", newmodel.keys(), newmodel.keys().length, $scope.uimodel.length,_(new_keys).keys().length, new_keys);
 							var new_ui_objs = _(new_keys).map(function(v,k) { return make_uiobj(k,v); });
 							var dead_ui_objs = _($scope.uimodel).map(function(uio) { if (newmodel.keys().indexOf(uio.key) < 0) { return uio; }	}).filter(u.defined);
 							var new_uimodel = _($scope.uimodel).difference(dead_ui_objs).map(function(uio) {
@@ -120,8 +120,10 @@
 							var viewobj = $scope.uimodel, model = $scope.model;
 							var pdfd = u.deferred();
 							// delete the changed keys
-							viewobj.filter(function(x) { return x.old_key !== x.key; })
-								.map(function(x) {
+							viewobj
+								.filter(function(x) {
+									return x.old_key !== x.key;
+								}).map(function(x) {
 									model.unset(x.old_key);
 									x.old_key = x.key; // update for next time!
 								});
@@ -129,7 +131,6 @@
 							u.when(viewobj.map(function(propertyval) {
 								var v = propertyval.value, k = propertyval.key;
 								var d = u.deferred();
-								// console.log('v >> ', v, v.map(_select2_val_out));
 								var parsed_and_resolved = v.map(_select2_val_out).filter(u.defined).map(parse);
 								u.when(parsed_and_resolved).then(function() {
 									d.resolve([k,_.toArray(arguments)]);
@@ -156,16 +157,15 @@
 							if ($scope.model !== undefined) {
 								if (find_invalid_uimodel_properties($scope.uimodel).length === 0) {
 									console.log('calling parseview >> ');
-									parseview().then(function(value_obj) {
-										setTimeout(function() { 
-											console.log($scope.model.id, '~ parsed and resolved, saving model >> ',value_obj);
+									setTimeout(function() {
+										parseview().then(function(value_obj) {
 											$scope.model.set(value_obj);
 											$scope.model.save();
-										},1);
-									}).fail(function(err) {
-										u.error('error committing model ', err);
-										d.reject(err);
-									});
+										}).fail(function(err) {
+											u.error('error committing model ', err);
+											d.reject(err);
+										});
+									}, 1);
 								} else {
 									console.error('invalid properties ', find_invalid_uimodel_properties($scope.uimodel));
 									d.reject();
@@ -176,12 +176,8 @@
 						$scope.delete_property = function(propertyval) {
 							var model = $scope.model;
 							var key = propertyval.key;
-							console.log('unsetting ', key);
-							model.unset(key);
-							$scope.uimodel = _($scope.uimodel).without(propertyval);
-							$scope.commit_model();
+							setTimeout(function() { model.unset(key); $scope.commit_model(); });
 						};
-
 						// initialise
 						if (boxname) {
 							box = webbox.store.get_or_create_box(boxname);
