@@ -35,6 +35,13 @@ class Token:
         self.origin = origin
         self.id = str(uuid.uuid1())
         self.clientip = clientip
+        self.connections = []
+
+    def close_all(self):
+        """ Close all database connections. """
+        for connection in self.connections:
+            logging.debug("Closing a database connection: {0}".format(connection))
+            connection.close()
 
     def get_store(self):
         """ Get a new ObjectStoreAsync using the connection pool. """
@@ -44,6 +51,7 @@ class Token:
 
         def connected_cb(conn):
             logging.debug("Token get_store connected, returning it.")
+            self.connections.append(conn)
 
             def get_sync():
                 return database.connect_box_sync(self.boxid, self.username, self.password)
@@ -66,6 +74,7 @@ class Token:
 
         def connected_cb(conn):
             logging.debug("Token get_raw_store connected, returning it.")
+            self.connections.append(conn)
 
             def get_sync():
                 return database.connect_box_sync(self.boxid, self.username, self.password)
@@ -95,6 +104,13 @@ class TokenKeeper:
 
     def __init__(self):
         self.tokens = {}
+
+    def close_all(self):
+        """ Close all database connections. """
+        logging.debug("Closing all database connections...")
+        for box, token in self.tokens.items():
+            logging.debug("Closing database connections in box {0}".format(box))
+            
 
     def get(self, tid):
         """ Used to get a token by the BaseHandler, and whenever a

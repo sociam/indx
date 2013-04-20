@@ -124,7 +124,7 @@ class WebServer:
     def shutdown(self):
         ## todo put more cleanup stuff here        
         logging.debug("Got reactor quit trigger, so closing down webbox.")
-        pass
+        self.tokens.close_all() # close all database connections
     
     def start(self):        
         factory = WebSocketSite(self.root)
