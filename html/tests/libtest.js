@@ -10,6 +10,18 @@ var app = angular.module('tests', ['ui', 'webbox-widgets']);
 
 function BoxView($scope, webbox) {
 	var box, u;
+
+	$scope.showing_new_item = false;
+	$scope.create_new_item = function(id) {
+		$scope.new_item_id = '';
+		$scope.showing_new_item = false;		
+		setTimeout(function() { 
+			box.get_obj(id).then(function(obj) {
+				obj.set("type", 'thing');				
+				obj.save().then(function() { obj.fetch(); });
+			}).fail(function(err) {	console.error('error ', err)});
+		}, 1);
+	};
 	
 	$scope.delete_object = function(id) {
 		box.get_obj(id).then(function(obj) {

@@ -28,7 +28,7 @@
 						var make_uiobj = function(key,val) {
 							return { key: key, old_key: key, value: val, old_val : val };
 						};
-						var modeltoview = function(m) {
+						var modeltoview = function() {
 							// makes a ui model
 							var m = $scope.model;
 							if (m === undefined) { return []; }
@@ -70,15 +70,12 @@
 								return uio;
 							}).concat(new_ui_objs);
 							console.log("NEW SCOPE UIMODEL IS ", new_uimodel);
-							webbox.safe_apply($scope, function() {
-								$scope.uimodel = new_uimodel;
-							});
+							webbox.safe_apply($scope, function() {	$scope.uimodel = new_uimodel;	});
 						};
 						$scope.update_uimodel = function() {
-							if ($scope.model === undefined) { return console.warn('$scope.model is undefined'); };
+							if ($scope.model === undefined) { return console.warn('$scope.model is undefined'); }
 							if ($scope.uimodel === undefined) {
 								var m2v = modeltoview();
-								console.log("modeltoview >> ", m2v, " ~~~~~~~~~~~~ from scope model ", $scope.model);
 								$scope.uimodel = m2v;							
 							} else { $scope._update_in_place(); }
 						};
@@ -188,7 +185,7 @@
 										// console.log(' ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ setting model',model, _(model.attributes).keys().length);
 										console.log('got model >> ', modelid, model);
 										$scope.model = model;
-										$scope.$apply($scope.update_uimodel);
+										webbox.safe_apply($scope,$scope.update_uimodel);
 										$scope.model.on('change', function() {
 											console.log('TABLE ------------- MODEL CHANGE >> ', $scope.model.id);
 											$scope.update_uimodel();

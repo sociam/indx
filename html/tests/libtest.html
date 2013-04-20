@@ -13,6 +13,13 @@
 	<img id="loader" src="../img/skifcha.gif">
 	<div class="boxview" ng-controller='BoxView'>
 	  <ul>
+		<li>
+		  <div class="add-new-obj row">
+			<div class="add-button"><i class="icon-plus" ng-click="showing_new_item=!showing_new_item"></i></div>
+			<form class="new-item" ng-show="showing_new_item" ng-submit="create_new_item(new_item_id)">
+			  <div class="span1"> new id: </div><input class="span4" type="text" ng-model="new_item_id">
+			</form>
+		  </div>		  
 		<li ng-repeat="el in box_object_ids">
 		  <div class="object row">
 			<div ng-click="toggleEditor(el)" class="span11 name">{{ el }}</div>

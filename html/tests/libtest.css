@@ -7,10 +7,35 @@
 }
 .row {
 	line-height:12px !important;
+
+}
+input[type=text],input[type=password] {
+	outline: none !important;
+	-webkit-outline: none !important;
+	border:none;
+	border-bottom: 1px solid black;
 }
 div.boxview {
 	padding:15px !important;
 	ul li {
+		.add-new-obj {
+			margin-left:0px;
+			position:relative;
+			.add-button { position:absolute; left: 0px; top: 0px; }
+			height:22px;
+			overflow:hide;
+			vertical-align:bottom;
+			.new-item {
+				vertical-align:bottom;				
+				margin:0px;
+				padding:0px;
+				.span1 { margin-top:4px; text-align:right; }
+				input {
+					margin:0px 0px 0px 10px;
+					
+				}
+			}
+		}
 		margin-left:0px;		
 		.object {
 			.name {

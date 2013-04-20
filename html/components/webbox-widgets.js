@@ -19,8 +19,8 @@
 			// };
 			
 			exports.safe_apply = function($scope, fn) {
-				var phase = $scope.$$phase;
-				console.log('phase >> ', phase);
+				var phase = $scope.$$phase || $scope.$root.$$phase;
+				console.log('phase >> ', $scope, phase, $scope);
 				if(phase == '$apply' || phase == '$digest') {
 					if(fn && (typeof(fn) === 'function')) {
 						fn();
