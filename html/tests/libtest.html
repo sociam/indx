@@ -11,15 +11,16 @@
   </head>
   <body onload="" ng-app='tests'>
 	<img id="loader" src="../img/skifcha.gif">
-	<div class='boxview' ng-controller='BoxView'>
-	  <h4>{{ box.id }}</h4>
+	<div class="boxview" ng-controller='BoxView'>
 	  <ul>
-		<li ng-repeat="el in box_object_ids" class="row">
-		  <div ng-click="toggleEditor(el)" class="span4">{{ el }}</div>
-		  <div class="span1"><i ng-click="delete_object(el)" class="icon-trash" ng-animate></i></div>
-		  <div ng-show="showEditor[el]" class="editor" ui-animate>
-			<modeltable boxideval="box.id" modelideval="el"></modeltable>
-		  </div>		  
+		<li ng-repeat="el in box_object_ids">
+		  <div class="object row">
+			<div ng-click="toggleEditor(el)" class="span11 name">{{ el }}</div>
+			<div class="span1 trash-object"><i ng-click="delete_object(el)" class="icon-trash" ng-animate></i></div>
+			<div ng-show="showEditor[el]" class="editor span12" ui-animate>
+			  <modeltable boxideval="box.id" modelideval="el"></modeltable>
+			</div>
+		  </div>
 	  </ul>
 	</div>
   </body>
