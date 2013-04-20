@@ -42,8 +42,6 @@
 								return make_uiobj(k,vals);
 							}).filter(u.defined);
 						};
-
-
 						
 						$scope._update_in_place = function() {
 							var newmodel = $scope.model;

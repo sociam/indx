@@ -8,18 +8,26 @@
 .row {
 	line-height:12px !important;
 }
-	
-li i {
-	cursor:pointer;
-}
-li.ui-animate {
-  opacity: 0;
-  max-height: 0;
-  padding: 0 5px;
-}
-.editor {
-	max-width:600px;
-	padding:16px;
-	border:1px solid #bbb;
-	margin:20px;
+.boxview {
+	padding:15px !important;
+	li {
+		list-style-type:none !important;
+		i { cursor:pointer; }	
+	}
+	.ui-animate {
+		opacity: 0;
+		max-height: 0;
+		padding: 0 5px;
+	}
+	transition: all 1.5s ease;
+	-o-transition: all 1.5s ease;
+	-moz-transition: all 1.5s ease;
+	-webkit-transition: all 1.5s ease;
+	.editor {
+		thead { display:none; }
+		max-width:600px;
+		padding:0px 16px 16px 16px;
+		// border:1px solid #bbb;
+		margin:0px 20px 20px 20px;
+	}
 }
