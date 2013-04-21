@@ -53,7 +53,8 @@ class WebSocketsHandler(WebSocketHandler):
             logging.error("WebSocketsHandler err_cb, error getting raw store: {0}".format(failure))
             # TODO inform the client?
 
-        def store_cb(pooled_store):
+        def store_cb(store):
+            logging.debug("WebSocketsHandler startListen, store_cb: {0}".format(store))
 
             def observer(notify):
                 """ Receive an update from the server. """
@@ -71,15 +72,9 @@ class WebSocketsHandler(WebSocketHandler):
                 version = int(notify.payload)
                 old_version = version - 1 # TODO do this a better way?
 
-                pooled_store.diff(old_version, version, "diff").addCallbacks(diff_cb, err_cb)
+                store.diff(old_version, version, "diff").addCallbacks(diff_cb, err_cb)
 
-
-            def raw_store_cb(raw_store):
-                logging.debug("WebSocketsHandler startListen, raw_store_cb: {0}".format(raw_store))
-                raw_store.listen(observer)
-
-            # To add a notify observer, we need a store that is directly connected, not using the connection pool
-            self.token.get_raw_store().addCallbacks(raw_store_cb, err_cb)
+            self.token.subscribe(observer)
 
         self.token.get_store().addCallbacks(store_cb, err_cb)
 
