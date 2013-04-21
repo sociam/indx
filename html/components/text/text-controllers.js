@@ -67,6 +67,7 @@
 								.attr("x", 1)
 								.attr("width", bar_width)
 								.attr('fill', '#aef')
+								.transition()
 								.attr("height", function(d) { return y(d.value); });
 
 							bar.append("text")

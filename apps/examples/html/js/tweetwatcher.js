@@ -61,16 +61,18 @@ angular
 				// console.log('got obj word_counts >> ', obj);
 				set_counts(obj);
 				loadtweets(box);
-				box.on('obj-add', function(object) {
-					if (object.text) {
-						var newct = parse_and_count(object);
-						sum_in($scope.counts, parse_and_count(newct,object));
-						$scope.counts.save();
-						$scope.counts.trigger('count-complete');											
-					} else {
-						// debug 
-						console.warn('new object not a tweet, skipping ', object.id);
-					}
+				box.on('obj-add', function(oid) {
+					box.get_obj(oid).then(function(object) {
+						if (object.get("text")) {
+							var newct = parse_and_count(object.get("text")[0]);
+							sum_in($scope.counts, newct);
+							// $scope.counts.save();
+							$scope.counts.trigger('update-counts');											
+						} else {
+							// debug 
+							console.warn('new object not a tweet, skipping ', object.id);
+						}						
+					});
 				});
 			}).fail(error);
 		};
