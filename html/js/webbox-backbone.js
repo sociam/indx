@@ -231,7 +231,7 @@
 		_fetch:function() {
 			var this_ = this, fd = u.deferred(), box = this.box.get_id();
 			this.box._ajax('GET', box, {'id':this.id}).then(function(response) {
-				u.log('query response ::: ', response);
+				// u.log('query response ::: ', response);
 				var objdata = response.data;
 				if (objdata['@version'] === undefined) {
 					// according to the server, we're dead.
@@ -322,7 +322,7 @@
 				var ws_url = [protocol,server_host,'ws'].join('/');
 				ws = new WebSocket(ws_url);
 				ws.onmessage = function(evt) {
-					u.debug('websocket :: incoming a message ', evt.data);
+					u.debug('websocket :: incoming a message ', evt.data.toString().substring(0,120));
 					var pdata = JSON.parse(evt.data);
 					if (pdata.action === 'diff') {
 						this_._diff_update(pdata.data)

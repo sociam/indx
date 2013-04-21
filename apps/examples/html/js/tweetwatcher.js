@@ -13,6 +13,8 @@ angular
 		var token_filter = function(x) {
 			if (x.length === 0) return false;
 			if (x.indexOf('http') === 0) return false;
+			if (x.indexOf('#') === 0) return false;	// ignore hashtags
+			if (x.indexOf('@') === 0) return false;	// ignore @ replies
 			return true;
 		};
 		var parse_and_count = function(text) {
@@ -46,7 +48,7 @@ angular
 					webbox.safe_apply($scope, function() { $scope._updated = new Date().valueOf(); });
 					window.counts = counts;
 					counts.save();
-					counts.trigger('count-complete');					
+					counts.trigger('update-counts');
 				}).fail(error);
 		};
 
