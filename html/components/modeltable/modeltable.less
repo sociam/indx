@@ -13,22 +13,25 @@
 		&:first-child { border-top:1px solid #fff; }
 		padding:0px;
 	}
-	tr td {
-		border-top:none; 
-		padding:7px 3px 0px 3px !important;
-	}
-	tr td.key {
-		border-top:none; 
+    tr td {
+    	border-top:none; 
+    }  
+	tr td.keyspan {
 		padding:12px 0px 0px 3px !important;
+        width:200px;
 	}
 	tr td.delspan {
 		padding: 13px 0px 0px 0px !important;
 		width:10px; opacity:0.2;
-	}	
+	}
+	tr td.valspan {
+		padding:7px 3px 0px 3px !important;
+        min-width:200px;
+	}    
 	input {
 		background-color:rgba(255,255,255,0) !important;
 		border:none;
-		width:100%;
+		min-width:200px;
 		max-height:100px;
 		vertical-align:top !important;
 	}
