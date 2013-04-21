@@ -4,7 +4,7 @@
 (function() { 
 	angular
 		.module('webbox-widgets')
-		.directive('word-histogram', function() {
+		.directive('wordhistogram', function() {
 			return {
 				restrict: 'E',
 				scope:{ counts:"=counts" }, // these means the attribute 'm' has the name of the scope variable to use
@@ -17,9 +17,15 @@
 						//    box - box name
 						//    parsechar - character to use to parse
 
-						var u = webbox.u, counts = $scope.counts, c = d3.select($element);
-						u.assert( counts, "no counts model found, please specify the name of a $scope variable in counts= attr" );
+						console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> histoload ");
+						var u = webbox.u, c = d3.select($element[0]);
+
 						var render_update = function() {
+
+							var counts = $scope.counts
+							console.log('render update ! ', counts);
+
+							u.assert( counts, "no counts model found, please specify the name of a $scope variable in counts= attr" );
 							var margin = {top: $attrs.margin || 10, right: $attrs.margin || 30, bottom: $attrs.margin || 30, left: $attrs.margin || 30},
 							   width = ($attrs.width || 400) - margin.left - margin.right,
 							   height = ($attrs.height || 100) - margin.top - margin.bottom;
@@ -61,8 +67,13 @@
 								.attr("transform", "translate(0," + height + ")")
 								.call(xAxis);
 						};
-						$scope.counts.on('change', render_update);
+						$scope.$watch('counts', function() {
+							$scope.counts.on('count-complete', render_update);
+						 	// render_update();
+						});									
 					});
+
+
 				}
 			};
 		});
