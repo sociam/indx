@@ -30,27 +30,38 @@
 							   width = ($attrs.width || 1024) - margin.left - margin.right,
 							   height = ($attrs.height || 768) - margin.top - margin.bottom;
 
-							var n_bins = counts.keys().length,
-								x = d3.scale.linear().domain([0, n_bins + 1]).range([0, width]),
-								y = d3.scale.linear().domain([0, d3.max(counts.values())]).range([height, 0]);
+							var n_bins = Math.min(60,counts.keys().length);
 
-							var xAxis = d3.svg.axis().scale(x).orient("bottom");
-							var svg = c.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+							var bar_width = width/(n_bins+1); // bar spacing
+							console.log("bar width : ", bar_width);
+							var svg = c.append("g")
+								.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+							
 							var data = counts.keys().map(function(k) {	return { key : k , value : counts.get(k)[0] || 0 };	});
 							data.sort(function(x,y) { return y.value - x.value; }); // descending
-
 							_(data).map(function(v,i) { v.rank = i; });
-							data = data.slice(0,100);
+							data = data.slice(0,n_bins);
+
+							var x = d3.scale.linear().domain([0, n_bins + 1]).range([0, width]),
+								y = d3.scale.linear()
+									.domain([0, d3.max(data.map(function(x) { return x.value; }))])
+									.range([0,height]);
+							
+
+							var xAxis = d3.svg.axis().scale(x).orient("bottom");							
 
 							console.log("COUNTS >> ", data.map(function(x) { return x.value; }));
-
-							var bar_width = 1/(n_bins+1) - (0.10/(n_bins+1)); // bar spacing
 							
 							var bar = svg.selectAll(".bar")
 								.data(data, function(x) { return x.key; })
 								.enter().append("g")
 								.attr("class", "bar")
-								.attr("transform", function(d) { return "translate(" + x(d.rank) + "," + y(d.value) + ")"; });
+								.attr("transform", function(d) {
+									// console.log(" d.value ", d.value, ' y() ', y(d.value), 'height - y()', height-y(d.value));
+									return "translate(" + x(d.rank) + "," + (height-y(d.value)) + ")";
+								});
+
+							console.log('bar width >> ', bar_width);
 							
 							bar.append("rect")
 								.attr("x", 1)
@@ -59,10 +70,12 @@
 								.attr("height", function(d) { return y(d.value); });
 
 							bar.append("text")
-								.attr("dy", ".75em")
-								.attr("y", 6)
-								.attr("x", bar_width/2)
-								.attr("text-anchor", "middle")
+								 // .attr("dy", ".75em")
+								.attr("y", -(bar_width/2)+3+"px")//-bar_width/4) // 6)
+								.attr('font-size', '10px')
+								.attr('transform','rotate(90)')
+								.attr("x", 5) // bar_width/2)
+								.attr("text-anchor", "left")
 								.attr('fill', 'white')
 								.text(function(d) { return d.key; });
 
