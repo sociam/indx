@@ -30,60 +30,70 @@
 							   width = ($attrs.width || 1024) - margin.left - margin.right,
 							   height = ($attrs.height || 768) - margin.top - margin.bottom;
 
-							var n_bins = Math.min(60,counts.keys().length);
+							var n_bins = Math.min(100,counts.keys().length);
 
 							var bar_width = width/(n_bins+1); // bar spacing
 							console.log("bar width : ", bar_width);
-							var svg = c.append("g")
+							
+							var svg = c.selectAll('.wordhist').data([0]);
+							svg.enter().append("g")
+								.attr('class','wordhist')
 								.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 							
 							var data = counts.keys().map(function(k) {	return { key : k , value : counts.get(k)[0] || 0 };	});
 							data.sort(function(x,y) { return y.value - x.value; }); // descending
 							_(data).map(function(v,i) { v.rank = i; });
 							data = data.slice(0,n_bins);
-
+							
 							var x = d3.scale.linear().domain([0, n_bins + 1]).range([0, width]),
 								y = d3.scale.linear()
 									.domain([0, d3.max(data.map(function(x) { return x.value; }))])
 									.range([0,height]);
 							
-
 							var xAxis = d3.svg.axis().scale(x).orient("bottom");							
 
-							console.log("COUNTS >> ", data.map(function(x) { return x.value; }));
+							// console.log("COUNTS >> ", data, data.map(function(x) { return x.rank; })); // data.map(function(x) { return x.value; }));
+							console.log('counts -- ', data.length, data.map(function(x) { return x.key; }));
 							
-							var bar = svg.selectAll(".bar")
-								.data(data, function(x) { return x.key; })
-								.enter().append("g")
-								.attr("class", "bar")
-								.attr("transform", function(d) {
-									// console.log(" d.value ", d.value, ' y() ', y(d.value), 'height - y()', height-y(d.value));
-									return "translate(" + x(d.rank) + "," + (height-y(d.value)) + ")";
-								});
-
-							console.log('bar width >> ', bar_width);
-							
-							bar.append("rect")
-								.attr("x", 1)
-								.attr("width", bar_width)
-								.attr('fill', '#aef')
+							var bars = svg
+								.selectAll(".bar")
+								.data(data); // , function(x) { return x.key;	});
+							bars.enter().append("g");
+							bars.attr("class", "bar")
+								.attr('key', function(x) { return x.key; })
 								.transition()
-								.attr("height", function(d) { return y(d.value); });
+								.attr("transform", function(d) {
+									// console.log('translating', d.key, ' ', d.rank, ' ', x(d.rank), "translate(" + x(d.rank) + "," + (height-y(d.value)) + ")");
+									return "translate(" + x(d.rank) + "," + (height-y(d.value)) + ")";
+								})
+								.each(function(d) {
+									d3.select(this).selectAll('rect').data([0]).enter().append('rect');
+									d3.select(this).selectAll('rect')
+										.transition()
+										.attr("x", 1)
+										.attr("width", bar_width)
+										.attr('fill', '#aef')
+										.attr("height", function() { return y(d.value); });
+									
+									d3.select(this).selectAll('.label').data([0]).enter().append('text').attr('class', 'label');
+									d3.select(this).selectAll('.label')
+										.transition()
+										.attr("y", -(bar_width/2)+3+"px")//-bar_width/4) // 6)
+										.attr('font-size', '10px')
+										.attr('transform','rotate(90)')
+										.attr("x", 5) // bar_width/2)
+										.attr("text-anchor", "left")
+										.attr('fill', 'white')
+										.text(function() { return d.key; });																		
+								});							
+							bars.exit().remove();							
 
-							bar.append("text")
-								 // .attr("dy", ".75em")
-								.attr("y", -(bar_width/2)+3+"px")//-bar_width/4) // 6)
-								.attr('font-size', '10px')
-								.attr('transform','rotate(90)')
-								.attr("x", 5) // bar_width/2)
-								.attr("text-anchor", "left")
-								.attr('fill', 'white')
-								.text(function(d) { return d.key; });
-
-							svg.append("g")
+							var xaxis = svg.select('.xaxis').data([0]);
+							xaxis.enter().append("g")
 								.attr("class", "xaxis")
 								.attr("transform", "translate(0," + height + ")")
 								.call(xAxis);
+							xaxis.exit().remove();
 						};
 						$scope.$watch('counts', function() {
 							if ($scope.counts) {

@@ -4,11 +4,10 @@
 angular
 	.module('TwitterDemoApp', ['ui', 'webbox-widgets'])
 	.controller('TweetWatcher', function($scope, webbox) {
-		var u;
-		var error = function(err) {
-			// TODO do soemthing more dramatic 
-			console.error(err);
-		};
+		var u, old_box;
+		// TODO do soemthing more dramatic 
+		
+		var error = function(err) {	console.error(err); };
 
 		var token_filter = function(x) {
 			if (x.length === 0) return false;
@@ -28,14 +27,17 @@ angular
 			return c;
 		};
 		var sum_in = function(counts,new_counts) {
-			new_counts.keys().map(function(k) { counts.set(k, (counts.get(k) ? counts.get(k)[0] : 0) + new_counts.get(k)[0]); });
+			new_counts.keys().map(function(k) {
+				counts.set(k, (counts.get(k) ? counts.get(k)[0] : 0) + new_counts.get(k)[0]);
+			});
 		};		
 
 		var loadtweets = function(box) {
 			var counts = $scope.counts;
 			// recount everything!
 			if (counts) {
-				counts.keys().map(function(k) { if (k !== '@id') { counts.unset(k); } });
+				counts.attributes = { '@id' : counts.id }; 
+				// counts.keys().map(function(k) { if (k !== '@id') { counts.unset(k); } });
 			}
 			u.when(box.get_obj_ids().map(function(oid) { return box.get_obj(oid); }))
 				.then(function() {
@@ -61,6 +63,11 @@ angular
 				// console.log('got obj word_counts >> ', obj);
 				set_counts(obj);
 				loadtweets(box);
+				if (old_box !== undefined) {
+					console.log("unsubscribing to old obox ****************************************************************** ");
+					old_box.off('obj-add',undefined,$scope)
+					old_box = box;
+				}
 				box.on('obj-add', function(oid) {
 					box.get_obj(oid).then(function(object) {
 						if (object.get("text")) {
@@ -72,7 +79,7 @@ angular
 							// debug 
 							console.warn('new object not a tweet, skipping ', object.id);
 						}						
-					});
+					}, $scope);
 				});
 			}).fail(error);
 		};
@@ -90,6 +97,7 @@ angular
 			if (store.toolbar.is_logged_in() && store.toolbar.get_selected_box()) {
 				console.log('logged in already setting selected ');
 				var sb = store.get_box(store.toolbar.get_selected_box());
+				old_box = sb;
 				sb.fetch().then(proceed).fail(error); 
 			}
 		});
