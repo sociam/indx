@@ -11,15 +11,6 @@ WITH (
   OIDS=FALSE
 );
 
-CREATE INDEX idx_id_string
-  ON wb_strings
-  USING btree
-  (id_string, string);
-
-CREATE INDEX idx_string_id
-  ON wb_strings
-  USING btree
-  (string, id_string);
 
 
 CREATE TABLE wb_objects
@@ -39,20 +30,6 @@ WITH (
   OIDS=FALSE
 );
 
-CREATE INDEX idx_otv
-  ON wb_objects
-  USING btree
-  (id_object, obj_type, obj_value);
-
-CREATE INDEX idx_o_all
-  ON wb_objects
-  USING btree
-  (obj_type, obj_value, obj_lang, obj_datatype, id_object);
-
-CREATE INDEX idx_vo
-  ON wb_objects
-  USING btree
-  (obj_value);
 
 
 CREATE TABLE wb_triples
