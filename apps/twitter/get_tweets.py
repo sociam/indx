@@ -16,7 +16,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
-import tweetstream, argparse, logging, getpass, sys, urllib, urllib2, json
+import tweetstream, argparse, logging, getpass, sys, urllib2, json
 from pywebbox import WebBox
 
 
