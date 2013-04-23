@@ -25,6 +25,7 @@ def require_token(function):
         self._debug("require_token, token is: {0}".format(self.token))
         if self.token is None:
             self.get_token()
+        logging.debug("require_token, self: {0}, *args: {1}, **kwargs: {2}".format(self, args, kwargs))
         return function(self, *args, **kwargs)
     return wrapper
 
@@ -47,10 +48,9 @@ class WebBox:
 
         self.base = "{0}{1}".format(self.address, self.box)
 
-        """ Set up a cookies-enabled opener globally. """
+        """ Set up a cookies-enabled opener locally. """
         cj = cookielib.LWPCookieJar()
-        opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
-        urllib2.install_opener(opener)
+        self.opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
 
         self.params = {"app": self.appid, "token": self.token, "box": self.box} # used in requests
         self.auth()
@@ -119,7 +119,7 @@ class WebBox:
         for header in headers:
             req.add_header(header[0], header[1])
         req.get_method = lambda: method
-        response = urllib2.urlopen(req)
+        response = self.opener.open(req)
         the_page = response.read()
 
         self._debug("HTTP Request: response headers: {0}".format(response.info().headers))
