@@ -193,6 +193,45 @@ class WebBox:
         return self._req_body(url, values, "POST", content_type)
 
 
+    def _prepare_objects(self, objects):
+        """ Take raw JSON object and expand them into the webbox internal format. """
+
+        objects_new = []
+
+        if type(objects) != type([]):
+            objects = [objects]
+
+        for obj in objects:
+            if "@id" not in obj:
+                raise Exception("@id required in all objects.")
+
+            obj_new = {}
+
+            for predicate, sub_objs in obj.items():
+                if predicate[0] == "@" or predicate[0] == "_":
+                    obj_new[predicate] = sub_objs
+                    continue # ignore internal non-data predicates
+
+                if sub_objs is None:
+                    continue
+
+                if type(sub_objs) != type([]):
+                    sub_objs = [sub_objs]
+
+                for object in sub_objs:
+                    if type(object) != type({}):
+
+                        if type(object) != type(u"") and type(object) != type(""):
+                            object = unicode(object)
+                        object = {"@value": object} # turn single value into a literal
+
+                    for sub_pred in object:
+                        pass # finish from here:
+
+            objects_new.append(obj_new)
+
+        return objects_new
+
     # API access functions
 
     def create_box(self):
@@ -227,7 +266,7 @@ class WebBox:
         """
         self._debug("Called API: update with version: {0}, objects: {1}".format(version, objects)) 
 
-        values = {"data": json.dumps(objects), "version": version}
+        values = {"data": json.dumps(self._prepare_objects(objects)), "version": version}
         return self._put(self.base, values)
 
     @require_token
