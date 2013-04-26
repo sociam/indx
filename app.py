@@ -58,10 +58,14 @@ parser.add_argument('--ssl-cert', default="data/server.crt", type=str, help="Pat
 parser.add_argument('--ssl-key', default="data/server.key", type=str, help="Path to SSL private key")
 parser.add_argument('--no-browser', default=False, action="store_true", help="Don't load a web browser after the server has started")
 parser.add_argument('--address', default="", type=str, help="Specify IP address to bind to")
+parser.add_argument('--password', default=None, type=str, help="Specify password on the command line instead of interactively")
 args = vars(parser.parse_args())
 
 """ Prompt the user for a password. """
-password = password_prompt()
+if args['password'] is None:
+	password = password_prompt()
+else:
+	password = args['password']
 
 """ Set up the logging based on the user's options. """
 setup_logger(args['log'], args['log_stdout'])
