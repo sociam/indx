@@ -1,4 +1,6 @@
 CREATE TYPE object_type AS ENUM ('resource', 'literal');
+CREATE TYPE change_type AS ENUM ('add_object', 'remove_object', 'add_triple', 'remove_triple');
+
 
 CREATE TABLE wb_strings
 (
@@ -70,8 +72,8 @@ WITH (
 -- Remove this in future
 INSERT INTO wb_users (username, email, name) VALUES ('webbox', 'webbox@localhost', 'Webbox User');
 
-
-CREATE TABLE wb_triple_vers
+-- Only every N versions will get a full snapshot - where N is dynamically determined
+CREATE TABLE wb_triple_vers_snapshot
 (
   version integer NOT NULL,
   triple integer NOT NULL,
