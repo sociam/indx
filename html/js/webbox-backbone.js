@@ -102,7 +102,11 @@
 		"http://www.w3.org/2001/XMLSchema#double": function(o) { return parseFloat(o['@value'], 10); },
 		"http://www.w3.org/2001/XMLSchema#boolean": function(o) { return o['@value'].toLowerCase() === 'true'; },
 		"http://www.w3.org/2001/XMLSchema#dateTime": function(o) { return new Date(Date.parse(o['@value'])); },
-		"webbox-file": function(o,box) { return new File({"@id":o['@value'], "content-type":o['@language'] },{box:box}); }
+		"webbox-file": function(o,box) {
+			var f = box.get_or_create_file(o['@value']);
+			f.set("content-type", o['@language']);
+			return f;
+		}
 	};
 	var deserialize_literal = function(obj, box) {
 		return obj['@value'] !== undefined ? literal_deserializers[ obj['@type'] || '' ](obj, box) : obj;
@@ -284,7 +288,8 @@
 
 	// Box =================================================
 	// WebBox.GraphCollection is the list of WebBox.Objs in a WebBox.Graph
-	var ObjCollection = Backbone.Collection.extend({ model: Obj });
+	var ObjCollection = Backbone.Collection.extend({ model: Obj }),
+		FileCollection = Backbone.Collection.extend({ model: File });	
 
 	// new client: fetch is always lazy, only gets ids, and
 	// lazily get objects as you go
@@ -295,7 +300,7 @@
 			var this_ = this;
 			u.assert(options.store, "no store provided");
 			this.store = options.store;
-			this.set({objcache: new ObjCollection(), objlist: [] });
+			this.set({objcache: new ObjCollection(), objlist: [], files : new FileCollection() });
 			this.options = _(this.default_options).chain().clone().extend(options || {}).value();
 			this.set_up_websocket();
 			this._update_queue = {};
@@ -306,6 +311,13 @@
 				this_._flush_update_queue();
 				this_._flush_delete_queue();
 			});
+		},
+		get_or_create_file:function(fid) {
+			var files = this.get('files');
+			if (files.get(fid) === undefined) {
+				files.add(new File({"@id": fid}, { box: this }));
+			}
+			return files.get(fid);
 		},
 		set_up_websocket:function() {
 			var this_ = this, server_host = this.store.get('server_host');
@@ -382,7 +394,9 @@
 		},
 		put_file:function(id,filedata,contenttype) {
 			// creates a File object and hands it back in the resolve
-			var d = u.deferred(), this_ = this, newFile = new File({"@id": id, "content-type": contenttype}, { box: this }); 
+			contenttype = contenttype || filedata.type;
+			var d = u.deferred(), this_ = this, newFile = this.get_or_create_file(id);
+			newFile.set({"content-type": contenttype}); 
 			this._do_put_file(id,filedata,contenttype).then(function(){
 				u.debug('image put success ');
 				d.resolve(newFile);
@@ -454,13 +468,16 @@
 				var cached_obj = this_._objcache().get(uri), cdfd = u.deferred();
 				if (cached_obj) {
 					// { prop : [ {sval1 - @type:""}, {sval2 - @type} ... ]
-					var changed_properties = [];					
+					var changed_properties = [];
+					console.log("obj deleted ", obj.deleted);
 					var deleted_propval_dfds = _(obj.deleted).map(function(vs, k) {
 						changed_properties = _(changed_properties).union([k]);
-						var dd = u.deferred();						
+						var dd = u.deferred();
 						u.when(vs.map(function(v) {	return deserialize_value(v, this_);	})).then(function() {
 							var values = _.toArray(arguments);
 							var new_vals = _(cached_obj.get(k) || []).difference(values);
+							// console.log("DESERIALISED deleted values ", values, " - ", " new_vals ", new_vals);
+							// window._values = values; window._newvals = new_vals;
 							cached_obj.set(k,new_vals);
 							// semantics - if a property has no value then we delete it
 							if (new_vals.length === 0) { cached_obj.unset(k); }
