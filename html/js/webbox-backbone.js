@@ -334,7 +334,7 @@
 				var ws_url = [protocol,server_host,'ws'].join('/');
 				ws = new WebSocket(ws_url);
 				ws.onmessage = function(evt) {
-					u.debug('websocket :: incoming a message ', evt.data.toString().substring(0,120));
+					u.debug('websocket :: incoming a message ', evt.data.toString().substring(0,190));
 					var pdata = JSON.parse(evt.data);
 					if (pdata.action === 'diff') {
 						this_._diff_update(pdata.data)
