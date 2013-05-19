@@ -7,7 +7,7 @@
 		.directive('timeseries', function() {
 			return {
 				restrict: 'E',
-				scope:{model:"=model", box:"=box"}, // these means the attribute 'm' has the name of the scope variable to use
+				scope:{model:"=model", box:"=box", property:"=property"}, // these means the attribute 'm' has the name of the scope variable to use
 				templateUrl:'/components/timeseries/timeseries.html',
 				controller:function($scope, $element, $attrs, webbox) {
 					// incoming :
@@ -107,16 +107,18 @@
 					var update = function() {
 						try {
 							// run from inside safe apply
-							var ps = $attrs.properties.split(',').map(function(x) { return x.trim(); });
-                            console.debug("properties", $attrs.properties);
-							$scope.hello = ' '+ ps.map(function(p) {
-								var v = $scope.model.get(p);
-								return p + ": " + (v ? v.toString() : 'none');
-							}).join(',');
-                            console.debug("element",$element);
-                            update_chart($attrs, $element);
-//                            $scope.chart = update_chart($attrs);
-							console.log('TIME SERIES UPDATE > ', $scope.hello);
+							console.log('property ', $scope.property);
+							update_chart($element, $scope.model.get($scope.property));
+														
+							// var ps = $attrs.property.split(',').map(function(x) { return x.trim(); });
+// 							$scope.hello = ' '+ ps.map(function(p) {
+// 								var v = $scope.model.get(p);
+// 								return p + ": " + (v ? v.toString() : 'none');
+// 							}).join(',');
+//                             console.debug("element",$element);
+//                             update_chart($attrs, $element);
+// //                            $scope.chart = update_chart($attrs);
+// 							console.log('TIME SERIES UPDATE > ', $scope.hello);
 							
 						} catch(e) {
 							console.error(e);
@@ -129,12 +131,12 @@
 						if (old_model) { old_model.off(null, null, context); }
 						if (model) {
 							model.on('change', function() {
-								$scope.$apply(update);
+								try { $scope.$apply(update); }
+								catch(e) {	webbox.safe_apply($scope, update);	}
 							}, context);
-							old_model = model;
 							update();
-							console.log(' ~~~~~~~~~~~~~~~~~~~~~ listen and update done', model);
 						}
+						old_model = model;
 					};					
 					webbox.loaded.then(function() {
 						$scope.$watch('model', listen_and_update);
