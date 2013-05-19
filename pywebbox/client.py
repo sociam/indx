@@ -88,8 +88,11 @@ class WebBoxClient:
             if status['code'] < 200 or status['code'] > 299:
                 raise Exception("{0} in box {1} failed. Response is {2} with code {3}".format(source, self.args['box'], status['message'], status['code']))
             else:
-                pretty = pprint.pformat(status, indent=2, width=80)
-                logging.info("{0} in box {1} successful, return is: {2}".format(source, self.args['box'], pretty))
+                if "data" in status and self.args['jsondata']:
+                    print json.dumps(status['data'], indent = 2)
+                else:
+                    pretty = pprint.pformat(status, indent=2, width=80)
+                    logging.info("{0} in box {1} successful, return is: {2}".format(source, self.args['box'], pretty))
 
 
     """ Test functions."""
@@ -228,6 +231,7 @@ if __name__ == "__main__":
     parser.add_argument('--debug', action="store_true", default=False, help="Enable output of debug logging")
     parser.add_argument('--id', action="store", nargs="+", help="Limit to specific IDs (e.g., for get_by_ids)")
     parser.add_argument('--contenttype', action="store", help="Specify content-type (e.g., for add_file)")
+    parser.add_argument('--jsondata', action="store_true", default=False, help="Return the 'data' element of the response as JSON.")
 
     args = vars(parser.parse_args())
 
