@@ -2,7 +2,6 @@
 /*jslint vars:true todo:true sloppy:true */
 
 (function() {
-	console.log('>>>>>>>>>>> TIMESERIES #1');
 	angular
 		.module('webbox-widgets')
 		.directive('timeseries', function() {
@@ -15,10 +14,8 @@
 					//   $scope.model <- model 
 					//   $scope.box <- from property
 					//   $attr.propert[ies] <- properties to plot
-
 					console.log("TIMESERIES INIT >>>>>> ");
 					var update = function() {
-						console.log('TIMESERIES UPDATE ');
 						try {
 							// run from inside safe apply
 							var ps = $attrs.properties.split(',').map(function(x) { return x.trim(); });
@@ -26,15 +23,31 @@
 								var v = $scope.model.get(p);
 								return p + ": " + (v ? v.toString() : 'none');
 							}).join(',');
+							console.log('TIME SERIES UPDATE > ', $scope.hello);
+							
 						} catch(e) {
 							console.error(e);
 						}
+					};
+					var context = { id : Math.random() };
+					var old_model, old_box;
+					var listen_and_update = function() {
+						var model = $scope.model;
+						if (old_model) { old_model.off(null, null, context); }
+						if (model) {
+							model.on('change', function() {
+								$scope.$apply(update);
+							}, context);
+							old_model = model;
+							update();
+							console.log(' ~~~~~~~~~~~~~~~~~~~~~ listen and update done', model);
+						}
 					};					
 					webbox.loaded.then(function() {
-						$scope.$watch('model', update);
-						$scope.$watch('box', update);						
+						$scope.$watch('model', listen_and_update);
+						$scope.$watch('box', listen_and_update);
 					});
-					webbox.safe_apply($scope, update);
+					webbox.safe_apply($scope, listen_and_update);
 				}
 			};
 		});
