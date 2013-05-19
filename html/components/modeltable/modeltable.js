@@ -7,9 +7,10 @@
 		.directive('modeltable', function() {
 			return {
 				restrict: 'E',
-				scope:{},  // model:"=m" }, // these means the attribute 'm' has the name of the scope variable to use
+				scope:{model:"=model", box:"=box"}, // these means the attribute 'm' has the name of the scope variable to use
 				templateUrl:'/components/modeltable/modeltable.html',
 				controller:function($scope, $attrs, webbox) {
+					
 					webbox.loaded.then(function() {
 						// incoming : $scope.model <- inherited from parent scope via attribute m
 						// $scope.uimodel <- gets set and manipulated by the ui
@@ -17,13 +18,14 @@
 						//    box - box name
 						//    parsechar - character to use to parse
 
-						console.log("MODELTABLE box >> ", $scope.$parent.$eval($attrs.boxideval));
-						console.log("MODELTABLE model >> ", $scope.$parent.$eval($attrs.modelideval));
+						var box;													
+
+						// console.log('scope model ', $scope.model, ' scope box ', $scope.box);
+						// console.log("MODELTABLE box >> ", $attrs.boxideval, $scope.$parent.$eval($attrs.boxideval), $scope.$eval($attrs.boxideval));
+						// console.log("MODELTABLE model >> ", $attrs.modelideval, $scope.$parent.$eval($attrs.modelideval), $scope.$eval($attrs.modelideval));
 						
-						var modelid = $attrs.modelideval ? $scope.$parent.$eval($attrs.modelideval) : undefined;
 						var u = webbox.u; // backbone model
 						var parsechar = $attrs.parsechar || ',';
-						var boxname = $attrs.box || ($attrs.boxideval && $scope.$parent.$eval($attrs.boxideval)), box;
 						var resolve_fields = ['name', 'label', 'first_name'];
 						var make_uiobj = function(key,val) {
 							return { key: key, old_key: key, value: val, old_val : val };
@@ -73,11 +75,16 @@
 							webbox.safe_apply($scope, function() {	$scope.uimodel = new_uimodel;	});
 						};
 						$scope.update_uimodel = function() {
+							// should be run in a safe apply
 							if ($scope.model === undefined) { return console.warn('$scope.model is undefined'); }
 							if ($scope.uimodel === undefined) {
 								var m2v = modeltoview();
-								$scope.uimodel = m2v;							
-							} else { $scope._update_in_place(); }
+								$scope.uimodel = m2v; 
+								console.log('ran standalone modeltoview ', m2v);
+							} else {
+								$scope._update_in_place();
+								console.log('ran updateinplace ', m2v);								
+							}
 						};
 						// model -> view
 						var _serialise = function(v) {
@@ -173,33 +180,42 @@
 							var key = propertyval.key;
 							setTimeout(function() { model.unset(key); $scope.commit_model(); });
 						};
-						// initialise
-						if (boxname) {
-							box = webbox.store.get_or_create_box(boxname);
-							box.fetch().then(function() {
-								$scope.loaded = true;
-								$scope.box_objs = box.get_obj_ids();
-								if (modelid) {
-									console.log(' getting  modelid ', modelid);									
-									box.get_obj(modelid).then(function(model) {
-										// console.log(' ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ setting model',model, _(model.attributes).keys().length);
-										console.log('got model >> ', modelid, model);
-										$scope.model = model;
-										webbox.safe_apply($scope,$scope.update_uimodel);
-										$scope.model.on('change', function() {
-											console.log('TABLE ------------- MODEL CHANGE >> ', $scope.model.id);
-											$scope.update_uimodel();
-										});										
-									});
-								} else {
-									// already have the model can update directly
-									console.log('already have the model can update directly ');
-									$scope.$apply($scope.update_uimodel);
-									$scope.$watch('model', $scope.update_uimodel);
-								}
+						var _init_ = function() {
+							// initialise
+							var modelid = $scope.model ? $scope.model.id : ($attrs.modelid || ($attrs.modelideval && $scope.$parent.$eval($attrs.modelideval)));
+							var boxid = $scope.box ? $scope.box.id : ($attrs.box || ($attrs.boxideval && $scope.$parent.$eval($attrs.boxideval)));
+							console.log("calling _init_", modelid, boxid);								
+							if (boxid) {
+								// set box, which is used above ^
+								box = webbox.store.get_or_create_box(boxid);
+								box.fetch().then(function() {
+									$scope.loaded = true;
+									$scope.box_objs = box.get_obj_ids();
+									if (modelid) {
+										console.log(' getting  modelid ', modelid);									
+										box.get_obj(modelid).then(function(model) {
+											// console.log(' ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ setting model',model, _(model.attributes).keys().length);
+											console.log('got model >> ', modelid, model);
+											$scope.model = model;
+											$scope.model.on('change', function() {
+												console.log('TABLE ------------- MODEL CHANGE >> ', $scope.model.id);
+												webbox.safe_apply($scope,$scope.update_uimodel);
+											});
+											webbox.safe_apply($scope, $scope.update_uimodel);
+										});
+									} else {
+										// already have the model can update directly
+										console.log('already have the model can update directly ');
+										$scope.$apply($scope.update_uimodel);
+										$scope.$watch('model', $scope.update_uimodel);
+									}
 
-							}).fail(function(err) { $scope.error = err; });
-						}				  
+								}).fail(function(err) { $scope.error = err; });
+							}
+						};
+						$scope.$watch('model', _init_);
+						$scope.$watch('box', _init_);
+						_init_();
 					});
 				}
 			};
