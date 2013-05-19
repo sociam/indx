@@ -70,12 +70,20 @@
                             ];
                                 */
                 
-                            data.forEach(function(d) {
-                              d.timestamp = +(new Date(d.timestamp));
-                            });
 
-                            x.domain(d3.extent(data, function(d) { return d.timestamp; }));
-                            y.domain(d3.extent(data, function(d) { return d.value; }));
+                            var newdata = [];
+
+                            data.forEach(function(d) {
+                              d.timestamp = +(new Date(d.timestamp)); // parse the date, and then turn into unix timestamp
+                              d.value = + d.value; // convert to int from string 
+                              if (!isNaN(d.value)){
+                                newdata.push(d);
+                              }
+                            });
+                            console.debug("Parsed data", newdata);
+
+                            x.domain(d3.extent(newdata, function(d) { return d.timestamp; }));
+                            y.domain(d3.extent(newdata, function(d) { return d.value; }));
 
                             svg.append("g")
                                 .attr("class", "x axis")
@@ -93,7 +101,7 @@
                                 .text(""); // y-axis text
 
                             svg.append("path")
-                                .datum(data)
+                                .datum(newdata)
                                 .attr("class", "line")
                                 .attr("d", line);
 
