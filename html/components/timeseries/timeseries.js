@@ -9,12 +9,101 @@
 				restrict: 'E',
 				scope:{model:"=model", box:"=box"}, // these means the attribute 'm' has the name of the scope variable to use
 				templateUrl:'/components/timeseries/timeseries.html',
-				controller:function($scope, $attrs, webbox) {
+				controller:function($scope, $element, $attrs, webbox) {
 					// incoming :
 					//   $scope.model <- model 
 					//   $scope.box <- from property
 					//   $attr.propert[ies] <- properties to plot
 					console.log("TIMESERIES INIT >>>>>> ");
+   
+                    var update_chart = function($attrs, $element){
+                        try {
+                            var new_node = $($element).find(".timeseries-chart"); // find the chart within this scope's element
+                            new_node.html(""); // remove existing chart
+                            new_node = new_node[0]; // get DOM node
+                            console.debug("new_node", new_node);
+
+                            var width = 750;
+                            var height = 150;
+
+                            var margin = {top: 20, right: 20, bottom: 30, left: 50},
+                                width = width - margin.left - margin.right,
+                                height = height - margin.top - margin.bottom;
+
+                            //var parseDate = d3.time.format("%d-%b-%y").parse;
+
+                            var x = d3.time.scale()
+                                .range([0, width]);
+
+                            var y = d3.scale.linear()
+                                .range([height, 0]);
+
+                            var xAxis = d3.svg.axis()
+                                .scale(x)
+                                .orient("bottom");
+
+                            var yAxis = d3.svg.axis()
+                                .scale(y)
+                                .orient("left");
+
+                            var line = d3.svg.line()
+                                .x(function(d) { return x(d.timestamp); })
+                                .y(function(d) { return y(d.value); });
+
+                            var svg = d3.select(new_node).append("svg")
+                                .attr("width", width + margin.left + margin.right)
+                                .attr("height", height + margin.top + margin.bottom)
+                              .append("g")
+                                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+                            // replace data with real data from attrs
+                            var data = [
+                                {"timestamp": 1368992932147,
+                                 "value": 1},
+                                {"timestamp": 1368992942147,
+                                 "value": 2},
+                                {"timestamp": 1368992952147,
+                                 "value": 3},
+                                {"timestamp": 1368992962147,
+                                 "value": 4}
+                            ];
+                
+                            /*
+                            data.forEach(function(d) {
+                              d.date = d.date;
+                              d.date = parseDate(d.date);
+                              console.debug("date", d.date);
+                              d.close = +d.c;
+                            });
+                            */
+
+                            x.domain(d3.extent(data, function(d) { return d.timestamp; }));
+                            y.domain(d3.extent(data, function(d) { return d.value; }));
+
+                            svg.append("g")
+                                .attr("class", "x axis")
+                                .attr("transform", "translate(0," + height + ")")
+                                .call(xAxis);
+
+                            svg.append("g")
+                                .attr("class", "y axis")
+                                .call(yAxis)
+                              .append("text")
+                                .attr("transform", "rotate(-90)")
+                                .attr("y", 6)
+                                .attr("dy", ".71em")
+                                .style("text-anchor", "end")
+                                .text(""); // y-axis text
+
+                            svg.append("path")
+                                .datum(data)
+                                .attr("class", "line")
+                                .attr("d", line);
+
+						} catch(e) {
+							console.error("error: " + e);
+						}
+                    };
 					var update = function() {
 						try {
 							// run from inside safe apply
@@ -23,6 +112,9 @@
 								var v = $scope.model.get(p);
 								return p + ": " + (v ? v.toString() : 'none');
 							}).join(',');
+                            console.debug("element",$element);
+                            update_chart($attrs, $element);
+//                            $scope.chart = update_chart($attrs);
 							console.log('TIME SERIES UPDATE > ', $scope.hello);
 							
 						} catch(e) {
