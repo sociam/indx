@@ -1,0 +1,64 @@
+/* modeltable component cdm */
+
+@import url('/css/select2.css');
+
+.modeltable {
+	opacity:1.0;
+	.invalid {
+		background-color:#fee !important;
+		border-color:1px solid red !important;
+	}
+	tbody tr {
+		border-top:1px solid rgba(250,250,250,1);				
+		&:first-child { border-top:1px solid #fff; }
+		padding:0px;
+	}
+    tr td {
+    	border-top:none; 
+    }  
+	tr td.keyspan {
+		padding:12px 0px 0px 3px !important;
+        width:200px;
+	}
+	tr td.delspan {
+		padding: 13px 0px 0px 0px !important;
+		width:10px; opacity:0.2;
+	}
+	tr td.valspan {
+		padding:7px 3px 0px 3px !important;
+        min-width:200px;
+	}    
+	input {
+		background-color:rgba(255,255,255,0) !important;
+		border:none;
+		min-width:200px;
+		max-height:100px;
+		vertical-align:top !important;
+	}
+	.key {
+		color:#023 !important;
+	}
+	textarea, input, input:focus {
+		outline:none !important; border:none !important;
+		box-shadow:none !important;
+	}
+	.ui-animate {
+		opacity: 0 !important;
+		max-height:0px !important;
+		transition: all 1.5s ease;
+		-o-transition: all 1.5s ease;
+		-moz-transition: all 1.5s ease;
+		-webkit-transition: all 1.5s ease;
+	}
+
+	.select2 {
+		.select2-choices {
+			height:100%;
+			border-color:rgba(0,0,0,0.2);
+			margin:1px 0px 5px 5px;
+		}
+		.select2-search-choice {
+			margin:5px 0px 3px 5px !important;
+		}
+	}
+}
