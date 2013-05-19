@@ -48,7 +48,7 @@
 						$scope._update_in_place = function() {
 							var newmodel = $scope.model;
 							var new_keys = newmodel.omit(['@id', '@type'].concat(_($scope.uimodel).map(function(x) { return x.key; })));
-							console.log("ui model >> ", newmodel.keys(), newmodel.keys().length, $scope.uimodel.length,_(new_keys).keys().length, new_keys);
+							// console.log("ui model >> ", newmodel.keys(), newmodel.keys().length, $scope.uimodel.length,_(new_keys).keys().length, new_keys);
 							var new_ui_objs = _(new_keys).map(function(v,k) { return make_uiobj(k,v); });
 							var dead_ui_objs = _($scope.uimodel).map(function(uio) { if (newmodel.keys().indexOf(uio.key) < 0) { return uio; }	}).filter(u.defined);
 							var new_uimodel = _($scope.uimodel).difference(dead_ui_objs).map(function(uio) {
@@ -180,6 +180,7 @@
 							var key = propertyval.key;
 							setTimeout(function() { model.unset(key); $scope.commit_model(); });
 						};
+						/*
 						var _init_ = function() {
 							// initialise
 							var modelid = $scope.model ? $scope.model.id : ($attrs.modelid || ($attrs.modelideval && $scope.$parent.$eval($attrs.modelideval)));
@@ -213,9 +214,26 @@
 								}).fail(function(err) { $scope.error = err; });
 							}
 						};
-						$scope.$watch('model', _init_);
-						$scope.$watch('box', _init_);
-						_init_();
+						*/
+
+						var context = { id : Math.random() };
+						var old_model, old_box;
+						var listen_and_update = function() {
+							box = $scope.box;
+							$scope.box_objs = box ? box.get_obj_ids() : [];
+							var model = $scope.model;
+							if (old_model) {
+								old_model.off(null, null, context);
+							}
+							if (model) {
+								model.on('change', function() { $scope.$apply($scope.update_uimodel);}, context);
+								$scope.update_uimodel();
+							}
+							old_model = model;
+						};					
+						$scope.$watch('model', listen_and_update);
+						$scope.$watch('box', listen_and_update);
+						$scope.$apply(listen_and_update);						
 					});
 				}
 			};

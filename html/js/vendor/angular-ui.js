@@ -939,7 +939,7 @@ angular.module('ui.directives').directive('uiSelect2', ['ui.config', '$timeout',
         if (controller) {
           // Watch the model for programmatic changes
           controller.$render = function () {
-			  console.log("RENDER >>>>>>>>>>>>>>>>>>>>> ", controller.$modelValue);
+	      // console.log("RENDER >>>>>>>>>>>>>>>>>>>>> ", controller.$modelValue);
             if (isSelect) {
               elm.select2('val', controller.$modelValue);
             } else {

@@ -35,13 +35,10 @@
 						var model = $scope.model;
 						if (old_model) { old_model.off(null, null, context); }
 						if (model) {
-							model.on('change', function() {
-								$scope.$apply(update);
-							}, context);
-							old_model = model;
+							model.on('change', function() { $scope.$apply(update);}, context);
 							update();
-							console.log(' ~~~~~~~~~~~~~~~~~~~~~ listen and update done', model);
 						}
+						old_model = model;
 					};					
 					webbox.loaded.then(function() {
 						$scope.$watch('model', listen_and_update);
