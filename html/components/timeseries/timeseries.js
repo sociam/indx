@@ -16,7 +16,7 @@
 					//   $attr.propert[ies] <- properties to plot
 					console.log("TIMESERIES INIT >>>>>> ");
    
-                    var update_chart = function($attrs, $element){
+                    var update_chart = function($element, data){
                         try {
                             var new_node = $($element).find(".timeseries-chart"); // find the chart within this scope's element
                             new_node.html(""); // remove existing chart
@@ -57,6 +57,7 @@
                                 .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
                             // replace data with real data from attrs
+                               /*
                             var data = [
                                 {"timestamp": 1368992932147,
                                  "value": 1},
@@ -67,15 +68,11 @@
                                 {"timestamp": 1368992962147,
                                  "value": 4}
                             ];
+                                */
                 
-                            /*
                             data.forEach(function(d) {
-                              d.date = d.date;
-                              d.date = parseDate(d.date);
-                              console.debug("date", d.date);
-                              d.close = +d.c;
+                              d.timestamp = +(new Date(d.timestamp));
                             });
-                            */
 
                             x.domain(d3.extent(data, function(d) { return d.timestamp; }));
                             y.domain(d3.extent(data, function(d) { return d.value; }));
