@@ -35,7 +35,10 @@
 						var model = $scope.model;
 						if (old_model) { old_model.off(null, null, context); }
 						if (model) {
-							model.on('change', function() { $scope.$apply(update);}, context);
+							model.on('change', function() {
+								try { $scope.$apply(update); }
+								catch(e) {	webbox.safe_apply($scope, update);	}
+							}, context);
 							update();
 						}
 						old_model = model;
