@@ -108,6 +108,7 @@
 						try {
 							// run from inside safe apply
 							var ps = $attrs.properties.split(',').map(function(x) { return x.trim(); });
+                            console.debug("properties", $attrs.properties);
 							$scope.hello = ' '+ ps.map(function(p) {
 								var v = $scope.model.get(p);
 								return p + ": " + (v ? v.toString() : 'none');
