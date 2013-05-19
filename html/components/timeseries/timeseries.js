@@ -104,8 +104,10 @@
 					var update = function() {
 						try {
 							// run from inside safe apply
-							console.log('property ', $scope.property);
-							update_chart($element, $scope.model.get($scope.property));
+
+							var vals = $scope.model.get($scope.property) ? JSON.parse($scope.model.get($scope.property)[0]) : [];
+							console.log('property ', $scope.property, vals);							
+							update_chart($element, vals);
 														
 							// var ps = $attrs.property.split(',').map(function(x) { return x.trim(); });
 // 							$scope.hello = ' '+ ps.map(function(p) {
