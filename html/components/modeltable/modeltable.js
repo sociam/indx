@@ -149,11 +149,9 @@
 								var v = propertyval.value, k = propertyval.key;
 								var d = u.deferred();
 								var parsed_and_resolved = v.map(_select2_val_out).filter(u.defined).map(parse);
-								u.when(parsed_and_resolved).then(function() {
-									d.resolve([k,_.toArray(arguments)]);
-								}).fail(d.reject);
+								u.when(parsed_and_resolved).then(function(vals) { d.resolve([k,vals]); }).fail(d.reject);
 								return d.promise();
-							})).then(function() { pdfd.resolve(u.dict(_.toArray(arguments))); }).fail(pdfd.reject);
+							})).then(function(v) { pdfd.resolve(u.dict(v)); }).fail(pdfd.reject);
 							return pdfd.promise();
 						};
 						$scope.new_row = function() {

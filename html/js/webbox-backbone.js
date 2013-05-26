@@ -165,6 +165,8 @@
 		initialize:function(attrs, options) {
 			this.box = options.box;
 		},
+		_is_fetched: function() { return this._fetched || false; },
+		_set_fetched : function() { this._fetched = true; },
 		get_id:function() { return this.id;	},			
 		_value_to_array:function(k,v) {
 			if (k === '@id') { return v; }
@@ -217,8 +219,7 @@
 					}
 					return vd.promise();							
 				});						
-				u.when(val_dfds).then(function() {
-					var obj_vals = _.toArray(arguments);
+				u.when(val_dfds).then(function(obj_vals) {
 					// only update keys that have changed
 					var prev_vals = this_.get(key);
 					if ( prev_vals === undefined || obj_vals.length !== prev_vals.length ||
@@ -235,31 +236,17 @@
 		_fetch:function() {
 			var this_ = this, fd = u.deferred(), box = this.box.get_id();
 			this.box._ajax('GET', box, {'id':this.id}).then(function(response) {
-				// u.log('query response ::: ', response);
+				this_._set_fetched(true);
 				var objdata = response.data;
 				if (objdata['@version'] === undefined) {
 					// according to the server, we're dead.
 					console.log('zombie detected ', this_.id);
-					this.cid = this.id;
+					this_.cid = this_.id;
 					this_.unset({});
-					delete this.id;
+					delete this_.id;
 					fd.resolve();
 					return;
 				}
-				/*
-				if (this_.box._get_version() !== objdata['@version']) {
-					// our box is obsolete! let's tell box to update itself.
-					// u.debug('telling box to update >> ', this_.box._get_version(), response['@version']);
-					// update entire box to latest version then continue
-					return this_.box.fetch().then(function(fetched_thingies) {
-						// recurse after done
-						// TODO: if you already fetched an update for this object
-						// then we really don't need to do it do we? --
-						// 
-						this_.fetch().then(fd.resolve).fail(fd.reject);
-					}).fail(fd.reject);
-				}
-				*/
 				// we are at current known version as far as we know
 				var obj_save_dfds = _(objdata).map(function(obj,uri) {
 						// top level keys - corresponding to box level properties
@@ -473,8 +460,7 @@
 					var deleted_propval_dfds = _(obj.deleted).map(function(vs, k) {
 						changed_properties = _(changed_properties).union([k]);
 						var dd = u.deferred();
-						u.when(vs.map(function(v) {	return deserialize_value(v, this_);	})).then(function() {
-							var values = _.toArray(arguments);
+						u.when(vs.map(function(v) {	return deserialize_value(v, this_);	})).then(function(values) {
 							var new_vals = _(cached_obj.get(k) || []).difference(values);
 							// console.log("DESERIALISED deleted values ", values, " - ", " new_vals ", new_vals);
 							// window._values = values; window._newvals = new_vals;
@@ -488,8 +474,7 @@
 					var added_propval_dfds = _(obj.added).map(function(vs, k) {
 						changed_properties = _(changed_properties).union([k]);
 						var dd = u.deferred();						
-						u.when(vs.map(function(v) {	return deserialize_value(v, this_);	})).then(function() {
-							var values = _.toArray(arguments);
+						u.when(vs.map(function(v) {	return deserialize_value(v, this_);	})).then(function(values) {
 							var new_vals = (cached_obj.get(k) || []).concat(values);
 							cached_obj.set(k,new_vals);
 							dd.resolve();
@@ -589,10 +574,9 @@
 				this._ajax("GET",[box,'get_object_ids'].join('/')).then(
 					function(response){
 						u.assert(response['@version'] !== undefined, 'no version provided');
-						console.log(' BOX FETCH VERSION ', response['@version']);
-						this_.id = this_.get_id();
+						this_.id = this_.get_id(); // sets so that _is_fetched later returns true
 						this_._set_version(response['@version']);
-						this_._update_object_list(response.ids);					
+						this_._update_object_list(response.ids);				
 						fd.resolve(this_);
 					}).fail(fd.reject);
 			}
