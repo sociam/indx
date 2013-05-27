@@ -78,7 +78,6 @@
 					$scope.$watch('property', $scope._reload);
 					$el.on('change', function(evt) {
 						var selected = $(evt.currentTarget).find(':selected');
-						console.log('seleeeeeeeect!');
 						u.when(selected.map(function(x) {
 							var v = $(this).attr('value'),
 							t = $(this).attr('option-type'),
@@ -89,11 +88,15 @@
 							else { d.resolve(v); }
 							return d.promise();
 						}).get()).then(function(vals) {
-							$scope.$sa(function() { $scope.selected = vals; });
+							$scope.$sa(function() {
+								console.log('seleeeeeeeect!', vals);
+								$scope.selected = vals;
+							});
 						});
-					});						
-					console.log('link done');						
-				} 
+					});
+					$el.find('select').select2();
+					console.log('link done');
+				}
 			}
 		});
 }());
