@@ -36,6 +36,10 @@
 			WebBox.load().then(function() {
 				exports.u = window.u = WebBox.utils;
 				exports.store = window.store = new WebBox.Store();
+				exports.Obj = WebBox.Obj;
+				exports.File = WebBox.File;
+				exports.Box = WebBox.Box;
+				exports.Store = WebBox.Store;												
 				window.store.fetch()
 					.then(function() { d.resolve(exports); })
 					.fail(function() {

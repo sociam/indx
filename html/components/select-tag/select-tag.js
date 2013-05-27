@@ -27,40 +27,34 @@
 							$scope.box_id === undefined ||
 							$scope.model_id === undefined ||
 							$scope.property === undefined) { return ; }
-						store
-							.get_box($scope.box_id)
-							.fetch().then(function(box) {
-								box.get_obj($scope.model_id)
-									.then(function(_m) {
-										console.log('loaded >> ' , _m.id);
-										if (model) { model.off(null, null, ctx); }
-										model = _m;
-										window.model = model;
-										model.on('change', function() { $sa(reload); }, ctx);
-										$sa(function() {
-											$scope.values = (model.get($scope.property) || []).concat();
-											console.log('values are ', $scope.values, $scope.property, model.get($scope.property));
-										});
-									}).fail(function(err) {	u.error('box fetch error ', err);	});
-							}).fail(function(err) {	u.error('select error ', err);	});
+						
+						var box = $scope.box = store.get_box($scope.box_id);
+						box.fetch().then(function(box) {
+							box.get_obj($scope.model_id)
+								.then(function(_m) {
+									console.log('loaded >> ' , _m.id);
+									if (model) { model.off(null, null, ctx); }
+									model = _m;
+									window.model = model;
+									model.on('change', function() { $sa(reload); }, ctx);
+									$sa(function() {
+										$scope.values = (model.get($scope.property) || []).concat();
+										console.log('values are ', $scope.values, $scope.property, model.get($scope.property));
+									});
+								}).fail(function(err) {	u.error('box fetch error ', err);	});
+						}).fail(function(err) {	u.error('select error ', err);	});
 					};
 					$scope.option_string = function(v) {
 						// turns value
-						if (_.isObject(v) && v instanceof webbox.Obj) {
-							console.log('returning id ', v.id);
-							return v.id;
-						}						
+						if (_.isObject(v) && v instanceof webbox.Obj) { return v.id; }						
 						if (_.isString(v)) { return v; }
-						return v.toString();						
+						return v.toString();
 					};
 					$scope.option_value = function(v) {
 						// turns value
-						if (_.isObject(v) && v instanceof webbox.Obj) {
-							console.log('returning id ', v.id);
-							return v.id;
-						}						
+						if (_.isObject(v) && v instanceof webbox.Obj) { return v.id; }						
 						if (_.isString(v)) { return v; }
-						return v.toString();						
+						return v.toString();
 					};
 					$scope.option_type = function(v) {
 						// turns value
@@ -80,29 +74,30 @@
 				link:function($scope, $element) {
 					// add listeners here
 					var $el = $element; // .select2({allowClear:true});
+					window._scope = $scope; // debug					
 					$scope.$watch('box_id', $scope._reload);
 					$scope.$watch('model_id', $scope._reload);
 					$scope.$watch('property', $scope._reload);
 					$el.on('change', function(evt) {
 						var selected = $(evt.currentTarget).find(':selected');
 						console.log('seleeeeeeeect!');
-
 						u.when(selected.map(function(x) {
 							var v = $(this).attr('value'),
-								d = u.deferred(),
-								t = $(this).attr('type');							
-							if (t == 'resource') {	return box.get_obj(v);}
+							t = $(this).attr('option-type'),
+							d = u.deferred();
+							if (t == 'resource') { return $scope.box.get_obj(v);}
 							if (t == 'string') {	d.resolve(v.toString()); }
 							if (t == 'number') {	d.resolve(parseFloat(v)); }
 							else { d.resolve(v); }
 							return d.promise();
 						}).get()).then(function(vals) {
 							console.log('selected vals ', vals);
-							window._scope = $scope;
 							$scope.$sa(function() { $scope.selected = vals; });
 						});
 					});
+						
 					console.log('link done');
+						
 				} 
 			}
 		});
