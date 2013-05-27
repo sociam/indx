@@ -193,42 +193,6 @@
 							var key = propertyval.key;
 							setTimeout(function() { model.unset(key); $scope.commit_model(); });
 						};
-						/*
-						var _init_ = function() {
-							// initialise
-							var modelid = $scope.model ? $scope.model.id : ($attrs.modelid || ($attrs.modelideval && $scope.$parent.$eval($attrs.modelideval)));
-							var boxid = $scope.box ? $scope.box.id : ($attrs.box || ($attrs.boxideval && $scope.$parent.$eval($attrs.boxideval)));
-							console.log("calling _init_", modelid, boxid);								
-							if (boxid) {
-								// set box, which is used above ^
-								box = webbox.store.get_or_create_box(boxid);
-								box.fetch().then(function() {
-									$scope.loaded = true;
-									$scope.box_objs = box.get_obj_ids();
-									if (modelid) {
-										console.log(' getting  modelid ', modelid);									
-										box.get_obj(modelid).then(function(model) {
-											// console.log(' ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ setting model',model, _(model.attributes).keys().length);
-											console.log('got model >> ', modelid, model);
-											$scope.model = model;
-											$scope.model.on('change', function() {
-												console.log('TABLE ------------- MODEL CHANGE >> ', $scope.model.id);
-												webbox.safe_apply($scope,$scope.update_uimodel);
-											});
-											webbox.safe_apply($scope, $scope.update_uimodel);
-										});
-									} else {
-										// already have the model can update directly
-										console.log('already have the model can update directly ');
-										$scope.$apply($scope.update_uimodel);
-										$scope.$watch('model', $scope.update_uimodel);
-									}
-
-								}).fail(function(err) { $scope.error = err; });
-							}
-						};
-						*/
-
 						var context = { id : Math.random() };
 						var old_model, old_box;
 						var listen_and_update = function() {
@@ -239,16 +203,14 @@
 								old_model.off(null, null, context);
 							}
 							if (model) {
-								model.on('change', function() {
-									$scope.$apply($scope.update_uimodel);
-								}, context);
+								model.on('change', function() { $scope.$apply($scope.update_uimodel); }, context);
 								$scope.update_uimodel();
 							}
 							old_model = model;
 						};					
 						$scope.$watch('model', listen_and_update);
 						$scope.$watch('box', listen_and_update);
-						$scope.$apply(listen_and_update);						
+						setTimeout(function() { $scope.$apply(listen_and_update); }, 0);
 					});
 				}
 			};

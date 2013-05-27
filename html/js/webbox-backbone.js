@@ -513,7 +513,15 @@
 
 			// check to see if already fetching, then we can tag along 
 			if (fetching_dfd) {
-				fetching_dfd.then(d.resolve).fail(d.reject);
+				// to fix a deadlock condition -
+				// if we fetch someone who loops back to us
+				// then we will never resolve with this code:
+				// 
+				// fetching_dfd.then(d.resolve).fail(d.reject);
+				// return d.promise();
+				// --
+				// therefore a fix: 				
+				d.resolve(cachemodel);
 				return d.promise();
 			}
 
