@@ -32,10 +32,9 @@
 						box.fetch().then(function(box) {
 							box.get_obj($scope.model_id)
 								.then(function(_m) {
-									console.log('loaded >> ' , _m.id);
 									if (model) { model.off(null, null, ctx); }
 									model = _m;
-									window.model = model;
+									window.model = model; // TODO: DEBUG!
 									model.on('change', function() { $sa(reload); }, ctx);
 									$sa(function() {
 										$scope.values = (model.get($scope.property) || []).concat();
@@ -74,7 +73,6 @@
 				link:function($scope, $element) {
 					// add listeners here
 					var $el = $element; // .select2({allowClear:true});
-					window._scope = $scope; // debug					
 					$scope.$watch('box_id', $scope._reload);
 					$scope.$watch('model_id', $scope._reload);
 					$scope.$watch('property', $scope._reload);
@@ -91,13 +89,10 @@
 							else { d.resolve(v); }
 							return d.promise();
 						}).get()).then(function(vals) {
-							console.log('selected vals ', vals);
 							$scope.$sa(function() { $scope.selected = vals; });
 						});
-					});
-						
-					console.log('link done');
-						
+					});						
+					console.log('link done');						
 				} 
 			}
 		});
