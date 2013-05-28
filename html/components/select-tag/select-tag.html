@@ -1,0 +1,7 @@
+<select data-model-id='{{ model_id }}' data-property='{{ property }}' multiple>
+  <option ng-repeat="v in values"
+		  value="{{ option_value(v) }}"
+		  ng-bind="option_string(v)"
+		  option-type="{{ option_type(v) }}">	
+  </option>
+</select>
