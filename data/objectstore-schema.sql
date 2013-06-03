@@ -1,5 +1,7 @@
 CREATE TYPE object_type AS ENUM ('resource', 'literal');
-CREATE TYPE change_type AS ENUM ('add_object', 'remove_object', 'add_triple', 'remove_triple');
+CREATE TYPE change_type AS ENUM ('upsert_object');
+-- TODO implement these too
+--, 'add_subject', 'remove_subject', 'add_triple', 'remove_triple');
 
 
 CREATE TABLE wb_strings
@@ -33,13 +35,12 @@ WITH (
 );
 
 
-
 CREATE TABLE wb_triples
 (
   id_triple serial NOT NULL,
   subject integer NOT NULL,
   predicate integer NOT NULL,
-  object integer NOT NULL,
+  object integer[] NOT NULL,
   CONSTRAINT pk_triple PRIMARY KEY (id_triple),
   CONSTRAINT fk_subject FOREIGN KEY (subject)
       REFERENCES wb_strings (id_string) MATCH SIMPLE
@@ -47,9 +48,10 @@ CREATE TABLE wb_triples
   CONSTRAINT fk_predicate FOREIGN KEY (predicate)
       REFERENCES wb_strings (id_string) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT fk_object FOREIGN KEY (object)
-      REFERENCES wb_objects (id_object) MATCH SIMPLE
-      ON UPDATE NO ACTION ON DELETE NO ACTION,
+--  CONSTRAINT fk_object FOREIGN KEY (object)
+--      REFERENCES wb_objects (id_object) MATCH SIMPLE
+--      ON UPDATE NO ACTION ON DELETE NO ACTION,
+-- -- Removing the constraint because this is now an array - PG9.3 will allow ELEMENT constraints.
   CONSTRAINT uq_spo UNIQUE (subject, predicate, object)
 )
 WITH (
@@ -73,7 +75,7 @@ WITH (
 INSERT INTO wb_users (username, email, name) VALUES ('webbox', 'webbox@localhost', 'Webbox User');
 
 -- Only every N versions will get a full snapshot - where N is dynamically determined
-CREATE TABLE wb_triple_vers_snapshot
+CREATE TABLE wb_triple_vers_snapshots
 (
   version integer NOT NULL,
   triple integer NOT NULL,
@@ -86,6 +88,33 @@ CREATE TABLE wb_triple_vers_snapshot
 WITH (
   OIDS=FALSE
 );
+
+
+CREATE TABLE wb_latest_subjects
+(
+    id_subject integer NOT NULL,
+    CONSTRAINT pk_subject PRIMARY KEY (id_subject),
+    CONSTRAINT fk_subject FOREIGN KEY (id_subject)
+      REFERENCES wb_strings (id_string) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE NO ACTION
+)
+WITH (
+    OIDS=FALSE
+);
+
+CREATE TABLE wb_latest_vers
+(
+  triple integer NOT NULL,
+  triple_order integer NOT NULL,
+  CONSTRAINT pk_latest_triple_order PRIMARY KEY (triple, triple_order),
+  CONSTRAINT fk_triple FOREIGN KEY (triple)
+      REFERENCES wb_triples (id_triple) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE NO ACTION
+)
+WITH (
+  OIDS=FALSE
+);
+
 
 CREATE TABLE wb_versions
 (
