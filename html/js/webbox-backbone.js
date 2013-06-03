@@ -102,7 +102,11 @@
 		"http://www.w3.org/2001/XMLSchema#double": function(o) { return parseFloat(o['@value'], 10); },
 		"http://www.w3.org/2001/XMLSchema#boolean": function(o) { return o['@value'].toLowerCase() === 'true'; },
 		"http://www.w3.org/2001/XMLSchema#dateTime": function(o) { return new Date(Date.parse(o['@value'])); },
-		"webbox-file": function(o,box) { return new File({"@id":o['@value'], "content-type":o['@language'] },{box:box}); }
+		"webbox-file": function(o,box) {
+			var f = box.get_or_create_file(o['@value']);
+			f.set("content-type", o['@language']);
+			return f;
+		}
 	};
 	var deserialize_literal = function(obj, box) {
 		return obj['@value'] !== undefined ? literal_deserializers[ obj['@type'] || '' ](obj, box) : obj;
@@ -161,6 +165,8 @@
 		initialize:function(attrs, options) {
 			this.box = options.box;
 		},
+		_is_fetched: function() { return this._fetched || false; },
+		_set_fetched : function() { this._fetched = true; },
 		get_id:function() { return this.id;	},			
 		_value_to_array:function(k,v) {
 			if (k === '@id') { return v; }
@@ -213,8 +219,7 @@
 					}
 					return vd.promise();							
 				});						
-				u.when(val_dfds).then(function() {
-					var obj_vals = _.toArray(arguments);
+				u.when(val_dfds).then(function(obj_vals) {
 					// only update keys that have changed
 					var prev_vals = this_.get(key);
 					if ( prev_vals === undefined || obj_vals.length !== prev_vals.length ||
@@ -231,31 +236,17 @@
 		_fetch:function() {
 			var this_ = this, fd = u.deferred(), box = this.box.get_id();
 			this.box._ajax('GET', box, {'id':this.id}).then(function(response) {
-				// u.log('query response ::: ', response);
+				this_._set_fetched(true);
 				var objdata = response.data;
 				if (objdata['@version'] === undefined) {
 					// according to the server, we're dead.
 					console.log('zombie detected ', this_.id);
-					this.cid = this.id;
+					this_.cid = this_.id;
 					this_.unset({});
-					delete this.id;
+					delete this_.id;
 					fd.resolve();
 					return;
 				}
-				/*
-				if (this_.box._get_version() !== objdata['@version']) {
-					// our box is obsolete! let's tell box to update itself.
-					// u.debug('telling box to update >> ', this_.box._get_version(), response['@version']);
-					// update entire box to latest version then continue
-					return this_.box.fetch().then(function(fetched_thingies) {
-						// recurse after done
-						// TODO: if you already fetched an update for this object
-						// then we really don't need to do it do we? --
-						// 
-						this_.fetch().then(fd.resolve).fail(fd.reject);
-					}).fail(fd.reject);
-				}
-				*/
 				// we are at current known version as far as we know
 				var obj_save_dfds = _(objdata).map(function(obj,uri) {
 						// top level keys - corresponding to box level properties
@@ -284,7 +275,8 @@
 
 	// Box =================================================
 	// WebBox.GraphCollection is the list of WebBox.Objs in a WebBox.Graph
-	var ObjCollection = Backbone.Collection.extend({ model: Obj });
+	var ObjCollection = Backbone.Collection.extend({ model: Obj }),
+		FileCollection = Backbone.Collection.extend({ model: File });	
 
 	// new client: fetch is always lazy, only gets ids, and
 	// lazily get objects as you go
@@ -295,7 +287,7 @@
 			var this_ = this;
 			u.assert(options.store, "no store provided");
 			this.store = options.store;
-			this.set({objcache: new ObjCollection(), objlist: [] });
+			this.set({objcache: new ObjCollection(), objlist: [], files : new FileCollection() });
 			this.options = _(this.default_options).chain().clone().extend(options || {}).value();
 			this.set_up_websocket();
 			this._update_queue = {};
@@ -306,6 +298,13 @@
 				this_._flush_update_queue();
 				this_._flush_delete_queue();
 			});
+		},
+		get_or_create_file:function(fid) {
+			var files = this.get('files');
+			if (files.get(fid) === undefined) {
+				files.add(new File({"@id": fid}, { box: this }));
+			}
+			return files.get(fid);
 		},
 		set_up_websocket:function() {
 			var this_ = this, server_host = this.store.get('server_host');
@@ -322,7 +321,7 @@
 				var ws_url = [protocol,server_host,'ws'].join('/');
 				ws = new WebSocket(ws_url);
 				ws.onmessage = function(evt) {
-					u.debug('websocket :: incoming a message ', evt.data.toString().substring(0,120));
+					u.debug('websocket :: incoming a message ', evt.data.toString().substring(0,190));
 					var pdata = JSON.parse(evt.data);
 					if (pdata.action === 'diff') {
 						this_._diff_update(pdata.data)
@@ -382,7 +381,9 @@
 		},
 		put_file:function(id,filedata,contenttype) {
 			// creates a File object and hands it back in the resolve
-			var d = u.deferred(), this_ = this, newFile = new File({"@id": id, "content-type": contenttype}, { box: this }); 
+			contenttype = contenttype || filedata.type;
+			var d = u.deferred(), this_ = this, newFile = this.get_or_create_file(id);
+			newFile.set({"content-type": contenttype}); 
 			this._do_put_file(id,filedata,contenttype).then(function(){
 				u.debug('image put success ');
 				d.resolve(newFile);
@@ -454,13 +455,15 @@
 				var cached_obj = this_._objcache().get(uri), cdfd = u.deferred();
 				if (cached_obj) {
 					// { prop : [ {sval1 - @type:""}, {sval2 - @type} ... ]
-					var changed_properties = [];					
+					var changed_properties = [];
+					console.log("obj deleted ", obj.deleted);
 					var deleted_propval_dfds = _(obj.deleted).map(function(vs, k) {
 						changed_properties = _(changed_properties).union([k]);
-						var dd = u.deferred();						
-						u.when(vs.map(function(v) {	return deserialize_value(v, this_);	})).then(function() {
-							var values = _.toArray(arguments);
+						var dd = u.deferred();
+						u.when(vs.map(function(v) {	return deserialize_value(v, this_);	})).then(function(values) {
 							var new_vals = _(cached_obj.get(k) || []).difference(values);
+							// console.log("DESERIALISED deleted values ", values, " - ", " new_vals ", new_vals);
+							// window._values = values; window._newvals = new_vals;
 							cached_obj.set(k,new_vals);
 							// semantics - if a property has no value then we delete it
 							if (new_vals.length === 0) { cached_obj.unset(k); }
@@ -471,8 +474,7 @@
 					var added_propval_dfds = _(obj.added).map(function(vs, k) {
 						changed_properties = _(changed_properties).union([k]);
 						var dd = u.deferred();						
-						u.when(vs.map(function(v) {	return deserialize_value(v, this_);	})).then(function() {
-							var values = _.toArray(arguments);
+						u.when(vs.map(function(v) {	return deserialize_value(v, this_);	})).then(function(values) {
 							var new_vals = (cached_obj.get(k) || []).concat(values);
 							cached_obj.set(k,new_vals);
 							dd.resolve();
@@ -511,7 +513,15 @@
 
 			// check to see if already fetching, then we can tag along 
 			if (fetching_dfd) {
-				fetching_dfd.then(d.resolve).fail(d.reject);
+				// to fix a deadlock condition -
+				// if we fetch someone who loops back to us
+				// then we will never resolve with this code:
+				// 
+				// fetching_dfd.then(d.resolve).fail(d.reject);
+				// return d.promise();
+				// --
+				// therefore a fix: 				
+				d.resolve(cachemodel);
 				return d.promise();
 			}
 
@@ -572,10 +582,9 @@
 				this._ajax("GET",[box,'get_object_ids'].join('/')).then(
 					function(response){
 						u.assert(response['@version'] !== undefined, 'no version provided');
-						console.log(' BOX FETCH VERSION ', response['@version']);
-						this_.id = this_.get_id();
+						this_.id = this_.get_id(); // sets so that _is_fetched later returns true
 						this_._set_version(response['@version']);
-						this_._update_object_list(response.ids);					
+						this_._update_object_list(response.ids);				
 						fd.resolve(this_);
 					}).fail(fd.reject);
 			}

@@ -1,7 +1,7 @@
 <div ng-app="WebboxToolbar" class="ng-cloak" ng-controller="ToolbarController" ng-show="visible">
   <div class="navbar">
 	<div class="navbar-inner" ng-init="_initialise()">
-	  <div class="brand">webbox
+	  <div class="brand">indx
 		<div class="spinner" ng-show="loading > 0">
 		  <div ng-repeat="i in u.range(12)" class="bar{{ i + 1 }}"></div>
 		</div>
@@ -22,19 +22,19 @@
 	  <form class="form-horizontal">
 		<div class="modal-header">
 		  <a type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</a>
-		  <h3 id="loginlabel">log in to webbox</h3>
+		  <h3 id="loginlabel">log in to indx</h3>
 		</div>
 		<div class="modal-body">
 		  <div class="control-group">
 			<label class="control-label" for="#login_username">username:</label>
 			<div class="controls">
-			  <input type="text" id="login_username" name="username" class="username_field" placeholder="< webbox username > " ng-model="_login_username" autofocus></input>
+			  <input type="text" id="login_username" name="username" class="username_field" placeholder="< your username > " ng-model="_login_username" autofocus></input>
 			</div>
 		  </div>
 		  <div class="control-group">
 			<label class="control-label" for="#login_password">password:</label>
 			<div class="controls">
-			  <input type="password" id="login_password" name="password" class="password_field" placeholder="< webbox password >" ng-model="_login_password">
+			  <input type="password" id="login_password" name="password" class="password_field" placeholder="< your password >" ng-model="_login_password">
 			</div>
 		  </div>
 		</div>
@@ -52,7 +52,7 @@
 	<div id="logout_dialog" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="logoutlabel" aria-hidden="true">
 	  <div class="modal-header">
 		<button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-		<h3 id="logoutlabel">log out of webbox?</h3>
+		<h3 id="logoutlabel">log out ?</h3>
 	  </div>
 	  <div class="modal-footer">
 		<button class="btn" data-dismiss="modal" aria-hidden="true">No</button>

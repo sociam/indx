@@ -52,7 +52,9 @@
 			return undefined; // throw new Error("Could not convert ", v);
 		},
 		when:function(x) {
-			return $.when.apply($,x);
+			var d = this.deferred();
+			$.when.apply($,x).then(function() {	d.resolve(_.toArray(arguments)); }).fail(d.reject);
+			return d.promise();
 		},
 		when_steps:function(fns, fail_fast) {
 			// executes a bunch of functions that return deferreds in sequence
