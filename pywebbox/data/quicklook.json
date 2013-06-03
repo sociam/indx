@@ -1,0 +1,36 @@
+{
+    "@id": "quicklook",
+    "name" : "quick look",
+    "sections" : [
+        {
+            "name": "clinical status",
+            "sections": [
+                { "name":"since", "valuetype":"date" },
+                {
+                    "name" : "treated",
+                    "sections": [
+                        { "name" : "VF", "valuetype" : "number"},
+                        { "name" : "FVT", "valuetype" : "number"},
+                        { "name" : "VT", "valuetype" : "number"},
+                        { "name" : "AT/AF (monitor)", "valuetype" : "number"}
+                    ]
+                },
+                {
+                    "name" : "monitored",
+                    "sections": [
+                        { "name" : "VT (133-150 bpm)", "valuetype" : "number"},
+                        { "name" : "VT-NS (>4 beats, >150 bpm)", "valuetype" : "number"},
+                        { "name" : "SVT: vt/vf Rx Withheld", "valuetype" : "number"},
+                        { "name" : "AT/AF (monitor)", "valuetype" : "number"}
+                    ]
+                },
+                { "name" : "Time in AT/AF", "valuetype":"number", "units": "hr/day" },
+                { "name" : "Patient Activity", "valuetype":"number", "units": "hr/day" }
+            ]
+        },
+        {
+            "name":"Therapy Summary",
+            "datatype":"table"
+        }
+    ]
+}

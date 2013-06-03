@@ -16,8 +16,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging, json, urllib, urllib2, cookielib
-
+import logging, json, urllib, urllib2, cookielib, uuid, pprint
 
 # Decorator function to ensure that the webbox object has a token when the function requires one
 def require_token(function):
@@ -193,6 +192,11 @@ class WebBox:
         return self._req_body(url, values, "POST", content_type)
 
 
+    def _gen_bnode_id(self):
+        """ Generate an ID for a bnode. """
+        return "_:{0}".format(uuid.uuid1())
+
+
     def _prepare_objects(self, objects):
         """ Take raw JSON object and expand them into the webbox internal format. """
 
@@ -225,12 +229,28 @@ class WebBox:
                             object = unicode(object)
                         object = {"@value": object} # turn single value into a literal
 
-                    for sub_pred in object:
-                        pass # finish from here:
+                    # check if 'object' is an object value or if it is a subobject
+                    if "@value" in object or "@id" in object:
+                        # this object is a value
+                        if predicate not in obj_new:
+                            obj_new[predicate] = []
+                        obj_new[predicate].append(object)
+                    else:
+                        # this is a subobject, so rescursively process it
+                        new_id = self._gen_bnode_id()
+                        object["@id"] = new_id
+                        sub_obj = self._prepare_objects(object)
+                        if len(sub_obj) > 0 and sub_obj[0] is not None: 
+                            if predicate not in obj_new:
+                                obj_new[predicate] = []
+                            obj_new[predicate].append({"@id": new_id}) # link to new object
+                            objects_new.extend(sub_obj) # add new object to object list
 
-            objects_new.append(obj_new)
+            if len(obj_new.keys()) > 0:
+                objects_new.append(obj_new)
 
         return objects_new
+
 
     # API access functions
 
@@ -266,7 +286,10 @@ class WebBox:
         """
         self._debug("Called API: update with version: {0}, objects: {1}".format(version, objects)) 
 
-        values = {"data": json.dumps(self._prepare_objects(objects)), "version": version}
+        prepared_objects = self._prepare_objects(objects)
+        self._debug("update: prepared_objects: {0}".format(pprint.pformat(prepared_objects, indent=2, width=80)))
+        
+        values = {"data": json.dumps(prepared_objects), "version": version}
         return self._put(self.base, values)
 
     @require_token
@@ -365,7 +388,7 @@ class WebBox:
         
             file_id -- The file ID to retrieve
         """
-        logging.debug("Called API: get_file with file_id: {0}".format(file_id))
+        self._debug("Called API: get_file with file_id: {0}".format(file_id))
 
         url = "{0}/files".format(self.base)
         params = {'id': file_id}
@@ -374,7 +397,7 @@ class WebBox:
     @require_token
     def list_files(self):
         """ Get a list of the files in the latest version of the box. """
-        logging.debug("Called API: list_files")
+        self._debug("Called API: list_files")
 
         url = "{0}/files".format(self.base)
         return self._get(url)
