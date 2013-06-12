@@ -715,7 +715,7 @@ class ObjectStoreAsync:
 
                 self._curexec(cur, "SELECT latest_version FROM wb_v_latest_version").addCallbacks(get_ver_cb, interaction_err_cb)
 
-            self._curexec(cur, "LOCK TABLE wb_files, wb_versions, wb_triple_vers, wb_triples, wb_objects, wb_strings, wb_users IN EXCLUSIVE MODE").addCallbacks(lock_cb, interaction_err_cb) # lock to other writes, but not reads
+            self._curexec(cur, "LOCK TABLE wb_files, wb_versions, wb_latest_vers, wb_triples, wb_objects, wb_strings, wb_users, wb_vers_diffs, wb_latest_subjects IN EXCLUSIVE MODE").addCallbacks(lock_cb, interaction_err_cb) # lock to other writes, but not reads
             
             return interaction_d
 
@@ -725,44 +725,6 @@ class ObjectStoreAsync:
             self.conn.runOperation("VACUUM").addCallbacks(lambda _: result_d.callback(ver_response), err_cb)
 
         self.conn.runInteraction(interaction_cb).addCallbacks(interaction_complete_d, err_cb)
-        return result_d
-
-    def _update_primitives(self, primitives):
-        """ Check and add strings to wb_strings table if required.
-
-            primitives -- List of primitives to be checked/added.
-        """
-        self.debug("Objectscore _update_primitives, primitives: {0}".format(primitives))
-        result_d = Deferred()
-
-        def err_cb(failure):
-            self.error("Objectstore _add_files_to_version, err_cb, failure: {0}".format(failure))
-            result_d.errback(failure)
-            return
-
-        def interaction_cb(cur):
-            self.debug("Objectstore _update_primitives, interaction_cb, cur: {0}".format(cur))
-            interaction_d = Deferred()
-
-            def interaction_err_cb(failure):
-                self.debug("Objectstore _update_primitives, interaction_err_cb, failure: {0}".format(failure))
-                interaction_d.errback(failure) 
-
-            def lock_cb(val):
-                self.debug("Objectstore _update_primitives, lock_cb, val: {0}".format(val))
-                
-
-            self._curexec(cur, "LOCK TABLE wb_strings").addCallbacks(lock_cb, err_cb)
-
-            return interaction_d
-
-
-        def interaction_complete_d(ver_response):
-            self.debug("Interaction_complete_d: {0}".format(ver_response))
-            result_d.callback(ver_response)
-
-        self.conn.runInteraction(interaction_cb).addCallbacks(interaction_complete_d, err_cb)
-
         return result_d
 
 
