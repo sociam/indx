@@ -6,13 +6,13 @@ $BODY$DECLARE
 BEGIN
     SELECT * INTO triple_result FROM wb_get_triple_id(input_subject, input_predicate, input_object_value, input_object_type, input_object_language, input_object_datatype);
 
-    SELECT MAX(triple_order) INTO max_order FROM wb_triple_vers WHERE version = input_version;
+    SELECT MAX(triple_order) INTO max_order FROM wb_latest_vers;
 
     IF max_order IS NULL THEN
         max_order := 0;
     END IF;
 
-    INSERT INTO wb_triple_vers (version, triple, triple_order) VALUES (input_version, triple_result, max_order + 1);
+    INSERT INTO wb_latest_vers (version, triple, triple_order) VALUES (input_version, triple_result, max_order + 1);
     RETURN true;
 END;$BODY$
   LANGUAGE plpgsql VOLATILE
@@ -107,14 +107,13 @@ BEGIN
 
     SELECT * INTO subject_ids FROM wb_get_string_ids(input_excludes_subjects);
 
-    INSERT INTO wb_triple_vers (version, triple, triple_order)
+    INSERT INTO wb_triple_vers_snapshots (version, triple, triple_order)
         SELECT    input_to_version as version,
             wb_triples.id_triple as triple,
-            wb_triple_vers.triple_order as triple_order
-        FROM    wb_triple_vers
-        JOIN    wb_triples ON (wb_triple_vers.triple = wb_triples.id_triple)
-        WHERE        wb_triple_vers.version = input_from_version
-                AND    NOT (wb_triples.subject = ANY(subject_ids));
+            wb_latest_vers.triple_order as triple_order
+        FROM    wb_latest_vers
+        JOIN    wb_triples ON (wb_latest_vers.triple = wb_triples.id_triple)
+        WHERE   NOT (wb_triples.subject = ANY(subject_ids));
 
     RETURN true;
 END;$BODY$

@@ -1,7 +1,6 @@
 CREATE TYPE object_type AS ENUM ('resource', 'literal');
-CREATE TYPE change_type AS ENUM ('upsert_object');
--- TODO implement these too
---, 'add_subject', 'remove_subject', 'add_triple', 'remove_triple');
+CREATE TYPE change_type AS ENUM ('add_subject', 'remove_subject', 'update_subject', 'add_triple');
+-- 'remove_triple');
 
 
 CREATE TABLE wb_strings
@@ -14,7 +13,6 @@ CREATE TABLE wb_strings
 WITH (
   OIDS=FALSE
 );
-
 
 
 CREATE TABLE wb_objects
@@ -40,7 +38,8 @@ CREATE TABLE wb_triples
   id_triple serial NOT NULL,
   subject integer NOT NULL,
   predicate integer NOT NULL,
-  object integer[] NOT NULL,
+  object integer,
+  object_order integer NOT NULL,
   CONSTRAINT pk_triple PRIMARY KEY (id_triple),
   CONSTRAINT fk_subject FOREIGN KEY (subject)
       REFERENCES wb_strings (id_string) MATCH SIMPLE
@@ -113,6 +112,27 @@ CREATE TABLE wb_latest_vers
 )
 WITH (
   OIDS=FALSE
+);
+
+
+CREATE TABLE wb_vers_diffs
+(
+  id_diff serial NOT NULL,
+  version INTEGER NOT NULL,
+  diff_type change_type NOT NULL,
+  subject INTEGER NOT NULL,
+  predicate INTEGER,
+  object INTEGER,
+  object_order INTEGER,
+  CONSTRAINT pk_diff PRIMARY KEY (id_diff),
+  CONSTRAINT fk_subject FOREIGN KEY (subject)
+      REFERENCES wb_strings (id_string) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE NO ACTION,
+  CONSTRAINT fk_predicate FOREIGN KEY (predicate)
+      REFERENCES wb_strings (id_string) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE NO ACTION
+) WITH (
+    OIDS=FALSE
 );
 
 

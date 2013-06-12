@@ -26,9 +26,9 @@ CREATE INDEX idx_vo
 
 
 CREATE INDEX idx_ver
-  ON wb_triple_vers
+  ON wb_latest_vers
   USING btree
-  (version, triple, triple_order);
+  (triple, triple_order);
 
 
 CREATE INDEX idx_triple
