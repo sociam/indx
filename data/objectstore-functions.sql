@@ -45,10 +45,13 @@ $BODY$DECLARE
 BEGIN
     SELECT * INTO value_id FROM wb_get_string_id(input_obj_value);
 
+    BEGIN WORK;
+    LOCK TABLE wb_objects in EXCLUSIVE MODE;
     SELECT wb_objects.id_object INTO object_result FROM wb_objects WHERE (wb_objects.obj_type = input_obj_type AND wb_objects.obj_value = value_id AND wb_objects.obj_lang = input_obj_lang AND wb_objects.obj_datatype = input_obj_datatype);
     IF NOT FOUND THEN
         INSERT INTO wb_objects (obj_type, obj_value, obj_lang, obj_datatype) VALUES (input_obj_type, value_id, input_obj_lang, input_obj_datatype) RETURNING wb_objects.id_object INTO object_result;
     END IF;
+    COMMIT WORK;
     RETURN object_result;
 END;$BODY$
   LANGUAGE plpgsql VOLATILE
@@ -60,11 +63,20 @@ CREATE OR REPLACE FUNCTION wb_get_string_id(input_string text)
 $BODY$DECLARE
     string_result integer;
 BEGIN
-    SELECT wb_strings.id_string INTO string_result FROM wb_strings WHERE (wb_strings.string = input_string);
-    IF NOT FOUND THEN
-        INSERT INTO wb_strings (string) VALUES (input_string) RETURNING wb_strings.id_string INTO string_result;
+    BEGIN WORK;
+
+    IF input_string IS NULL
+    THEN
+        RETURN NULL;
+    ELSE
+        LOCK TABLE wb_strings IN EXCLUSIVE MODE;
+        SELECT wb_strings.id_string INTO string_result FROM wb_strings WHERE (wb_strings.string = input_string);
+        IF NOT FOUND THEN
+            INSERT INTO wb_strings (string) VALUES (input_string) RETURNING wb_strings.id_string INTO string_result;
+        END IF;
+        COMMIT WORK;
+        RETURN string_result;
     END IF;
-    RETURN string_result;
 END;$BODY$
   LANGUAGE plpgsql VOLATILE
   COST 100;

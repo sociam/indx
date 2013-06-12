@@ -124,8 +124,7 @@ class ObjectStoreAsync:
 
 
     def value_to_json(self, obj_value, obj_type, obj_lang, obj_datatype):
-        """ Serialise a single value into the result format.
-        """
+        """ Serialise a single value into the result format. """
         if obj_type == "resource":
             obj_key = "@id"
         elif obj_type == "literal":
@@ -715,7 +714,7 @@ class ObjectStoreAsync:
 
                 self._curexec(cur, "SELECT latest_version FROM wb_v_latest_version").addCallbacks(get_ver_cb, interaction_err_cb)
 
-            self._curexec(cur, "LOCK TABLE wb_files, wb_versions, wb_latest_vers, wb_triples, wb_objects, wb_strings, wb_users, wb_vers_diffs, wb_latest_subjects IN EXCLUSIVE MODE").addCallbacks(lock_cb, interaction_err_cb) # lock to other writes, but not reads
+            self._curexec(cur, "LOCK TABLE wb_files, wb_versions, wb_latest_vers, wb_triples, wb_users, wb_vers_diffs, wb_latest_subjects IN EXCLUSIVE MODE").addCallbacks(lock_cb, interaction_err_cb) # lock to other writes, but not reads
             
             return interaction_d
 
