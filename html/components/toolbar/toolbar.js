@@ -105,10 +105,8 @@ else { WebBox = root.WebBox; }
 			});
 		};
 		
-		$scope.cb_box_selected = function(bid) {
-			$scope.box = bid;
-			event_model.trigger('change:box', bid);
-		};		
+		$scope.cb_box_selected = function(bid) { $scope.box = bid;	};
+		
 		$scope.cb_login = function(username) {
 			$scope.username = username;
 			$scope.username_html = username + " &nbsp; <i class='icon-user'></i>";
