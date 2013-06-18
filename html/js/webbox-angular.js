@@ -29,34 +29,50 @@
 			var deregfns = [];
 			var scope_bind = function($scope, name, model) {
 				utils.assert(model instanceof Backbone.Model, "tried to bind something that was not a model");
-				$scope[name] = model.attributes;
 				var clone = _(model.attributes).clone();
-				var changes = function(old,new_,fn) {
+				$scope[name] = clone;				
+				var findchanges = function(old,new_,fn) {
 					var changes = [];
 					_(old).map(function(v,k) {
-						if (v[k] !== new_[k]) {
+						console.log('findchanges ', old[k], new_[k], v.length, new_[k].length,
+									_(v).filter(function(vi, i) { return vi != new_[k][i]; }).length);
+						if (v.length !== new_[k].length ||
+							_(v).filter(function(vi, i) { return vi != new_[k][i]; }).length) {
+							console.log('pushing changes ', k);
 							changes.push(k);
-							if (fn) { fn(k,v); }
+							if (fn) { fn(k,_(v).clone()); }
 						}
 					});
 					return changes;					
 				};
 				// angular -> backbone
-				var dereg = $scope.watch(name, function() {
+				var dereg = $scope.$watch(name, function() {
 					// do a quick diff --
-					// first check to make sure that our brave model is still 
-					if ($scope[name] !== clone) { return; }
-					var changes = compute_changes(clone, model.attributes, function(k,v) { model.set(k,v,{silent:true}); });
+					// first check to make sure that our brave model is still
+					console.log('watch! ', $scope[name].value);
+					if ($scope[name] !== clone) { console.log('returning ' ); return true; }
+					var changes = findchanges(clone, model.attributes, function(k,v) {
+						console.log('model ', model);
+						model.set(k,v,{silent:true, origin:'bleh'});
+					});
+
+					/*
 					changes.map(function(x) { model.trigger('change:'+x,model.attributes[x]); })
 					if (changes) { model.trigger('change'); }
+					*/
 				});
-				dregfns.push([$scope,name,model,dereg]);
+				deregfns.push([$scope,name,model,dereg]);
 				// backbone -> angular
-				model.on('change', function() {
-					webbox.safe_apply(function() {
-						changes(model.attributes, clone, function(k,v) { clone[k] = v; });
+				model.on('change', function(data) {
+					console.log('change! ', data, this);
+					webbox.safe_apply($scope, function() {
+						findchanges(model.attributes, clone, function(k,v) {
+							console.log('setting clone ', k, v);
+							clone[k] = v;
+						});
 					});
 				},$scope);
+				console.log('scope binding ', $scope.$id, name, "<-", model.get('value'));				
 			};
 			return {
 				scope_bind: scope_bind,

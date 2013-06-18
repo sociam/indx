@@ -44,7 +44,6 @@ angular
 						};
 						// model -> scope
 						var update_view = function() {
-
 							var val = model.get('value') !== undefined ? model.get('value')[0] : '';
 							console.log('update view val >> ', val);							
 							if (val === $scope.inputmodel) { return; }
