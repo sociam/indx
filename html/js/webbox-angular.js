@@ -32,6 +32,7 @@
 			};
 			var scope_bind = function($scope, name, model) {
 				utils.assert(model instanceof Backbone.Model, "tried to bind something that was not a model");
+				window._m = model;
 				var clone = deep_clone_obj(_(model.attributes));
 				webbox.safe_apply($scope, function() { $scope[name] = clone;	});
 				var findchanges = function(old,new_,fn) {
@@ -50,27 +51,27 @@
 				var dereg = $scope.$watch(name, function() {
 					// do a quick diff --
 					// first check to make sure that our brave model is still
-					console.log('watch! ', $scope[name]);
 					if ($scope[name] !== clone) { console.log('returning ' ); return true; }
-
 					console.log('findchanges ', clone.value[0], model.attributes.value[0], clone === model.attributes);
 					var changes = findchanges(model.attributes, clone, function(k,v) {
-						console.log('model ', model);
-						model.set(k,v,{silent:true});
+						model.set(k,v);
+						console.log('saving model >  ', JSON.stringify(model.attributes));
 						model.save();
-					});					
+					});
+					/*
 					console.log('changes found > ', changes.length);
 					if (changes.length) {
 						model.trigger('change'); 
 						changes.map(function(x) { model.trigger('change:'+x,model.attributes[x]); })
-					}					
+					}
+					*/
 				}, true);
 				deregfns.push([$scope,name,model,dereg]);
 				// backbone -> angular
 				model.on('change', function(data) {
-					console.log('change! ', data, this);
+					console.log('change! ', JSON.stringify(model.attributes));
 					webbox.safe_apply($scope, function() {
-						findchanges(model.attributes, clone, function(k,v) {
+						findchanges(clone, model.attributes, function(k,v) {
 							console.log('model -> angular ', k, v);
 							clone[k] = v;
 						});

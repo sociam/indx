@@ -457,7 +457,7 @@
 				if (cached_obj) {
 					// { prop : [ {sval1 - @type:""}, {sval2 - @type} ... ]
 					var changed_properties = [];
-					console.log("obj deleted ", obj.deleted);
+					// console.log("obj deleted ", obj.deleted);
 					var deleted_propval_dfds = _(obj.deleted).map(function(vs, k) {
 						changed_properties = _(changed_properties).union([k]);
 						var dd = u.deferred();
