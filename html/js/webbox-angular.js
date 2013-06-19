@@ -27,47 +27,51 @@
 		}).factory('backbone', function(webbox, utils) {
 			// this manages backbone-angular mystification
 			var deregfns = [];
+			var deep_clone_obj = function(o) {
+				return utils.dict(_(o).map(function(v,k) { return [k, v.concat()]; }));
+			};
 			var scope_bind = function($scope, name, model) {
 				utils.assert(model instanceof Backbone.Model, "tried to bind something that was not a model");
-				var clone = _(model.attributes).clone();
-				$scope[name] = clone;				
+				var clone = deep_clone_obj(_(model.attributes));
+				webbox.safe_apply($scope, function() { $scope[name] = clone;	});
 				var findchanges = function(old,new_,fn) {
 					var changes = [];
 					_(old).map(function(v,k) {
-						console.log('findchanges ', old[k], new_[k], v.length, new_[k].length,
-									_(v).filter(function(vi, i) { return vi != new_[k][i]; }).length);
-						if (v.length !== new_[k].length ||
-							_(v).filter(function(vi, i) { return vi != new_[k][i]; }).length) {
-							console.log('pushing changes ', k);
+						if (v.length !== new_[k].length || _(v).filter(function(vi, i) { return vi != new_[k][i]; }).length) {
+							console.log('pushing changes ', k, new_[k]);
 							changes.push(k);
-							if (fn) { fn(k,_(v).clone()); }
+							if (fn) { fn(k,new_[k].concat()); }
 						}
 					});
 					return changes;					
 				};
 				// angular -> backbone
+				console.log('watching ', name);
 				var dereg = $scope.$watch(name, function() {
 					// do a quick diff --
 					// first check to make sure that our brave model is still
-					console.log('watch! ', $scope[name].value);
+					console.log('watch! ', $scope[name]);
 					if ($scope[name] !== clone) { console.log('returning ' ); return true; }
-					var changes = findchanges(clone, model.attributes, function(k,v) {
-						console.log('model ', model);
-						model.set(k,v,{silent:true, origin:'bleh'});
-					});
 
-					/*
-					changes.map(function(x) { model.trigger('change:'+x,model.attributes[x]); })
-					if (changes) { model.trigger('change'); }
-					*/
-				});
+					console.log('findchanges ', clone.value[0], model.attributes.value[0], clone === model.attributes);
+					var changes = findchanges(model.attributes, clone, function(k,v) {
+						console.log('model ', model);
+						model.set(k,v,{silent:true});
+						model.save();
+					});					
+					console.log('changes found > ', changes.length);
+					if (changes.length) {
+						model.trigger('change'); 
+						changes.map(function(x) { model.trigger('change:'+x,model.attributes[x]); })
+					}					
+				}, true);
 				deregfns.push([$scope,name,model,dereg]);
 				// backbone -> angular
 				model.on('change', function(data) {
 					console.log('change! ', data, this);
 					webbox.safe_apply($scope, function() {
 						findchanges(model.attributes, clone, function(k,v) {
-							console.log('setting clone ', k, v);
+							console.log('model -> angular ', k, v);
 							clone[k] = v;
 						});
 					});
