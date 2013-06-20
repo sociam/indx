@@ -25,11 +25,12 @@ class ObjectSetDiff:
         each object as well as the objects that have been added and removed.
     """
 
-    def __init__(self, conn, objs1, objs2):
+    def __init__(self, conn, objs1, objs2, version):
         """ Compare two objects in an INDX database. """
         self.conn = conn
         self.objs1 = objs1
         self.objs2 = objs2
+        self.version = version
 
     def reset_queries(self):
         self.queries = {
@@ -71,7 +72,7 @@ class ObjectSetDiff:
 
                     if sub_objs is None or len(sub_objs) < 1:
                         self.add_diff_query("add_predicate", obj_id, predicate = predicate)
-                    else:   
+                    else:
                         for sub_obj in sub_objs:
                             self.add_diff_query("add_triple", obj_id, predicate = predicate, sub_obj = sub_obj)
 
@@ -79,8 +80,48 @@ class ObjectSetDiff:
             else:
                 # SUBJECT IN BOTH - DIFF THEM
                 
-                # DIFF and do diff queries
+                prev_obj = ids[obj_id]
+
+                all_predicates = set(obj.keys() + prev_obj.keys())
                 
+                for predicate in all_predicates:
+                    if predicate[0] is "@":
+                        continue
+
+
+                    if predicate not in obj.keys():
+                        # predicate removed
+                        self.add_diff_query("remove_predicate", obj_id, predicate = predicate)
+                    elif predicate not in prev_obj.keys():
+                        # predicate added
+                        sub_objs = obj[predicate]
+
+                        if sub_objs is None or len(sub_objs) < 1:
+                            self.add_diff_query("add_predicate", obj_id, predicate = predicate)
+                        else:
+                            order = 1
+                            for sub_obj in sub_objs:
+                                self.add_diff_query("add_triple", obj_id, predicate = predicate, sub_obj = sub_obj, object_order = order)
+                                order += 1
+
+                    else:
+                        # predicate in both, diff values
+                        prev_sub_objs = prev_obj[predicate]
+                        sub_objs = obj[predicate]
+                        
+                        if prev_sub_objs == sub_objs:
+                            # the same, do nothing here
+                            pass
+                        else:
+                            # not the same, remove the previous, add the new
+                            if sub_objs is None or len(sub_objs) < 1:
+                                self.add_diff_query("replace_objects", obj_id, predicate = predicate, sub_obj = None)
+                            else:
+                                order = 1
+                                for sub_obj in sub_objs:
+                                    self.add_diff_query("replace_objects", obj_id, predicate = predicate, sub_obj = sub_obj, object_order = order)
+                                    order += 1
+
 
                 # TODO XXX do latest_vers_query
             
@@ -111,12 +152,14 @@ class ObjectSetDiff:
         else:
             self.queries['diff']['values'].append("(%s, %s, wb_get_string_id(%s), wb_get_string_id(%s), NULL, NULL)")
             self.queries['diff']['params'].append(self.version, diff_type, subject, predicate)
+
+        ## XXX store some data for make_latest_query to use - or qrite them now ??
+
         return
         
-    def make_latest_query(...
+    def make_latest_query(self, version, ):
         """ Make the queries used to INSERT/DELETE from the wb_latest_vers table. """
         pass
-
 
     def obj_to_obj_tuple(self, sub_obj):
         """ Return a tuple of (type, value, language, datatype) used in SQL queries. """
