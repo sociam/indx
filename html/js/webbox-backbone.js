@@ -46,14 +46,14 @@
 
 	// set up our parameters for webbox -
 	// default is that we're loading from an _app_ hosted within
-	// webbox. 
+	// webbox.
 	var DEFAULT_HOST = document.location.host; // which may contain the port
 
 	var WS_MESSAGES_SEND = {
 		auth: function(token) { return JSON.stringify({action:'auth', token:token}); },
-		diff: function(token) { return JSON.stringify({action:'diff', operation:"start"}); }		
+		diff: function(token) { return JSON.stringify({action:'diff', operation:"start"}); }
 	};
-	
+
 	var serialize_obj = function(obj) {
 		var uri = obj.id;
 		var out_obj = {};
@@ -111,7 +111,7 @@
 	var deserialize_literal = function(obj, box) {
 		return obj['@value'] !== undefined ? literal_deserializers[ obj['@type'] || '' ](obj, box) : obj;
 	};
-	
+
 	var deserialize_value = function(s_val, box) {
 		var vd = u.deferred();
 		// it's an object, so return that
@@ -131,7 +131,7 @@
 	};
 
 	var File = WebBox.File = Backbone.Model.extend({
-		idAttribute: "@id", // the URI attribute is '@id' in JSON-LD		
+		idAttribute: "@id", // the URI attribute is '@id' in JSON-LD
 		initialize:function(attrs, options) {
 			u.debug('options >> ', attrs, options );
 			this.box = options.box;
@@ -146,19 +146,19 @@
 			}, url = ['/', this.box.store.get('server_host'), this.box.id, 'files'].join('/') + '?' + $.param(params);
 			// u.debug("IMAGE URL IS ", url, params);
 			return url;
-		}		
+		}
 	});
-	
+
 
 	// MAP OF THIS MODUULE :::::::::::::: -----
-	// 
+	//
 	// An Obj is a single instance, thing in WebBox.
-	// 
+	//
 	// A Box is a model that has an attribute called 'Objs'.
 	// ...  which is a Backbone.Collection of Graph objects.
-	// 
+	//
 	// A _Store_ represents a single WebBox server, which has an
-	//	 attribute called 'boxes' - 
+	//	 attribute called 'boxes' -
 	// ... which is a collection of Box objects
 	var Obj = WebBox.Obj = Backbone.Model.extend({
 		idAttribute: "@id", // the URI attribute is '@id' in JSON-LD
@@ -167,14 +167,14 @@
 		},
 		_is_fetched: function() { return this._fetched || false; },
 		_set_fetched : function() { this._fetched = true; },
-		get_id:function() { return this.id;	},			
+		get_id:function() { return this.id;	},
 		_value_to_array:function(k,v) {
 			if (k === '@id') { return v; }
 			if (!_(v).isUndefined() && !_(v).isArray()) {
 				return [v];
 			}
 			return v;
-		},		
+		},
 		_all_values_to_arrays:function(o) {
 			if (!_(o).isObject()) {	console.error(' not an object', o); return o; }
 			var this_ = this;
@@ -201,7 +201,7 @@
 			var this_ = this;
 			var dfds = _(s_obj).map(function(vals, key) {
 				var kd = u.deferred();
-				if (key.indexOf('@') === 0) { return; } 
+				if (key.indexOf('@') === 0) { return; }
 				var val_dfds = vals.map(function(val) {
 					var vd = u.deferred();
 					// it's an object, so return that
@@ -217,8 +217,8 @@
 						// don't know what it is!
 						vd.reject('cannot unpack value ', val);
 					}
-					return vd.promise();							
-				});						
+					return vd.promise();
+				});
 				u.when(val_dfds).then(function(obj_vals) {
 					// only update keys that have changed
 					var prev_vals = this_.get(key);
@@ -262,21 +262,21 @@
 		},
 		sync: function(method, model, options){
 			switch(method){
-			case "create": return u.assert(false, "create is never used for Objs"); 
-			case "read"  : return model._fetch(); 
+			case "create": return u.assert(false, "create is never used for Objs");
+			case "read"  : return model._fetch();
 			case "update":
 				return  model.box.update([model.id])[0];
 			case "delete":
 				return this.box._delete_models([this.id])[0];
 			}
-		}		
+		}
 	});
 
 
 	// Box =================================================
 	// WebBox.GraphCollection is the list of WebBox.Objs in a WebBox.Graph
 	var ObjCollection = Backbone.Collection.extend({ model: Obj }),
-		FileCollection = Backbone.Collection.extend({ model: File });	
+		FileCollection = Backbone.Collection.extend({ model: File });
 
 	// new client: fetch is always lazy, only gets ids, and
 	// lazily get objects as you go
@@ -336,10 +336,10 @@
 					var data = WS_MESSAGES_SEND.auth(this_.get('token'));
 					ws.send(data);
 					data = WS_MESSAGES_SEND.diff();
-					ws.send(data);					
+					ws.send(data);
 					this_._ws = ws;
 					this_.trigger('ws-connect');
-				};				
+				};
 				ws.onclose = function(evt) {
 					// what do we do now?!
 					u.error('websocket closed -- ');
@@ -363,7 +363,7 @@
 		_set_objlist:function(ol) { return this.set({objlist:ol.slice()}); },
 		_set_token:function(token) { this.set("token", token);	},
 		_set_version:function(v) { this.set("version", v);	},
-		_get_version:function(v) { return this.get("version"); },		
+		_get_version:function(v) { return this.get("version"); },
 		get_token:function() {
 			console.log('>> get_token ', ' id: ',this.id, ' cid: ',this.cid);
 			var this_ = this, d = u.deferred();
@@ -373,7 +373,7 @@
 					this_.trigger('new-token', data.token);
 					d.resolve(this_);
 				}).fail(d.reject);
-			return d.promise();			
+			return d.promise();
 		},
 		get_id:function() { return this.id || this.cid;	},
 		_ajax:function(method, path, data) {
@@ -384,7 +384,7 @@
 			// creates a File object and hands it back in the resolve
 			contenttype = contenttype || filedata.type;
 			var d = u.deferred(), this_ = this, newFile = this.get_or_create_file(id);
-			newFile.set({"content-type": contenttype}); 
+			newFile.set({"content-type": contenttype});
 			this._do_put_file(id,filedata,contenttype).then(function(){
 				u.debug('image put success ');
 				d.resolve(newFile);
@@ -398,7 +398,7 @@
 				} else {
 					u.error('error putting, dammit ', err);
 					d.reject(err);
-				}				
+				}
 			});
 			return d.promise();
 		},
@@ -408,7 +408,7 @@
 			// here the parameters are get encoded
 			// // 'http://' + this.store.get('server_host') + "/" +  boxid + "/" + 'files',
 			var boxid = this.id || this.cid,
-				base_url = ['/', this.store.get('server_host'), boxid, 'files'].join('/'), 
+				base_url = ['/', this.store.get('server_host'), boxid, 'files'].join('/'),
 				options = { app: this.store.get('app'), id: id, token:this.get('token'),  box: boxid, version: this._get_version() },
 			    option_params = $.param(options),
 				url = base_url+"?"+option_params,
@@ -418,7 +418,7 @@
 				{ url: url, method : 'PUT', crossDomain:false, data:file, contentType: contenttype, processData:false }
 			);
 			return $.ajax( ajax_args );
-		},		
+		},
 		query: function(q){
 			// @TODO ::::::::::::::::::::::::::
 			u.NotImplementedYet();
@@ -437,7 +437,7 @@
 			changed_ids = _(response.data.changed).keys(),
 			deleted_ids = _(response.data.deleted).keys(),
 			changed_objs = response.data.changed;
-			
+
 			u.assert(latest_version !== undefined, 'latest version not provided');
 			u.assert(added_ids !== undefined, 'added_ids not provided');
 			u.assert(changed_ids !== undefined, 'changed not provided');
@@ -447,7 +447,7 @@
 				u.debug('asked to diff update, but already up to date, so just relax!', latest_version, this_._get_version());
 				return d.resolve();
 			}
-			u.debug('setting latest version >> ', latest_version, added_ids, changed_ids, deleted_ids);			
+			u.debug('setting latest version >> ', latest_version, added_ids, changed_ids, deleted_ids);
 			this_._set_version(latest_version);
 			this_._update_object_list(undefined, added_ids, deleted_ids);
 			var change_dfds = _(changed_objs).map(function(obj, uri) {
@@ -474,7 +474,7 @@
 					});
 					var added_propval_dfds = _(obj.added).map(function(vs, k) {
 						changed_properties = _(changed_properties).union([k]);
-						var dd = u.deferred();						
+						var dd = u.deferred();
 						u.when(vs.map(function(v) {	return deserialize_value(v, this_);	})).then(function(values) {
 							var new_vals = (cached_obj.get(k) || []).concat(values);
 							cached_obj.set(k,new_vals);
@@ -500,7 +500,7 @@
 			var model = new Obj({"@id":obj_id}, {box:this});
 			this._objcache().add(model);
 			return model;
-		},		
+		},
 		get_obj:function(objid) {
 			// get_obj always returns a promise
 			u.assert(typeof objid === 'string' || typeof objid === 'number', "objid has to be a number or string");
@@ -512,16 +512,16 @@
 
 			if (hasmodel) {	d.resolve(cachemodel); return d.promise(); }
 
-			// check to see if already fetching, then we can tag along 
+			// check to see if already fetching, then we can tag along
 			if (fetching_dfd) {
 				// to fix a deadlock condition -
 				// if we fetch someone who loops back to us
 				// then we will never resolve with this code:
-				// 
+				//
 				// fetching_dfd.then(d.resolve).fail(d.reject);
 				// return d.promise();
 				// --
-				// therefore a fix: 				
+				// therefore a fix:
 				d.resolve(cachemodel);
 				return d.promise();
 			}
@@ -539,14 +539,14 @@
 				// otherwise it must be new!
 				model.is_new = true;
 				d.resolve(model);
-			}			
+			}
 			return d.promise();
 		},
 		// ----------------------------------------------------
 		_update_object_list:function(updated_obj_ids, added, deleted) {
 			var current, olds = this._objlist().slice(), this_ = this, news, died;
 			// u.debug('_update_object_list +', added ? added.length : ' ', '-', deleted ? deleted.length : ' ');
-			// u.debug('_update_object_list +', added || ' ', deleted || ' ');			
+			// u.debug('_update_object_list +', added || ' ', deleted || ' ');
 			if (updated_obj_ids === undefined ) {
 				current = _(olds).chain().union(added).difference(deleted).value();
 				news = (added || []).slice(); died = (deleted || []).slice();
@@ -570,7 +570,7 @@
 			return this.id !== undefined;
 		},
 		_fetch:function() {
-			// all fetch really does is retrieve ids! 
+			// all fetch really does is retrieve ids!
 			// new client :: this now _only_ fetches object ids
 			// return a list of models (each of type WebBox.Object) to populate a GraphCollection
 			var d = u.deferred(), fd = u.deferred(), this_ = this;
@@ -585,13 +585,13 @@
 						u.assert(response['@version'] !== undefined, 'no version provided');
 						this_.id = this_.get_id(); // sets so that _is_fetched later returns true
 						this_._set_version(response['@version']);
-						this_._update_object_list(response.ids);				
+						this_._update_object_list(response.ids);
 						fd.resolve(this_);
 					}).fail(fd.reject);
 			}
 			fd.then(function() {
 				this_.trigger('update-from-master', this_._get_version());
-				d.resolve(this_);				
+				d.resolve(this_);
 			}).fail(d.reject);
 			return d.promise();
 		},
@@ -605,7 +605,7 @@
 					.fail(d.reject);
 				return d.promise();
 			}
-			return this_._fetch();			
+			return this_._fetch();
 		},
 		_create_box:function() {
 			var d = u.deferred();
@@ -616,7 +616,7 @@
 				}).fail(function(err) { d.reject(err); });
 			return d.promise();
 		},
-		
+
 		// =============== :: UPDATE ::  ======================
 		WHOLE_BOX: "__UPDATE__WHOLE__BOX__",
 		_add_to_update_queue:function(ids_to_update) {
@@ -642,7 +642,7 @@
 			if (ids_to_update.length === 0) { return ; }
 			if (this._updating || this._deleting) {
 				return this._requeue_update();
-			}			
+			}
 
 			this._update_queue = {};
 			var update_arguments = ids_to_update.indexOf(this.WHOLE_BOX) >= 0 ? undefined : ids_to_update;
@@ -666,11 +666,11 @@
 							this_._update_queue[id] = uq[id];
 						}
 					});
-					return this_._requeue_update();		
-				}				
+					return this_._requeue_update();
+				}
 				// something bad happened, we'd better reject on those deferreds
 				u.error('UPDATE error ', err);
-				ids_to_update.map(function(id) { uq[id].reject(err);});									
+				ids_to_update.map(function(id) { uq[id].reject(err);});
 			});
 		},
 		_do_update:function(ids) {
@@ -678,7 +678,7 @@
 			var d = u.deferred(), version = this.get('version') || 0, this_ = this,
 			    objs = this._objcache().filter(function(x) { return ids === undefined || ids.indexOf(x.id) >= 0; }),
 			    obj_ids = objs.map(function(x) { return x.id; }),
-				sobjs = objs.map(function(obj){ return serialize_obj(obj); });			
+				sobjs = objs.map(function(obj){ return serialize_obj(obj); });
 			this._ajax("PUT",  this.id + "/update", { version: escape(version), data : JSON.stringify(sobjs)  })
 				.then(function(response) {
 					this_._set_version(response.data["@version"]);
@@ -714,48 +714,48 @@
 					this_._flush_delete_queue();
 				}, 300);
 			}
-		},		
+		},
 		_flush_delete_queue:function() {
 			var this_ = this, dq = this._delete_queue, delete_ids = _(dq).keys();
-			if (delete_ids.length === 0) { return ; }			
+			if (delete_ids.length === 0) { return ; }
 			if (this._deleting || this._updating) { return this._requeue_delete();  }
 			this_._deleting = true;
 			this_._do_delete(delete_ids).then(function() {
 				delete this_._deleting;
 				delete_ids.map(function(id) {
 					dq[id].resolve(); delete dq[id];
-				});				
+				});
 			}).fail(function(err) {
 				delete this_._deleting;
 				if (err.status === 409) { this_._requeue_delete();	}
-			});			
+			});
 		},
 		_do_delete:function(m_ids) {
-			var version = this.get('version') || 0, d = u.deferred(), this_ = this; 
+			var version = this.get('version') || 0, d = u.deferred(), this_ = this;
 			this._ajax('DELETE', this.id+'/', { version:version, data: JSON.stringify(m_ids) })
 				.then(function(response) {
 					u.debug('DELETE response NEW version > ', response.data["@version"]);
 					this_._set_version(response.data["@version"]);
 					this_._update_object_list(undefined, [], m_ids); // update object list
-					d.resolve(this_);					
+					d.resolve(this_);
 				}).fail(d.reject);
-			return d.promise();			
+			return d.promise();
 		},
 		// =============== :: SYNC ::  ======================
 		sync: function(method, box, options){
 			switch(method)
 			{
 			case "create": return box._create_box();
-			case "read": return box._check_token_and_fetch(); 
+			case "read": return box._check_token_and_fetch();
 			case "update": return box.update()[0];  // save whole box?
 			case "delete": return u.warn('box.delete() : not implemented yet');
 			}
 		},
-		toString: function() { return 'box:' + this.get_id(); }		
+		toString: function() { return 'box:' + this.get_id(); }
 	});
-	
+
 	var BoxCollection = Backbone.Collection.extend({ model: Box });
-	
+
 	var Store = WebBox.Store = Backbone.Model.extend({
 		defaults: {
 			server_host:DEFAULT_HOST,
@@ -772,6 +772,7 @@
 			if (this.get('toolbar')) { this._load_toolbar(); }
 		},
 		is_same_domain:function() {
+			// FIXME: indexOf is insecure? http://evilwebsite.com/localhost/blah would pass
 			return this.get('server_host').indexOf(document.location.host) >= 0 && (document.location.port === (this.get('server_port') || ''));
 		},
 		_load_toolbar:function() {
@@ -790,7 +791,7 @@
 			var this_ = this;
 			this._ajax('POST', 'auth/login', { username: username, password: password })
 				.then(function(l) { this_.trigger('login', username); d.resolve(l); })
-				.fail(function(l) { d.reject(l); });			
+				.fail(function(l) { d.reject(l); });
 			return d.promise();
 		},
 		reconnect:function() {
@@ -802,7 +803,7 @@
 			this._ajax('POST', 'auth/logout')
 				.then(function(l) { this_.trigger('logout'); d.resolve(l); })
 				.fail(function(l) { d.reject(l); });
-			return d.promise();			
+			return d.promise();
 		},
 		_create:function(boxid) {
 			var b = new Box({}, {store: this});
@@ -812,7 +813,7 @@
 		},
 		_fetch:function() {
 			// fetches list of boxes
-			var this_ = this, d = u.deferred();			
+			var this_ = this, d = u.deferred();
 			this._ajax('GET','admin/list_boxes')
 				.success(function(data) {
 					var boxes =	data.list.map(function(boxid) { return this_.get_or_create_box(boxid); });
@@ -822,18 +823,18 @@
 			return d.promise();
 		},
 		_ajax:function(method, path, data) {
-			// now uses relative url scheme '//blah:port/path';			
+			// now uses relative url scheme '//blah:port/path';
 			var url = ['/', this.get('server_host'), path].join('/');
 			var default_data = { app: this.get('app') };
 			var options = _(_(this.ajax_defaults).clone()).extend(
 				{ url: url, method : method, crossDomain: !this.is_same_domain(), data: _(default_data).extend(data) }
 			);
-			return $.ajax( options ); // returns a deferred		
-		},		
+			return $.ajax( options ); // returns a deferred
+		},
 		sync: function(method, model, options){
 			switch(method){
 			case "create": return u.error('store.create() : cannot create a store'); // TODO
-			case "read"  : return model._fetch(); 
+			case "read"  : return model._fetch();
 			case "update": return u.error('store.update() : cannot update a store'); // TODO
 			case "delete": return u.error('store.delete() : cannot delete a store'); // tODO
 			}
@@ -844,10 +845,10 @@
 		utils : { path: '/js/utils.js', dfd : new $.Deferred()  },
 		toolbar : { path: '/components/toolbar/toolbar.js', dfd : new $.Deferred()  }
 	};
-	
+
 	WebBox.load = function(options) {
 		var base_url = options && options.base_url;
-		if (!base_url) { base_url = ['/', document.location.host].join('/'); }		
+		if (!base_url) { base_url = ['/', document.location.host].join('/'); }
 		var loadfns = _(WebBox.loader_dependencies).map(function(dependency,name) {
 			return function() {
 				$.getScript(base_url + dependency.path);
@@ -861,11 +862,11 @@
 				recursive_loader(rest.slice(1)).then(dp.resolve).fail(dp.reject);
 			}).fail(dp.reject);
 			return dp.promise();
-		};		
-		var _load_d = new $.Deferred();		
+		};
+		var _load_d = new $.Deferred();
 		recursive_loader(loadfns).then(function() {
 			u = WebBox.utils;
-			_load_d.resolve(root);			
+			_load_d.resolve(root);
 		}).fail(function(err) { console.error(err); _load_d.reject(root); });
 		return _load_d.promise();
 	};

@@ -1,0 +1,16 @@
+{
+  "name": "tests",
+  "version": "0.0.0",
+  "description": "Unit tests for INDX",
+  "main": "tests.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": "",
+  "author": "Peter West",
+  "license": "BSD",
+  "dependencies": {
+    "mocha": "~1.11.0",
+    "karma": "~0.8.6"
+  }
+}
