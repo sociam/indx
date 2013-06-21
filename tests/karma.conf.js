@@ -3,7 +3,7 @@
 
 
 // base path, that will be used to resolve files and exclude
-basePath = '';
+basePath = '../';
 
 
 // list of files / patterns to load in the browser
@@ -22,7 +22,7 @@ files = [
   'js/vendor/angular-ui.js',
   'js/vendor/d3.min.js',
   'js/webbox-backbone.js',*/
-  'tests.js'
+  'tests/tests.js'
 ];
 
 
@@ -34,7 +34,7 @@ exclude = [
 
 // test results reporter to use
 // possible values: 'dots', 'progress', 'junit'
-reporters = ['progress','junit', 'coverage'];
+reporters = ['progress'];
 
 
 // web server port

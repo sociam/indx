@@ -1,11 +1,21 @@
 
 describe('example', function () {
+	var angular;
 	beforeEach(function() {
 	    browser().navigateTo('/apps/examples/angular-example.html');
+	    //angular = window.frames[0].window.angular; // WTF?!?
 	});
 
+	it('should be equal', function() {
+		expect(value(20)).toBe(20);
+	});
 	it('should have real time', function() {
-		expect(element('body').html()).toContain('real time')
+		//console.log(window.frames[0].document.body.innerHTML);
+		angular = window.frames[0].window.angular; // WTF?!?
+		//debugger;
+		expect(angular.element('div').count()).toEqual(4)
+		//console.log(angular.element('body').html());
+		//expect(angular.element('body').html()).toContain('real time')
 	});
 })
 
@@ -54,3 +64,12 @@ describe('WebBox-Backbone', function () {
 	});
 });
 */
+
+//http://zachsnow.com/#!/blog/2013/expecting-expect-work-expected/
+angular.scenario.dsl('value', function() {
+  return function(value) {
+    return this.addFuture('value to future', function(done) {
+      done(null, value);
+    });
+  };
+});
