@@ -16,7 +16,7 @@
 --    You should have received a copy of the GNU General Public License
 --    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
-CREATE OR REPLACE FUNCTION wb_add_triple_to_version(input_version integer, input_subject text, input_predicate text, input_object_value text, input_object_type object_type, input_object_language character varying, input_object_datatype character varying)
+CREATE OR REPLACE FUNCTION wb_add_triple_to_latest(input_subject text, input_predicate text, input_object_value text, input_object_type object_type, input_object_language character varying, input_object_datatype character varying)
   RETURNS boolean AS
 $BODY$DECLARE
     triple_result integer;
@@ -30,7 +30,7 @@ BEGIN
         max_order := 0;
     END IF;
 
-    INSERT INTO wb_latest_vers (version, triple, triple_order) VALUES (input_version, triple_result, max_order + 1);
+    INSERT INTO wb_latest_vers (triple, triple_order) VALUES (triple_result, max_order + 1);
     RETURN true;
 END;$BODY$
   LANGUAGE plpgsql VOLATILE
@@ -45,13 +45,11 @@ $BODY$DECLARE
 BEGIN
     SELECT * INTO value_id FROM wb_get_string_id(input_obj_value);
 
-    BEGIN WORK;
     LOCK TABLE wb_objects in EXCLUSIVE MODE;
     SELECT wb_objects.id_object INTO object_result FROM wb_objects WHERE (wb_objects.obj_type = input_obj_type AND wb_objects.obj_value = value_id AND wb_objects.obj_lang = input_obj_lang AND wb_objects.obj_datatype = input_obj_datatype);
     IF NOT FOUND THEN
         INSERT INTO wb_objects (obj_type, obj_value, obj_lang, obj_datatype) VALUES (input_obj_type, value_id, input_obj_lang, input_obj_datatype) RETURNING wb_objects.id_object INTO object_result;
     END IF;
-    COMMIT WORK;
     RETURN object_result;
 END;$BODY$
   LANGUAGE plpgsql VOLATILE
@@ -63,8 +61,6 @@ CREATE OR REPLACE FUNCTION wb_get_string_id(input_string text)
 $BODY$DECLARE
     string_result integer;
 BEGIN
-    BEGIN WORK;
-
     IF input_string IS NULL
     THEN
         RETURN NULL;
@@ -74,7 +70,6 @@ BEGIN
         IF NOT FOUND THEN
             INSERT INTO wb_strings (string) VALUES (input_string) RETURNING wb_strings.id_string INTO string_result;
         END IF;
-        COMMIT WORK;
         RETURN string_result;
     END IF;
 END;$BODY$
@@ -95,7 +90,7 @@ BEGIN
     SELECT * INTO object_result FROM wb_get_object_id(input_object_type, input_object_value, input_object_language, input_object_datatype);
 
     SELECT wb_triples.id_triple INTO triple_result FROM wb_triples WHERE
-        (wb_triples.subject = subject_value_id AND
+    (wb_triples.subject = subject_value_id AND
          wb_triples.predicate = predicate_value_id AND
          wb_triples.object = object_result);
     IF NOT FOUND THEN

@@ -18,6 +18,7 @@
 from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
 import logging
+import collections
 
 class ObjectSetDiff:
     """ Determine the differences between two sets of objects, identified by
@@ -38,11 +39,42 @@ class ObjectSetDiff:
                 "values": [],
                 "params": [],
                 "query_prefix": "INSERT INTO wb_diff_vers (version, diff_type, subject, predicate, object, object_order) VALUES "
-            }
+            },
+            "latest_diffs": {
+                "add_predicate": [],
+                "remove_predicate": [],
+                "add_subject": [],
+                "add_triple": [],
+                "remove_subject": [],
+                "replace_objects": [],
+            },
         }
 
     def run_queries(self):
-        pass
+        """ Run all of the queries. """
+        result_d = Deferred()
+
+        queries = collections.deque([self.generate_diff_query()])
+        queries.extend(self.apply_diffs_to_latest())
+
+        def exec_queries():
+            if len(queries) < 1:
+                result_d.callback(None)
+                return
+
+            def ran_cb(result):
+                # TODO check value
+                exec_queries()
+
+            def err_cb(failure):
+                result_d.errback(failure)
+
+            query, params = queries.popleft()
+            self.conn.runQuery(query, params).addCallbacks(ran_cb, err_cb)
+
+        exec_queries()
+
+        return result_d
 
     def compare(self):
         """ Compare the two sets of objects, prepare SQL queries to INSERT the diff into the database. """
@@ -76,7 +108,6 @@ class ObjectSetDiff:
                         for sub_obj in sub_objs:
                             self.add_diff_query("add_triple", obj_id, predicate = predicate, sub_obj = sub_obj)
 
-                    # TODO XXX do latest_vers query
             else:
                 # SUBJECT IN BOTH - DIFF THEM
                 
@@ -122,17 +153,12 @@ class ObjectSetDiff:
                                     self.add_diff_query("replace_objects", obj_id, predicate = predicate, sub_obj = sub_obj, object_order = order)
                                     order += 1
 
-
-                # TODO XXX do latest_vers_query
-            
             del ids[obj_id] # remove this object from ids
 
         # check for removed subjects, e.g. ids still in ids 
         for obj_id, obj in ids.items():
             # SUBJECT REMOVED
             self.add_diff_query("remove_subject", obj_id)
-
-            # TODO XXX do latest_vers query
 
         def err_cb(failure):
             logging.error("ObjectSetDiff compare, err_cb, failure: {0}".format(failure))
@@ -153,13 +179,64 @@ class ObjectSetDiff:
             self.queries['diff']['values'].append("(%s, %s, wb_get_string_id(%s), wb_get_string_id(%s), NULL, NULL)")
             self.queries['diff']['params'].append(self.version, diff_type, subject, predicate)
 
-        ## XXX store some data for make_latest_query to use - or qrite them now ??
+        # apply the diff to the latest table
+        self.queries['latest_diffs'][diff_type].append((subject, predicate, sub_obj, object_order))
 
-        return
-        
-    def make_latest_query(self, version, ):
+    def generate_diff_query(self):
+        """ Generate query/params pair of the diff query. """
+        return (self.queries['diff']['query_prefix'] + ", ".join(self.queries['diff']['values']), self.queries['diff']['params'])
+
+
+    def apply_diffs_to_latest(self):
         """ Make the queries used to INSERT/DELETE from the wb_latest_vers table. """
-        pass
+        
+        queries = [] # list of tuples, of (query, params) to execute in order
+
+        for row in self.queries['latest_diffs']['remove_subject']:
+            subject, predicate, sub_obj, object_order = row
+            queries.append(("DELETE FROM wb_latest_vers USING JOIN wb_triples ON wb_latest_vers.triple = wb_triples.id_triple JOIN wb_strings subjects ON wb_strings.id_string = wb_triples.subject WHERE subjects.string = %s", [subject])) # XXX TODO test
+
+        for row in self.queries['latest_diffs']['remove_predicate']:
+            subject, predicate, sub_obj, object_order = row
+            queries.append(("DELETE FROM wb_latest_vers USING JOIN wb_triples ON wb_latest_vers.triple = wb_triples.id_triple JOIN wb_strings predicates ON wb_strings.id_string = wb_triples.predicate JOIN wb_strings subjects ON wb_strings.id_string = wb_triples.subject WHERE subjects.string = %s AND predicates.string = %s", [subject, predicate])) # XXX TODO test ## same as below
+        
+        for row in self.queries['latest_diffs']['replace_objects']:
+            subject, predicate, sub_obj, object_order = row
+            # remove existing first
+            queries.append(("DELETE FROM wb_latest_vers USING JOIN wb_triples ON wb_latest_vers.triple = wb_triples.id_triple JOIN wb_strings predicates ON wb_strings.id_string = wb_triples.predicate JOIN wb_strings subjects ON wb_strings.id_string = wb_triples.subject WHERE subjects.string = %s AND predicates.string = %s", [subject, predicate])) # XXX TODO test ## same as above, remove everything with subject AND predicate
+
+        # this is two loops because we don't want to remove the new objects (this can be optimised if required/in future)
+        for row in self.queries['latest_diffs']['replace_objects']:
+            subject, predicate, sub_obj, object_order = row
+
+            if sub_obj is not None:
+                thetype, value, language, datatype = self.obj_to_obj_tuple(sub_obj)
+            else:
+                thetype, value, language, datatype = None, None, None, None
+
+            # then add new
+            queries.append(("SELECT wb_add_triple_to_latest(%s, %s, %s, %s, %s, %s)", [subject, predicate, value, thetype, language, datatype]))
+
+        for row in self.queries['latest_diffs']['add_subject']:
+            subject, predicate, sub_obj, object_order = row
+            queries.append(("SELECT wb_add_triple_to_latest(%s, %s, %s, %s, %s, %s)", [subject, None, None, None, None, None]))
+
+        for row in self.queries['latest_diffs']['add_predicate']:
+            subject, predicate, sub_obj, object_order = row
+            queries.append(("SELECT wb_add_triple_to_latest(%s, %s, %s, %s, %s, %s)", [subject, predicate, None, None, None, None]))
+
+        for row in self.queries['latest_diffs']['add_triple']:
+            subject, predicate, sub_obj, object_order = row
+
+            if sub_obj is not None:
+                thetype, value, language, datatype = self.obj_to_obj_tuple(sub_obj)
+            else:
+                thetype, value, language, datatype = None, None, None, None
+
+            queries.append(("SELECT wb_add_triple_to_latest(%s, %s, %s, %s, %s, %s)", [subject, predicate, value, thetype, language, datatype]))
+
+        return queries
+
 
     def obj_to_obj_tuple(self, sub_obj):
         """ Return a tuple of (type, value, language, datatype) used in SQL queries. """
