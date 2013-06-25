@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+	<title>Unit tests for INDX</title>
+	<link rel="stylesheet/less" type="text/css" href="css/angular-example.less"/>
+	<link rel="stylesheet/less" type="text/css" href="/components/toolbar/toolbar.less"/>
+	<link rel="stylesheet" type="text/css" href="/css/bootstrap.css">
+	<meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1, maximum-scale=1">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+  </head>
+  <body ng-app='example' ng-controller='App'>
+	<h1 class="lead">real time collaboration</h1>
+	<div class="example" class="container-fluid">
+	  <div ui-if="error">
+		{{ error }}
+	  </div>
+	  <div ui-if="!logged_in && !error">
+		Please log in and select a box.
+	  </div>
+	  <div ui-if="logged_in && !error">
+		<h2> Using box {{ box_id }} </h2>
+		<p> open a second browser, type something</p>
+		<div class="row">
+
+		  <form class="span12">
+			<input type="text" ng-model="$parent.inputmodel" ng-change='update()'></input>
+		  </form>
+		</div>
+	  </div>
+	</div>
+  </body>
+  <script src="../../js/vendor/lesscss.min.js" type="text/javascript"></script>
+  <script src="../../js/vendor/jquery.min.js" type="text/javascript"></script>
+  <script src="../../js/vendor/angular.min.js" type="text/javascript"></script>
+  <script src="../../js/vendor/angular-ui.js" type="text/javascript"></script>
+  <script src="../../js/vendor/underscore.min.js" type="text/javascript"></script>
+  <script src="../../js/vendor/backbone.min.js" type="text/javascript"></script>
+  <script src="../../js/vendor/bootstrap.min.js" type="text/javascript"></script>
+  <script type="text/javascript" src="../../js/webbox-backbone.js"></script>
+  <script type="text/javascript" src="../../js/webbox-angular.js"></script>
+  <script type="text/javascript" src="../../js/webbox-angular-utils.js"></script>
+  <script type="text/javascript" src="js/connection-params.js"></script>
+  <script type="text/javascript" src="js/angular-example.js"></script>
+</html>
