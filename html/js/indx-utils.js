@@ -1,8 +1,9 @@
 (function() {
 	angular
-		.module('webbox')
+		.module('indx')
 		.factory('utils',function() {
 			return {
+				safe_apply: function($scope, fn) { setTimeout(function() { $scope.$apply(fn); }, 0); },
 				log : function() { try { console.log.apply(console,arguments);  } catch(e) { }},
 				warn : function() { try { console.warn.apply(console,arguments);  } catch(e) { }},
 				debug : function() { try { console.debug.apply(console,arguments);  } catch(e) { }},
