@@ -764,7 +764,7 @@ angular
 			is_same_domain:function() {
 				return this.get('server_host').indexOf(document.location.host) >= 0 && (document.location.port === (this.get('server_port') || ''));
 			},
-			boxes:function() {	return this.attributes.boxes;	},
+			boxes:function() { return this.attributes.boxes;	},
 			get_box: function(boxid) {	return this.boxes().get(boxid);	},
 			get_or_create_box:function(boxid) { return this.boxes().get(boxid) || this._create(boxid);	},
 			checkLogin:function() { return this._ajax('GET', 'auth/whoami'); },

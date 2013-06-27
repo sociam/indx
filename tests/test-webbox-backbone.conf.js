@@ -16,11 +16,9 @@ files = [
   'js/vendor/angular-beta.min.js',
   'js/vendor/angular-ui.js',
   'js/vendor/bootstrap.js',
-  'js/webbox-angular.js',
-  'js/webbox-angular-utils.js',
-  'components/toolbar/toolbar.js',
+  'js/indx.js',
+  'js/indx-utils.js',
   '../tests/test-webbox-backbone.js'
-	
 ];
 
 
