@@ -1,4 +1,4 @@
-<div ng-app="WebboxToolbar" class="ng-cloak" ng-controller="ToolbarController" ng-show="visible">
+<div class="ng-cloak indx-toolbar" ng-show="visible">
   <div class="navbar">
 	<div class="navbar-inner" ng-init="_initialise()">
 	  <div class="brand">indx
@@ -18,7 +18,7 @@
 	  <div role="button" class="btn login_logout_btn" ng-click="cb_login_logout_clicked()" ng-bind-html-unsafe="username_html || not_logged_in"></div>
 	</div> <!-- navbar-inner -->
 	<!-- Modal -->
-	<div id="login_dialog" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="loginlabel" aria-hidden="true">
+	<div class="login_dialog" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="loginlabel" aria-hidden="true">
 	  <form class="form-horizontal">
 		<div class="modal-header">
 		  <a type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</a>
@@ -47,9 +47,9 @@
 		  <input type="submit" class="btn btn-primary" value="Log in" ng-click="loginbox_try_login(_login_username,_login_password)"></input>
 		</div>
 	  </form>
-	</div>
-	
-	<div id="logout_dialog" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="logoutlabel" aria-hidden="true">
+	</div>	
+	<div class="logout_dialog"
+		 class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="logoutlabel" aria-hidden="true">
 	  <div class="modal-header">
 		<button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
 		<h3 id="logoutlabel">log out ?</h3>
