@@ -53,8 +53,14 @@ angular
 				toolbar.get_selected_box = function() { return  $scope.box; };
 				toolbar.is_logged_in = function() { return $scope.is_logged_in(); };
 				
-				$scope.cb_login_clicked = function() { login_dialog().modal({ show: true, keyboard:true });	};
-				$scope.cb_logout_clicked = function() { logout_dialog().modal({ show: true, keyboard:true }); }; 
+				$scope.cb_login_clicked = function() {
+					login_dialog().modal({ show: true, keyboard:true });
+					login_dialog().on('shown', function() { login_dialog().find('.login_username').focus(); });
+				};
+				$scope.cb_logout_clicked = function() {
+					logout_dialog().modal({ show: true, keyboard:true });
+					logout_dialog().on('shown', function() { logout_dialog().find('.btn-primary').focus(); });
+				}; 
 				
 				var update_boxlist = function() {
 					// get boxes

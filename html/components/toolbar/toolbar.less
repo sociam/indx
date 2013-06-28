@@ -31,13 +31,23 @@
 	}
     .modal-footer { vertical-align:middle;  }
     .login_logout_btn { position:absolute; right:20px; }
-    .login_dialog {
+    .login_dialog, .logout_dialog {
+		* { font-weight:100 !important; }
+       .btn { font-weight:200 !important; }
 		form {
 			margin: 0px;
 			.control-group { margin-bottom:10px; }
-			input {
+			color:#111;			
+			input[type=text],input[type=password] {
+				font-family:'Consolas', 'Monaco', monospace;
 				font-size:12pt;
 				height:2.0em;
+				outline: none !important;
+				-webkit-outline: none !important;
+				border:none;
+				border-bottom: 1px solid #eee;
+				box-shadow:none;
+				border-radius:0px;
 			}		
 		}
 		div.error {
