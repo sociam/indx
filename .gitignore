@@ -14,3 +14,4 @@ osx_app/*.dmg
 osx_app/*.egg
 *~
 tags
+node_modules
