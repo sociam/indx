@@ -15,10 +15,16 @@
 		  </ul>
 		</li>
 	  </ul>
-	  <div role="button" class="btn login_logout_btn" ng-click="cb_login_logout_clicked()" ng-bind-html-unsafe="username_html || not_logged_in"></div>
+	  <!-- login-logout button --> 
+	  <div ui-if="!is_logged_in()" role="button" class="btn login_logout_btn" ng-click="cb_login_clicked()">
+		<i>log in to indx</i>
+	  </div>
+	  <div ui-if="is_logged_in()" role="button" class="btn login_logout_btn" ng-click="cb_logout_clicked()">
+		{{ username }} &nbsp; <i class='icon-user'></i>
+	  </div>
 	</div> <!-- navbar-inner -->
 	<!-- Modal -->
-	<div class="login_dialog" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="loginlabel" aria-hidden="true">
+	<div class="login_dialog modal hide fade" tabindex="-1" role="dialog" aria-labelledby="loginlabel" aria-hidden="true">
 	  <form class="form-horizontal">
 		<div class="modal-header">
 		  <a type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</a>
@@ -48,8 +54,7 @@
 		</div>
 	  </form>
 	</div>	
-	<div class="logout_dialog"
-		 class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="logoutlabel" aria-hidden="true">
+	<div class="logout_dialog modal hide fade" tabindex="-1" role="dialog" aria-labelledby="logoutlabel" aria-hidden="true">
 	  <div class="modal-header">
 		<button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
 		<h3 id="logoutlabel">log out ?</h3>

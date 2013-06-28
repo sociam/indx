@@ -2,8 +2,10 @@
 @import url('/components/toolbar/spinner.less');
 
 .indx-toolbar {
+	.hide { display:none; }
 	position:relative;
 	* { box-sizing:border-box; }
+	margin-top:5px;
     .brand {
 		position:relative;
 		margin-left:0px !important;
@@ -15,6 +17,18 @@
     .modal {
 		// -webkit-filter:	blur(0.5px) grayscale(.5) opacity(0.9) !important;
     }
+	.navbar .nav .dropdown-toggle .caret {
+		margin-top:8px;
+		margin-bottom:8px;
+	}
+	.btn-group > .dropdown-menu li {
+		padding:2px 4px 2px 4px;
+		margin:5px;
+		border-radius:2px;
+		&:hover {
+			background-color:rgba(240,240,255,0.9) !important;
+		}
+	}
     .modal-footer { vertical-align:middle;  }
     .login_logout_btn { position:absolute; right:20px; }
     .login_dialog {
