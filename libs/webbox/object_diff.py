@@ -115,8 +115,10 @@ class ObjectSetDiff:
                     if sub_objs is None or len(sub_objs) < 1:
                         self.add_diff_query("add_predicate", obj_id, predicate = predicate)
                     else:
+                        order = 1
                         for sub_obj in sub_objs:
-                            self.add_diff_query("add_triple", obj_id, predicate = predicate, sub_obj = sub_obj)
+                            self.add_diff_query("add_triple", obj_id, predicate = predicate, sub_obj = sub_obj, object_order = order)
+                            order += 1
 
             else:
                 # SUBJECT IN BOTH - DIFF THEM

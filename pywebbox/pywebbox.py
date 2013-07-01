@@ -219,6 +219,10 @@ class WebBox:
         return self._get(url)
 
     @require_token
+    def update_json(self, version, objects):
+        pass
+
+    @require_token
     def update(self, version, objects):
         """ Update objects in a box.
         

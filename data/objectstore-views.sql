@@ -42,6 +42,6 @@ CREATE OR REPLACE VIEW wb_v_diffs AS
    JOIN wb_strings j_subject ON j_subject.id_string = wb_vers_diffs.subject
    JOIN wb_strings j_predicate ON j_predicate.id_string = wb_vers_diffs.predicate
    JOIN wb_strings j_object ON j_object.id_string = wb_objects.obj_value
-  ORDER BY wb_vers_diffs.object_order;
+  ORDER BY wb_vers_diffs.version, wb_vers_diffs.diff_type, j_subject.string, j_predicate.string, wb_vers_diffs.object_order, j_object.string, wb_objects.obj_type, wb_objects.obj_lang, wb_objects.obj_datatype;
 
 
