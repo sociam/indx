@@ -17,7 +17,7 @@
 --    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
 CREATE TYPE object_type AS ENUM ('resource', 'literal');
-CREATE TYPE change_type AS ENUM ('add_subject', 'remove_subject', 'update_subject', 'add_triple');
+CREATE TYPE change_type AS ENUM ('add_subject', 'remove_subject', 'update_subject', 'add_triple', 'add_predicate', 'replace_objects', 'remove_predicate');
 -- 'remove_triple');
 
 
@@ -57,7 +57,7 @@ CREATE TABLE wb_triples
   subject integer NOT NULL,
   predicate integer NOT NULL,
   object integer,
-  object_order integer NOT NULL,
+--  object_order integer NOT NULL,
   CONSTRAINT pk_triple PRIMARY KEY (id_triple),
   CONSTRAINT fk_subject FOREIGN KEY (subject)
       REFERENCES wb_strings (id_string) MATCH SIMPLE

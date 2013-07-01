@@ -21,17 +21,28 @@ CREATE OR REPLACE FUNCTION wb_add_triple_to_latest(input_subject text, input_pre
 $BODY$DECLARE
     triple_result integer;
     max_order integer;
+    subject_check integer;
 BEGIN
-    SELECT * INTO triple_result FROM wb_get_triple_id(input_subject, input_predicate, input_object_value, input_object_type, input_object_language, input_object_datatype);
-
-    SELECT MAX(triple_order) INTO max_order FROM wb_latest_vers;
-
-    IF max_order IS NULL THEN
-        max_order := 0;
+    SELECT id_subject INTO subject_check FROM wb_latest_subjects WHERE id_subject = wb_get_string_id(input_subject);
+    IF NOT FOUND THEN
+        INSERT INTO wb_latest_subjects (id_subject) VALUES (wb_get_string_id(input_subject));
     END IF;
 
-    INSERT INTO wb_latest_vers (triple, triple_order) VALUES (triple_result, max_order + 1);
-    RETURN true;
+    IF input_predicate IS NOT NULL
+    THEN
+        SELECT * INTO triple_result FROM wb_get_triple_id(input_subject, input_predicate, input_object_value, input_object_type, input_object_language, input_object_datatype);
+
+        SELECT MAX(triple_order) INTO max_order FROM wb_latest_vers;
+
+        IF max_order IS NULL THEN
+            max_order := 0;
+        END IF;
+
+        INSERT INTO wb_latest_vers (triple, triple_order) VALUES (triple_result, max_order + 1);
+        RETURN true;
+    ELSE
+        RETURN true;
+    END IF;
 END;$BODY$
   LANGUAGE plpgsql VOLATILE
   COST 100;
@@ -43,14 +54,20 @@ $BODY$DECLARE
     value_id integer;
     object_result integer;
 BEGIN
-    SELECT * INTO value_id FROM wb_get_string_id(input_obj_value);
+    IF input_obj_value IS NULL
+    THEN
+        RETURN NULL;
+    ELSE
 
-    LOCK TABLE wb_objects in EXCLUSIVE MODE;
-    SELECT wb_objects.id_object INTO object_result FROM wb_objects WHERE (wb_objects.obj_type = input_obj_type AND wb_objects.obj_value = value_id AND wb_objects.obj_lang = input_obj_lang AND wb_objects.obj_datatype = input_obj_datatype);
-    IF NOT FOUND THEN
-        INSERT INTO wb_objects (obj_type, obj_value, obj_lang, obj_datatype) VALUES (input_obj_type, value_id, input_obj_lang, input_obj_datatype) RETURNING wb_objects.id_object INTO object_result;
+        SELECT * INTO value_id FROM wb_get_string_id(input_obj_value);
+
+        LOCK TABLE wb_objects in EXCLUSIVE MODE;
+        SELECT wb_objects.id_object INTO object_result FROM wb_objects WHERE (wb_objects.obj_type = input_obj_type AND wb_objects.obj_value = value_id AND wb_objects.obj_lang = input_obj_lang AND wb_objects.obj_datatype = input_obj_datatype);
+        IF NOT FOUND THEN
+            INSERT INTO wb_objects (obj_type, obj_value, obj_lang, obj_datatype) VALUES (input_obj_type, value_id, input_obj_lang, input_obj_datatype) RETURNING wb_objects.id_object INTO object_result;
+        END IF;
+        RETURN object_result;
     END IF;
-    RETURN object_result;
 END;$BODY$
   LANGUAGE plpgsql VOLATILE
   COST 100;

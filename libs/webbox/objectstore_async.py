@@ -21,6 +21,7 @@ from twisted.internet.defer import Deferred
 from twisted.internet import threads
 from twisted.python.failure import Failure
 from webbox.objectstore_query import ObjectStoreQuery
+from webbox.object_diff import ObjectSetDiff
 
 class ObjectStoreAsync:
     """ Stores objects in a database, handling import, export and versioning.
@@ -60,7 +61,7 @@ class ObjectStoreAsync:
 
     def _notify(self, cur, version):
         """ Notify listeners (in postgres) of a new version (called after update/delete has completed). """
-        self.debug("ObjectStoreAsync _notify, cur: {0}, version: {1}".format(cur, version))
+        self.debug("ObjectStoreAsync _notify, version: {0}".format(version))
         result_d = Deferred()
 
         def err_cb(failure):
@@ -69,7 +70,7 @@ class ObjectStoreAsync:
             return
 
         def new_ver_done(success):
-            self._curexec(cur, "SELECT wb_version_finished(%s)", [version]).addCallbacks(lambda success: result_d.callback(success), err_cb)
+            self._curexec(cur, "SELECT * FROM wb_version_finished(%s)", [version]).addCallbacks(result_d.callback, err_cb)
 
         self._curexec(cur,
                 "INSERT INTO wb_versions (version, updated, username, appid, clientip) VALUES (%s, CURRENT_TIMESTAMP, %s, %s, %s)",
@@ -151,12 +152,12 @@ class ObjectStoreAsync:
         """
         obj_out = {}
         for row in rows:
-            (version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype) = row
+            (triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype) = row
 
-            if "@version" not in obj_out:
-                if version is None:
-                    version = 0
-                obj_out["@version"] = version
+            #if "@version" not in obj_out:
+            #    if version is None:
+            #        version = 0
+            #    obj_out["@version"] = version
 
             if subject not in obj_out:
                 obj_out[subject] = {}
@@ -184,7 +185,7 @@ class ObjectStoreAsync:
             obj_out = self.rows_to_json(rows)
             result_d.callback(obj_out)
        
-        query = "SELECT version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples WHERE subject = ANY(ARRAY["
+        query = "SELECT triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples WHERE subject = ANY(ARRAY["
         for i in range(len(object_ids)):
             if i > 0:
                 query += ", "
@@ -300,7 +301,7 @@ class ObjectStoreAsync:
 
         def ver_cb(version):
             self.debug("get_latest ver_cb: {0}".format(version))
-            self.conn.runQuery("SELECT version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples", []).addCallbacks(lambda rows2: row_cb(rows2, version), err_cb) # ORDER BY is implicit, defined by the view, so no need to override it here
+            self.conn.runQuery("SELECT triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples", []).addCallbacks(lambda rows2: row_cb(rows2, version), err_cb) # ORDER BY is implicit, defined by the view, so no need to override it here
             return
 
         self._get_latest_ver().addCallbacks(ver_cb, err_cb)
@@ -444,7 +445,7 @@ class ObjectStoreAsync:
                 query = "SELECT * FROM wb_diff_changed(%s, %s)" # order is implicit, defined by the view, so no need to override it here
                 self.conn.runQuery(query, [from_version, to_version_used]).addCallbacks(lambda rows: diff_cb(rows, to_version_used), err_cb)
             elif return_objs == "objects": 
-                query = "SELECT version, triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_all_triples WHERE subject = ANY(SELECT wb_diff(%s, %s)) AND version = %s" # order is implicit, defined by the view, so no need to override it here
+                query = "SELECT triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_all_triples WHERE subject = ANY(SELECT wb_diff(%s, %s)) AND version = %s" # order is implicit, defined by the view, so no need to override it here
                 self.conn.runQuery(query, [from_version, to_version_used, to_version_used]).addCallbacks(lambda rows: objs_cb(rows, to_version_used), err_cb)
             elif return_objs == "ids":
                 get_ids_diff(from_version, to_version_used).addCallbacks(ids_cb, err_cb)
@@ -633,46 +634,52 @@ class ObjectStoreAsync:
         self.debug("Objectstore update, specified_prev_version: {0}".format(specified_prev_version))
         from twisted.internet.defer import setDebugging
         setDebugging(True)
-    
+   
         def err_cb(failure):
-            self.error("Objectstore update, err_cb, failure: {0}".format(failure))
+            self.error("Objectstore update err_cb, failure: {0}".format(failure))
             result_d.errback(failure)
+            return
 
-        # subject ids to not include in the clone
-        id_list = self.ids_from_objs(objs)
-        id_list.extend(delete_ids)
+        # TODO XXX deal with new_files_oids and delete_files_oids
 
-        # files to not include in the clone
-        files_id_list = []
-        files_id_list.extend(map(lambda x: x[1], new_files_oids)) # extract ids from the new files list
-        files_id_list.extend(delete_files_ids)
-        
+
+##         ### OLD STUFF FROM HERE
+## 
+##         # subject ids to not include in the clone
+##         id_list = self.ids_from_objs(objs)
+##         id_list.extend(delete_ids)
+## 
+##         # files to not include in the clone
+##         files_id_list = []
+##         files_id_list.extend(map(lambda x: x[1], new_files_oids)) # extract ids from the new files list
+##         files_id_list.extend(delete_files_ids)
+##         
         def interaction_cb(cur):
             self.debug("Objectstore update, interaction_cb, cur: {0}".format(cur))
             interaction_d = Deferred()
-
+ 
             def interaction_err_cb(failure):
                 self.debug("Objectstore update, interaction_err_cb, failure: {0}".format(failure))
                 interaction_d.errback(failure) 
-
-            def cloned_cb(new_ver):
-                self.debug("Objectstore update, cloned_cb new_ver: {0}".format(new_ver))
-
-                def added_cb(info):
-                    # added object successfully
-                    self.debug("Objectstore update, added_cb info: {0}".format(info))
-
-                    def files_added_cb(info):
-                        self.debug("Objectstore update, files_added_cb info: {0}".format(info))
-                        self._notify(cur, new_ver).addCallbacks(lambda _: interaction_d.callback({"@version": new_ver}), interaction_err_cb)
-
-                    self._add_files_to_version(cur, new_files_oids, new_ver).addCallbacks(files_added_cb, interaction_err_cb)
-
-                if len(objs) > 0: # skip if we're just deleting
-                    self._add_objs_to_version(cur, objs, new_ver).addCallbacks(added_cb, interaction_err_cb)
-                else:
-                    added_cb(new_ver)
-
+## 
+##             def cloned_cb(new_ver):
+##                 self.debug("Objectstore update, cloned_cb new_ver: {0}".format(new_ver))
+## 
+##                 def added_cb(info):
+##                     # added object successfully
+##                     self.debug("Objectstore update, added_cb info: {0}".format(info))
+## 
+##                     def files_added_cb(info):
+##                         self.debug("Objectstore update, files_added_cb info: {0}".format(info))
+##                         self._notify(cur, new_ver).addCallbacks(lambda _: interaction_d.callback({"@version": new_ver}), interaction_err_cb)
+## 
+##                     self._add_files_to_version(cur, new_files_oids, new_ver).addCallbacks(files_added_cb, interaction_err_cb)
+## 
+##                 if len(objs) > 0: # skip if we're just deleting
+##                     self._add_objs_to_version(cur, objs, new_ver).addCallbacks(added_cb, interaction_err_cb)
+##                 else:
+##                     added_cb(new_ver)
+## 
             def ver_cb(latest_ver):
                 self.debug("Objectstore update, ver_cb, latest_ver: {0}".format(latest_ver))
                 latest_ver = latest_ver[0][0] or 0
@@ -680,12 +687,37 @@ class ObjectStoreAsync:
                 def do_check():
                     self.debug("Objectstore do_check")
                     if latest_ver == specified_prev_version:
+                        new_ver = latest_ver + 1
 
                         def check_err_cb(failure):
                             self.debug("Objectstore check_err_cb, failure: {0}".format(failure))
                             interaction_d.errback(failure)
 
-                        self._clone(cur, specified_prev_version, id_list = id_list, files_id_list = files_id_list).addCallbacks(cloned_cb, check_err_cb)
+                        def compare_cb(val):
+                            self.debug("Objectstore update, compare_cb, val: {0}".format(val))
+                            self._notify(cur, new_ver).addCallbacks(lambda _: interaction_d.callback({"@version": new_ver}), check_err_cb)
+
+                        def objs_cb(objs_full):
+                            self.debug("Objectstore update, objs_cb, val: {0}".format(objs_full))
+                            # add all delete_ids to objs1 and not objs2 so that they get deleted by the ObjectSetDiff
+                            for obj_id in delete_ids:
+                                if obj_id in objs_full:
+                                    objs_full[obj_id] = {"@id": obj_id}
+
+                            for obj_id in delete_ids:
+                                objs_full[obj_id] = {"@id": obj_id}
+
+                            objs_full = objs_full.values()
+ 
+                            set_diff = ObjectSetDiff(self.conn, objs_full, objs, new_ver)
+                            set_diff.compare(cur).addCallbacks(compare_cb, check_err_cb) # changes the DB for us
+
+                        # add full objects from db to objs_orig if their id is in objs         
+                        objs_ids = map(lambda x: x['@id'], objs)
+                        self.get_latest_objs(objs_ids).addCallbacks(objs_cb, check_err_cb)
+
+
+##                         self._clone(cur, specified_prev_version, id_list = id_list, files_id_list = files_id_list).addCallbacks(cloned_cb, check_err_cb)
                     else:
                         self.debug("In objectstore update, the previous version of the box {0} didn't match the actual {1}".format(specified_prev_version, latest_ver))
                         ipve = IncorrectPreviousVersionException("Actual previous version is {0}, specified previous version is: {1}".format(latest_ver, specified_prev_version))
@@ -715,14 +747,15 @@ class ObjectStoreAsync:
                 self._curexec(cur, "SELECT latest_version FROM wb_v_latest_version").addCallbacks(get_ver_cb, interaction_err_cb)
 
             self._curexec(cur, "LOCK TABLE wb_files, wb_versions, wb_latest_vers, wb_triples, wb_users, wb_vers_diffs, wb_latest_subjects IN EXCLUSIVE MODE").addCallbacks(lock_cb, interaction_err_cb) # lock to other writes, but not reads
-            
+##             
             return interaction_d
-
-
+ 
+ 
         def interaction_complete_d(ver_response):
             self.debug("Interaction_complete_d: {0}".format(ver_response))
-            self.conn.runOperation("VACUUM").addCallbacks(lambda _: result_d.callback(ver_response), err_cb)
-
+            ##self.conn.runOperation("VACUUM").addCallbacks(lambda _: result_d.callback(ver_response), err_cb)
+            result_d.callback(ver_response)
+ 
         self.conn.runInteraction(interaction_cb).addCallbacks(interaction_complete_d, err_cb)
         return result_d
 

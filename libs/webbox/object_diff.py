@@ -19,6 +19,7 @@ from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
 import logging
 import collections
+import pprint
 
 class ObjectSetDiff:
     """ Determine the differences between two sets of objects, identified by
@@ -38,7 +39,7 @@ class ObjectSetDiff:
             "diff": {
                 "values": [],
                 "params": [],
-                "query_prefix": "INSERT INTO wb_diff_vers (version, diff_type, subject, predicate, object, object_order) VALUES "
+                "query_prefix": "INSERT INTO wb_vers_diffs (version, diff_type, subject, predicate, object, object_order) VALUES "
             },
             "latest_diffs": {
                 "add_predicate": [],
@@ -50,33 +51,42 @@ class ObjectSetDiff:
             },
         }
 
-    def run_queries(self):
+    def run_queries(self, cur):
         """ Run all of the queries. """
         result_d = Deferred()
 
         queries = collections.deque([self.generate_diff_query()])
         queries.extend(self.apply_diffs_to_latest())
 
+        logging.debug("ObjectSetDiff run_queries, queries: {0}".format(pprint.pformat(queries[0])))
+
         def exec_queries():
+            logging.debug("ObjectSetDiff exec_queries, len(queries): {0}".format(len(queries)))
             if len(queries) < 1:
+                logging.debug("ObjectSetDiff exec_queries callback sent")
                 result_d.callback(None)
                 return
 
             def ran_cb(result):
                 # TODO check value
+                logging.debug("ObjectSetDiff run_queries, ran_cb, result: {0}".format(ran_cb))
                 exec_queries()
 
             def err_cb(failure):
                 result_d.errback(failure)
 
             query, params = queries.popleft()
-            self.conn.runQuery(query, params).addCallbacks(ran_cb, err_cb)
+            logging.debug("ObjectSetDiff run_queries, query: {0}, params: {1}".format(query,params))
+            if query.upper().startswith("SELECT"):
+                cur.execute(query, params).addCallbacks(ran_cb, err_cb)
+            else:
+                cur.execute(query, params).addCallbacks(ran_cb, err_cb)
 
         exec_queries()
 
         return result_d
 
-    def compare(self):
+    def compare(self, cur):
         """ Compare the two sets of objects, prepare SQL queries to INSERT the diff into the database. """
         result_d = Deferred()
         self.reset_queries()
@@ -99,7 +109,7 @@ class ObjectSetDiff:
                 # NEW SUBJECT
                 self.add_diff_query("add_subject", obj_id)
                 for predicate, sub_objs in obj.items():
-                    if predicate[0] is "@":
+                    if predicate[0] == "@":
                         continue
 
                     if sub_objs is None or len(sub_objs) < 1:
@@ -116,7 +126,7 @@ class ObjectSetDiff:
                 all_predicates = set(obj.keys() + prev_obj.keys())
                 
                 for predicate in all_predicates:
-                    if predicate[0] is "@":
+                    if predicate[0] == "@":
                         continue
 
 
@@ -153,7 +163,7 @@ class ObjectSetDiff:
                                     self.add_diff_query("replace_objects", obj_id, predicate = predicate, sub_obj = sub_obj, object_order = order)
                                     order += 1
 
-            del ids[obj_id] # remove this object from ids
+                del ids[obj_id] # remove this object from ids
 
         # check for removed subjects, e.g. ids still in ids 
         for obj_id, obj in ids.items():
@@ -165,19 +175,21 @@ class ObjectSetDiff:
             result_d.errback(failure)
             return
 
-        self.run_queries().addCallbacks(lambda result: result_d.callback(result), err_cb)
+        self.run_queries(cur).addCallbacks(result_d.callback, err_cb)
         return result_d
 
     def add_diff_query(self, diff_type, subject, predicate = None, sub_obj = None, object_order = None):
         """ Make the queries used to INSERT into the wb_vers_diffs table. """
 
+        
+
         if sub_obj is not None:
             obj_type, obj_value, obj_lang, obj_datatype = self.obj_to_obj_tuple(sub_obj)
             self.queries['diff']['values'].append("(%s, %s, wb_get_string_id(%s), wb_get_string_id(%s), wb_get_object_id(%s, %s, %s, %s), %s)")
-            self.queries['diff']['params'].append(self.version, diff_type, subject, predicate, obj_type, obj_value, obj_lang, obj_datatype, object_order)
+            self.queries['diff']['params'].extend([self.version, diff_type, subject, predicate, obj_type, obj_value, obj_lang, obj_datatype, object_order])
         else:
             self.queries['diff']['values'].append("(%s, %s, wb_get_string_id(%s), wb_get_string_id(%s), NULL, NULL)")
-            self.queries['diff']['params'].append(self.version, diff_type, subject, predicate)
+            self.queries['diff']['params'].extend([self.version, diff_type, subject, predicate])
 
         # apply the diff to the latest table
         self.queries['latest_diffs'][diff_type].append((subject, predicate, sub_obj, object_order))
@@ -194,16 +206,16 @@ class ObjectSetDiff:
 
         for row in self.queries['latest_diffs']['remove_subject']:
             subject, predicate, sub_obj, object_order = row
-            queries.append(("DELETE FROM wb_latest_vers USING JOIN wb_triples ON wb_latest_vers.triple = wb_triples.id_triple JOIN wb_strings subjects ON wb_strings.id_string = wb_triples.subject WHERE subjects.string = %s", [subject])) # XXX TODO test
+            queries.append(("DELETE FROM wb_latest_vers wb_triples, wb_strings AS subjects WHERE subjects.id_string = wb_triples.subject AND wb_latest_vers.triple = wb_triples.id_triple AND subjects.string = %s", [subject])) # XXX TODO test
 
         for row in self.queries['latest_diffs']['remove_predicate']:
             subject, predicate, sub_obj, object_order = row
-            queries.append(("DELETE FROM wb_latest_vers USING JOIN wb_triples ON wb_latest_vers.triple = wb_triples.id_triple JOIN wb_strings predicates ON wb_strings.id_string = wb_triples.predicate JOIN wb_strings subjects ON wb_strings.id_string = wb_triples.subject WHERE subjects.string = %s AND predicates.string = %s", [subject, predicate])) # XXX TODO test ## same as below
+            queries.append(("DELETE FROM wb_latest_vers USING wb_triples, wb_strings AS predicates, wb_strings AS subjects WHERE wb_latest_vers.triple = wb_triples.id_triple AND predicates.id_string = wb_triples.predicate AND subjects.id_string = wb_triples.subject AND subjects.string = %s AND predicates.string = %s", [subject, predicate])) # XXX TODO test ## same as below
         
         for row in self.queries['latest_diffs']['replace_objects']:
             subject, predicate, sub_obj, object_order = row
             # remove existing first
-            queries.append(("DELETE FROM wb_latest_vers USING JOIN wb_triples ON wb_latest_vers.triple = wb_triples.id_triple JOIN wb_strings predicates ON wb_strings.id_string = wb_triples.predicate JOIN wb_strings subjects ON wb_strings.id_string = wb_triples.subject WHERE subjects.string = %s AND predicates.string = %s", [subject, predicate])) # XXX TODO test ## same as above, remove everything with subject AND predicate
+            queries.append(("DELETE FROM wb_latest_vers USING wb_triples, wb_strings AS predicates, wb_strings AS subjects WHERE wb_latest_vers.triple = wb_triples.id_triple AND predicates.id_string = wb_triples.predicate AND subjects.id_string = wb_triples.subject AND subjects.string = %s AND predicates.string = %s", [subject, predicate])) # XXX TODO test ## same as above, remove everything with subject AND predicate
 
         # this is two loops because we don't want to remove the new objects (this can be optimised if required/in future)
         for row in self.queries['latest_diffs']['replace_objects']:
@@ -215,15 +227,15 @@ class ObjectSetDiff:
                 thetype, value, language, datatype = None, None, None, None
 
             # then add new
-            queries.append(("SELECT wb_add_triple_to_latest(%s, %s, %s, %s, %s, %s)", [subject, predicate, value, thetype, language, datatype]))
+            queries.append(("SELECT * FROM wb_add_triple_to_latest(%s, %s, %s, %s, %s, %s)", [subject, predicate, value, thetype, language, datatype]))
 
         for row in self.queries['latest_diffs']['add_subject']:
             subject, predicate, sub_obj, object_order = row
-            queries.append(("SELECT wb_add_triple_to_latest(%s, %s, %s, %s, %s, %s)", [subject, None, None, None, None, None]))
+            queries.append(("SELECT * FROM wb_add_triple_to_latest(%s, %s, %s, %s, %s, %s)", [subject, None, None, None, None, None]))
 
         for row in self.queries['latest_diffs']['add_predicate']:
             subject, predicate, sub_obj, object_order = row
-            queries.append(("SELECT wb_add_triple_to_latest(%s, %s, %s, %s, %s, %s)", [subject, predicate, None, None, None, None]))
+            queries.append(("SELECT * FROM wb_add_triple_to_latest(%s, %s, %s, %s, %s, %s)", [subject, predicate, None, None, None, None]))
 
         for row in self.queries['latest_diffs']['add_triple']:
             subject, predicate, sub_obj, object_order = row
@@ -233,7 +245,7 @@ class ObjectSetDiff:
             else:
                 thetype, value, language, datatype = None, None, None, None
 
-            queries.append(("SELECT wb_add_triple_to_latest(%s, %s, %s, %s, %s, %s)", [subject, predicate, value, thetype, language, datatype]))
+            queries.append(("SELECT * FROM wb_add_triple_to_latest(%s, %s, %s, %s, %s, %s)", [subject, predicate, value, thetype, language, datatype]))
 
         return queries
 
