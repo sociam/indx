@@ -3,6 +3,6 @@
 
 var params = {
 	username : 'webbox',
-	password : 'webbox',
+	password : 'foobar',
 	database : 'example'
 };

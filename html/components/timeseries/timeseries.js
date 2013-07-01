@@ -69,8 +69,7 @@
                                  "value": 4}
                             ];
                                 */
-                
-
+							
                             var newdata = [];
 
                             data.forEach(function(d) {
@@ -110,26 +109,8 @@
 						}
                     };
 					var update = function() {
-						try {
-							// run from inside safe apply
-
-							var vals = $scope.model.get($scope.property) ? JSON.parse($scope.model.get($scope.property)[0]) : [];
-							console.log('property ', $scope.property, vals);							
-							update_chart($element, vals);
-														
-							// var ps = $attrs.property.split(',').map(function(x) { return x.trim(); });
-// 							$scope.hello = ' '+ ps.map(function(p) {
-// 								var v = $scope.model.get(p);
-// 								return p + ": " + (v ? v.toString() : 'none');
-// 							}).join(',');
-//                             console.debug("element",$element);
-//                             update_chart($attrs, $element);
-// //                            $scope.chart = update_chart($attrs);
-// 							console.log('TIME SERIES UPDATE > ', $scope.hello);
-							
-						} catch(e) {
-							console.error(e);
-						}
+						var vals = $scope.model.get($scope.property) ? JSON.parse($scope.model.get($scope.property)[0]) : [];
+						update_chart($element, vals);
 					};
 					var context = { id : Math.random() };
 					var old_model, old_box;
@@ -138,8 +119,7 @@
 						if (old_model) { old_model.off(null, null, context); }
 						if (model) {
 							model.on('change', function() {
-								try { $scope.$apply(update); }
-								catch(e) {	webbox.safe_apply($scope, update);	}
+								webbox.safe_apply($scope, update);
 							}, context);
 							update();
 						}

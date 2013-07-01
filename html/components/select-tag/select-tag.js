@@ -11,11 +11,13 @@
 				templateUrl:'/components/select-tag/select-tag.html',
 				controller:function($scope, $attrs, webbox) {
 					console.log('controller');
+
 					var store, u, $sa, model; // private, keep it out of the scope.
 
-					$scope.model_id = $attrs.modelId;
-					$scope.box_id = $attrs.boxId;
-					$scope.property = $attrs.property;
+					$scope.model_id = $attrs.srcModelId;
+					$scope.box_id = $attrs.srcBoxId;
+					$scope.property = $attrs.srcProperty;
+					$scope.model = $attrs.model;					
 					$scope.values = [];
 					
 					var ctx = { scope: $scope.model_id };
@@ -62,13 +64,24 @@
 						if (_.isNumber(v)) { return 'number'; }
 						if (_.isString(v)) { return 'string'; }
 						return 'unknown';
-					};					
+					};
+					$scope.option_value_to_raw = function(v, option_type) {
+						var d = u.deferred(), t = option_type;
+						if (t == 'resource') { return $scope.box.get_obj(v);}
+						if (t == 'string') { d.resolve(v.toString()); }
+						if (t == 'number') { d.resolve(parseFloat(v)); }
+						else { d.resolve(v); }
+						return d.promise();
+					};
+					
+					// initialise
 					webbox.loaded.then(function(_s) {
 						u = _s.u;
 						store = _s.store;
 						$sa = $scope.$sa = function(f) { _s.safe_apply($scope, f); };
 						$sa($scope._reload);
 					});					
+					
 				},
 				link:function($scope, $element) {
 					// add listeners here
@@ -79,18 +92,12 @@
 					$el.on('change', function(evt) {
 						var selected = $(evt.currentTarget).find(':selected');
 						u.when(selected.map(function(x) {
-							var v = $(this).attr('value'),
-							t = $(this).attr('option-type'),
-							d = u.deferred();
-							if (t == 'resource') { return $scope.box.get_obj(v);}
-							if (t == 'string') {	d.resolve(v.toString()); }
-							if (t == 'number') {	d.resolve(parseFloat(v)); }
-							else { d.resolve(v); }
-							return d.promise();
+							return $scope.option_value_to_raw($(this).attr('value'),$(this).attr('option-type'));
 						}).get()).then(function(vals) {
 							$scope.$sa(function() {
-								console.log('seleeeeeeeect!', vals);
-								$scope.selected = vals;
+								console.log('seleeeeeeeect! - setting ', $scope.model, vals);
+								$scope.$parent[$scope.model] = vals;
+								
 							});
 						});
 					});
