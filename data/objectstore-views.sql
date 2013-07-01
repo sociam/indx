@@ -32,3 +32,16 @@ CREATE OR REPLACE VIEW wb_v_latest_triples AS
    JOIN wb_strings j_object ON j_object.id_string = wb_objects.obj_value
   ORDER BY wb_latest_vers.triple_order;
 
+CREATE OR REPLACE VIEW wb_v_diffs AS 
+ SELECT wb_vers_diffs.version, wb_vers_diffs.diff_type, 
+    j_subject.string AS subject, j_predicate.string AS predicate, 
+    j_object.string AS obj_value, wb_objects.obj_type, wb_objects.obj_lang, 
+    wb_objects.obj_datatype, wb_vers_diffs.object_order
+   FROM wb_vers_diffs
+   JOIN wb_objects ON wb_objects.id_object = wb_vers_diffs.object
+   JOIN wb_strings j_subject ON j_subject.id_string = wb_vers_diffs.subject
+   JOIN wb_strings j_predicate ON j_predicate.id_string = wb_vers_diffs.predicate
+   JOIN wb_strings j_object ON j_object.id_string = wb_objects.obj_value
+  ORDER BY wb_vers_diffs.object_order;
+
+
