@@ -370,7 +370,7 @@ class ObjectStoreAsync:
 
             elif diff_type == "add_triple":
                 if subject not in diff['changed']:
-                    diff['changed']['added'][subject] = {}
+                    diff['changed'][subject] = {}
                 if "added" not in diff['changed'][subject]:
                     diff['changed'][subject]["added"] = {}
                 if predicate not in diff['changed'][subject]["added"]:
