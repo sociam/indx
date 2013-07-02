@@ -10,7 +10,7 @@ INDX is licensed under the GPLv3. See COPYING for more details.
 
 ### Installation
 
-Run `./setup-env.sh` to create a new `virtualenv` and install the webbox dependencies:
+Run `./setup-env.sh` to create a new `virtualenv` and install the INDX dependencies:
 
     ./setup-env.sh
 
@@ -22,7 +22,7 @@ Now, source the virtualenv:
 
     source env/bin/activate
 
-Now, run webbox with your PostgreSQL authentication username and hostname:
+Now, run INDX with your PostgreSQL authentication username and hostname:
 
     python app.py <username> <hostname>
 
@@ -43,13 +43,13 @@ Usage will be printed:
 
     positional arguments:
       user                 PostgreSQL server username, e.g. indx
-      hostname             Hostname of the webbox server, e.g. indx.example.com
+      hostname             Hostname of the INDX server, e.g. indx.example.com
 
     optional arguments:
       -h, --help           show this help message and exit
       --db-host DB_HOST    PostgreSQL host, e.g. localhost
       --db-port DB_PORT    PostgreSQL port, e.g. 5432
-      --log LOG            Location of logfile e.g. /tmp/webbox.log
+      --log LOG            Location of logfile e.g. /tmp/indx.log
       --port PORT          Override the server listening port
       --log-stdout         Also log to stdout?
       --ssl                Turn on SSL
