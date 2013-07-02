@@ -18,7 +18,7 @@ files = [
   'js/vendor/bootstrap.js',
   'js/indx.js',
   'js/indx-utils.js',
-  '../tests/test-webbox-backbone.js'
+  '../tests/indx-client.js'
 ];
 
 
