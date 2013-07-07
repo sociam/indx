@@ -767,6 +767,12 @@ angular
 			boxes:function() { return this.attributes.boxes;	},
 			get_box: function(boxid) {	return this.boxes().get(boxid);	},
 			get_or_create_box:function(boxid) { return this.boxes().get(boxid) || this._create(boxid);	},
+			create_box:function(boxid) {
+				dump('create box ', boxid);
+				var c = this._create(boxid);
+				dump('creating ', boxid);				
+				return c.save();
+			},			
 			checkLogin:function() { return this._ajax('GET', 'auth/whoami'); },
 			getInfo:function() { return this._ajax('GET', 'admin/info'); },
 			login : function(username,password) {

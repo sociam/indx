@@ -3,6 +3,13 @@
 		.module('indx')
 		.factory('utils',function() {
 			return {
+				guid: function(len) {
+					len = len || 64;
+					var alpha = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ-';
+					return this.range(0,len-1).map(function(x) {
+						return alpha[Math.floor(Math.random()*alpha.length)];
+					}).join('');
+				},
 				safe_apply: function($scope, fn) { setTimeout(function() { $scope.$apply(fn); }, 0); },
 				log : function() { try { console.log.apply(console,arguments);  } catch(e) { }},
 				warn : function() { try { console.warn.apply(console,arguments);  } catch(e) { }},
