@@ -432,6 +432,8 @@
 			// return d.promise();
 		},
 		_diff_update:function(response) {
+            console.debug("_diff_update, response: ", response);
+            
 			var d = u.deferred(), this_ = this, latest_version = response['@to_version'],
 			added_ids  = _(response.data.added).keys(),
 			changed_ids = _(response.data.changed).keys(),

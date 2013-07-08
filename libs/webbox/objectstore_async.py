@@ -396,16 +396,16 @@ class ObjectStoreAsync:
             result_d.errback(failure)
             return
 
-        def diff_cb(rows):
+        def diff_cb(to_version_used, rows, latest_ver):
             self.debug("ObjectStore diff, diff_cb, rows: {0}".format(rows))
 
             diff = self._db_diff_to_diff(rows)
-            result_d.callback(diff)
+            result_d.callback({"data": diff, "@to_version": to_version_used, "@from_version": from_version, "@latest_version": latest_ver})
 
-        def got_versions(to_version_used):
+        def got_versions(to_version_used, latest_ver):
             # first callback once we have the to_version
             if return_objs == "diff":
-                self._get_diff_versions(to_version_used).addCallbacks(diff_cb, err_cb)
+                self._get_diff_versions(to_version_used).addCallbacks(lambda rows: diff_cb(to_version_used, rows, latest_ver), err_cb)
             elif return_objs == "objects": 
                 result_d.callback(None)
             elif return_objs == "ids":
@@ -419,11 +419,12 @@ class ObjectStoreAsync:
         if to_version is None:
             # if to_version is None, we get the latest version first
             self.debug("diff to version is None, so getting latest.")
-            self._get_latest_ver().addCallbacks(got_versions, err_cb)
+            self._get_latest_ver().addCallbacks(lambda ver: got_versions(ver, ver), err_cb)
+            
         else:
             # else just call got_versions immediately
             self.debug("diff to version not None, so using version {0}.".format(to_version))
-            got_versions(to_version)
+            self._get_latest_ver().addCallbacks(lambda ver: got_versions(to_version, ver), err_cb)
 
         return result_d
 
