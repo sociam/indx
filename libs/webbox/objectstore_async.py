@@ -323,7 +323,7 @@ class ObjectStoreAsync:
     def _get_diff_versions(self, versions):
         """ Query for the diffs of the versions in the list 'versions'. """
         result_d = Deferred()
-        logging.debug("ObjectStore _get_diff_versions, versions: {0}".format(versions))
+        self.debug("ObjectStore _get_diff_versions, versions: {0}".format(versions))
     
         query = "SELECT * FROM wb_v_diffs WHERE version = ANY(ARRAY[%s])"
         params = [versions]
@@ -333,6 +333,7 @@ class ObjectStoreAsync:
 
     def _db_diff_to_diff(self, diff_rows):
         """ Translate database rows to JSON diff changes. """
+        self.debug("ObjectStore _db_diff_to_diff, diff_rows: {0}".format(diff_rows))
 
         diff = {"changed": {}, "added": {}, "deleted": []}
         for row in diff_rows:
@@ -385,9 +386,11 @@ class ObjectStoreAsync:
 
     def _get_diff_combined(self, from_version, to_version):
         """ Get a combined diff from from_version to to_version. """
+        self.debug("ObjectStore _get_diff_combined, from_version: {0}, to_version: {1}".format(from_version, to_version))
         result_d = Deferred()
 
         def diff_cb(diff_rows):
+            self.debug("ObjectStore _get_diff_combined, diff_cb diff_rows: {0}".format(diff_rows))
             diffs = {}
             for row in diff_rows:
                 version = row[0]
@@ -396,20 +399,21 @@ class ObjectStoreAsync:
                 diffs[version].append(row)
 
             version_list = sorted(diffs.keys())
-            diff = {}
+            diff = {"changed": {}, "added": {}, "deleted": []}
             for version in version_list:
                 new_diff = self._db_diff_to_diff(diffs[version])
                 diff = self.diff_on_diff(diff, new_diff)
             result_d.callback(diff)
 
         versions = range(from_version+1, to_version+1) 
-        self._get_diff_versions(versions).addCallbacks(lambda rows: diff_cb, result_d.errback)
+        self._get_diff_versions(versions).addCallbacks(diff_cb, result_d.errback)
         return result_d
 
 
     def diff_on_diff(self, existing_diff, next_ver_diff):
         """ Return a JSON-type diff after applying a new JSON-type diff to it."""
         # FIXME does this need to live in object_diff.py ?
+        self.debug("ObjectStore diff_on_diff, existing_diff: {0}, next_ver_diff: {1}".format(existing_diff, next_ver_diff))
 
         # This function plays the diff from next_ver_diff onto existing_diff and returns it
 
@@ -442,6 +446,8 @@ class ObjectStoreAsync:
                     if "added" not in existing_diff['changed'][uri]:
                         existing_diff['changed'][uri]['added'] = {}
                     existing_diff['changed'][uri]['added'].update( next_ver_diff['changed'][uri]['added'] )
+                else:
+                    existing_diff['added'][uri] = next_ver_diff['changed'][uri]
 
             if "replaced" in next_ver_diff['changed'][uri]:
                 # replaced in the new diff
@@ -459,6 +465,21 @@ class ObjectStoreAsync:
                         # remove reference to deleted, and instead replace it all
                         del existing_diff['changed'][uri]['deleted']
                         existing_diff['changed'][uri]["replaced"] = next_ver_diff['changed'][uri]['replaced']
+
+                elif uri in existing_diff['deleted']:
+                    del existing_diff['deleted'][uri]
+
+                    if uri not in existing_diff['changed']:
+                        existing_diff['changed'][uri] = {}
+                    if "replaced" not in existing_diff['changed'][uri]:
+                        existing_diff['changed'][uri]['replaced'] = {}
+                    existing_diff['changed'][uri]['replaced'].update( next_ver_diff['changed'][uri]['replaced'] )
+                else:
+                    if uri not in existing_diff['changed']:
+                        existing_diff['changed'][uri] = {}
+                    if "replaced" not in existing_diff['changed'][uri]:
+                        existing_diff['changed'][uri]['replaced'] = {}
+                    existing_diff['changed'][uri]['replaced'].update( next_ver_diff['changed'][uri]['replaced'] )
 
             if "deleted" in next_ver_diff['changed'][uri]:
                 # deleted in the new diff, remove all 'added' and 'replaced' in existing diff
@@ -479,6 +500,7 @@ class ObjectStoreAsync:
             to_version -- The most recent version to check up to (can be None, in which can the latest version will be used)
             return_objs -- ['diff','objects','ids'] Diff of objects will be return, full objects will be returned, or a list of IDs will be returned
         """
+        self.debug("ObjectStore diff, from_version: {0}, to_version: {1}, return_objs: {2}".format(from_version, to_version, return_objs))
         result_d = Deferred()
         def err_cb(failure):
             self.error("Objectstore diff, err_cb, failure: {0}".format(failure))
@@ -490,6 +512,7 @@ class ObjectStoreAsync:
             result_d.callback({"data": combined_diff, "@to_version": to_version_used, "@from_version": from_version, "@latest_version": latest_ver})
 
         def got_versions(to_version_used, latest_ver):
+            self.debug("ObjectStore diff, got_versions, to_version_used: {0}, latest_ver".format(to_version_used, latest_ver))
             # first callback once we have the to_version
             if return_objs == "diff":
                 self._get_diff_combined(from_version, to_version_used).addCallbacks(lambda combined_diff: diff_cb(to_version_used, combined_diff, latest_ver), err_cb)
