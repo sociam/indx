@@ -27,6 +27,17 @@ describe('indx-core', function() {
 		expect(box).toBeDefined();
 	});
 
+	// create box 
+	// making it sure it exists 
+	// login as you, make sure you're logged in
+	// log out, make sure yo'ure not logged in
+	// create new object that didnt exist before, check to make sure it got created
+	// ?? create new object that existed before, check to see if error // updates object
+	// update object, make sure it propagate
+	// coordinated testing: Can we ever do this??
+	//   write an object, waitFor the thing to propagate to the other client
+	// delete object, make sure it's dead, jim
+
 	// it('getinfo', function() {
 	// 	var gi;
 	// 	runs(function() {
