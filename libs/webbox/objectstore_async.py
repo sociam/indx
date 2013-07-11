@@ -383,6 +383,30 @@ class ObjectStoreAsync:
         return diff
 
 
+    def _get_diff_combined(self, from_version, to_version):
+        """ Get a combined diff from from_version to to_version. """
+        result_d = Deferred()
+
+        def diff_cb(diff_rows):
+            diffs = {}
+            for row in diff_rows:
+                version = row[0]
+                if version not in diffs:
+                    diffs[version] = []
+                diffs[version].append(row)
+
+            version_list = sorted(diffs.keys())
+            diff = {}
+            for version in version_list:
+                new_diff = self._db_diff_to_diff(diffs[version])
+                diff = self.diff_on_diff(diff, new_diff)
+            result_d.callback(diff)
+
+        versions = range(from_version+1, to_version+1) 
+        self._get_diff_versions(versions).addCallbacks(lambda rows: diff_cb, result_d.errback)
+        return result_d
+
+
     def diff_on_diff(self, existing_diff, next_ver_diff):
         """ Return a JSON-type diff after applying a new JSON-type diff to it."""
         # FIXME does this need to live in object_diff.py ?
@@ -461,17 +485,14 @@ class ObjectStoreAsync:
             result_d.errback(failure)
             return
 
-        def diff_cb(to_version_used, rows, latest_ver):
-            self.debug("ObjectStore diff, diff_cb, rows: {0}".format(rows))
-
-            diff = self._db_diff_to_diff(rows)
-            result_d.callback({"data": diff, "@to_version": to_version_used, "@from_version": from_version, "@latest_version": latest_ver})
+        def diff_cb(to_version_used, combined_diff, latest_ver):
+            self.debug("ObjectStore diff, diff_cb, rows: {0}".format(combined_diff))
+            result_d.callback({"data": combined_diff, "@to_version": to_version_used, "@from_version": from_version, "@latest_version": latest_ver})
 
         def got_versions(to_version_used, latest_ver):
             # first callback once we have the to_version
             if return_objs == "diff":
-                # TODO implement fully with multi-version diffs
-                self._get_diff_versions(to_version_used).addCallbacks(lambda rows: diff_cb(to_version_used, rows, latest_ver), err_cb)
+                self._get_diff_combined(from_version, to_version_used).addCallbacks(lambda combined_diff: diff_cb(to_version_used, combined_diff, latest_ver), err_cb)
             elif return_objs == "objects": 
                 # TODO implement
                 result_d.callback(None)
