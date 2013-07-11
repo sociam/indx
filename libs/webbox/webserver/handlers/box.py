@@ -14,7 +14,7 @@
 #    GNU General Public License for more details.
 #
 #    You should have received a copy of the GNU General Public License
-#    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
+#    along with INDX.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging, json
 from webbox.webserver.handlers.base import BaseHandler
