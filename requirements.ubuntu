@@ -1,6 +1,6 @@
 python-dev
-pip
-virtualenv
+python-pip
+python-virtualenv
 postgresql
 postgresql-server-dev-9.1
 psycopg2
