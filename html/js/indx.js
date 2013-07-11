@@ -475,7 +475,18 @@ angular
 							}).fail(dd.reject);
 							return dd.promise();
 						});
-						u.when(added_propval_dfds.concat(deleted_propval_dfds)).then(function() {
+                        var replaced_propval_dfs = _(obj.replaced).map(function(vs, k) {
+                            console.debug("Processing replaced property");
+                            changed_properties = _(changed_properties).union([k]);
+                            var dd = u.deferred();
+                            u.when(vs.map(function(v) { return deserialize_value(v, this_); })).then(function(values) {
+                                var new_vals = values; // this is the difference from added - just replace (by DS)
+                                cached_obj.set(k,new_vals);
+                                dd.resolve();
+                            }).fail(dd.reject);
+                            return dd.promise();
+                        });
+                        u.when(added_propval_dfds.concat(deleted_propval_dfds).concat(replaced_propval_dfs)).then(function() {
 							// u.debug("triggering changed properties ", changed_properties);
 							changed_properties.map(function(k) {
 								cached_obj.trigger('change:'+k, (cached_obj.get(k) || []).slice());
