@@ -15,7 +15,7 @@
 	backbone.js 0.9.2 or higher
 	underscore.js 1.4.2 or higher
 
-  This file is part of WebBox.
+  This file is part of INDX.
   Copyright 2012 Max Van Kleek, Daniel Alexander Smith
   Copyright 2012 University of Southampton
 

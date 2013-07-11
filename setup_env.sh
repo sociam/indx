@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#    This file is part of WebBox.
+#    This file is part of INDX.
 #
 #    Copyright 2011-2012 Daniel Alexander Smith
 #    Copyright 2011-2012 University of Southampton

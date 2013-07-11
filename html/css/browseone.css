@@ -1,5 +1,5 @@
 /*
-    This file is part of WebBox.
+    This file is part of INDX.
 
     Copyright 2012 Daniel Alexander Smith
     Copyright 2012 University of Southampton

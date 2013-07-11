@@ -1,4 +1,4 @@
-#    This file is part of WebBox.
+#    This file is part of INDX.
 #
 #    Copyright 2011-2013 Daniel Alexander Smith
 #    Copyright 2011-2013 University of Southampton
