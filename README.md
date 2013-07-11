@@ -10,7 +10,7 @@ INDX is licensed under the GPLv3. See COPYING for more details.
 
 ### Installation
 
-Install PostgreSQL, e.g. on a Mac you could use: [[http://postgresapp.com/]]
+Install PostgreSQL, e.g. on a Mac you could use: http://postgresapp.com/
 
 Run `./setup-env.sh` to create a new `virtualenv` and install the INDX dependencies:
 
