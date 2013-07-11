@@ -354,6 +354,7 @@ angular
 			_objcache:function() { return this.attributes.objcache; },
 			_objlist:function() { return this.attributes.objlist !== undefined ? this.attributes.objlist : []; },
 			_set_objlist:function(ol) { return this.set({objlist:ol.slice()}); },
+			_get_cached_token:function() { return this.get("token"); },
 			_set_token:function(token) { this.set("token", token);	},
 			_set_version:function(v) { this.set("version", v);	},
 			_get_version:function(v) { return this.get("version"); },		
@@ -362,6 +363,7 @@ angular
 				var this_ = this, d = u.deferred();
 				this._ajax('POST', 'auth/get_token', { app: this.store.get('app') })
 					.then(function(data) {
+						console.log('setting token ', data.token);
 						this_._set_token( data.token );
 						this_.trigger('new-token', data.token);
 						d.resolve(this_);
@@ -550,11 +552,8 @@ angular
 				}
 				u.debug('old objlist had ', olds.length, ' new has ', current.length, 'news > ', news);
 				this._set_objlist(current);
-				news.map(function(aid) {
-					this_.trigger('obj-add', aid);
-				});
+				news.map(function(aid) {	this_.trigger('obj-add', aid);	});
 				died.map(function(rid) {
-					// u.debug('>> webbox-backbone :: obj-remove ', rid);
 					this_.trigger('obj-remove', rid);
 					this_._objcache().remove(rid);
 				});
@@ -668,11 +667,12 @@ angular
 			},
 			_do_update:function(ids) {
 				// this actua
+				console.log('box update >> ');
 				var d = u.deferred(), version = this.get('version') || 0, this_ = this,
 				objs = this._objcache().filter(function(x) { return ids === undefined || ids.indexOf(x.id) >= 0; }),
 				obj_ids = objs.map(function(x) { return x.id; }),
 				sobjs = objs.map(function(obj){ return serialize_obj(obj); });			
-				this._ajax("PUT",  this.id + "/update", { version: escape(version), data : JSON.stringify(sobjs)  })
+				this._ajax("PUT",  this.get_id() + "/update", { version: escape(version), data : JSON.stringify(sobjs)  })
 					.then(function(response) {
 						this_._set_version(response.data["@version"]);
 						this_._update_object_list(undefined, obj_ids, []); // update object list
@@ -765,8 +765,16 @@ angular
 				return this.get('server_host').indexOf(document.location.host) >= 0 && (document.location.port === (this.get('server_port') || ''));
 			},
 			boxes:function() { return this.attributes.boxes;	},
-			get_box: function(boxid) {	return this.boxes().get(boxid);	},
-			get_or_create_box:function(boxid) { return this.boxes().get(boxid) || this._create(boxid);	},
+			get_box: function(boxid) {
+				var b = this.boxes().get(boxid) || this._create(boxid);
+				console.log(' b ', boxid, ' cached token ', b._get_cached_token());
+				if (!b._get_cached_token()) {
+					console.log('calling get token ');
+					return b.get_token().pipe(function() { return b.fetch(); })	
+				}
+				var d = u.deferred(); d.resolve(b);
+				return d.promise();
+			},  
 			create_box:function(boxid) {
 				dump('create box ', boxid);
 				var c = this._create(boxid);
@@ -806,9 +814,11 @@ angular
 				var this_ = this, d = u.deferred();			
 				this._ajax('GET','admin/list_boxes')
 					.success(function(data) {
-						var boxes =	data.list.map(function(boxid) { return this_.get_or_create_box(boxid); });
-						this_.boxes().reset(boxes);
-						d.resolve(boxes);
+						u.when(data.list.map(function(boxid) { return this_.get_box(boxid); })).then(function(boxes) {
+							console.log("boxes !! ", boxes);
+							this_.boxes().reset(boxes);
+							d.resolve(boxes);							
+						});
 					}).error(function(e) { d.reject(e); });
 				return d.promise();
 			},
