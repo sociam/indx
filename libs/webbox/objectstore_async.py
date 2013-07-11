@@ -346,11 +346,11 @@ class ObjectStoreAsync:
                 diff['changed'][subject]["deleted"][predicate] = []
 
             elif diff_type == "remove_subject":
-                diff['delete'].append(subject)
+                diff['deleted'].append(subject)
 
             elif diff_type == "add_subject":
                 if subject not in diff['added']:
-                    diff['added']['subject'] = {}
+                    diff['added'][subject] = {}
 
             elif diff_type == "add_predicate":
                 if subject not in diff['changed']:
@@ -383,6 +383,71 @@ class ObjectStoreAsync:
         return diff
 
 
+    def diff_on_diff(self, existing_diff, next_ver_diff):
+        """ Return a JSON-type diff after applying a new JSON-type diff to it."""
+        # FIXME does this need to live in object_diff.py ?
+
+        # This function plays the diff from next_ver_diff onto existing_diff and returns it
+
+        for uri in next_ver_diff['deleted']:
+            if uri not in existing_diff['deleted']:
+                existing_diff['deleted'].append(uri)
+
+            if uri in existing_diff['changed']:
+                del existing_diff['changed'][uri]
+
+            if uri in existing_diff['added']:
+                del existing_diff['added'][uri]
+
+        for uri in next_ver_diff['added']:
+            while uri in existing_diff['deleted']: # have to use "while" in case there are multiple refs in the array
+                existing_diff['deleted'].remove(uri)
+            
+            if uri in existing_diff['added']:
+                existing_diff['added'][uri].update(next_ver_diff['added'][uri])
+            else:
+                existing_diff['added'][uri] = next_ver_diff['added'][uri]
+
+        for uri in next_ver_diff['changed']:
+            # /added/pred /replaced/pred /deleted/pred
+
+            if "added" in next_ver_diff['changed'][uri]:
+                # added in the new diff
+                if uri in existing_diff['changed']:
+                    # extend existing
+                    if "added" not in existing_diff['changed'][uri]:
+                        existing_diff['changed'][uri]['added'] = {}
+                    existing_diff['changed'][uri]['added'].update( next_ver_diff['changed'][uri]['added'] )
+
+            if "replaced" in next_ver_diff['changed'][uri]:
+                # replaced in the new diff
+
+                if uri in existing_diff['changed']:
+
+                    if "added" in existing_diff['changed'][uri]:
+                        # if they are added, then add to that, instead of creating a new "changed" entry
+                        existing_diff['changed'][uri]["added"].update( next_ver_diff['changed'][uri]['replaced'] )
+
+                    if "replaced" in existing_diff['changed'][uri]:
+                        existing_diff['changed'][uri]["replaced"].update( next_ver_diff['changed'][uri]['replaced'] )
+
+                    if "deleted" in existing_diff['changed'][uri]:
+                        # remove reference to deleted, and instead replace it all
+                        del existing_diff['changed'][uri]['deleted']
+                        existing_diff['changed'][uri]["replaced"] = next_ver_diff['changed'][uri]['replaced']
+
+            if "deleted" in next_ver_diff['changed'][uri]:
+                # deleted in the new diff, remove all 'added' and 'replaced' in existing diff
+                if "added" in existing_diff['changed'][uri]:
+                    del existing_diff['changed'][uri]['added'] 
+                if "replaced" in existing_diff['changed'][uri]:
+                    del existing_diff['changed'][uri]['replaced']
+                if "deleted" not in existing_diff['changed'][uri]:
+                    existing_diff['changed'][uri]['deleted'] = {}
+                existing_diff['changed'][uri]['deleted'].update( next_ver_diff['changed'][uri]['deleted'] )
+
+        return existing_diff
+
     def diff(self, from_version, to_version, return_objs):
         """ Return the differences between two versions of the database.
 
@@ -405,10 +470,13 @@ class ObjectStoreAsync:
         def got_versions(to_version_used, latest_ver):
             # first callback once we have the to_version
             if return_objs == "diff":
+                # TODO implement fully with multi-version diffs
                 self._get_diff_versions(to_version_used).addCallbacks(lambda rows: diff_cb(to_version_used, rows, latest_ver), err_cb)
             elif return_objs == "objects": 
+                # TODO implement
                 result_d.callback(None)
             elif return_objs == "ids":
+                # TODO implement
                 result_d.callback(None)
             else:
                 result_d.errback(Failure(Exception("Did not specify valid value of return_objs.")))
