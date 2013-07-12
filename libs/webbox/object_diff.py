@@ -37,6 +37,11 @@ class ObjectSetDiff:
 
     def reset_queries(self):
         self.queries = {
+            "subjects": {
+                "values": [],
+                "params": [],
+                "query_prefix": "INSERT INTO wb_latest_subjects (id_subject) VALUES "
+            },
             "diff": {
                 "values": [],
                 "params": [],
@@ -63,7 +68,8 @@ class ObjectSetDiff:
 
         queries = collections.deque([self.generate_diff_query()])
         queries.extend(self.apply_diffs_to_latest())
-        queries.extend([self.generate_latest_query()])
+        queries.append(self.generate_latest_query())
+        queries.append(self.generate_subject_query())
 
         logging.debug("ObjectSetDiff run_queries, queries: {0}".format(pprint.pformat(queries[0])))
 
@@ -224,6 +230,19 @@ class ObjectSetDiff:
         """ Generate query/params pair of the latest query. """
         return (self.queries['latest']['query_prefix'] + ", ".join(self.queries['latest']['values']), self.queries['latest']['params'])
 
+    def generate_subject_query(self):
+        """ Generate query/params pair of the subjects insert query. """
+        return (self.queries['subjects']['query_prefix'] + ", ".join(self.queries['subjects']['values']), self.queries['subjects']['params'])
+
+#         params = []
+#         query_arr = []
+#         for subj in self.queries['subjects']:
+#             params.append(subj)
+#             query_arr.append("%s")
+#         query_array = "ARRAY[{0}]".format(",".join(query_arr))
+#         query = "SELECT * FROM wb_multi_subject_add({0})".format(query_array)
+# 
+#         return (query, params)
 
     def apply_diffs_to_latest(self):
         """ Make the queries used to INSERT/DELETE from the wb_latest_vers table. """
@@ -264,12 +283,15 @@ class ObjectSetDiff:
         for row in self.queries['latest_diffs']['add_subject']:
             subject, predicate, sub_obj, object_order = row
 #            queries.append(("SELECT * FROM wb_add_triple_to_latest(%s, %s, %s, %s, %s, %s)", [subject, None, None, None, None, None]))
-            order += 1
+#            order += 1
 
             # FIXME XXX just do an insert check into wb_latest_subjects
 ##            self.queries['latest']['values'].append("(wb_get_triple_id(%s, NULL, NULL, NULL, NULL, NULL), %s)")
 ##            self.queries['latest']['params'].extend([subject, order])
-            queries.append(("INSERT INTO wb_latest_subjects (id_subject) SELECT wb_get_string_id(%s) WHERE NOT EXISTS (SELECT id_subject FROM wb_latest_subjects WHERE id_subject = wb_get_string_id(%s))", [subject, subject]))
+#            queries.append(("INSERT INTO wb_latest_subjects (id_subject) SELECT wb_get_string_id(%s) WHERE NOT EXISTS (SELECT id_subject FROM wb_latest_subjects WHERE id_subject = wb_get_string_id(%s))", [subject, subject]))
+            #self.queries['subjects'].append(subject)
+            self.queries['subjects']['values'].append("(wb_get_string_id(%s))")
+            self.queries['subjects']['params'].extend([subject])
 
         for row in self.queries['latest_diffs']['add_predicate']:
             subject, predicate, sub_obj, object_order = row

@@ -16,6 +16,24 @@
 --    You should have received a copy of the GNU General Public License
 --    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
+CREATE OR REPLACE FUNCTION wb_multi_subject_add(input_strings text[])
+  RETURNS boolean AS
+$BODY$DECLARE
+    input_string text;
+    i integer;
+BEGIN
+    IF array_length(input_strings,1) > 0 THEN
+        FOR i IN 1 .. array_upper(input_strings, 1) LOOP
+            input_string := input_strings[i];
+            INSERT INTO wb_latest_subjects (id_subject) SELECT wb_get_string_id(input_string) WHERE NOT EXISTS (SELECT id_subject FROM wb_latest_subjects WHERE id_subject = wb_get_string_id(input_string));
+        END LOOP;
+    END IF;
+    RETURN TRUE;
+
+END;$BODY$
+  LANGUAGE plpgsql VOLATILE
+  COST 100;
+
 CREATE OR REPLACE FUNCTION wb_add_triple_to_latest(input_subject text, input_predicate text, input_object_value text, input_object_type object_type, input_object_language character varying, input_object_datatype character varying)
   RETURNS boolean AS
 $BODY$DECLARE
