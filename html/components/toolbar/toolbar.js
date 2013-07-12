@@ -117,7 +117,7 @@ angular
 				};
 				var checkLogin = function() {
 					var store = getStore();					
-					store.checkLogin().then(function(response) {
+					store.check_login().then(function(response) {
 						u.debug('checklogin ', response);
 						if (response.is_authenticated) {
 							apply(function() { $scope.cb_login(response.user);	});

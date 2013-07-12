@@ -782,9 +782,9 @@ angular
 				return c.save();
 			},
 			// todo: change to _ 
-			checkLogin:function() { return this._ajax('GET', 'auth/whoami'); },
+			check_login:function() { return this._ajax('GET', 'auth/whoami'); },
 			// todo: change to _ 
-			getInfo:function() { return this._ajax('GET', 'admin/info'); },
+			get_info:function() { return this._ajax('GET', 'admin/info'); },
 			login : function(username,password) {
 				var d = u.deferred();
 				this.set({username:username,password:password});
