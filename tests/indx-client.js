@@ -13,15 +13,13 @@
 		var injector = angular.injector(['ng', 'indx']),
 			indx = injector.get('client'),
 			u = injector.get('utils'),
-			store = new indx.Store({ server_host: 'localhost:8211' }),
-			box;
-
-
+			store1 = new indx.Store({ server_host: 'localhost:8211' }),
+			store2 = new indx.Store({ server_host: 'localhost:8211' });
 
 		it('should fail to log in with invalid credentials', function () {
 			var loggedin;
-			store.login(user, pass + 'aaa') // invalidate the password
-				.fail(function (x) { loggedin = false; });
+			store1.login(user, pass + 'aaa') // invalidate the password
+				.fail(function () { loggedin = false; });
 			waitsFor(function() { return loggedin === false; }, 'the user should not be logged in', 500);
 			runs(function () { expect(loggedin).toBe(false); });
 		});
@@ -29,7 +27,7 @@
 		// login as you
 		it('should successfully log in with valid credentials', function () {
 			var loggedin;
-			store.login(user, pass) .then(function () { loggedin = true; });
+			store1.login(user, pass) .then(function () { loggedin = true; });
 			waitsFor(function() { return loggedin; }, 'the user should be logged in', 500);
 			runs(function () { expect(loggedin).toBe(true); });
 		});
@@ -37,7 +35,7 @@
 		// log out, make sure yo'ure not logged in
 		it('should log out', function () {
 			var loggedout;
-			store.logout().then(function () { loggedout = true; });
+			store1.logout().then(function () { loggedout = true; });
 			waitsFor(function() { return loggedout; }, 'the user should be logged out', 500);
 			runs(function () { expect(loggedout).toBe(true); });
 		});
@@ -45,7 +43,7 @@
 		// login as you
 		it('should successfully log in with valid credentials', function () {
 			var loggedin;
-			store.login(user, pass).then(function () { loggedin = true; });
+			store1.login(user, pass).then(function () { loggedin = true; });
 			waitsFor(function() { return loggedin; }, 'the user should be logged in', 500);
 			runs(function () { expect(loggedin).toBe(true); });
 		});
@@ -55,35 +53,75 @@
 
 		// create box
 		it('should allow a box to be created', function () {
-			store.create_box(testboxname).then(function () {
-				box = store.get_box(testboxname);
+			var box;
+			store1.create_box(testboxname).then(function () {
+				box = store1.get_box(testboxname);
 			});
 			waitsFor(function () { return box; }, 'the box should be created', 500);
-			runs(function () {
-				expect(box).toBeDefined();
-			});
+			runs(function () { expect(box).toBeDefined(); });
 		});
 
-		it('should allow a box to be loaded', function () {
-			box = store.get_box('blah');
-			expect(box).toBeDefined();
-		});
-
+		// hack
+		testboxname = 'blah';
 
 		describe('box', function () {
+			var s1box, s2box;
+			it('should be defined', function () {
+				var b = store1.get_box(testboxname);
+				expect(b).toBeDefined();
+			});
 			// making it sure it exists
 			it('should be retreivable', function () {
-				box = store.get_box(testboxname);
-				expect(box).toBeDefined();
-			})
-			it('should be able to be fetched', function() {
-				box.fetch().then(function () {
-					console.log("HJK")
+				store1.get_box(testboxname).then(function (b) { s1box = b; });
+				store2.get_box(testboxname).then(function (b) { s2box = b; });
+				waitsFor(function () { return s1box && s2box; }, 'the box should be fetched', 500);
+				runs(function () {
+					expect(s1box).toBeDefined();
+					expect(s2box).toBeDefined();
 				});
-				waitsFor(function () { return loadedBox; });
-				runs(function () { expect(loadedBox).toBeDefined(); });
 			});
-		})
+
+			it('should allow an object to be created', function () {
+				var obj;
+				s1box.get_obj('test1').then(function(o) { obj = o; });
+				waitsFor(function () { return obj; });
+				runs(function () { expect(obj).toBeDefined(); });
+			});
+
+			/*it('should not allow an object to be created if it already exists', function () {
+				var obj;
+				s1box.get_obj('test1').then(function(o) { obj = o; });
+				waitsFor(function () { return obj; });
+				runs(function () { expect(obj).toBeDefined(); });
+			});*/
+
+
+			describe('object', function () {
+				var s1obj, s2obj;
+				it('should allow the object to be fetched', function () {
+					s1box.get_obj('test1').then(function (o) { s1obj = o; });
+					s2box.get_obj('test1').then(function (o) { s2obj = o; });
+					waitsFor(function () { return s1obj && s2obj; });
+					runs(function () {
+						expect(s1obj).toBeDefined();
+						expect(s2obj).toBeDefined();
+					});
+				});
+
+				it('should allow the object to be changed', function () {
+					var saved;
+					s1obj.save({ value: 99 }).then(function () { saved = true; });
+					waitsFor(function () { return saved; });
+					runs(function () { expect(s1obj.get('value')[0]).toBe(99); });
+				});
+				it('should have be up-to-date in the other store', function () {
+					expect(s2obj.get('value')[0]).toBe(99);
+				});
+				it('should not be using the same cache between stores', function () {
+					expect(s1obj.attributes).not.toBe(s2obj.attributes);
+				});
+			});
+		});
 
 
 		// create new object that didnt exist before, check to make sure it got created
