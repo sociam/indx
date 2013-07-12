@@ -179,10 +179,12 @@ class ObjectStoreAsync:
 
             object_ids -- ids of the objects to return
         """
+        logging.debug("ObjectStoreASync - get_latest_objs, object_ids: {0}".format(object_ids))
         result_d = Deferred()
 
-        def rows_cb(rows):
+        def rows_cb(rows, version):
             obj_out = self.rows_to_json(rows)
+            obj_out["@version"] = version
             result_d.callback(obj_out)
        
         query = "SELECT triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples WHERE subject = ANY(ARRAY["
@@ -197,7 +199,16 @@ class ObjectStoreAsync:
             result_d.errback(failure)
             return
  
-        self.conn.runQuery(query, object_ids).addCallbacks(rows_cb, err_cb)
+
+        def ver_cb(version):
+            self.debug("get_latest_objs ver_cb: {0}".format(version))
+            if version == 0:
+                return result_d.callback({"@version": 0 })
+            self.conn.runQuery(query, object_ids).addCallbacks(lambda rows: rows_cb(rows, version), err_cb)
+            return
+
+        self._get_latest_ver().addCallbacks(ver_cb, err_cb)
+
         return result_d
 
 
