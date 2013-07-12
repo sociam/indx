@@ -17,6 +17,16 @@
 				error : function() { try { console.error.apply(console,arguments);  } catch(e) { }},		
 				isInteger:function(n) { return n % 1 === 0; },
 				deferred:function() { return new $.Deferred(); },
+				dresolve:function(val) {
+					var d = new $.Deferred();
+					d.resolve(val);
+					return d.promise();					
+				},				
+				dreject:function(err) {
+					var d = new $.Deferred();
+					d.reject(err);
+					return d.promise();					
+				},				
 				whend:function(deferred_array) { return $.when.apply($,deferred_array); },
 				t:function(template,v) { return _(template).template(v); },
 				assert:function(t,s) { if (!t) { throw new Error(s); }},

@@ -269,7 +269,7 @@ angular
 		// Box =================================================
 		// GraphCollection is the list of Objs in a Graph
 		var ObjCollection = Backbone.Collection.extend({ model: Obj }),
-		FileCollection = Backbone.Collection.extend({ model: File });	
+			FileCollection = Backbone.Collection.extend({ model: File });	
 
 		// new client: fetch is always lazy, only gets ids, and
 		// lazily get objects as you go
@@ -767,22 +767,24 @@ angular
 			boxes:function() { return this.attributes.boxes;	},
 			get_box: function(boxid) {
 				var b = this.boxes().get(boxid) || this._create(boxid);
-				console.log(' b ', boxid, ' cached token ', b._get_cached_token());
 				if (!b._get_cached_token()) {
-					console.log('calling get token ');
 					return b.get_token().pipe(function() { return b.fetch(); })	
 				}
-				var d = u.deferred(); d.resolve(b);
-				return d.promise();
+				return u.dresolve(b);
 			},  
 			create_box:function(boxid) {
-				dump('create box ', boxid);
-				var c = this._create(boxid);
-				dump('creating ', boxid);				
-				return c.save();
-			},			
-			checkLogin:function() { return this._ajax('GET', 'auth/whoami'); },
-			getInfo:function() { return this._ajax('GET', 'admin/info'); },
+				u.debug('create box ', boxid);
+				if (this.boxes().get(boxid)) {
+					return u.dreject('Box already exists: ' + boxid);
+				}
+				var c = this._create(boxid), this_ = this;
+				u.debug('creating ', boxid);				
+				return c.save().pipe(function() { return this_.get_box(boxid); });
+			},
+			// todo: change to _ 
+			check_login:function() { return this._ajax('GET', 'auth/whoami'); },
+			// todo: change to _ 
+			get_info:function() { return this._ajax('GET', 'admin/info'); },
 			login : function(username,password) {
 				var d = u.deferred();
 				this.set({username:username,password:password});
@@ -815,7 +817,7 @@ angular
 				this._ajax('GET','admin/list_boxes')
 					.success(function(data) {
 						u.when(data.list.map(function(boxid) { return this_.get_box(boxid); })).then(function(boxes) {
-							console.log("boxes !! ", boxes);
+							// console.log("boxes !! ", boxes);
 							this_.boxes().reset(boxes);
 							d.resolve(boxes);							
 						});
