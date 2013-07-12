@@ -63,9 +63,24 @@ class ObjectSetDiff:
 
         queries = collections.deque([self.generate_diff_query()])
         queries.extend(self.apply_diffs_to_latest())
-        queries = collections.deque([self.generate_latest_query()])
+        queries.extend([self.generate_latest_query()])
 
         logging.debug("ObjectSetDiff run_queries, queries: {0}".format(pprint.pformat(queries[0])))
+
+        #### test
+#        mega_query = ""
+#        mega_queries = []
+#        mega_params = []
+#
+#        while len(queries) > 0:
+#            query, params = queries.popleft()
+#            mega_queries.append(query)
+#            mega_params.extend(params)
+#
+#        mega_query = " UNION ".join(mega_queries)
+#        
+#        queries = collections.deque([(mega_query, mega_params)])
+        ####
 
         def exec_queries():
             logging.debug("ObjectSetDiff exec_queries, len(queries): {0}".format(len(queries)))
@@ -84,10 +99,7 @@ class ObjectSetDiff:
 
             query, params = queries.popleft()
             logging.debug("ObjectSetDiff run_queries, query: {0}, params: {1}".format(query,params))
-            if query.upper().startswith("SELECT"):
-                cur.execute(query, params).addCallbacks(ran_cb, err_cb)
-            else:
-                cur.execute(query, params).addCallbacks(ran_cb, err_cb)
+            cur.execute(query, params).addCallbacks(ran_cb, err_cb)
 
         exec_queries()
 
