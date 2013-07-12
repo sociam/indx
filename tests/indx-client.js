@@ -1,3 +1,6 @@
+var user = 'webbox',
+	pass = 'webbox';
+
 describe('indx-core', function() {
 	var injector = angular.injector(['ng','indx']), loggedin;
 	var indx = injector.get('client'),
@@ -8,14 +11,14 @@ describe('indx-core', function() {
 	beforeEach(function() {
 		var box_name = 'box-'+u.guid(12);
 		box = undefined;
-		store.login('webbox','webbox')		
+		store.login(user, pass)
 			.then(function(x) {
 				dump('login done ');
 				loggedin = true;
 				store.create_box(box_name).then(function(b) {
 					box = store.get_box(box_name);
 				});
-				
+
 			}).fail(function(x) {
 				console.error('fail logging in ', x); loggedin = false;
 			});
@@ -27,8 +30,8 @@ describe('indx-core', function() {
 		expect(box).toBeDefined();
 	});
 
-	// create box 
-	// making it sure it exists 
+	// create box
+	// making it sure it exists
 	// login as you, make sure you're logged in
 	// log out, make sure yo'ure not logged in
 	// create new object that didnt exist before, check to make sure it got created
@@ -48,7 +51,7 @@ describe('indx-core', function() {
 	// 	waitsFor(function() { return gi; });
 	// 	runs(function() {
 	// 		expect(gi).toBeDefined();
-	// 		dump('done waiting ', gi);	
+	// 		dump('done waiting ', gi);
 	// 	});
 	// });
 	// it('should fetch boxes', function() {
@@ -62,7 +65,7 @@ describe('indx-core', function() {
 	// 	runs(function() {
 	// 		dump('boxes >> ', boxes.map(function(x) { return x.get_id(); }));
 	// 	});
-	// });	
-	
+	// });
+
 });
 
