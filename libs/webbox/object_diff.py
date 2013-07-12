@@ -29,6 +29,7 @@ class ObjectSetDiff:
 
     def __init__(self, conn, objs1, objs2, version):
         """ Compare two objects in an INDX database. """
+        logging.debug("ObjectSetDiff conn: {0}, objs1: {1}, objs2: {2}, version: {3}".format(conn, objs1, objs2, version))
         self.conn = conn
         self.objs1 = objs1
         self.objs2 = objs2
@@ -95,6 +96,7 @@ class ObjectSetDiff:
             raise Exception("ObjectSet is None, cannot compare.")
 
         ids = {}
+        logging.debug("ObjectSetDiff compare, objs1: {0}, objs2: {1}".format(self.objs1, self.objs2))
 
         # add IDs of object from the first set to the ids dict,
         #  then remove them as they are processed in objectset2,

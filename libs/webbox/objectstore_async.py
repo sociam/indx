@@ -183,29 +183,29 @@ class ObjectStoreAsync:
         result_d = Deferred()
 
         def rows_cb(rows, version):
+            self.error("Objectstore get_latest_objs, rows_cb, rows: {0}, version: {1}".format(rows, version))
             obj_out = self.rows_to_json(rows)
             obj_out["@version"] = version
             result_d.callback(obj_out)
        
-        query = "SELECT triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples WHERE subject = ANY(ARRAY["
-        for i in range(len(object_ids)):
-            if i > 0:
-                query += ", "
-            query += "%s"
-        query += "])"
 
         def err_cb(failure):
             self.error("Objectstore get_latest_objs, err_cb, failure: {0}".format(failure))
             result_d.errback(failure)
-            return
- 
 
         def ver_cb(version):
             self.debug("get_latest_objs ver_cb: {0}".format(version))
             if version == 0:
                 return result_d.callback({"@version": 0 })
+
+            query = "SELECT triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples WHERE subject = ANY(ARRAY["
+            for i in range(len(object_ids)):
+                if i > 0:
+                    query += ", "
+                query += "%s"
+            query += "])"
+
             self.conn.runQuery(query, object_ids).addCallbacks(lambda rows: rows_cb(rows, version), err_cb)
-            return
 
         self._get_latest_ver().addCallbacks(ver_cb, err_cb)
 
@@ -926,7 +926,15 @@ class ObjectStoreAsync:
                             for obj_id in delete_ids:
                                 objs_full[obj_id] = {"@id": obj_id}
 
-                            objs_full = objs_full.values()
+                            # remove "@version" etc from objs_full
+                            non_obj_keys = []
+                            for key in objs_full:
+                                if key[0] == "@":
+                                    non_obj_keys.append(key)
+                            for key in non_obj_keys:
+                                del objs_full[key]
+
+                            objs_full = objs_full.values() # objs_full is "id: {obj}", so extract just the objs
  
                             set_diff = ObjectSetDiff(self.conn, objs_full, objs, new_ver)
                             set_diff.compare(cur).addCallbacks(compare_cb, check_err_cb) # changes the DB for us
