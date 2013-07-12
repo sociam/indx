@@ -770,12 +770,14 @@ angular
 				if (!b._get_cached_token()) {
 					return b.get_token().pipe(function() { return b.fetch(); })	
 				}
-				var d = u.deferred(); d.resolve(b);
-				return d.promise();
+				return u.dresolve(b);
 			},  
 			create_box:function(boxid) {
 				u.debug('create box ', boxid);
-				var c = this._create(boxid), this_ = this;;
+				if (this.boxes().get(boxid)) {
+					return u.dreject('Box already exists: ' + boxid);
+				}
+				var c = this._create(boxid), this_ = this;
 				u.debug('creating ', boxid);				
 				return c.save().pipe(function() { return this_.get_box(boxid); });
 			},
@@ -815,7 +817,7 @@ angular
 				this._ajax('GET','admin/list_boxes')
 					.success(function(data) {
 						u.when(data.list.map(function(boxid) { return this_.get_box(boxid); })).then(function(boxes) {
-							console.log("boxes !! ", boxes);
+							// console.log("boxes !! ", boxes);
 							this_.boxes().reset(boxes);
 							d.resolve(boxes);							
 						});
