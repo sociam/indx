@@ -68,7 +68,12 @@
 			});
 			waitsFor(function () { return failed; }, 'the box should not have been created', 500);
 			runs(function () { expect(failed).toBe(true); });
-		})
+		});
+
+		it('should have this box within another store', function () {
+			waitsFor(function () { return store2.boxes().get(testboxname); });
+			runs(function () { expect(store2.boxes().get(testboxname)).toBeDefined(); });
+		});
 
 		// hack
 		//testboxname = 'blah';
@@ -109,28 +114,56 @@
 				var s1obj, s2obj;
 				it('should allow the object to be fetched', function () {
 					s1box.get_obj('test1').then(function (o) { s1obj = o; });
-					s2box.get_obj('test1').then(function (o) { s2obj = o; });
-					waitsFor(function () { return s1obj && s2obj; }, 'the object should be fetched', 500);
+					waitsFor(function () { return s1obj; }, 'the object should be fetched', 500);
 					runs(function () {
 						expect(s1obj).toBeDefined();
-						expect(s2obj).toBeDefined();
 					});
 				});
 
-				it('should allow the object to be changed', function () {
+				it('should allow the object to be created', function () {
 					var saved;
 					s1obj.save({ value: 99 }).then(function () { saved = true; });
 					waitsFor(function () { return saved; }, 'the object should have changed', 500);
 					runs(function () { expect(s1obj.get('value')[0]).toBe(99); });
 				});
-				it('should be up-to-date in the other store', function () {
-					var fetched;
-					s2obj.fetch().then(function () { fetched = true; });
-					waitsFor(function () { return fetched; }, 'the object in the other store should be up-to-date', 500);
+				it('should allow another store (store 2) to load the object', function () {
+					s2box.get_obj('test1').then(function (o) { s2obj = o; });
+					waitsFor(function () { return s2obj; }, 'the object should be fetched', 500);
+					runs(function () { expect(s2obj).toBeDefined(); });
+				});
+				it('should be up-to-date in store 2', function () {
+					waitsFor(function () { return s2obj.get('value') && s2obj.get('value')[0] === 99; },
+							'the object should be up-to-date', 500);
 					runs(function () { expect(s2obj.get('value')[0]).toBe(99); });
 				});
 				it('should not be using the same cache between stores', function () {
 					expect(s1obj.attributes).not.toBe(s2obj.attributes);
+				});
+				it('should allow the store 2 to edit the object', function () {
+					var saved;
+					s2obj.save({ value: 97 }).then(function () { saved = true; });
+					waitsFor(function () { return saved; }, 'the object should have changed', 500);
+					runs(function () { expect(s2obj.get('value')[0]).toBe(97); });
+				});
+				it('should have updated the object in store 1', function () {
+					waitsFor(function () { return s1obj.get('value') && s1obj.get('value')[0] === 97; },
+								'the object should be up-to-date', 500);
+					runs(function () { expect(s1obj.get('value')[0]).toBe(97); });
+				});
+
+				it('should not allow two conflicting objects', function () {
+					var s1obj, s2obj,
+						passes = 0,
+						fails = 0;
+					s1box.get_obj('test2').then(function (o) { s1obj = o; });
+					s2box.get_obj('test2').then(function (o) { s2obj = o; });
+					s1box.save().then(function () { passes++; }).fail(function () { fails++; });
+					s2box.save().then(function () { passes++; }).fail(function () { fails++; });
+					waitsFor(function () { return passes + fails === 2; }, 'the boxes should have changed', 500);
+					runs(function () {
+						expect(passes).toBe(1);
+						expect(fails).not.toBe(0);
+					});
 				});
 			});
 
