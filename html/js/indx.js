@@ -246,7 +246,7 @@ angular
 						if (uri[0] === "@") { return; } // ignore "@id", "@version" etc
 						// not one of those, so must be a
 						// < uri > : { prop1 .. prop2 ... }
-						u.assert(uri === this_.id, 'can only deserialise this object');
+						u.assert(uri === this_.id, 'can only deserialise this object ');
 						return this_._deserialise_and_set(obj);
 					});
 					u.when(obj_save_dfds).then(function(){ fd.resolve(this_); }).fail(fd.reject);
