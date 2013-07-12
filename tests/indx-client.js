@@ -5,7 +5,7 @@
 
 	var user = 'webbox',
 		pass = 'foobar',
-		testboxname = 'box-test' + (new Date()).getTime();
+		testboxname = 'boxtest' + (new Date()).getTime(); // FIXME can't have dash in name?
 
 	console.log('**** RUNNING TESTS (u: ' + user + ', p: ' + pass + ') ****');
 
@@ -61,8 +61,17 @@
 			runs(function () { expect(box).toBeDefined(); });
 		});
 
+		it('should fail to create a box if it already exists', function () {
+			var failed;
+			store1.create_box(testboxname).fail(function () {
+				failed = true;
+			});
+			waitsFor(function () { return failed; }, 'the box should not have been created', 500);
+			runs(function () { expect(failed).toBe(true); });
+		})
+
 		// hack
-		testboxname = 'blah';
+		//testboxname = 'blah';
 
 		describe('box', function () {
 			var s1box, s2box;
@@ -84,7 +93,7 @@
 			it('should allow an object to be created', function () {
 				var obj;
 				s1box.get_obj('test1').then(function(o) { obj = o; });
-				waitsFor(function () { return obj; });
+				waitsFor(function () { return obj; }, 'the object should be created', 500);
 				runs(function () { expect(obj).toBeDefined(); });
 			});
 
@@ -101,7 +110,7 @@
 				it('should allow the object to be fetched', function () {
 					s1box.get_obj('test1').then(function (o) { s1obj = o; });
 					s2box.get_obj('test1').then(function (o) { s2obj = o; });
-					waitsFor(function () { return s1obj && s2obj; });
+					waitsFor(function () { return s1obj && s2obj; }, 'the object should be fetched', 500);
 					runs(function () {
 						expect(s1obj).toBeDefined();
 						expect(s2obj).toBeDefined();
@@ -111,15 +120,25 @@
 				it('should allow the object to be changed', function () {
 					var saved;
 					s1obj.save({ value: 99 }).then(function () { saved = true; });
-					waitsFor(function () { return saved; });
+					waitsFor(function () { return saved; }, 'the object should have changed', 500);
 					runs(function () { expect(s1obj.get('value')[0]).toBe(99); });
 				});
-				it('should have be up-to-date in the other store', function () {
-					expect(s2obj.get('value')[0]).toBe(99);
+				it('should be up-to-date in the other store', function () {
+					var fetched;
+					s2obj.fetch().then(function () { fetched = true; });
+					waitsFor(function () { return fetched; }, 'the object in the other store should be up-to-date', 500);
+					runs(function () { expect(s2obj.get('value')[0]).toBe(99); });
 				});
 				it('should not be using the same cache between stores', function () {
 					expect(s1obj.attributes).not.toBe(s2obj.attributes);
 				});
+			});
+
+			it('should be deletable', function () {
+				var destroyed;
+				s1box.destroy().then(function () { destroyed = true; });
+				waitsFor(function () { return destroyed; }, 'the box should be deleted', 500);
+				runs(function () { expect(s1box).not.toBeDefined(); });
 			});
 		});
 
