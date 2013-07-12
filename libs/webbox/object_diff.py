@@ -42,6 +42,11 @@ class ObjectSetDiff:
                 "params": [],
                 "query_prefix": "INSERT INTO wb_vers_diffs (version, diff_type, subject, predicate, object, object_order) VALUES "
             },
+            "latest": {
+                "values": [],
+                "params": [],
+                "query_prefix": "INSERT INTO wb_latest_vers (triple, triple_order) VALUES "
+            },
             "latest_diffs": {
                 "add_predicate": [],
                 "remove_predicate": [],
@@ -58,6 +63,7 @@ class ObjectSetDiff:
 
         queries = collections.deque([self.generate_diff_query()])
         queries.extend(self.apply_diffs_to_latest())
+        queries = collections.deque([self.generate_latest_query()])
 
         logging.debug("ObjectSetDiff run_queries, queries: {0}".format(pprint.pformat(queries[0])))
 
@@ -202,6 +208,10 @@ class ObjectSetDiff:
         """ Generate query/params pair of the diff query. """
         return (self.queries['diff']['query_prefix'] + ", ".join(self.queries['diff']['values']), self.queries['diff']['params'])
 
+    def generate_latest_query(self):
+        """ Generate query/params pair of the latest query. """
+        return (self.queries['latest']['query_prefix'] + ", ".join(self.queries['latest']['values']), self.queries['latest']['params'])
+
 
     def apply_diffs_to_latest(self):
         """ Make the queries used to INSERT/DELETE from the wb_latest_vers table. """
@@ -221,6 +231,9 @@ class ObjectSetDiff:
             # remove existing first
             queries.append(("DELETE FROM wb_latest_vers USING wb_triples, wb_strings AS predicates, wb_strings AS subjects WHERE wb_latest_vers.triple = wb_triples.id_triple AND predicates.id_string = wb_triples.predicate AND subjects.id_string = wb_triples.subject AND subjects.string = %s AND predicates.string = %s", [subject, predicate])) # XXX TODO test ## same as above, remove everything with subject AND predicate
 
+
+
+        order = 0
         # this is two loops because we don't want to remove the new objects (this can be optimised if required/in future)
         for row in self.queries['latest_diffs']['replace_objects']:
             subject, predicate, sub_obj, object_order = row
@@ -231,25 +244,41 @@ class ObjectSetDiff:
                 thetype, value, language, datatype = None, None, None, None
 
             # then add new
-            queries.append(("SELECT * FROM wb_add_triple_to_latest(%s, %s, %s, %s, %s, %s)", [subject, predicate, value, thetype, language, datatype]))
+#            queries.append(("SELECT * FROM wb_add_triple_to_latest(%s, %s, %s, %s, %s, %s)", [subject, predicate, value, thetype, language, datatype]))
+            order += 1
+            self.queries['latest']['values'].append("(wb_get_triple_id(%s, %s, %s, %s, %s, %s), %s)")
+            self.queries['latest']['params'].extend([subject, predicate, value, thetype, language, datatype, order])
 
         for row in self.queries['latest_diffs']['add_subject']:
             subject, predicate, sub_obj, object_order = row
-            queries.append(("SELECT * FROM wb_add_triple_to_latest(%s, %s, %s, %s, %s, %s)", [subject, None, None, None, None, None]))
+#            queries.append(("SELECT * FROM wb_add_triple_to_latest(%s, %s, %s, %s, %s, %s)", [subject, None, None, None, None, None]))
+            order += 1
+
+            # FIXME XXX just do an insert check into wb_latest_subjects
+##            self.queries['latest']['values'].append("(wb_get_triple_id(%s, NULL, NULL, NULL, NULL, NULL), %s)")
+##            self.queries['latest']['params'].extend([subject, order])
 
         for row in self.queries['latest_diffs']['add_predicate']:
             subject, predicate, sub_obj, object_order = row
-            queries.append(("SELECT * FROM wb_add_triple_to_latest(%s, %s, %s, %s, %s, %s)", [subject, predicate, None, None, None, None]))
+#            queries.append(("SELECT * FROM wb_add_triple_to_latest(%s, %s, %s, %s, %s, %s)", [subject, predicate, None, None, None, None]))
+            order += 1
+            self.queries['latest']['values'].append("(wb_get_triple_id(%s, %s, NULL, NULL, NULL, NULL), %s)")
+            self.queries['latest']['params'].extend([subject, predicate, order])
 
         for row in self.queries['latest_diffs']['add_triple']:
             subject, predicate, sub_obj, object_order = row
 
+            order += 1
             if sub_obj is not None:
                 thetype, value, language, datatype = self.obj_to_obj_tuple(sub_obj)
+                self.queries['latest']['values'].append("(wb_get_triple_id(%s, %s, %s, %s, %s, %s), %s)")
+                self.queries['latest']['params'].extend([subject, predicate, value, thetype, language, datatype, order])
             else:
                 thetype, value, language, datatype = None, None, None, None
+                self.queries['latest']['values'].append("(wb_get_triple_id(%s, %s, NULL, NULL, NULL, NULL), %s)")
+                self.queries['latest']['params'].extend([subject, predicate, order])
 
-            queries.append(("SELECT * FROM wb_add_triple_to_latest(%s, %s, %s, %s, %s, %s)", [subject, predicate, value, thetype, language, datatype]))
+            #queries.append(("SELECT * FROM wb_add_triple_to_latest(%s, %s, %s, %s, %s, %s)", [subject, predicate, value, thetype, language, datatype]))
 
         return queries
 
