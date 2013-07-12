@@ -767,19 +767,17 @@ angular
 			boxes:function() { return this.attributes.boxes;	},
 			get_box: function(boxid) {
 				var b = this.boxes().get(boxid) || this._create(boxid);
-				console.log(' b ', boxid, ' cached token ', b._get_cached_token());
 				if (!b._get_cached_token()) {
-					console.log('calling get token ');
 					return b.get_token().pipe(function() { return b.fetch(); })	
 				}
 				var d = u.deferred(); d.resolve(b);
 				return d.promise();
 			},  
 			create_box:function(boxid) {
-				dump('create box ', boxid);
-				var c = this._create(boxid);
-				dump('creating ', boxid);				
-				return c.save();
+				u.debug('create box ', boxid);
+				var c = this._create(boxid), this_ = this;;
+				u.debug('creating ', boxid);				
+				return c.save().pipe(function() { return this_.get_box(boxid); });
 			},
 			// todo: change to _ 
 			check_login:function() { return this._ajax('GET', 'auth/whoami'); },
