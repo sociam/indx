@@ -88,7 +88,7 @@ WITH (
 CREATE TABLE wb_versions
 (
   version integer NOT NULL,
-  updated time with time zone NOT NULL,
+  updated timestamp with time zone NOT NULL,
   username name NOT NULL,
   appid text NOT NULL,
   clientip inet NOT NULL,

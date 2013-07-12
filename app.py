@@ -1,20 +1,20 @@
-#    This file is part of WebBox.
+#    This file is part of INDX.
 #
 #    Copyright 2011-2013 Daniel Alexander Smith
 #    Copyright 2011-2013 University of Southampton
 #
-#    WebBox is free software: you can redistribute it and/or modify
+#    INDX is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation, either version 3 of the License, or
 #    (at your option) any later version.
 #
-#    WebBox is distributed in the hope that it will be useful,
+#    INDX is distributed in the hope that it will be useful,
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #    GNU General Public License for more details.
 #
 #    You should have received a copy of the GNU General Public License
-#    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
+#    along with INDX.  If not, see <http://www.gnu.org/licenses/>.
 
 import os, logging, sys, getpass, argparse
 from webbox.server import WebServer
@@ -58,10 +58,14 @@ parser.add_argument('--ssl-cert', default="data/server.crt", type=str, help="Pat
 parser.add_argument('--ssl-key', default="data/server.key", type=str, help="Path to SSL private key")
 parser.add_argument('--no-browser', default=False, action="store_true", help="Don't load a web browser after the server has started")
 parser.add_argument('--address', default="", type=str, help="Specify IP address to bind to")
+parser.add_argument('--password', default=None, type=str, help="Specify password on the command line instead of interactively")
 args = vars(parser.parse_args())
 
 """ Prompt the user for a password. """
-password = password_prompt()
+if args['password'] is None:
+	password = password_prompt()
+else:
+	password = args['password']
 
 """ Set up the logging based on the user's options. """
 setup_logger(args['log'], args['log_stdout'])

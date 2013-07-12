@@ -939,16 +939,22 @@ angular.module('ui.directives').directive('uiSelect2', ['ui.config', '$timeout',
         if (controller) {
           // Watch the model for programmatic changes
           controller.$render = function () {
-			  console.log("RENDER >>>>>>>>>>>>>>>>>>>>> ", controller.$modelValue);
+	      // console.log("RENDER >>>>>>>>>>>>>>>>>>>>> ", controller.$modelValue);
             if (isSelect) {
+				console.log('case 0 ');				
               elm.select2('val', controller.$modelValue);
             } else {
+				console.log("isMultiple >> ", isMultiple, controller.$modelValue);
               if (isMultiple) {
                 if (!controller.$modelValue) {
                   elm.select2('data', []);
                 } else if (angular.isArray(controller.$modelValue)) {
+					console.log('case 2 ');
+					window._mv = controller.$modelValue;
+					window._elm = elm;
                   elm.select2('data', controller.$modelValue);
                 } else {
+					console.log('case 3 ');					
                   elm.select2('val', controller.$modelValue);
                 }
               } else {

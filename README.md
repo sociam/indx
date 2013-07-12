@@ -1,16 +1,18 @@
-## WebBox
+## INDX
 
-WebBox is a personal file store being developed by @danielsmith-eu and @electronicmax at the University of Southampton, for the SOCIAM project.
+INDX is a personal file store being developed by @danielsmith-eu and @electronicmax at the University of Southampton, for the SOCIAM project.
 
-Installation and API documentation can be found on the WebBox wiki:
-https://github.com/danielsmith-eu/webbox/wiki
+Installation and API documentation can be found on the INDX wiki:
+https://github.com/sociam/indx/wiki
 
-WebBox is licensed under the GPLv3. See COPYING for more details.
+INDX is licensed under the GPLv3. See COPYING for more details.
 
 
 ### Installation
 
-Run `./setup-env.sh` to create a new `virtualenv` and install the webbox dependencies:
+Install PostgreSQL, e.g. on a Mac you could use: http://postgresapp.com/
+
+Run `./setup-env.sh` to create a new `virtualenv` and install the INDX dependencies:
 
     ./setup-env.sh
 
@@ -22,7 +24,7 @@ Now, source the virtualenv:
 
     source env/bin/activate
 
-Now, run webbox with your PostgreSQL authentication username and hostname:
+Now, run INDX with your PostgreSQL authentication username and hostname:
 
     python app.py <username> <hostname>
 
@@ -39,17 +41,17 @@ Usage will be printed:
                   [--ssl-key SSL_KEY] [--no-browser] [--address ADDRESS]
                   user hostname
 
-    Run a WebBox server.
+    Run an INDX server.
 
     positional arguments:
-      user                 PostgreSQL server username, e.g. webbox
-      hostname             Hostname of the webbox server, e.g. webbox.example.com
+      user                 PostgreSQL server username, e.g. indx
+      hostname             Hostname of the INDX server, e.g. indx.example.com
 
     optional arguments:
       -h, --help           show this help message and exit
       --db-host DB_HOST    PostgreSQL host, e.g. localhost
       --db-port DB_PORT    PostgreSQL port, e.g. 5432
-      --log LOG            Location of logfile e.g. /tmp/webbox.log
+      --log LOG            Location of logfile e.g. /tmp/indx.log
       --port PORT          Override the server listening port
       --log-stdout         Also log to stdout?
       --ssl                Turn on SSL

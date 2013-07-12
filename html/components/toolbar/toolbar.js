@@ -105,10 +105,8 @@ else { WebBox = root.WebBox; }
 			});
 		};
 		
-		$scope.cb_box_selected = function(bid) {
-			$scope.box = bid;
-			event_model.trigger('change:box', bid);
-		};		
+		$scope.cb_box_selected = function(bid) { $scope.box = bid;	};
+		
 		$scope.cb_login = function(username) {
 			$scope.username = username;
 			$scope.username_html = username + " &nbsp; <i class='icon-user'></i>";
@@ -174,7 +172,7 @@ else { WebBox = root.WebBox; }
 			var app = angular.module('WebboxToolbar', []);
 			app.controller('ToolbarController', ToolbarController);
 			angular.bootstrap(dom_el, ["WebboxToolbar"]);
-			$("#login_dialog, #logout_dialog").on('shown', function() {	$(this).find("[autofocus]:first").focus();		});
+			$("#login_dialog, #logout_dialog").on('shown', function() {	$(this).find("[autofocus]:first").focus();	});
 			WebBox.loader_dependencies.toolbar.dfd.resolve(toolbar_exports);
 		}).fail(WebBox.loader_dependencies.toolbar.dfd.reject);
 	}());

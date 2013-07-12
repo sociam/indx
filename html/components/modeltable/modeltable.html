@@ -16,7 +16,8 @@
 	  <td class="valspan">
 		<!-- <input type="text" ng-model="kvobj.value" ui-event="{keyup: 'commit_model()'}"> -->
 		<input class="select2"
-			   ui-select2="{tags:box_objs,width:'100%'}" ng-model="kvobj.value"
+			   multiple 
+			   ui-select2="{multiple:true,tags:box_objs,width:'100%'}" ng-model="kvobj.value"
 			   ui-event="{blur: 'commit_model()', click: 'commit_model()'}"></select>
 	  </td>
 	</tr>
