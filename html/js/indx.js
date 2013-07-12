@@ -269,7 +269,7 @@ angular
 		// Box =================================================
 		// GraphCollection is the list of Objs in a Graph
 		var ObjCollection = Backbone.Collection.extend({ model: Obj }),
-		FileCollection = Backbone.Collection.extend({ model: File });	
+			FileCollection = Backbone.Collection.extend({ model: File });	
 
 		// new client: fetch is always lazy, only gets ids, and
 		// lazily get objects as you go
@@ -780,8 +780,10 @@ angular
 				var c = this._create(boxid);
 				dump('creating ', boxid);				
 				return c.save();
-			},			
+			},
+			// todo: change to _ 
 			checkLogin:function() { return this._ajax('GET', 'auth/whoami'); },
+			// todo: change to _ 
 			getInfo:function() { return this._ajax('GET', 'admin/info'); },
 			login : function(username,password) {
 				var d = u.deferred();
