@@ -58,22 +58,30 @@
 			store.create_box(testboxname).then(function () {
 				box = store.get_box(testboxname);
 			});
-			waitsFor(function () { return box; }, 'the box should be created', 1500);
+			waitsFor(function () { return box; }, 'the box should be created', 500);
 			runs(function () {
 				expect(box).toBeDefined();
 			});
 		});
 
+		it('should allow a box to be loaded', function () {
+			box = store.get_box('blah');
+			expect(box).toBeDefined();
+		});
+
 
 		describe('box', function () {
+			// making it sure it exists
 			it('should be retreivable', function () {
 				box = store.get_box(testboxname);
 				expect(box).toBeDefined();
 			})
-			// making it sure it exists
-			it('should be defined', function() {
-				dump('box is', box);
-				expect(box).toBeDefined();
+			it('should be able to be fetched', function() {
+				box.fetch().then(function () {
+					console.log("HJK")
+				});
+				waitsFor(function () { return loadedBox; });
+				runs(function () { expect(loadedBox).toBeDefined(); });
 			});
 		})
 
