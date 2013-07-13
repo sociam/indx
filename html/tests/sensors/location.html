@@ -19,7 +19,7 @@
 		  <div class='latlng' ng-show="location">
 			(lat: <b>{{ location.latitude }}</b>, lon: <b>{{ location.longitude }}</b>)
 		  </div>
-		  <div class="btn locate" ng-click="locate()"><i class='icon-refresh'></i></div>	  
+		  <div ng-class="{btn:true, locate:true, disabled:loading}" ng-click="locate()"><i class='icon-refresh'></i></div>	  
 		</div>
 		<div ng-show="!(selected_user && selected_box)">
 		  <h2> please log in </h2>
