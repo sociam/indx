@@ -20,6 +20,7 @@ angular
 		$scope.locate = function() {
 			u.debug('locate! ');
 			$scope.loading++;
+			$scope.error = undefined;			
 			get_location().then(function(x) {
 				u.safe_apply($scope, function() { 
 					$scope.loading--;				
@@ -32,6 +33,7 @@ angular
 			}).fail(function(e) {
 				u.safe_apply($scope, function() { 				
 					$scope.loading--;	u.error('couldnt locate ', e);
+					$scope.error = 'Could not estimate location ' + e.message;
 				});
 			});
 		};

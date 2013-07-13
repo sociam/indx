@@ -13,17 +13,19 @@
 	<div ng-app="sensors" ng-controller="location">
 	  <toolbar box-var='selected_box' username-var='selected_user'></toolbar>
 	  <div class="container">
-		<h2 class='title'>Where've I been? </h2>
+		<div ng-show="!(selected_user && selected_box)">
+		  <h2> please log in to load your location lifelog  </h2>
+		</div>		
 		<div ng-show="selected_user && selected_box">
+		  <h2 class='title'>where've you been? your private location lifelog</h2>		  
 		  <div id="map"></div>
-		  <div class='latlng' ng-show="location">
+		  <div class='latlng' ng-show="location && !error">
 			(lat: <b>{{ location.latitude }}</b>, lon: <b>{{ location.longitude }}</b>)
 		  </div>
-		  <div ng-class="{btn:true, locate:true, disabled:loading}" ng-click="locate()"><i class='icon-refresh'></i></div>	  
-		</div>
-		<div ng-show="!(selected_user && selected_box)">
-		  <h2> please log in </h2>
-		</div>
+		  <div class='latlng error' ng-show="error">
+			{{ error }}
+		  </div>		  
+		  <div ng-class="{btn:true, locate:true, disabled:loading}" ng-click="locate()"><i class='icon-refresh'></i></div>	  		</div>
 	  </div>
 	</div>
   </body>
