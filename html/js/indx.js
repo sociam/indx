@@ -550,7 +550,7 @@ angular
 					news = _(current).difference(olds);
 					died = _(olds).difference(current);
 				}
-				u.debug('old objlist had ', olds.length, ' new has ', current.length, 'news > ', news);
+				// u.debug('old objlist had ', olds.length, ' new has ', current.length, 'news > ', news);
 				this._set_objlist(current);
 				news.map(function(aid) {	this_.trigger('obj-add', aid);	});
 				died.map(function(rid) {

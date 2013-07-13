@@ -3,7 +3,7 @@
 (function () {
 	'use strict';
 
-	var user = 'webbox',
+	var user = 'tester',
 		pass = 'foobar',
 		testboxname = 'boxtest' + (new Date()).getTime(); // FIXME can't have dash in name?
 
