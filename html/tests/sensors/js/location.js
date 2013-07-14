@@ -70,11 +70,11 @@ angular
 			get_location().then(function(x) {
 				u.safe_apply($scope, function() { 
 					$scope.loading--;				
-					u.debug("location >> ", x.coords);
+					u.debug("detected location >> ", x.coords);
 					u.safe_apply($scope, function() {
 						$scope.location = _(x.coords).clone();
+						$scope.update_logger();
 					});
-					$scope.update_logger();
 				});
 			}).fail(function(e) {
 				u.safe_apply($scope, function() { 				
