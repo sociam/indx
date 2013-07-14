@@ -64,7 +64,6 @@ angular
 		
 		// called by the refresh button
 		$scope.locate = function() {
-			u.debug('locate! ');
 			$scope.loading++;
 			$scope.error = undefined;			
 			get_location().then(function(x) {
