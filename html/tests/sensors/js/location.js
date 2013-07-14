@@ -7,12 +7,12 @@ angular
 
 		var initialise_map = function() { 
 			$scope.map = L.map($('#map')[0]).setView([51.505, -0.09], 13);
+			
 			L.tileLayer('http://{s}.tile.cloudmade.com/285675b50972436798d67ce55ab7ddde/997/256/{z}/{x}/{y}.png', {
 				attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://cloudmade.com">CloudMade</a>',
 				maxZoom: 18
 			}).addTo($scope.map);
-
-
+			
 			// feedback
 			var choose_me_popup = (new L.Popup());
 
@@ -23,27 +23,24 @@ angular
 			});
 
 			var choose_me_marker = new L.Marker([51.505, -0.09]);
-			choose_me_marker.bindPopup(choose_me_popup);
-			
+			$scope.choose_me_marker = choose_me_marker;
+			choose_me_marker.bindPopup(choose_me_popup);			
 			$scope.map.on('click', function(c) {
 				var ll = $scope.map.layerPointToLatLng(c.layerPoint);
-				console.log('got a click on layer point ', c.layerPoint, ll);				
 				choose_me_marker.setLatLng(ll);
 				choose_me_marker.addTo($scope.map);
 				choose_me_marker.togglePopup();
 				return false;				
 			});
-
 			$scope.setLocationButton = function() {
 				var ll= choose_me_marker.getLatLng();
-				console.log('location set ', ll);				
 				$scope.update_logger([ll.lat, ll.lng]);
 			};			
 		};
 
 		var readings_sorted_by_time = function(locs) {
 			locs = locs.concat([]);
-			locs.sort(function(x,y) { return x.get('start')[0] - y.get('start')[0]; });
+			locs.sort(function(x,y) { return y.get('start')[0] - x.get('start')[0]; });
 			return locs;
 		};
 		var get_location = function() {			
@@ -83,6 +80,7 @@ angular
 			});
 		};
 
+		
 
 		// utility used by update_logger
 		var dist = function(ll1, ll2) {
@@ -154,6 +152,13 @@ angular
 		var top_of_day = function(dlong) {
 			var dd = (new Date(dlong)).toDateString();
 			return new Date(dd).valueOf();			
+		};
+		$scope.hover_history = function(lat,lng) {
+			console.log('hover history ', lat, lng);
+			var hoverltlng = new L.LatLng(lat,lng);
+			$scope.map.panTo(hoverltlng);
+			$scope.choose_me_marker.setLatLng(hoverltlng);
+			$scope.choose_me_marker.addTo($scope.map);
 		};		
 		var update_diary_view = function(diary) {
 			var locs = readings_sorted_by_time(diary.get('locations') || []);

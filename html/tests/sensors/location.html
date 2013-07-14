@@ -36,9 +36,11 @@
 			</td>
 			<td>
 			  <ol>
-				<li ng-repeat="loc in day.locations" data-latitude='{{loc.get("latitude")[0]}}' data-longitude='{{loc.get("longitude")[0]}}'>
+				<li ng-repeat="loc in day.locations">
 				  <div class="timespan">{{ to_time_string(loc.get('start')[0]) }} - {{ to_time_string(loc.get('end')[0]) }}</div> : 
-				  <div class='latlng-coords'>[ {{ loc.get('latitude')[0] | number:4 }}, {{ loc.get('longitude')[0] | number:4 }} ]</div> 
+				  <div class='latlng-coords' ng-mouseover="hover_history(loc.get('latitude')[0], loc.get('longitude')[0])">
+					[ {{ loc.get('latitude')[0] | number:4 }}, {{ loc.get('longitude')[0] | number:4 }} ]
+				  </div> 
 				</li>
 			  </ol>
 			</td>
