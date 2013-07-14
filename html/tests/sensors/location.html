@@ -10,7 +10,7 @@
 	<title>INDX GeoLocation</title>
   </head>
   <body>
-	<div ng-app="sensors" ng-controller="location">
+	<div ng-app="sensors" ng-controller="location" ng-cloak>
 	  <toolbar box-var='selected_box' username-var='selected_user'></toolbar>
 	  <div class="container">
 		<div ng-show="!(selected_user && selected_box)">
@@ -25,7 +25,24 @@
 		  <div class='latlng error' ng-show="error">
 			{{ error }}
 		  </div>		  
-		  <div ng-class="{btn:true, locate:true, disabled:loading}" ng-click="locate()"><i class='icon-refresh'></i></div>	  		</div>
+		  <div ng-class="{btn:true, locate:true, disabled:loading}" ng-click="locate()"><i class='icon-refresh'></i></div>
+		</div>		
+	  </div>
+	  <div class="container history" ng-show="selected_user && selected_box">
+		<table>
+		  <tr ng-repeat="day in by_day">
+			<td>
+			  {{ to_date_string(day.start) }}
+			</td>
+			<td>
+			  <ol>
+				<li ng-repeat="loc in day.locations" data-latitude='{{loc.get("latitude")[0]}}' data-longitude='{{loc.get("longitude")[0]}}'>
+				  <div class="timespan">{{ to_time_string(loc.get('start')[0]) }} - {{ to_time_string(loc.get('end')[0]) }}</div>
+				  <div class='latlng-coords'>[ {{ loc.get('latitude')[0] }}, {{ loc.get('longitude')[0] }} ]</div>
+				</li>
+			  </ol>
+			</td>
+		</table>
 	  </div>
 	</div>
   </body>

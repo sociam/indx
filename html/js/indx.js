@@ -232,13 +232,16 @@ angular
 					this_._set_fetched(true);
 					var objdata = response.data;
 					if (objdata['@version'] === undefined) {
+						// then the server thinks we've been deleted, so let's just die.
+						return fd.reject(this_.id);
+						// old code: 
 						// according to the server, we're dead.
-						console.log('zombie detected ', this_.id);
-						this_.cid = this_.id;
-						this_.unset({});
-						delete this_.id;
-						fd.resolve();
-						return;
+						// console.log('zombie detected ', this_.id);
+						// this_.cid = this_.id;
+						// this_.unset({});
+						// delete this_.id;
+						// fd.resolve();
+						// return;					
 					}
 					// we are at current known version as far as we know
 					var obj_save_dfds = _(objdata).map(function(obj,uri) {
@@ -359,7 +362,8 @@ angular
 			_set_version:function(v) { this.set("version", v);	},
 			_get_version:function(v) { return this.get("version"); },		
 			get_token:function() {
-				// utils.info('>> get_token ', ' id: ',this.id, ' cid: ',this.cid);
+				utils.debug('>> get_token ', ' id: ',this.id, ' cid: ',this.cid);
+				try { throw new Error(''); } catch(e) { console.error(e); }
 				var this_ = this, d = u.deferred();
 				this._ajax('POST', 'auth/get_token', { app: this.store.get('app') })
 					.then(function(data) {
@@ -505,7 +509,10 @@ angular
 				hasmodel = cachemodel && fetching_dfd === undefined,
 				this_ = this;
 
-				if (hasmodel) {	d.resolve(cachemodel); return d.promise(); }
+				if (hasmodel) {
+					console.log('returning cached ', objid);
+					d.resolve(cachemodel); return d.promise();
+				}
 
 				// check to see if already fetching, then we can tag along 
 				if (fetching_dfd) {
@@ -525,16 +532,35 @@ angular
 				this._fetching_queue[objid] = d;
 				var model = this_._create_model_for_id(objid);
 				// if the serve knows about it, then we fetch its definition
-				if (this._objlist().indexOf(objid) >= 0) {
-					model.fetch().then(function() {
-						d.resolve(model);
-						delete this_._fetching_queue[objid];
-					}).fail(d.reject);
-				} else {
-					// otherwise it must be new!
+				console.log('objlist ', this._objlist());
+
+				// old code :: 
+				// if (this._objlist().indexOf(objid) >= 0) {
+				// 	console.log('object exists, going to fetch it ');
+				// 	model.fetch().then(function() {
+				// 		d.resolve(model);
+				// 		delete this_._fetching_queue[objid];
+				// 	}).fail(d.reject);
+				// } else {
+				// 	console.log('object doesnt exist, not going to fetch it ');
+				// 	// otherwise it must be new!
+				// 	model.is_new = true;
+				// 	d.resolve(model);
+				// }
+
+				console.log('trying to fetch ', objid);
+				model.fetch().then(function() {
+					d.resolve(model);
+					delete this_._fetching_queue[objid];
+				}).fail(function(err) {
+					console.log('failed.. declaring it new ', objid);
+					// TODO check if 404'd
+					console.log('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA err - didnt exist ? ', err);
 					model.is_new = true;
 					d.resolve(model);
-				}			
+					delete this_._fetching_queue[objid];
+				});
+				
 				return d.promise();
 			},
 			// ----------------------------------------------------
@@ -768,7 +794,9 @@ angular
 			get_box: function(boxid) {
 				var b = this.boxes().get(boxid) || this._create(boxid);
 				if (!b._get_cached_token()) {
-					return b.get_token().pipe(function() { return b.fetch(); })	
+					return b.get_token().pipe(function() {
+						return b.fetch(); 
+					});
 				}
 				return u.dresolve(b);
 			},  
