@@ -30,6 +30,16 @@ angular
 				toolbar.get_selected_box = function() { return; };
 				toolbar.is_logged_in = function() { return false; };
 
+				var get_last_used_box = function() {
+					return localStorage["indx__last_used_box" + document.location.toString()];
+				};
+				var clear_last_used_box = function() {
+					delete localStorage["indx__last_used_box" + document.location.toString()];
+				};
+				var set_last_used_box = function(bid) {
+					localStorage["indx__last_used_box" + document.location.toString()] = bid;
+				};				
+
 				_($scope).extend({
 					visible: true,
 					u: utils,
@@ -40,7 +50,8 @@ angular
 					_login_password:undefined,
 					is_logged_in : function() { return $scope.username !== undefined; },
 				});
-				
+
+				// reflect everything in to the model >> 
 				_($scope).map(function(val,k) {
 					// hook up scope to model changes
 					$scope.$watch(k, function() { model.trigger('change:'+k, $scope[k]); });
@@ -69,8 +80,13 @@ angular
 						console.log('boxlist >> ', boxlist);
 						apply(function() {
 							$scope.boxlist = boxlist.concat();
-							if ($scope.box === undefined && $scope.boxlist.length > 0) {
-								$scope.cb_box_selected($scope.boxlist[0]);
+							if ($scope.box === undefined && $scope.boxlist.length > 0 && get_last_used_box()) {
+								if ($scope.boxlist.indexOf( get_last_used_box() ) >= 0) {
+									$scope.cb_box_selected(get_last_used_box());
+								} else {
+									clear_last_used_box(); 
+									// don't do anything --
+								}
 							}
 							$scope.decr_loading();
 						});
@@ -100,7 +116,10 @@ angular
 						});
 					});
 				};		
-				$scope.cb_box_selected = function(bid) { $scope.box = bid;	};
+				$scope.cb_box_selected = function(bid) {
+					$scope.box = bid;
+					set_last_used_box(bid); 
+				};
 				$scope.cb_login = function(username) {
 					$scope.username = username;
 					update_boxlist();
