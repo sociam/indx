@@ -65,9 +65,10 @@ angular
 					// get boxes
 					var this_ = this, d = u.deferred();
 					$scope.incr_loading();
-					getStore().fetch().then(function(boxlist) {
+					getStore().get_box_list().then(function(boxlist) {
+						console.log('boxlist >> ', boxlist);
 						apply(function() {
-							$scope.boxlist = boxlist.map(function(b) { return b.get_id(); });
+							$scope.boxlist = boxlist.concat();
 							if ($scope.box === undefined && $scope.boxlist.length > 0) {
 								$scope.cb_box_selected($scope.boxlist[0]);
 							}
