@@ -232,13 +232,16 @@ angular
 					this_._set_fetched(true);
 					var objdata = response.data;
 					if (objdata['@version'] === undefined) {
+						// then the server thinks we've been deleted, so let's just die.
+						return fd.reject(this_.id);
+						// old code: 
 						// according to the server, we're dead.
-						console.log('zombie detected ', this_.id);
-						this_.cid = this_.id;
-						this_.unset({});
-						delete this_.id;
-						fd.resolve();
-						return;
+						// console.log('zombie detected ', this_.id);
+						// this_.cid = this_.id;
+						// this_.unset({});
+						// delete this_.id;
+						// fd.resolve();
+						// return;					
 					}
 					// we are at current known version as far as we know
 					var obj_save_dfds = _(objdata).map(function(obj,uri) {
@@ -246,7 +249,7 @@ angular
 						if (uri[0] === "@") { return; } // ignore "@id", "@version" etc
 						// not one of those, so must be a
 						// < uri > : { prop1 .. prop2 ... }
-						u.assert(uri === this_.id, 'can only deserialise this object');
+						u.assert(uri === this_.id, 'can only deserialise this object ');
 						return this_._deserialise_and_set(obj);
 					});
 					u.when(obj_save_dfds).then(function(){ fd.resolve(this_); }).fail(fd.reject);
@@ -269,7 +272,7 @@ angular
 		// Box =================================================
 		// GraphCollection is the list of Objs in a Graph
 		var ObjCollection = Backbone.Collection.extend({ model: Obj }),
-		FileCollection = Backbone.Collection.extend({ model: File });	
+			FileCollection = Backbone.Collection.extend({ model: File });	
 
 		// new client: fetch is always lazy, only gets ids, and
 		// lazily get objects as you go
@@ -359,7 +362,8 @@ angular
 			_set_version:function(v) { this.set("version", v);	},
 			_get_version:function(v) { return this.get("version"); },		
 			get_token:function() {
-				// utils.info('>> get_token ', ' id: ',this.id, ' cid: ',this.cid);
+				utils.debug('>> get_token ', ' id: ',this.id, ' cid: ',this.cid);
+				try { throw new Error(''); } catch(e) { console.error(e); }
 				var this_ = this, d = u.deferred();
 				this._ajax('POST', 'auth/get_token', { app: this.store.get('app') })
 					.then(function(data) {
@@ -516,7 +520,10 @@ angular
 				hasmodel = cachemodel && fetching_dfd === undefined,
 				this_ = this;
 
-				if (hasmodel) {	d.resolve(cachemodel); return d.promise(); }
+				if (hasmodel) {
+					console.log('returning cached ', objid);
+					d.resolve(cachemodel); return d.promise();
+				}
 
 				// check to see if already fetching, then we can tag along 
 				if (fetching_dfd) {
@@ -536,16 +543,35 @@ angular
 				this._fetching_queue[objid] = d;
 				var model = this_._create_model_for_id(objid);
 				// if the serve knows about it, then we fetch its definition
-				if (this._objlist().indexOf(objid) >= 0) {
-					model.fetch().then(function() {
-						d.resolve(model);
-						delete this_._fetching_queue[objid];
-					}).fail(d.reject);
-				} else {
-					// otherwise it must be new!
+				console.log('objlist ', this._objlist());
+
+				// old code :: 
+				// if (this._objlist().indexOf(objid) >= 0) {
+				// 	console.log('object exists, going to fetch it ');
+				// 	model.fetch().then(function() {
+				// 		d.resolve(model);
+				// 		delete this_._fetching_queue[objid];
+				// 	}).fail(d.reject);
+				// } else {
+				// 	console.log('object doesnt exist, not going to fetch it ');
+				// 	// otherwise it must be new!
+				// 	model.is_new = true;
+				// 	d.resolve(model);
+				// }
+
+				console.log('trying to fetch ', objid);
+				model.fetch().then(function() {
+					d.resolve(model);
+					delete this_._fetching_queue[objid];
+				}).fail(function(err) {
+					console.log('failed.. declaring it new ', objid);
+					// TODO check if 404'd
+					console.log('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA err - didnt exist ? ', err);
 					model.is_new = true;
 					d.resolve(model);
-				}			
+					delete this_._fetching_queue[objid];
+				});
+				
 				return d.promise();
 			},
 			// ----------------------------------------------------
@@ -561,7 +587,7 @@ angular
 					news = _(current).difference(olds);
 					died = _(olds).difference(current);
 				}
-				u.debug('old objlist had ', olds.length, ' new has ', current.length, 'news > ', news);
+				// u.debug('old objlist had ', olds.length, ' new has ', current.length, 'news > ', news);
 				this._set_objlist(current);
 				news.map(function(aid) {	this_.trigger('obj-add', aid);	});
 				died.map(function(rid) {
@@ -778,22 +804,26 @@ angular
 			boxes:function() { return this.attributes.boxes;	},
 			get_box: function(boxid) {
 				var b = this.boxes().get(boxid) || this._create(boxid);
-				console.log(' b ', boxid, ' cached token ', b._get_cached_token());
 				if (!b._get_cached_token()) {
-					console.log('calling get token ');
-					return b.get_token().pipe(function() { return b.fetch(); })	
+					return b.get_token().pipe(function() {
+						return b.fetch(); 
+					});
 				}
-				var d = u.deferred(); d.resolve(b);
-				return d.promise();
+				return u.dresolve(b);
 			},  
 			create_box:function(boxid) {
-				dump('create box ', boxid);
-				var c = this._create(boxid);
-				dump('creating ', boxid);				
-				return c.save();
-			},			
-			checkLogin:function() { return this._ajax('GET', 'auth/whoami'); },
-			getInfo:function() { return this._ajax('GET', 'admin/info'); },
+				u.debug('create box ', boxid);
+				if (this.boxes().get(boxid)) {
+					return u.dreject('Box already exists: ' + boxid);
+				}
+				var c = this._create(boxid), this_ = this;
+				u.debug('creating ', boxid);				
+				return c.save().pipe(function() { return this_.get_box(boxid); });
+			},
+			// todo: change to _ 
+			check_login:function() { return this._ajax('GET', 'auth/whoami'); },
+			// todo: change to _ 
+			get_info:function() { return this._ajax('GET', 'admin/info'); },
 			login : function(username,password) {
 				var d = u.deferred();
 				this.set({username:username,password:password});
@@ -826,7 +856,7 @@ angular
 				this._ajax('GET','admin/list_boxes')
 					.success(function(data) {
 						u.when(data.list.map(function(boxid) { return this_.get_box(boxid); })).then(function(boxes) {
-							console.log("boxes !! ", boxes);
+							// console.log("boxes !! ", boxes);
 							this_.boxes().reset(boxes);
 							d.resolve(boxes);							
 						});

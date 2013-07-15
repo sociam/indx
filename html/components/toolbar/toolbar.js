@@ -10,6 +10,7 @@ angular
 			link:function($scope, $element) {
 				$scope.el = $element;
 			},
+			scope: { box:"=boxVar", username:"=usernameVar" },
 			controller: function($scope, client, backbone, utils) {
 				var u = utils;
 				var toolbar = {}; // public interface
@@ -33,8 +34,6 @@ angular
 					visible: true,
 					u: utils,
 					error:undefined,
-					username: undefined,
-					box : undefined, // selected box
 					boxlist: [],
 					loading: 0,
 					_login_username:undefined,
@@ -118,7 +117,7 @@ angular
 				};
 				var checkLogin = function() {
 					var store = getStore();					
-					store.checkLogin().then(function(response) {
+					store.check_login().then(function(response) {
 						u.debug('checklogin ', response);
 						if (response.is_authenticated) {
 							apply(function() { $scope.cb_login(response.user);	});
