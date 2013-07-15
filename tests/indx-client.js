@@ -1,14 +1,16 @@
 /* global describe, angular, beforeEach, it, waitsFor, dump, expect, runs, console */
 
-(function (jasmine, Backbone) {
+(function (jasmine, $, _, Backbone) {
 	'use strict';
 
 	var user = 'tester',
 		pass = 'foobar',
-		testboxname = 'boxtest' + (new Date()).getTime(); // FIXME can't have dash in name?
+		boxcreations = 3;
 
 	console.log('**** RUNNING TESTS (u: ' + user + ', p: ' + pass + ') ****');
 
+	var testboxname = 'boxtest' + (new Date()).getTime() + 'r' + Math.round(Math.random() * 10000); // FIXME can't have dash in name?
+console.log(testboxname)
 	describe('indx-core store', function() {
 		var injector = angular.injector(['ng', 'indx']),
 			indx = injector.get('client'),
@@ -93,7 +95,6 @@
 		it('should allow a box to be created', function () {
 			var box;
 			store1.create_box(testboxname).then(function () {
-				console.log("CREATED")
 				box = store1.get_box(testboxname);
 			});
 			waitsFor(function () { return box; }, 'the box to be created', 1500);
@@ -109,10 +110,34 @@
 			});
 		});
 
-		it('should be able to create 10,000 boxes')
+
+		var tmpBoxes = {},
+			tmpBoxesDfds = [];
+		it('should be able to create ' + boxcreations + ' boxes', function () {
+			var created;
+
+			_.times(boxcreations, function (i) {
+				var boxname = testboxname + 'tmp' + i,
+					$dfd = $.Deferred();
+
+				tmpBoxesDfds = $dfd;
+
+				store1.create_box(boxname).then(function () {
+					$dfd.resolve();
+					tmpBoxes[boxname] = store1.get_box(testboxname);
+				});
+			});
+
+			$.when.apply(null, _.keys(tmpBoxes)).then(function () {
+				created = true;
+			});
+
+			waitsFor(function () { return created; }, 'the boxes to be created', boxcreations * 2000);
+			runs(function () { expect(_.values(tmpBoxes).length) === tmpBoxesDfds.length; });
+		});
 
 		describe('box collection', function () {
-			it('should have 10,000 box in the box collection')
+			it('should have ' + (boxcreations + 1) + ' boxes in the box collection')
 		});
 
 		it('should be able to delete those boxes')
@@ -129,6 +154,12 @@
 		it('should have this box within another store (should auto-update)', function () {
 			waitsFor(function () { return store2.boxes().get(testboxname); }, 'another store to list the new box', 1000);
 			runs(function () { expect(store2.boxes().get(testboxname)).toBeDefined(); });
+		});
+
+		describe('box collection', function () {
+			it('should have only one box in the box collection', function () {
+				expect(store1.boxes().length).toBe(1);
+			});
 		});
 
 		// hack
@@ -296,4 +327,4 @@
 
 	});
 
-}(this.jasmine, Backbone));
+}(this.jasmine, this.$, this._, this.Backbone));
