@@ -44,6 +44,24 @@ class AdminHandler(BaseHandler):
             return d.callback(not name in boxes)
         self.webserver.get_master_box_list().addCallback(cont).addErrback(d.errback)
         return d
+
+    def delete_box_handler(self, request):
+        """ Delete a box. """
+        args = self.get_post_args(request)
+        box_name = args['name'][0]
+        username,password = self.get_session(request).username, self.get_session(request).password
+        logging.debug('asking to delete box ' + box_name)
+
+        logging.debug("Deleting box {0} for user {1}".format(box_name,username))
+        try:
+            success = database.delete_box(box_name,username,password) ## TODO make this nonblocking
+            if success:
+                return self.return_no_content(request)
+            else:
+                return self.return_internal_error(request)
+        except Exception as e:
+            logging.debug(' error deleting box {0} '.format(e))
+            return self.return_internal_error(request)
     
     def create_box_handler(self, request):
         """ Create a new box. """
@@ -102,6 +120,15 @@ AdminHandler.subhandlers = [
         'content-type':'text/plain', # optional
         'accept':['application/json']
     },    
+    {
+        'prefix': 'delete_box',
+        'methods': ['POST'],
+        'require_auth': True,
+        'require_token': False,
+        'handler': AdminHandler.delete_box_handler,
+        'content-type':'text/plain', # optional
+        'accept':['application/json']
+    },
     {
         'prefix': 'create_box',
         'methods': ['POST'],

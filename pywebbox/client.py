@@ -24,6 +24,7 @@ class WebBoxClient:
     def __init__(self, appid = "WebBoxClient"):
         """ Associate command-line actions with functions, and enforce required variables. """
         self.actions = {'create_box': {'f': self.create_box, 'args': ['box']},
+                      'delete_box': {'f': self.delete_box, 'args': ['box']},
                       'list_boxes': {'f': self.list_boxes, 'args': []},
                       'get_object_ids': {'f': self.get_object_ids, 'args': ['box']},
                       'update': {'f': self.update, 'args': ['box','data','version']},
@@ -102,6 +103,10 @@ class WebBoxClient:
         logging.debug("Creating box: '{0}' on server '{1}'".format(self.args['box'], self.args['server']))
         return self.webbox.create_box()
 
+    def delete_box(self):
+        """ Test to delete a box. """
+        logging.debug("Deleting box: '{0}' on server '{1}'".format(self.args['box'], self.args['server']))
+        return self.webbox.delete_box()
 
     def list_boxes(self):
         """ List the boxes on the webbox server. """
