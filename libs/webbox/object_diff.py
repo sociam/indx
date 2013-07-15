@@ -62,14 +62,22 @@ class ObjectSetDiff:
             },
         }
 
+    def gen_queries(self, keys):
+        query_list = []
+        for quer in keys:
+            if len(self.queries[quer]['params']) > 0:
+                query_list.append((self.queries[quer]['query_prefix'] + ", ".join(self.queries[quer]['values']), self.queries[quer]['params']))
+        return query_list
+
     def run_queries(self, cur):
         """ Run all of the queries. """
         result_d = Deferred()
 
-        queries = collections.deque([self.generate_diff_query()])
+
+
+        queries = collections.deque(self.gen_queries(['diff']))
         queries.extend(self.apply_diffs_to_latest())
-        queries.append(self.generate_latest_query())
-        queries.append(self.generate_subject_query())
+        queries.extend(self.gen_queries(['latest','subjects']))
 
         logging.debug("ObjectSetDiff run_queries, queries: {0}".format(pprint.pformat(queries[0])))
 
@@ -222,17 +230,6 @@ class ObjectSetDiff:
         # apply the diff to the latest table
         self.queries['latest_diffs'][diff_type].append((subject, predicate, sub_obj, object_order))
 
-    def generate_diff_query(self):
-        """ Generate query/params pair of the diff query. """
-        return (self.queries['diff']['query_prefix'] + ", ".join(self.queries['diff']['values']), self.queries['diff']['params'])
-
-    def generate_latest_query(self):
-        """ Generate query/params pair of the latest query. """
-        return (self.queries['latest']['query_prefix'] + ", ".join(self.queries['latest']['values']), self.queries['latest']['params'])
-
-    def generate_subject_query(self):
-        """ Generate query/params pair of the subjects insert query. """
-        return (self.queries['subjects']['query_prefix'] + ", ".join(self.queries['subjects']['values']), self.queries['subjects']['params'])
 
 #         params = []
 #         query_arr = []
