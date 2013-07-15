@@ -1,6 +1,6 @@
 /* global describe, angular, beforeEach, it, waitsFor, dump, expect, runs, console */
 
-(function () {
+(function (jasmine, Backbone) {
 	'use strict';
 
 	var user = 'tester',
@@ -9,14 +9,22 @@
 
 	console.log('**** RUNNING TESTS (u: ' + user + ', p: ' + pass + ') ****');
 
-	describe('indx-core', function() {
+	describe('indx-core store', function() {
 		var injector = angular.injector(['ng', 'indx']),
 			indx = injector.get('client'),
 			u = injector.get('utils'),
 			store1 = new indx.Store({ server_host: 'localhost:8211' }),
 			store2 = new indx.Store({ server_host: 'localhost:8211' });
 
-		it('should fail to log in with invalid credentials', function () {
+		it('is a Backbone Model', function () {
+			expect(store1 instanceof Backbone.Model).toBe(true);
+		});
+
+		it('should be logged out', function () {
+
+		});
+
+		it('should fail to be logged in with invalid credentials', function () {
 			var loggedin;
 			store1.login(user, pass + 'aaa') // invalidate the password
 				.fail(function () { loggedin = false; });
@@ -24,24 +32,36 @@
 			runs(function () { expect(loggedin).toBe(false); });
 		});
 
+		it('should be logged out', function () {
+
+		});
+
 		// login as you
-		it('should successfully log in with valid credentials', function () {
+		it('should successfully be logged in with valid credentials', function () {
 			var loggedin;
-			store1.login(user, pass) .then(function () { loggedin = true; });
+			store1.login(user, pass).then(function () { loggedin = true; });
 			waitsFor(function() { return loggedin; }, 'the user to be logged in', 500);
 			runs(function () { expect(loggedin).toBe(true); });
 		});
 
+		it('should be logged in', function () {
+
+		});
+
 		// log out, make sure yo'ure not logged in
-		it('should log out', function () {
+		it('should able to be logged out', function () {
 			var loggedout;
 			store1.logout().then(function () { loggedout = true; });
 			waitsFor(function() { return loggedout; }, 'the user to be logged out', 500);
 			runs(function () { expect(loggedout).toBe(true); });
 		});
 
+		it('should be logged out', function () {
+
+		});
+
 		// login as you
-		it('should successfully log in with valid credentials', function () {
+		it('should successfully be logged in with valid credentials', function () {
 			var loggedin;
 			store1.login(user, pass).then(function () { loggedin = true; });
 			waitsFor(function() { return loggedin; }, 'the user to be logged in', 500);
@@ -49,7 +69,25 @@
 		});
 
 		// make sure you're logged in
+		it('should be logged in', function () {
 
+		});
+
+		it('should have a collection of boxes', function () {
+			expect(store1.get('boxes')).toBeDefined();
+			expect(store1.get('boxes')).toBe(store1.boxes());
+			expect(store2.get('boxes')).toBeDefined();
+			expect(store2.get('boxes')).toBe(store2.boxes());
+		});
+
+		describe('box collection', function () {
+			it('should be empty', function () {
+				expect(store1.boxes().length).toBe(0);
+			});
+			it('should be a Backbone Collection', function () {
+				expect(store1.boxes() instanceof Backbone.Collection).toBe(true);
+			});
+		});
 
 		// create box
 		it('should allow a box to be created', function () {
@@ -62,6 +100,23 @@
 			runs(function () { expect(box).toBeDefined(); });
 		});
 
+		describe('box collection', function () {
+			it('should have the new box in the box collection', function () {
+				expect(store1.boxes().get(testboxname)).toBeDefined();
+			})
+			it('should have only one box in the box collection', function () {
+				expect(store1.boxes().length).toBe(1);
+			});
+		});
+
+		it('should be able to create 10,000 boxes')
+
+		describe('box collection', function () {
+			it('should have 10,000 box in the box collection')
+		});
+
+		it('should be able to delete those boxes')
+
 		it('should fail to create a box if it already exists', function () {
 			var failed;
 			store1.create_box(testboxname).fail(function () {
@@ -71,7 +126,7 @@
 			runs(function () { expect(failed).toBe(true); });
 		});
 
-		it('should have this box within another store', function () {
+		it('should have this box within another store (should auto-update)', function () {
 			waitsFor(function () { return store2.boxes().get(testboxname); }, 'another store to list the new box', 1000);
 			runs(function () { expect(store2.boxes().get(testboxname)).toBeDefined(); });
 		});
@@ -85,6 +140,27 @@
 				var b = store1.get_box(testboxname);
 				expect(b).toBeDefined();
 			});
+
+			it('should be a Backbone Model')
+
+			it('should have a cache of objects')
+
+			describe('Object Cache', function () {
+				it('should be a Backbone Collection')
+			})
+
+			it('should have a list of objects')
+
+			describe('Object List', function () {
+				it('should be an array')
+			});
+
+			it('should have a collection of files')
+
+			describe('File Collection', function () {
+				it('should be a Backbone Collection')
+			})
+
 			// making it sure it exists
 			it('should be retreivable', function () {
 				store1.get_box(testboxname).then(function (b) { s1box = b; });
@@ -140,7 +216,7 @@
 				it('should not be using the same cache between stores', function () {
 					expect(s1obj.attributes).not.toBe(s2obj.attributes);
 				});
-				it('should allow the store 2 to edit the object', function () {
+				it('should allow store 2 to edit the object', function () {
 					var saved;
 					s2obj.save({ value: 97 }).then(function () { saved = true; });
 					waitsFor(function () { return saved; }, 'the object to have changed', 500);
@@ -167,6 +243,14 @@
 					});
 				});
 			});
+
+
+			it('should allow a file to be created')
+
+			describe('file', function () {
+				it('should allow the file to be fetched')
+
+			})
 
 			it('should be deletable', function () {
 				var destroyed;
@@ -212,4 +296,4 @@
 
 	});
 
-}());
+}(this.jasmine, Backbone));
