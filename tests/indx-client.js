@@ -58,7 +58,7 @@
 				console.log("CREATED")
 				box = store1.get_box(testboxname);
 			});
-			waitsFor(function () { return box; }, 'the box to be created', 500);
+			waitsFor(function () { return box; }, 'the box to be created', 1500);
 			runs(function () { expect(box).toBeDefined(); });
 		});
 
@@ -72,7 +72,7 @@
 		});
 
 		it('should have this box within another store', function () {
-			waitsFor(function () { return store2.boxes().get(testboxname); });
+			waitsFor(function () { return store2.boxes().get(testboxname); }, 'another store to list the new box', 1000);
 			runs(function () { expect(store2.boxes().get(testboxname)).toBeDefined(); });
 		});
 
