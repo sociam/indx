@@ -645,7 +645,9 @@ angular
 					}).fail(function(err) { d.reject(err); });
 				return d.promise();
 			},
-			
+			delete_box:function(boxid) {
+				return this.store._ajax('POST','admin/delete_box', { name: boxid } );
+			},			
 			// =============== :: UPDATE ::  ======================
 			WHOLE_BOX: "__UPDATE__WHOLE__BOX__",
 			_add_to_update_queue:function(ids_to_update) {
@@ -778,7 +780,7 @@ angular
 				case "create": return box._create_box();
 				case "read": return box._check_token_and_fetch(); 
 				case "update": return box.update()[0];  // save whole box?
-				case "delete": return u.warn('box.delete() : not implemented yet');
+				case "delete": return this.delete_box(this.get_id()) // hook up to destroy
 				}
 			},
 			toString: function() { return 'box:' + this.get_id(); }		
