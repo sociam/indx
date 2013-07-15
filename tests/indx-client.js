@@ -20,7 +20,7 @@
 			var loggedin;
 			store1.login(user, pass + 'aaa') // invalidate the password
 				.fail(function () { loggedin = false; });
-			waitsFor(function() { return loggedin === false; }, 'the user should not be logged in', 500);
+			waitsFor(function() { return loggedin === false; }, 'the user to not be logged in', 500);
 			runs(function () { expect(loggedin).toBe(false); });
 		});
 
@@ -28,7 +28,7 @@
 		it('should successfully log in with valid credentials', function () {
 			var loggedin;
 			store1.login(user, pass) .then(function () { loggedin = true; });
-			waitsFor(function() { return loggedin; }, 'the user should be logged in', 500);
+			waitsFor(function() { return loggedin; }, 'the user to be logged in', 500);
 			runs(function () { expect(loggedin).toBe(true); });
 		});
 
@@ -36,7 +36,7 @@
 		it('should log out', function () {
 			var loggedout;
 			store1.logout().then(function () { loggedout = true; });
-			waitsFor(function() { return loggedout; }, 'the user should be logged out', 500);
+			waitsFor(function() { return loggedout; }, 'the user to be logged out', 500);
 			runs(function () { expect(loggedout).toBe(true); });
 		});
 
@@ -44,7 +44,7 @@
 		it('should successfully log in with valid credentials', function () {
 			var loggedin;
 			store1.login(user, pass).then(function () { loggedin = true; });
-			waitsFor(function() { return loggedin; }, 'the user should be logged in', 500);
+			waitsFor(function() { return loggedin; }, 'the user to be logged in', 500);
 			runs(function () { expect(loggedin).toBe(true); });
 		});
 
@@ -55,9 +55,10 @@
 		it('should allow a box to be created', function () {
 			var box;
 			store1.create_box(testboxname).then(function () {
+				console.log("CREATED")
 				box = store1.get_box(testboxname);
 			});
-			waitsFor(function () { return box; }, 'the box should be created', 500);
+			waitsFor(function () { return box; }, 'the box to be created', 500);
 			runs(function () { expect(box).toBeDefined(); });
 		});
 
@@ -66,7 +67,7 @@
 			store1.create_box(testboxname).fail(function () {
 				failed = true;
 			});
-			waitsFor(function () { return failed; }, 'the box should not have been created', 500);
+			waitsFor(function () { return failed; }, 'the box to not have been created', 500);
 			runs(function () { expect(failed).toBe(true); });
 		});
 
@@ -88,7 +89,7 @@
 			it('should be retreivable', function () {
 				store1.get_box(testboxname).then(function (b) { s1box = b; });
 				store2.get_box(testboxname).then(function (b) { s2box = b; });
-				waitsFor(function () { return s1box && s2box; }, 'the box should be fetched', 500);
+				waitsFor(function () { return s1box && s2box; }, 'the box to be fetched', 500);
 				runs(function () {
 					expect(s1box).toBeDefined();
 					expect(s2box).toBeDefined();
@@ -98,7 +99,7 @@
 			it('should allow an object to be created', function () {
 				var obj;
 				s1box.get_obj('test1').then(function(o) { obj = o; });
-				waitsFor(function () { return obj; }, 'the object should be created', 500);
+				waitsFor(function () { return obj; }, 'the object to be created', 500);
 				runs(function () { expect(obj).toBeDefined(); });
 			});
 
@@ -114,7 +115,7 @@
 				var s1obj, s2obj;
 				it('should allow the object to be fetched', function () {
 					s1box.get_obj('test1').then(function (o) { s1obj = o; });
-					waitsFor(function () { return s1obj; }, 'the object should be fetched', 500);
+					waitsFor(function () { return s1obj; }, 'the object to be fetched', 500);
 					runs(function () {
 						expect(s1obj).toBeDefined();
 					});
@@ -123,17 +124,17 @@
 				it('should allow the object to be created', function () {
 					var saved;
 					s1obj.save({ value: 99 }).then(function () { saved = true; });
-					waitsFor(function () { return saved; }, 'the object should have changed', 500);
+					waitsFor(function () { return saved; }, 'the object to have changed', 500);
 					runs(function () { expect(s1obj.get('value')[0]).toBe(99); });
 				});
 				it('should allow another store (store 2) to load the object', function () {
 					s2box.get_obj('test1').then(function (o) { s2obj = o; });
-					waitsFor(function () { return s2obj; }, 'the object should be fetched', 500);
+					waitsFor(function () { return s2obj; }, 'the object to be fetched', 500);
 					runs(function () { expect(s2obj).toBeDefined(); });
 				});
 				it('should be up-to-date in store 2', function () {
 					waitsFor(function () { return s2obj.get('value') && s2obj.get('value')[0] === 99; },
-							'the object should be up-to-date', 500);
+							'the object to be up-to-date', 500);
 					runs(function () { expect(s2obj.get('value')[0]).toBe(99); });
 				});
 				it('should not be using the same cache between stores', function () {
@@ -142,12 +143,12 @@
 				it('should allow the store 2 to edit the object', function () {
 					var saved;
 					s2obj.save({ value: 97 }).then(function () { saved = true; });
-					waitsFor(function () { return saved; }, 'the object should have changed', 500);
+					waitsFor(function () { return saved; }, 'the object to have changed', 500);
 					runs(function () { expect(s2obj.get('value')[0]).toBe(97); });
 				});
 				it('should have updated the object in store 1', function () {
 					waitsFor(function () { return s1obj.get('value') && s1obj.get('value')[0] === 97; },
-								'the object should be up-to-date', 500);
+								'the object to be up-to-date', 500);
 					runs(function () { expect(s1obj.get('value')[0]).toBe(97); });
 				});
 
@@ -159,7 +160,7 @@
 					s2box.get_obj('test2').then(function (o) { s2obj = o; });
 					s1box.save().then(function () { passes++; }).fail(function () { fails++; });
 					s2box.save().then(function () { passes++; }).fail(function () { fails++; });
-					waitsFor(function () { return passes + fails === 2; }, 'the boxes should have changed', 500);
+					waitsFor(function () { return passes + fails === 2; }, 'the boxes to have changed', 500);
 					runs(function () {
 						expect(passes).toBe(1);
 						expect(fails).not.toBe(0);
@@ -170,7 +171,7 @@
 			it('should be deletable', function () {
 				var destroyed;
 				s1box.destroy().then(function () { destroyed = true; });
-				waitsFor(function () { return destroyed; }, 'the box should be deleted', 500);
+				waitsFor(function () { return destroyed; }, 'the box to be deleted', 500);
 				runs(function () { expect(s1box).not.toBeDefined(); });
 			});
 		});
