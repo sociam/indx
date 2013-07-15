@@ -1,4 +1,4 @@
-<div ng-app="WebboxToolbar" class="ng-cloak" ng-controller="ToolbarController" ng-show="visible">
+<div class="ng-cloak indx-toolbar" ng-show="visible">
   <div class="navbar">
 	<div class="navbar-inner" ng-init="_initialise()">
 	  <div class="brand">indx
@@ -7,7 +7,7 @@
 		</div>
 	  </div>
 	  <ul class="nav box-selector">
-		<li class="btn-group">
+		<li ui-if="is_logged_in()" class="btn-group">
 		  <button class="btn selected-box" ng-bind-html-unsafe="box || 'select a box'">select a box</button>
 		  <button class="btn dropdown-toggle boxes" data-toggle="dropdown"><span class="caret"></span> </button>
 		  <ul class="dropdown-menu boxlist">
@@ -15,10 +15,16 @@
 		  </ul>
 		</li>
 	  </ul>
-	  <div role="button" class="btn login_logout_btn" ng-click="cb_login_logout_clicked()" ng-bind-html-unsafe="username_html || not_logged_in"></div>
+	  <!-- login-logout button --> 
+	  <div ui-if="!is_logged_in()" role="button" class="btn login_logout_btn" ng-click="cb_login_clicked()">
+		<i>log in to indx</i>
+	  </div>
+	  <div ui-if="is_logged_in()" role="button" class="btn login_logout_btn" ng-click="cb_logout_clicked()">
+		{{ username }} &nbsp; <i class='icon-user'></i>
+	  </div>
 	</div> <!-- navbar-inner -->
 	<!-- Modal -->
-	<div id="login_dialog" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="loginlabel" aria-hidden="true">
+	<div class="login_dialog modal hide fade" tabindex="-1" role="dialog" aria-labelledby="loginlabel" aria-hidden="true">
 	  <form class="form-horizontal">
 		<div class="modal-header">
 		  <a type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</a>
@@ -28,13 +34,13 @@
 		  <div class="control-group">
 			<label class="control-label" for="#login_username">username:</label>
 			<div class="controls">
-			  <input type="text" id="login_username" name="username" class="username_field" placeholder="< your username > " ng-model="_login_username" autofocus></input>
+			  <input type="text" class="login_username" name="username" class="username_field" placeholder="< your username > " ng-model="_login_username" autofocus></input>
 			</div>
 		  </div>
 		  <div class="control-group">
 			<label class="control-label" for="#login_password">password:</label>
 			<div class="controls">
-			  <input type="password" id="login_password" name="password" class="password_field" placeholder="< your password >" ng-model="_login_password">
+			  <input type="password" class="login_password" name="password" class="password_field" placeholder="< your password >" ng-model="_login_password">
 			</div>
 		  </div>
 		</div>
@@ -47,9 +53,8 @@
 		  <input type="submit" class="btn btn-primary" value="Log in" ng-click="loginbox_try_login(_login_username,_login_password)"></input>
 		</div>
 	  </form>
-	</div>
-	
-	<div id="logout_dialog" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="logoutlabel" aria-hidden="true">
+	</div>	
+	<div class="logout_dialog modal hide fade" tabindex="-1" role="dialog" aria-labelledby="logoutlabel" aria-hidden="true">
 	  <div class="modal-header">
 		<button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
 		<h3 id="logoutlabel">log out ?</h3>

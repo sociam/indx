@@ -1,4 +1,25 @@
+--    This file is part of WebBox.
+--
+--    Copyright 2011-2013 Daniel Alexander Smith
+--    Copyright 2011-2013 University of Southampton
+--
+--    WebBox is free software: you can redistribute it and/or modify
+--    it under the terms of the GNU General Public License as published by
+--    the Free Software Foundation, either version 3 of the License, or
+--    (at your option) any later version.
+--
+--    WebBox is distributed in the hope that it will be useful,
+--    but WITHOUT ANY WARRANTY; without even the implied warranty of
+--    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+--    GNU General Public License for more details.
+--
+--    You should have received a copy of the GNU General Public License
+--    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
+
 CREATE TYPE object_type AS ENUM ('resource', 'literal');
+CREATE TYPE change_type AS ENUM ('add_subject', 'remove_subject', 'add_triple', 'add_predicate', 'replace_objects', 'remove_predicate');
+-- 'remove_triple');
+
 
 CREATE TABLE wb_strings
 (
@@ -10,7 +31,6 @@ CREATE TABLE wb_strings
 WITH (
   OIDS=FALSE
 );
-
 
 
 CREATE TABLE wb_objects
@@ -31,13 +51,13 @@ WITH (
 );
 
 
-
 CREATE TABLE wb_triples
 (
   id_triple serial NOT NULL,
   subject integer NOT NULL,
   predicate integer NOT NULL,
-  object integer NOT NULL,
+  object integer,
+--  object_order integer NOT NULL,
   CONSTRAINT pk_triple PRIMARY KEY (id_triple),
   CONSTRAINT fk_subject FOREIGN KEY (subject)
       REFERENCES wb_strings (id_string) MATCH SIMPLE
@@ -45,9 +65,10 @@ CREATE TABLE wb_triples
   CONSTRAINT fk_predicate FOREIGN KEY (predicate)
       REFERENCES wb_strings (id_string) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT fk_object FOREIGN KEY (object)
-      REFERENCES wb_objects (id_object) MATCH SIMPLE
-      ON UPDATE NO ACTION ON DELETE NO ACTION,
+--  CONSTRAINT fk_object FOREIGN KEY (object)
+--      REFERENCES wb_objects (id_object) MATCH SIMPLE
+--      ON UPDATE NO ACTION ON DELETE NO ACTION,
+-- -- Removing the constraint because this is now an array - PG9.3 will allow ELEMENT constraints.
   CONSTRAINT uq_spo UNIQUE (subject, predicate, object)
 )
 WITH (
@@ -70,8 +91,8 @@ WITH (
 -- Remove this in future
 INSERT INTO wb_users (username, email, name) VALUES ('webbox', 'webbox@localhost', 'Webbox User');
 
-
-CREATE TABLE wb_triple_vers
+-- Only every N versions will get a full snapshot - where N is dynamically determined
+CREATE TABLE wb_triple_vers_snapshots
 (
   version integer NOT NULL,
   triple integer NOT NULL,
@@ -84,6 +105,54 @@ CREATE TABLE wb_triple_vers
 WITH (
   OIDS=FALSE
 );
+
+
+CREATE TABLE wb_latest_subjects
+(
+    id_subject integer NOT NULL,
+    CONSTRAINT pk_subject PRIMARY KEY (id_subject),
+    CONSTRAINT fk_subject FOREIGN KEY (id_subject)
+      REFERENCES wb_strings (id_string) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE NO ACTION
+)
+WITH (
+    OIDS=FALSE
+);
+
+CREATE TABLE wb_latest_vers
+(
+  triple integer NOT NULL,
+  triple_order integer NOT NULL,
+  CONSTRAINT pk_latest_triple_order PRIMARY KEY (triple, triple_order),
+  CONSTRAINT fk_triple FOREIGN KEY (triple)
+      REFERENCES wb_triples (id_triple) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE NO ACTION
+)
+WITH (
+  OIDS=FALSE
+);
+
+
+CREATE TABLE wb_vers_diffs
+(
+  id_diff serial NOT NULL,
+  version INTEGER NOT NULL,
+  diff_type change_type NOT NULL,
+  subject INTEGER NOT NULL,
+  predicate INTEGER,
+  object INTEGER,
+  object_order INTEGER,
+  CONSTRAINT pk_diff PRIMARY KEY (id_diff),
+  CONSTRAINT fk_subject FOREIGN KEY (subject)
+      REFERENCES wb_strings (id_string) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE NO ACTION,
+  CONSTRAINT fk_predicate FOREIGN KEY (predicate)
+      REFERENCES wb_strings (id_string) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE NO ACTION
+) WITH (
+    OIDS=FALSE
+);
+
 
 CREATE TABLE wb_versions
 (
