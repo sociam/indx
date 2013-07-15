@@ -98,4 +98,7 @@ if __name__ == '__main__':
     auth = OAuthHandler(consumer_key, consumer_secret)
     auth.set_access_token(access_token, access_token_secret)
     stream = Stream(auth, l)
-    stream.filter(track=args['words'].split(","))
+    if len(args['words']) > 0:
+        stream.filter(track=args['words'].split(","))
+    else:
+        stream.sample()
