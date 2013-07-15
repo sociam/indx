@@ -16,6 +16,11 @@
 --    You should have received a copy of the GNU General Public License
 --    along with WebBox.  If not, see <http://www.gnu.org/licenses/>.
 
+CREATE INDEX idx_vers_diffs
+  ON wb_vers_diffs
+  USING btree
+  (version, id_diff);
+
 CREATE INDEX idx_id_latest_subject
   ON wb_latest_subjects
   USING btree

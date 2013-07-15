@@ -335,9 +335,13 @@ class ObjectStoreAsync:
         """ Query for the diffs of the versions in the list 'versions'. """
         result_d = Deferred()
         self.debug("ObjectStore _get_diff_versions, versions: {0}".format(versions))
-    
-        query = "SELECT * FROM wb_v_diffs WHERE version = ANY(ARRAY[%s])"
-        params = [versions]
+   
+        if len(versions) == 1:
+            query = "SELECT * FROM wb_v_diffs WHERE version = %s"
+            params = [versions[0]]
+        else:
+            query = "SELECT * FROM wb_v_diffs WHERE version = ANY(%s)"
+            params = [versions]
 
         self.conn.runQuery(query, params).addCallbacks(result_d.callback, result_d.errback)
         return result_d
