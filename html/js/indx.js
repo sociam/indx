@@ -362,8 +362,8 @@ angular
 			_set_version:function(v) { this.set("version", v);	},
 			_get_version:function(v) { return this.get("version"); },		
 			get_token:function() {
-				utils.debug('>> get_token ', ' id: ',this.id, ' cid: ',this.cid);
-				try { throw new Error(''); } catch(e) { console.error(e); }
+				// utils.debug('>> get_token ', ' id: ',this.id, ' cid: ',this.cid);
+				// try { throw new Error(''); } catch(e) { console.error(e); }
 				var this_ = this, d = u.deferred();
 				this._ajax('POST', 'auth/get_token', { app: this.store.get('app') })
 					.then(function(data) {
@@ -850,9 +850,19 @@ angular
 				this.boxes().add(b);
 				return b;
 			},
+			get_box_list:function() {
+				var d = u.deferred();
+				this._ajax('GET','admin/list_boxes')
+					.success(function(data) {d.resolve(data.list);})
+					.fail(function(err) { d.reject(err); });
+				return d.promise();
+			},
 			_fetch:function() {
+				throw new Error('dont fetch a store - any more!');
+				// 
 				// fetches list of boxes
-				var this_ = this, d = u.deferred();			
+				/* - do not do this
+				var this_ = this, d = u.deferred();			 
 				this._ajax('GET','admin/list_boxes')
 					.success(function(data) {
 						u.when(data.list.map(function(boxid) { return this_.get_box(boxid); })).then(function(boxes) {
@@ -862,6 +872,7 @@ angular
 						});
 					}).error(function(e) { d.reject(e); });
 				return d.promise();
+				*/
 			},
 			_ajax:function(method, path, data) {
 				// now uses relative url scheme '//blah:port/path';			
@@ -892,9 +903,9 @@ angular
 			loaded : utils.deferred()
 		};
 		window.u = utils;
-		exports.store.fetch()
-			.then(function() { exports.loaded.resolve(exports); })
-			.fail(function() { exports.loaded.reject(exports);	});
+		
+		// do not fetch boxes
+		exports.loaded.resolve(exports);
 		return exports;
 		
 	}).factory('backbone', function(client, utils) {

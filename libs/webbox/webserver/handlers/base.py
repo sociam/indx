@@ -211,6 +211,8 @@ class BaseHandler(Resource):
         self._respond(request, 200, "OK", data)
     def return_created(self,request,data=None):
         self._respond(request, 201, "Created",data)        
+    def return_no_content(self,request):
+        self._respond(request, 204, "No Content")        
     def return_not_found(self,request):
         self._respond(request, 404, "Not Found")
     def return_forbidden(self,request):

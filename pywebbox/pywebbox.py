@@ -262,6 +262,14 @@ class WebBox:
         values = {"name": self.box}
         return self._post(url, values)
 
+    def delete_box(self):
+        """ Delete a box. """
+        self._debug("Called API: delete_box")
+
+        url = "{0}admin/delete_box".format(self.address)
+        values = {"name": self.box}
+        return self._post(url, values)
+
     def list_boxes(self):
         """ List the boxes on the webbox server. """
         self._debug("Called API: list_boxes")
