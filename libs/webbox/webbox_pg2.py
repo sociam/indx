@@ -171,6 +171,26 @@ def create_box(box_name, db_user, db_pass):
 
     return True
 
+def delete_box(box_name, db_user, db_pass):
+    # delete the database
+    logging.debug("Delete box {0} req from user {1}".format(box_name, db_user))
+    try:
+        db_name = WBPREFIX + box_name 
+        pg_conn_str = ("dbname='{0}' user='{1}' password='{2}' host='{3}' port='{4}'".format(POSTGRES_DB, db_user, db_pass, HOST, PORT))
+        root_conn = psycopg2.connect(pg_conn_str) # have to specify a db that exists
+        root_conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
+        root_cur = root_conn.cursor()
+        root_cur.execute("DROP DATABASE {0}".format(db_name))
+        root_conn.commit()
+        root_cur.close()
+        root_conn.close()
+
+    except Exception as e:
+        logging.error("Error deleting box {0} as user {1}: {2}".format(box_name, db_user, e))
+        return False
+
+    return True
+
 def create_role():
     
     return 
