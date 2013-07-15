@@ -11,7 +11,7 @@ files = [
   JASMINE,
   JASMINE_ADAPTER,
   'js/vendor/jquery.min.js',
-  'js/vendor/underscore.min.js',			
+  'js/vendor/underscore.min.js',
   'js/vendor/backbone.min.js',
   'js/vendor/angular-beta.min.js',
   'js/vendor/angular-ui.js',
@@ -21,16 +21,26 @@ files = [
   '../tests/indx-client.js'
 ];
 
+preprocessors = {
+  '../tests/indx-client.js': 'coverage',
+  'js/indx.js': 'coverage',
+  'js/indx-utils.js': 'coverage'
+};
+
+coverageReporter = {
+  type : 'html',
+  dir : '../tests/coverage/'
+};
 
 // list of files to exclude
 exclude = [
-  
+
 ];
 
 
 // test results reporter to use
 // possible values: 'dots', 'progress', 'junit'
-reporters = ['progress'];
+reporters = ['progress'/*, 'coverage'*/];
 
 
 // web server port

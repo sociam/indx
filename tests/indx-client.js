@@ -5,12 +5,15 @@
 
 	var user = 'tester',
 		pass = 'foobar',
-		boxcreations = 3;
+		boxcreations = 3,
+		suppressLogs = true;
 
 	console.log('**** RUNNING TESTS (u: ' + user + ', p: ' + pass + ') ****');
 
 	var testboxname = 'boxtest' + (new Date()).getTime() + 'r' + Math.round(Math.random() * 10000); // FIXME can't have dash in name?
-console.log(testboxname)
+
+	if (suppressLogs) { console.log = function () {}; }
+
 	describe('indx-core store', function() {
 		var injector = angular.injector(['ng', 'indx']),
 			indx = injector.get('client'),
@@ -75,6 +78,32 @@ console.log(testboxname)
 
 		});
 
+
+		var boxes1, boxes2;
+		it('should be able to fetch a list of box ids', function () {
+			store1.get_box_list().then(function (bs) { boxes1 = bs; });
+			store2.get_box_list().then(function (bs) { boxes2 = bs; });
+			waitsFor(function () { return boxes1 && boxes2; });
+			runs(function () {
+				expect(_.isArray(boxes1)).toBe(true);
+				expect(_.isArray(boxes2)).toBe(true);
+			});
+		});
+
+		describe('box list', function () {
+			it('should be an array of ids', function () {
+				var pass = true;
+				_.each(boxes1, function (id) {
+					pass = pass && _.isString(id);
+				});
+				expect(pass).toBe(true);
+			});
+			it('should be an identical list between stores', function () {
+				expect(_(boxes1).difference(boxes2).length).toBe(0);
+				expect(_(boxes2).difference(boxes1).length).toBe(0);
+			});
+		});
+
 		it('should have a collection of boxes', function () {
 			expect(store1.get('boxes')).toBeDefined();
 			expect(store1.get('boxes')).toBe(store1.boxes());
@@ -104,7 +133,7 @@ console.log(testboxname)
 		describe('box collection', function () {
 			it('should have the new box in the box collection', function () {
 				expect(store1.boxes().get(testboxname)).toBeDefined();
-			})
+			});
 			it('should have only one box in the box collection', function () {
 				expect(store1.boxes().length).toBe(1);
 			});
@@ -137,10 +166,14 @@ console.log(testboxname)
 		});
 
 		describe('box collection', function () {
-			it('should have ' + (boxcreations + 1) + ' boxes in the box collection')
+			it('should have ' + (boxcreations + 1) + ' boxes in the box collection', function () {
+				expect(store1.boxes().length).toBe(boxcreations + 1);
+			});
 		});
 
-		it('should be able to delete those boxes')
+		it('should be able to delete those boxes', function () {
+			1;
+		});
 
 		it('should fail to create a box if it already exists', function () {
 			var failed;
@@ -172,26 +205,6 @@ console.log(testboxname)
 				expect(b).toBeDefined();
 			});
 
-			it('should be a Backbone Model')
-
-			it('should have a cache of objects')
-
-			describe('Object Cache', function () {
-				it('should be a Backbone Collection')
-			})
-
-			it('should have a list of objects')
-
-			describe('Object List', function () {
-				it('should be an array')
-			});
-
-			it('should have a collection of files')
-
-			describe('File Collection', function () {
-				it('should be a Backbone Collection')
-			})
-
 			// making it sure it exists
 			it('should be retreivable', function () {
 				store1.get_box(testboxname).then(function (b) { s1box = b; });
@@ -200,6 +213,40 @@ console.log(testboxname)
 				runs(function () {
 					expect(s1box).toBeDefined();
 					expect(s2box).toBeDefined();
+				});
+			});
+
+			it('should be a Backbone Model', function () {
+				expect(s1box instanceof Backbone.Model).toBe(true);
+			});
+
+			it('should have a cache of objects', function () {
+				expect(s1box.get('objcache')).toBeDefined();
+			});
+
+			describe('object cache', function () {
+				it('should be a Backbone Collection', function () {
+					expect(s1box.get('objcache') instanceof Backbone.Collection).toBe(true);
+				});
+			});
+
+			it('should have a list of objects', function () {
+				expect(s1box.get('objlist')).toBeDefined();
+			});
+
+			describe('object list', function () {
+				it('should be an array', function () {
+					expect(_.isArray(s1box.get('objlist'))).toBe(true);
+				});
+			});
+
+			it('should have a collection of files', function () {
+				expect(s1box.get('files')).toBeDefined();
+			});
+
+			describe('File Collection', function () {
+				it('should be a Backbone Collection', function () {
+					expect(s1box.get('files') instanceof Backbone.Collection).toBe(true);
 				});
 			});
 
