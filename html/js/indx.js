@@ -362,8 +362,8 @@ angular
 			_set_version:function(v) { this.set("version", v);	},
 			_get_version:function(v) { return this.get("version"); },		
 			get_token:function() {
-				utils.debug('>> get_token ', ' id: ',this.id, ' cid: ',this.cid);
-				try { throw new Error(''); } catch(e) { console.error(e); }
+				// utils.debug('>> get_token ', ' id: ',this.id, ' cid: ',this.cid);
+				// try { throw new Error(''); } catch(e) { console.error(e); }
 				var this_ = this, d = u.deferred();
 				this._ajax('POST', 'auth/get_token', { app: this.store.get('app') })
 					.then(function(data) {
