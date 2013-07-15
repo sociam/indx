@@ -113,7 +113,7 @@ angular
 			box.get_obj('my_location_diary').then(function(diary) {
 				var now = (new Date()).valueOf(),
 					history = readings_sorted_by_time(diary.get('locations') || []),
-					reading = history && history[history.length-1],
+					reading = history && history[0],
 					readloc = reading && [(reading.get('latitude') || [0])[0],(reading.get('longitude') || [0])[0]	];
 				
 				console.log("MY LOCATION DIARY ", history.length, diary);

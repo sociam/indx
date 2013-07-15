@@ -11,41 +11,47 @@
   </head>
   <body>
 	<div ng-app="sensors" ng-controller="location" ng-cloak>
+	  <div id="map" ng-show="selected_user && selected_box"></div>
+		  
 	  <toolbar box-var='selected_box' username-var='selected_user'></toolbar>
+	  <div ng-show="selected_user && selected_box">
+		<div class='title'><b>INDX</b> : longitude</div>
+	  </div>
+	  
 	  <div class="container">
 		<div ng-show="!(selected_user && selected_box)">
 		  <h2> please log in to load your location lifelog  </h2>
 		</div>		
-		<div ng-show="selected_user && selected_box">
-		  <h2 class='title'>where've you been? your private location lifelog</h2>		  
-		  <div id="map"></div>
-		  <div class='latlng' ng-show="location && !error">
-			(lat: <b>{{ location.latitude }}</b>, lon: <b>{{ location.longitude }}</b>)
-		  </div>
-		  <div class='latlng error' ng-show="error">
-			{{ error }}
-		  </div>		  
-		  <div ng-class="{btn:true, locate:true, disabled:loading}" ng-click="locate()"><i class='icon-refresh'></i></div>
+	  </div>
+	  <div class="geolocate">
+		<div ng-class="{btn:true, locate:true, disabled:loading}" ng-click="locate()" ng-show="selected_user && selected_box"><i class='icon-map-marker'></i></div>
+		<div class='latlng' ng-show="location && !error">
+		  lat:<b>{{ location.latitude | number:4 }}</b>, lon:<b>{{ location.longitude | number:2 }}</b>
+		</div>
+		<div class='latlng error' ng-show="error">
+		  {{ error }}
 		</div>		
 	  </div>
-	  <div class="container history" ng-show="selected_user && selected_box">
-		<table>
-		  <tr ng-repeat="day in by_day">
-			<td>
-			  {{ to_date_string(day.start) }}
-			</td>
-			<td>
-			  <ol>
-				<li ng-repeat="loc in day.locations">
-				  <div class="timespan">{{ to_time_string(loc.get('start')[0]) }} - {{ to_time_string(loc.get('end')[0]) }}</div> : 
-				  <div class='latlng-coords' ng-mouseover="hover_history(loc.get('latitude')[0], loc.get('longitude')[0])">
-					[ {{ loc.get('latitude')[0] | number:4 }}, {{ loc.get('longitude')[0] | number:4 }} ]
-				  </div> 
-				</li>
-			  </ol>
-			</td>
-		</table>
-	  </div>
+	  <div class="history" ng-show="selected_user && selected_box">
+		<div>
+		  <table>
+			<tr ng-repeat="day in by_day">
+			  <td class="timelabel">
+				{{ to_date_string(day.start) }}
+			  </td>
+			  <td class="locations">
+				<ol>
+				  <li ng-repeat="loc in day.locations">
+					<div class="timespan">{{ to_time_string(loc.get('start')[0]).slice(0,-2) }}-{{ to_time_string(loc.get('end')[0]) }}</div>:
+					<div class='latlng-coords' ng-mouseover="hover_history(loc.get('latitude')[0], loc.get('longitude')[0])">
+					  [ {{ loc.get('latitude')[0] | number:4 }}, {{ loc.get('longitude')[0] | number:4 }} ]
+					</div> 
+				  </li>
+				</ol>
+			  </td>
+		  </table>
+		</div>
+	  </div> <!-- history --> 
 	</div>
   </body>
   <script src="../../js/vendor/lesscss.min.js" type="text/javascript"></script>  

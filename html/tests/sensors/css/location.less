@@ -1,6 +1,10 @@
+body {
+  background:#eee;
+}
 * {
   font-family:'helvetica neue', 'helvetica';
   font-weight:100;
+  box-sizing:border-box;
 }
 h1, h2, h3 {
   font-weight:200 !important;
@@ -14,32 +18,66 @@ h1, h2, h3 {
   position:relative;
   border:1px solid rgba(200,200,200,0.5);   
 }
-.locate {
-  position:absolute; right:10px; top:10px;
-}
 .title {
-  position:absolute; top:8px; right:60px; left:60px;
-  background:rgba(255,255,255,0.95);
+  z-index:-1;
+  border-bottom-right-radius:15px;
+  border-top-right-radius:15px;   
+  position:fixed;
+  top:58px; left:40px;
+  font-weight:400;
+  width:398px;
+  height:51px;
+  font-size:30pt;
+  background:rgba(255,255,255,0.77);
   z-index:1000;
-  padding:8px 0px 12px 12px;
+  padding:14px 12px 0px 57px;
   margin:0px;
+  text-align:right;
 }
-.latlng {
-  padding:8px;
-  font-weight:200;
-  &.error {  color:red; }
-}       
-#map {
-  width:100%;
-  height:500px;
+.locate { display:inline-block; }
+.geolocate {
+	position:relative;
+	font-size:12pt;
+	position:fixed;
+   right:20px;
+   width:160px;
+   height:70px;
+   background:rgba(255,255,255,0.95);
+   padding:10px;
+   border-radius:5px;
+   .latlng {
+	   position:absolute;
+	   right:10px;
+	   top:8px;
+	   width:60%;
+	   bottom:10px;
+   }
 }
 .history {
-	li {
+   padding:15px 20px 0px 15px;
+   border-bottom-right-radius:15px;
+   border-top-right-radius:15px;   
+   background:rgba(252,252,252,0.97);
+   position:fixed;
+   top:118px; left:10px; bottom:0px;
+   min-width:426px;
+   overflow-y:scroll;
+   ul {
+	   ol {
+		   margin:0px 0px 10px 0px;
+	   }
+   }
+   td { border-bottom: 1px solid #eee; }
+   td.timelabel { vertical-align:top; width:85px; text-align:right; padding:3px; }
+   td.locations { text-align:right; }
+   li {
 		display:block;
 		.latlng-coords, .timespan {
+			margin:0px;
 			display:inline-block;
 			font-weight:200;
 		}
+		.timespan { font-size:90%; }
 		.latlng-coords {
 			font-size:80% !important;
 			margin: 0px 0px 0px 5px;
@@ -48,4 +86,13 @@ h1, h2, h3 {
             }       
 		}
 	}
+}
+.latlng {
+  padding:8px;
+  font-weight:200;
+  &.error {  color:red; }
+}       
+#map {
+  position:fixed; top:48px; bottom:0px; left:0px; right:-150px;
+  z-index:0;
 }
