@@ -284,7 +284,7 @@ class ObjectStoreAsync:
             self.debug("get_object_ids ver_cb: {0}".format(version))
             if version == 0:
                 return result_d.callback({"@version": 0 })
-            self.conn.runQuery("SELECT DISTINCT subject FROM wb_v_latest_triples", []).addCallbacks(lambda rows2: row_cb(rows2, version), err_cb)
+            self.conn.runQuery("SELECT DISTINCT subjects.string AS subject FROM wb_latest_subjects JOIN wb_strings subjects ON (subjects.id_string = wb_latest_subjects.id_subject)", []).addCallbacks(lambda rows2: row_cb(rows2, version), err_cb)
             return
 
         self._get_latest_ver().addCallbacks(ver_cb, err_cb)
