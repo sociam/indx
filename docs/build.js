@@ -10,7 +10,8 @@
 	fs.readFile(config.basePath + config.files[0], function (err, data) {
 		if (err) { throw err; }
 
-		parseClasses(data.toString());
+		var classes = parseClasses(data.toString());
+		console.log(classes);
 	});
 
 
@@ -23,7 +24,7 @@
 			data.replace(re, function (match, name, pos) {
 				if (classes.length > 0) { classes[classes.length - 1].end = pos - 1; }
 				classes.push({ name: name, start: pos });
-				console.log(match, name, pos);
+				//console.log(match, name, pos);
 				return match;
 			});
 			if (classes.length > 0) { classes[classes.length - 1].end = data.length - 1; }
@@ -34,20 +35,20 @@
 		return _.map(classes, function (cls) {
 			var subdata = data.substring(cls.start, cls.end),
 				methods = parseMethods(subdata, cls.name);
-			_.extend({ methods: methods }, cls);
+			return _.extend({ methods: methods }, cls);
 		});
 	}
 
 	function parseMethods (data, cls) {
-		console.log("DATA", data)
+		//console.log("DATA", data)
 		var lines = data.split(','),
 			methods = [];
 
 		var re = new RegExp('([^\\\s]*) *: *function *\\\(([^\\\)]*)\\\)', 'g');
 		data.replace(re, function (match, name, lineNo) {
 			//if (classes.length > 0) { classes[classes.length - 1].lineNoEnd = lineNo - 1; }
-			//classes.push({ name: name, lineNoStart: lineNo });
-			console.log(match, name, lineNo);
+			methods.push({ name: name, lineNoStart: lineNo });
+			//console.log(match, name, lineNo);
 			return match;
 		});
 		//if (classes.length > 0) { classes[classes.length - 1].lineNoEnd = lines.length - 1; }
