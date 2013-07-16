@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>{{ title }} {{ version }} documentation</title>
+    <title>{{ project.title }} {{ project.version }} documentation</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="../lib/bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen">
     <style>
@@ -25,27 +25,53 @@
       margin-left: 300px;
     }
     </style>
+    <script>
+    data = {{{json}}}
+    </script>
   </head>
   <body>
     <div class="sidebar">
       <ul class="nav nav-list">
         {{#classes}}
           <li class="nav-header"><a href="#{{uid}}">{{name}}</a></li>
-        {{#methods}}
-          <li><a href="#{{uid}}">{{name}}</a></li>
-        {{/methods}}
+          {{#methods}}
+            <li><a href="#{{uid}}">{{name}}</a></li>
+          {{/methods}}
         {{/classes}}
       </ul>
     </div>
     <div class="mainbody">
-      <h1>{{ title }} {{ version }} documentation</h1>
+      <h1>{{ project.title }} {{ project.version }} documentation</h1>
+
+      {{project.description}}
 
       {{#classes}}
-        <a id="{{uid}}"></a>
+        <a name="{{uid}}"></a>
         <h3>{{name}}</h3>
+        {{#extends}}
+          extends <i>{{name}}</i>
+        {{/extends}}
         {{#methods}}
-          <a id="{{uid}}"></a>
+          <a name="{{uid}}"></a>
           <h4>{{name}}</h4>
+
+          <code><b>{{instanceName}}.{{name}}(
+          {{#args}}
+            {{name}}{{^last}},{{/last}}
+          {{/args}}
+          )</b></code>
+
+          {{#inheritedFrom}}
+            inherited from <i>{{inheritedFrom.class.name}}</i>
+          {{/inheritedFrom}}
+
+          <div class="description">
+            {{description}}
+            {{^description}}
+              No description :(
+            {{/description}}
+          </div>
+
         {{/methods}}
       {{/classes}}
     </div>
