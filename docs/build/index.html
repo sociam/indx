@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>INDX 0.01 documentation</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="../lib/bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen">
+    <style>
+    .sidebar {
+      position: fixed;
+      z-index: 10;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 230px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      padding: 15px 0 30px 30px;
+      border-right: 1px solid #bbb;
+      box-shadow: 0 0 20px #ccc;
+      -webkit-box-shadow: 0 0 20px #ccc;
+      -moz-box-shadow: 0 0 20px #ccc;
+    }
+    .mainbody {
+      margin-left: 300px;
+    }
+    </style>
+  </head>
+  <body>
+    <div class="sidebar">
+      <ul class="nav nav-list">
+        
+          <li class="nav-header"><a href="#File">File</a></li>
+        
+          <li><a href="#File">get_id</a></li>
+        
+          <li><a href="#File">get_url</a></li>
+        
+          <li><a href="#File">initialize</a></li>
+        
+        
+          <li class="nav-header"><a href="#Obj">Obj</a></li>
+        
+          <li><a href="#Obj">get_id</a></li>
+        
+          <li><a href="#Obj">initialize</a></li>
+        
+          <li><a href="#Obj">set</a></li>
+        
+          <li><a href="#Obj">sync</a></li>
+        
+          <li><a href="#Obj">delete_properties</a></li>
+        
+        
+          <li class="nav-header"><a href="#ObjCollection">ObjCollection</a></li>
+        
+        
+          <li class="nav-header"><a href="#FileCollection">FileCollection</a></li>
+        
+          <li><a href="#FileCollection">set_up_websocket</a></li>
+        
+          <li><a href="#FileCollection">get_use_websockets</a></li>
+        
+          <li><a href="#FileCollection">get_obj_ids</a></li>
+        
+          <li><a href="#FileCollection">get_token</a></li>
+        
+          <li><a href="#FileCollection">get_id</a></li>
+        
+          <li><a href="#FileCollection">toString</a></li>
+        
+          <li><a href="#FileCollection">initialize</a></li>
+        
+          <li><a href="#FileCollection">delete_box</a></li>
+        
+          <li><a href="#FileCollection">get_or_create_file</a></li>
+        
+          <li><a href="#FileCollection">get_cache_size</a></li>
+        
+          <li><a href="#FileCollection">put_file</a></li>
+        
+          <li><a href="#FileCollection">sync</a></li>
+        
+          <li><a href="#FileCollection">get_obj</a></li>
+        
+          <li><a href="#FileCollection">update</a></li>
+        
+          <li><a href="#FileCollection">query</a></li>
+        
+        
+          <li class="nav-header"><a href="#Box">Box</a></li>
+        
+          <li><a href="#Box">set_up_websocket</a></li>
+        
+          <li><a href="#Box">get_use_websockets</a></li>
+        
+          <li><a href="#Box">get_obj_ids</a></li>
+        
+          <li><a href="#Box">get_token</a></li>
+        
+          <li><a href="#Box">get_id</a></li>
+        
+          <li><a href="#Box">toString</a></li>
+        
+          <li><a href="#Box">initialize</a></li>
+        
+          <li><a href="#Box">delete_box</a></li>
+        
+          <li><a href="#Box">get_or_create_file</a></li>
+        
+          <li><a href="#Box">get_cache_size</a></li>
+        
+          <li><a href="#Box">put_file</a></li>
+        
+          <li><a href="#Box">sync</a></li>
+        
+          <li><a href="#Box">get_obj</a></li>
+        
+          <li><a href="#Box">update</a></li>
+        
+          <li><a href="#Box">query</a></li>
+        
+        
+          <li class="nav-header"><a href="#BoxCollection">BoxCollection</a></li>
+        
+          <li><a href="#BoxCollection">is_same_domain</a></li>
+        
+          <li><a href="#BoxCollection">boxes</a></li>
+        
+          <li><a href="#BoxCollection">check_login</a></li>
+        
+          <li><a href="#BoxCollection">get_info</a></li>
+        
+          <li><a href="#BoxCollection">reconnect</a></li>
+        
+          <li><a href="#BoxCollection">logout</a></li>
+        
+          <li><a href="#BoxCollection">get_box_list</a></li>
+        
+          <li><a href="#BoxCollection">scope_unbind</a></li>
+        
+          <li><a href="#BoxCollection">initialize</a></li>
+        
+          <li><a href="#BoxCollection">get_box</a></li>
+        
+          <li><a href="#BoxCollection">create_box</a></li>
+        
+          <li><a href="#BoxCollection">sync</a></li>
+        
+          <li><a href="#BoxCollection">login</a></li>
+        
+        
+          <li class="nav-header"><a href="#Store">Store</a></li>
+        
+          <li><a href="#Store">set_up_websocket</a></li>
+        
+          <li><a href="#Store">get_use_websockets</a></li>
+        
+          <li><a href="#Store">get_obj_ids</a></li>
+        
+          <li><a href="#Store">get_token</a></li>
+        
+          <li><a href="#Store">get_id</a></li>
+        
+          <li><a href="#Store">toString</a></li>
+        
+          <li><a href="#Store">initialize</a></li>
+        
+          <li><a href="#Store">delete_box</a></li>
+        
+          <li><a href="#Store">get_or_create_file</a></li>
+        
+          <li><a href="#Store">get_cache_size</a></li>
+        
+          <li><a href="#Store">put_file</a></li>
+        
+          <li><a href="#Store">sync</a></li>
+        
+          <li><a href="#Store">get_obj</a></li>
+        
+          <li><a href="#Store">update</a></li>
+        
+          <li><a href="#Store">query</a></li>
+        
+        
+      </ul>
+    </div>
+    <div class="mainbody">
+      <h1>INDX 0.01 documentation</h1>
+
+      
+        <a id="File"></a>
+        <h3>File</h3>
+        
+          <a id="File"></a>
+          <h4>get_id</h4>
+        
+          <a id="File"></a>
+          <h4>get_url</h4>
+        
+          <a id="File"></a>
+          <h4>initialize</h4>
+        
+      
+        <a id="Obj"></a>
+        <h3>Obj</h3>
+        
+          <a id="Obj"></a>
+          <h4>get_id</h4>
+        
+          <a id="Obj"></a>
+          <h4>initialize</h4>
+        
+          <a id="Obj"></a>
+          <h4>set</h4>
+        
+          <a id="Obj"></a>
+          <h4>sync</h4>
+        
+          <a id="Obj"></a>
+          <h4>delete_properties</h4>
+        
+      
+        <a id="ObjCollection"></a>
+        <h3>ObjCollection</h3>
+        
+      
+        <a id="FileCollection"></a>
+        <h3>FileCollection</h3>
+        
+          <a id="FileCollection"></a>
+          <h4>set_up_websocket</h4>
+        
+          <a id="FileCollection"></a>
+          <h4>get_use_websockets</h4>
+        
+          <a id="FileCollection"></a>
+          <h4>get_obj_ids</h4>
+        
+          <a id="FileCollection"></a>
+          <h4>get_token</h4>
+        
+          <a id="FileCollection"></a>
+          <h4>get_id</h4>
+        
+          <a id="FileCollection"></a>
+          <h4>toString</h4>
+        
+          <a id="FileCollection"></a>
+          <h4>initialize</h4>
+        
+          <a id="FileCollection"></a>
+          <h4>delete_box</h4>
+        
+          <a id="FileCollection"></a>
+          <h4>get_or_create_file</h4>
+        
+          <a id="FileCollection"></a>
+          <h4>get_cache_size</h4>
+        
+          <a id="FileCollection"></a>
+          <h4>put_file</h4>
+        
+          <a id="FileCollection"></a>
+          <h4>sync</h4>
+        
+          <a id="FileCollection"></a>
+          <h4>get_obj</h4>
+        
+          <a id="FileCollection"></a>
+          <h4>update</h4>
+        
+          <a id="FileCollection"></a>
+          <h4>query</h4>
+        
+      
+        <a id="Box"></a>
+        <h3>Box</h3>
+        
+          <a id="Box"></a>
+          <h4>set_up_websocket</h4>
+        
+          <a id="Box"></a>
+          <h4>get_use_websockets</h4>
+        
+          <a id="Box"></a>
+          <h4>get_obj_ids</h4>
+        
+          <a id="Box"></a>
+          <h4>get_token</h4>
+        
+          <a id="Box"></a>
+          <h4>get_id</h4>
+        
+          <a id="Box"></a>
+          <h4>toString</h4>
+        
+          <a id="Box"></a>
+          <h4>initialize</h4>
+        
+          <a id="Box"></a>
+          <h4>delete_box</h4>
+        
+          <a id="Box"></a>
+          <h4>get_or_create_file</h4>
+        
+          <a id="Box"></a>
+          <h4>get_cache_size</h4>
+        
+          <a id="Box"></a>
+          <h4>put_file</h4>
+        
+          <a id="Box"></a>
+          <h4>sync</h4>
+        
+          <a id="Box"></a>
+          <h4>get_obj</h4>
+        
+          <a id="Box"></a>
+          <h4>update</h4>
+        
+          <a id="Box"></a>
+          <h4>query</h4>
+        
+      
+        <a id="BoxCollection"></a>
+        <h3>BoxCollection</h3>
+        
+          <a id="BoxCollection"></a>
+          <h4>is_same_domain</h4>
+        
+          <a id="BoxCollection"></a>
+          <h4>boxes</h4>
+        
+          <a id="BoxCollection"></a>
+          <h4>check_login</h4>
+        
+          <a id="BoxCollection"></a>
+          <h4>get_info</h4>
+        
+          <a id="BoxCollection"></a>
+          <h4>reconnect</h4>
+        
+          <a id="BoxCollection"></a>
+          <h4>logout</h4>
+        
+          <a id="BoxCollection"></a>
+          <h4>get_box_list</h4>
+        
+          <a id="BoxCollection"></a>
+          <h4>scope_unbind</h4>
+        
+          <a id="BoxCollection"></a>
+          <h4>initialize</h4>
+        
+          <a id="BoxCollection"></a>
+          <h4>get_box</h4>
+        
+          <a id="BoxCollection"></a>
+          <h4>create_box</h4>
+        
+          <a id="BoxCollection"></a>
+          <h4>sync</h4>
+        
+          <a id="BoxCollection"></a>
+          <h4>login</h4>
+        
+      
+        <a id="Store"></a>
+        <h3>Store</h3>
+        
+          <a id="Store"></a>
+          <h4>set_up_websocket</h4>
+        
+          <a id="Store"></a>
+          <h4>get_use_websockets</h4>
+        
+          <a id="Store"></a>
+          <h4>get_obj_ids</h4>
+        
+          <a id="Store"></a>
+          <h4>get_token</h4>
+        
+          <a id="Store"></a>
+          <h4>get_id</h4>
+        
+          <a id="Store"></a>
+          <h4>toString</h4>
+        
+          <a id="Store"></a>
+          <h4>initialize</h4>
+        
+          <a id="Store"></a>
+          <h4>delete_box</h4>
+        
+          <a id="Store"></a>
+          <h4>get_or_create_file</h4>
+        
+          <a id="Store"></a>
+          <h4>get_cache_size</h4>
+        
+          <a id="Store"></a>
+          <h4>put_file</h4>
+        
+          <a id="Store"></a>
+          <h4>sync</h4>
+        
+          <a id="Store"></a>
+          <h4>get_obj</h4>
+        
+          <a id="Store"></a>
+          <h4>update</h4>
+        
+          <a id="Store"></a>
+          <h4>query</h4>
+        
+      
+    </div>
+  </body>
+</html>
