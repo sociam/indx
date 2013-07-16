@@ -47,11 +47,25 @@ CREATE INDEX idx_o_all
   USING btree
   (obj_type, obj_value, obj_lang, obj_datatype, id_object);
 
+CREATE INDEX idx_vt
+  ON wb_objects
+  USING btree
+  (obj_type);
+
 CREATE INDEX idx_vo
   ON wb_objects
   USING btree
   (obj_value);
 
+CREATE INDEX idx_vl
+  ON wb_objects
+  USING btree
+  (obj_lang);
+
+CREATE INDEX idx_vd
+  ON wb_objects
+  USING btree
+  (obj_datatype);
 
 CREATE INDEX idx_ver
   ON wb_latest_vers
