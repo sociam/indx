@@ -645,7 +645,9 @@ angular
 					}).fail(function(err) { d.reject(err); });
 				return d.promise();
 			},
-			
+			delete_box:function(boxid) {
+				return this.store._ajax('POST','admin/delete_box', { name: boxid } );
+			},			
 			// =============== :: UPDATE ::  ======================
 			WHOLE_BOX: "__UPDATE__WHOLE__BOX__",
 			_add_to_update_queue:function(ids_to_update) {
@@ -778,7 +780,7 @@ angular
 				case "create": return box._create_box();
 				case "read": return box._check_token_and_fetch(); 
 				case "update": return box.update()[0];  // save whole box?
-				case "delete": return u.warn('box.delete() : not implemented yet');
+				case "delete": return this.delete_box(this.get_id()) // hook up to destroy
 				}
 			},
 			toString: function() { return 'box:' + this.get_id(); }		
@@ -812,16 +814,28 @@ angular
 				return u.dresolve(b);
 			},  
 			create_box:function(boxid) {
+				// documentation example! 
+				// boxid : <string || number>
+				// foo: <string || { a: 'valueofa' } >
+				// @returns <Box>  yourbox
+				// @then <Box> yourbox, <string> name_of_thing, <int> prime_factor
+				// @fail
+				//   if box already exists: <{ code: 409 }>
+				//   if other error: <{ code: -1, error: <error obj> }>
 				u.debug('create box ', boxid);
 				if (this.boxes().get(boxid)) {
-					return u.dreject('Box already exists: ' + boxid);
+					return u.dreject({ code:409, message: 'Box already exists: ' + boxid });
 				}
 				var c = this._create(boxid), this_ = this;
 				u.debug('creating ', boxid);				
 				return c.save().pipe(function() { return this_.get_box(boxid); });
+			},			
+			check_login:function() {
+				// checks whether you can connect to the server and who is logged in.
+				// returns a deferred that gets passed an argument
+				// { code:200 (server is okay),  is_authenticated:true/false,  user:<username>  }				
+				return this._ajax('GET', 'auth/whoami');
 			},
-			// todo: change to _ 
-			check_login:function() { return this._ajax('GET', 'auth/whoami'); },
 			// todo: change to _ 
 			get_info:function() { return this._ajax('GET', 'admin/info'); },
 			login : function(username,password) {
