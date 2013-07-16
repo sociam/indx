@@ -174,12 +174,13 @@ class ObjectStoreAsync:
         return obj_out
 
 
-    def get_latest_objs(self, object_ids):
+    def get_latest_objs(self, object_ids, cur = None):
         """ Get the latest version of objects in the box, as expanded JSON-LD notation.
 
             object_ids -- ids of the objects to return
+            cur -- Database cursor if the caller is in a transaction (optional)
         """
-        logging.debug("ObjectStoreASync - get_latest_objs, object_ids: {0}".format(object_ids))
+        self.debug("ObjectStoreASync - get_latest_objs, object_ids: {0}".format(object_ids))
         result_d = Deferred()
 
         def rows_cb(rows, version):
@@ -198,16 +199,20 @@ class ObjectStoreAsync:
             if version == 0:
                 return result_d.callback({"@version": 0 })
 
-            query = "SELECT triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples WHERE subject = ANY(ARRAY["
-            for i in range(len(object_ids)):
-                if i > 0:
-                    query += ", "
-                query += "%s"
-            query += "])"
+            query = "SELECT triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples WHERE subject = ANY(%s)"
 
-            self.conn.runQuery(query, object_ids).addCallbacks(lambda rows: rows_cb(rows, version), err_cb)
+            if cur is None:
+                self.conn.runQuery(query, [object_ids]).addCallbacks(lambda rows: rows_cb(rows, version), err_cb)
+            else:
 
-        self._get_latest_ver().addCallbacks(ver_cb, err_cb)
+                def exec_cb(cur):
+                    self.debug("Objectstore get_latest_objs exec_cb, cur: {0}".format(cur))
+                    rows = cur.fetchall()
+                    rows_cb(rows, version)
+
+                self._curexec(cur, query, [object_ids]).addCallbacks(exec_cb, err_cb)
+
+        self._get_latest_ver(cur).addCallbacks(ver_cb, err_cb)
 
         return result_d
 
@@ -274,7 +279,7 @@ class ObjectStoreAsync:
             return
 
         def row_cb(rows, version):
-            self.debug("get_object_ids row_cb: version={0}, rows={1}".format(version, rows))
+            self.debug("get_object_ids row_cb: version={0}, len(rows)={1}".format(version, len(rows)))
             ids = map(lambda row: row[0], rows)
             obj_out = {"ids": ids, "@version": version}
             result_d.callback(obj_out)
@@ -715,11 +720,13 @@ class ObjectStoreAsync:
             self.error("_log_connections: could not check state of connections: {0}".format(e))
 
 
-    def _get_latest_ver(self):
+    def _get_latest_ver(self, cur=None):
         """ Get the latest version of the database and return it to the deferred.
+
+            cur -- Database cursor if the caller is in a transaction (optional)
         """
         result_d = Deferred()
-        self.debug("Objectstore _get_latest_ver")
+        self.debug("Objectstore _get_latest_ver, cur: {0}".format(cur))
 
         def err_cb(failure):
             self.error("Objectstore _get_latest_ver err_cb, failure: {0}".format(failure))
@@ -740,7 +747,11 @@ class ObjectStoreAsync:
             result_d.callback(version)
             return
 
-        self.conn.runQuery("SELECT latest_version FROM wb_v_latest_version", []).addCallbacks(ver_cb, err_cb)
+        if cur is None:
+            self.conn.runQuery("SELECT latest_version FROM wb_v_latest_version", []).addCallbacks(ver_cb, err_cb)
+        else:
+            self._curexec(cur, "SELECT latest_version FROM wb_v_latest_version", []).addCallbacks(lambda cur: ver_cb(cur.fetchall()), err_cb)
+
         return result_d
 
 
@@ -945,7 +956,7 @@ class ObjectStoreAsync:
 
                         # add full objects from db to objs_orig if their id is in objs         
                         objs_ids = map(lambda x: x['@id'], objs)
-                        self.get_latest_objs(objs_ids).addCallbacks(objs_cb, check_err_cb)
+                        self.get_latest_objs(objs_ids, cur).addCallbacks(objs_cb, check_err_cb)
 
 
 ##                         self._clone(cur, specified_prev_version, id_list = id_list, files_id_list = files_id_list).addCallbacks(cloned_cb, check_err_cb)
@@ -969,13 +980,7 @@ class ObjectStoreAsync:
 
             def lock_cb(val):
                 self.debug("Objectstore update, lock_cb, val: {0}".format(val))
-
-                def get_ver_cb(val2):
-                    self.debug("Objectstore update, get_ver_cb, val2: {0}".format(val2))
-                    rows = cur.fetchall()
-                    ver_cb(rows)
-
-                self._curexec(cur, "SELECT latest_version FROM wb_v_latest_version").addCallbacks(get_ver_cb, interaction_err_cb)
+                self._curexec(cur, "SELECT latest_version FROM wb_v_latest_version").addCallbacks(lambda cur: ver_cb(cur.fetchall()), interaction_err_cb)
 
             self._curexec(cur, "LOCK TABLE wb_files, wb_versions, wb_latest_vers, wb_triples, wb_users, wb_vers_diffs, wb_latest_subjects IN EXCLUSIVE MODE").addCallbacks(lock_cb, interaction_err_cb) # lock to other writes, but not reads
 ##             
