@@ -40,13 +40,13 @@ angular
 	.factory('client',function(utils) {
 		var u = utils; // to be filled in by dependency
 		// set up our parameters for webbox -
-		// default is that we're loading from an _app_ hosted within 
-		// indx. 
+		// default is that we're loading from an _app_ hosted within
+		// indx.
 		var DEFAULT_HOST = document.location.host; // which may contain the port
 		var WS_MESSAGES_SEND = {
 			auth: function(token) { return JSON.stringify({action:'auth', token:token}); },
-			diff: function(token) { return JSON.stringify({action:'diff', operation:"start"}); }		
-		};			
+			diff: function(token) { return JSON.stringify({action:'diff', operation:"start"}); }
+		};
 		var serialize_obj = function(obj) {
 			var uri = obj.id;
 			var out_obj = {};
@@ -104,7 +104,7 @@ angular
 		var deserialize_literal = function(obj, box) {
 			return obj['@value'] !== undefined ? literal_deserializers[ obj['@type'] || '' ](obj, box) : obj;
 		};
-		
+
 		var deserialize_value = function(s_val, box) {
 			var vd = u.deferred();
 			// it's an object, so return that
@@ -124,7 +124,7 @@ angular
 		};
 
 		var File =  Backbone.Model.extend({
-			idAttribute: "@id", // the URI attribute is '@id' in JSON-LD		
+			idAttribute: "@id", // the URI attribute is '@id' in JSON-LD
 			initialize:function(attrs, options) {
 				u.debug('options >> ', attrs, options );
 				this.box = options.box;
@@ -139,19 +139,19 @@ angular
 				}, url = ['/', this.box.store.get('server_host'), this.box.id, 'files'].join('/') + '?' + $.param(params);
 				// u.debug("IMAGE URL IS ", url, params);
 				return url;
-			}		
+			}
 		});
-		
+
 
 		// MAP OF THIS MODUULE :::::::::::::: -----
-		// 
+		//
 		// An Obj is a single instance, thing in Indx.
-		// 
+		//
 		// A Box is a model that has an attribute called 'Objs'.
 		// ...  which is a Backbone.Collection of Graph objects.
-		// 
+		//
 		// A _Store_ represents a single Indx server, which has an
-		//	 attribute called 'boxes' - 
+		//	 attribute called 'boxes' -
 		// ... which is a collection of Box objects
 		var Obj =  Backbone.Model.extend({
 			idAttribute: "@id", // the URI attribute is '@id' in JSON-LD
@@ -160,14 +160,14 @@ angular
 			},
 			_is_fetched: function() { return this._fetched || false; },
 			_set_fetched : function() { this._fetched = true; },
-			get_id:function() { return this.id;	},			
+			get_id:function() { return this.id;	},
 			_value_to_array:function(k,v) {
 				if (k === '@id') { return v; }
 				if (!_(v).isUndefined() && !_(v).isArray()) {
 					return [v];
 				}
 				return v;
-			},		
+			},
 			_all_values_to_arrays:function(o) {
 				if (!_(o).isObject()) { utils.error(' not an object', o); return o; }
 				var this_ = this;
@@ -194,7 +194,7 @@ angular
 				var this_ = this;
 				var dfds = _(s_obj).map(function(vals, key) {
 					var kd = u.deferred();
-					if (key.indexOf('@') === 0) { return; } 
+					if (key.indexOf('@') === 0) { return; }
 					var val_dfds = vals.map(function(val) {
 						var vd = u.deferred();
 						// it's an object, so return that
@@ -210,8 +210,8 @@ angular
 							// don't know what it is!
 							vd.reject('cannot unpack value ', val);
 						}
-						return vd.promise();							
-					});						
+						return vd.promise();
+					});
 					u.when(val_dfds).then(function(obj_vals) {
 						// only update keys that have changed
 						var prev_vals = this_.get(key);
@@ -234,14 +234,14 @@ angular
 					if (objdata['@version'] === undefined) {
 						// then the server thinks we've been deleted, so let's just die.
 						return fd.reject(this_.id);
-						// old code: 
+						// old code:
 						// according to the server, we're dead.
 						// console.log('zombie detected ', this_.id);
 						// this_.cid = this_.id;
 						// this_.unset({});
 						// delete this_.id;
 						// fd.resolve();
-						// return;					
+						// return;
 					}
 					// we are at current known version as far as we know
 					var obj_save_dfds = _(objdata).map(function(obj,uri) {
@@ -258,21 +258,21 @@ angular
 			},
 			sync: function(method, model, options){
 				switch(method){
-				case "create": return u.assert(false, "create is never used for Objs"); 
-				case "read"  : return model._fetch(); 
+				case "create": return u.assert(false, "create is never used for Objs");
+				case "read"  : return model._fetch();
 				case "update":
 					return  model.box.update([model.id])[0];
 				case "delete":
 					return this.box._delete_models([this.id])[0];
 				}
-			}		
+			}
 		});
 
 
 		// Box =================================================
 		// GraphCollection is the list of Objs in a Graph
 		var ObjCollection = Backbone.Collection.extend({ model: Obj }),
-			FileCollection = Backbone.Collection.extend({ model: File });	
+			FileCollection = Backbone.Collection.extend({ model: File });
 
 		// new client: fetch is always lazy, only gets ids, and
 		// lazily get objects as you go
@@ -295,6 +295,9 @@ angular
 					this_._flush_delete_queue();
 				});
 			},
+			/// <string> fid file id
+			/// Tries to get a file with given id. If it doesn't exist, a file with that name is created.
+			/// @return <File> the file
 			get_or_create_file:function(fid) {
 				var files = this.get('files');
 				if (files.get(fid) === undefined) {
@@ -332,10 +335,10 @@ angular
 						var data = WS_MESSAGES_SEND.auth(this_.get('token'));
 						ws.send(data);
 						data = WS_MESSAGES_SEND.diff();
-						ws.send(data);					
+						ws.send(data);
 						this_._ws = ws;
 						this_.trigger('ws-connect');
-					};				
+					};
 					ws.onclose = function(evt) {
 						// what do we do now?!
 						u.error('websocket closed -- ');
@@ -360,7 +363,7 @@ angular
 			_get_cached_token:function() { return this.get("token"); },
 			_set_token:function(token) { this.set("token", token);	},
 			_set_version:function(v) { this.set("version", v);	},
-			_get_version:function(v) { return this.get("version"); },		
+			_get_version:function(v) { return this.get("version"); },
 			get_token:function() {
 				// utils.debug('>> get_token ', ' id: ',this.id, ' cid: ',this.cid);
 				// try { throw new Error(''); } catch(e) { console.error(e); }
@@ -372,7 +375,7 @@ angular
 						this_.trigger('new-token', data.token);
 						d.resolve(this_);
 					}).fail(d.reject);
-				return d.promise();			
+				return d.promise();
 			},
 			get_id:function() { return this.id || this.cid;	},
 			_ajax:function(method, path, data) {
@@ -383,7 +386,7 @@ angular
 				// creates a File object and hands it back in the resolve
 				contenttype = contenttype || filedata.type;
 				var d = u.deferred(), this_ = this, newFile = this.get_or_create_file(id);
-				newFile.set({"content-type": contenttype}); 
+				newFile.set({"content-type": contenttype});
 				this._do_put_file(id,filedata,contenttype).then(function(){
 					u.debug('image put success ');
 					d.resolve(newFile);
@@ -397,7 +400,7 @@ angular
 					} else {
 						u.error('error putting, dammit ', err);
 						d.reject(err);
-					}				
+					}
 				});
 				return d.promise();
 			},
@@ -407,7 +410,7 @@ angular
 				// here the parameters are get encoded
 				// // 'http://' + this.store.get('server_host') + "/" +  boxid + "/" + 'files',
 				var boxid = this.id || this.cid,
-				base_url = ['/', this.store.get('server_host'), boxid, 'files'].join('/'), 
+				base_url = ['/', this.store.get('server_host'), boxid, 'files'].join('/'),
 				options = { app: this.store.get('app'), id: id, token:this.get('token'),  box: boxid, version: this._get_version() },
 				option_params = $.param(options),
 				url = base_url+"?"+option_params,
@@ -417,7 +420,7 @@ angular
 					{ url: url, method : 'PUT', crossDomain:false, data:file, contentType: contenttype, processData:false }
 				);
 				return $.ajax( ajax_args );
-			},		
+			},
 			query: function(q){
 				// @TODO ::::::::::::::::::::::::::
 				u.NotImplementedYet();
@@ -436,7 +439,7 @@ angular
 				changed_ids = _(response.data.changed).keys(),
 				deleted_ids = _(response.data.deleted).keys(),
 				changed_objs = response.data.changed;
-				
+
 				u.assert(latest_version !== undefined, 'latest version not provided');
 				u.assert(added_ids !== undefined, 'added_ids not provided');
 				u.assert(changed_ids !== undefined, 'changed not provided');
@@ -446,7 +449,7 @@ angular
 					u.debug('asked to diff update, but already up to date, so just relax!', latest_version, this_._get_version());
 					return d.resolve();
 				}
-				u.debug('setting latest version >> ', latest_version, added_ids, changed_ids, deleted_ids);			
+				u.debug('setting latest version >> ', latest_version, added_ids, changed_ids, deleted_ids);
 				this_._set_version(latest_version);
 				this_._update_object_list(undefined, added_ids, deleted_ids);
 				var change_dfds = _(changed_objs).map(function(obj, uri) {
@@ -473,7 +476,7 @@ angular
 						});
 						var added_propval_dfds = _(obj.added).map(function(vs, k) {
 							changed_properties = _(changed_properties).union([k]);
-							var dd = u.deferred();						
+							var dd = u.deferred();
 							u.when(vs.map(function(v) {	return deserialize_value(v, this_);	})).then(function(values) {
 								var new_vals = (cached_obj.get(k) || []).concat(values);
 								cached_obj.set(k,new_vals);
@@ -510,7 +513,7 @@ angular
 				var model = new Obj({"@id":obj_id}, {box:this});
 				this._objcache().add(model);
 				return model;
-			},		
+			},
 			get_obj:function(objid) {
 				// get_obj always returns a promise
 				u.assert(typeof objid === 'string' || typeof objid === 'number', "objid has to be a number or string");
@@ -525,16 +528,16 @@ angular
 					d.resolve(cachemodel); return d.promise();
 				}
 
-				// check to see if already fetching, then we can tag along 
+				// check to see if already fetching, then we can tag along
 				if (fetching_dfd) {
 					// to fix a deadlock condition -
 					// if we fetch someone who loops back to us
 					// then we will never resolve with this code:
-					// 
+					//
 					// fetching_dfd.then(d.resolve).fail(d.reject);
 					// return d.promise();
 					// --
-					// therefore a fix: 				
+					// therefore a fix:
 					d.resolve(cachemodel);
 					return d.promise();
 				}
@@ -545,7 +548,7 @@ angular
 				// if the serve knows about it, then we fetch its definition
 				console.log('objlist ', this._objlist());
 
-				// old code :: 
+				// old code ::
 				// if (this._objlist().indexOf(objid) >= 0) {
 				// 	console.log('object exists, going to fetch it ');
 				// 	model.fetch().then(function() {
@@ -571,14 +574,14 @@ angular
 					d.resolve(model);
 					delete this_._fetching_queue[objid];
 				});
-				
+
 				return d.promise();
 			},
 			// ----------------------------------------------------
 			_update_object_list:function(updated_obj_ids, added, deleted) {
 				var current, olds = this._objlist().slice(), this_ = this, news, died;
 				// u.debug('_update_object_list +', added ? added.length : ' ', '-', deleted ? deleted.length : ' ');
-				// u.debug('_update_object_list +', added || ' ', deleted || ' ');			
+				// u.debug('_update_object_list +', added || ' ', deleted || ' ');
 				if (updated_obj_ids === undefined ) {
 					current = _(olds).chain().union(added).difference(deleted).value();
 					news = (added || []).slice(); died = (deleted || []).slice();
@@ -599,7 +602,7 @@ angular
 				return this.id !== undefined;
 			},
 			_fetch:function() {
-				// all fetch really does is retrieve ids! 
+				// all fetch really does is retrieve ids!
 				// new client :: this now _only_ fetches object ids
 				// return a list of models (each of type Object) to populate a GraphCollection
 				var d = u.deferred(), fd = u.deferred(), this_ = this;
@@ -614,13 +617,13 @@ angular
 							u.assert(response['@version'] !== undefined, 'no version provided');
 							this_.id = this_.get_id(); // sets so that _is_fetched later returns true
 							this_._set_version(response['@version']);
-							this_._update_object_list(response.ids);				
+							this_._update_object_list(response.ids);
 							fd.resolve(this_);
 						}).fail(fd.reject);
 				}
 				fd.then(function() {
 					this_.trigger('update-from-master', this_._get_version());
-					d.resolve(this_);				
+					d.resolve(this_);
 				}).fail(d.reject);
 				return d.promise();
 			},
@@ -634,7 +637,7 @@ angular
 						.fail(d.reject);
 					return d.promise();
 				}
-				return this_._fetch();			
+				return this_._fetch();
 			},
 			_create_box:function() {
 				var d = u.deferred();
@@ -647,7 +650,7 @@ angular
 			},
 			delete_box:function(boxid) {
 				return this.store._ajax('POST','admin/delete_box', { name: boxid } );
-			},			
+			},
 			// =============== :: UPDATE ::  ======================
 			WHOLE_BOX: "__UPDATE__WHOLE__BOX__",
 			_add_to_update_queue:function(ids_to_update) {
@@ -673,7 +676,7 @@ angular
 				if (ids_to_update.length === 0) { return ; }
 				if (this._updating || this._deleting) {
 					return this._requeue_update();
-				}			
+				}
 
 				this._update_queue = {};
 				var update_arguments = ids_to_update.indexOf(this.WHOLE_BOX) >= 0 ? undefined : ids_to_update;
@@ -697,11 +700,11 @@ angular
 								this_._update_queue[id] = uq[id];
 							}
 						});
-						return this_._requeue_update();		
-					}				
+						return this_._requeue_update();
+					}
 					// something bad happened, we'd better reject on those deferreds
 					u.error('UPDATE error ', err);
-					ids_to_update.map(function(id) { uq[id].reject(err);});									
+					ids_to_update.map(function(id) { uq[id].reject(err);});
 				});
 			},
 			_do_update:function(ids) {
@@ -710,7 +713,7 @@ angular
 				var d = u.deferred(), version = this.get('version') || 0, this_ = this,
 				objs = this._objcache().filter(function(x) { return ids === undefined || ids.indexOf(x.id) >= 0; }),
 				obj_ids = objs.map(function(x) { return x.id; }),
-				sobjs = objs.map(function(obj){ return serialize_obj(obj); });			
+				sobjs = objs.map(function(obj){ return serialize_obj(obj); });
 				this._ajax("PUT",  this.get_id() + "/update", { version: escape(version), data : JSON.stringify(sobjs)  })
 					.then(function(response) {
 						this_._set_version(response.data["@version"]);
@@ -746,48 +749,48 @@ angular
 						this_._flush_delete_queue();
 					}, 300);
 				}
-			},		
+			},
 			_flush_delete_queue:function() {
 				var this_ = this, dq = this._delete_queue, delete_ids = _(dq).keys();
-				if (delete_ids.length === 0) { return ; }			
+				if (delete_ids.length === 0) { return ; }
 				if (this._deleting || this._updating) { return this._requeue_delete();  }
 				this_._deleting = true;
 				this_._do_delete(delete_ids).then(function() {
 					delete this_._deleting;
 					delete_ids.map(function(id) {
 						dq[id].resolve(); delete dq[id];
-					});				
+					});
 				}).fail(function(err) {
 					delete this_._deleting;
 					if (err.status === 409) { this_._requeue_delete();	}
-				});			
+				});
 			},
 			_do_delete:function(m_ids) {
-				var version = this.get('version') || 0, d = u.deferred(), this_ = this; 
+				var version = this.get('version') || 0, d = u.deferred(), this_ = this;
 				this._ajax('DELETE', this.id+'/', { version:version, data: JSON.stringify(m_ids) })
 					.then(function(response) {
 						u.debug('DELETE response NEW version > ', response.data["@version"]);
 						this_._set_version(response.data["@version"]);
 						this_._update_object_list(undefined, [], m_ids); // update object list
-						d.resolve(this_);					
+						d.resolve(this_);
 					}).fail(d.reject);
-				return d.promise();			
+				return d.promise();
 			},
 			// =============== :: SYNC ::  ======================
 			sync: function(method, box, options){
 				switch(method)
 				{
 				case "create": return box._create_box();
-				case "read": return box._check_token_and_fetch(); 
+				case "read": return box._check_token_and_fetch();
 				case "update": return box.update()[0];  // save whole box?
 				case "delete": return this.delete_box(this.get_id()) // hook up to destroy
 				}
 			},
-			toString: function() { return 'box:' + this.get_id(); }		
+			toString: function() { return 'box:' + this.get_id(); }
 		});
-		
+
 		var BoxCollection = Backbone.Collection.extend({ model: Box });
-		
+
 		var Store =  Backbone.Model.extend({
 			defaults: {
 				server_host:DEFAULT_HOST,
@@ -808,35 +811,37 @@ angular
 				var b = this.boxes().get(boxid) || this._create(boxid);
 				if (!b._get_cached_token()) {
 					return b.get_token().pipe(function() {
-						return b.fetch(); 
+						return b.fetch();
 					});
 				}
 				return u.dresolve(b);
-			},  
+			},
+			/// @arg <string|number> boxid
+			/// @arg <string | { a: 'valueofa' } > foo: some comment
+			/// @arg arg3: this is an argument with no type specified
+			///
+			/// Now I'll comment on this function...
+			///
+			/// @then (<Box> yourbox, <string> name_of_thing, <int> prime_factor)
+			/// @fail
+			///   box already exists (<{ code: 409 }>)
+			///   other error (<{ code: -1, error: <error obj> }>)
 			create_box:function(boxid) {
-				// documentation example! 
-				// boxid : <string || number>
-				// foo: <string || { a: 'valueofa' } >
-				// @returns <Box>  yourbox
-				// @then <Box> yourbox, <string> name_of_thing, <int> prime_factor
-				// @fail
-				//   if box already exists: <{ code: 409 }>
-				//   if other error: <{ code: -1, error: <error obj> }>
 				u.debug('create box ', boxid);
 				if (this.boxes().get(boxid)) {
 					return u.dreject({ code:409, message: 'Box already exists: ' + boxid });
 				}
 				var c = this._create(boxid), this_ = this;
-				u.debug('creating ', boxid);				
+				u.debug('creating ', boxid);
 				return c.save().pipe(function() { return this_.get_box(boxid); });
-			},			
+			},
 			check_login:function() {
 				// checks whether you can connect to the server and who is logged in.
 				// returns a deferred that gets passed an argument
-				// { code:200 (server is okay),  is_authenticated:true/false,  user:<username>  }				
+				// { code:200 (server is okay),  is_authenticated:true/false,  user:<username>  }
 				return this._ajax('GET', 'auth/whoami');
 			},
-			// todo: change to _ 
+			// todo: change to _
 			get_info:function() { return this._ajax('GET', 'admin/info'); },
 			login : function(username,password) {
 				var d = u.deferred();
@@ -844,7 +849,7 @@ angular
 				var this_ = this;
 				this._ajax('POST', 'auth/login', { username: username, password: password })
 					.then(function(l) { this_.trigger('login', username); d.resolve(l); })
-					.fail(function(l) { d.reject(l); });			
+					.fail(function(l) { d.reject(l); });
 				return d.promise();
 			},
 			reconnect:function() {
@@ -856,7 +861,7 @@ angular
 				this._ajax('POST', 'auth/logout')
 					.then(function(l) { this_.trigger('logout'); d.resolve(l); })
 					.fail(function(l) { d.reject(l); });
-				return d.promise();			
+				return d.promise();
 			},
 			_create:function(boxid) {
 				var b = new Box({}, {store: this});
@@ -873,34 +878,34 @@ angular
 			},
 			_fetch:function() {
 				throw new Error('dont fetch a store - any more!');
-				// 
+				//
 				// fetches list of boxes
 				/* - do not do this
-				var this_ = this, d = u.deferred();			 
+				var this_ = this, d = u.deferred();
 				this._ajax('GET','admin/list_boxes')
 					.success(function(data) {
 						u.when(data.list.map(function(boxid) { return this_.get_box(boxid); })).then(function(boxes) {
 							// console.log("boxes !! ", boxes);
 							this_.boxes().reset(boxes);
-							d.resolve(boxes);							
+							d.resolve(boxes);
 						});
 					}).error(function(e) { d.reject(e); });
 				return d.promise();
 				*/
 			},
 			_ajax:function(method, path, data) {
-				// now uses relative url scheme '//blah:port/path';			
+				// now uses relative url scheme '//blah:port/path';
 				var url = ['/', this.get('server_host'), path].join('/');
 				var default_data = { app: this.get('app') };
 				var options = _(_(this.ajax_defaults).clone()).extend(
 					{ url: url, method : method, crossDomain: !this.is_same_domain(), data: _(default_data).extend(data) }
 				);
-				return $.ajax( options ); // returns a deferred		
-			},		
+				return $.ajax( options ); // returns a deferred
+			},
 			sync: function(method, model, options){
 				switch(method){
 				case "create": return u.error('store.create() : cannot create a store'); // TODO
-				case "read"  : return model._fetch(); 
+				case "read"  : return model._fetch();
 				case "update": return u.error('store.update() : cannot update a store'); // TODO
 				case "delete": return u.error('store.delete() : cannot delete a store'); // tODO
 				}
@@ -917,11 +922,11 @@ angular
 			loaded : utils.deferred()
 		};
 		window.u = utils;
-		
+
 		// do not fetch boxes
 		exports.loaded.resolve(exports);
 		return exports;
-		
+
 	}).factory('backbone', function(client, utils) {
 		// this manages backbone-angular mystification
 		var deregfns = [];
@@ -942,7 +947,7 @@ angular
 						if (fn) { fn(k,new_[k].concat()); }
 					}
 				});
-				return changes;					
+				return changes;
 			};
 			// angular -> backbone
 			var dereg = $scope.$watch(name, function() {

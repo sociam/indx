@@ -65,6 +65,12 @@
             inherited from <i>{{inheritedFrom.class.name}}</i>
           {{/inheritedFrom}}
 
+          <ul class="arguments">
+            {{#args}}
+              <li>{{name}} {{^type}} &lt;{{type}}&gt; {{/type}} {{^comment}} {{comment}} {{/comment}}
+            {{/args}}
+          </ul>
+
           <div class="description">
             {{description}}
             {{^description}}

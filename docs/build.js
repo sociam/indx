@@ -13,11 +13,11 @@
 	fs.readFile(config.basePath + config.files[0], function (err, data) {
 		if (err) { throw err; }
 
-		var appData = _.extend(parseClasses(data.toString()), config),
-			app = _.extend({ json: JSON.stringify(appData) }, appData),
+		var appData = _.extend({
+				classes: parseClasses(data.toString())
+			}, config),
+			app = _.extend({ /*json: JSON.stringify(appData)*/ }, appData),
 			html = '';
-
-		process(app);
 
 		mu.compileAndRender('index.html', app).on('data', function (dat) {
 			html += dat.toString();
@@ -29,69 +29,119 @@
 
 	});
 
+	var Class = function (attributes, extend) {
+		this.methods = [];
+		this.properties = [];
 
-	function process (app) {
-		_.each(app.classes, function (cls) {
-			_.defaults(cls, {
-				uid: cls.name.replace(/\W/gi, ''),
-				instanceName: cls.name.charAt(0).toLowerCase() + cls.name.substr(1)
+		this.set(attributes);
+
+		if (extend) {
+			this.extend = extend;
+			console.log(extend)
+			//_.defaults(this.attributes, this.extend.attributes);
+			this.methods = _.map(extend.methods, function (method) {
+				console.log(method.name)
+				return _.extend({}, method);
+			});
+			// inherit properties
+		}
+		_.bindAll(this, "uid", "instanceName");
+	};
+
+	_.extend(Class.prototype, {
+		set: function (attributes) {
+			_.extend(this, attributes);
+		},
+		uid: function () {
+			return this.name.replace(/\W/gi, '');
+		},
+		instanceName: function () {
+			return this.name.charAt(0).toLowerCase() + this.name.substr(1);
+		},
+		parse: function (data) {
+			var that = this,
+				methods = parseMethods(data, this.start, this.end, this);
+
+			_.each(methods, function (method) {
+				var existing = _.findWhere(that.methods, { name: method.name }); // TODO
+				that.methods.push(new Method(method, that));
 			});
 
-			_.each(cls.methods, function (method) {
+			return;
 
-				_.defaults(method, {
-					uid: cls.uid + '-' + method.name.replace(/\W/gi, '')
-				});
+			var oldMethods = cls.methods
 
+
+			cls.methods = methods;
+
+			_.each(oldMethods, function (method) {
+				var newMethod = _.findWhere(cls.methods, { name: method.name });
+				if (!newMethod) {
+					newMethod = _.clone(method);
+					//cls.methods.push(newMethod); // PUT THIS BACK
+				}
+				newMethod.inheritedFrom = method;
 			});
+			return cls;
+		}
+	});
 
-		});
+	var Method = function (attributes, cls) {
+		_.extend(this, attributes);
+		this.cls = cls;
+		_.bindAll(this, "uid");
+	};
+
+	_.extend(Method.prototype, {
+		set: function (attributes) {
+			_.extend(this, attributes);
+		},
+		uid: function () {
+			return this.cls.uid + '-' + this.name.replace(/\W/gi, '');
+		},
+	});
+
+
+	function generateSuperClasses () {
+		return _.extend({
+			'Object' : new Class({
+				regexps: [
+					['([A-Z][^\\\s.]*) *= *function *\\\(([^\\\)]*)\\\)', function (match, name, pos) {
+						return { match: match, name: name, start: pos };
+					}],
+					['function *([A-Z][^\\\s.]*) *\\\(([^\\\)]*)\\\)', function (match, name, pos) {
+						return { match: match, name: name, start: pos };
+					}]
+				]
+			})
+		}, _.map(config.superclasses, function (cls, name) {
+			var ncls = _.extend({
+				name: name,
+				regexps: [
+					['([^\\\s.]*) *= *' + name + '\\\.extend\\\(', function (match, name, pos) {
+						return { match: match, name: name, start: pos };
+					}]
+				]
+			}, cls);
+			return new Class(ncls);
+		}));
 	}
-
 
 	function parseClasses (data) {
 
 		var classes = [],
-			superclasses = _.extend({
-				'Object' : {
-					regexps: [
-						['([A-Z][^\\\s.]*) *= *function *\\\(([^\\\)]*)\\\)', function (match, name, pos) {
-							return { match: match, name: name, start: pos };
-						}],
-						['function *([A-Z][^\\\s.]*) *\\\(([^\\\)]*)\\\)', function (match, name, pos) {
-							return { match: match, name: name, start: pos };
-						}]
-					]
-				}
-			}, _.map(config.superclasses, function (cls, name) {
-				return _.extend({
-					name: name,
-					regexps: [
-						['([^\\\s.]*) *= *' + name + '\\\.extend\\\(', function (match, name, pos) {
-							return { match: match, name: name, start: pos };
-						}]
-					]
-				}, cls);
-			}));
+			superclasses = generateSuperClasses();
 
-		_.each(superclasses, function (scls) {
+		_.each(superclasses, function (scls) { // Find each class that extends each superclass
 			_.each(scls.regexps, function (regexp) {
 				var re = new RegExp(regexp[0], 'g');
-				data.replace(re, function () {
-					var match = regexp[1].apply(this, arguments),
-						cls = _.extend({
-							extends: scls,
-							methods: []
-						}, scls, match);
-					cls.methods = _.map(cls.methods, function (method) {
-						return _.extend({
-							class: scls
-						}, method);
-					});
-					classes.push(cls);
-					return this;
+				data.replace(re, function (_match) {
+					var match = regexp[1].apply(this, arguments);
+					classes.push(new Class(match, scls));
+					return _match;
 				});
 			});
+
 		});
 
 		classes = _.sortBy(classes, function (cls) { return cls.start; });
@@ -99,66 +149,42 @@
 		_.each(classes, function (cls, i) {
 			if (i > 0) { classes[i - 1].end = cls.start - 1; }
 		});
+		if (classes.length > 0) { classes[classes.length - 1].end = data.length - 1; }
 
-		if (classes.length > 0) { classes[classes.length - 1].end = classes[0].start - 1; }
+		_.each(classes, function (cls) {
+			cls.parse(data);
+		});
 
-		return {
-			classes: _.map(classes, function (cls) {
-				var subdata = data.substring(cls.start, cls.end),
-					oldMethods = cls.methods,
-					methods = parseMethods(subdata, cls.name).methods;
-
-				cls.methods = methods;
-
-				_.each(oldMethods, function (method) {
-					var newMethod = _.findWhere(cls.methods, { name: method.name });
-					if (!newMethod) {
-						newMethod = _.clone(method);
-						cls.methods.push(newMethod);
-					}
-					newMethod.inheritedFrom = method;
-				});
-				return cls;
-			})
-		};
+		return classes;
 	}
 
-	function parseMethods (data, cls) {
-		//console.log("DATA", data)
-		var methods = [],
-			privateMethods = [];
+	function parseMethods (data, start, end, cls) {
+		var subdata = data.substring(start, end),
+			methods = [];
 
 		var re = new RegExp('([^\\\s]*) *: *function *\\\(([^\\\)]*)\\\)', 'g');
-		data.replace(re, function (match, name, args, lineNo) {
-			//if (classes.length > 0) { classes[classes.length - 1].lineNoEnd = lineNo - 1; }
+
+		subdata.replace(re, function (match, name, args, pos) {
+			if (name.indexOf('_') === 0) { return; }
 			var method = {
-				name: name,
-				args: parseArgs(args),
-				lineNoStart: lineNo
-			};
-			if (name.indexOf('_') === 0) {
-				privateMethods.push(method);
-			} else {
-				methods.push(method);
-			}
-			//console.log(match, name, lineNo);
+					name: name,
+					args: parseArgs(args),
+					lineNoStart: pos
+				},
+				comments = getCommentBefore(data, start + pos);
+
+
+			parseMethodComment(comments, method);
+
+			methods.push(method);
+
 			return match;
 		});
-		//if (classes.length > 0) { classes[classes.length - 1].lineNoEnd = lines.length - 1; }
 
 		methods = _.sortBy(methods, function (method) { return method.lineNoStart; });
-		privateMethods = _.sortBy(privateMethods, function (method) { return method.lineNoStart; });
 
-		return {
-			methods: methods,
-			privateMethods: privateMethods
-		};
+		return methods;
 
-		/*return _.map(methods, function (method) {
-			var data = lines.slice(method.lineNoStart, method.lineNoEnd),
-				methods = parseMethods(data, method.name);
-			_.extend({ methods: methods }, method);
-		});*/
 	}
 
 	function parseArgs (data) {
@@ -169,6 +195,86 @@
 		});
 		args[args.length - 1].last = true;
 		return args;
+	}
+
+
+	function parseMethodComment (comment, method) {
+		var lines = comment.split('\n'),
+			oldArgs = method.args,
+			mode = 0; // arguments, description, result
+		method.args = [];
+		_.each(lines, function (line) {
+			line = line.trim();
+			if (line.indexOf('@arg') === 0) {
+				method.args.push(parseArgComment(line));
+			}
+		});
+		if (method.args.length === 0) {
+			method.args = oldArgs;
+			console.log(method.args)
+		} else {
+			method.args[method.args.length - 1].last = true;
+		}
+	}
+
+	function parseArgComment (str) {
+		var parts = genericParser(str.trim().substring(4).trim(), ['<type>?', '<name>', ':?', '<comment>']);
+		return parts;
+	}
+
+	function getCommentBefore (data, start) {
+		var subdata = data.substring(0, start),
+			lines = subdata.split('\n').reverse(),
+			commentLines = [],
+			i, l, line;
+
+		for (i = 1, l = lines.length; i < l; i++) {
+			line = lines[i].trim();
+			if (line.indexOf('///') !== 0) { break; }
+			line = line.substr(4).trim();
+			commentLines.push(line);
+		}
+		return commentLines.reverse().join('\n');
+	}
+
+	function genericParser (str, parts) {
+		var regexps = {
+				type: '<([^>]+)>',
+				name: '(\\\w+)',
+				comment: '(.*)'
+			},
+			currPos = 0,
+			result = {};
+
+		_.each(parts, function (part) {
+			var l = part.length,
+				optional, p, regexp;
+
+			if (part.indexOf('?') === l - 1) {
+				optional = true; // TODO
+				part = part.substr(0, part.length - 1);
+			}
+
+			if (part.indexOf('<') === 0) {
+				p = part.substring(1, part.indexOf('>'));
+				regexp = new RegExp(regexps[p]);
+			} else {
+				p = part;
+				regexp = new RegExp(part);
+			}
+
+			str.substring(currPos).replace(regexp, function (match) {
+				var pos = _.find(arguments, function (a) { return _.isNumber(a); });
+				currPos = currPos + pos + match.length;
+				result[p] = match.trim();
+			});
+		});
+
+		return result;
+		/*_.each(regexps, function (r, k) {
+			regexp.replace('<' + k + '>', r);
+		});
+		return new RegExp(regexp, flags);*/
 	}
 
 }());
