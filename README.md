@@ -5,8 +5,6 @@ INDX is a personal file store being developed by @danielsmith-eu and @electronic
 Installation and API documentation can be found on the INDX wiki:
 https://github.com/sociam/indx/wiki
 
-INDX is licensed under the GPLv3. See COPYING for more details.
-
 
 ### Installation
 
