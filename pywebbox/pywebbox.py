@@ -194,7 +194,7 @@ class WebBox:
 
     def _gen_bnode_id(self):
         """ Generate an ID for a bnode. """
-        return "_:{0}".format(uuid.uuid1())
+        return "_:{0}".format(uuid.uuid4()) # uuid4 to avoid collisions - uuid1 can (and did) cause collisions
 
 
     def _prepare_objects(self, objects):

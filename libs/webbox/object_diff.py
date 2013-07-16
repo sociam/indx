@@ -287,8 +287,10 @@ class ObjectSetDiff:
 ##            self.queries['latest']['params'].extend([subject, order])
 #            queries.append(("INSERT INTO wb_latest_subjects (id_subject) SELECT wb_get_string_id(%s) WHERE NOT EXISTS (SELECT id_subject FROM wb_latest_subjects WHERE id_subject = wb_get_string_id(%s))", [subject, subject]))
             #self.queries['subjects'].append(subject)
-            self.queries['subjects']['values'].append("(wb_get_string_id(%s))")
-            self.queries['subjects']['params'].extend([subject])
+            for subj in self.queries['subjects']['params']:
+                if subj[0] != subject:
+                    self.queries['subjects']['values'].append("(wb_get_string_id(%s))")
+                    self.queries['subjects']['params'].extend([subject])
 
         for row in self.queries['latest_diffs']['add_predicate']:
             subject, predicate, sub_obj, object_order = row

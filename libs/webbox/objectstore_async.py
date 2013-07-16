@@ -750,7 +750,13 @@ class ObjectStoreAsync:
         if cur is None:
             self.conn.runQuery("SELECT latest_version FROM wb_v_latest_version", []).addCallbacks(ver_cb, err_cb)
         else:
-            self._curexec(cur, "SELECT latest_version FROM wb_v_latest_version", []).addCallbacks(lambda cur: ver_cb(cur.fetchall()), err_cb)
+
+            def exec_cb(cur):
+                self.debug("Objectstore _get_latest_ver exec_cb, cur: {0}".format(cur))
+                rows = cur.fetchall()
+                ver_cb(rows)
+
+            self._curexec(cur, "SELECT latest_version FROM wb_v_latest_version", []).addCallbacks(exec_cb, err_cb)
 
         return result_d
 
@@ -980,7 +986,13 @@ class ObjectStoreAsync:
 
             def lock_cb(val):
                 self.debug("Objectstore update, lock_cb, val: {0}".format(val))
-                self._curexec(cur, "SELECT latest_version FROM wb_v_latest_version").addCallbacks(lambda cur: ver_cb(cur.fetchall()), interaction_err_cb)
+
+                def exec_cb(cur):
+                    self.debug("Objectstore update, exec_cb, cur: {0}".format(cur))
+                    rows = cur.fetchall()
+                    ver_cb(rows)
+
+                self._curexec(cur, "SELECT latest_version FROM wb_v_latest_version").addCallbacks(exec_cb, interaction_err_cb)
 
             self._curexec(cur, "LOCK TABLE wb_files, wb_versions, wb_latest_vers, wb_triples, wb_users, wb_vers_diffs, wb_latest_subjects IN EXCLUSIVE MODE").addCallbacks(lock_cb, interaction_err_cb) # lock to other writes, but not reads
 ##             

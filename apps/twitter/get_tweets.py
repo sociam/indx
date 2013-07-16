@@ -42,6 +42,7 @@ else:
 password = getpass.getpass()
 webbox = WebBox(args['address'], args['box'], args['user'], password, args['appid'])
 version = 0 # box version
+batch = [] # batch update multiple tweets at once
 
 # Go to http://dev.twitter.com and create an app.
 # The consumer key and secret will be generated for you after
@@ -67,6 +68,7 @@ class INDXListener(StreamListener):
         tweet -- The tweet to assert into the box.
         """
         global version
+        global batch
         try:
             tweet = json.loads(tweet_data)
             logging.debug("{0}, {1}".format(type(tweet), tweet))
@@ -75,9 +77,13 @@ class INDXListener(StreamListener):
                 logging.info("Skipping informational message: '{0}'".format(tweet_data.encode("utf-8")))
                 return
             logging.info("Adding tweet: '{0}'".format(tweet['text'].encode("utf-8")))            
-            tweet["@id"] = unicode(tweet['id'])             
-            response = webbox.update(version, tweet)
-            version = response['data']['@version'] # update the version
+            tweet["@id"] = unicode(tweet['id'])
+            batch.append(tweet)
+            if len(batch) > 25:
+                response = webbox.update(version, batch)
+                version = response['data']['@version'] # update the version
+                batch = []
+#            response = webbox.update(version, tweet)
         except Exception as e:
             if isinstance(e, urllib2.HTTPError): # handle a version incorrect error, and update the version
                 if e.code == 409: # 409 Obsolete
