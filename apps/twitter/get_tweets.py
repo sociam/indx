@@ -30,6 +30,7 @@ parser.add_argument('box', type=str, help="Box to assert tweets into")
 parser.add_argument('words', type=str, help="Words to search for, comma separated")
 parser.add_argument('--appid', type=str, default="Twitter Harvester", help="Override the appid used for the webbox assertions")
 parser.add_argument('--debug', default=False, action="store_true", help="Enable debugging")
+parser.add_argument('--profile', default=False, action="store_true", help="Enable profiling")
 args = vars(parser.parse_args())
 
 if args['debug']:
@@ -68,7 +69,7 @@ class INDXListener(StreamListener):
         global version
         try:
             tweet = json.loads(tweet_data)
-            print type(tweet), tweet
+            logging.debug("{0}, {1}".format(type(tweet), tweet))
             if not tweet.get('text'):
                 # TODO: log these for provenance?                
                 logging.info("Skipping informational message: '{0}'".format(tweet_data.encode("utf-8")))
@@ -94,11 +95,19 @@ class INDXListener(StreamListener):
         print status
 
 if __name__ == '__main__':
-    l = INDXListener()
-    auth = OAuthHandler(consumer_key, consumer_secret)
-    auth.set_access_token(access_token, access_token_secret)
-    stream = Stream(auth, l)
-    if len(args['words']) > 0:
-        stream.filter(track=args['words'].split(","))
+    def get_tweets():
+        l = INDXListener()
+        auth = OAuthHandler(consumer_key, consumer_secret)
+        auth.set_access_token(access_token, access_token_secret)
+        stream = Stream(auth, l)
+        if len(args['words']) > 0:
+            stream.filter(track=args['words'].split(","))
+        else:
+            stream.sample()
+
+    if args['profile']:
+        import cProfile
+        cProfile.run('get_tweets()')
     else:
-        stream.sample()
+        get_tweets()
+
