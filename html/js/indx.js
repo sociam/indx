@@ -822,7 +822,7 @@ angular
 			///
 			/// Now I'll comment on this function...
 			///
-			/// @then (<Box> yourbox, <string> name_of_thing, <int> prime_factor)
+			/// @then success! :) (<Box> yourbox, <string> name_of_thing, <int> prime_factor)
 			/// @fail
 			///   box already exists (<{ code: 409 }>)
 			///   other error (<{ code: -1, error: <error obj> }>)

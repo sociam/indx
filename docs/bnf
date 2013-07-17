@@ -1,80 +1,59 @@
-Backus–Naur Form for documentation comments of methods.
+{
+    "<methodannotation>": [ [ "<arguments>",  "NL", "<description>", "NL", "<result>" ] ],
 
-There may be arbitrary whitespace between tokens.
+    "<arguments>": [ [ "<argument>" ],
+                     [ "<argument>", "NL", "<arguments>" ] ],
 
+    "<argument>": [ [ "<linestart>", "@arg", "<typestatement>", "<name>", ":", "<comment>" ],
+                    [ "<linestart>", "@arg", "<name>", ":", "<comment>" ] ],
 
-/// @arg <string|number> boxid
-/// @arg <string | { a: 'valueofa' } > foo: some comment
-/// @arg arg3 this is an argument with no type specified
-///
-/// Now I'll comment on this function...
-///
-/// @returns <Box>  yourbox
---- OR ---
-/// @chain
---- OR ---
-/// @then (<Box> yourbox, <string> name_of_thing, <int> prime_factor)
-/// @fail
-///   box already exists (<{ code: 409 }>)
-///   other error (<{ code: -1, error: <error obj> }>)
+    "<description>": [ [ "<chars>" ] ],
 
 
-<methodannotation> ::=	<arguments>	NL <description> NL <result>
+    "<result>": [ [ "<returnresult>" ],
+                  [ "<asyncresult>" ],
+                  [ "<chainresult>" ] ],
 
+    "<returnresult>": [ [ "<linestart>", "@return", "<typestatement>", "<comment>" ],
+                        [ "<linestart>", "@return", "<comment>" ] ],
 
-<arguments> ::= <argument>
-			  | <argument> NL <arguments>
+    "<asyncresult>": [ [ "<asyncthenresult>" ],
+                       [ "<asyncfailresult>" ] ],
 
-<argument> ::= <linestart> "@arg" <typestatement> <name> ":" <comment>
-             | <linestart> "@arg" <name> ":" <comment>
+    "<asyncthenresult>": [ [ "<linestart>" "@then" "<comment>" "<callback>" ] ],
 
+    "<asyncfailresult>": [ [ "<linestart>" "@fail" "<asyncfailresultcases>" ] ],
 
-<description> ::= <chars>
+    "<asyncfailresultcases>" :== "<asyncfailresultcase>"
+                             | "<asyncfailresultcase>" NL "<asyncfailresultcases>" ],
 
+    "<asyncfailresultcase>" :== "<linestart>" "<comment>" "<callback>" ],
 
-<result> ::= <returnresult>
-           | <asyncresult>
-           | <chainresult>
+    "<callback>": [  "(" "<callbackarguments>" ")" ],
 
-<returnresult> ::= <linestart> "@return" <typestatement> <comment>
-                 | <linestart> "@return" <comment>
+    "<callbackarguments>": [  "<callbackargument>"
+                          | "<callbackargument>", "<callbackarguments>" ],
 
-<asyncresult> ::= <asyncthenresult>
-                | <asyncfailresult>
+    "<callbackargument>": [  "<typestatement>" "<comment>" ],
 
-<asyncthenresult> ::= <linestart> "@then" <comment> <callback>
+    "<chainresult>": [  "<linestart>" "@chain" ],
 
-<asyncfailresult> ::= <linestart> "@fail" <asyncfailresultcases>
+    "<typestatement>": [  ""<" "<types>" ">"" ],
 
-<asyncfailresultcases> :== <asyncfailresultcase>
-                         | <asyncfailresultcase> NL <asyncfailresultcases>
+    "<types>": [  "<type>"
+              | "<type>" "|" "<types>" ],
 
-<asyncfailresultcase> :== <linestart> <comment> <callback>
+    "<type>": [  string
+             | number
+             | object
+             | array
+             | boolean
+             | [any-js-object]
+             | [any-of-your-own-types] ],
 
-<callback> ::= "(" <callbackarguments> ")"
+    "<comment>": [  [any-string] ],
 
-<callbackarguments> ::= <callbackargument>
-                      | <callbackargument>, <callbackarguments>
+    "<name>": [  [valid-js-identifier] ],
 
-<callbackargument> ::= <typestatement> <comment>
-
-<chainresult> ::= <linestart> "@chain"
-
-<typestatement> ::= "<" <types> ">"
-
-<types> ::= <type>
-          | <type> "|" <types>
-
-<type> ::= string
-         | number
-         | object
-         | array
-         | boolean
-         | [any-js-object]
-         | [any-of-your-own-types]
-
-<comment> ::= [any-string]
-
-<name> ::= [valid-js-identifier]
-
-<linestart> ::=  NL "///"
+    "<linestart>": [   NL "///" ],
+}

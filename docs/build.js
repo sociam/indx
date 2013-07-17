@@ -237,6 +237,7 @@
 		return commentLines.reverse().join('\n');
 	}
 
+
 	function genericParser (str, parts) {
 		var regexps = {
 				type: '<([^>]+)>',

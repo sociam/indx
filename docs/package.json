@@ -11,6 +11,7 @@
   "license": "BSD",
   "dependencies": {
     "underscore": "~1.5.1",
-    "mu2": "~0.5.19"
+    "mu2": "~0.5.19",
+    "node-promise": "~0.5.8"
   }
 }
