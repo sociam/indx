@@ -67,15 +67,40 @@
 
           <ul class="arguments">
             {{#args}}
-              <li>{{name}} {{^type}} &lt;{{type}}&gt; {{/type}} {{^comment}} {{comment}} {{/comment}}
+              <li>{{name}} {{^types}} &lt;{{.}}&gt; {{/types}} {{^comment}} {{comment}} {{/comment}}
             {{/args}}
           </ul>
 
           <div class="description">
-            {{description}}
+            <i>{{description}}</i>
             {{^description}}
-              No description :(
+
             {{/description}}
+          </div>
+
+          <div class="return">
+            {{#result.async}}
+              Returns a promise. Asynchronous.
+              <h6>{{instanceName}}.{{name}}(...).then (
+                {{#then.args}}
+                  &lt;{{type}}&gt; {{comment}},
+                {{/then.args}}
+              )</h6>
+              {{then.comment}}
+              <h6>fail</h6>
+              <ul>
+                {{#fail.cases}}
+                <li>
+                  <h6>{{instanceName}}.{{name}}(...).fail (
+                    {{#args}}
+                      &lt;{{type}}&gt; {{comment}},
+                    {{/args}}
+                  )</h6>
+                  {{comment}}
+                </li>
+                {{/fail.cases}}
+              </ul>
+            {{/result.async}}
           </div>
 
         {{/methods}}

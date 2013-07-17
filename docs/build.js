@@ -6,24 +6,29 @@
 	var fs = require('fs'),
 		_ = require('underscore'),
 		mu = require('mu2'),
-		config = require('./config.js');
+		config = require('./config.js'),
+		GrammarParser = require('./grammar-parser.js'),
+		allPromises = require('node-promise').all,
+		Promise = require('node-promise').Promise;
 
 	mu.root = __dirname + '/templates';
 
 	fs.readFile(config.basePath + config.files[0], function (err, data) {
 		if (err) { throw err; }
 
-		var appData = _.extend({
-				classes: parseClasses(data.toString())
-			}, config),
+		var appData = _.extend({}, config),
 			app = _.extend({ /*json: JSON.stringify(appData)*/ }, appData),
 			html = '';
 
-		mu.compileAndRender('index.html', app).on('data', function (dat) {
-			html += dat.toString();
-		}).on('end', function () {
-			fs.writeFile('./build/index.html', html, function (err) {
-				if (err) { throw err; }
+		parseClasses(data.toString()).then(function (classes) {
+			_.extend(app, { classes: classes });
+
+			mu.compileAndRender('index.html', app).on('data', function (dat) {
+				html += dat.toString();
+			}).on('end', function () {
+				fs.writeFile('./build/index.html', html, function (err) {
+					if (err) { throw err; }
+				});
 			});
 		});
 
@@ -37,10 +42,10 @@
 
 		if (extend) {
 			this.extend = extend;
-			console.log(extend)
+			//console.log(extend)
 			//_.defaults(this.attributes, this.extend.attributes);
 			this.methods = _.map(extend.methods, function (method) {
-				console.log(method.name)
+				//console.log(method.name)
 				return _.extend({}, method);
 			});
 			// inherit properties
@@ -60,14 +65,17 @@
 		},
 		parse: function (data) {
 			var that = this,
-				methods = parseMethods(data, this.start, this.end, this);
+				promise = new Promise();
 
-			_.each(methods, function (method) {
-				var existing = _.findWhere(that.methods, { name: method.name }); // TODO
-				that.methods.push(new Method(method, that));
+			parseMethods(data, this.start, this.end, this).then(function (methods) {
+				_.each(methods, function (method) {
+					var existing = _.findWhere(that.methods, { name: method.name }); // TODO
+					that.methods.push(new Method(method, that));
+				});
+				promise.resolve(methods);
 			});
 
-			return;
+			return promise;
 
 			var oldMethods = cls.methods
 
@@ -130,7 +138,9 @@
 	function parseClasses (data) {
 
 		var classes = [],
-			superclasses = generateSuperClasses();
+			dfds = [],
+			superclasses = generateSuperClasses(),
+			promise = new Promise();
 
 		_.each(superclasses, function (scls) { // Find each class that extends each superclass
 			_.each(scls.regexps, function (regexp) {
@@ -152,14 +162,20 @@
 		if (classes.length > 0) { classes[classes.length - 1].end = data.length - 1; }
 
 		_.each(classes, function (cls) {
-			cls.parse(data);
+			dfds.push(cls.parse(data));
 		});
 
-		return classes;
+		allPromises(dfds).then(function () {
+			promise.resolve(classes);
+		});
+
+		return promise;
 	}
 
 	function parseMethods (data, start, end, cls) {
-		var subdata = data.substring(start, end),
+		var promise = new Promise(),
+			dfds = [],
+			subdata = data.substring(start, end),
 			methods = [];
 
 		var re = new RegExp('([^\\\s]*) *: *function *\\\(([^\\\)]*)\\\)', 'g');
@@ -174,16 +190,21 @@
 				comments = getCommentBefore(data, start + pos);
 
 
-			parseMethodComment(comments, method);
+			dfds.push(parseMethodComment(comments, method));
 
 			methods.push(method);
 
 			return match;
 		});
 
-		methods = _.sortBy(methods, function (method) { return method.lineNoStart; });
 
-		return methods;
+		allPromises(dfds).then(function () {
+			methods = _.sortBy(methods, function (method) { return method.lineNoStart; });
+
+			promise.resolve(methods);
+		});
+
+		return promise;
 
 	}
 
@@ -197,9 +218,18 @@
 		return args;
 	}
 
+	var methodGrammar = new GrammarParser('./grammar');
 
 	function parseMethodComment (comment, method) {
-		var lines = comment.split('\n'),
+
+		return methodGrammar.parse(comment).then(function (rs) {
+			//console.log(rs);
+			_.extend(method, rs);
+
+			console.log(JSON.stringify(rs, null, ' '))
+			//console.log(method)
+		});
+		/*var lines = comment.split('\n'),
 			oldArgs = method.args,
 			mode = 0; // arguments, description, result
 		method.args = [];
@@ -214,7 +244,7 @@
 			console.log(method.args)
 		} else {
 			method.args[method.args.length - 1].last = true;
-		}
+		}*/
 	}
 
 	function parseArgComment (str) {
@@ -231,7 +261,7 @@
 		for (i = 1, l = lines.length; i < l; i++) {
 			line = lines[i].trim();
 			if (line.indexOf('///') !== 0) { break; }
-			line = line.substr(4).trim();
+			//line = line.substr(4).trim();
 			commentLines.push(line);
 		}
 		return commentLines.reverse().join('\n');

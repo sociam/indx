@@ -816,16 +816,16 @@ angular
 				}
 				return u.dresolve(b);
 			},
+
+
 			/// @arg <string|number> boxid
-			/// @arg <string | { a: 'valueofa' } > foo: some comment
+			/// @arg <string | { a: \'valueofa\' } > foo: some comment
 			/// @arg arg3: this is an argument with no type specified
-			///
-			/// Now I'll comment on this function...
-			///
-			/// @then success! :) (<Box> yourbox, <string> name_of_thing, <int> prime_factor)
+			/// @then (<Box> yourbox, <string> name_of_thing, <int> prime_factor) success! :
 			/// @fail
-			///   box already exists (<{ code: 409 }>)
-			///   other error (<{ code: -1, error: <error obj> }>)
+			///   (<{ code: 409 }> code) box already exists
+			///   (<{ code: -1, error: error obj }> code) other error
+			/// Now I'll comment on this function...
 			create_box:function(boxid) {
 				u.debug('create box ', boxid);
 				if (this.boxes().get(boxid)) {

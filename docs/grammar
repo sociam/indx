@@ -22,15 +22,18 @@ description_line
 			{ return c; }
 
 result
-	= return_result
-    / async_result
+	= r:return_result
+			{ return { "return": r }; }
+    / r:async_result
+			{ return { "async": r }; }
     / chain_result
+			{ return { "chain": true }; }
 
 return_result
 	= $ "@return" _ type_statement? _ comment
 
 async_result
-	= then: async_then_result _$_ fail: async_fail_result
+	= then:async_then_result _$_ fail:async_fail_result
 			{ return { then: then, fail: fail }; }
 
 async_then_result
@@ -38,29 +41,35 @@ async_then_result
 			{ return { comment: c, args: cb }; }
 
 async_fail_result
-	= "@fail" //_ async_fail_result_cases
-			{ return { cases: [] }; }
+	= "@fail" _ c:async_fail_result_cases
+			{ return { cases: c }; }
 
 async_fail_result_cases
-	= async_fail_result_case async_fail_result_cases
-	/ async_fail_result_case
+	= c:async_fail_result_case cs:async_fail_result_cases
+			{ return [].concat(cs, [c]); }
+	/ c:async_fail_result_case
+			{ return c; }
 
 async_fail_result_case
-	= $ comment _ callback
+	= __ $ cb:callback _ c:comment
+			{ return { args: cb, comment: c }; }
 
 callback
-	= _ "(" _ callback_arguments _ ")" _
+	= _ "(" _ c:callback_arguments _ ")" _
+			{ return c; }
 
 callback_arguments
-	= _ callback_argument _ "," _ callback_arguments _
-	/ _ callback_argument _
+	= _ c:callback_argument _ "," _ cs:callback_arguments _
+			{ return [].concat(cs, [c]); }
+	/ _ c:callback_argument _
+			{ return c; }
 
 callback_argument
-	= [^\n\r,]*
-	//= _ type_statement _ callback_argument_comment  _
+	= _ t:type_statement _ c:callback_argument_comment  _
+			{ return { type: t, comment: c }; }
 
 callback_argument_comment
-	= c:[^\n\r,]*
+	= c:[^\n\r),]*
 			{ return c.join(''); }
 
 
