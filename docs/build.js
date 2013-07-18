@@ -9,29 +9,47 @@
 		config = require('./config.js'),
 		GrammarParser = require('./grammar-parser.js'),
 		allPromises = require('node-promise').all,
-		Promise = require('node-promise').Promise;
+		Promise = require('node-promise').Promise,
+		CJSON = require('circular-json');
 
 	mu.root = __dirname + '/templates';
 
-	fs.readFile(config.basePath + config.files[0], function (err, data) {
-		if (err) { throw err; }
+	var filesParsed = [],
+		app = _.extend({ classes: [] }, config);
 
-		var appData = _.extend({}, config),
-			app = _.extend({ /*json: JSON.stringify(appData)*/ }, appData),
-			html = '';
-
-		parseClasses(data.toString()).then(function (classes) {
-			_.extend(app, { classes: classes });
-
-			mu.compileAndRender('index.html', app).on('data', function (dat) {
-				html += dat.toString();
-			}).on('end', function () {
-				fs.writeFile('./build/index.html', html, function (err) {
+	_.each(config.files, function (file, i) {
+		var promise = new Promise(),
+			parse = function () {
+				fs.readFile(config.basePath + file, function (err, data) {
 					if (err) { throw err; }
+
+					parseClasses(data.toString(), app).then(function () {
+						promise.resolve();
+					});
+
 				});
+			};
+
+		filesParsed.push(promise);
+
+		if (i > 0) {
+			filesParsed[i - 1].then(function () { parse(); });
+		} else {
+			parse();
+		}
+	});
+
+	allPromises(filesParsed).then(function () {
+		var html = '';
+		_.extend(app, { json: CJSON.stringify(app) });
+		fs.writeFile('abstract.json', CJSON.stringify(app, null, ' '));
+		mu.compileAndRender('index.html', app).on('data', function (dat) {
+			html += dat.toString();
+		}).on('end', function () {
+			fs.writeFile('./build/index.html', html, function (err) {
+				if (err) { throw err; }
 			});
 		});
-
 	});
 
 	var Class = function (attributes, extend) {
@@ -41,7 +59,7 @@
 		this.set(attributes);
 
 		if (extend) {
-			this.extend = extend;
+			//this.extend = extend;
 			//console.log(extend)
 			//_.defaults(this.attributes, this.extend.attributes);
 			this.methods = _.map(extend.methods, function (method) {
@@ -77,7 +95,7 @@
 
 			return promise;
 
-			var oldMethods = cls.methods
+			var oldMethods = cls.methods;
 
 
 			cls.methods = methods;
@@ -106,28 +124,30 @@
 		},
 		uid: function () {
 			return this.cls.uid + '-' + this.name.replace(/\W/gi, '');
-		},
+		}
 	});
 
 
-	function generateSuperClasses () {
+	function generateSuperClasses (classes) {
 		return _.extend({
 			'Object' : new Class({
 				regexps: [
-					['([A-Z][^\\\s.]*) *= *function *\\\(([^\\\)]*)\\\)', function (match, name, pos) {
-						return { match: match, name: name, start: pos };
+					['([^\\s]*[\\.|\\s]+([A-Z][^\\s\\.]*)) *= *function *\\(([^\\)]*)\\)', function (match, fullName, name, n, pos) {
+						//console.log(arguments);
+						return { match: match, name: name, fullName: fullName, start: pos };
 					}],
-					['function *([A-Z][^\\\s.]*) *\\\(([^\\\)]*)\\\)', function (match, name, pos) {
+					['function\\s*([A-Z][^\\s.]*) *\\(([^\\)]*)\\)', function (match, name, pos) {
+						//console.log(arguments)
 						return { match: match, name: name, start: pos };
 					}]
 				]
 			})
-		}, _.map(config.superclasses, function (cls, name) {
+		}, _.map(classes, function (cls) {
 			var ncls = _.extend({
-				name: name,
+				name: cls.name,
 				regexps: [
-					['([^\\\s.]*) *= *' + name + '\\\.extend\\\(', function (match, name, pos) {
-						return { match: match, name: name, start: pos };
+					['([^\\s.]*) *= *' + (cls.fullName || cls.name) + '\\.extend\\(', function (match, name, pos) {
+						return { match: match, name: cls.name, start: pos };
 					}]
 				]
 			}, cls);
@@ -135,11 +155,11 @@
 		}));
 	}
 
-	function parseClasses (data) {
+	function parseClasses (data, app) {
 
-		var classes = [],
+		var classes = app.classes,
 			dfds = [],
-			superclasses = generateSuperClasses(),
+			superclasses = generateSuperClasses(classes),
 			promise = new Promise();
 
 		_.each(superclasses, function (scls) { // Find each class that extends each superclass
@@ -178,7 +198,7 @@
 			subdata = data.substring(start, end),
 			methods = [];
 
-		var re = new RegExp('([^\\\s]*) *: *function *\\\(([^\\\)]*)\\\)', 'g');
+		var re = new RegExp('[\\.|\\s]+([a-z_][^\\s.]*) *[:=] *function *\\(([^\\)]*)\\)', 'g');
 
 		subdata.replace(re, function (match, name, args, pos) {
 			if (name.indexOf('_') === 0) { return; }
@@ -192,11 +212,6 @@
 
 			dfds.push(parseMethodComment(comments, method));
 
-			if (method.args.length > 0) {
-				method.hasArgs = true;
-				method.args[method.args.length - 1].last = true;
-			}
-
 			methods.push(method);
 
 			return match;
@@ -204,7 +219,29 @@
 
 
 		allPromises(dfds).then(function () {
-			methods = _.sortBy(methods, function (method) { return method.lineNoStart; });
+			methods = _.chain(methods).map(function (method) {
+
+				if (method.args.length > 0) {
+					method.hasArgs = true;
+
+					_.each(method.args, function (arg) {
+						arg.moreInfo = !!arg.types || !!arg.comment;
+						arg.last = false;
+						if (arg.types && arg.types.length > 0) {
+							arg.hasTypes = true;
+							_.each(arg.types, function (type) {
+								type.last = false;
+							});
+							arg.types[arg.types.length - 1].last = true;
+						}
+					});
+					method.args[method.args.length - 1].last = true;
+				}
+				//console.log(JSON.stringify(method, null, ' '))
+				return method;
+			}).sortBy(methods, function (method) {
+				return method.lineNoStart;
+			}).value();
 
 			promise.resolve(methods);
 		});
@@ -214,12 +251,11 @@
 	}
 
 	function parseArgs (data) {
-		var args = _.map(data.split(','), function (arg) {
-			return {
-				name: arg.trim()
-			};
-		});
-		return args;
+		return _.chain(data.split(',')).map(function (arg) {
+			return { name: arg.trim() };
+		}).reject(function (o) {
+			return o.name.length === 0;
+		}).value();
 	}
 
 	var methodGrammar = new GrammarParser('./grammar');
@@ -227,18 +263,13 @@
 	function parseMethodComment (comment, method) {
 
 		return methodGrammar.parse(comment).then(function (rs) {
+			//console.log(JSON.stringify(rs, null, ' '))
 			var oldArgs = method.args;
 			_.extend(method, rs);
 			if (!method.args) { method.args = oldArgs; }
-
-			console.log(JSON.stringify(rs, null, ' '))
 		});
 	}
 
-	function parseArgComment (str) {
-		var parts = genericParser(str.trim().substring(4).trim(), ['<type>?', '<name>', ':?', '<comment>']);
-		return parts;
-	}
 
 	function getCommentBefore (data, start) {
 		var subdata = data.substring(0, start),
@@ -255,45 +286,5 @@
 		return commentLines.reverse().join('\n');
 	}
 
-
-	function genericParser (str, parts) {
-		var regexps = {
-				type: '<([^>]+)>',
-				name: '(\\\w+)',
-				comment: '(.*)'
-			},
-			currPos = 0,
-			result = {};
-
-		_.each(parts, function (part) {
-			var l = part.length,
-				optional, p, regexp;
-
-			if (part.indexOf('?') === l - 1) {
-				optional = true; // TODO
-				part = part.substr(0, part.length - 1);
-			}
-
-			if (part.indexOf('<') === 0) {
-				p = part.substring(1, part.indexOf('>'));
-				regexp = new RegExp(regexps[p]);
-			} else {
-				p = part;
-				regexp = new RegExp(part);
-			}
-
-			str.substring(currPos).replace(regexp, function (match) {
-				var pos = _.find(arguments, function (a) { return _.isNumber(a); });
-				currPos = currPos + pos + match.length;
-				result[p] = match.trim();
-			});
-		});
-
-		return result;
-		/*_.each(regexps, function (r, k) {
-			regexp.replace('<' + k + '>', r);
-		});
-		return new RegExp(regexp, flags);*/
-	}
 
 }());

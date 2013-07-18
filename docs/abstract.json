@@ -1,0 +1,2738 @@
+{
+ "classes": [
+  {
+   "methods": [
+    {
+     "name": "extend",
+     "args": [
+      {
+       "mode": {
+        "optional": true
+       },
+       "types": "",
+       "name": "classProperties",
+       "comment": "",
+       "moreInfo": false,
+       "last": false
+      },
+      {
+       "mode": {
+        "mandatory": true
+       },
+       "types": "",
+       "name": "properties",
+       "comment": "",
+       "moreInfo": false,
+       "last": true
+      }
+     ],
+     "lineNoStart": 313,
+     "description": "To create a Model class of your own, you extend Backbone.Model and\n/// provide instance properties, as well as optional classProperties to be\n/// attached directly to the constructor function.",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~classes~0"
+    },
+    {
+     "name": "initialize",
+     "args": [
+      {
+       "mode": {
+        "optional": true
+       },
+       "types": "",
+       "name": "options",
+       "comment": "",
+       "moreInfo": false,
+       "last": false
+      },
+      {
+       "mode": {
+        "optional": true
+       },
+       "types": "",
+       "name": "attributes",
+       "comment": "",
+       "moreInfo": false,
+       "last": true
+      }
+     ],
+     "lineNoStart": 617,
+     "description": "When creating an instance of a model, you can pass in the initial values of the attributes, which will be set on the model. If you define an initialize function, it will be invoked when the model is created.",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~classes~0"
+    },
+    {
+     "name": "get",
+     "args": [
+      {
+       "mode": {
+        "mandatory": true
+       },
+       "types": "",
+       "name": "attribute",
+       "comment": "",
+       "moreInfo": false,
+       "last": true
+      }
+     ],
+     "lineNoStart": 783,
+     "description": "Get the current value of an attribute from the model. For example: note.get(\"title\")",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~classes~0"
+    },
+    {
+     "name": "set",
+     "args": [],
+     "lineNoStart": 832,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "escape",
+     "args": [],
+     "lineNoStart": 881,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "has",
+     "args": [],
+     "lineNoStart": 933,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "unset",
+     "args": [],
+     "lineNoStart": 982,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "clear",
+     "args": [],
+     "lineNoStart": 1033,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "toJSON",
+     "args": [],
+     "lineNoStart": 1084,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "initialize",
+     "args": [],
+     "lineNoStart": 1136,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "fetch",
+     "args": [],
+     "lineNoStart": 1192,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "save",
+     "args": [],
+     "lineNoStart": 1243,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "destroy",
+     "args": [],
+     "lineNoStart": 1293,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "isValid",
+     "args": [],
+     "lineNoStart": 1346,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "clone",
+     "args": [],
+     "lineNoStart": 1399,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "isNew",
+     "args": [],
+     "lineNoStart": 1450,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "hasChanged",
+     "args": [],
+     "lineNoStart": 1501,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "previous",
+     "args": [],
+     "lineNoStart": 1557,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "changedAttributes",
+     "args": [],
+     "lineNoStart": 1611,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "previousAttributes",
+     "args": [],
+     "lineNoStart": 1674,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "id",
+     "args": [],
+     "lineNoStart": 1738,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "attributes",
+     "args": [],
+     "lineNoStart": 1786,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "cid",
+     "args": [],
+     "lineNoStart": 1842,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "changed",
+     "args": [],
+     "lineNoStart": 1891,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "url",
+     "args": [],
+     "lineNoStart": 1944,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "auth",
+     "args": [
+      {
+       "name": "token",
+       "moreInfo": false,
+       "last": true
+      }
+     ],
+     "lineNoStart": 1440,
+     "description": "",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~classes~0"
+    },
+    {
+     "name": "diff",
+     "args": [
+      {
+       "name": "token",
+       "moreInfo": false,
+       "last": true
+      }
+     ],
+     "lineNoStart": 1523,
+     "description": "",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~classes~0"
+    },
+    {
+     "name": "serialize_obj",
+     "args": [
+      {
+       "name": "obj",
+       "moreInfo": false,
+       "last": true
+      }
+     ],
+     "lineNoStart": 1622,
+     "description": "",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~classes~0"
+    }
+   ],
+   "properties": [],
+   "match": "Backbone.Model = function ()",
+   "name": "Model",
+   "fullName": "Backbone.Model",
+   "start": 108,
+   "end": 2120
+  },
+  {
+   "methods": [
+    {
+     "name": "extend",
+     "args": [],
+     "lineNoStart": 64,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "initialize",
+     "args": [],
+     "lineNoStart": 116,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "add",
+     "args": [],
+     "lineNoStart": 172,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "remove",
+     "args": [],
+     "lineNoStart": 221,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "reset",
+     "args": [],
+     "lineNoStart": 273,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "get",
+     "args": [],
+     "lineNoStart": 324,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "set",
+     "args": [],
+     "lineNoStart": 373,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "at",
+     "args": [],
+     "lineNoStart": 422,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "push",
+     "args": [],
+     "lineNoStart": 470,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "pop",
+     "args": [],
+     "lineNoStart": 520,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "unshift",
+     "args": [],
+     "lineNoStart": 569,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "shift",
+     "args": [],
+     "lineNoStart": 622,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "slice",
+     "args": [],
+     "lineNoStart": 673,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "sort",
+     "args": [],
+     "lineNoStart": 724,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "pluck",
+     "args": [],
+     "lineNoStart": 774,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "where",
+     "args": [],
+     "lineNoStart": 825,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "findWhere",
+     "args": [],
+     "lineNoStart": 876,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "clone",
+     "args": [],
+     "lineNoStart": 931,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "fetch",
+     "args": [],
+     "lineNoStart": 982,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "create",
+     "args": [],
+     "lineNoStart": 1033,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "model",
+     "args": [],
+     "lineNoStart": 1087,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "models",
+     "args": [],
+     "lineNoStart": 1140,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "org/2001/XMLSchema#integer\"",
+     "args": [
+      {
+       "name": "o",
+       "moreInfo": false,
+       "last": true
+      }
+     ],
+     "lineNoStart": 1333,
+     "description": "",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~1"
+    },
+    {
+     "name": "org/2001/XMLSchema#float\"",
+     "args": [
+      {
+       "name": "o",
+       "moreInfo": false,
+       "last": true
+      }
+     ],
+     "lineNoStart": 1431,
+     "description": "",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~1"
+    },
+    {
+     "name": "org/2001/XMLSchema#double\"",
+     "args": [
+      {
+       "name": "o",
+       "moreInfo": false,
+       "last": true
+      }
+     ],
+     "lineNoStart": 1529,
+     "description": "",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~1"
+    },
+    {
+     "name": "org/2001/XMLSchema#boolean\"",
+     "args": [
+      {
+       "name": "o",
+       "moreInfo": false,
+       "last": true
+      }
+     ],
+     "lineNoStart": 1628,
+     "description": "",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~1"
+    },
+    {
+     "name": "org/2001/XMLSchema#dateTime\"",
+     "args": [
+      {
+       "name": "o",
+       "moreInfo": false,
+       "last": true
+      }
+     ],
+     "lineNoStart": 1737,
+     "description": "",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~1"
+    },
+    {
+     "name": "deserialize_literal",
+     "args": [
+      {
+       "name": "obj",
+       "moreInfo": false,
+       "last": false
+      },
+      {
+       "name": "box",
+       "moreInfo": false,
+       "last": true
+      }
+     ],
+     "lineNoStart": 1982,
+     "description": "",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~1"
+    },
+    {
+     "name": "deserialize_value",
+     "args": [
+      {
+       "name": "s_val",
+       "moreInfo": false,
+       "last": false
+      },
+      {
+       "name": "box",
+       "moreInfo": false,
+       "last": true
+      }
+     ],
+     "lineNoStart": 2138,
+     "description": "",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~1"
+    }
+   ],
+   "properties": [],
+   "match": "Backbone.Collection = function ()",
+   "name": "Collection",
+   "fullName": "Backbone.Collection",
+   "start": 2121,
+   "end": 4728
+  },
+  {
+   "methods": [
+    {
+     "name": "extend",
+     "args": "~classes~0~methods~args",
+     "lineNoStart": 313,
+     "description": "To create a Model class of your own, you extend Backbone.Model and\n/// provide instance properties, as well as optional classProperties to be\n/// attached directly to the constructor function.",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~classes~0"
+    },
+    {
+     "name": "initialize",
+     "args": "~args",
+     "lineNoStart": 617,
+     "description": "When creating an instance of a model, you can pass in the initial values of the attributes, which will be set on the model. If you define an initialize function, it will be invoked when the model is created.",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~classes~0"
+    },
+    {
+     "name": "get",
+     "args": "~args",
+     "lineNoStart": 783,
+     "description": "Get the current value of an attribute from the model. For example: note.get(\"title\")",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~classes~0"
+    },
+    {
+     "name": "set",
+     "args": "~args",
+     "lineNoStart": 832,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "escape",
+     "args": "~args",
+     "lineNoStart": 881,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "has",
+     "args": "~args",
+     "lineNoStart": 933,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "unset",
+     "args": "~args",
+     "lineNoStart": 982,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "clear",
+     "args": "~args",
+     "lineNoStart": 1033,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "toJSON",
+     "args": "~args",
+     "lineNoStart": 1084,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "initialize",
+     "args": "~args",
+     "lineNoStart": 1136,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "fetch",
+     "args": "~args",
+     "lineNoStart": 1192,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "save",
+     "args": "~args",
+     "lineNoStart": 1243,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "destroy",
+     "args": "~args",
+     "lineNoStart": 1293,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "isValid",
+     "args": "~args",
+     "lineNoStart": 1346,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "clone",
+     "args": "~args",
+     "lineNoStart": 1399,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "isNew",
+     "args": "~args",
+     "lineNoStart": 1450,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "hasChanged",
+     "args": "~args",
+     "lineNoStart": 1501,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "previous",
+     "args": "~args",
+     "lineNoStart": 1557,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "changedAttributes",
+     "args": "~args",
+     "lineNoStart": 1611,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "previousAttributes",
+     "args": "~args",
+     "lineNoStart": 1674,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "id",
+     "args": "~args",
+     "lineNoStart": 1738,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "attributes",
+     "args": "~args",
+     "lineNoStart": 1786,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "cid",
+     "args": "~args",
+     "lineNoStart": 1842,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "changed",
+     "args": "~args",
+     "lineNoStart": 1891,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "url",
+     "args": "~args",
+     "lineNoStart": 1944,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "initialize",
+     "args": [
+      {
+       "name": "attrs",
+       "moreInfo": false,
+       "last": false
+      },
+      {
+       "name": "options",
+       "moreInfo": false,
+       "last": true
+      }
+     ],
+     "lineNoStart": 95,
+     "description": "",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~2"
+    },
+    {
+     "name": "get_id",
+     "args": [],
+     "lineNoStart": 215,
+     "description": "",
+     "result": "",
+     "cls": "~2"
+    },
+    {
+     "name": "get_url",
+     "args": [],
+     "lineNoStart": 257,
+     "description": "",
+     "result": "",
+     "cls": "~2"
+    }
+   ],
+   "properties": [],
+   "match": "File =  Backbone.Model.extend(",
+   "name": "Model",
+   "start": 4729,
+   "end": 5709
+  },
+  {
+   "methods": [
+    {
+     "name": "extend",
+     "args": "~classes~0~methods~args",
+     "lineNoStart": 313,
+     "description": "To create a Model class of your own, you extend Backbone.Model and\n/// provide instance properties, as well as optional classProperties to be\n/// attached directly to the constructor function.",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~classes~0"
+    },
+    {
+     "name": "initialize",
+     "args": "~args",
+     "lineNoStart": 617,
+     "description": "When creating an instance of a model, you can pass in the initial values of the attributes, which will be set on the model. If you define an initialize function, it will be invoked when the model is created.",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~classes~0"
+    },
+    {
+     "name": "get",
+     "args": "~args",
+     "lineNoStart": 783,
+     "description": "Get the current value of an attribute from the model. For example: note.get(\"title\")",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~classes~0"
+    },
+    {
+     "name": "set",
+     "args": "~args",
+     "lineNoStart": 832,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "escape",
+     "args": "~args",
+     "lineNoStart": 881,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "has",
+     "args": "~args",
+     "lineNoStart": 933,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "unset",
+     "args": "~args",
+     "lineNoStart": 982,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "clear",
+     "args": "~args",
+     "lineNoStart": 1033,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "toJSON",
+     "args": "~args",
+     "lineNoStart": 1084,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "initialize",
+     "args": "~args",
+     "lineNoStart": 1136,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "fetch",
+     "args": "~args",
+     "lineNoStart": 1192,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "save",
+     "args": "~args",
+     "lineNoStart": 1243,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "destroy",
+     "args": "~args",
+     "lineNoStart": 1293,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "isValid",
+     "args": "~args",
+     "lineNoStart": 1346,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "clone",
+     "args": "~args",
+     "lineNoStart": 1399,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "isNew",
+     "args": "~args",
+     "lineNoStart": 1450,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "hasChanged",
+     "args": "~args",
+     "lineNoStart": 1501,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "previous",
+     "args": "~args",
+     "lineNoStart": 1557,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "changedAttributes",
+     "args": "~args",
+     "lineNoStart": 1611,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "previousAttributes",
+     "args": "~args",
+     "lineNoStart": 1674,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "id",
+     "args": "~args",
+     "lineNoStart": 1738,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "attributes",
+     "args": "~args",
+     "lineNoStart": 1786,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "cid",
+     "args": "~args",
+     "lineNoStart": 1842,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "changed",
+     "args": "~args",
+     "lineNoStart": 1891,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "url",
+     "args": "~args",
+     "lineNoStart": 1944,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "initialize",
+     "args": [
+      {
+       "name": "attrs",
+       "moreInfo": false,
+       "last": false
+      },
+      {
+       "name": "options",
+       "moreInfo": false,
+       "last": true
+      }
+     ],
+     "lineNoStart": 94,
+     "description": "",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~3"
+    },
+    {
+     "name": "get_id",
+     "args": [],
+     "lineNoStart": 288,
+     "description": "",
+     "result": "",
+     "cls": "~3"
+    },
+    {
+     "name": "set",
+     "args": [
+      {
+       "name": "k",
+       "moreInfo": false,
+       "last": false
+      },
+      {
+       "name": "v",
+       "moreInfo": false,
+       "last": false
+      },
+      {
+       "name": "options",
+       "moreInfo": false,
+       "last": true
+      }
+     ],
+     "lineNoStart": 858,
+     "description": "",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~3"
+    },
+    {
+     "name": "delete_properties",
+     "args": [
+      {
+       "name": "props",
+       "moreInfo": false,
+       "last": false
+      },
+      {
+       "name": "silent",
+       "moreInfo": false,
+       "last": true
+      }
+     ],
+     "lineNoStart": 1167,
+     "description": "",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~3"
+    },
+    {
+     "name": "sync",
+     "args": [
+      {
+       "name": "method",
+       "moreInfo": false,
+       "last": false
+      },
+      {
+       "name": "model",
+       "moreInfo": false,
+       "last": false
+      },
+      {
+       "name": "options",
+       "moreInfo": false,
+       "last": true
+      }
+     ],
+     "lineNoStart": 3772,
+     "description": "",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~3"
+    }
+   ],
+   "properties": [],
+   "match": "Obj =  Backbone.Model.extend(",
+   "name": "Model",
+   "start": 5710,
+   "end": 9934
+  },
+  {
+   "methods": [
+    {
+     "name": "extend",
+     "args": "~classes~0~methods~args",
+     "lineNoStart": 313,
+     "description": "To create a Model class of your own, you extend Backbone.Model and\n/// provide instance properties, as well as optional classProperties to be\n/// attached directly to the constructor function.",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~classes~0"
+    },
+    {
+     "name": "initialize",
+     "args": "~args",
+     "lineNoStart": 617,
+     "description": "When creating an instance of a model, you can pass in the initial values of the attributes, which will be set on the model. If you define an initialize function, it will be invoked when the model is created.",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~classes~0"
+    },
+    {
+     "name": "get",
+     "args": "~args",
+     "lineNoStart": 783,
+     "description": "Get the current value of an attribute from the model. For example: note.get(\"title\")",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~classes~0"
+    },
+    {
+     "name": "set",
+     "args": "~args",
+     "lineNoStart": 832,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "escape",
+     "args": "~args",
+     "lineNoStart": 881,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "has",
+     "args": "~args",
+     "lineNoStart": 933,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "unset",
+     "args": "~args",
+     "lineNoStart": 982,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "clear",
+     "args": "~args",
+     "lineNoStart": 1033,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "toJSON",
+     "args": "~args",
+     "lineNoStart": 1084,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "initialize",
+     "args": "~args",
+     "lineNoStart": 1136,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "fetch",
+     "args": "~args",
+     "lineNoStart": 1192,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "save",
+     "args": "~args",
+     "lineNoStart": 1243,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "destroy",
+     "args": "~args",
+     "lineNoStart": 1293,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "isValid",
+     "args": "~args",
+     "lineNoStart": 1346,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "clone",
+     "args": "~args",
+     "lineNoStart": 1399,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "isNew",
+     "args": "~args",
+     "lineNoStart": 1450,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "hasChanged",
+     "args": "~args",
+     "lineNoStart": 1501,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "previous",
+     "args": "~args",
+     "lineNoStart": 1557,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "changedAttributes",
+     "args": "~args",
+     "lineNoStart": 1611,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "previousAttributes",
+     "args": "~args",
+     "lineNoStart": 1674,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "id",
+     "args": "~args",
+     "lineNoStart": 1738,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "attributes",
+     "args": "~args",
+     "lineNoStart": 1786,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "cid",
+     "args": "~args",
+     "lineNoStart": 1842,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "changed",
+     "args": "~args",
+     "lineNoStart": 1891,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "url",
+     "args": "~args",
+     "lineNoStart": 1944,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "initialize",
+     "args": [
+      {
+       "name": "attributes",
+       "moreInfo": false,
+       "last": false
+      },
+      {
+       "name": "options",
+       "moreInfo": false,
+       "last": true
+      }
+     ],
+     "lineNoStart": 121,
+     "description": "",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~4"
+    },
+    {
+     "name": "get_or_create_file",
+     "args": [
+      {
+       "name": "fid",
+       "moreInfo": false,
+       "last": true
+      }
+     ],
+     "lineNoStart": 905,
+     "description": "<string> fid file id\n/// Tries to get a file with given id. If it doesn't exist, a file with that name is created.",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~4"
+    },
+    {
+     "name": "set_up_websocket",
+     "args": [],
+     "lineNoStart": 1112,
+     "description": "",
+     "result": "",
+     "cls": "~4"
+    },
+    {
+     "name": "onmessage",
+     "args": [
+      {
+       "name": "evt",
+       "moreInfo": false,
+       "last": true
+      }
+     ],
+     "lineNoStart": 1620,
+     "description": "",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~4"
+    },
+    {
+     "name": "onopen",
+     "args": [],
+     "lineNoStart": 2069,
+     "description": "",
+     "result": "",
+     "cls": "~4"
+    },
+    {
+     "name": "onclose",
+     "args": [
+      {
+       "name": "evt",
+       "moreInfo": false,
+       "last": true
+      }
+     ],
+     "lineNoStart": 2304,
+     "description": "",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~4"
+    },
+    {
+     "name": "get_use_websockets",
+     "args": [],
+     "lineNoStart": 2661,
+     "description": "",
+     "result": "",
+     "cls": "~4"
+    },
+    {
+     "name": "get_cache_size",
+     "args": [
+      {
+       "name": "i",
+       "moreInfo": false,
+       "last": true
+      }
+     ],
+     "lineNoStart": 2735,
+     "description": "",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~4"
+    },
+    {
+     "name": "get_obj_ids",
+     "args": [],
+     "lineNoStart": 2802,
+     "description": "",
+     "result": "",
+     "cls": "~4"
+    },
+    {
+     "name": "get_token",
+     "args": [],
+     "lineNoStart": 3347,
+     "description": "",
+     "result": "",
+     "cls": "~4"
+    },
+    {
+     "name": "get_id",
+     "args": [],
+     "lineNoStart": 3865,
+     "description": "",
+     "result": "",
+     "cls": "~4"
+    },
+    {
+     "name": "put_file",
+     "args": [
+      {
+       "name": "id",
+       "moreInfo": false,
+       "last": false
+      },
+      {
+       "name": "filedata",
+       "moreInfo": false,
+       "last": false
+      },
+      {
+       "name": "contenttype",
+       "moreInfo": false,
+       "last": true
+      }
+     ],
+     "lineNoStart": 4109,
+     "description": "",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~4"
+    },
+    {
+     "name": "cb",
+     "args": [],
+     "lineNoStart": 4588,
+     "description": "",
+     "result": "",
+     "cls": "~4"
+    },
+    {
+     "name": "query",
+     "args": [
+      {
+       "name": "q",
+       "moreInfo": false,
+       "last": true
+      }
+     ],
+     "lineNoStart": 5803,
+     "description": "",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~4"
+    },
+    {
+     "name": "get_obj",
+     "args": [
+      {
+       "name": "objid",
+       "moreInfo": false,
+       "last": true
+      }
+     ],
+     "lineNoStart": 10246,
+     "description": "",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~4"
+    },
+    {
+     "name": "delete_box",
+     "args": [
+      {
+       "name": "boxid",
+       "moreInfo": false,
+       "last": true
+      }
+     ],
+     "lineNoStart": 15178,
+     "description": "",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~4"
+    },
+    {
+     "name": "update",
+     "args": [
+      {
+       "name": "original_ids",
+       "moreInfo": false,
+       "last": true
+      }
+     ],
+     "lineNoStart": 18065,
+     "description": "",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~4"
+    },
+    {
+     "name": "sync",
+     "args": [
+      {
+       "name": "method",
+       "moreInfo": false,
+       "last": false
+      },
+      {
+       "name": "box",
+       "moreInfo": false,
+       "last": false
+      },
+      {
+       "name": "options",
+       "moreInfo": false,
+       "last": true
+      }
+     ],
+     "lineNoStart": 20001,
+     "description": "",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~4"
+    },
+    {
+     "name": "toString",
+     "args": [],
+     "lineNoStart": 20320,
+     "description": "",
+     "result": "",
+     "cls": "~4"
+    }
+   ],
+   "properties": [],
+   "match": "Box = Backbone.Model.extend(",
+   "name": "Model",
+   "start": 10159,
+   "end": 30551
+  },
+  {
+   "methods": [
+    {
+     "name": "extend",
+     "args": "~classes~0~methods~args",
+     "lineNoStart": 313,
+     "description": "To create a Model class of your own, you extend Backbone.Model and\n/// provide instance properties, as well as optional classProperties to be\n/// attached directly to the constructor function.",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~classes~0"
+    },
+    {
+     "name": "initialize",
+     "args": "~args",
+     "lineNoStart": 617,
+     "description": "When creating an instance of a model, you can pass in the initial values of the attributes, which will be set on the model. If you define an initialize function, it will be invoked when the model is created.",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~classes~0"
+    },
+    {
+     "name": "get",
+     "args": "~args",
+     "lineNoStart": 783,
+     "description": "Get the current value of an attribute from the model. For example: note.get(\"title\")",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~classes~0"
+    },
+    {
+     "name": "set",
+     "args": "~args",
+     "lineNoStart": 832,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "escape",
+     "args": "~args",
+     "lineNoStart": 881,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "has",
+     "args": "~args",
+     "lineNoStart": 933,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "unset",
+     "args": "~args",
+     "lineNoStart": 982,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "clear",
+     "args": "~args",
+     "lineNoStart": 1033,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "toJSON",
+     "args": "~args",
+     "lineNoStart": 1084,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "initialize",
+     "args": "~args",
+     "lineNoStart": 1136,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "fetch",
+     "args": "~args",
+     "lineNoStart": 1192,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "save",
+     "args": "~args",
+     "lineNoStart": 1243,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "destroy",
+     "args": "~args",
+     "lineNoStart": 1293,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "isValid",
+     "args": "~args",
+     "lineNoStart": 1346,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "clone",
+     "args": "~args",
+     "lineNoStart": 1399,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "isNew",
+     "args": "~args",
+     "lineNoStart": 1450,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "hasChanged",
+     "args": "~args",
+     "lineNoStart": 1501,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "previous",
+     "args": "~args",
+     "lineNoStart": 1557,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "changedAttributes",
+     "args": "~args",
+     "lineNoStart": 1611,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "previousAttributes",
+     "args": "~args",
+     "lineNoStart": 1674,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "id",
+     "args": "~args",
+     "lineNoStart": 1738,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "attributes",
+     "args": "~args",
+     "lineNoStart": 1786,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "cid",
+     "args": "~args",
+     "lineNoStart": 1842,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "changed",
+     "args": "~args",
+     "lineNoStart": 1891,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "url",
+     "args": "~args",
+     "lineNoStart": 1944,
+     "description": "",
+     "result": "",
+     "cls": "~classes~0"
+    },
+    {
+     "name": "initialize",
+     "args": [
+      {
+       "mode": {
+        "optional": true
+       },
+       "types": [
+        {
+         "type": "{}",
+         "last": true
+        }
+       ],
+       "name": "options",
+       "comment": "",
+       "moreInfo": true,
+       "last": false,
+       "hasTypes": true
+      },
+      {
+       "mode": {
+        "optional": true
+       },
+       "types": [
+        {
+         "type": "{}",
+         "last": true
+        }
+       ],
+       "name": "attributes",
+       "comment": "",
+       "moreInfo": true,
+       "last": true,
+       "hasTypes": true
+      }
+     ],
+     "lineNoStart": 305,
+     "description": "",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~5"
+    },
+    {
+     "name": "is_same_domain",
+     "args": [],
+     "lineNoStart": 419,
+     "description": "",
+     "result": "",
+     "cls": "~5"
+    },
+    {
+     "name": "boxes",
+     "args": [],
+     "lineNoStart": 593,
+     "description": "",
+     "result": "",
+     "cls": "~5"
+    },
+    {
+     "name": "get_box",
+     "args": [
+      {
+       "name": "boxid",
+       "moreInfo": false,
+       "last": true
+      }
+     ],
+     "lineNoStart": 648,
+     "description": "",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~5"
+    },
+    {
+     "name": "create_box",
+     "args": [
+      {
+       "mode": {
+        "mandatory": true
+       },
+       "types": [
+        {
+         "type": "number",
+         "last": false
+        },
+        {
+         "type": "string",
+         "last": true
+        }
+       ],
+       "name": "boxid",
+       "comment": "the id for the box",
+       "moreInfo": true,
+       "last": true,
+       "hasTypes": true
+      }
+     ],
+     "lineNoStart": 1169,
+     "description": "",
+     "result": {
+      "async": {
+       "then": {
+        "comment": "",
+        "args": [
+         {
+          "type": [
+           {
+            "type": "Box"
+           }
+          ],
+          "comment": "the box"
+         }
+        ]
+       },
+       "fail": {
+        "cases": [
+         {
+          "args": [
+           {
+            "type": [
+             {
+              "type": "{ code: -1, error: error obj }"
+             }
+            ],
+            "comment": "response"
+           }
+          ],
+          "comment": "other error"
+         },
+         {
+          "args": [
+           {
+            "type": [
+             {
+              "type": "{ code: 409 }"
+             }
+            ],
+            "comment": "response"
+           }
+          ],
+          "comment": "box already exists"
+         }
+        ]
+       }
+      }
+     },
+     "hasArgs": true,
+     "cls": "~5"
+    },
+    {
+     "name": "check_login",
+     "args": [],
+     "lineNoStart": 1515,
+     "description": "",
+     "result": "",
+     "cls": "~5"
+    },
+    {
+     "name": "get_info",
+     "args": [],
+     "lineNoStart": 1833,
+     "description": "",
+     "result": "",
+     "cls": "~5"
+    },
+    {
+     "name": "login",
+     "args": [
+      {
+       "name": "username",
+       "moreInfo": false,
+       "last": false
+      },
+      {
+       "name": "password",
+       "moreInfo": false,
+       "last": true
+      }
+     ],
+     "lineNoStart": 1901,
+     "description": "",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~5"
+    },
+    {
+     "name": "reconnect",
+     "args": [],
+     "lineNoStart": 2272,
+     "description": "",
+     "result": "",
+     "cls": "~5"
+    },
+    {
+     "name": "logout",
+     "args": [],
+     "lineNoStart": 2370,
+     "description": "",
+     "result": "",
+     "cls": "~5"
+    },
+    {
+     "name": "get_box_list",
+     "args": [],
+     "lineNoStart": 2753,
+     "description": "",
+     "result": "",
+     "cls": "~5"
+    },
+    {
+     "name": "sync",
+     "args": [
+      {
+       "name": "method",
+       "moreInfo": false,
+       "last": false
+      },
+      {
+       "name": "model",
+       "moreInfo": false,
+       "last": false
+      },
+      {
+       "name": "options",
+       "moreInfo": false,
+       "last": true
+      }
+     ],
+     "lineNoStart": 3964,
+     "description": "",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~5"
+    },
+    {
+     "name": "deep_clone_obj",
+     "args": [
+      {
+       "name": "o",
+       "moreInfo": false,
+       "last": true
+      }
+     ],
+     "lineNoStart": 4743,
+     "description": "",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~5"
+    },
+    {
+     "name": "scope_bind",
+     "args": [
+      {
+       "name": "$scope",
+       "moreInfo": false,
+       "last": false
+      },
+      {
+       "name": "name",
+       "moreInfo": false,
+       "last": false
+      },
+      {
+       "name": "model",
+       "moreInfo": false,
+       "last": true
+      }
+     ],
+     "lineNoStart": 4860,
+     "description": "",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~5"
+    },
+    {
+     "name": "findchanges",
+     "args": [
+      {
+       "name": "old",
+       "moreInfo": false,
+       "last": false
+      },
+      {
+       "name": "new_",
+       "moreInfo": false,
+       "last": false
+      },
+      {
+       "name": "fn",
+       "moreInfo": false,
+       "last": true
+      }
+     ],
+     "lineNoStart": 5151,
+     "description": "",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~5"
+    },
+    {
+     "name": "scope_unbind",
+     "args": [
+      {
+       "name": "$scope",
+       "moreInfo": false,
+       "last": false
+      },
+      {
+       "name": "name",
+       "moreInfo": false,
+       "last": true
+      }
+     ],
+     "lineNoStart": 6098,
+     "description": "",
+     "result": "",
+     "hasArgs": true,
+     "cls": "~5"
+    }
+   ],
+   "properties": [],
+   "match": "Store =  Backbone.Model.extend(",
+   "name": "Model",
+   "start": 30619,
+   "end": 36945
+  },
+  {
+   "methods": [
+    {
+     "name": "extend",
+     "args": "~1~methods~args",
+     "lineNoStart": 64,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "initialize",
+     "args": "~args",
+     "lineNoStart": 116,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "add",
+     "args": "~args",
+     "lineNoStart": 172,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "remove",
+     "args": "~args",
+     "lineNoStart": 221,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "reset",
+     "args": "~args",
+     "lineNoStart": 273,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "get",
+     "args": "~args",
+     "lineNoStart": 324,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "set",
+     "args": "~args",
+     "lineNoStart": 373,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "at",
+     "args": "~args",
+     "lineNoStart": 422,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "push",
+     "args": "~args",
+     "lineNoStart": 470,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "pop",
+     "args": "~args",
+     "lineNoStart": 520,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "unshift",
+     "args": "~args",
+     "lineNoStart": 569,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "shift",
+     "args": "~args",
+     "lineNoStart": 622,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "slice",
+     "args": "~args",
+     "lineNoStart": 673,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "sort",
+     "args": "~args",
+     "lineNoStart": 724,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "pluck",
+     "args": "~args",
+     "lineNoStart": 774,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "where",
+     "args": "~args",
+     "lineNoStart": 825,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "findWhere",
+     "args": "~args",
+     "lineNoStart": 876,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "clone",
+     "args": "~args",
+     "lineNoStart": 931,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "fetch",
+     "args": "~args",
+     "lineNoStart": 982,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "create",
+     "args": "~args",
+     "lineNoStart": 1033,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "model",
+     "args": "~args",
+     "lineNoStart": 1087,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "models",
+     "args": "~args",
+     "lineNoStart": 1140,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    }
+   ],
+   "properties": [],
+   "match": "ObjCollection = Backbone.Collection.extend(",
+   "name": "Collection",
+   "start": 9935,
+   "end": 9997
+  },
+  {
+   "methods": [
+    {
+     "name": "extend",
+     "args": "~1~methods~args",
+     "lineNoStart": 64,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "initialize",
+     "args": "~args",
+     "lineNoStart": 116,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "add",
+     "args": "~args",
+     "lineNoStart": 172,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "remove",
+     "args": "~args",
+     "lineNoStart": 221,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "reset",
+     "args": "~args",
+     "lineNoStart": 273,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "get",
+     "args": "~args",
+     "lineNoStart": 324,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "set",
+     "args": "~args",
+     "lineNoStart": 373,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "at",
+     "args": "~args",
+     "lineNoStart": 422,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "push",
+     "args": "~args",
+     "lineNoStart": 470,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "pop",
+     "args": "~args",
+     "lineNoStart": 520,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "unshift",
+     "args": "~args",
+     "lineNoStart": 569,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "shift",
+     "args": "~args",
+     "lineNoStart": 622,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "slice",
+     "args": "~args",
+     "lineNoStart": 673,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "sort",
+     "args": "~args",
+     "lineNoStart": 724,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "pluck",
+     "args": "~args",
+     "lineNoStart": 774,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "where",
+     "args": "~args",
+     "lineNoStart": 825,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "findWhere",
+     "args": "~args",
+     "lineNoStart": 876,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "clone",
+     "args": "~args",
+     "lineNoStart": 931,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "fetch",
+     "args": "~args",
+     "lineNoStart": 982,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "create",
+     "args": "~args",
+     "lineNoStart": 1033,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "model",
+     "args": "~args",
+     "lineNoStart": 1087,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "models",
+     "args": "~args",
+     "lineNoStart": 1140,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    }
+   ],
+   "properties": [],
+   "match": "FileCollection = Backbone.Collection.extend(",
+   "name": "Collection",
+   "start": 9998,
+   "end": 10158
+  },
+  {
+   "methods": [
+    {
+     "name": "extend",
+     "args": "~1~methods~args",
+     "lineNoStart": 64,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "initialize",
+     "args": "~args",
+     "lineNoStart": 116,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "add",
+     "args": "~args",
+     "lineNoStart": 172,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "remove",
+     "args": "~args",
+     "lineNoStart": 221,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "reset",
+     "args": "~args",
+     "lineNoStart": 273,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "get",
+     "args": "~args",
+     "lineNoStart": 324,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "set",
+     "args": "~args",
+     "lineNoStart": 373,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "at",
+     "args": "~args",
+     "lineNoStart": 422,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "push",
+     "args": "~args",
+     "lineNoStart": 470,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "pop",
+     "args": "~args",
+     "lineNoStart": 520,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "unshift",
+     "args": "~args",
+     "lineNoStart": 569,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "shift",
+     "args": "~args",
+     "lineNoStart": 622,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "slice",
+     "args": "~args",
+     "lineNoStart": 673,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "sort",
+     "args": "~args",
+     "lineNoStart": 724,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "pluck",
+     "args": "~args",
+     "lineNoStart": 774,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "where",
+     "args": "~args",
+     "lineNoStart": 825,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "findWhere",
+     "args": "~args",
+     "lineNoStart": 876,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "clone",
+     "args": "~args",
+     "lineNoStart": 931,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "fetch",
+     "args": "~args",
+     "lineNoStart": 982,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "create",
+     "args": "~args",
+     "lineNoStart": 1033,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "model",
+     "args": "~args",
+     "lineNoStart": 1087,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    },
+    {
+     "name": "models",
+     "args": "~args",
+     "lineNoStart": 1140,
+     "description": "",
+     "result": "",
+     "cls": "~1"
+    }
+   ],
+   "properties": [],
+   "match": "BoxCollection = Backbone.Collection.extend(",
+   "name": "Collection",
+   "start": 30552,
+   "end": 30618
+  }
+ ],
+ "basePath": "../html/",
+ "files": [
+  "../docs/backbone-abstract.js",
+  "js/indx.js"
+ ],
+ "project": {
+  "title": "INDX",
+  "version": "0.01",
+  "description": "INDX is a personal file store being developed at the University of Southampton, for the SOCIAM project."
+ },
+ "superclasses": {},
+ "json": "{\"classes\":[{\"methods\":[{\"name\":\"extend\",\"args\":[{\"mode\":{\"optional\":true},\"types\":\"\",\"name\":\"classProperties\",\"comment\":\"\",\"moreInfo\":false,\"last\":false},{\"mode\":{\"mandatory\":true},\"types\":\"\",\"name\":\"properties\",\"comment\":\"\",\"moreInfo\":false,\"last\":true}],\"lineNoStart\":313,\"description\":\"To create a Model class of your own, you extend Backbone.Model and\\n/// provide instance properties, as well as optional classProperties to be\\n/// attached directly to the constructor function.\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"\\x7eclasses~0\"},{\"name\":\"initialize\",\"args\":[{\"mode\":{\"optional\":true},\"types\":\"\",\"name\":\"options\",\"comment\":\"\",\"moreInfo\":false,\"last\":false},{\"mode\":{\"optional\":true},\"types\":\"\",\"name\":\"attributes\",\"comment\":\"\",\"moreInfo\":false,\"last\":true}],\"lineNoStart\":617,\"description\":\"When creating an instance of a model, you can pass in the initial values of the attributes, which will be set on the model. If you define an initialize function, it will be invoked when the model is created.\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~classes~0\"},{\"name\":\"get\",\"args\":[{\"mode\":{\"mandatory\":true},\"types\":\"\",\"name\":\"attribute\",\"comment\":\"\",\"moreInfo\":false,\"last\":true}],\"lineNoStart\":783,\"description\":\"Get the current value of an attribute from the model. For example: note.get(\\\"title\\\")\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~classes~0\"},{\"name\":\"set\",\"args\":[],\"lineNoStart\":832,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"escape\",\"args\":[],\"lineNoStart\":881,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"has\",\"args\":[],\"lineNoStart\":933,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"unset\",\"args\":[],\"lineNoStart\":982,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"clear\",\"args\":[],\"lineNoStart\":1033,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"toJSON\",\"args\":[],\"lineNoStart\":1084,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"initialize\",\"args\":[],\"lineNoStart\":1136,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"fetch\",\"args\":[],\"lineNoStart\":1192,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"save\",\"args\":[],\"lineNoStart\":1243,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"destroy\",\"args\":[],\"lineNoStart\":1293,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"isValid\",\"args\":[],\"lineNoStart\":1346,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"clone\",\"args\":[],\"lineNoStart\":1399,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"isNew\",\"args\":[],\"lineNoStart\":1450,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"hasChanged\",\"args\":[],\"lineNoStart\":1501,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"previous\",\"args\":[],\"lineNoStart\":1557,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"changedAttributes\",\"args\":[],\"lineNoStart\":1611,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"previousAttributes\",\"args\":[],\"lineNoStart\":1674,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"id\",\"args\":[],\"lineNoStart\":1738,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"attributes\",\"args\":[],\"lineNoStart\":1786,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"cid\",\"args\":[],\"lineNoStart\":1842,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"changed\",\"args\":[],\"lineNoStart\":1891,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"url\",\"args\":[],\"lineNoStart\":1944,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"auth\",\"args\":[{\"name\":\"token\",\"moreInfo\":false,\"last\":true}],\"lineNoStart\":1440,\"description\":\"\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~classes~0\"},{\"name\":\"diff\",\"args\":[{\"name\":\"token\",\"moreInfo\":false,\"last\":true}],\"lineNoStart\":1523,\"description\":\"\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~classes~0\"},{\"name\":\"serialize_obj\",\"args\":[{\"name\":\"obj\",\"moreInfo\":false,\"last\":true}],\"lineNoStart\":1622,\"description\":\"\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~classes~0\"}],\"properties\":[],\"match\":\"Backbone.Model = function ()\",\"name\":\"Model\",\"fullName\":\"Backbone.Model\",\"start\":108,\"end\":2120},{\"methods\":[{\"name\":\"extend\",\"args\":[],\"lineNoStart\":64,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"initialize\",\"args\":[],\"lineNoStart\":116,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"add\",\"args\":[],\"lineNoStart\":172,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"remove\",\"args\":[],\"lineNoStart\":221,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"reset\",\"args\":[],\"lineNoStart\":273,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"get\",\"args\":[],\"lineNoStart\":324,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"set\",\"args\":[],\"lineNoStart\":373,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"at\",\"args\":[],\"lineNoStart\":422,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"push\",\"args\":[],\"lineNoStart\":470,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"pop\",\"args\":[],\"lineNoStart\":520,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"unshift\",\"args\":[],\"lineNoStart\":569,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"shift\",\"args\":[],\"lineNoStart\":622,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"slice\",\"args\":[],\"lineNoStart\":673,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"sort\",\"args\":[],\"lineNoStart\":724,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"pluck\",\"args\":[],\"lineNoStart\":774,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"where\",\"args\":[],\"lineNoStart\":825,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"findWhere\",\"args\":[],\"lineNoStart\":876,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"clone\",\"args\":[],\"lineNoStart\":931,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"fetch\",\"args\":[],\"lineNoStart\":982,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"create\",\"args\":[],\"lineNoStart\":1033,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"model\",\"args\":[],\"lineNoStart\":1087,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"models\",\"args\":[],\"lineNoStart\":1140,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"org/2001/XMLSchema#integer\\\"\",\"args\":[{\"name\":\"o\",\"moreInfo\":false,\"last\":true}],\"lineNoStart\":1333,\"description\":\"\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~1\"},{\"name\":\"org/2001/XMLSchema#float\\\"\",\"args\":[{\"name\":\"o\",\"moreInfo\":false,\"last\":true}],\"lineNoStart\":1431,\"description\":\"\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~1\"},{\"name\":\"org/2001/XMLSchema#double\\\"\",\"args\":[{\"name\":\"o\",\"moreInfo\":false,\"last\":true}],\"lineNoStart\":1529,\"description\":\"\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~1\"},{\"name\":\"org/2001/XMLSchema#boolean\\\"\",\"args\":[{\"name\":\"o\",\"moreInfo\":false,\"last\":true}],\"lineNoStart\":1628,\"description\":\"\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~1\"},{\"name\":\"org/2001/XMLSchema#dateTime\\\"\",\"args\":[{\"name\":\"o\",\"moreInfo\":false,\"last\":true}],\"lineNoStart\":1737,\"description\":\"\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~1\"},{\"name\":\"deserialize_literal\",\"args\":[{\"name\":\"obj\",\"moreInfo\":false,\"last\":false},{\"name\":\"box\",\"moreInfo\":false,\"last\":true}],\"lineNoStart\":1982,\"description\":\"\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~1\"},{\"name\":\"deserialize_value\",\"args\":[{\"name\":\"s_val\",\"moreInfo\":false,\"last\":false},{\"name\":\"box\",\"moreInfo\":false,\"last\":true}],\"lineNoStart\":2138,\"description\":\"\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~1\"}],\"properties\":[],\"match\":\"Backbone.Collection = function ()\",\"name\":\"Collection\",\"fullName\":\"Backbone.Collection\",\"start\":2121,\"end\":4728},{\"methods\":[{\"name\":\"extend\",\"args\":\"~classes~0~methods~args\",\"lineNoStart\":313,\"description\":\"To create a Model class of your own, you extend Backbone.Model and\\n/// provide instance properties, as well as optional classProperties to be\\n/// attached directly to the constructor function.\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~classes~0\"},{\"name\":\"initialize\",\"args\":\"~args\",\"lineNoStart\":617,\"description\":\"When creating an instance of a model, you can pass in the initial values of the attributes, which will be set on the model. If you define an initialize function, it will be invoked when the model is created.\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~classes~0\"},{\"name\":\"get\",\"args\":\"~args\",\"lineNoStart\":783,\"description\":\"Get the current value of an attribute from the model. For example: note.get(\\\"title\\\")\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~classes~0\"},{\"name\":\"set\",\"args\":\"~args\",\"lineNoStart\":832,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"escape\",\"args\":\"~args\",\"lineNoStart\":881,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"has\",\"args\":\"~args\",\"lineNoStart\":933,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"unset\",\"args\":\"~args\",\"lineNoStart\":982,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"clear\",\"args\":\"~args\",\"lineNoStart\":1033,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"toJSON\",\"args\":\"~args\",\"lineNoStart\":1084,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"initialize\",\"args\":\"~args\",\"lineNoStart\":1136,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"fetch\",\"args\":\"~args\",\"lineNoStart\":1192,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"save\",\"args\":\"~args\",\"lineNoStart\":1243,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"destroy\",\"args\":\"~args\",\"lineNoStart\":1293,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"isValid\",\"args\":\"~args\",\"lineNoStart\":1346,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"clone\",\"args\":\"~args\",\"lineNoStart\":1399,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"isNew\",\"args\":\"~args\",\"lineNoStart\":1450,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"hasChanged\",\"args\":\"~args\",\"lineNoStart\":1501,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"previous\",\"args\":\"~args\",\"lineNoStart\":1557,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"changedAttributes\",\"args\":\"~args\",\"lineNoStart\":1611,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"previousAttributes\",\"args\":\"~args\",\"lineNoStart\":1674,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"id\",\"args\":\"~args\",\"lineNoStart\":1738,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"attributes\",\"args\":\"~args\",\"lineNoStart\":1786,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"cid\",\"args\":\"~args\",\"lineNoStart\":1842,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"changed\",\"args\":\"~args\",\"lineNoStart\":1891,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"url\",\"args\":\"~args\",\"lineNoStart\":1944,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"initialize\",\"args\":[{\"name\":\"attrs\",\"moreInfo\":false,\"last\":false},{\"name\":\"options\",\"moreInfo\":false,\"last\":true}],\"lineNoStart\":95,\"description\":\"\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~2\"},{\"name\":\"get_id\",\"args\":[],\"lineNoStart\":215,\"description\":\"\",\"result\":\"\",\"cls\":\"~2\"},{\"name\":\"get_url\",\"args\":[],\"lineNoStart\":257,\"description\":\"\",\"result\":\"\",\"cls\":\"~2\"}],\"properties\":[],\"match\":\"File =  Backbone.Model.extend(\",\"name\":\"Model\",\"start\":4729,\"end\":5709},{\"methods\":[{\"name\":\"extend\",\"args\":\"~classes~0~methods~args\",\"lineNoStart\":313,\"description\":\"To create a Model class of your own, you extend Backbone.Model and\\n/// provide instance properties, as well as optional classProperties to be\\n/// attached directly to the constructor function.\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~classes~0\"},{\"name\":\"initialize\",\"args\":\"~args\",\"lineNoStart\":617,\"description\":\"When creating an instance of a model, you can pass in the initial values of the attributes, which will be set on the model. If you define an initialize function, it will be invoked when the model is created.\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~classes~0\"},{\"name\":\"get\",\"args\":\"~args\",\"lineNoStart\":783,\"description\":\"Get the current value of an attribute from the model. For example: note.get(\\\"title\\\")\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~classes~0\"},{\"name\":\"set\",\"args\":\"~args\",\"lineNoStart\":832,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"escape\",\"args\":\"~args\",\"lineNoStart\":881,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"has\",\"args\":\"~args\",\"lineNoStart\":933,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"unset\",\"args\":\"~args\",\"lineNoStart\":982,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"clear\",\"args\":\"~args\",\"lineNoStart\":1033,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"toJSON\",\"args\":\"~args\",\"lineNoStart\":1084,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"initialize\",\"args\":\"~args\",\"lineNoStart\":1136,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"fetch\",\"args\":\"~args\",\"lineNoStart\":1192,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"save\",\"args\":\"~args\",\"lineNoStart\":1243,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"destroy\",\"args\":\"~args\",\"lineNoStart\":1293,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"isValid\",\"args\":\"~args\",\"lineNoStart\":1346,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"clone\",\"args\":\"~args\",\"lineNoStart\":1399,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"isNew\",\"args\":\"~args\",\"lineNoStart\":1450,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"hasChanged\",\"args\":\"~args\",\"lineNoStart\":1501,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"previous\",\"args\":\"~args\",\"lineNoStart\":1557,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"changedAttributes\",\"args\":\"~args\",\"lineNoStart\":1611,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"previousAttributes\",\"args\":\"~args\",\"lineNoStart\":1674,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"id\",\"args\":\"~args\",\"lineNoStart\":1738,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"attributes\",\"args\":\"~args\",\"lineNoStart\":1786,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"cid\",\"args\":\"~args\",\"lineNoStart\":1842,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"changed\",\"args\":\"~args\",\"lineNoStart\":1891,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"url\",\"args\":\"~args\",\"lineNoStart\":1944,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"initialize\",\"args\":[{\"name\":\"attrs\",\"moreInfo\":false,\"last\":false},{\"name\":\"options\",\"moreInfo\":false,\"last\":true}],\"lineNoStart\":94,\"description\":\"\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~3\"},{\"name\":\"get_id\",\"args\":[],\"lineNoStart\":288,\"description\":\"\",\"result\":\"\",\"cls\":\"~3\"},{\"name\":\"set\",\"args\":[{\"name\":\"k\",\"moreInfo\":false,\"last\":false},{\"name\":\"v\",\"moreInfo\":false,\"last\":false},{\"name\":\"options\",\"moreInfo\":false,\"last\":true}],\"lineNoStart\":858,\"description\":\"\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~3\"},{\"name\":\"delete_properties\",\"args\":[{\"name\":\"props\",\"moreInfo\":false,\"last\":false},{\"name\":\"silent\",\"moreInfo\":false,\"last\":true}],\"lineNoStart\":1167,\"description\":\"\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~3\"},{\"name\":\"sync\",\"args\":[{\"name\":\"method\",\"moreInfo\":false,\"last\":false},{\"name\":\"model\",\"moreInfo\":false,\"last\":false},{\"name\":\"options\",\"moreInfo\":false,\"last\":true}],\"lineNoStart\":3772,\"description\":\"\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~3\"}],\"properties\":[],\"match\":\"Obj =  Backbone.Model.extend(\",\"name\":\"Model\",\"start\":5710,\"end\":9934},{\"methods\":[{\"name\":\"extend\",\"args\":\"~classes~0~methods~args\",\"lineNoStart\":313,\"description\":\"To create a Model class of your own, you extend Backbone.Model and\\n/// provide instance properties, as well as optional classProperties to be\\n/// attached directly to the constructor function.\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~classes~0\"},{\"name\":\"initialize\",\"args\":\"~args\",\"lineNoStart\":617,\"description\":\"When creating an instance of a model, you can pass in the initial values of the attributes, which will be set on the model. If you define an initialize function, it will be invoked when the model is created.\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~classes~0\"},{\"name\":\"get\",\"args\":\"~args\",\"lineNoStart\":783,\"description\":\"Get the current value of an attribute from the model. For example: note.get(\\\"title\\\")\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~classes~0\"},{\"name\":\"set\",\"args\":\"~args\",\"lineNoStart\":832,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"escape\",\"args\":\"~args\",\"lineNoStart\":881,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"has\",\"args\":\"~args\",\"lineNoStart\":933,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"unset\",\"args\":\"~args\",\"lineNoStart\":982,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"clear\",\"args\":\"~args\",\"lineNoStart\":1033,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"toJSON\",\"args\":\"~args\",\"lineNoStart\":1084,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"initialize\",\"args\":\"~args\",\"lineNoStart\":1136,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"fetch\",\"args\":\"~args\",\"lineNoStart\":1192,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"save\",\"args\":\"~args\",\"lineNoStart\":1243,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"destroy\",\"args\":\"~args\",\"lineNoStart\":1293,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"isValid\",\"args\":\"~args\",\"lineNoStart\":1346,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"clone\",\"args\":\"~args\",\"lineNoStart\":1399,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"isNew\",\"args\":\"~args\",\"lineNoStart\":1450,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"hasChanged\",\"args\":\"~args\",\"lineNoStart\":1501,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"previous\",\"args\":\"~args\",\"lineNoStart\":1557,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"changedAttributes\",\"args\":\"~args\",\"lineNoStart\":1611,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"previousAttributes\",\"args\":\"~args\",\"lineNoStart\":1674,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"id\",\"args\":\"~args\",\"lineNoStart\":1738,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"attributes\",\"args\":\"~args\",\"lineNoStart\":1786,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"cid\",\"args\":\"~args\",\"lineNoStart\":1842,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"changed\",\"args\":\"~args\",\"lineNoStart\":1891,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"url\",\"args\":\"~args\",\"lineNoStart\":1944,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"initialize\",\"args\":[{\"name\":\"attributes\",\"moreInfo\":false,\"last\":false},{\"name\":\"options\",\"moreInfo\":false,\"last\":true}],\"lineNoStart\":121,\"description\":\"\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~4\"},{\"name\":\"get_or_create_file\",\"args\":[{\"name\":\"fid\",\"moreInfo\":false,\"last\":true}],\"lineNoStart\":905,\"description\":\"<string> fid file id\\n/// Tries to get a file with given id. If it doesn't exist, a file with that name is created.\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~4\"},{\"name\":\"set_up_websocket\",\"args\":[],\"lineNoStart\":1112,\"description\":\"\",\"result\":\"\",\"cls\":\"~4\"},{\"name\":\"onmessage\",\"args\":[{\"name\":\"evt\",\"moreInfo\":false,\"last\":true}],\"lineNoStart\":1620,\"description\":\"\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~4\"},{\"name\":\"onopen\",\"args\":[],\"lineNoStart\":2069,\"description\":\"\",\"result\":\"\",\"cls\":\"~4\"},{\"name\":\"onclose\",\"args\":[{\"name\":\"evt\",\"moreInfo\":false,\"last\":true}],\"lineNoStart\":2304,\"description\":\"\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~4\"},{\"name\":\"get_use_websockets\",\"args\":[],\"lineNoStart\":2661,\"description\":\"\",\"result\":\"\",\"cls\":\"~4\"},{\"name\":\"get_cache_size\",\"args\":[{\"name\":\"i\",\"moreInfo\":false,\"last\":true}],\"lineNoStart\":2735,\"description\":\"\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~4\"},{\"name\":\"get_obj_ids\",\"args\":[],\"lineNoStart\":2802,\"description\":\"\",\"result\":\"\",\"cls\":\"~4\"},{\"name\":\"get_token\",\"args\":[],\"lineNoStart\":3347,\"description\":\"\",\"result\":\"\",\"cls\":\"~4\"},{\"name\":\"get_id\",\"args\":[],\"lineNoStart\":3865,\"description\":\"\",\"result\":\"\",\"cls\":\"~4\"},{\"name\":\"put_file\",\"args\":[{\"name\":\"id\",\"moreInfo\":false,\"last\":false},{\"name\":\"filedata\",\"moreInfo\":false,\"last\":false},{\"name\":\"contenttype\",\"moreInfo\":false,\"last\":true}],\"lineNoStart\":4109,\"description\":\"\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~4\"},{\"name\":\"cb\",\"args\":[],\"lineNoStart\":4588,\"description\":\"\",\"result\":\"\",\"cls\":\"~4\"},{\"name\":\"query\",\"args\":[{\"name\":\"q\",\"moreInfo\":false,\"last\":true}],\"lineNoStart\":5803,\"description\":\"\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~4\"},{\"name\":\"get_obj\",\"args\":[{\"name\":\"objid\",\"moreInfo\":false,\"last\":true}],\"lineNoStart\":10246,\"description\":\"\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~4\"},{\"name\":\"delete_box\",\"args\":[{\"name\":\"boxid\",\"moreInfo\":false,\"last\":true}],\"lineNoStart\":15178,\"description\":\"\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~4\"},{\"name\":\"update\",\"args\":[{\"name\":\"original_ids\",\"moreInfo\":false,\"last\":true}],\"lineNoStart\":18065,\"description\":\"\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~4\"},{\"name\":\"sync\",\"args\":[{\"name\":\"method\",\"moreInfo\":false,\"last\":false},{\"name\":\"box\",\"moreInfo\":false,\"last\":false},{\"name\":\"options\",\"moreInfo\":false,\"last\":true}],\"lineNoStart\":20001,\"description\":\"\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~4\"},{\"name\":\"toString\",\"args\":[],\"lineNoStart\":20320,\"description\":\"\",\"result\":\"\",\"cls\":\"~4\"}],\"properties\":[],\"match\":\"Box = Backbone.Model.extend(\",\"name\":\"Model\",\"start\":10159,\"end\":30551},{\"methods\":[{\"name\":\"extend\",\"args\":\"~classes~0~methods~args\",\"lineNoStart\":313,\"description\":\"To create a Model class of your own, you extend Backbone.Model and\\n/// provide instance properties, as well as optional classProperties to be\\n/// attached directly to the constructor function.\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~classes~0\"},{\"name\":\"initialize\",\"args\":\"~args\",\"lineNoStart\":617,\"description\":\"When creating an instance of a model, you can pass in the initial values of the attributes, which will be set on the model. If you define an initialize function, it will be invoked when the model is created.\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~classes~0\"},{\"name\":\"get\",\"args\":\"~args\",\"lineNoStart\":783,\"description\":\"Get the current value of an attribute from the model. For example: note.get(\\\"title\\\")\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~classes~0\"},{\"name\":\"set\",\"args\":\"~args\",\"lineNoStart\":832,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"escape\",\"args\":\"~args\",\"lineNoStart\":881,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"has\",\"args\":\"~args\",\"lineNoStart\":933,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"unset\",\"args\":\"~args\",\"lineNoStart\":982,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"clear\",\"args\":\"~args\",\"lineNoStart\":1033,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"toJSON\",\"args\":\"~args\",\"lineNoStart\":1084,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"initialize\",\"args\":\"~args\",\"lineNoStart\":1136,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"fetch\",\"args\":\"~args\",\"lineNoStart\":1192,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"save\",\"args\":\"~args\",\"lineNoStart\":1243,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"destroy\",\"args\":\"~args\",\"lineNoStart\":1293,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"isValid\",\"args\":\"~args\",\"lineNoStart\":1346,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"clone\",\"args\":\"~args\",\"lineNoStart\":1399,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"isNew\",\"args\":\"~args\",\"lineNoStart\":1450,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"hasChanged\",\"args\":\"~args\",\"lineNoStart\":1501,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"previous\",\"args\":\"~args\",\"lineNoStart\":1557,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"changedAttributes\",\"args\":\"~args\",\"lineNoStart\":1611,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"previousAttributes\",\"args\":\"~args\",\"lineNoStart\":1674,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"id\",\"args\":\"~args\",\"lineNoStart\":1738,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"attributes\",\"args\":\"~args\",\"lineNoStart\":1786,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"cid\",\"args\":\"~args\",\"lineNoStart\":1842,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"changed\",\"args\":\"~args\",\"lineNoStart\":1891,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"url\",\"args\":\"~args\",\"lineNoStart\":1944,\"description\":\"\",\"result\":\"\",\"cls\":\"~classes~0\"},{\"name\":\"initialize\",\"args\":[{\"mode\":{\"optional\":true},\"types\":[{\"type\":\"{}\",\"last\":true}],\"name\":\"options\",\"comment\":\"\",\"moreInfo\":true,\"last\":false,\"hasTypes\":true},{\"mode\":{\"optional\":true},\"types\":[{\"type\":\"{}\",\"last\":true}],\"name\":\"attributes\",\"comment\":\"\",\"moreInfo\":true,\"last\":true,\"hasTypes\":true}],\"lineNoStart\":305,\"description\":\"\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~5\"},{\"name\":\"is_same_domain\",\"args\":[],\"lineNoStart\":419,\"description\":\"\",\"result\":\"\",\"cls\":\"~5\"},{\"name\":\"boxes\",\"args\":[],\"lineNoStart\":593,\"description\":\"\",\"result\":\"\",\"cls\":\"~5\"},{\"name\":\"get_box\",\"args\":[{\"name\":\"boxid\",\"moreInfo\":false,\"last\":true}],\"lineNoStart\":648,\"description\":\"\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~5\"},{\"name\":\"create_box\",\"args\":[{\"mode\":{\"mandatory\":true},\"types\":[{\"type\":\"number\",\"last\":false},{\"type\":\"string\",\"last\":true}],\"name\":\"boxid\",\"comment\":\"the id for the box\",\"moreInfo\":true,\"last\":true,\"hasTypes\":true}],\"lineNoStart\":1169,\"description\":\"\",\"result\":{\"async\":{\"then\":{\"comment\":\"\",\"args\":[{\"type\":[{\"type\":\"Box\"}],\"comment\":\"the box\"}]},\"fail\":{\"cases\":[{\"args\":[{\"type\":[{\"type\":\"{ code: -1, error: error obj }\"}],\"comment\":\"response\"}],\"comment\":\"other error\"},{\"args\":[{\"type\":[{\"type\":\"{ code: 409 }\"}],\"comment\":\"response\"}],\"comment\":\"box already exists\"}]}}},\"hasArgs\":true,\"cls\":\"~5\"},{\"name\":\"check_login\",\"args\":[],\"lineNoStart\":1515,\"description\":\"\",\"result\":\"\",\"cls\":\"~5\"},{\"name\":\"get_info\",\"args\":[],\"lineNoStart\":1833,\"description\":\"\",\"result\":\"\",\"cls\":\"~5\"},{\"name\":\"login\",\"args\":[{\"name\":\"username\",\"moreInfo\":false,\"last\":false},{\"name\":\"password\",\"moreInfo\":false,\"last\":true}],\"lineNoStart\":1901,\"description\":\"\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~5\"},{\"name\":\"reconnect\",\"args\":[],\"lineNoStart\":2272,\"description\":\"\",\"result\":\"\",\"cls\":\"~5\"},{\"name\":\"logout\",\"args\":[],\"lineNoStart\":2370,\"description\":\"\",\"result\":\"\",\"cls\":\"~5\"},{\"name\":\"get_box_list\",\"args\":[],\"lineNoStart\":2753,\"description\":\"\",\"result\":\"\",\"cls\":\"~5\"},{\"name\":\"sync\",\"args\":[{\"name\":\"method\",\"moreInfo\":false,\"last\":false},{\"name\":\"model\",\"moreInfo\":false,\"last\":false},{\"name\":\"options\",\"moreInfo\":false,\"last\":true}],\"lineNoStart\":3964,\"description\":\"\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~5\"},{\"name\":\"deep_clone_obj\",\"args\":[{\"name\":\"o\",\"moreInfo\":false,\"last\":true}],\"lineNoStart\":4743,\"description\":\"\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~5\"},{\"name\":\"scope_bind\",\"args\":[{\"name\":\"$scope\",\"moreInfo\":false,\"last\":false},{\"name\":\"name\",\"moreInfo\":false,\"last\":false},{\"name\":\"model\",\"moreInfo\":false,\"last\":true}],\"lineNoStart\":4860,\"description\":\"\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~5\"},{\"name\":\"findchanges\",\"args\":[{\"name\":\"old\",\"moreInfo\":false,\"last\":false},{\"name\":\"new_\",\"moreInfo\":false,\"last\":false},{\"name\":\"fn\",\"moreInfo\":false,\"last\":true}],\"lineNoStart\":5151,\"description\":\"\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~5\"},{\"name\":\"scope_unbind\",\"args\":[{\"name\":\"$scope\",\"moreInfo\":false,\"last\":false},{\"name\":\"name\",\"moreInfo\":false,\"last\":true}],\"lineNoStart\":6098,\"description\":\"\",\"result\":\"\",\"hasArgs\":true,\"cls\":\"~5\"}],\"properties\":[],\"match\":\"Store =  Backbone.Model.extend(\",\"name\":\"Model\",\"start\":30619,\"end\":36945},{\"methods\":[{\"name\":\"extend\",\"args\":\"~1~methods~args\",\"lineNoStart\":64,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"initialize\",\"args\":\"~args\",\"lineNoStart\":116,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"add\",\"args\":\"~args\",\"lineNoStart\":172,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"remove\",\"args\":\"~args\",\"lineNoStart\":221,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"reset\",\"args\":\"~args\",\"lineNoStart\":273,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"get\",\"args\":\"~args\",\"lineNoStart\":324,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"set\",\"args\":\"~args\",\"lineNoStart\":373,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"at\",\"args\":\"~args\",\"lineNoStart\":422,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"push\",\"args\":\"~args\",\"lineNoStart\":470,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"pop\",\"args\":\"~args\",\"lineNoStart\":520,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"unshift\",\"args\":\"~args\",\"lineNoStart\":569,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"shift\",\"args\":\"~args\",\"lineNoStart\":622,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"slice\",\"args\":\"~args\",\"lineNoStart\":673,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"sort\",\"args\":\"~args\",\"lineNoStart\":724,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"pluck\",\"args\":\"~args\",\"lineNoStart\":774,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"where\",\"args\":\"~args\",\"lineNoStart\":825,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"findWhere\",\"args\":\"~args\",\"lineNoStart\":876,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"clone\",\"args\":\"~args\",\"lineNoStart\":931,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"fetch\",\"args\":\"~args\",\"lineNoStart\":982,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"create\",\"args\":\"~args\",\"lineNoStart\":1033,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"model\",\"args\":\"~args\",\"lineNoStart\":1087,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"models\",\"args\":\"~args\",\"lineNoStart\":1140,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"}],\"properties\":[],\"match\":\"ObjCollection = Backbone.Collection.extend(\",\"name\":\"Collection\",\"start\":9935,\"end\":9997},{\"methods\":[{\"name\":\"extend\",\"args\":\"~1~methods~args\",\"lineNoStart\":64,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"initialize\",\"args\":\"~args\",\"lineNoStart\":116,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"add\",\"args\":\"~args\",\"lineNoStart\":172,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"remove\",\"args\":\"~args\",\"lineNoStart\":221,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"reset\",\"args\":\"~args\",\"lineNoStart\":273,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"get\",\"args\":\"~args\",\"lineNoStart\":324,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"set\",\"args\":\"~args\",\"lineNoStart\":373,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"at\",\"args\":\"~args\",\"lineNoStart\":422,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"push\",\"args\":\"~args\",\"lineNoStart\":470,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"pop\",\"args\":\"~args\",\"lineNoStart\":520,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"unshift\",\"args\":\"~args\",\"lineNoStart\":569,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"shift\",\"args\":\"~args\",\"lineNoStart\":622,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"slice\",\"args\":\"~args\",\"lineNoStart\":673,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"sort\",\"args\":\"~args\",\"lineNoStart\":724,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"pluck\",\"args\":\"~args\",\"lineNoStart\":774,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"where\",\"args\":\"~args\",\"lineNoStart\":825,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"findWhere\",\"args\":\"~args\",\"lineNoStart\":876,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"clone\",\"args\":\"~args\",\"lineNoStart\":931,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"fetch\",\"args\":\"~args\",\"lineNoStart\":982,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"create\",\"args\":\"~args\",\"lineNoStart\":1033,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"model\",\"args\":\"~args\",\"lineNoStart\":1087,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"models\",\"args\":\"~args\",\"lineNoStart\":1140,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"}],\"properties\":[],\"match\":\"FileCollection = Backbone.Collection.extend(\",\"name\":\"Collection\",\"start\":9998,\"end\":10158},{\"methods\":[{\"name\":\"extend\",\"args\":\"~1~methods~args\",\"lineNoStart\":64,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"initialize\",\"args\":\"~args\",\"lineNoStart\":116,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"add\",\"args\":\"~args\",\"lineNoStart\":172,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"remove\",\"args\":\"~args\",\"lineNoStart\":221,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"reset\",\"args\":\"~args\",\"lineNoStart\":273,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"get\",\"args\":\"~args\",\"lineNoStart\":324,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"set\",\"args\":\"~args\",\"lineNoStart\":373,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"at\",\"args\":\"~args\",\"lineNoStart\":422,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"push\",\"args\":\"~args\",\"lineNoStart\":470,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"pop\",\"args\":\"~args\",\"lineNoStart\":520,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"unshift\",\"args\":\"~args\",\"lineNoStart\":569,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"shift\",\"args\":\"~args\",\"lineNoStart\":622,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"slice\",\"args\":\"~args\",\"lineNoStart\":673,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"sort\",\"args\":\"~args\",\"lineNoStart\":724,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"pluck\",\"args\":\"~args\",\"lineNoStart\":774,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"where\",\"args\":\"~args\",\"lineNoStart\":825,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"findWhere\",\"args\":\"~args\",\"lineNoStart\":876,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"clone\",\"args\":\"~args\",\"lineNoStart\":931,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"fetch\",\"args\":\"~args\",\"lineNoStart\":982,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"create\",\"args\":\"~args\",\"lineNoStart\":1033,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"model\",\"args\":\"~args\",\"lineNoStart\":1087,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"},{\"name\":\"models\",\"args\":\"~args\",\"lineNoStart\":1140,\"description\":\"\",\"result\":\"\",\"cls\":\"~1\"}],\"properties\":[],\"match\":\"BoxCollection = Backbone.Collection.extend(\",\"name\":\"Collection\",\"start\":30552,\"end\":30618}],\"basePath\":\"../html/\",\"files\":[\"../docs/backbone-abstract.js\",\"js/indx.js\"],\"project\":{\"title\":\"INDX\",\"version\":\"0.01\",\"description\":\"INDX is a personal file store being developed at the University of Southampton, for the SOCIAM project.\"},\"superclasses\":{}}"
+}

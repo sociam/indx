@@ -800,9 +800,15 @@ angular
 				jsonp: false, contentType: "application/json",
 				xhrFields: { withCredentials: true }
 			},
+
+			/// @opt <{}> attributes
+			/// @opt <{}> options
+			/// @constructor
 			initialize: function(attributes, options){
 				this.set({boxes : new BoxCollection([], {store: this})});
 			},
+
+			/// Check that the
 			is_same_domain:function() {
 				return this.get('server_host').indexOf(document.location.host) >= 0 && (document.location.port === (this.get('server_port') || ''));
 			},
@@ -818,7 +824,7 @@ angular
 			},
 
 
-			/// @arg <string|number> boxid
+			/// @arg <string|number> boxid: the id for the box
 			///
 			/// @then (<Box> the box)
 			/// @fail

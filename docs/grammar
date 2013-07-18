@@ -6,20 +6,20 @@ arguments
 	= a:argument __ as:arguments
 			{ return [].concat(as, [a]); }
 	/ a:argument
-			{ return a; }
+			{ return [a]; }
 
 argument
-	= $ "@arg" _ t:type_statement? _ n:name _ ":"? _ c:comment?
-			{ return { types: t, name: n, comment: c }; }
+	= $ m:argument_mode _ t:type_statement? _ n:name _ ":"? _ c:comment?
+			{ return { mode: m, types: t, name: n, comment: c }; }
+
+argument_mode
+	= "@arg"
+		{ return { mandatory: true }; }
+	/ "@opt"
+		{ return { optional: true }; }
 
 description_lines
 	= d:.* { return d.join(''); }
-//	= description_line description_lines
-//	/ description_line
-
-description_line
-	= c:comment __
-			{ return c; }
 
 result
 	= r:return_result
@@ -28,6 +28,8 @@ result
 			{ return { "async": r }; }
     / chain_result
 			{ return { "chain": true }; }
+	/ constructor_result
+			{ return { "constructor": true }; }
 
 return_result
 	= $ "@return" _ type_statement? _ comment
@@ -48,7 +50,7 @@ async_fail_result_cases
 	= c:async_fail_result_case cs:async_fail_result_cases
 			{ return [].concat(cs, [c]); }
 	/ c:async_fail_result_case
-			{ return c; }
+			{ return [c]; }
 
 async_fail_result_case
 	= __ $ cb:callback _ c:comment
@@ -62,7 +64,7 @@ callback_arguments
 	= _ c:callback_argument _ "," _ cs:callback_arguments _
 			{ return [].concat(cs, [c]); }
 	/ _ c:callback_argument _
-			{ return c; }
+			{ return [c]; }
 
 callback_argument
 	= _ t:type_statement _ c:callback_argument_comment  _
@@ -76,6 +78,8 @@ callback_argument_comment
 chain_result
 	= $ "@chain"
 
+constructor_result
+	= $ "@constructor"
 
 
 type_statement
@@ -86,15 +90,15 @@ types
 	= _ t:type _ "|" _ ts:types _
 			{ return [].concat(ts, [t]); }
 	/ _ t:type _
-			{ return t; }
+			{ return [t]; }
 
 type
 	= t: [^|>]+
-			{ return t.join(''); }
+			{ return { type: t.join('') }; }
 
 
 name
-	= n:[^\s\-\n\r:]+
+	= n:[^ \t\-\n\r\:]+
 			{ return n.join(''); }
 
 comment

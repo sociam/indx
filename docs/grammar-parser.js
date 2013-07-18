@@ -6,22 +6,6 @@
 		Promise = require('node-promise').Promise,
 		peg = require('pegjs');
 
-	var comment = [
-		'	/// @arg <string|number> boxid',
-		'	/// @arg <string | { a: \'valueofa\' } > foo: some comment',
-		'	/// @arg arg3: this is an argument with no type specified',
-
-		'	/// @then (<Box> yourbox, <string> name_of_thing, <int> prime_factor) success! :',
-		'	/// @fail',
-		'	///   (<{ code: 409 }> code) box already exists',
-		'	///   (<{ code: -1, error: error obj }> code) other error ',
-
-		'   /// Now I\'ll comment on this function...'
-	].join('\n');
-
-
-
-
 	var GrammarParser = function (grammarFile) {
 		var that = this;
 		this.loaded = new Promise();
