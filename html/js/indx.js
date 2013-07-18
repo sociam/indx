@@ -819,17 +819,17 @@ angular
 
 
 			/// @arg <string|number> boxid
-			/// @arg <string | { a: \'valueofa\' } > foo: some comment
-			/// @arg arg3: this is an argument with no type specified
-			/// @then (<Box> yourbox, <string> name_of_thing, <int> prime_factor) success! :
+			///
+			/// @then (<Box> the box)
 			/// @fail
-			///   (<{ code: 409 }> code) box already exists
-			///   (<{ code: -1, error: error obj }> code) other error
-			/// Now I'll comment on this function...
-			create_box:function(boxid) {
+			///   (<{ code: 409 }> response) box already exists
+			///   (<{ code: -1, error: error obj }> response) other error
+			///
+			/// Attempts to create a box with the given ID
+			create_box: function (boxid) {
 				u.debug('create box ', boxid);
 				if (this.boxes().get(boxid)) {
-					return u.dreject({ code:409, message: 'Box already exists: ' + boxid });
+					return u.dreject({ code: 409, message: 'Box already exists: ' + boxid });
 				}
 				var c = this._create(boxid), this_ = this;
 				u.debug('creating ', boxid);

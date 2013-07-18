@@ -192,6 +192,11 @@
 
 			dfds.push(parseMethodComment(comments, method));
 
+			if (method.args.length > 0) {
+				method.hasArgs = true;
+				method.args[method.args.length - 1].last = true;
+			}
+
 			methods.push(method);
 
 			return match;
@@ -214,7 +219,6 @@
 				name: arg.trim()
 			};
 		});
-		args[args.length - 1].last = true;
 		return args;
 	}
 
@@ -223,28 +227,12 @@
 	function parseMethodComment (comment, method) {
 
 		return methodGrammar.parse(comment).then(function (rs) {
-			//console.log(rs);
+			var oldArgs = method.args;
 			_.extend(method, rs);
+			if (!method.args) { method.args = oldArgs; }
 
 			console.log(JSON.stringify(rs, null, ' '))
-			//console.log(method)
 		});
-		/*var lines = comment.split('\n'),
-			oldArgs = method.args,
-			mode = 0; // arguments, description, result
-		method.args = [];
-		_.each(lines, function (line) {
-			line = line.trim();
-			if (line.indexOf('@arg') === 0) {
-				method.args.push(parseArgComment(line));
-			}
-		});
-		if (method.args.length === 0) {
-			method.args = oldArgs;
-			console.log(method.args)
-		} else {
-			method.args[method.args.length - 1].last = true;
-		}*/
 	}
 
 	function parseArgComment (str) {
