@@ -24,17 +24,17 @@ Now, source the virtualenv:
 
 Now, run INDX with your PostgreSQL authentication username and hostname:
 
-    python app.py <username> <hostname>
+    python indx.py <username> <hostname>
 
 (It will prompt for your postgresql password).
 
 If you wish to specify additional configuration, you can get the list using `--help`:
 
-    python app.py --help
+    python indx.py --help
 
 Usage will be printed:
 
-    usage: app.py [-h] [--db-host DB_HOST] [--db-port DB_PORT] [--log LOG]
+    usage: indx.py [-h] [--db-host DB_HOST] [--db-port DB_PORT] [--log LOG]
                   [--port PORT] [--log-stdout] [--ssl] [--ssl-cert SSL_CERT]
                   [--ssl-key SSL_KEY] [--no-browser] [--address ADDRESS]
                   user hostname
