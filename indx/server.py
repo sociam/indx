@@ -1,20 +1,19 @@
-#    This file is part of INDX.
+#    Copyright (C) 2011-2013 University of Southampton
+#    Copyright (C) 2011-2013 Daniel Alexander Smith
+#    Copyright (C) 2011-2013 Max Van Klek
+#    Copyright (C) 2011-2013 Nigel R. Shadbolt
 #
-#    Copyright 2012-2013 Daniel Alexander Smith, Max Van Kleek
-#    Copyright 2012-2013 University of Southampton
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU Affero General Public License, version 3,
+#    as published by the Free Software Foundation.
 #
-#    INDX is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, either version 3 of the License, or
-#    (at your option) any later version.
-#
-#    INDX is distributed in the hope that it will be useful,
+#    This program is distributed in the hope that it will be useful,
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
+#    GNU Affero General Public License for more details.
 #
-#    You should have received a copy of the GNU General Public License
-#    along with INDX.  If not, see <http://www.gnu.org/licenses/>.
+#    You should have received a copy of the GNU Affero General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os, logging
 from twisted.web import script
@@ -23,13 +22,13 @@ from twisted.web.static import File
 from twisted.internet import reactor, ssl
 from twisted.internet.defer import Deferred
 
-import webbox.webserver.handlers as handlers
-from webbox.webserver.handlers.box import BoxHandler
-from webbox.webserver.handlers.app import AppsMetaHandler
-from webbox.webserver import token
-import webbox.webbox_pg2 as database
+import indx.webserver.handlers as handlers
+from indx.webserver.handlers.box import BoxHandler
+from indx.webserver.handlers.app import AppsMetaHandler
+from indx.webserver import token
+import indx.indx_pg2 as database
 
-from webbox.webserver.handlers.websockets import WebSocketsHandler
+from indx.webserver.handlers.websockets import WebSocketsHandler
 from txWebSocket.websocket import WebSocketSite
 
 BOX_NAME_BLACKLIST = [
@@ -37,7 +36,7 @@ BOX_NAME_BLACKLIST = [
     "html",
     "static",
     "lrdd",
-    "webbox",
+    "indx",
     ".well-known",
     "openid",
     "auth",
@@ -46,10 +45,10 @@ BOX_NAME_BLACKLIST = [
 
 
 class WebServer:
-    """ Twisted web server for running WebBox. """
+    """ Twisted web server for running INDX. """
 
     def __init__(self, config):
-        """ Set up the server with a webbox. """
+        """ Set up the server with a INDX. """
 
         self.tokens = token.TokenKeeper()
         self.config = config
@@ -77,11 +76,6 @@ class WebServer:
         database.PORT = config['db']['port']
 
         # TODO set up twisted to use gzip compression
-
-        # set up the twisted web resource object
-        # allow the config to be readable by .rpy files
-        # registry = Registry()
-        # registry.setComponent(WebBox, self.webbox)
 
         # Disable directory listings
         class FileNoDirectoryListings(File):
@@ -118,12 +112,12 @@ class WebServer:
         # calls the web browser opening function above when the reactor has finished starting up
         d = Deferred()
         d.addCallbacks(on_start, start_failed)
-        reactor.callWhenRunning(d.callback, "WebBox HTTP startup") #@UndefinedVariable
+        reactor.callWhenRunning(d.callback, "INDX HTTP startup") #@UndefinedVariable
         reactor.addSystemEventTrigger("during", "shutdown", lambda *x: self.shutdown()) #@UndefinedVariable
 
     def shutdown(self):
         ## todo put more cleanup stuff here        
-        logging.debug("Got reactor quit trigger, so closing down webbox.")
+        logging.debug("Got reactor quit trigger, so closing down INDX.")
         self.tokens.close_all() # close all database connections
     
     def start(self):        
@@ -138,7 +132,7 @@ class WebServer:
         server_cert = self.config['server'].get('ssl_cert')
         server_private_key = self.config['server'].get('ssl_private_key')
         if not self.ssl:
-            logging.debug("SSL is OFF, connections to this WebBox are not encrypted.")
+            logging.debug("SSL is OFF, connections to this INDX are not encrypted.")
             reactor.listenTCP(server_port, factory) #@UndefinedVariable
         else:
             logging.debug("SSL ON.")
@@ -146,16 +140,16 @@ class WebServer:
             sslContext = ssl.DefaultOpenSSLContextFactory(server_private_key, server_cert)
             reactor.listenSSL(server_port, factory, contextFactory=sslContext) #@UndefinedVariable
 
-    def get_webbox_user_password(self):
+    def get_indx_user_password(self):
         return self.config['db']['user'],self.config['db']['password']
 
     def get_master_box_list(self):
         ## returns _all_ boxes in this server
-        user,password = self.get_webbox_user_password()
+        user,password = self.get_indx_user_password()
         return database.list_boxes(user,password)
 
     def register_boxes(self, parent):
-        """ Add the webboxes to the server. """
+        """ Add the INDXes to the server. """
         d = Deferred()
         def registerem(boxes):
             [self.register_box(boxname, parent) for boxname in boxes]
@@ -164,8 +158,8 @@ class WebServer:
 
         
     def register_box(self, name, parent):
-        """ Add a single webbox to the server. """
-        parent.putChild(name, BoxHandler(self, name)) # e.g. /webbox
+        """ Add a single INDX to the server. """
+        parent.putChild(name, BoxHandler(self, name)) # e.g. /indx
 
     def run(self):
         """ Run the server. """

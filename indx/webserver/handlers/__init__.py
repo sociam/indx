@@ -1,4 +1,3 @@
-#!/bin/bash
 #    Copyright (C) 2011-2013 University of Southampton
 #    Copyright (C) 2011-2013 Daniel Alexander Smith
 #    Copyright (C) 2011-2013 Max Van Klek
@@ -16,21 +15,29 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-# to change back to current dir
-export MACOSDIR="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-export PATH="$MACOSDIR:$PATH" # make sure our supplied python is run
+## update this when you want to add a new handler
 
-cd "$MACOSDIR/../Resources"
-export WBDIR=`pwd`
-export PATH="$WBDIR/4store:$PATH" # add supplied 4store binaries to the path
+from indx.webserver.handlers.admin import AdminHandler
+from indx.webserver.handlers.auth import AuthHandler
 
-# do initial per-user set up
-cd "$WBDIR"
-./scripts/setup_4store.sh # create /var/lib/4store (prompts for admin password)
-cd "$WBDIR"
-./scripts/new_4store_kb.sh # create webbox kb (if not exists)
+#from indx.webserver.handlers.enrich import EnrichHandler
+# from indx.webserver.handlers.wellknown import WellKnownHandler
+# from indx.webserver.handlers.lrdd import LRDDHandler
+# from indx.webserver.handlers.openid import OpenIDHandler
+# from indx.webserver.handlers.auth import AuthHandler
+# from indx.webserver.handlers.box import BoxHandler
 
-cd "$WBDIR"
-# send the 4store bin directory (subprocess.pyc fails otherwise)
-../MacOS/run "$@" > /tmp/webbox.log   2>&1
+# leave boxhandler out of here, as it is instantiated on a per-box basis
+HANDLERS = [
+    AuthHandler,
+    AdminHandler
+
+    # WebSocketsHandler
+
+#    EnrichHandler
+    # ('wellknown', WellKnownHandler),
+    # ('lrdd', LRDDHandler),
+    # ('openid', OpenIDHandler),
+    #  ('', BoxHandler) # 
+]
 

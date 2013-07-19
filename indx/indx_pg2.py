@@ -1,26 +1,25 @@
-#    This file is part of INDX.
+#    Copyright (C) 2011-2013 University of Southampton
+#    Copyright (C) 2011-2013 Daniel Alexander Smith
+#    Copyright (C) 2011-2013 Max Van Klek
+#    Copyright (C) 2011-2013 Nigel R. Shadbolt
 #
-#    Copyright 2012-2013 Daniel Alexander Smith, Max Van Kleek
-#    Copyright 2012-2013 University of Southampton
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU Affero General Public License, version 3,
+#    as published by the Free Software Foundation.
 #
-#    INDX is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, either version 3 of the License, or
-#    (at your option) any later version.
-#
-#    INDX is distributed in the hope that it will be useful,
+#    This program is distributed in the hope that it will be useful,
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
+#    GNU Affero General Public License for more details.
 #
-#    You should have received a copy of the GNU General Public License
-#    along with INDX.  If not, see <http://www.gnu.org/licenses/>.
+#    You should have received a copy of the GNU Affero General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os, logging, psycopg2
 from txpostgres import txpostgres
 from twisted.internet.defer import Deferred
 
-## webbox to txpostgres bridge
+## indx to txpostgres bridge
 
 POSTGRES_DB = "postgres" # default db fallback if db name is none
 WBPREFIX = "wb_"
@@ -35,7 +34,7 @@ def connect(db_name,db_user,db_pass):
 
     result_d = Deferred()
     if conn_str in POOLS:
-        logging.debug("webbox_pg2: returning existing pool for db: {0}, user: {1}".format(db_name, db_user))
+        logging.debug("indx_pg2: returning existing pool for db: {0}, user: {1}".format(db_name, db_user))
         pool = POOLS[conn_str]
         # already connected, so just return a defered with itself
         result_d.callback(pool)
@@ -43,7 +42,7 @@ def connect(db_name,db_user,db_pass):
         # not connected yet, so return after start() finished
 
         def success(pool):
-            logging.debug("webbox_pg2: returning new pool for db: {0}, user: {1}, pool: {2}".format(db_name, db_user, pool))
+            logging.debug("indx_pg2: returning new pool for db: {0}, user: {1}, pool: {2}".format(db_name, db_user, pool))
             POOLS[conn_str] = pool # only do this if it successfully connects
             result_d.callback(pool)
 

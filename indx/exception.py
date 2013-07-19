@@ -1,4 +1,3 @@
-#!/bin/bash
 #    Copyright (C) 2011-2013 University of Southampton
 #    Copyright (C) 2011-2013 Daniel Alexander Smith
 #    Copyright (C) 2011-2013 Max Van Klek
@@ -16,21 +15,19 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-# to change back to current dir
-export MACOSDIR="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-export PATH="$MACOSDIR:$PATH" # make sure our supplied python is run
+class ResponseOverride(Exception):
+    
+    def __init__(self, status, reason, data=""):
+        super(ResponseOverride, self).__init__()
+        self.status = status
+        self.reason = reason
+        self.data = data
 
-cd "$MACOSDIR/../Resources"
-export WBDIR=`pwd`
-export PATH="$WBDIR/4store:$PATH" # add supplied 4store binaries to the path
+    def get_response(self):
+        return {"status": self.status, "reason": self.reason, "data": self.data}
 
-# do initial per-user set up
-cd "$WBDIR"
-./scripts/setup_4store.sh # create /var/lib/4store (prompts for admin password)
-cd "$WBDIR"
-./scripts/new_4store_kb.sh # create webbox kb (if not exists)
-
-cd "$WBDIR"
-# send the 4store bin directory (subprocess.pyc fails otherwise)
-../MacOS/run "$@" > /tmp/webbox.log   2>&1
-
+class AbstractException(Exception):
+    
+    def __init__(self, message=''):
+        super(AbstractException, self).__init__()
+        self.message = message

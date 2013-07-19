@@ -1,27 +1,26 @@
-#    This file is part of INDX.
+#    Copyright (C) 2011-2013 University of Southampton
+#    Copyright (C) 2011-2013 Daniel Alexander Smith
+#    Copyright (C) 2011-2013 Max Van Klek
+#    Copyright (C) 2011-2013 Nigel R. Shadbolt
 #
-#    Copyright 2011-2012 Daniel Alexander Smith
-#    Copyright 2011-2012 University of Southampton
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU Affero General Public License, version 3,
+#    as published by the Free Software Foundation.
 #
-#    INDX is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, either version 3 of the License, or
-#    (at your option) any later version.
-#
-#    INDX is distributed in the hope that it will be useful,
+#    This program is distributed in the hope that it will be useful,
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
+#    GNU Affero General Public License for more details.
 #
-#    You should have received a copy of the GNU General Public License
-#    along with INDX.  If not, see <http://www.gnu.org/licenses/>.
+#    You should have received a copy of the GNU Affero General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import time, os, logging, shutil, uuid
 from exception import ResponseOverride
 from lxml import objectify
 
 class WebDAVHandler:
-    """ WebBox WebDAV module. """
+    """ WebDAV module. """
     
     def __init__(self):
         """ Create a new WebDAV handler, created per request. """
@@ -177,7 +176,7 @@ class WebDAVHandler:
                 # do an LS
                 displayname = None
                 if request.path == "/":
-                    displayname = "WebBox"
+                    displayname = "INDX"
                 xmlout += self.get_prop_xml(self.server_url + request.path, file_path, directory=True, displayname=displayname)
                 for filename in os.listdir(file_path):
                     fname = filename

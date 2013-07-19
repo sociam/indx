@@ -1,26 +1,25 @@
-#    This file is part of INDX.
+#    Copyright (C) 2011-2013 University of Southampton
+#    Copyright (C) 2011-2013 Daniel Alexander Smith
+#    Copyright (C) 2011-2013 Max Van Klek
+#    Copyright (C) 2011-2013 Nigel R. Shadbolt
 #
-#    Copyright 2011-2012 Daniel Alexander Smith, Max Van Kleek
-#    Copyright 2011-2012 University of Southampton
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU Affero General Public License, version 3,
+#    as published by the Free Software Foundation.
 #
-#    INDX is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, either version 3 of the License, or
-#    (at your option) any later version.
-#
-#    INDX is distributed in the hope that it will be useful,
+#    This program is distributed in the hope that it will be useful,
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
+#    GNU Affero General Public License for more details.
 #
-#    You should have received a copy of the GNU General Public License
-#    along with INDX.  If not, see <http://www.gnu.org/licenses/>.
+#    You should have received a copy of the GNU Affero General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging, traceback, json
 from twisted.web.resource import Resource
 from twisted.web.server import NOT_DONE_YET
-from webbox.webserver.session import WebBoxSession, ISession
-from webbox.exception import ResponseOverride
+from indx.webserver.session import INDXSession, ISession
+from indx.exception import ResponseOverride
 from mimeparse import quality
 from urlparse import parse_qs
 try:
@@ -138,7 +137,7 @@ class BaseHandler(Resource):
         # persists for life of a session (based on the cookie set by the above)
         wbSession = session.getComponent(ISession)
         if not wbSession:
-            wbSession = WebBoxSession(session, self.webserver)
+            wbSession = INDXSession(session, self.webserver)
             session.setComponent(ISession, wbSession)
         return wbSession
 

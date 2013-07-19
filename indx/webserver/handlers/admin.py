@@ -1,39 +1,37 @@
-#    This file is part of INDX.
+#    Copyright (C) 2011-2013 University of Southampton
+#    Copyright (C) 2011-2013 Daniel Alexander Smith
+#    Copyright (C) 2011-2013 Max Van Klek
+#    Copyright (C) 2011-2013 Nigel R. Shadbolt
 #
-#    Copyright 2011-2012 Daniel Alexander Smith, Max Van Kleek
-#    Copyright 2011-2012 University of Southampton
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU Affero General Public License, version 3,
+#    as published by the Free Software Foundation.
 #
-#    INDX is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, either version 3 of the License, or
-#    (at your option) any later version.
-#
-#    INDX is distributed in the hope that it will be useful,
+#    This program is distributed in the hope that it will be useful,
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
+#    GNU Affero General Public License for more details.
 #
-#    You should have received a copy of the GNU General Public License
-#    along with INDX.  If not, see <http://www.gnu.org/licenses/>.
+#    You should have received a copy of the GNU Affero General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging, re
-from webbox.webserver.handlers.base import BaseHandler
-import webbox.webbox_pg2 as database
-from webbox.objectstore_async import ObjectStoreAsync
+from indx.webserver.handlers.base import BaseHandler
+import indx.indx_pg2 as database
 from twisted.internet.defer import Deferred
-import webbox.server
+import indx.server
 
 class AdminHandler(BaseHandler):
     """ Add/remove boxes, add/remove users, change config. """
     base_path = 'admin'
     
     def info(self, request):
-        """ Information about the webbox. """
-        return self.return_ok(request, data = {"webbox_uri": self.webserver.server_url} )
+        """ Information about the INDX. """
+        return self.return_ok(request, data = {"indx_uri": self.webserver.server_url} )
 
     def invalid_name(self, name):
         """ Check if this name is safe (only contains a-z0-9_-). """ 
-        return re.match("^[a-z0-9_-]*$", name) is None and name not in webbox.server.BOX_NAME_BLACKLIST
+        return re.match("^[a-z0-9_-]*$", name) is None and name not in indx.server.BOX_NAME_BLACKLIST
 
     def _is_box_name_okay(self, name):
         """ checks new box, listening on /name. """
@@ -104,7 +102,7 @@ class AdminHandler(BaseHandler):
     def create_user_handler(self, request):
         args = self.get_post_args(request)
         new_username, new_password = args['username'][0],  args['password'][0]
-        username,password = self.webserver.get_webbox_user_password()
+        username,password = self.webserver.get_indx_user_password()
         logging.debug("Creating new user with username: {0}".format(new_username))
         database.create_user(new_username, new_password, username, password)\
             .addCallback(lambda *x: self.return_ok())\

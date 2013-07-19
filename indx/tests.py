@@ -1,29 +1,28 @@
-#    This file is part of INDX.
+#    Copyright (C) 2011-2013 University of Southampton
+#    Copyright (C) 2011-2013 Daniel Alexander Smith
+#    Copyright (C) 2011-2013 Max Van Klek
+#    Copyright (C) 2011-2013 Nigel R. Shadbolt
 #
-#    Copyright 2013 Daniel Alexander Smith
-#    Copyright 2013 University of Southampton
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU Affero General Public License, version 3,
+#    as published by the Free Software Foundation.
 #
-#    INDX is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, either version 3 of the License, or
-#    (at your option) any later version.
-#
-#    INDX is distributed in the hope that it will be useful,
+#    This program is distributed in the hope that it will be useful,
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
+#    GNU Affero General Public License for more details.
 #
-#    You should have received a copy of the GNU General Public License
-#    along with INDX.  If not, see <http://www.gnu.org/licenses/>.
+#    You should have received a copy of the GNU Affero General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import urllib, urllib2, logging, cookielib, json, pprint
-from webbox.objectstore_async import ObjectStoreAsync
-import webbox.webbox_pg2 as database
+from indx.objectstore_async import ObjectStoreAsync
+import indx.indx_pg2 as database
 from twisted.internet import reactor
 
-class WebBoxTests:
+class INDXTests:
 
-    def __init__(self, appid="WebBoxTests"):
+    def __init__(self, appid="INDXTests"):
         """ Associate command-line test names with test functions. """
         self.tests = {'create_box': self.create_box,
                       'list_boxes': self.list_boxes,
@@ -181,7 +180,7 @@ class WebBoxTests:
 
 
     def auth(self):
-        """ Authenticate to the webbox server. """
+        """ Authenticate to the INDX server. """
         self.check_args(['server','username','password'])
         url = "{0}auth/login".format(self.args['server'])
         values = {"username": self.args['username'], "password": self.args['password']}
@@ -230,7 +229,7 @@ class WebBoxTests:
             logging.info("Creation of box successful, return is: {0}".format(pretty))
 
     def list_boxes(self):
-        """ List the boxes on the webbox server. """
+        """ List the boxes on the INDX server. """
         self.check_args(['server'])
         self.auth()
 

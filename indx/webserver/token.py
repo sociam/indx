@@ -1,24 +1,23 @@
-#    This file is part of INDX.
+#    Copyright (C) 2011-2013 University of Southampton
+#    Copyright (C) 2011-2013 Daniel Alexander Smith
+#    Copyright (C) 2011-2013 Max Van Klek
+#    Copyright (C) 2011-2013 Nigel R. Shadbolt
 #
-#    Copyright 2012-2013 Daniel Alexander Smith, eMax
-#    Copyright 2012-2013 University of Southampton
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU Affero General Public License, version 3,
+#    as published by the Free Software Foundation.
 #
-#    INDX is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, either version 3 of the License, or
-#    (at your option) any later version.
-#
-#    INDX is distributed in the hope that it will be useful,
+#    This program is distributed in the hope that it will be useful,
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
+#    GNU Affero General Public License for more details.
 #
-#    You should have received a copy of the GNU General Public License
-#    along with INDX.  If not, see <http://www.gnu.org/licenses/>.
+#    You should have received a copy of the GNU Affero General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging, uuid
-import webbox.webbox_pg2 as database
-from webbox.objectstore_async import ObjectStoreAsync
+import indx.indx_pg2 as database
+from indx.objectstore_async import ObjectStoreAsync
 from twisted.internet.defer import Deferred
 
 SHARERS = {} # one connection per box to listen to updates
@@ -193,7 +192,7 @@ class ConnectionSharer:
         self.subscribers.append(observer)
 
     def listen(self):
-        """ Start listening to WebBox updates. """
+        """ Start listening to INDX updates. """
 
         def observer(notify):
             """ Receive a notification update from the store, and dispatch to subscribers. """
