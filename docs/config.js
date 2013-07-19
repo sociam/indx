@@ -1,7 +1,7 @@
 module.exports = {
 	basePath: '../html/',
 
-	files: [
+	filePaths: [
 		'../docs/abstracts/*',
 		'js/indx.js'
 		//'js/indx-utils.js'

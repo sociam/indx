@@ -48,97 +48,106 @@
   </head>
   <body>
     <div class="sidebar">
-      <ul class="nav nav-list">
-        {{#classes}}
-          <li class="nav-header"><a href="#{{uid}}">{{name}}</a></li>
-          {{#methods}}
-            <li><a href="#{{uid}}">{{name}}</a></li>
-          {{/methods}}
-        {{/classes}}
-      </ul>
+      {{#files}}
+        <h3>{{title}}</h3>
+        <ul class="nav nav-list">
+          {{#classes}}
+            <li class="nav-header"><a href="#{{uid}}">{{name}}</a></li>
+            {{#methods}}
+              <li><a href="#{{uid}}">{{name}}</a></li>
+            {{/methods}}
+          {{/classes}}
+        </ul>
+      {{/files}}
     </div>
     <div class="mainbody">
       <h1>{{ project.title }} {{ project.version }}</h1>
 
       {{project.description}}
 
-      {{#classes}}
-        <a name="{{uid}}"></a>
-        <h3>{{#fullName}}{{fullName}}{{/fullName}}{{^fullName}}{{name}}{{/fullName}}</h3>
-        {{#extends}}
-          extends <i>{{name}}</i>
-        {{/extends}}
-        {{#methods}}
-          <a name="{{uid}}"></a>
-          <h4>{{name}}</h4>
+      {{#files}}
+        {{^parameters.supplementary}}
+          <h2>{{title}}</h2>
+          {{description}}
+          {{#classes}}
+            <a name="{{uid}}"></a>
+            <h3>{{#fullName}}{{fullName}}{{/fullName}}{{^fullName}}{{name}}{{/fullName}}</h3>
+            {{#extends}}
+              extends <i>{{name}}</i>
+            {{/extends}}
+            {{#methods}}
+              <a name="{{uid}}"></a>
+              <h4>{{name}}</h4>
 
-          <code class="header-example">{{instanceName}}.{{name}}(
-          {{#args}}
-            {{#mode.optional}}[{{/mode.optional}}{{name}}{{^last}},{{/last}}{{#mode.optional}}]{{/mode.optional}}
-          {{/args}}
-          )</code>
+              <code class="header-example">{{instanceName}}.{{name}}(
+              {{#args}}
+                {{#mode.optional}}[{{/mode.optional}}{{name}}{{^last}},{{/last}}{{#mode.optional}}]{{/mode.optional}}
+              {{/args}}
+              )</code>
 
-          <div>
+              <div>
 
-            <div class="description">
-              {{description}}
-            </div>
+                <div class="description">
+                  {{description}}
+                </div>
 
-            {{#inheritedFrom}}
-              inherited from <i>{{inheritedFrom.class.name}}</i>
-            {{/inheritedFrom}}
+                {{#inheritedFrom}}
+                  inherited from <i>{{inheritedFrom.class.name}}</i>
+                {{/inheritedFrom}}
 
-            {{#hasArgs}}
-              <br>
-              Arguments:
-              <ol class="arguments">
-                {{#args}}
-                  <li>{{name}}
-                    {{#moreInfo}} -
-                      {{#hasTypes}}
-                        ({{#types}}
-                          <code>{{type}}</code>
-                          {{^last}}or{{/last}}
-                        {{/types}})
-                      {{/hasTypes}}
-                      {{comment}}
-                    {{/moreInfo}}
-                  </li>
-                {{/args}}
-              </ol>
-            {{/hasArgs}}
+                {{#hasArgs}}
+                  <br>
+                  Arguments:
+                  <ol class="arguments">
+                    {{#args}}
+                      <li>{{name}}
+                        {{#moreInfo}} -
+                          {{#hasTypes}}
+                            ({{#types}}
+                              <code>{{type}}</code>
+                              {{^last}}or{{/last}}
+                            {{/types}})
+                          {{/hasTypes}}
+                          {{comment}}
+                        {{/moreInfo}}
+                      </li>
+                    {{/args}}
+                  </ol>
+                {{/hasArgs}}
 
-            <br>
+                <br>
 
-            Returns:
-            <div class="return">
-              {{#result.async}}
-                Returns a promise. Asynchronous.
-                <h6>{{instanceName}}.{{name}}(...).then (
-                  {{#then.args}}
-                    &lt;{{type}}&gt; {{comment}},
-                  {{/then.args}}
-                )</h6>
-                {{then.comment}}
-                <h6>fail</h6>
-                <ul>
-                  {{#fail.cases}}
-                  <li>
-                    <h6>{{instanceName}}.{{name}}(...).fail (
-                      {{#args}}
+                Returns:
+                <div class="return">
+                  {{#result.async}}
+                    Returns a promise. Asynchronous.
+                    <h6>{{instanceName}}.{{name}}(...).then (
+                      {{#then.args}}
                         &lt;{{type}}&gt; {{comment}},
-                      {{/args}}
+                      {{/then.args}}
                     )</h6>
-                    {{comment}}
-                  </li>
-                  {{/fail.cases}}
-                </ul>
-              {{/result.async}}
-            </div>
-          </div>
+                    {{then.comment}}
+                    <h6>fail</h6>
+                    <ul>
+                      {{#fail.cases}}
+                      <li>
+                        <h6>{{instanceName}}.{{name}}(...).fail (
+                          {{#args}}
+                            &lt;{{type}}&gt; {{comment}},
+                          {{/args}}
+                        )</h6>
+                        {{comment}}
+                      </li>
+                      {{/fail.cases}}
+                    </ul>
+                  {{/result.async}}
+                </div>
+              </div>
 
-        {{/methods}}
-      {{/classes}}
+            {{/methods}}
+          {{/classes}}
+        {{/parameters.supplementary}}
+      {{/files}}
     </div>
   </body>
 </html>

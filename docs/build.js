@@ -18,7 +18,8 @@
 	mu.root = __dirname + '/template';
 
 
-	var methodGrammar = new GrammarParser('./grammars/method-grammar');
+	var methodGrammar = new GrammarParser('./grammars/method-grammar'),
+		fileGrammar = new GrammarParser('./grammars/file-grammar');
 
 	function log (context, message) {
 		console.log(' ' + clc.green(context) + ' ' + message);
@@ -26,25 +27,25 @@
 
 	var Builder = function (config) {
 		this.config = config;
-		this.app = _.extend({ classes: [] }, this.config);
+		this.app = _.extend({ files: [] }, this.config);
 	};
 
 	_.extend(Builder.prototype, {
 		build: function () {
 			log('build', 'starting build process');
-			var that = this;
-			this._buildFilePaths().then(function (files) {
-				var parsers = [];
-				_.each(files, function (file, i) {
-					var parser = new FileParser(file, that.app);
-					parsers.push(parser);
-					if (parsers[i - 1]) {
-						parsers[i - 1].then(function () { parser.start(); });
+			var that = this,
+				files = this.app.files;
+			this._buildFilePaths().then(function (filenames) {
+				_.each(filenames, function (filename, i) {
+					var file = new File(filename, that.app);
+					files.push(file);
+					if (files[i - 1]) {
+						files[i - 1].then(function () { file.parse(); });
 					} else {
-						parser.start();
+						file.parse();
 					}
 				});
-				parsers[parsers.length - 1].then(function () {
+				files[files.length - 1].then(function () {
 					that.render();
 				});
 			});
@@ -74,7 +75,7 @@
 				globPromises = [],
 				files = [];
 
-			_.each(this.config.files, function (glob) {
+			_.each(this.config.filePaths, function (glob) {
 				var globPromise = new Promise();
 				globPromises.push(globPromise);
 				globp(that.config.basePath + glob, { }, function (err, globFiles) {
@@ -95,28 +96,39 @@
 	var builder = new Builder(config);
 	builder.build();
 
-	function FileParser (file, app) {
+	function File (file, app) {
 		this.promise = new Promise();
 		this.then = this.promise.then;
 		this.fail = this.promise.fail;
 		this.app = app;
 		this.file = file;
+		this.classes = [];
 	}
 
-	_.extend(FileParser.prototype, {
-		start: function () {
+	_.extend(File.prototype, {
+		parse: function () {
 			log('parse file', this.file);
 			var that = this;
 			fs.readFile(this.file, function (err, data) {
 				log('read', that.file);
 				if (err) { throw err; }
 				that.data = data.toString();
-				that.parseClasses();
+				that.parseComment().then(function () {
+					that.parseClasses();
+				});
+			});
+		},
+		parseComment: function () {
+			var that = this,
+				comment = getCommentAfter(this.data, 0);
+			return fileGrammar.parse(comment).then(function (rs) {
+				//console.log(JSON.stringify(rs, null, ' '))
+				_.extend(that, rs);
 			});
 		},
 		parseClasses: function () {
 			var that = this,
-				classes = this.app.classes,
+				classes = this.classes,
 				superclasses = generateSuperClasses(classes),
 				promises = [];
 			// Find each class that extends each superclass
@@ -316,16 +328,25 @@
 
 	function getCommentBefore (data, start) {
 		var subdata = data.substring(0, start),
-			lines = subdata.split('\n').reverse(),
-			commentLines = [],
-			i, l, line;
+			lines = subdata.split('\n').reverse();
+		return getComment(lines).reverse().join('\n');
+	}
 
+	function getCommentAfter (data, start) {
+		var subdata = data.substring(start - 1), // FIXME: not sure why -1
+			lines = subdata.split('\n');
+		return getComment(lines).join('\n');
+	}
+
+	function getComment (lines) {
+		var commentLines = [],
+			i, l, line;
 		for (i = 1, l = lines.length; i < l; i++) {
 			line = lines[i].trim();
 			if (line.indexOf('///') !== 0) { break; }
 			commentLines.push(line);
 		}
-		return commentLines.reverse().join('\n');
+		return commentLines;
 	}
 
 	function deleteFolderRecursive (path) {

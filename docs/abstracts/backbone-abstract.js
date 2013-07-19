@@ -1,4 +1,7 @@
-// Provides the structure and documention for Backbone
+///
+/// @title Backbone.js
+/// @supplementary
+/// Provides the structure and documention for Backbone
 (function () {
 	"use strict";
 
