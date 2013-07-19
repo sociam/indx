@@ -4,6 +4,7 @@
     <title>{{ project.title }} {{ project.version }} documentation</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="lib/bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen">
+    <script src="lib/jquery.min.js"></script>
     <style>
     body {
       max-width: 900px;
@@ -56,7 +57,22 @@
     }
     </style>
     <script>
-    data = {{{json}}}
+    var data = {{{json}}};
+
+    var fileCache = {};
+    function showSource (file, line) {
+      if (fileCache[file]) {
+        openFilePane(fileCache[file], line);
+      } else {
+        $.get(file, function (data) {
+          fileCache[file] = data;
+          openFilePane(data, line);
+        });
+      }
+    }
+    function openFilePane (data, line) {
+      console.log(data, line);
+    }
     </script>
   </head>
   <body>

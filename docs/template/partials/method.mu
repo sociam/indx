@@ -1,5 +1,5 @@
+<a name="{{uid}}"></a>
 <div class="method well">
-  <a name="{{uid}}"></a>
   <h4>{{name}}</h4>
 
   <code class="header-example">{{instanceName}}.{{name}}(
@@ -8,7 +8,7 @@
   {{/args}}
   )</code>
 
-  <div class="lineno">{{line}}</div>
+  <div class="lineno">line <a href="#" onclick="showSource('{{file}}', {{line}})">{{line}}</a></div>
 
   <div>
 
