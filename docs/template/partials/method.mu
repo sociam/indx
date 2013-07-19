@@ -8,6 +8,8 @@
   {{/args}}
   )</code>
 
+  <div class="lineno">{{line}}</div>
+
   <div>
 
     <div class="description">

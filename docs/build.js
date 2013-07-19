@@ -265,7 +265,8 @@
 			var method = {
 					name: name,
 					args: parseArgs(args),
-					lineNoStart: pos
+					start: start + pos,
+					line: lineNumber(data, start + pos)
 				},
 				comments = getCommentBefore(data, start + pos);
 
@@ -300,7 +301,7 @@
 				//console.log(JSON.stringify(method, null, ' '))
 				return method;
 			}).sortBy(methods, function (method) {
-				return method.lineNoStart;
+				return method.start;
 			}).value();
 
 			promise.resolve(methods);
@@ -367,6 +368,10 @@
 			});
 			fs.rmdirSync(path);
 		}
-	};
+	}
+
+	function lineNumber (data, charNumber) {
+		return data.substring(0, charNumber).split('\n').length + 1;
+	}
 
 }());
