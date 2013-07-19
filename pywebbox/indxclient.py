@@ -18,7 +18,7 @@
 
 import logging, json, urllib, urllib2, cookielib, uuid, pprint
 
-# Decorator function to ensure that the webbox object has a token when the function requires one
+# Decorator function to ensure that the IndxClient object has a token when the function requires one
 def require_token(function):
     def wrapper(self, *args, **kwargs):
         self._debug("require_token, token is: {0}".format(self.token))
@@ -29,11 +29,11 @@ def require_token(function):
     return wrapper
 
 
-class WebBox:
-    """ Authenticates and accesses a WebBox. """
+class IndxClient:
+    """ Authenticates and accesses an INDX. """
 
     def __init__(self, address, box, username, password, appid, token = None):
-        """ Connect to a WebBox and authenticate. """
+        """ Connect to an INDX and authenticate. """
         self.address = address
         self.box = box
         self.username = username
@@ -66,7 +66,7 @@ class WebBox:
 
     def _log(self, loglevel, message):
         """ Write a log message including the server and box information. """
-        logger = logging.getLogger("pywebbox")
+        logger = logging.getLogger("pyindx")
         return logger.log(loglevel, u"%s\t%s\t%s\t%s\t%s", self.address, self.box, self.username, self.token, message)
     
     def _debug(self, message):
@@ -76,7 +76,7 @@ class WebBox:
         return self._log(logging.ERROR, message)
 
     def auth(self):
-        """ Authenticate to a WebBox, and get a token. """
+        """ Authenticate to an INDX, and get a token. """
         url = "{0}auth/login".format(self.address)
         values = {"username": self.username, "password": self.password}
 
@@ -198,7 +198,7 @@ class WebBox:
 
 
     def _prepare_objects(self, objects):
-        """ Take raw JSON object and expand them into the webbox internal format. """
+        """ Take raw JSON object and expand them into the INDX internal format. """
 
         objects_new = []
 
@@ -271,7 +271,7 @@ class WebBox:
         return self._post(url, values)
 
     def list_boxes(self):
-        """ List the boxes on the webbox server. """
+        """ List the boxes on the INDX server. """
         self._debug("Called API: list_boxes")
 
         url = "{0}admin/list_boxes".format(self.address)
