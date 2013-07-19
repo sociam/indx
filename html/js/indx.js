@@ -1,3 +1,7 @@
+///
+/// @title INDX
+/// blah
+
 /*global $,_,document,window,console,escape,Backbone,exports,WebSocket */
 /*jslint vars:true, todo:true */
 /*

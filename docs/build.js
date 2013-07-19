@@ -27,7 +27,7 @@
 
 	var Builder = function (config) {
 		this.config = config;
-		this.app = _.extend({ files: [] }, this.config);
+		this.app = _.extend({ files: [], classes: [] }, this.config);
 	};
 
 	_.extend(Builder.prototype, {
@@ -58,7 +58,7 @@
 			deleteFolderRecursive('./build');
 			ncp('./template', './build', function (err) {
 				if (err) { throw err; }
-				mu.compileAndRender('index.html', that.app).on('data', function (dat) {
+				mu.compileAndRender('index.mu', that.app).on('data', function (dat) {
 					html += dat.toString();
 				}).on('end', function () {
 					fs.writeFile('./build/index.html', html, function (err) {
@@ -129,7 +129,7 @@
 		parseClasses: function () {
 			var that = this,
 				classes = this.classes,
-				superclasses = generateSuperClasses(classes),
+				superclasses = generateSuperClasses(this.app.classes),
 				promises = [];
 			// Find each class that extends each superclass
 			_.each(superclasses, function (superCls) {
@@ -138,7 +138,9 @@
 					that.data.replace(re, function () {
 						var match = regexp[1].apply(this, arguments);
 						console.log(match);
-						classes.push(new Class(that.data, match, superCls));
+						var cls = new Class(that.data, match, superCls.cls);
+						that.app.classes.push(cls);
+						classes.push(cls);
 					});
 
 				});
@@ -180,6 +182,7 @@
 	};
 
 	_.extend(Class.prototype, {
+		fullName: function () { return this.name; },
 		set: function (attributes) {
 			_.extend(this, attributes);
 		},
@@ -242,8 +245,9 @@
 						console.log(name);
 						return { match: match, name: name, start: pos };
 					}]
-				]
-			}, cls);
+				],
+				cls: cls
+			});
 			return new Class('', ncls);
 		}));
 	}
