@@ -17,11 +17,11 @@
 #    along with INDX.  If not, see <http://www.gnu.org/licenses/>.
 
 import traceback, argparse, logging, pprint, json
-from pywebbox import WebBox
+from pyindx import IndxClient
 
-class WebBoxClient:
+class CLIClient:
 
-    def __init__(self, appid = "WebBoxClient"):
+    def __init__(self, appid = "INDX CLIClient"):
         """ Associate command-line actions with functions, and enforce required variables. """
         self.actions = {'create_box': {'f': self.create_box, 'args': ['box']},
                       'delete_box': {'f': self.delete_box, 'args': ['box']},
@@ -41,7 +41,7 @@ class WebBoxClient:
                      }
 
         self.appid = appid
-        self.webbox = None
+        self.indx = None
 
 
     def set_args(self, args):
@@ -76,8 +76,8 @@ class WebBoxClient:
         f = action['f']
         self.check_args(action['args'])
 
-        if not self.webbox:
-            self.webbox = WebBox(self.args['server'], self.args['box'], self.args['username'], self.args['password'], self.appid)
+        if not self.indx:
+            self.indx = IndxClient(self.args['server'], self.args['box'], self.args['username'], self.args['password'], self.appid)
 
         return self.parse_status(name, f(*args, **kwargs))
 
@@ -101,29 +101,29 @@ class WebBoxClient:
     def create_box(self):
         """ Test to create a box. """
         logging.debug("Creating box: '{0}' on server '{1}'".format(self.args['box'], self.args['server']))
-        return self.webbox.create_box()
+        return self.indx.create_box()
 
     def delete_box(self):
         """ Test to delete a box. """
         logging.debug("Deleting box: '{0}' on server '{1}'".format(self.args['box'], self.args['server']))
-        return self.webbox.delete_box()
+        return self.indx.delete_box()
 
     def list_boxes(self):
-        """ List the boxes on the webbox server. """
+        """ List the boxes on the INDX server. """
         logging.debug("Listing boxes on server '{0}'".format(self.args['server']))
-        return self.webbox.list_boxes()
+        return self.indx.list_boxes()
 
 
     def get_object_ids(self):
         """ Get the IDs of every object in this box. """
         logging.debug("Getting a list of object IDs on server '{0}' in box '{1}'".format(self.args['server'], self.args['box']))
-        return self.webbox.get_object_ids()
+        return self.indx.get_object_ids()
 
 
     def update(self):
         """ Test to update objects in a box. """
         logging.debug("Updating data to box: '{0}' on server '{1}'".format(self.args['box'], self.args['server']))
-        return self.webbox.update(self.args['version'], json.loads(self.args['data'].read()))
+        return self.indx.update(self.args['version'], json.loads(self.args['data'].read()))
 
 
     def delete(self):
@@ -133,13 +133,13 @@ class WebBoxClient:
             e.g., --id=id1 --id=id2
         """
         logging.debug("Deleting data to box: '{0}' on server '{1}'".format(self.args['box'], self.args['server']))
-        return self.webbox.delete(self.args['version'], self.args['id'])
+        return self.indx.delete(self.args['version'], self.args['id'])
 
 
     def get_latest(self):
         """ Get the latest version of every object in this box. """
         logging.debug("Getting latest objects on server '{0}' in box '{1}'".format(self.args['server'], self.args['box']))
-        return self.webbox.get_latest()
+        return self.indx.get_latest()
 
 
     def get_by_ids(self):
@@ -148,7 +148,7 @@ class WebBoxClient:
         ids = self.args['id']
         if type(ids) != type([]):
             ids = [ids] # put a single id into an array
-        return self.webbox.get_by_ids(ids)
+        return self.indx.get_by_ids(ids)
 
 
     def query(self):
@@ -157,7 +157,7 @@ class WebBoxClient:
              or query="{ 'firstname': 'dan' }"           
         """
         logging.debug("Querying server '{0}' in box '{1}'".format(self.args['server'], self.args['box']))
-        return self.webbox.query(self.args['query'])
+        return self.indx.query(self.args['query'])
 
 
     def diff(self):
@@ -168,7 +168,7 @@ class WebBoxClient:
         if "to" in self.args and self.args['to'] is not None:
             to_version = self.args['to']
 
-        return self.webbox.diff(self.args['return_objs'], self.args['from'], to_version = to_version)
+        return self.indx.diff(self.args['return_objs'], self.args['from'], to_version = to_version)
 
 
 #    def listen(self):
@@ -196,36 +196,36 @@ class WebBoxClient:
     def add_file(self):
         """ Add a file to the database. """
         logging.debug("Adding a file to server '{0}' in box '{1}', with id: {2}".format(self.args['server'], self.args['box'], self.args['id']))
-        return self.webbox.add_file(self.args['version'], self.args['id'], self.args['data'].read(), self.args['contenttype'])
+        return self.indx.add_file(self.args['version'], self.args['id'], self.args['data'].read(), self.args['contenttype'])
 
 
     def delete_file(self):
         """ Delete a file from the database. """
         logging.debug("Deleting a file from server '{0}' in box '{1}', with id: {2}".format(self.args['server'], self.args['box'], self.args['id']))
-        return self.webbox.delete_file(self.args['version'], self.args['id'])
+        return self.indx.delete_file(self.args['version'], self.args['id'])
 
 
     def get_file(self):
         """ Get a file from the database. """
         logging.debug("Calling get_file on server '{0}' in box '{1}'".format(self.args['server'], self.args['box']))
         # returns the file to stdout so it can be piped to a file
-        print self.webbox.get_file(self.args['id'])
+        print self.indx.get_file(self.args['id'])
 
 
     def list_files(self):
         """ Get a list of the files from the database. """
         logging.debug("Calling list_files on server '{0}' in box '{1}'".format(self.args['server'], self.args['box']))
-        return self.webbox.list_files()
+        return self.indx.list_files()
 
 
 if __name__ == "__main__":
-    wbclient = WebBoxClient()
+    client = CLIClient()
 
-    parser = argparse.ArgumentParser(description='Access a WebBox server.')
-    parser.add_argument('server', metavar='SERVER', type=str, nargs=1, help='URL of WebBox server, e.g. http://localhost:8211/')
+    parser = argparse.ArgumentParser(description='Access an INDX server.')
+    parser.add_argument('server', metavar='SERVER', type=str, nargs=1, help='URL of INDX server, e.g. http://localhost:8211/')
     parser.add_argument('username', metavar='USERNAME', type=str, nargs=1, help='Username')
     parser.add_argument('password', metavar='PASSWORD', type=str, nargs=1, help='Password')
-    parser.add_argument('action', metavar='ACTION', type=str, nargs=1, choices=wbclient.actions.keys(), help='Run a named action, one of: '+", ".join(wbclient.actions.keys()))
+    parser.add_argument('action', metavar='ACTION', type=str, nargs=1, choices=client.actions.keys(), help='Run a named action, one of: '+", ".join(client.actions.keys()))
     parser.add_argument('--box', action="store", type=str, help='Name of the Box (for actions that required it)')
     parser.add_argument('--query', action="store", type=str, help='Query string (for actions that required it)')
     parser.add_argument('--data', action="store", type=argparse.FileType('r'), help="Data file (e.g., JSON to import)")
@@ -247,8 +247,8 @@ if __name__ == "__main__":
 
     try:
         action = args['action'][0]
-        wbclient.set_args(args)
-        wbclient.call_action(action)
+        client.set_args(args)
+        client.call_action(action)
     except Exception as e:
         if args['debug']:
             traceback.print_exc()

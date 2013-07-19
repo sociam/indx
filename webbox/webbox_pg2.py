@@ -157,7 +157,7 @@ def create_box(box_name, db_user, db_pass):
         # ordered list of source database creation files
         source_files = ['objectstore-schema.sql', 'objectstore-views.sql', 'objectstore-functions.sql', 'objectstore-indexes.sql']
         for src_file in source_files:
-            fh_objsql = open(os.path.join(os.path.dirname(__file__),"..","..","data",src_file)) # FIXME put into config
+            fh_objsql = open(os.path.join(os.path.dirname(__file__),"..","data",src_file)) # FIXME put into config
             objsql = fh_objsql.read()
             fh_objsql.close()
             root_cur.execute(objsql) # execute the sql from each file
