@@ -2,7 +2,7 @@ module.exports = {
 	basePath: '../html/',
 
 	files: [
-		'../docs/backbone-abstract.js',
+		'../docs/abstracts/*',
 		'js/indx.js'
 		//'js/indx-utils.js'
 	],
