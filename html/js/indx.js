@@ -1,3 +1,7 @@
+///
+/// @title INDX
+/// blah
+
 /*global $,_,document,window,console,escape,Backbone,exports,WebSocket */
 /*jslint vars:true, todo:true */
 /*
@@ -800,9 +804,15 @@ angular
 				jsonp: false, contentType: "application/json",
 				xhrFields: { withCredentials: true }
 			},
+
+			/// @opt <{}> attributes
+			/// @opt <{}> options
+			/// @constructor
 			initialize: function(attributes, options){
 				this.set({boxes : new BoxCollection([], {store: this})});
 			},
+
+			/// Check that the
 			is_same_domain:function() {
 				return this.get('server_host').indexOf(document.location.host) >= 0 && (document.location.port === (this.get('server_port') || ''));
 			},
@@ -816,20 +826,20 @@ angular
 				}
 				return u.dresolve(b);
 			},
-			/// @arg <string|number> boxid
-			/// @arg <string | { a: 'valueofa' } > foo: some comment
-			/// @arg arg3: this is an argument with no type specified
+
+
+			/// @arg <string|number> boxid: the id for the box
 			///
-			/// Now I'll comment on this function...
-			///
-			/// @then success! :) (<Box> yourbox, <string> name_of_thing, <int> prime_factor)
+			/// @then (<Box> the box)
 			/// @fail
-			///   box already exists (<{ code: 409 }>)
-			///   other error (<{ code: -1, error: <error obj> }>)
-			create_box:function(boxid) {
+			///   (<{ code: 409 }> response) box already exists
+			///   (<{ code: -1, error: error obj }> response) other error
+			///
+			/// Attempts to create a box with the given ID
+			create_box: function (boxid) {
 				u.debug('create box ', boxid);
 				if (this.boxes().get(boxid)) {
-					return u.dreject({ code:409, message: 'Box already exists: ' + boxid });
+					return u.dreject({ code: 409, message: 'Box already exists: ' + boxid });
 				}
 				var c = this._create(boxid), this_ = this;
 				u.debug('creating ', boxid);
