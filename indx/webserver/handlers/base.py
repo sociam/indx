@@ -130,7 +130,11 @@ class BaseHandler(Resource):
         logging.debug("_matches_token_requirements, force_get: {0}".format(force_get))
 
         token,boxid,appid = self.get_token(request, force_get=force_get), self.get_request_box(request, force_get=force_get), self.get_request_app(request, force_get=force_get)
-        return token and token.verify(boxid, appid, self.get_origin(request))
+
+        if token and token.verify(boxid, appid, self.get_origin(request)):
+            return True
+        else:
+            raise ResponseOverride(403, "Forbidden")
     
     def get_session(self,request):
         session = request.getSession()
