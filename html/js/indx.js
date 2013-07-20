@@ -21,7 +21,7 @@
 
     Copyright (C) 2011-2013 University of Southampton
     Copyright (C) 2011-2013 Daniel Alexander Smith
-    Copyright (C) 2011-2013 Max Van Klek
+    Copyright (C) 2011-2013 Max Van Kleek
     Copyright (C) 2011-2013 Nigel R. Shadbolt
 
     This program is free software: you can redistribute it and/or modify
