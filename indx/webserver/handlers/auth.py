@@ -37,7 +37,7 @@ class AuthHandler(BaseHandler):
             pwd = args['password'][0]
         except Exception as e:
             logging.error("Error  {0}".format(e))
-            return self.return_bad_request(request)
+            return self.return_unauthorized(request)
 
         def win():
             logging.debug("Login request auth for {0}, origin: {1}".format(user, request.getHeader("Origin")))
