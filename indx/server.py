@@ -15,7 +15,7 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import os, logging
+import os, logging, sys
 from twisted.web import script
 from twisted.web.resource import ForbiddenResource
 from twisted.web.static import File
@@ -75,6 +75,22 @@ class WebServer:
         database.HOST = config['db']['host']
         database.PORT = config['db']['port']
 
+        def auth_cb(can_auth):
+            logging.debug("WebServer auth_cb, can_auth: {0}".format(can_auth))
+            if can_auth:
+                self.server_setup()
+            else:
+                print "Authentication failed, check username and password are correct."
+                reactor.stop()
+
+        def err_cb(failure):
+            logging.debug("WebServer err_cb, failure: {0}".format(failure))
+            failure.trap(Exception)
+
+        user,password = self.get_indx_user_password()
+        database.auth(user, password).addCallbacks(auth_cb, err_cb)
+
+    def server_setup(self):
         # TODO set up twisted to use gzip compression
 
         # Disable directory listings
@@ -114,6 +130,7 @@ class WebServer:
         d.addCallbacks(on_start, start_failed)
         reactor.callWhenRunning(d.callback, "INDX HTTP startup") #@UndefinedVariable
         reactor.addSystemEventTrigger("during", "shutdown", lambda *x: self.shutdown()) #@UndefinedVariable
+
 
     def shutdown(self):
         ## todo put more cleanup stuff here        

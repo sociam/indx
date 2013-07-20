@@ -18,6 +18,7 @@
 import os, logging, psycopg2
 from txpostgres import txpostgres
 from twisted.internet.defer import Deferred
+from twisted.python.failure import Failure
 
 ## indx to txpostgres bridge
 
@@ -61,9 +62,17 @@ def connect_sync(db_name, db_user, db_pass):
 def connect_raw(db_name, db_user, db_pass):
     """ Connect to the database bypassing the connection pool (e.g., for adding a notify observer). """
 
-    conn_str = ("dbname='{0}' user='{1}' password='{2}' host='{3}' port='{4}'".format(db_name or POSTGRES_DB, db_user, db_pass, HOST, PORT))
-    conn = txpostgres.Connection()
-    return conn.connect(conn_str)
+    try:
+        conn_str = ("dbname='{0}' user='{1}' password='{2}' host='{3}' port='{4}'".format(db_name or POSTGRES_DB, db_user, db_pass, HOST, PORT))
+        conn = txpostgres.Connection()
+        connection = conn.connect(conn_str)
+        return connection
+    except Exception as e:
+        logging.error("DB: Error connecting to {0} as {1} ({2})".format(db_name, db_user, e))
+        d = Deferred()
+        failure = Failure(e)
+        d.errback(failure)
+        return d
 
 
 def connect_box_sync(box_name, db_user, db_pass):
@@ -79,7 +88,7 @@ def connect_box(box_name,db_user,db_pass):
 
 def auth(db_user,db_pass):
     d = Deferred()
-    connect(None,db_user,db_pass).addCallbacks(lambda *x: d.callback(True), lambda *x: d.callback(False))
+    connect_raw(None,db_user,db_pass).addCallbacks(lambda *x: d.callback(True), lambda failure: failure.trap(Exception) and d.callback(False))
     return d
 
 
