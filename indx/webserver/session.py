@@ -30,6 +30,7 @@ class INDXSession(object):
         self.is_authenticated = False
         self.username = None
         self.password = None
+        self.openid_session = {}
 
     def setAuthenticated(self, val):
         self.is_authenticated = val
@@ -39,3 +40,7 @@ class INDXSession(object):
 
     def setPassword(self, password):
         self.password = password
+
+    def get_openid_session(self):
+        return self.openid_session
+

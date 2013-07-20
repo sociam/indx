@@ -19,6 +19,7 @@
 
 from indx.webserver.handlers.admin import AdminHandler
 from indx.webserver.handlers.auth import AuthHandler
+from indx.webserver.handlers.open_id import OpenIDHandler
 
 #from indx.webserver.handlers.enrich import EnrichHandler
 # from indx.webserver.handlers.wellknown import WellKnownHandler
@@ -30,7 +31,8 @@ from indx.webserver.handlers.auth import AuthHandler
 # leave boxhandler out of here, as it is instantiated on a per-box basis
 HANDLERS = [
     AuthHandler,
-    AdminHandler
+    AdminHandler,
+    OpenIDHandler
 
     # WebSocketsHandler
 
