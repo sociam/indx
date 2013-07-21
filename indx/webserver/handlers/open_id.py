@@ -24,7 +24,7 @@ from openid.consumer import consumer
 from openid.oidutil import appendArgs
 #from openid.cryptutil import randomString
 #from openid.fetchers import setDefaultFetcher, Urllib2Fetcher
-from openid.extensions import pape, sreg
+from openid.extensions import pape, sreg, ax
 
 OPENID_PROVIDER_NAME = "INDX OpenID Handler"
 OPENID_PROVIDER_URL = "http://indx.ecs.soton.ac.uk/"
@@ -42,6 +42,11 @@ OPENID_PROVIDER_URL = "http://indx.ecs.soton.ac.uk/"
 class OpenIDHandler(BaseHandler):
     base_path = 'openid'
     store = memstore.MemoryStore()
+    AX_URIS = [
+        'http://schema.openid.net/contact/email',
+        'http://schema.openid.net/namePerson/first',
+        'http://schema.openid.net/namePerson/last'
+    ]
 
     def verify(self, request):
         """ Verify an OpenID identity. """
@@ -55,6 +60,18 @@ class OpenIDHandler(BaseHandler):
         oid_consumer = consumer.Consumer(self.get_openid_session(request), self.store)
         try:
             oid_req = oid_consumer.begin(identity)
+            
+            # SReg speaks this protocol: http://openid.net/specs/openid-simple-registration-extension-1_1-01.html
+            # and tries to request additional metadata about this OpenID identity
+            sreg_req = sreg.SRegRequest(required=['fullname','nickname','email'], optional=[])
+            oid_req.addExtension(sreg_req)
+
+            # AX speaks this protocol: http://openid.net/specs/openid-attribute-exchange-1_0.html
+            # and tries to get more attributes (by URI), we request some of the more common ones
+            ax_req = ax.FetchRequest()
+            for uri in self.AX_URIS:
+                ax_req.add(ax.AttrInfo(uri, required = True))
+            oid_req.addExtension(ax_req)
         except consumer.DiscoveryFailure, exc:
             # FIXME handle this much better
             request.setResponseCode(200, message = "OK")
@@ -96,10 +113,18 @@ class OpenIDHandler(BaseHandler):
             request.finish()
         elif info.status == consumer.SUCCESS:
             sreg_resp = sreg.SRegResponse.fromSuccessResponse(info)
+            sreg_data = {}
+            if sreg_resp is not None:
+                sreg_data = sreg_resp.data
             pape_resp = pape.Response.fromSuccessResponse(info)
+            ax_resp = ax.FetchResponse.fromSuccessResponse(info)
+            ax_data = {}
+            if ax_resp is not None:
+                for uri in self.AX_URIS:
+                    ax_data[uri] = ax_resp.get(uri)
 
             request.setResponseCode(200, "OK")
-            request.write("Success of {0}, sreg_resp: {1}, pape_resp: {2}".format(display_identifier, sreg_resp, pape_resp))
+            request.write("Success of {0}, sreg_resp: {1} (sreg_data: {2}), pape_resp: {3}, ax_resp: {4}, ax_data: {5}".format(display_identifier, sreg_resp, sreg_data, pape_resp, ax_resp, ax_data))
             if info.endpoint.canonicalID:
                 request.write("...This is an i-name and its persistent ID is: {0}".format(info.endpoint.canonicalID))
             request.finish()
