@@ -1,0 +1,123 @@
+start
+	= as:arguments?  _$_ r:result? _$_ d:description_lines?
+			{ return { args: as, description: d, result: r }; }
+
+arguments
+	= a:argument __ as:arguments
+			{ return [].concat(as, [a]); }
+	/ a:argument
+			{ return [a]; }
+
+argument
+	= $ m:argument_mode _ t:type_statement? _ n:name _ ":"? _ c:comment?
+			{ return { mode: m, types: t, name: n, comment: c }; }
+
+argument_mode
+	= "@arg"
+		{ return { mandatory: true }; }
+	/ "@opt"
+		{ return { optional: true }; }
+
+description_lines
+	= d:.* { return d.join(''); }
+
+result
+	= r:return_result
+			{ return { "return": r }; }
+    / r:async_result
+			{ return { "async": r }; }
+    / chain_result
+			{ return { "chain": true }; }
+	/ constructor_result
+			{ return { "constructor": true }; }
+
+return_result
+	= $ "@return" _ type_statement? _ comment
+
+async_result
+	= then:async_then_result _$_ fail:async_fail_result
+			{ return { then: then, fail: fail }; }
+
+async_then_result
+	= "@then" _ cb:callback _ c:comment
+			{ return { comment: c, args: cb }; }
+
+async_fail_result
+	= "@fail" _ c:async_fail_result_cases
+			{ return { cases: c }; }
+
+async_fail_result_cases
+	= c:async_fail_result_case cs:async_fail_result_cases
+			{ return [].concat(cs, [c]); }
+	/ c:async_fail_result_case
+			{ return [c]; }
+
+async_fail_result_case
+	= __ $ cb:callback _ c:comment
+			{ return { args: cb, comment: c }; }
+
+callback
+	= _ "(" _ c:callback_arguments _ ")" _
+			{ return c; }
+
+callback_arguments
+	= _ c:callback_argument _ "," _ cs:callback_arguments _
+			{ return [].concat(cs, [c]); }
+	/ _ c:callback_argument _
+			{ return [c]; }
+
+callback_argument
+	= _ t:type_statement _ c:callback_argument_comment  _
+			{ return { type: t, comment: c }; }
+
+callback_argument_comment
+	= c:[^\n\r),]*
+			{ return c.join(''); }
+
+
+chain_result
+	= $ "@chain"
+
+constructor_result
+	= $ "@constructor"
+
+
+type_statement
+	= _ "<" _ ts:types _ ">" _
+			{ return ts; }
+
+types
+	= _ t:type _ "|" _ ts:types _
+			{ return [].concat(ts, [t]); }
+	/ _ t:type _
+			{ return [t]; }
+
+type
+	= t: [^|>]+
+			{ return { type: t.join('') }; }
+
+
+name
+	= n:[^ \t\-\n\r\:]+
+			{ return n.join(''); }
+
+comment
+	= c:[^\n\r]*
+			{ return c.join(''); }
+
+
+$
+	= _ "///" _
+
+
+_$_ = __ $ __ _$_
+	/ __ $ __
+	/ __
+
+_
+	= [ \t]*
+			{ return ''; }
+
+__
+	= [ \t\r\n]*
+			{ return ''; }

@@ -11,6 +11,12 @@
   "license": "BSD",
   "dependencies": {
     "underscore": "~1.5.1",
-    "mu2": "~0.5.19"
+    "mu2": "~0.5.19",
+    "node-promise": "~0.5.8",
+    "pegjs": "~0.7.0",
+    "circular-json": "~0.1.3",
+    "ncp": "~0.4.2",
+    "glob": "~3.2.3",
+    "cli-color": "~0.2.2"
   }
 }

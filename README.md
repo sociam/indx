@@ -2,7 +2,7 @@
 
 INDX is a personal file store being developed by @danielsmith-eu and @electronicmax at the University of Southampton, for the SOCIAM project.
 
-Installation and API documentation can be found on the INDX wiki:
+More installation and API documentation can be found on the INDX wiki:
 https://github.com/sociam/indx/wiki
 
 
@@ -14,27 +14,23 @@ Run `./setup-env.sh` to create a new `virtualenv` and install the INDX dependenc
 
     ./setup-env.sh
 
-Next run the following to add the library directories to your virtualenv path:
-
-    echo 'export PYTHONPATH="$VIRTUAL_ENV/../libs:$VIRTUAL_ENV/../pywebbox:$PYTHONPATH"' >> env/bin/activate
-
 Now, source the virtualenv:
 
     source env/bin/activate
 
-Now, run INDX with your PostgreSQL authentication username and hostname:
+Now, run the INDX server with your PostgreSQL authentication username and hostname:
 
-    python app.py <username> <hostname>
+    python server.py <username> <hostname>
 
 (It will prompt for your postgresql password).
 
 If you wish to specify additional configuration, you can get the list using `--help`:
 
-    python app.py --help
+    python server.py --help
 
 Usage will be printed:
 
-    usage: app.py [-h] [--db-host DB_HOST] [--db-port DB_PORT] [--log LOG]
+    usage: server.py [-h] [--db-host DB_HOST] [--db-port DB_PORT] [--log LOG]
                   [--port PORT] [--log-stdout] [--ssl] [--ssl-cert SSL_CERT]
                   [--ssl-key SSL_KEY] [--no-browser] [--address ADDRESS]
                   user hostname

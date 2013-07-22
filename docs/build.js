@@ -1,4 +1,4 @@
-
+/* jshint node:true */
 (function () {
 
 	'use strict';
@@ -6,30 +6,165 @@
 	var fs = require('fs'),
 		_ = require('underscore'),
 		mu = require('mu2'),
-		config = require('./config.js');
+		config = require('./config.js'),
+		GrammarParser = require('./lib/grammar-parser.js'),
+		allPromises = require('node-promise').all,
+		Promise = require('node-promise').Promise,
+		CJSON = require('circular-json'),
+		ncp = require('ncp'),
+		globp = require('glob'),
+		clc = require('cli-color');
 
-	mu.root = __dirname + '/templates';
+	mu.root = __dirname + '/template';
 
-	fs.readFile(config.basePath + config.files[0], function (err, data) {
-		if (err) { throw err; }
 
-		var appData = _.extend({
-				classes: parseClasses(data.toString())
-			}, config),
-			app = _.extend({ /*json: JSON.stringify(appData)*/ }, appData),
-			html = '';
+	var methodGrammar = new GrammarParser('./grammars/method-grammar'),
+		fileGrammar = new GrammarParser('./grammars/file-grammar');
 
-		mu.compileAndRender('index.html', app).on('data', function (dat) {
-			html += dat.toString();
-		}).on('end', function () {
-			fs.writeFile('./build/index.html', html, function (err) {
-				if (err) { throw err; }
+	function log (context, message) {
+		console.log(' ' + clc.green(context) + ' ' + message);
+	}
+
+	var Builder = function (config) {
+		this.config = config;
+		this.app = _.extend({ files: [], classes: [] }, this.config);
+	};
+
+	_.extend(Builder.prototype, {
+		build: function () {
+			log('build', 'starting build process');
+			var that = this,
+				files = this.app.files;
+			this._buildFilePaths().then(function (filenames) {
+				_.each(filenames, function (filename, i) {
+					var file = new File(filename, that.app);
+					files.push(file);
+					if (files[i - 1]) {
+						files[i - 1].then(function () { file.parse(); });
+					} else {
+						file.parse();
+					}
+				});
+				files[files.length - 1].then(function () {
+					that.render();
+				});
 			});
-		});
+		},
+		render: function () {
+			_.extend(this.app, { json: CJSON.stringify(this.app) }); // So we have a js representation on client
+			var that = this,
+				html = '';
 
+			deleteFolderRecursive('./build');
+			ncp('./template', './build', function (err) {
+				if (err) { throw err; }
+				mu.compileAndRender('index.mu', that.app).on('data', function (dat) {
+					html += dat.toString();
+				}).on('end', function () {
+					fs.writeFile('./build/index.html', html, function (err) {
+						if (err) { throw err; }
+					});
+				});
+			});
+		},
+		// Expands globs into paths
+		_buildFilePaths: function () {
+			log('build', 'building file paths');
+			var that = this,
+				promise = new Promise(),
+				globPromises = [],
+				files = [];
+
+			_.each(this.config.filePaths, function (glob) {
+				var globPromise = new Promise();
+				globPromises.push(globPromise);
+				globp(that.config.basePath + glob, { }, function (err, globFiles) {
+					files = files.concat(globFiles);
+					globPromise.resolve();
+				});
+			});
+
+			allPromises(globPromises).then(function () {
+				log('build', 'got ' + files.length + ' file paths');
+				promise.resolve(files);
+			});
+
+			return promise;
+		}
 	});
 
-	var Class = function (attributes, extend) {
+	var builder = new Builder(config);
+	builder.build();
+
+	function File (file, app) {
+		this.promise = new Promise();
+		this.then = this.promise.then;
+		this.fail = this.promise.fail;
+		this.app = app;
+		this.file = file;
+		this.classes = [];
+	}
+
+	_.extend(File.prototype, {
+		parse: function () {
+			log('parse file', this.file);
+			var that = this;
+			fs.readFile(this.file, function (err, data) {
+				log('read', that.file);
+				if (err) { throw err; }
+				that.data = data.toString();
+				that.parseComment().then(function () {
+					that.parseClasses();
+				});
+			});
+		},
+		parseComment: function () {
+			var that = this,
+				comment = getCommentAfter(this.data, 0);
+			return fileGrammar.parse(comment).then(function (rs) {
+				//console.log(JSON.stringify(rs, null, ' '))
+				_.extend(that, rs);
+			});
+		},
+		parseClasses: function () {
+			var that = this,
+				classes = this.classes,
+				superclasses = generateSuperClasses(this.app.classes),
+				promises = [];
+			// Find each class that extends each superclass
+			_.each(superclasses, function (superCls) {
+				_.each(superCls.regexps, function (regexp) {
+					var re = new RegExp(regexp[0], 'g');
+					that.data.replace(re, function () {
+						var match = regexp[1].apply(this, arguments);
+						console.log(match);
+						var cls = new Class(that.data, match, superCls.cls);
+						that.app.classes.push(cls);
+						classes.push(cls);
+					});
+
+				});
+			});
+
+			// Sort each class by its line number
+			classes = _.sortBy(classes, function (cls) { return cls.start; });
+			// Infer that the end the each class is the start of the next
+			_.each(classes, function (cls, i) {
+				if (i > 0) { classes[i - 1].end = cls.start - 1; }
+			});
+			// ... or the end of the file
+			if (classes.length > 0) { classes[classes.length - 1].end = that.data.length - 1; }
+			// Parse each class
+			_.each(classes, function (cls) { promises.push(cls.parse()); });
+
+			allPromises(promises).then(function () {
+				that.promise.resolve();
+			});
+		}
+	});
+
+	var Class = function (data, attributes, extend) {
+		this.data = data;
 		this.methods = [];
 		this.properties = [];
 
@@ -37,18 +172,17 @@
 
 		if (extend) {
 			this.extend = extend;
-			console.log(extend)
-			//_.defaults(this.attributes, this.extend.attributes);
-			this.methods = _.map(extend.methods, function (method) {
-				console.log(method.name)
-				return _.extend({}, method);
-			});
+			//this.methods = _.map(extend.methods, function (method) {
+				//console.log(method.name)
+			//	return _.extend({}, method);
+			//});
 			// inherit properties
 		}
-		_.bindAll(this, "uid", "instanceName");
+		_.bindAll(this, 'uid', 'instanceName');
 	};
 
 	_.extend(Class.prototype, {
+		fullName: function () { return this.name; },
 		set: function (attributes) {
 			_.extend(this, attributes);
 		},
@@ -58,38 +192,27 @@
 		instanceName: function () {
 			return this.name.charAt(0).toLowerCase() + this.name.substr(1);
 		},
-		parse: function (data) {
+		parse: function () {
+			log('parse class', this.name);
 			var that = this,
-				methods = parseMethods(data, this.start, this.end, this);
+				promise = new Promise();
 
-			_.each(methods, function (method) {
-				var existing = _.findWhere(that.methods, { name: method.name }); // TODO
-				that.methods.push(new Method(method, that));
+			parseMethods(this.data, this.start, this.end, this).then(function (methods) {
+				_.each(methods, function (method) {
+					var existing = _.findWhere(that.methods, { name: method.name }); // TODO
+					that.methods.push(new Method(method, that));
+				});
+				promise.resolve(methods);
 			});
 
-			return;
-
-			var oldMethods = cls.methods
-
-
-			cls.methods = methods;
-
-			_.each(oldMethods, function (method) {
-				var newMethod = _.findWhere(cls.methods, { name: method.name });
-				if (!newMethod) {
-					newMethod = _.clone(method);
-					//cls.methods.push(newMethod); // PUT THIS BACK
-				}
-				newMethod.inheritedFrom = method;
-			});
-			return cls;
+			return promise;
 		}
 	});
 
 	var Method = function (attributes, cls) {
 		_.extend(this, attributes);
 		this.cls = cls;
-		_.bindAll(this, "uid");
+		_.bindAll(this, 'uid');
 	};
 
 	_.extend(Method.prototype, {
@@ -98,71 +221,44 @@
 		},
 		uid: function () {
 			return this.cls.uid + '-' + this.name.replace(/\W/gi, '');
-		},
+		}
 	});
 
 
-	function generateSuperClasses () {
+	function generateSuperClasses (classes) {
 		return _.extend({
-			'Object' : new Class({
+			'Object' : new Class('', {
 				regexps: [
-					['([A-Z][^\\\s.]*) *= *function *\\\(([^\\\)]*)\\\)', function (match, name, pos) {
-						return { match: match, name: name, start: pos };
+					['([^\\s]*[\\.|\\s]+([A-Z][^\\s\\.]*)) *= *function *\\(([^\\)]*)\\)', function (match, fullName, name, n, pos) {
+						return { match: match, name: name, fullName: fullName, start: pos };
 					}],
-					['function *([A-Z][^\\\s.]*) *\\\(([^\\\)]*)\\\)', function (match, name, pos) {
+					['function\\s*([A-Z][^\\s.]*) *\\(([^\\)]*)\\)', function (match, name, pos) {
 						return { match: match, name: name, start: pos };
 					}]
 				]
 			})
-		}, _.map(config.superclasses, function (cls, name) {
+		}, _.map(classes, function (cls) {
 			var ncls = _.extend({
-				name: name,
+				name: cls.name,
 				regexps: [
-					['([^\\\s.]*) *= *' + name + '\\\.extend\\\(', function (match, name, pos) {
+					['([^\\s.]*) *= *' + (cls.fullName || cls.name) + '\\.extend\\(', function (match, name, pos) {
+						console.log(name);
 						return { match: match, name: name, start: pos };
 					}]
-				]
-			}, cls);
-			return new Class(ncls);
+				],
+				cls: cls
+			});
+			return new Class('', ncls);
 		}));
 	}
 
-	function parseClasses (data) {
-
-		var classes = [],
-			superclasses = generateSuperClasses();
-
-		_.each(superclasses, function (scls) { // Find each class that extends each superclass
-			_.each(scls.regexps, function (regexp) {
-				var re = new RegExp(regexp[0], 'g');
-				data.replace(re, function (_match) {
-					var match = regexp[1].apply(this, arguments);
-					classes.push(new Class(match, scls));
-					return _match;
-				});
-			});
-
-		});
-
-		classes = _.sortBy(classes, function (cls) { return cls.start; });
-
-		_.each(classes, function (cls, i) {
-			if (i > 0) { classes[i - 1].end = cls.start - 1; }
-		});
-		if (classes.length > 0) { classes[classes.length - 1].end = data.length - 1; }
-
-		_.each(classes, function (cls) {
-			cls.parse(data);
-		});
-
-		return classes;
-	}
-
 	function parseMethods (data, start, end, cls) {
-		var subdata = data.substring(start, end),
+		var promise = new Promise(),
+			dfds = [],
+			subdata = data.substring(start, end),
 			methods = [];
 
-		var re = new RegExp('([^\\\s]*) *: *function *\\\(([^\\\)]*)\\\)', 'g');
+		var re = new RegExp('[\\.|\\s]+([a-z_][^\\s.]*) *[:=] *function *\\(([^\\)]*)\\)', 'g');
 
 		subdata.replace(re, function (match, name, args, pos) {
 			if (name.indexOf('_') === 0) { return; }
@@ -174,107 +270,103 @@
 				comments = getCommentBefore(data, start + pos);
 
 
-			parseMethodComment(comments, method);
+			dfds.push(parseMethodComment(comments, method));
 
 			methods.push(method);
 
 			return match;
 		});
 
-		methods = _.sortBy(methods, function (method) { return method.lineNoStart; });
 
-		return methods;
+		allPromises(dfds).then(function () {
+			methods = _.chain(methods).map(function (method) {
+
+				if (method.args.length > 0) {
+					method.hasArgs = true;
+
+					_.each(method.args, function (arg) {
+						arg.moreInfo = !!arg.types || !!arg.comment;
+						arg.last = false;
+						if (arg.types && arg.types.length > 0) {
+							arg.hasTypes = true;
+							_.each(arg.types, function (type) {
+								type.last = false;
+							});
+							arg.types[arg.types.length - 1].last = true;
+						}
+					});
+					method.args[method.args.length - 1].last = true;
+				}
+				//console.log(JSON.stringify(method, null, ' '))
+				return method;
+			}).sortBy(methods, function (method) {
+				return method.lineNoStart;
+			}).value();
+
+			promise.resolve(methods);
+		});
+
+		return promise;
 
 	}
 
 	function parseArgs (data) {
-		var args = _.map(data.split(','), function (arg) {
-			return {
-				name: arg.trim()
-			};
-		});
-		args[args.length - 1].last = true;
-		return args;
+		return _.chain(data.split(',')).map(function (arg) {
+			return { name: arg.trim() };
+		}).reject(function (o) {
+			return o.name.length === 0;
+		}).value();
 	}
 
 
 	function parseMethodComment (comment, method) {
-		var lines = comment.split('\n'),
-			oldArgs = method.args,
-			mode = 0; // arguments, description, result
-		method.args = [];
-		_.each(lines, function (line) {
-			line = line.trim();
-			if (line.indexOf('@arg') === 0) {
-				method.args.push(parseArgComment(line));
-			}
+
+		return methodGrammar.parse(comment).then(function (rs) {
+			//console.log(JSON.stringify(rs, null, ' '))
+			var oldArgs = method.args;
+			_.extend(method, rs);
+			if (!method.args) { method.args = oldArgs; }
 		});
-		if (method.args.length === 0) {
-			method.args = oldArgs;
-			console.log(method.args)
-		} else {
-			method.args[method.args.length - 1].last = true;
-		}
 	}
 
-	function parseArgComment (str) {
-		var parts = genericParser(str.trim().substring(4).trim(), ['<type>?', '<name>', ':?', '<comment>']);
-		return parts;
-	}
 
 	function getCommentBefore (data, start) {
 		var subdata = data.substring(0, start),
-			lines = subdata.split('\n').reverse(),
-			commentLines = [],
-			i, l, line;
+			lines = subdata.split('\n').reverse();
+		return getComment(lines).reverse().join('\n');
+	}
 
+	function getCommentAfter (data, start) {
+		var subdata = data.substring(start - 1), // FIXME: not sure why -1
+			lines = subdata.split('\n');
+		return getComment(lines).join('\n');
+	}
+
+	function getComment (lines) {
+		var commentLines = [],
+			i, l, line;
 		for (i = 1, l = lines.length; i < l; i++) {
 			line = lines[i].trim();
 			if (line.indexOf('///') !== 0) { break; }
-			line = line.substr(4).trim();
 			commentLines.push(line);
 		}
-		return commentLines.reverse().join('\n');
+		return commentLines;
 	}
 
-	function genericParser (str, parts) {
-		var regexps = {
-				type: '<([^>]+)>',
-				name: '(\\\w+)',
-				comment: '(.*)'
-			},
-			currPos = 0,
-			result = {};
-
-		_.each(parts, function (part) {
-			var l = part.length,
-				optional, p, regexp;
-
-			if (part.indexOf('?') === l - 1) {
-				optional = true; // TODO
-				part = part.substr(0, part.length - 1);
-			}
-
-			if (part.indexOf('<') === 0) {
-				p = part.substring(1, part.indexOf('>'));
-				regexp = new RegExp(regexps[p]);
-			} else {
-				p = part;
-				regexp = new RegExp(part);
-			}
-
-			str.substring(currPos).replace(regexp, function (match) {
-				var pos = _.find(arguments, function (a) { return _.isNumber(a); });
-				currPos = currPos + pos + match.length;
-				result[p] = match.trim();
+	function deleteFolderRecursive (path) {
+		var files = [];
+		if( fs.existsSync(path) ) {
+			files = fs.readdirSync(path);
+			files.forEach(function(file,index){
+				var curPath = path + "/" + file;
+				if(fs.statSync(curPath).isDirectory()) { // recurse
+					deleteFolderRecursive(curPath);
+				} else { // delete file
+					fs.unlinkSync(curPath);
+				}
 			});
-		});
-
-		return result;
-		/*_.each(regexps, function (r, k) {
-			regexp.replace('<' + k + '>', r);
-		});
-		return new RegExp(regexp, flags);*/
-	}
+			fs.rmdirSync(path);
+		}
+	};
 
 }());

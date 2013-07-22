@@ -1,3 +1,7 @@
+///
+/// @title INDX
+/// blah
+
 /*global $,_,document,window,console,escape,Backbone,exports,WebSocket */
 /*jslint vars:true, todo:true */
 /*
@@ -15,22 +19,22 @@
 	backbone.js 0.9.2 or higher
 	underscore.js 1.4.2 or higher
 
-  This file is part of INDX
-  Copyright 2012 Max Van Kleek, Daniel Alexander Smith
-  Copyright 2012 University of Southampton
+    Copyright (C) 2011-2013 University of Southampton
+    Copyright (C) 2011-2013 Daniel Alexander Smith
+    Copyright (C) 2011-2013 Max Van Kleek
+    Copyright (C) 2011-2013 Nigel R. Shadbolt
 
-  WebBox is free software: you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License, version 3,
+    as published by the Free Software Foundation.
 
-  WebBox is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
 
-  You should have received a copy of the GNU General Public License
-  along with Indx.  If not, see <http://www.gnu.org/licenses/>.
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 
@@ -800,9 +804,15 @@ angular
 				jsonp: false, contentType: "application/json",
 				xhrFields: { withCredentials: true }
 			},
+
+			/// @opt <{}> attributes
+			/// @opt <{}> options
+			/// @constructor
 			initialize: function(attributes, options){
 				this.set({boxes : new BoxCollection([], {store: this})});
 			},
+
+			/// Check that the
 			is_same_domain:function() {
 				return this.get('server_host').indexOf(document.location.host) >= 0 && (document.location.port === (this.get('server_port') || ''));
 			},
@@ -816,20 +826,20 @@ angular
 				}
 				return u.dresolve(b);
 			},
-			/// @arg <string|number> boxid
-			/// @arg <string | { a: 'valueofa' } > foo: some comment
-			/// @arg arg3: this is an argument with no type specified
+
+
+			/// @arg <string|number> boxid: the id for the box
 			///
-			/// Now I'll comment on this function...
-			///
-			/// @then (<Box> yourbox, <string> name_of_thing, <int> prime_factor)
+			/// @then (<Box> the box)
 			/// @fail
-			///   box already exists (<{ code: 409 }>)
-			///   other error (<{ code: -1, error: <error obj> }>)
-			create_box:function(boxid) {
+			///   (<{ code: 409 }> response) box already exists
+			///   (<{ code: -1, error: error obj }> response) other error
+			///
+			/// Attempts to create a box with the given ID
+			create_box: function (boxid) {
 				u.debug('create box ', boxid);
 				if (this.boxes().get(boxid)) {
-					return u.dreject({ code:409, message: 'Box already exists: ' + boxid });
+					return u.dreject({ code: 409, message: 'Box already exists: ' + boxid });
 				}
 				var c = this._create(boxid), this_ = this;
 				u.debug('creating ', boxid);
