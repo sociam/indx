@@ -1,34 +1,33 @@
-#    This file is part of INDX.
+#    Copyright (C) 2011-2013 University of Southampton
+#    Copyright (C) 2011-2013 Daniel Alexander Smith
+#    Copyright (C) 2011-2013 Max Van Kleek
+#    Copyright (C) 2011-2013 Nigel R. Shadbolt
 #
-#    Copyright 2013 Daniel Alexander Smith, Max Van Kleek
-#    Copyright 2013 University of Southampton
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU Affero General Public License, version 3,
+#    as published by the Free Software Foundation.
 #
-#    INDX is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, either version 3 of the License, or
-#    (at your option) any later version.
-#
-#    INDX is distributed in the hope that it will be useful,
+#    This program is distributed in the hope that it will be useful,
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
+#    GNU Affero General Public License for more details.
 #
-#    You should have received a copy of the GNU General Public License
-#    along with INDX.  If not, see <http://www.gnu.org/licenses/>.
+#    You should have received a copy of the GNU Affero General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import argparse, logging, getpass, sys, urllib2, json
-from pywebbox import WebBox
+from pyindx import IndxClient
 from tweepy.streaming import StreamListener
 from tweepy import OAuthHandler
 from tweepy import Stream
 
 """ Set up the arguments, and their defaults. """
-parser = argparse.ArgumentParser(description='Run a continuous twitter search and import tweets into a Webbox.')
-parser.add_argument('user', type=str, help="Webbox username, e.g. webbox")
-parser.add_argument('address', type=str, help="Address of the webbox server, e.g. http://webbox.example.com:8211/")
+parser = argparse.ArgumentParser(description='Run a continuous twitter search and import tweets into INDX.')
+parser.add_argument('user', type=str, help="INDX username, e.g. indx")
+parser.add_argument('address', type=str, help="Address of the INDX server, e.g. http://indx.example.com:8211/")
 parser.add_argument('box', type=str, help="Box to assert tweets into")
 parser.add_argument('words', type=str, help="Words to search for, comma separated")
-parser.add_argument('--appid', type=str, default="Twitter Harvester", help="Override the appid used for the webbox assertions")
+parser.add_argument('--appid', type=str, default="Twitter Harvester", help="Override the appid used for the INDX assertions")
 parser.add_argument('--debug', default=False, action="store_true", help="Enable debugging")
 parser.add_argument('--profile', default=False, action="store_true", help="Enable profiling")
 args = vars(parser.parse_args())
@@ -38,9 +37,9 @@ if args['debug']:
 else:
     logging.basicConfig(level=logging.INFO)
 
-# Prompt for the webbox password
+# Prompt for the INDX password
 password = getpass.getpass()
-webbox = WebBox(args['address'], args['box'], args['user'], password, args['appid'])
+indx = IndxClient(args['address'], args['box'], args['user'], password, args['appid'])
 version = 0 # box version
 batch = [] # batch update multiple tweets at once
 
@@ -62,7 +61,7 @@ class INDXListener(StreamListener):
 
     """
     def on_data(self, tweet_data):
-        """ Assert the tweet into the webbox.
+        """ Assert the tweet into INDX.
         If the version is incorrect, the correct version will be grabbed and the update re-sent.
         
         tweet -- The tweet to assert into the box.
@@ -80,10 +79,10 @@ class INDXListener(StreamListener):
             tweet["@id"] = unicode(tweet['id'])
             batch.append(tweet)
             if len(batch) > 25:
-                response = webbox.update(version, batch)
+                response = indx.update(version, batch)
                 version = response['data']['@version'] # update the version
                 batch = []
-#            response = webbox.update(version, tweet)
+#            response = indx.update(version, tweet)
         except Exception as e:
             if isinstance(e, urllib2.HTTPError): # handle a version incorrect error, and update the version
                 if e.code == 409: # 409 Obsolete
@@ -93,7 +92,7 @@ class INDXListener(StreamListener):
                     self.on_data(tweet_data) # try updating again now the version is correct
                 pass
             else:
-                logging.error("Error updating webbox: {0}".format(e))
+                logging.error("Error updating INDX: {0}".format(e))
                 sys.exit(0)                    
         return True
 

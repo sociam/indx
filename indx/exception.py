@@ -15,31 +15,19 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging, traceback, json, re
-from twisted.web.resource import Resource
-from indx.webserver.handlers.base import BaseHandler
-from indx.objectstore_async import ObjectStoreAsync
-from twisted.internet.defer import Deferred
+class ResponseOverride(Exception):
+    
+    def __init__(self, status, reason, data=""):
+        super(ResponseOverride, self).__init__()
+        self.status = status
+        self.reason = reason
+        self.data = data
 
-class TestApp(BaseHandler):
-    def __init__(self, server):
-        BaseHandler.__init__(self, server)
-        self.isLeaf = False
+    def get_response(self):
+        return {"status": self.status, "reason": self.reason, "data": self.data}
 
-    def hello(self, request):
-        self.return_ok(request, { data: "hello" })
-
-TestApp.submodules = [
-   # TODO: dispatching with apps doesn't seem to work yet
-   #  { 
-   #      'prefix':'hello',
-   #      'methods': ['GET'],
-   #      'require_auth': False,
-   #      'require_token': False,
-   #      'handler': BaseHandler.return_ok,
-   #      'content-type':'text/plain', # optional
-   #      'accept':['application/json']
-   # }
-]
-
-APP = TestApp
+class AbstractException(Exception):
+    
+    def __init__(self, message=''):
+        super(AbstractException, self).__init__()
+        self.message = message

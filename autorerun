@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 ##
-## Super Fancy Autoreloader module for speeding up Webbox development
+## Super Fancy Autoreloader module for speeding up INDX development
 ##  inspired by autoreload.py, which did not work because python does
 ##  not free up ports taken up by terminated subprocess children:: so
 ##  we use daemonization to make it work
 ## 
 ## @see: http://stackoverflow.com/questions/3355995/fork-and-exit-in-python
 ## @see: http://stackoverflow.com/questions/881388/what-is-the-reason-for-performing-a-double-fork-when-creating-a-daemon
-##  (c) 2012 - electronic Max - Part of the WebBox framework
+##  (c) 2012 - electronic Max - Part of the INDX framework
 ## 
 ## Usage: just run this main ./autorerun
 ##

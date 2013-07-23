@@ -15,31 +15,26 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging, traceback, json, re
-from twisted.web.resource import Resource
-from indx.webserver.handlers.base import BaseHandler
-from indx.objectstore_async import ObjectStoreAsync
-from twisted.internet.defer import Deferred
+import json, string, random
 
-class TestApp(BaseHandler):
-    def __init__(self, server):
-        BaseHandler.__init__(self, server)
-        self.isLeaf = False
+""" Script to generate JSON files for testing importing/updating. """
 
-    def hello(self, request):
-        self.return_ok(request, { data: "hello" })
+objects = 10
+properties = 10
+values = 3
 
-TestApp.submodules = [
-   # TODO: dispatching with apps doesn't seem to work yet
-   #  { 
-   #      'prefix':'hello',
-   #      'methods': ['GET'],
-   #      'require_auth': False,
-   #      'require_token': False,
-   #      'handler': BaseHandler.return_ok,
-   #      'content-type':'text/plain', # optional
-   #      'accept':['application/json']
-   # }
-]
+def str_gen(size=16, chars=string.ascii_uppercase + string.digits):
+    return ''.join(random.choice(chars) for x in range(size))
 
-APP = TestApp
+
+objs = []
+for i in range(objects):
+    obj = {"@id": str_gen()}
+    for j in range(properties):
+        prop = str_gen()
+        obj[prop] = []
+        for k in range(values):
+            obj[prop].append({"@value": str_gen()}) 
+    objs.append(obj)
+
+print json.dumps(objs)
