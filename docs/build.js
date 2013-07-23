@@ -138,7 +138,7 @@
 					that.data.replace(re, function () {
 						var match = regexp[1].apply(this, arguments);
 						console.log(match);
-						var cls = new Class(that.data, match, superCls.cls);
+						var cls = new Class(that.data, match, superCls.cls, that);
 						that.app.classes.push(cls);
 						classes.push(cls);
 					});
@@ -160,13 +160,17 @@
 			allPromises(promises).then(function () {
 				that.promise.resolve();
 			});
+		},
+		uid: function () {
+			return 'file-' + this.file.replace(/\W+/gi, '-');
 		}
 	});
 
-	var Class = function (data, attributes, extend) {
+	var Class = function (data, attributes, extend, file) {
 		this.data = data;
 		this.methods = [];
 		this.properties = [];
+		this.file = file;
 
 		this.set(attributes);
 
@@ -187,7 +191,7 @@
 			_.extend(this, attributes);
 		},
 		uid: function () {
-			return this.name.replace(/\W/gi, '');
+			return _.result(this.file, 'uid') + '_class-' + this.name.replace(/\W+/gi, '');
 		},
 		instanceName: function () {
 			return this.name.charAt(0).toLowerCase() + this.name.substr(1);
@@ -220,7 +224,7 @@
 			_.extend(this, attributes);
 		},
 		uid: function () {
-			return this.cls.uid + '-' + this.name.replace(/\W/gi, '');
+			return _.result(this.cls, 'uid') + '_method-' + this.name.replace(/\W+/gi, '-');
 		}
 	});
 

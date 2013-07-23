@@ -1,5 +1,5 @@
 <a name="{{uid}}"></a>
-<div class="method well">
+<div class="method well" id="{{uid}}">
   <h4>{{name}}</h4>
 
   <code class="header-example">{{instanceName}}.{{name}}(
