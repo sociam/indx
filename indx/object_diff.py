@@ -78,7 +78,10 @@ class ObjectSetDiff:
         queries.extend(self.apply_diffs_to_latest())
         queries.extend(self.gen_queries(['latest','subjects']))
 
-        logging.debug("ObjectSetDiff run_queries, queries: {0}".format(pprint.pformat(queries[0])))
+        if len(queries) > 0:
+            logging.debug("ObjectSetDiff run_queries, queries: {0}".format(pprint.pformat(queries[0])))
+        else:
+            logging.debug("ObjectSetDiff run_queries, queries: [empty]")
 
         #### test
 #        mega_query = ""
