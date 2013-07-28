@@ -59,7 +59,6 @@ class ObjectStoreQuery:
 
         # same order as table
         selects = [
-            "wb_v_latest_triples.version",
             "wb_v_latest_triples.triple_order",
             "wb_v_latest_triples.subject",
             "wb_v_latest_triples.predicate",
