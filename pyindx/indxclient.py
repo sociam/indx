@@ -289,8 +289,20 @@ class IndxClient:
         pass
 
     @require_token
+    def update_raw(self, version, objects):
+        """ Update objects in a box, in INDX format.
+        
+            version -- The current version of the box
+            objects -- List of objects to create/update
+        """
+        self._debug("Called API: update_raw with version: {0}, objects: {1}".format(version, objects)) 
+
+        values = {"data": json.dumps(objects), "version": version}
+        return self._put(self.base, values)
+
+    @require_token
     def update(self, version, objects):
-        """ Update objects in a box.
+        """ Update objects in a box, from any JSON format.
         
             version -- The current version of the box
             objects -- List of objects to create/update
