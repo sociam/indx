@@ -1,8 +1,8 @@
-<div class="class">
-	<a name="{{uid}}"></a>
+<a name="{{uid}}"></a>
+<article class="class" id="{{uid}}">
 	<h3>{{fullName}}</h3>
 	{{#extend}}
-	  <div class="extends">extends <i>{{fullName}}</i></div><br>
+	  <div class="extends">extends <a target="_blank" href="#{{uid}}"><i>{{fullName}}</i></a></div><br>
 	  <h4>Inherited methods from {{fullName}}</h4>
 	  <ul>
 	  	{{#methods}}
@@ -14,4 +14,4 @@
 	{{#methods}}
 	  {{>partials/method.mu}}
 	{{/methods}}
-</div>
+</article>

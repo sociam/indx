@@ -26,6 +26,11 @@ import apps
 # map apps/modulename/x -> handler
 # map apps/modulename/html/x  -> static
 
+class NoHTMLHandler(Resource):
+
+    def render(self, request):
+        return "Nothing to see here."
+
 class AppsMetaHandler(Resource):
 
     def __init__(self,webserver):
@@ -60,9 +65,9 @@ class AppsMetaHandler(Resource):
             module,html = vals['module'],vals['html']
             logging.debug(' module dir {0}'.format(html))
             if not html: 
-                # TODO: handle this case
-                continue            
-            file_handler = File(html)                        
+                file_handler = NoHTMLHandler()
+            else:
+                file_handler = File(html)                        
             if getattr(module, 'APP', None):
                 app = module.APP(server)
                 self.apps[appname] = app
