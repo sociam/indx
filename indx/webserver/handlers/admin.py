@@ -19,7 +19,7 @@ import logging, re
 from indx.webserver.handlers.base import BaseHandler
 import indx.indx_pg2 as database
 from twisted.internet.defer import Deferred
-import indx.server
+import indx.server # causes an infinite dependency loop
 
 class AdminHandler(BaseHandler):
     """ Add/remove boxes, add/remove users, change config. """
@@ -30,6 +30,7 @@ class AdminHandler(BaseHandler):
         return self.return_ok(request, data = {"indx_uri": self.webserver.server_url} )
 
     def invalid_name(self, name):
+        # import indx.server
         """ Check if this name is safe (only contains a-z0-9_-). """ 
         return re.match("^[a-z0-9_-]*$", name) is None and name not in indx.server.BOX_NAME_BLACKLIST
 
