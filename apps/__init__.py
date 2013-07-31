@@ -1,7 +1,7 @@
 ## module loader, goes to see which submodules have 'html' directories
 ## and declares them at the toplevel
 
-import os,importlib
+import os,importlib,logging
 
 def find_module_dirs():
     curdir = os.path.dirname(os.path.abspath(__file__))
