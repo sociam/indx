@@ -250,7 +250,7 @@ class ObjectSetDiff:
 
         for row in self.queries['latest_diffs']['remove_subject']:
             subject, predicate, sub_obj, object_order = row
-            queries.append(("DELETE FROM wb_latest_vers wb_triples, wb_strings AS subjects WHERE subjects.id_string = wb_triples.subject AND wb_latest_vers.triple = wb_triples.id_triple AND subjects.string = %s", [subject])) # XXX TODO test
+            queries.append(("DELETE FROM wb_latest_vers USING wb_triples, wb_strings AS subjects WHERE subjects.id_string = wb_triples.subject AND wb_latest_vers.triple = wb_triples.id_triple AND subjects.string = %s", [subject])) # XXX TODO test
 
         for row in self.queries['latest_diffs']['remove_predicate']:
             subject, predicate, sub_obj, object_order = row
