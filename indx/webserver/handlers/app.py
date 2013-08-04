@@ -23,8 +23,8 @@ from twisted.web.resource import NoResource
 
 import apps
 
-# map apps/modulename/x -> handler
-# map apps/modulename/html/x  -> static
+# map apps/modulename/api/x -> handler
+# map apps/modulename/x  -> static
 
 class NoHTMLHandler(Resource):
 
@@ -63,7 +63,7 @@ class AppsMetaHandler(Resource):
         for appname, vals in apps.MODULES.iteritems():
             logging.debug("registering app {0}".format(appname))
             module,html = vals['module'],vals['html']
-            logging.debug(' module dir {0}'.format(html))
+            logging.debug(' module dir vals {0}'.format(vals))
             if not html: 
                 file_handler = NoHTMLHandler()
             else:

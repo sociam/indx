@@ -17,7 +17,7 @@ def find_html_dirs():
 def import_app(app):
     try:
         logging.debug("importing app: {0}".format(app))
-        importlib.import_module(app)
+        return importlib.import_module(app)
     except Exception as e:
         logging.error("Couldn't load app: {0}, error: {1}".format(app, e))
 
