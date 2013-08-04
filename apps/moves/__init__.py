@@ -15,11 +15,8 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging, traceback, json, re
-from twisted.web.resource import Resource
+import logging, json
 from indx.webserver.handlers.base import BaseHandler
-from indx.objectstore_async import ObjectStoreAsync
-from twisted.internet.defer import Deferred
 from twisted.web.server import NOT_DONE_YET
 import requests
 
@@ -35,8 +32,10 @@ class MovesApp(BaseHandler):
             code = request.args['code'][0]
             redirect_url = request.args['redirect_url'][0]
             response = requests.post("http://moves.indx.ecs.soton.ac.uk/get_token/", data = {"code": code, "redirect_url": redirect_url})
+            logging.debug("Moves App, returning response from server")
             self.return_ok(request, data = {"response": json.loads(response.text)})
         else:
+            logging.debug("Moves App, returning 404")
             self.return_not_found(request)
         return NOT_DONE_YET
 
