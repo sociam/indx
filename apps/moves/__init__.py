@@ -28,10 +28,9 @@ class MovesApp(BaseHandler):
     def render(self, request):
         logging.debug("Moves App, request args: {0}".format(request.args))
         # forwards a POST request (same domain, because of XHR cross-domain security), then through moves.indx.ecs.soton.ac.uk (which holds the client secret ID) to the API at moves-app.com (phew!)
-        if "code" in request.args and "redirect_url" in request.args:
+        if "code" in request.args:
             code = request.args['code'][0]
-            redirect_url = request.args['redirect_url'][0]
-            response = requests.post("http://moves.indx.ecs.soton.ac.uk/get_token/", data = {"code": code, "redirect_url": redirect_url})
+            response = requests.post("http://moves.indx.ecs.soton.ac.uk/get_token/", data = {"code": code})
             logging.debug("Moves App, returning response from server")
             self.return_ok(request, data = {"response": json.loads(response.text)})
         else:

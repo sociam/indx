@@ -7,21 +7,33 @@ window.s = indx.store;
 
 // MOVES code
 
-function moves_get_token(code, redirect_url){
-    u.debug("moves_get_token");
+function moves_access(token){
+    // access moves, sync to box, update visuals
+    u.debug("moves_access, token: "+token);
+}
+
+function moves_get_token(code){
+    u.debug("moves_get_token, code: " + code);
 
     $("#step-load").show();
     $.ajax({
         url: "api",
-        data: {"code": code, "redirect_url": redirect_url},
+        data: {"code": code},
         type: "GET",
         dataType: "json",
         success: function(data, status, xhr){
             var token = data.response.access_token;
             var user_id = data.response.user_id;
             var refresh_token = data.response.refresh_token;
-            alert(token);
             $("#step-load").hide();
+            moves_box.get_obj("movesdata-status").then(function(status_obj){
+                status_obj.set("token", token);
+                status_obj.set("refresh_token", refresh_token);
+                status_obj.set("user_id", user_id);
+                status_obj.save();
+                alert("Got new token: " + token);
+                moves_access(token);
+            });
         },
     });
 }
@@ -36,16 +48,17 @@ function moves_init(){
         u.debug("moves_init, moves_box present:",moves_box);
         moves_box.get_obj("movesdata-status").then(function(status_obj){
             u.debug("got movesdata-status object",status_obj);
-            if (status_obj.get("code") == undefined){
-                u.debug("moves status code not present");
-                var vars = $.deparam.fragment();
+            if (status_obj.get("token") == undefined){
+                u.debug("moves access token not present");
+                var vars = $.deparam.fragment(); // get the data from the server
+                window.location.replace("#"); // remove the data so that we dont accidentally re-trigger this code
                 if ("code" in vars){
                     u.debug("moves - Authorised - getting token now.");
                     // step one complete - we have been called back by the authorisation
                     $("#step-btn").hide();
                     $("#step-text").html("Authorisation successful, now requesting access, wait a moment.");
 
-                    moves_set_code(vars['code'], vars['redirect_url']);
+                    moves_get_token(vars['code']);
                 } else {
                     $("#step-div").show(); // make sure the initial step div is shown
 
@@ -60,25 +73,14 @@ function moves_init(){
                 u.debug("moved status code present.");
                 // we have an access code already, so no need to re-auth
                 // now we get the token
-                moves_get_token(status_obj.get("code")[0], status_obj.get("redirect_url")[0]);
+                alert("Got token from previous time: " + status_obj.get("token")[0]);
+                moves_access(status_obj.get("token")[0]);
             }
         });
     } else {
         // the user will login in a bit.
         // ng-show handles showing the right pane, and then moves_init will be called again
     }
-}
-
-function moves_set_code(code, redirect_url){
-    u.debug("moves_set_code");
-    // called when we get the access code for the first time
-    // we save it in the box and then get a token for this session
-    moves_box.get_obj("movesdata-status").then(function(status_obj){
-        status_obj.set("code", code);
-        status_obj.set("redirect_url", redirect_url);
-        status_obj.save();
-        moves_get_token(code, redirect_url);
-    });
 }
 
 
