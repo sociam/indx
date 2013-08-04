@@ -31,19 +31,6 @@ import indx.indx_pg2 as database
 from indx.webserver.handlers.websockets import WebSocketsHandler
 from txWebSocket.websocket import WebSocketSite
 
-BOX_NAME_BLACKLIST = [
-    "admin",
-    "html",
-    "static",
-    "lrdd",
-    "indx",
-    ".well-known",
-    "openid",
-    "auth",
-    "ws"
-]
-
-
 class WebServer:
     """ Twisted web server for running INDX. """
 
