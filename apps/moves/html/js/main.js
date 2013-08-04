@@ -4,12 +4,138 @@ window.indx = injector.get('client');
 window.s = indx.store;
 
 
+// Generic Objects to INDX box objects walker code
+// puts objects into the box and returns the object specified
+function objs_to_objs(id, prefix, obj, box){
+    // id is the is of the outer object
+    // prefix is the prefix for all of the inner objects
+    // obj is the actual JS object structure
+    // box is used to generate the new Objs
+
+    // TODO optimise this so that it doesn't save a version per value!
+
+    box.get_obj(id).then(function(newobj){
+        $.each(obj, function(key, subobj){
+            if (subobj instanceof Object){
+                var sub_id = prefix + "-" + u.uuid();
+                box.get_obj(sub_id).then(function(sub_obj_inbox){
+                    newobj.set(key, sub_obj_inbox); // put new subobject as the value of this property
+                    newobj.save();
+                    objs_to_objs(sub_id, prefix, subobj, box); // then recurse to deal with its properties
+                });
+            } else if (subobj instanceof Array){
+                newobj.set(key, []);
+                newobj.save();
+                $.each(subobj, function(){
+                    var subobj_i = this;
+                    if (subobj_i instanceof Object){
+                        var sub_id = prefix + "-" + u.uuid();
+                        box.get_obj(sub_id_i).then(function(sub_obj_inbox){
+                            newobj.set(key, newobj.get(key).push(sub_obj_inbox)); // push new subobject into the array value of this property
+                            newobj.save();
+                            objs_to_objs(sub_id, prefix, subobj_i, box); // then recurse to deal with its properties
+                        });
+                    } else {
+                        newobj.set(key, newobj.get(key).push(subobj_i));
+                        newobj.save();
+                    }
+                });
+            } else {
+                // primitive
+                newobj.set(key, subobj);
+                newobj.save();
+            }
+        });
+    });
+}
+
+
+
 
 // MOVES code
+
+function movesdate_to_date(date){
+    date = date[0]+date[1]+date[2]+date[3]+"/"+date[4]+date[5]+"/"+date[6]+date[7];
+    return new Date(date);
+}
+
+function date_to_movesdate(date){
+    // convert a javascript date object into a date in moves api format (YYYYMMDD)
+    var d = date.getDate();
+    var m = date.getMonth() + 1;
+    var y = date.getFullYear();
+    return '' + y + '' + (m<=9 ? '0' + m : m) + '' + (d <= 9 ? '0' + d : d);
+}
 
 function moves_access(token){
     // access moves, sync to box, update visuals
     u.debug("moves_access, token: "+token);
+    $("#step-btn").hide();
+    $("#step-load").show();
+    $("#step-text").html("Downloading data from moves...");
+    moves_box.get_obj("movesdata-status").then(function(status_obj){
+        if (status_obj.get("last_date") == undefined){
+            // no last date in INDX, so we need to start from the beginning
+            moves_api_lookup(token, "/user/profile?").then(function(profile){
+                first_date = profile['profile']['firstDate'];
+                moves_get_from(token, movesdate_to_date(first_date));
+            });
+        } else {
+            last_date = status_obj.get("last_date")[0];
+            from_date = movesdate_to_date(last_date);
+            from_date.setDate(from_date.getDate() + 1); // start from the next day
+            moves_get_from(token, from_date);
+        }
+    });
+}
+
+function moves_get_from(token, nextdate){
+    // get data from this date (js date object) inclusive, onwards up to yesterday
+    u.debug("moves_get_from, nextdate: " + nextdate);
+    var today = new Date();
+    today.setHours(0); today.setMinutes(0); today.setSeconds(0); // midnight
+
+    u.debug("moves_get_from, " + nextdate.getTime() + " < " +today.getTime());
+    while (nextdate.getTime() < today.getTime()){
+        var thisdate = date_to_movesdate(nextdate);
+        moves_api_lookup(token, "/user/storyline/daily/"+thisdate+"?trackPoints=true&").then(function(storyline){
+            $("#step-text").html("Downloading data from moves for "+thisdate+"...");
+            // add to box
+            $.each(storyline, function(){
+                var story = this;
+                // TODO step through the story and add to the box.
+                console.debug("story ", story);
+                objs_to_objs("moves-story-"+thisdate,"moves-story-"+thisdate,story,moves_box);
+            });
+
+            // add lastdate to box
+            moves_box.get_obj("movesdata-status").then(function(status_obj){
+                status_obj.set("last_date", thisdate);
+                status_obj.save();
+            });
+        });
+        nextdate.setDate(nextdate.getDate() + 1); // set the next day to check
+    }
+    $("#step-text").html("Moves data updated into INDX successfully.");
+    $("#step-load").hide();
+}
+
+function moves_api_lookup(token, suburl) {
+    // ask for a suburl for a token, it will remade as follows, and proxied through the INDX server:
+    // "https://api.moves-app.com/api/v1" + suburl + "access_token=" + token
+    // this function returns a promise
+    u.debug("moves_api_lookup suburl: " + suburl);
+    var d = u.deferred();
+    $.ajax({
+        url: "api",
+        data: {"token": token, "suburl": suburl},
+        type: "GET",
+        dataType: "json",
+        success: function(data, status, xhr){
+            d.resolve(data.response); // send response back
+        }
+    });
+    return d.promise();
 }
 
 function moves_get_token(code){
@@ -31,10 +157,9 @@ function moves_get_token(code){
                 status_obj.set("refresh_token", refresh_token);
                 status_obj.set("user_id", user_id);
                 status_obj.save();
-                alert("Got new token: " + token);
                 moves_access(token);
             });
-        },
+        }
     });
 }
 
@@ -73,7 +198,6 @@ function moves_init(){
                 u.debug("moved status code present.");
                 // we have an access code already, so no need to re-auth
                 // now we get the token
-                alert("Got token from previous time: " + status_obj.get("token")[0]);
                 moves_access(status_obj.get("token")[0]);
             }
         });

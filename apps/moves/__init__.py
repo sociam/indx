@@ -33,6 +33,12 @@ class MovesApp(BaseHandler):
             response = requests.post("http://moves.indx.ecs.soton.ac.uk/get_token/", data = {"code": code})
             logging.debug("Moves App, returning response from server")
             self.return_ok(request, data = {"response": json.loads(response.text)})
+        elif "token" in request.args and "suburl" in request.args:
+            token = request.args['token'][0]
+            suburl = request.args['suburl'][0]
+            req_url = "https://api.moves-app.com/api/v1{0}access_token={1}".format(suburl, token)
+            response = requests.get(req_url)
+            self.return_ok(request, data = {"response": json.loads(response.text)})
         else:
             logging.debug("Moves App, returning 404")
             self.return_not_found(request)
