@@ -6,6 +6,7 @@ import os,importlib,logging
 def find_module_dirs():
     curdir = os.path.dirname(os.path.abspath(__file__))
     subdirs = [o for o in os.listdir(curdir) if os.path.exists(os.path.sep.join([curdir,o,'__init__.py']))]
+    logging.debug("module dirs: {0}".format(subdirs))
     return subdirs
 
 def find_html_dirs():
@@ -15,6 +16,7 @@ def find_html_dirs():
 
 def import_app(app):
     try:
+        logging.debug("importing app: {0}".format(app))
         importlib.import_module(app)
     except Exception as e:
         logging.error("Couldn't load app: {0}, error: {1}".format(app, e))
