@@ -20,42 +20,65 @@ import types
 class ObjectStoreQuery:
     """ Handles JSON queries to an objectstore. """
 
+    exact_types = [types.IntType, types.LongType, types.BooleanType, types.FloatType, types.StringType, types.UnicodeType]
+    operator_map = {
+        "gt": ">",
+        "lt": "<",
+        "ge": ">=",
+        "le": "<="
+    }
+
     def __init__(self):
-        self.exact_types = [types.IntType, types.LongType, types.BooleanType, types.FloatType, types.StringType, types.UnicodeType]
+        # sql params
+        self.params = []
+
+        # to make up the query
+        self.joins = []
+        self.wheres = []
+
+        self.join_counter = 0
+
+    def do_join(self, predicate, val, operator = "="):
+
+        self.join_counter += 1
+        join_name = "j_{0}".format(self.join_counter)
+
+        join_table1 = "wb_v_latest_triples.subject"
+        join_table2 = "{0}.subject".format(join_name)
+
+        join = "JOIN wb_v_latest_triples AS {0} ON ({1} = {2}) ".format(join_name, join_table1, join_table2)
+        self.joins.append(join)
+
+        self.wheres.append("{0}.predicate = %s AND {0}.obj_value {1} %s".format(join_name, operator))
+        self.params.extend([predicate, val])
 
     def to_sql(self, q):
         """ Convert the query 'q', return a tuple of sql query and array of parameters. """
-    
-        # sql params
-        params = []
-        
-        # to make up the query
-        joins = []
-        wheres = []
-
-        join_counter = 0
 
         # look through the constraints of the query
         for predicate, val in q.items():
             if type(val) in self.exact_types:
                 # exact match, so JOIN in the view
                 if predicate == "@id": # _id is not in the db, it's the subject column
-                    wheres.append("wb_v_latest_triples.subject = %s")
-                    params.extend([val]) 
-
+                    self.wheres.append("wb_v_latest_triples.subject = %s")
+                    self.params.extend([val]) 
                 else:
+                    self.do_join(predicate, val)
 
-                    join_counter += 1
-                    join_name = "j_{0}".format(join_counter)
+            elif type(val) == type({}):
+                acted = False
 
-                    join_table1 = "wb_v_latest_triples.subject"
-                    join_table2 = "{0}.subject".format(join_name)
+                for operator in self.operator_map:
+                    if operator in val:
+                        subval = val[operator]
+                        self.do_join(predicate, subval, operator = self.operator_map[operator])
+                        acted = True
 
-                    join = "JOIN wb_v_latest_triples AS {0} ON ({1} = {2}) ".format(join_name, join_table1, join_table2)
-                    joins.append(join)
+                if not acted:
+                    raise InvalidObjectQueryException("No valid operator in val: {0}".format(val))
 
-                    wheres.append("{0}.predicate = %s AND {0}.obj_value = %s".format(join_name))
-                    params.extend([predicate, val])
+            else:
+                raise InvalidObjectQueryException("Invalid type of val: {0}".format(val))
 
         # same order as table
         selects = [
@@ -68,8 +91,9 @@ class ObjectStoreQuery:
             "wb_v_latest_triples.obj_datatype"
         ]
 
-        sql = "SELECT DISTINCT {0} FROM wb_v_latest_triples {1} WHERE {2}".format(", ".join(selects), " ".join(joins), " AND ".join(wheres)) 
-        return (sql, params)
+        sql = "SELECT DISTINCT {0} FROM wb_v_latest_triples {1} WHERE {2}".format(", ".join(selects), " ".join(self.joins), " AND ".join(self.wheres)) 
+        return (sql, self.params)
 
-
+class InvalidObjectQueryException(Exception):
+    pass
 
