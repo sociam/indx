@@ -39,6 +39,7 @@ class ObjectStoreQuery:
         self.join_counter = 0
 
     def do_join(self, predicate, val, operator = "="):
+        """ Add a join to the query, with a WHERE constraint based on the 'operator' specified. """
 
         self.join_counter += 1
         join_name = "j_{0}".format(self.join_counter)
@@ -63,11 +64,14 @@ class ObjectStoreQuery:
                     self.wheres.append("wb_v_latest_triples.subject = %s")
                     self.params.extend([val]) 
                 else:
-                    self.do_join(predicate, val)
+                    self.do_join(predicate, val) # this is the standard case, where the query was like {"foo": "bar"}, where the key foo has to be bar.
 
             elif type(val) == type({}):
-                acted = False
+                # when the value is a dict, then we check to see what it means
 
+                acted = False # track to see if we did anything, raise an exception if we didnt
+
+                # looks for an operator in the map, ignores keys we don't know
                 for operator in self.operator_map:
                     if operator in val:
                         subval = val[operator]
