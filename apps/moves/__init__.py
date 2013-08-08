@@ -30,7 +30,7 @@ class MovesApp(BaseHandler):
         # forwards a POST request (same domain, because of XHR cross-domain security), then through moves.indx.ecs.soton.ac.uk (which holds the client secret ID) to the API at moves-app.com (phew!)
         if "code" in request.args:
             code = request.args['code'][0]
-            response = requests.post("http://moves.indx.ecs.soton.ac.uk/get_token/", data = {"code": code})
+            response = requests.post("https://moves.indx.ecs.soton.ac.uk/get_token/", data = {"code": code})
             logging.debug("Moves App, returning response from server")
             self.return_ok(request, data = {"response": json.loads(response.text)})
         elif "token" in request.args and "suburl" in request.args:
