@@ -1,5 +1,6 @@
 module.exports = {
 	basePath: '../html/',
+	outputDirectory: '../html/docs/',
 
 	filePaths: [
 		'../docs/abstracts/*',
