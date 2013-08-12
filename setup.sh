@@ -18,6 +18,7 @@
 
 # set up the virtualenv
 virtualenv env
+echo "export PYTHONPATH=\"\$VIRTUAL_ENV/../lib:\$PYTHONPATH\"" >> env/bin/activate
 source env/bin/activate
 
 # install the required modules

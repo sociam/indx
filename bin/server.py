@@ -84,7 +84,7 @@ config = {
         "ssl_cert": args['ssl_cert'],
         "ssl_private_key": args['ssl_key'],
         "address": args['address'],
-        "html_dir": os.path.dirname(os.path.realpath(__file__)) + os.sep + "html",
+        "html_dir": os.path.dirname(os.path.realpath(__file__)) + os.sep + ".." + os.sep + "html",
     },
     "no_browser": args['no_browser'],
 }
