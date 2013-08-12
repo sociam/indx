@@ -68,6 +68,9 @@ class ObjectStoreQuery:
 
             elif type(val) == type({}):
                 # when the value is a dict, then we check to see what it means
+                # looks like this:
+                # 
+                # {"number": {"ge": 5} }   - means number >= 5
 
                 acted = False # track to see if we did anything, raise an exception if we didnt
 
