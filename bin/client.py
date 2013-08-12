@@ -16,7 +16,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import traceback, argparse, logging, pprint, json
-from pyindx import IndxClient
+from indxclient import IndxClient
 
 class CLIClient:
 

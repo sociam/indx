@@ -1,10 +1,10 @@
-# pyindx
+# indxclient
 
 A python client library for accessing an INDX.
 
 # indx_client.py
 
-A comment-line client for accessing an INDX (uses pyindx).
+A comment-line client for accessing an INDX (uses indxclient).
 
 ## Usage
 

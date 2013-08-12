@@ -65,7 +65,7 @@ class IndxClient:
 
     def _log(self, loglevel, message):
         """ Write a log message including the server and box information. """
-        logger = logging.getLogger("pyindx")
+        logger = logging.getLogger("indxclient")
         return logger.log(loglevel, u"%s\t%s\t%s\t%s\t%s", self.address, self.box, self.username, self.token, message)
     
     def _debug(self, message):
