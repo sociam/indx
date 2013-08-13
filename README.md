@@ -58,9 +58,9 @@ supervised by Prof. Sir Nigel Shadbolt and Prof. Dame Wendy Hall.
 
 Install PostgreSQL, e.g. on a Mac you could use: http://postgresapp.com/
 
-Run `./setup-env.sh` to create a new `virtualenv` and install the INDX dependencies:
+Run `./setup.sh` to create a new `virtualenv` and install the INDX dependencies:
 
-    ./setup-env.sh
+    ./setup.sh
 
 Now, source the virtualenv:
 
@@ -68,13 +68,13 @@ Now, source the virtualenv:
 
 Now, run the INDX server with your PostgreSQL authentication username and hostname:
 
-    python server.py <username> <hostname>
+    python bin/server.py <username> <hostname>
 
 (It will prompt for your postgresql password).
 
 If you wish to specify additional configuration, you can get the list using `--help`:
 
-    python server.py --help
+    python bin/server.py --help
 
 Usage will be printed:
 
