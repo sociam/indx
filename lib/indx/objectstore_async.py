@@ -102,12 +102,16 @@ class ObjectStoreAsync:
         self.conn.runOperation("LISTEN wb_new_version").addCallbacks(lambda _: result_d.callback(True), err_cb)
         return result_d
 
-    def query(self, q):
-        """ Perform a query and return results. """
+    def query(self, q, predicate_filter = None):
+        """ Perform a query and return results.
+        
+            q -- Query of objects to search for
+            predicate_filter -- List of predicates to limit the result objects to (None means no restriction)
+        """
         result_d = Deferred()
 
         query = ObjectStoreQuery()
-        sql, params = query.to_sql(q)
+        sql, params = query.to_sql(q, predicate_filter = predicate_filter)
 
         def results(rows):
             objs_out = self.rows_to_json(rows)

@@ -53,8 +53,12 @@ class ObjectStoreQuery:
         self.wheres.append("{0}.predicate = %s AND {0}.obj_value {1} %s".format(join_name, operator))
         self.params.extend([predicate, val])
 
-    def to_sql(self, q):
-        """ Convert the query 'q', return a tuple of sql query and array of parameters. """
+    def to_sql(self, q, predicate_filter = None): 
+        """ Convert the query 'q', return a tuple of sql query and array of parameters.
+        
+            q -- Query of objects to search for
+            predicate_filter -- List of predicates to limit the result objects to (None means no restriction)
+        """
 
         # look through the constraints of the query
         for predicate, val in q.items():
@@ -86,6 +90,10 @@ class ObjectStoreQuery:
 
             else:
                 raise InvalidObjectQueryException("Invalid type of val: {0}".format(val))
+
+        if predicate_filter is not None:
+            self.wheres.append("wb_v_latest_triples.predicate = ANY(%s)")
+            self.params.extend([predicate_filter])
 
         # same order as table
         selects = [
