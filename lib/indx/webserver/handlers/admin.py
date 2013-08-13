@@ -122,11 +122,14 @@ class AdminHandler(BaseHandler):
     
     def list_user_handler(self, request):
         username,password = self.webserver.get_indx_user_password()
-        logging.debug("Getting user list ")
+        logging.debug("Getting user list")
         database.list_users(username, password)\
             .addCallback(lambda rows: self.return_ok(request, data={"users":rows}))\
             .addErrback(lambda *x: self.return_internal_error(request))
-    
+        
+    def list_apps_handler(self, request):
+        logging.debug("Getting apps list")
+        self.return_ok(request, data={"apps":self.webserver.appshandler.get_apps().keys()})
         
 AdminHandler.subhandlers = [
     {
@@ -182,7 +185,16 @@ AdminHandler.subhandlers = [
         'handler': AdminHandler.list_user_handler,
         'content-type':'text/plain', # optional
         'accept':['application/json']
-    },    
+    },
+    {
+        'prefix': 'list_apps',
+        'methods': ['GET'],
+        'require_auth': True,
+        'require_token': False,
+        'handler': AdminHandler.list_apps_handler,
+        'content-type':'text/plain', # optional
+        'accept':['application/json']
+    },        
     {
         'prefix': 'info',
         'methods': ['GET'],

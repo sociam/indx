@@ -111,7 +111,6 @@ def list_databases(db_user, db_pass):
 
 def list_boxes(db_user, db_pass):
     return_d = Deferred()
-
     def db_list(dbs):
         boxes = []
         for db in dbs:

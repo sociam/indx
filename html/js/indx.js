@@ -891,6 +891,13 @@ angular
 					.success(function(data) {d.resolve(data.users);})
 					.fail(function(err) { d.reject(err); });
 				return d.promise();
+			},
+			get_apps_list:function() {
+				var d = u.deferred();
+				this._ajax('GET','admin/list_apps')
+					.success(function(data) { d.resolve(data.apps); })
+					.fail(function(err) { d.reject(err); });
+				return d.promise();
 			},			
 			_fetch:function() {
 				throw new Error('dont fetch a store - any more!');

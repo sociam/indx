@@ -97,7 +97,8 @@ class WebServer:
 
         ## start boxes
         self.register_boxes(self.root)
-        self.root.putChild('apps', AppsMetaHandler(self))        
+        self.appshandler = AppsMetaHandler(self)
+        self.root.putChild('apps', self.appshandler)        
         self.start()
         
         # load a web browser once the server has started
