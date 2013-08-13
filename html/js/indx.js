@@ -1,13 +1,19 @@
-///
-/// @title INDX
-/// blah
-
 /*global $,_,document,window,console,escape,Backbone,exports,WebSocket */
 /*jslint vars:true, todo:true */
-/*
+/// @title indx.js
+/// 
+/// Javascript ORM client for INDX that makes it easy to read
+/// and write objects from one or more INDX data store(s).
+/// 
+/// features:
+///   Real time read updates via websockets
+///   Cross-origin resource sharing (CORS) - e.g. client app can live on different
+///     server than indx host
+///   Backbone based dat amodels
+/// 
+/// Documentation is marked up in INDXDoc by Peter West
 
-  indx.js is the JS Client SDK for WebBox WebBox
-  which builds upon Backbone's Model architecture.
+/*
 
   CURRENT TODOs:
   	- update only supports updating the entire box
@@ -15,6 +21,7 @@
 	  ... which is a really bad idea.
 
   @prerequisites:
+    angular 1.0.8 or higher
 	jquery 1.8.0 or higher
 	backbone.js 0.9.2 or higher
 	underscore.js 1.4.2 or higher
@@ -36,7 +43,6 @@
     You should have received a copy of the GNU Affero General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-
 
 
 angular
@@ -879,6 +885,13 @@ angular
 					.fail(function(err) { d.reject(err); });
 				return d.promise();
 			},
+			get_user_list:function() {
+				var d = u.deferred();
+				this._ajax('GET','admin/list_users')
+					.success(function(data) {d.resolve(data.users);})
+					.fail(function(err) { d.reject(err); });
+				return d.promise();
+			},			
 			_fetch:function() {
 				throw new Error('dont fetch a store - any more!');
 				//

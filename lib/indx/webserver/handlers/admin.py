@@ -118,7 +118,15 @@ class AdminHandler(BaseHandler):
         logging.debug("Creating new user with username: {0}".format(new_username))
         database.create_user(new_username, new_password, username, password)\
             .addCallback(lambda *x: self.return_ok())\
-            .addErrback(lambda *x: self.return_internal_error())
+            .addErrback(lambda *x: self.return_internal_error(request))
+    
+    def list_user_handler(self, request):
+        username,password = self.webserver.get_indx_user_password()
+        logging.debug("Getting user list ")
+        database.list_users(username, password)\
+            .addCallback(lambda rows: self.return_ok(request, data={"users":rows}))\
+            .addErrback(lambda *x: self.return_internal_error(request))
+    
         
 AdminHandler.subhandlers = [
     {
@@ -166,6 +174,15 @@ AdminHandler.subhandlers = [
         'content-type':'text/plain', # optional
         'accept':['application/json']
     },
+    {
+        'prefix': 'list_users',
+        'methods': ['GET'],
+        'require_auth': True,
+        'require_token': False,
+        'handler': AdminHandler.list_user_handler,
+        'content-type':'text/plain', # optional
+        'accept':['application/json']
+    },    
     {
         'prefix': 'info',
         'methods': ['GET'],

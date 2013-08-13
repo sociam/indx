@@ -143,6 +143,26 @@ def create_user(new_username, new_password, db_user, db_pass):
     connect("postgres", db_user, db_pass).addCallbacks(connected, lambda failure: return_d.errback(failure))
     return return_d
 
+def list_users(db_user, db_pass):
+    """ Create a new user, and connect as the specified user.
+    """
+    return_d = Deferred()
+
+    def done(conn, rows):
+        conn.close() # close the connection
+        users = []
+        for r in rows:  users.append(r[0])
+        return_d.callback(users)
+        return
+
+    def connected(conn):
+        d = conn.runQuery("SELECT rolname from pg_roles")
+        d.addCallbacks(lambda rows: done(conn, rows), lambda failure: return_d.errback(failure))
+        return
+
+    connect("postgres", db_user, db_pass).addCallbacks(connected, lambda failure: return_d.errback(failure))
+    return return_d
+    
 
 def create_box(box_name, db_user, db_pass):
     # create the database
