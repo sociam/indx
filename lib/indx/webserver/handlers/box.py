@@ -148,6 +148,14 @@ class BoxHandler(BaseHandler):
                 BoxHandler.log(logging.ERROR, "Exception in box.query decoding JSON in query, 'q': {0}".format(e), extra = {"request": request, "token": token})
                 return self.return_bad_request(request, "Specify query as query string parameter 'q' as valid JSON")
 
+
+            predicate_list = None
+            try:
+                predicate_list = request.args['predicate_list']
+            except Exception as e:
+                BoxHandler.log(logging.DEBUG, "BoxHandler query, no predicate_list", extra = {"request": request, "token": token})
+
+
             try:
                 BoxHandler.log(logging.DEBUG, "BoxHandler querying store with q: "+str(q), extra = {"request": request, "token": token})
 
@@ -158,7 +166,7 @@ class BoxHandler(BaseHandler):
                     BoxHandler.log(logging.DEBUG, "BoxHandler Exception trying to add to query.", extra = {"request": request, "token": token})
                     return self.return_internal_error(request)
 
-                store.query(q).addCallbacks(lambda results: self.return_ok(request, {"data": results}), # callback
+                store.query(q, predicate_list = predicate_list).addCallbacks(lambda results: self.return_ok(request, {"data": results}), # callback
                         handle_add_error) # errback
             except Exception as e:
                 BoxHandler.log(logging.ERROR, "Exception in box.query: {0}".format(e), extra = {"request": request, "token": token})
