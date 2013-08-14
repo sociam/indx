@@ -436,6 +436,7 @@ angular
 				var d = u.deferred();
 				var cache = this._objcache();
 				var parameters = {"q": JSON.stringify(query_pattern)};
+				var this_ = this;
 				if (predicates) { _(query).extend({predicate_list: predicates }); }
 				console.log('ajax .. ');
 				this._ajax("GET", [this.id, "query"].join('/'), parameters)
@@ -444,11 +445,13 @@ angular
 							// raw partials just including predicates - these are not whole
 							// objects
 							return d.resolve(results);
-						} 
+						}
+						console.log('results >> ', results.data);
 						// otherwise we are getting full objects, so ...
-						d.resolve(results.map(function(dobj) {
-							var id = dobj["@id"];
-							if (cache.get(id)) { return cache.get(id); }
+						d.resolve(_(results.data).map(function(dobj,id) {
+							console.log('getting id ', id);
+							if (cache.get(id)) { console.log('cached! ', id); return cache.get(id); }
+							console.log('not cached! ', id); 
 							var model = this_._create_model_for_id(id);
 							model._deserialise_and_set(dobj, true);
 							return model;		
