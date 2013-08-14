@@ -1,51 +1,56 @@
-///
-/// @title INDX
-/// blah
-
 /*global $,_,document,window,console,escape,Backbone,exports,WebSocket */
 /*jslint vars:true, todo:true */
 /*
 
-  indx.js is the JS Client SDK for WebBox WebBox
-  which builds upon Backbone's Model architecture.
+  @title indx.js
 
-  CURRENT TODOs:
-  	- update only supports updating the entire box
-    - Box.fetch() retrieves _entire box contents_
-	  ... which is a really bad idea.
+  @description
+  Javascript ORM client for INDX that makes it easy to
+  read and write objects from one or more INDX data store(s).
+
+  @copying
+  Copyright (C) 2011-2013 University of Southampton
+  Copyright (C) 2011-2013 Daniel Alexander Smith
+  Copyright (C) 2011-2013 Max Van Kleek
+  Copyright (C) 2011-2013 Nigel R. Shadbolt
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU Affero General Public License, version 3,
+  as published by the Free Software Foundation.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU Affero General Public License for more details.
+
+  You should have received a copy of the GNU Affero General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  
+
+  @features: 
+  Real time read updates via websockets
+  Cross-origin resource sharing (CORS) - e.g. client app can live on different
+  server than indx host
+  Backbone based dat amodels
+  
+
+   @todos
+   - update only supports updating the entire box
+   - Box.fetch() retrieves _entire box contents_
+   ... which is a really bad idea.
 
   @prerequisites:
-	jquery 1.8.0 or higher
-	backbone.js 0.9.2 or higher
-	underscore.js 1.4.2 or higher
-
-    Copyright (C) 2011-2013 University of Southampton
-    Copyright (C) 2011-2013 Daniel Alexander Smith
-    Copyright (C) 2011-2013 Max Van Kleek
-    Copyright (C) 2011-2013 Nigel R. Shadbolt
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License, version 3,
-    as published by the Free Software Foundation.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
-
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  angular 1.0.8 or higher
+  jquery 1.8.0 or higher
+  backbone.js 0.9.2 or higher
+  underscore.js 1.4.2 or higher
+	
 */
-
-
 
 angular
 	.module('indx', ['ui'])
 	.factory('client',function(utils) {
-		var u = utils; // to be filled in by dependency
-		// set up our parameters for webbox -
-		// default is that we're loading from an _app_ hosted within
-		// indx.
+		var u = utils, log = utils.log, error = utils.error, debug = utils.debug; 
 		var DEFAULT_HOST = document.location.host; // which may contain the port
 		var WS_MESSAGES_SEND = {
 			auth: function(token) { return JSON.stringify({action:'auth', token:token}); },
@@ -108,7 +113,7 @@ angular
 		var deserialize_literal = function(obj, box) {
 			return obj['@value'] !== undefined ? literal_deserializers[ obj['@type'] || '' ](obj, box) : obj;
 		};
-
+	
 		var deserialize_value = function(s_val, box) {
 			var vd = u.deferred();
 			// it's an object, so return that
@@ -145,7 +150,6 @@ angular
 				return url;
 			}
 		});
-
 
 		// MAP OF THIS MODUULE :::::::::::::: -----
 		//
@@ -198,6 +202,7 @@ angular
 				var this_ = this;
 				var dfds = _(s_obj).map(function(vals, key) {
 					var kd = u.deferred();
+					// skip "@id" etc etc
 					if (key.indexOf('@') === 0) { return; }
 					var val_dfds = vals.map(function(val) {
 						var vd = u.deferred();
@@ -374,7 +379,7 @@ angular
 				var this_ = this, d = u.deferred();
 				this._ajax('POST', 'auth/get_token', { app: this.store.get('app') })
 					.then(function(data) {
-						console.log('setting token ', data.token);
+						debug('setting token ', data.token);
 						this_._set_token( data.token );
 						this_.trigger('new-token', data.token);
 						d.resolve(this_);
@@ -419,23 +424,40 @@ angular
 				option_params = $.param(options),
 				url = base_url+"?"+option_params,
 				d = u.deferred();
-				console.log("PUTTING FILE ", url);
+				debug("PUTTING FILE ", url);
 				var ajax_args  = _(_(this.store.ajax_defaults).clone()).extend(
 					{ url: url, method : 'PUT', crossDomain:false, data:file, contentType: contenttype, processData:false }
 				);
 				return $.ajax( ajax_args );
 			},
-			query: function(q){
-				// @TODO ::::::::::::::::::::::::::
-				u.NotImplementedYet();
-				// var d = u.deferred();
-				// this._ajax(this, "/query", "GET", {"q": JSON.stringify(q)})
-				// 	.then(function(data){
-				// 		console.debug("query results:",data);
-				// 	}).fail(function(data) {
-				// 		console.debug("fail query");
-				// 	});
-				// return d.promise();
+			query: function(query_pattern, predicates){
+				// @param - query_pattern is an object like { key1 : val1, key2: val2 } .. that
+				//   returns / fetches all objects 
+				var d = u.deferred();
+				var cache = this._objcache();
+				var parameters = {"q": JSON.stringify(query_pattern)};
+				var this_ = this;
+				if (predicates) { _(query).extend({predicate_list: predicates }); }
+				console.log('ajax .. ');
+				this._ajax("GET", [this.id, "query"].join('/'), parameters)
+					.then(function(results) {
+						if (predicates) {
+							// raw partials just including predicates - these are not whole
+							// objects
+							return d.resolve(results);
+						}
+						console.log('results >> ', results.data);
+						// otherwise we are getting full objects, so ...
+						d.resolve(_(results.data).map(function(dobj,id) {
+							console.log('getting id ', id);
+							if (cache.get(id)) { console.log('cached! ', id); return cache.get(id); }
+							console.log('not cached! ', id); 
+							var model = this_._create_model_for_id(id);
+							model._deserialise_and_set(dobj, true);
+							return model;		
+						}));
+					}).fail(function(err) { error(err); d.reject(err); });
+				return d.promise();
 			},
 			_diff_update:function(response) {
 				var d = u.deferred(), this_ = this, latest_version = response['@to_version'],
@@ -463,14 +485,11 @@ angular
 					if (cached_obj) {
 						// { prop : [ {sval1 - @type:""}, {sval2 - @type} ... ]
 						var changed_properties = [];
-						// console.log("obj deleted ", obj.deleted);
 						var deleted_propval_dfds = _(obj.deleted).map(function(vs, k) {
 							changed_properties = _(changed_properties).union([k]);
 							var dd = u.deferred();
 							u.when(vs.map(function(v) {	return deserialize_value(v, this_);	})).then(function(values) {
 								var new_vals = _(cached_obj.get(k) || []).difference(values);
-								// console.log("DESERIALISED deleted values ", values, " - ", " new_vals ", new_vals);
-								// window._values = values; window._newvals = new_vals;
 								cached_obj.set(k,new_vals);
 								// semantics - if a property has no value then we delete it
 								if (new_vals.length === 0) { cached_obj.unset(k); }
@@ -489,7 +508,7 @@ angular
 							return dd.promise();
 						});
                         var replaced_propval_dfs = _(obj.replaced).map(function(vs, k) {
-                            console.debug("Processing replaced property");
+                            debug("Processing replaced property");
                             changed_properties = _(changed_properties).union([k]);
                             var dd = u.deferred();
                             u.when(vs.map(function(v) { return deserialize_value(v, this_); })).then(function(values) {
@@ -528,7 +547,7 @@ angular
 				this_ = this;
 
 				if (hasmodel) {
-					console.log('returning cached ', objid);
+					// debug('returning cached ', objid);
 					d.resolve(cachemodel); return d.promise();
 				}
 
@@ -550,7 +569,7 @@ angular
 				this._fetching_queue[objid] = d;
 				var model = this_._create_model_for_id(objid);
 				// if the serve knows about it, then we fetch its definition
-				console.log('objlist ', this._objlist());
+				// console.log('objlist ', this._objlist());
 
 				// old code ::
 				// if (this._objlist().indexOf(objid) >= 0) {
@@ -566,14 +585,14 @@ angular
 				// 	d.resolve(model);
 				// }
 
-				console.log('trying to fetch ', objid);
+				debug('trying to fetch ', objid);
 				model.fetch().then(function() {
 					d.resolve(model);
 					delete this_._fetching_queue[objid];
 				}).fail(function(err) {
-					console.log('failed.. declaring it new ', objid);
+					error('failed.. declaring it new ', objid);
 					// TODO check if 404'd
-					console.log('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA err - didnt exist ? ', err);
+					error('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA err - didnt exist ? ', err);
 					model.is_new = true;
 					d.resolve(model);
 					delete this_._fetching_queue[objid];
@@ -713,7 +732,7 @@ angular
 			},
 			_do_update:function(ids) {
 				// this actua
-				console.log('box update >> ');
+				debug('box update >> ');
 				var d = u.deferred(), version = this.get('version') || 0, this_ = this,
 				objs = this._objcache().filter(function(x) { return ids === undefined || ids.indexOf(x.id) >= 0; }),
 				obj_ids = objs.map(function(x) { return x.id; }),
@@ -886,6 +905,20 @@ angular
 					.fail(function(err) { d.reject(err); });
 				return d.promise();
 			},
+			get_user_list:function() {
+				var d = u.deferred();
+				this._ajax('GET','admin/list_users')
+					.success(function(data) {d.resolve(data.users);})
+					.fail(function(err) { d.reject(err); });
+				return d.promise();
+			},
+			get_apps_list:function() {
+				var d = u.deferred();
+				this._ajax('GET','admin/list_apps')
+					.success(function(data) { d.resolve(data.apps); })
+					.fail(function(err) { d.reject(err); });
+				return d.promise();
+			},			
 			_fetch:function() {
 				throw new Error('dont fetch a store - any more!');
 				//

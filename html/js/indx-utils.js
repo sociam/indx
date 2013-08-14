@@ -2,7 +2,11 @@
 	angular
 		.module('indx')
 		.factory('utils',function() {
+			var DEBUG=0, INFO=1, LOG=2, WARN=3, ERROR=4, DEBUG_LEVEL = DEBUG;
 			return {
+				DEBUG_LEVELS: { INFO:INFO, LOG:LOG, WARN:WARN, ERROR:ERROR },
+				set_debug_level:function(lvl) {	DEBUG_LEVEL = lvl; return lvl; },
+                uuid: function(){ return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {var r = Math.random()*16|0,v=c=='x'?r:r&0x3|0x8;return v.toString(16);})},
 				guid: function(len) {
 					len = len || 64;
 					var alpha = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ-';
@@ -11,10 +15,10 @@
 					}).join('');
 				},
 				safe_apply: function($scope, fn) { setTimeout(function() { $scope.$apply(fn); }, 0); },
-				log : function() { try { console.log.apply(console,arguments);  } catch(e) { }},
-				warn : function() { try { console.warn.apply(console,arguments);  } catch(e) { }},
-				debug : function() { try { console.debug.apply(console,arguments);  } catch(e) { }},
-				error : function() { try { console.error.apply(console,arguments);  } catch(e) { }},		
+				log : function() { try { if (DEBUG_LEVEL >= LOG) { console.log.apply(console,arguments);  }} catch(e) { } },
+				warn : function() { try { if (DEBUG_LEVEL >= WARN) { console.warn.apply(console,arguments);  }} catch(e) { } },
+				debug : function() { try { if (DEBUG_LEVEL >= DEBUG) { console.debug.apply(console,arguments); }} catch(e) { } },
+				error : function() { try { if (DEBUG_LEVEL >= ERROR) { console.error.apply(console,arguments); }} catch(e) { } },		
 				isInteger:function(n) { return n % 1 === 0; },
 				deferred:function() { return new $.Deferred(); },
 				dresolve:function(val) {
