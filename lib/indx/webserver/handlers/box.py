@@ -166,7 +166,7 @@ class BoxHandler(BaseHandler):
                     BoxHandler.log(logging.DEBUG, "BoxHandler Exception trying to add to query.", extra = {"request": request, "token": token})
                     return self.return_internal_error(request)
 
-                store.query(q, predicate_list = predicate_list).addCallbacks(lambda results: self.return_ok(request, {"data": results}), # callback
+                store.query(q, predicate_filter = predicate_list).addCallbacks(lambda results: self.return_ok(request, {"data": results}), # callback
                         handle_add_error) # errback
             except Exception as e:
                 BoxHandler.log(logging.ERROR, "Exception in box.query: {0}".format(e), extra = {"request": request, "token": token})
