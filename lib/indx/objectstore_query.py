@@ -51,7 +51,7 @@ class ObjectStoreQuery:
         self.joins.append(join)
 
         self.wheres.append("{0}.predicate = %s AND {0}.obj_value {1} %s".format(join_name, operator))
-        self.params.extend([predicate, val])
+        self.params.extend([predicate, "{0}".format(val)])
 
     def to_sql(self, q, predicate_filter = None): 
         """ Convert the query 'q', return a tuple of sql query and array of parameters.
@@ -66,7 +66,7 @@ class ObjectStoreQuery:
                 # exact match, so JOIN in the view
                 if predicate == "@id": # _id is not in the db, it's the subject column
                     self.wheres.append("wb_v_latest_triples.subject = %s")
-                    self.params.extend([val]) 
+                    self.params.extend(["{0}".format(val)]) 
                 else:
                     self.do_join(predicate, val) # this is the standard case, where the query was like {"foo": "bar"}, where the key foo has to be bar.
 
