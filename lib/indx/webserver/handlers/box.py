@@ -151,7 +151,8 @@ class BoxHandler(BaseHandler):
 
             predicate_list = None
             try:
-                predicate_list = request.args['predicate_list']
+                predicate_list = request.args['predicate_list[]']
+                BoxHandler.log(logging.DEBUG, "BoxHandler query, predicate_list {0}".format(repr(predicate_list)), extra = {"request": request, "token": token})
             except Exception as e:
                 BoxHandler.log(logging.DEBUG, "BoxHandler query, no predicate_list", extra = {"request": request, "token": token})
 
