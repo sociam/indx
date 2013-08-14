@@ -96,6 +96,7 @@
           var $file = $('#' + file);
           if ($file.hasClass('supplementary')) {
             $file.show().siblings().hide();
+            $('#sidebar' + file).show().siblings().hide();
           }
       }
       setTimeout(function () {
@@ -107,17 +108,17 @@
   <body>
     <div class="sidebar">
       {{#files}}
-        {{^parameters.supplementary}}
+        <div id="sidebar-{{uid}}" class="{{#parameters.supplementary}}supplementary{{/parameters.supplementary}}">
           <a href="#{{uid}}"><h3>{{title}}</h3></a>
           <ul class="nav nav-list">
             {{#classes}}
               <li class="nav-header"><a href="#{{uid}}">{{name}}</a></li>
               {{#methods}}
-                <li><a href="#{{uid}}">{{name}}</a></li>
+                {{name}}
               {{/methods}}
             {{/classes}}
           </ul>
-        {{/parameters.supplementary}}
+        </div>
       {{/files}}
     </div>
     <div class="mainbody">

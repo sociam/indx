@@ -13,7 +13,8 @@
 		CJSON = require('circular-json'),
 		ncp = require('ncp'),
 		globp = require('glob'),
-		clc = require('cli-color');
+		clc = require('cli-color'),
+		Backbone = require('backbone');
 
 	mu.root = __dirname + '/template';
 
@@ -25,14 +26,84 @@
 		console.log(' ' + clc.green(context) + ' ' + message);
 	}
 
-	var Builder = function (config) {
-		this.config = config;
-		this.app = _.extend({ files: [], classes: [] }, this.config);
-	};
+	var Builder = Backbone.Model.extend({
+		initialise: function (config) {
+			var that = this;
+			this.ready = new Promise();
+			console.log("JK")
 
-	_.extend(Builder.prototype, {
+			this.config = _.clone(config);
+			this._buildFilePaths().then(function () {
+				this.app = new App(that.config);
+				that.ready.resolve();
+			});
+		},
 		build: function () {
-			log('build', 'starting build process');
+			this.ready.then(function () {
+				log('build', 'starting build process');
+				this.app.parseFiles();
+			});
+		},
+		render: function () {
+			var that = this,
+				html = '';
+
+			deleteFolderRecursive('./build');
+			ncp('./template', './build', function (err) {
+				if (err) { throw err; }
+				mu.compileAndRender('index.mu', that.app.object).on('data', function (dat) {
+					html += dat.toString();
+				}).on('end', function () {
+					fs.writeFile('./build/index.html', html, function (err) {
+						if (err) { throw err; }
+					});
+				});
+			});
+		},
+		// Expands globs into paths
+		_buildFilePaths: function () {
+			log('build', 'building file paths');
+			var that = this,
+				promise = new Promise(),
+				globPromises = [],
+				files = that.config.filenames = [];
+
+			_.each(this.config.filePaths, function (glob) {
+				var globPromise = new Promise();
+				globPromises.push(globPromise);
+				globp(that.config.basePath + glob, { }, function (err, globFiles) {
+					files = files.concat(globFiles);
+					globPromise.resolve();
+				});
+			});
+
+			allPromises(globPromises).then(function () {
+				log('build', 'got ' + files.length + ' file paths');
+				promise.resolve();
+			});
+
+			return promise;
+		}
+	});
+
+	var Model = Backbone.Model.extend({
+		defaults: {
+			name: '',
+			description: ''
+		}
+		}),
+		Collection = Backbone.Collection.extend({});
+
+	var Files = Collection.extend(),
+		Classes = Collection.extend(),
+		Methods = Collection.extend();
+
+	var App = Model.extend({
+		initialise: function (config) {
+			this.config = config;
+			this.files = new Files();
+		},
+		parseFiles: function () {
 			var that = this,
 				files = this.app.files;
 			this._buildFilePaths().then(function (filenames) {
@@ -50,62 +121,25 @@
 				});
 			});
 		},
-		render: function () {
-			_.extend(this.app, { json: CJSON.stringify(this.app) }); // So we have a js representation on client
-			var that = this,
-				html = '';
-
-			deleteFolderRecursive('./build');
-			ncp('./template', './build', function (err) {
-				if (err) { throw err; }
-				mu.compileAndRender('index.mu', that.app).on('data', function (dat) {
-					html += dat.toString();
-				}).on('end', function () {
-					fs.writeFile('./build/index.html', html, function (err) {
-						if (err) { throw err; }
-					});
-				});
-			});
-		},
-		// Expands globs into paths
-		_buildFilePaths: function () {
-			log('build', 'building file paths');
-			var that = this,
-				promise = new Promise(),
-				globPromises = [],
-				files = [];
-
-			_.each(this.config.filePaths, function (glob) {
-				var globPromise = new Promise();
-				globPromises.push(globPromise);
-				globp(that.config.basePath + glob, { }, function (err, globFiles) {
-					files = files.concat(globFiles);
-					globPromise.resolve();
-				});
-			});
-
-			allPromises(globPromises).then(function () {
-				log('build', 'got ' + files.length + ' file paths');
-				promise.resolve(files);
-			});
-
-			return promise;
+		object: function () {
+			return _.extend(this.app.toJSON(), {
+				files: this.files.array(),
+				classes: this.files.classes(),
+				json: CJSON.stringify(this.app)
+			}); // So we have a js representation on client
 		}
 	});
 
-	var builder = new Builder(config);
-	builder.build();
 
-	function File (file, app) {
-		this.promise = new Promise();
-		this.then = this.promise.then;
-		this.fail = this.promise.fail;
-		this.app = app;
-		this.file = file;
-		this.classes = [];
-	}
-
-	_.extend(File.prototype, {
+	var File = Model.extend({
+		initialise: function (file, app) {
+			this.promise = new Promise();
+			this.then = this.promise.then;
+			this.fail = this.promise.fail;
+			this.app = app;
+			this.file = file;
+			this.classes = [];
+		},
 		parse: function () {
 			log('parse file', this.file);
 			var that = this;
@@ -122,7 +156,6 @@
 			var that = this,
 				comment = getCommentAfter(this.data, 0);
 			return fileGrammar.parse(comment).then(function (rs) {
-				//console.log(JSON.stringify(rs, null, ' '))
 				_.extend(that, rs);
 			});
 		},
@@ -166,26 +199,83 @@
 		}
 	});
 
-	var Class = function (data, attributes, extend, file) {
-		this.data = data;
-		this.methods = [];
-		this.properties = [];
-		this.file = file;
+	var Class = Model.extend({
+		initialise: function (data, attributes, extend, file) {
+			this.data = data;
+			this.methods = [];
+			this.properties = [];
+			this.file = file;
 
-		this.set(attributes);
+			this.set(attributes);
 
-		if (extend) {
-			this.extend = extend;
-			//this.methods = _.map(extend.methods, function (method) {
-				//console.log(method.name)
-			//	return _.extend({}, method);
-			//});
-			// inherit properties
-		}
-		_.bindAll(this, 'uid', 'instanceName');
-	};
+			if (extend) {
+				this.extend = extend;
+				//this.methods = _.map(extend.methods, function (method) {
+					//console.log(method.name)
+				//	return _.extend({}, method);
+				//});
+				// inherit properties
+			}
+			_.bindAll(this, 'uid', 'instanceName');
+		},
+		parseMethods: function (data, start, end, cls) {
+			var promise = new Promise(),
+				dfds = [],
+				subdata = data.substring(start, end),
+				methods = [];
 
-	_.extend(Class.prototype, {
+			var re = new RegExp('[\\.|\\s]+([a-z_][^\\s.]*) *[:=] *function *\\(([^\\)]*)\\)', 'g');
+
+			subdata.replace(re, function (match, name, args, pos) {
+				if (name.indexOf('_') === 0) { return; }
+				var method = {
+						name: name,
+						args: parseArgs(args),
+						start: start + pos,
+						line: lineNumber(data, start + pos)
+					},
+					comments = getCommentBefore(data, start + pos);
+
+
+				dfds.push(parseMethodComment(comments, method));
+
+				methods.push(method);
+
+				return match;
+			});
+
+
+			allPromises(dfds).then(function () {
+				methods = _.chain(methods).map(function (method) {
+
+					if (method.args.length > 0) {
+						method.hasArgs = true;
+
+						_.each(method.args, function (arg) {
+							arg.moreInfo = !!arg.types || !!arg.comment;
+							arg.last = false;
+							if (arg.types && arg.types.length > 0) {
+								arg.hasTypes = true;
+								_.each(arg.types, function (type) {
+									type.last = false;
+								});
+								arg.types[arg.types.length - 1].last = true;
+							}
+						});
+						method.args[method.args.length - 1].last = true;
+					}
+					//console.log(JSON.stringify(method, null, ' '))
+					return method;
+				}).sortBy(methods, function (method) {
+					return method.start;
+				}).value();
+
+				promise.resolve(methods);
+			});
+
+			return promise;
+
+		},
 		fullName: function () { return this.name; },
 		set: function (attributes) {
 			_.extend(this, attributes);
@@ -213,13 +303,12 @@
 		}
 	});
 
-	var Method = function (attributes, cls) {
-		_.extend(this, attributes);
-		this.cls = cls;
-		_.bindAll(this, 'uid');
-	};
-
-	_.extend(Method.prototype, {
+	var Method = Model.extend({
+		initialise: function (attributes, cls) {
+			_.extend(this, attributes);
+			this.cls = cls;
+			_.bindAll(this, 'uid');
+		},
 		set: function (attributes) {
 			_.extend(this, attributes);
 		},
@@ -256,64 +345,7 @@
 		}));
 	}
 
-	function parseMethods (data, start, end, cls) {
-		var promise = new Promise(),
-			dfds = [],
-			subdata = data.substring(start, end),
-			methods = [];
-
-		var re = new RegExp('[\\.|\\s]+([a-z_][^\\s.]*) *[:=] *function *\\(([^\\)]*)\\)', 'g');
-
-		subdata.replace(re, function (match, name, args, pos) {
-			if (name.indexOf('_') === 0) { return; }
-			var method = {
-					name: name,
-					args: parseArgs(args),
-					start: start + pos,
-					line: lineNumber(data, start + pos)
-				},
-				comments = getCommentBefore(data, start + pos);
-
-
-			dfds.push(parseMethodComment(comments, method));
-
-			methods.push(method);
-
-			return match;
-		});
-
-
-		allPromises(dfds).then(function () {
-			methods = _.chain(methods).map(function (method) {
-
-				if (method.args.length > 0) {
-					method.hasArgs = true;
-
-					_.each(method.args, function (arg) {
-						arg.moreInfo = !!arg.types || !!arg.comment;
-						arg.last = false;
-						if (arg.types && arg.types.length > 0) {
-							arg.hasTypes = true;
-							_.each(arg.types, function (type) {
-								type.last = false;
-							});
-							arg.types[arg.types.length - 1].last = true;
-						}
-					});
-					method.args[method.args.length - 1].last = true;
-				}
-				//console.log(JSON.stringify(method, null, ' '))
-				return method;
-			}).sortBy(methods, function (method) {
-				return method.start;
-			}).value();
-
-			promise.resolve(methods);
-		});
-
-		return promise;
-
-	}
+	
 
 	function parseArgs (data) {
 		return _.chain(data.split(',')).map(function (arg) {
@@ -377,5 +409,9 @@
 	function lineNumber (data, charNumber) {
 		return data.substring(0, charNumber).split('\n').length + 1;
 	}
+
+
+	var builder = new Builder(config);
+	builder.build();
 
 }());

@@ -1,5 +1,5 @@
 {
-  "name": "INDXDoc",
+  "name": "indxdoc",
   "version": "0.0.0",
   "description": "ERROR: No README.md file found!",
   "main": "build.js",
@@ -17,6 +17,7 @@
     "circular-json": "~0.1.3",
     "ncp": "~0.4.2",
     "glob": "~3.2.3",
-    "cli-color": "~0.2.2"
+    "cli-color": "~0.2.2",
+    "backbone": "~1.0.0"
   }
 }
