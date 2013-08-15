@@ -31,13 +31,13 @@ angular
 				toolbar.is_logged_in = function() { return false; };
 
 				var get_last_used_box = function() {
-					return localStorage["indx__last_used_box" + document.location.toString()];
+					return localStorage["indx__last_used_box::" + document.location.toString()];
 				};
 				var clear_last_used_box = function() {
-					delete localStorage["indx__last_used_box" + document.location.toString()];
+					delete localStorage["indx__last_used_box::" + document.location.toString()];
 				};
 				var set_last_used_box = function(bid) {
-					localStorage["indx__last_used_box" + document.location.toString()] = bid;
+					localStorage["indx__last_used_box::" + document.location.toString()] = bid;
 				};				
 
 				_($scope).extend({

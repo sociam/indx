@@ -19,11 +19,14 @@
 	  </div>
 	  
 	  <div class="container">
-		<div ng-show="!(selected_user && selected_box)">
+		<div ng-show="!selected_user">
 		  <h2> please log in to load your location lifelog  </h2>
+		</div>
+		<div ng-show="selected_user && !selected_box">
+		  <h2> please select a box  </h2>
 		</div>		
 	  </div>
-	  <div class="geolocate">
+	  <div class="geolocate" ng-show="selected_user && selected_box">
 		<div ng-class="{btn:true, locate:true, disabled:loading}" ng-click="locate()" ng-show="selected_user && selected_box"><i class='icon-map-marker'></i></div>
 		<div class='latlng' ng-show="location && !error">
 		  lat:<b>{{ location.latitude | number:4 }}</b>, lon:<b>{{ location.longitude | number:2 }}</b>
