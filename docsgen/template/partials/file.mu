@@ -1,5 +1,5 @@
 <h2>{{title}}</h2>
-{{description}}
+{{{description}}}
 {{#classes}}
 	{{>partials/class.mu}}
 {{/classes}}

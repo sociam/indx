@@ -1,51 +1,49 @@
 /*global $,_,document,window,console,escape,Backbone,exports,WebSocket */
 /*jslint vars:true, todo:true */
-/*
 
-  @title indx.js
 
-  @description
-  Javascript ORM client for INDX that makes it easy to
-  read and write objects from one or more INDX data store(s).
+///  @title indx.js
+///
+///  Javascript ORM client for INDX that makes it easy to
+///  read and write objects from one or more INDX data store(s).
 
-  @copying
-  Copyright (C) 2011-2013 University of Southampton
-  Copyright (C) 2011-2013 Daniel Alexander Smith
-  Copyright (C) 2011-2013 Max Van Kleek
-  Copyright (C) 2011-2013 Nigel R. Shadbolt
-
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU Affero General Public License, version 3,
-  as published by the Free Software Foundation.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU Affero General Public License for more details.
-
-  You should have received a copy of the GNU Affero General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-  
-
-  @features: 
-  Real time read updates via websockets
-  Cross-origin resource sharing (CORS) - e.g. client app can live on different
-  server than indx host
-  Backbone based dat amodels
-  
-
-   @todos
-   - update only supports updating the entire box
-   - Box.fetch() retrieves _entire box contents_
-   ... which is a really bad idea.
-
-  @prerequisites:
-  angular 1.0.8 or higher
-  jquery 1.8.0 or higher
-  backbone.js 0.9.2 or higher
-  underscore.js 1.4.2 or higher
+///  @copying
+///  Copyright (C) 2011-2013 University of Southampton
+///  Copyright (C) 2011-2013 Daniel Alexander Smith
+///  Copyright (C) 2011-2013 Max Van Kleek
+///  Copyright (C) 2011-2013 Nigel R. Shadbolt
+///
+///  This program is free software: you can redistribute it and/or modify
+///  it under the terms of the GNU Affero General Public License, version 3,
+///  as published by the Free Software Foundation.
+///
+///  This program is distributed in the hope that it will be useful,
+///  but WITHOUT ANY WARRANTY; without even the implied warranty of
+///  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+///  GNU Affero General Public License for more details.
+///
+///  You should have received a copy of the GNU Affero General Public License
+///  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+///  
+///
+///  @features: 
+///  Real time read updates via websockets
+///  Cross-origin resource sharing (CORS) - e.g. client app can live on different
+///  server than indx host
+///  Backbone based dat amodels
+///  
+///
+///   @todos
+///   - update only supports updating the entire box
+///   - Box.fetch() retrieves _entire box contents_
+///   ... which is a really bad idea.
+///
+///  @prerequisites:
+///  angular 1.0.8 or higher
+///  jquery 1.8.0 or higher
+///  backbone.js 0.9.2 or higher
+///  underscore.js 1.4.2 or higher
 	
-*/
 
 angular
 	.module('indx', ['ui'])

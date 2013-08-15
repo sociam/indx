@@ -56,7 +56,7 @@
       padding-top: 20px;
     }
     .supplementary {
-      display: none;
+      /*display: none;*/
     }
     </style>
     <script>

@@ -3,7 +3,7 @@ module.exports = {
 	outputDirectory: '../html/docs/',
 
 	filePaths: [
-		'../docs/abstracts/*',
+		'../docsgen/abstracts/*',
 		'js/indx.js'
 		//'js/indx-utils.js'
 	],
