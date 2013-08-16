@@ -435,8 +435,10 @@ angular
 				var cache = this._objcache();
 				var parameters = {"q": JSON.stringify(query_pattern)};
 				var this_ = this;
-				if (predicates) { _(query).extend({predicate_list: predicates }); }
-				console.log('ajax .. ');
+				if (predicates) {
+					_(parameters).extend({predicate_list: predicates });
+					console.log('new query pattern >> ', parameters);
+				}
 				this._ajax("GET", [this.id, "query"].join('/'), parameters)
 					.then(function(results) {
 						if (predicates) {
