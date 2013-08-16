@@ -121,6 +121,7 @@
 			deleteFolderRecursive(outputDir);
 			ncp('./template', outputDir, function (err) {
 				if (err) { throw err; }
+				//console.log(that.object().files[1].classes[5].extend.cid)
 				mu.compileAndRender('index.mu', that.object()).on('data', function (dat) {
 					html += dat.toString();
 				}).on('end', function () {
@@ -191,7 +192,6 @@
 			var that = this,
 				comment = getCommentAfter(this.data, 0),
 				promise = new Promise();
-			console.log(comment);
 			fileGrammar.parse(comment).then(function (rs) {
 				marked(rs.description.join('\n'), markedOptions, function (err, content) {
 					if (err) { throw err; }
@@ -295,7 +295,7 @@
 					that.data.replace(re, function () {
 						var match = regexp[1].apply(this, arguments);
 						that.add(_.extend({
-							extend: superCls
+							extend: superCls.object()
 						}, match), { data: that.data, file: that.file });
 					});
 
