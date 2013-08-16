@@ -56,7 +56,7 @@
       padding-top: 20px;
     }
     .supplementary {
-      /*display: none;*/
+      display: none;
     }
     </style>
     <script>
@@ -108,13 +108,13 @@
   <body>
     <div class="sidebar">
       {{#files}}
-        <div id="sidebar-{{uid}}" class="{{#parameters.supplementary}}supplementary{{/parameters.supplementary}}">
-          <a href="#{{uid}}"><h3>{{title}}</h3></a>
+        <div id="sidebar-{{id}}" class="{{#parameters.supplementary}}supplementary{{/parameters.supplementary}}">
+          <a href="#{{id}}"><h3>{{title}}</h3></a>
           <ul class="nav nav-list">
             {{#classes}}
-              <li class="nav-header"><a href="#{{uid}}">{{name}}</a></li>
+              <li class="nav-header"><a href="#{{id}}">{{name}}</a></li>
               {{#methods}}
-                {{name}}
+                <li><a href="#{{id}}">{{name}}</a></li>
               {{/methods}}
             {{/classes}}
           </ul>
@@ -127,7 +127,7 @@
       {{project.description}}
 
       {{#files}}
-        <section class="file {{#parameters.supplementary}}supplementary{{/parameters.supplementary}}" id="{{uid}}">
+        <section class="file {{#parameters.supplementary}}supplementary{{/parameters.supplementary}}" id="{{id}}">
           {{>partials/file.mu}}
         </section>
       {{/files}}

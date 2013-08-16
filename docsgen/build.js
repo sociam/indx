@@ -28,7 +28,10 @@
 				name: '',
 				description: ''
 			},
-			initialize: function () { this.parsed = new Promise(); },
+			initialize: function () { 
+				this.parsed = new Promise(); 
+				this.set('id', this.uid ? this.uid() : Math.random());
+			},
 			afterParsed: function (fn) { return this.parsed.then(fn); },
 			object: function () { return this.toJSON(); }
 		}),
@@ -178,7 +181,7 @@
 				log('read', that.get('filename'));
 				if (err) { throw err; }
 				that.data = data.toString();
-				that.classes = new Classes(undefined, { builder: builder, file: this, data: that.data });
+				that.classes = new Classes(undefined, { builder: builder, file: that, data: that.data });
 				that.parseComment().then(function () {
 					that.classes.parse();
 					builder.pushClasses(that.classes);
@@ -191,7 +194,6 @@
 				comment = getCommentAfter(this.data, 0);
 			return fileGrammar.parse(comment).then(function (rs) {
 				rs.description = rs.description.join('<br>')
-				console.log("P", rs)
 				that.set(rs);
 			});
 		},
@@ -199,6 +201,9 @@
 			return _.extend(this.toJSON(), {
 				classes: this.classes.array()
 			});
+		},
+		uid: function () {
+			return 'file-' + this.get('filename').replace(/\W+/gi, '-');
 		}
 	});
 
@@ -209,8 +214,9 @@
 
 	var Class = Model.extend({
 		initialize: function (attributes, options) {
-			Model.prototype.initialize.apply(this, arguments);
 			this.data = options ? options.data : undefined;
+			this.file = options ? options.file : undefined;
+			Model.prototype.initialize.apply(this, arguments);
 			this.methods = new Methods(undefined, { cls: this, data: this.data });
 		},
 		parse: function () {
@@ -236,6 +242,9 @@
 			return _.extend(this.toJSON(), {
 				methods: this.methods.array()
 			});
+		},
+		uid: function () {
+			return (this.file ? this.file.id : '') + '_class-' + this.get('name').replace(/\W+/gi, '');
 		}
 	});
 
@@ -256,9 +265,8 @@
 					that.data.replace(re, function () {
 						var match = regexp[1].apply(this, arguments);
 						that.add(_.extend({
-							super: superCls.cls,
-							file: that.file
-						}, match), { data: that.data });
+							super: superCls.cls
+						}, match), { data: that.data, file: that.file });
 					});
 
 				});
@@ -277,11 +285,14 @@
 
 	var Method = Model.extend({
 		initialize: function (attributes, options) {
-			Model.prototype.initialize.apply(this, arguments);
 			this.data = options.data;
+			this.cls = options.cls;
+			Model.prototype.initialize.apply(this, arguments);
 			this.arguments = new Arguments(undefined, { method: this, args: this.get('args') });
 		},
 		parse: function () {
+			log('parse method', this.get('name'));
+
 			var that = this;
 			this.parseComment().then(function () {
 				if (that.arguments.length > 0) {
@@ -305,6 +316,9 @@
 			return _.extend(this.toJSON(), {
 				arguments: this.arguments.array()
 			});
+		},
+		uid: function () {
+			return this.cls.id + '_method-' + this.get('name').replace(/\W+/gi, '');
 		}
 	})
 
@@ -333,7 +347,7 @@
 						line: lineNumber(data, start + pos)
 					};
 
-				that.add(method, { data: that.data });
+				that.add(method, { data: that.data, cls: that.cls });
 
 				return match;
 			});
@@ -343,11 +357,13 @@
 	});
 
 	var Argument = Model.extend({
-		initialize: function () {
-			Model.prototype.initialize.apply(this, arguments);
+		initialize: function (attributes, options) {
 			this.args = options.args;
+			this.method = options.method;
+			Model.prototype.initialize.apply(this, arguments);
 		},
 		parse: function () {
+			log('parse argument', this.get('name'));
 			return _.chain(this.args.split(',')).map(function (arg) {
 				return { name: arg.trim() };
 			}).reject(function (o) {
@@ -368,6 +384,9 @@
 			this.last().set('last', true);
 
 			this.parsed.resolve();
+		},
+		uid: function () {
+			return this.method.id + '_argument-' + this.get('name').replace(/\W+/gi, '');
 		}
 	})
 
