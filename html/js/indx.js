@@ -7,7 +7,7 @@
 ///  Javascript ORM client for INDX that makes it easy to
 ///  read and write objects from one or more INDX data store(s).
 
-///  @copying
+///  #### Copying
 ///  Copyright (C) 2011-2013 University of Southampton
 ///  Copyright (C) 2011-2013 Daniel Alexander Smith
 ///  Copyright (C) 2011-2013 Max Van Kleek
@@ -24,31 +24,31 @@
 ///
 ///  You should have received a copy of the GNU Affero General Public License
 ///  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-///  
 ///
-///  @features: 
-///  Real time read updates via websockets
-///  Cross-origin resource sharing (CORS) - e.g. client app can live on different
+///
+///  #### Features
+///  * Real time read updates via websockets
+///  * Cross-origin resource sharing (CORS) - e.g. client app can live on different
 ///  server than indx host
-///  Backbone based dat amodels
-///  
+///  * Backbone based dat amodels
 ///
-///   @todos
-///   - update only supports updating the entire box
-///   - Box.fetch() retrieves _entire box contents_
+///
+///   #### todos
+///   * update only supports updating the entire box
+///   * Box.fetch() retrieves _entire box contents_
 ///   ... which is a really bad idea.
 ///
-///  @prerequisites:
-///  angular 1.0.8 or higher
-///  jquery 1.8.0 or higher
-///  backbone.js 0.9.2 or higher
-///  underscore.js 1.4.2 or higher
-	
+///  #### Prerequisites:
+///  * angular 1.0.8 or higher
+///  * jquery 1.8.0 or higher
+///  * backbone.js 0.9.2 or higher
+///  * underscore.js 1.4.2 or higher
+
 
 angular
 	.module('indx', ['ui'])
 	.factory('client',function(utils) {
-		var u = utils, log = utils.log, error = utils.error, debug = utils.debug; 
+		var u = utils, log = utils.log, error = utils.error, debug = utils.debug;
 		var DEFAULT_HOST = document.location.host; // which may contain the port
 		var WS_MESSAGES_SEND = {
 			auth: function(token) { return JSON.stringify({action:'auth', token:token}); },
@@ -111,7 +111,7 @@ angular
 		var deserialize_literal = function(obj, box) {
 			return obj['@value'] !== undefined ? literal_deserializers[ obj['@type'] || '' ](obj, box) : obj;
 		};
-	
+
 		var deserialize_value = function(s_val, box) {
 			var vd = u.deferred();
 			// it's an object, so return that
@@ -430,7 +430,7 @@ angular
 			},
 			query: function(query_pattern, predicates){
 				// @param - query_pattern is an object like { key1 : val1, key2: val2 } .. that
-				//   returns / fetches all objects 
+				//   returns / fetches all objects
 				var d = u.deferred();
 				var cache = this._objcache();
 				var parameters = {"q": JSON.stringify(query_pattern)};
@@ -449,10 +449,10 @@ angular
 						d.resolve(_(results.data).map(function(dobj,id) {
 							console.log('getting id ', id);
 							if (cache.get(id)) { console.log('cached! ', id); return cache.get(id); }
-							console.log('not cached! ', id); 
+							console.log('not cached! ', id);
 							var model = this_._create_model_for_id(id);
 							model._deserialise_and_set(dobj, true);
-							return model;		
+							return model;
 						}));
 					}).fail(function(err) { error(err); d.reject(err); });
 				return d.promise();
@@ -916,7 +916,7 @@ angular
 					.success(function(data) { d.resolve(data.apps); })
 					.fail(function(err) { d.reject(err); });
 				return d.promise();
-			},			
+			},
 			_fetch:function() {
 				throw new Error('dont fetch a store - any more!');
 				//

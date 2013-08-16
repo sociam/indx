@@ -22,11 +22,11 @@ description_lines
 			{ return [d]; }
 
 description_line
-	= _$_ d:comment
+	= __ $ _ d:comment
 			{ return d; }
 
 comment
-	= c:[^\n\r]+
+	= c:[^\n\r]*
 			{ return c.join(''); }
 
 $
