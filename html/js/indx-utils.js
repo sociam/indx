@@ -21,6 +21,15 @@
 				error : function() { try { if (DEBUG_LEVEL >= ERROR) { console.error.apply(console,arguments); }} catch(e) { } },		
 				isInteger:function(n) { return n % 1 === 0; },
 				deferred:function() { return new $.Deferred(); },
+				shake:function(el, times, px) {
+					var d = new $.Deferred(), l = px || 20;
+					for (var i = 0; i < 4; i++) {
+						$(el).animate({'margin-left':"+=" + (l = -l) + 'px'}, 50);
+					}
+					// todo
+					d.resolve();
+					return d.promise();
+				},				
 				dresolve:function(val) {
 					var d = new $.Deferred();
 					d.resolve(val);

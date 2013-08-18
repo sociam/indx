@@ -1,38 +1,30 @@
-<html>
+<!doctype html>
+<html lang="en" >
 <head>
-	<link href="../../css/bootstrap.css" rel="stylesheet"/>
-	<link href="../../css/angular-ui.css" rel="stylesheet"/>
-	<link href="../../css/bootstrap-fileupload.css" rel="stylesheet"/>	
+	<link href="css/bootstrap.css" rel="stylesheet"/>
+	<link href="css/angular-ui.css" rel="stylesheet"/>
 	<!-- cdmbase -->
     <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1, maximum-scale=1">	
 	<meta name="apple-mobile-web-app-capable" content="yes">
 	<!-- cdmbase -->
-	<link rel="stylesheet/less" type="text/css" href="css/index.less"/>	
+	<link rel="stylesheet/less" type="text/css" href="css/launcher.less"/>	
 	<link rel="stylesheet/less" type="text/css" href="/components/toolbar/toolbar.less"/>
-	<link rel="stylesheet/less" type="text/css" href="/components/timeseries/timeseries.less"/>
+	<title>My INDX</title>
 </head>
-<body>
-  <div class="main">
-	<h1>Welcome to</h1>
-	<center>
-	  <img src="img/indx.png">
-	</center>
-	<div class="apps">
-	  <h2>Installed apps</h2>
-	  <ul>
-		<li><a href="apps/cdm/index.html">Patient Centric Health Record</a>
-		<li><a href="apps/cdm/index.html">Real time update example</a>		
-	  </ul>
-	</div>
-  </div>
+<body ng-app="launcher" ng-controller="main">
+  <toolbar box-var='selected_box' username-var='user_logged_in'></toolbar>  
+  <loginbox ng-show='!user_logged_in'></loginbox>
+  <appslist ng-show='user_logged_in'></appslist>
   <script src="js/vendor/jquery.min.js" type="text/javascript"></script>
   <script src="js/vendor/lesscss.min.js" type="text/javascript"></script>  
   <script src="js/vendor/underscore.min.js" type="text/javascript"></script>
   <script src="js/vendor/backbone.min.js" type="text/javascript"></script>
   <script src="js/vendor/bootstrap.min.js" type="text/javascript"></script>
-  <script src="js/vendor/bootstrap-fileupload.js" type="text/javascript"></script>  
   <script src="js/vendor/angular.min.js" type="text/javascript"></script>
   <script src="js/vendor/angular-ui.js" type="text/javascript"></script>
-  <script src="js/vendor/d3.min.js" type="text/javascript"></script>  
+  <script src="js/indx.js" type="text/javascript"></script>
+  <script src="js/indx-utils.js" type="text/javascript"></script>
+  <script src="components/toolbar/toolbar.js" type="text/javascript"></script>
+  <script src="js/launcher.js" type="text/javascript"></script>
 </body>
 </html>

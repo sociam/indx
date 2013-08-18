@@ -122,7 +122,7 @@ class AdminHandler(BaseHandler):
     
     def list_user_handler(self, request):
         username,password = self.webserver.get_indx_user_password()
-        logging.debug("Getting user list")
+        logging.debug("Getting user list - indx user is {0} - password {0} ".format(username,password))
         database.list_users(username, password)\
             .addCallback(lambda rows: self.return_ok(request, data={"users":rows}))\
             .addErrback(lambda *x: self.return_internal_error(request))
@@ -180,7 +180,7 @@ AdminHandler.subhandlers = [
     {
         'prefix': 'list_users',
         'methods': ['GET'],
-        'require_auth': True,
+        'require_auth': False,
         'require_token': False,
         'handler': AdminHandler.list_user_handler,
         'content-type':'text/plain', # optional

@@ -130,7 +130,7 @@ def create_user(new_username, new_password, db_user, db_pass):
     return_d = Deferred()
 
     def created(conn, rows):
-        conn.close() # close the connection
+        # conn.close() # close the connection
         return_d.callback(None)
         return
 
@@ -148,16 +148,25 @@ def list_users(db_user, db_pass):
     return_d = Deferred()
 
     def done(conn, rows):
-        conn.close() # close the connection
+        logging.debug("indx_pg2.list_users.done : {0}".format(repr(rows)))        
         users = []
         for r in rows:  users.append(r[0])
+        # conn.close() # close the connection        
         return_d.callback(users)
         return
 
+    def fail(err):
+        logging.debug('indx_pg2.list_users failure >>>>>>> ');
+        logging.error(err)
+        return_d.errback(err)
+
     def connected(conn):
+        logging.debug("indx_pg2.list_users : connected")
         d = conn.runQuery("SELECT rolname from pg_roles")
-        d.addCallbacks(lambda rows: done(conn, rows), lambda failure: return_d.errback(failure))
+        d.addCallbacks(lambda rows: done(conn, rows), lambda failure: fail(failure))
         return
+
+    logging.debug('indx_pg2.list_users - connecting: {0}, {1}'.format(db_user,db_pass));
 
     connect("postgres", db_user, db_pass).addCallbacks(connected, lambda failure: return_d.errback(failure))
     return return_d
