@@ -1,0 +1,25 @@
+<div class="launcher_window">
+  <div ng-show="!user_selected" ng-animate="'animate'">
+	<div class="logo">
+	  <img class="logo" src="img/indx.png">
+	</div>
+	<ul ng-show="!user_selected" class='userlist'>
+	  <li ng-repeat='u in users'>
+		<a ng-click="select_user(u)"><user model='u' ></user></a>
+	  </li>
+	</ul>
+  </div>
+  <div ng-show="user_selected" ng-animate="'animate'">
+	<h2>{{ user_selected }}</h2>
+	<form class="form-horizontal" ng-submit="do_submit()">
+	  <div class="control-group">
+		<label class="control-label" for="#login_password">password:</label>
+		<div class="controls">
+		  <input type="password" id="login_password" class="login_password password_field" placeholder="< your password >" ng-model="password"></input>
+		  <input type="submit" ng-submit="do_submit()"></input>
+		</div>
+	  </div>
+	</form>
+  </div>
+</div>
+  
