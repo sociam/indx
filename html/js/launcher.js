@@ -23,13 +23,13 @@ angular.module('launcher', ['ui','indx'])
 				$scope.do_submit = function() {
 					store.login($scope.user_selected, $scope.password).then(function() {
 						u.debug('login okay!');
-						sa(function() {
-							delete $scope.user_selected;
-							delete $scope.password;
-						});
+						sa($scope.back_to_login);
 					}).fail(function() {
 						u.shake($($scope.el).find('input:password').parents('.launcher_window'));						
 					});
+				};
+				$scope.back_to_login = function() {
+					delete $scope.user_selected; delete $scope.password;
 				};
 				store.get_user_list().then(function(result) {
 					u.log('users > ', result);

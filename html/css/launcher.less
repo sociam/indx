@@ -6,32 +6,55 @@ body{
   box-spacing:border-box;
   border:1px solid #eee;
   padding:20px;
-  width:600px; // todo make reactive
+  width:440px; // todo make reactive
   margin:40px auto 0px auto;
+}
+
+.login-window {
+	.userlist {
+		margin:20px 20px 0px 20px;
+		padding:10px;	
+		h1 { font-size:80%; } 
+		list-style-type:none;
+		li {
+			.user {
+				border:1px solid #eee;
+				padding:10px;
+				.icon { float:left; clear:both; padding:2px; margin-right:10px; }
+				.name { padding-left:10px; }
+				margin:8px;
+			}
+		}
+	}
   .logo {
 	  text-align:center;
 	  img { width:120px !important; }
   }
+  h4 {
+      font-weight:100;
+      font-style:oblique;
+      margin-bottom:0.5em;
+  }	
 }
 
-
-.userlist {
-	margin:20px 0px 0px 0px;
-	padding:10px;	
-	h1 { font-size:80%; } 
-	list-style-type:none;
-
-	li {
-		.user {
-			border:1px solid #eee;
-			padding:10px;
-			.icon { float:left; clear:both; padding:2px; margin-right:10px; }
-			.name {
-				padding-left:10px; 
-			}
-			margin:5px;
-		}
+.password-dialog {
+	padding:50px 40px 30px 40px;
+	* { vertical-align:middle; }
+	img.goback { width:20px; opacity:0.5; }
+	.username {
+		display:inline-block;
+		font-size: 16pt;
+		font-style:italics;
+		padding:13px 0px 0px 10px !important;
+		margin-bottom:15px;
 	}
+	.controls {
+		input[type='password'] {
+			margin-top:12px;
+		}			
+		input.submit { width:30px; }		
+	}
+	text-align:center;
 }
 
 

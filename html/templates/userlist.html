@@ -1,7 +1,10 @@
 <div class="launcher_window">
-  <div ng-show="!user_selected" ng-animate="'animate'">
+  <div ng-show="!user_selected" ng-animate="'animate'" class="login-window">
 	<div class="logo">
-	  <img class="logo" src="img/indx.png">
+	  <h4>welcome to</h4>
+	  <p>
+		<img class="logo" src="img/indx.png">
+	  </p>
 	</div>
 	<ul ng-show="!user_selected" class='userlist'>
 	  <li ng-repeat='u in users'>
@@ -9,15 +12,12 @@
 	  </li>
 	</ul>
   </div>
-  <div ng-show="user_selected" ng-animate="'animate'">
-	<h2>{{ user_selected }}</h2>
-	<form class="form-horizontal" ng-submit="do_submit()">
-	  <div class="control-group">
-		<label class="control-label" for="#login_password">password:</label>
-		<div class="controls">
-		  <input type="password" id="login_password" class="login_password password_field" placeholder="< your password >" ng-model="password"></input>
-		  <input type="submit" ng-submit="do_submit()"></input>
-		</div>
+  <div ng-show="user_selected" ng-animate="'animate'" class="password-dialog">
+	<img class='goback' src="img/launcher-arrowleft.png" ng-click="back_to_login()"></i><div class="username">{{ user_selected }}</div>
+	<form class="form-vertical "ng-submit="do_submit()">
+	  <div class="controls">
+		<input type="password" id="login_password" class="login_password password_field" placeholder="password" ng-model="password"></input>
+		<input class='submit' type="image" src="img/launcher-arrowright.png" value="submit" ng-submit="do_submit()"></input>
 	  </div>
 	</form>
   </div>
