@@ -14,11 +14,7 @@ angular.module('launcher', ['ui','indx'])
 			link:function($scope, $element) { $scope.el = $element;	},
 			controller: function($scope, client, backbone, utils) {
 				var u = utils, store = client.store, sa = function(f) { return utils.safe_apply($scope,f); };
-				window._s = $scope;
-				$scope.select_user = function(user) {
-					u.log('select_user! ', user);
-					$scope.user_selected = user;
-				};				
+				$scope.select_user = function(user) { $scope.user_selected = user;	};				
 				// this gets called when the form is submitted
 				$scope.do_submit = function() {
 					store.login($scope.user_selected, $scope.password).then(function() {
@@ -47,7 +43,18 @@ angular.module('launcher', ['ui','indx'])
 			replace:true,
 			templateUrl:'templates/appslist.html',
 			link:function($scope, $element) { $scope.el = $element;	},
-			controller: function($scope, client, backbone, utils) {
+			controller: function($scope, client, utils) {
+				var u = utils, store = client.store, sa = function(f) { return utils.safe_apply($scope,f); };
+				var get_apps_list = function() {
+					client.store.get_apps_list().then(function(apps) {
+						sa(function() { $scope.apps = apps; });
+					}).fail(function() {
+						sa(function() { delete $scope.apps; });
+						u.error('oops can\'t get apps - not ready i guess');
+					});
+				};
+				store.on('login', get_apps_list);
+				get_apps_list();
 			}
 		};
 	}).controller('main', function($scope, client, utils) {});

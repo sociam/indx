@@ -18,7 +18,8 @@ body{
 		list-style-type:none;
 		li {
 			.user {
-				border:1px solid #eee;
+				border:1px solid white;
+				&:hover { border:1px solid #eee; }
 				padding:10px;
 				.icon { float:left; clear:both; padding:2px; margin-right:10px; }
 				.name { padding-left:10px; }
@@ -55,6 +56,37 @@ body{
 		input.submit { width:30px; }		
 	}
 	text-align:center;
+}
+
+.apps-toplevel {
+	h2 {
+		font-size:14pt;
+		font-style: italics;
+		font-weight:200;
+		margin:0px 0px 1em 0px; padding:0px;
+		line-height:1.0em;
+	}
+	a { color:orange; }
+	padding:20px;
+	.applist {
+		list-style-type:none;
+		padding:0px; margin:0px 0px 0px -10px;
+		.app {
+			text-align:left;
+			display:inline-block;		
+			width:120px;
+			height:30px;		
+			font-size:13pt;
+			border:1px solid #fff;
+			padding:10px 10px 3px 10px;
+			margin:0px 0px 0px 0px;
+			* { vertical-align: baseline; }
+			&:hover {
+				border:1px solid #eef;			
+				box-shadow:2px 2px #ee;
+			}
+		}
+	}
 }
 
 
