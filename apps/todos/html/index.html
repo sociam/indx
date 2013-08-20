@@ -10,9 +10,7 @@
   <body>
 	<div ng-app="todos" ng-controller="todos" ng-cloak>
 		<toolbar box-var='selected_box' username-var='selected_user'></toolbar>
-		<div ng-show="selected_user && selected_box">
-			<div class='title'><b>INDX</b> : Todo list</div>
-		</div>
+
 
 		<div class="container">
 			<div ng-show="!selected_user">
@@ -23,26 +21,61 @@
 			</div>
 		</div>
 
-
-		<div id="todo-list" ng-show="selected_user && selected_box">
-			<ol>
-				<li ng-repeat="todo in by_time">
-					<div class="timestamp">
-						{{ to_date_string(todo.timestamp[0]) + ' - ' + to_time_string(todo.timestamp[0]) }}
+		<div class="todos-container" ng-show="selected_user && selected_box">
+			<div class="todos-titlebar">
+				<h2 class="title">Todo list</h2>
+				<div class="title-controls" hidden>
+					<div class="search"><input type="text"></div>
+					<div class="sortby">
+						<select>
+							<option value="urgency" selected>Urgency</option>
+							<option value="time">Created</option>
+						</select>
 					</div>
-					<div class='todo-title'>
-						{{ todo.title[0] }}
-					</div>
-				</li>
-			</ol>
-		</div>
+				</div>
+			</div>
 
-		<div id="create_todo" ng-show="selected_user && selected_box" style="padding-top: 100px;">
-			New todo:
-			<input type="text" id="todo_title" placeholder="todo">
-			<div ng-class="{btn:true,  disabled:loading}" ng-click="create_todo()" ng-show="selected_user && selected_box">Create</div>
-			<div class='todo error' ng-show="error">
-				{{ error }}
+			<div id="todo-list">
+				<section ng-repeat="todo_group in todo_groups" ng-show="todo_group.by_time.length > 0">
+					<h3 ng-show="todo_groups[0].by_time.length > 0">{{ todo_group.title }}</h3>
+					<ul>
+						<li ng-repeat="todo in todo_group.by_time" class="todo-item" ng-class="{ completed: todo.completed }" ng-mousemove="select_todo(todo);">
+							<div class="left-overflow" ng-class="'urgency-' + todo.urgency[0]">
+								<div ng-show="todo.today">TODAY</div>
+							</div>
+							<div class="todo-title" ng-show="!todo.editing" ng-click="toggle_todo(todo);">{{ todo.title[0] }}</div>
+							<div class="todo-title" ng-show="todo.editing"><input type="text" ng-model="todo.title[0]" placeholder="todo..."></div>
+							<div class="todo-meta">
+								<div class="timestamp">
+									{{ to_date_string(todo.timestamp[0]) + ' - ' + to_time_string(todo.timestamp[0]) }}
+								</div>
+								<div class="urgency">
+								</div>
+							</div>
+							<div class="right-overflow" ng-show="todo.selected || todo.editing">
+								<div class="button-list">
+									<a class="todo-done" title="Completed" ng-show="todo.selected && !todo.editing"><i class="icon-ok"></i></a>
+									<a class="todo-edit" title="Edit" ng-show="todo.selected && !todo.editing" ng-click="edit_todo(todo);"><i class="icon-edit"></i></a>
+									<a class="todo-save" title="Save" ng-show="todo.editing"><i class="icon-ok-circle"></i></a>
+									<a class="todo-cancel" title="Cancel" ng-show="todo.editing" ng-click="edit_todo()"><i class="icon-remove"></i></a>
+								</div>
+							</div>
+						</li>
+					</ul>
+				</section>
+				<section>
+					<ul>
+						<li class="todo-item">
+							<div id="create_todo" style="padding-top: 100px;">
+								<input type="text" id="todo_title" placeholder="todo">
+								<div ng-class="{btn:true,  disabled:loading}" ng-click="create_todo()" ng-show="selected_user && selected_box">Create</div>
+								<div class='todo error' ng-show="error">
+									{{ error }}
+								</div>
+							</div>
+						</li>
+					</ul>
+				</section>
 			</div>
 		</div>
 	</div>

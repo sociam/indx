@@ -56,7 +56,8 @@ angular
 					console.log('todo ', todo);
 					o.set({
 						timestamp : now,
-						title: todo.title
+						title: todo.title,
+						urgency: 'urgent'
 					});
 					todo_list_items.push(o);
 					todo_list.set({'todos' : todo_list_items });
@@ -73,20 +74,47 @@ angular
 
 		$scope.by_time = [];
 
+		$scope.edit_todo = function (todo) {
+			if ($scope.editing_todo) { $scope.editing_todo.editing = false; }
+			$scope.editing_todo = todo;
+			if ($scope.editing_todo) { $scope.editing_todo.editing = true; }
+		};
+
+		$scope.select_todo = function (todo) {
+			if ($scope.selected_todo) { $scope.selected_todo.selected = false; }
+			$scope.selected_todo = todo;
+			if ($scope.selected_todo) { $scope.selected_todo.selected = true; }
+		};
+
+		$scope.toggle_todo = function (todo) {
+			todo.completed = !todo.completed;
+		}
+
 		var top_of_day = function(dlong) {
 			var dd = (new Date(dlong)).toDateString();
 			return new Date(dd).valueOf();
 		};
 		var update_todo_list_view = function(todo_list) {
-			var by_time = todos_sorted_by_time(todo_list.get('todos') || []);
-			console.log('update todo list view >> ', by_time.length);
-			u.safe_apply($scope, function () {
-				$scope.by_time = _.map(by_time, function (todo) {
-					return todo.toJSON();
+			var todos = todo_list.get('todos') || [],
+				groups = _.map(['For today', 'For another time'], function (group_title, i) {
+					var today = i === 0 ? true : false;
+					return {
+						title: group_title,
+						by_time: _.select(todos_json(todos_sorted_by_time(todos)), function (todo) {
+							return today ? todo.today === true : todo.today !== true;
+						})
+					}
 				});
+
+			console.log('update todo list view ');
+			u.safe_apply($scope, function () {
+				$scope.todo_groups = groups;
 				console.log(' >>>> by time is ', by_time);
 			});
 		};
+		var todos_json = function (todos) {
+			return _.map(todos, function (t) { return t.toJSON() });
+		}
 		var update_todo_list_watcher = function() {
 			$scope.by_time = [];
 			if (!box) { u.debug('no box, skipping '); return ;}
