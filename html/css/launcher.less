@@ -1,0 +1,124 @@
+body{
+  background-color:rgba(252,252,250,1);	
+}
+.launcher_window {
+  background:white;
+  box-spacing:border-box;
+  border:1px solid #eee;
+  padding:20px;
+  width:440px; // todo make reactive
+  margin:40px auto 0px auto;
+}
+
+.login-window {
+	.userlist {
+		margin:20px 20px 0px 20px;
+		padding:10px;	
+		h1 { font-size:80%; } 
+		list-style-type:none;
+		li {
+			.user {
+				border:1px solid white;
+				&:hover { border:1px solid #eee; }
+				padding:10px;
+				.icon { float:left; clear:both; padding:2px; margin-right:10px; }
+				.name { padding-left:10px; }
+				margin:8px;
+			}
+		}
+	}
+  .logo {
+	  text-align:center;
+	  img { width:120px !important; }
+  }
+  h4 {
+      font-weight:100;
+      font-style:oblique;
+      margin-bottom:0.5em;
+  }	
+}
+
+.password-dialog {
+	padding:50px 40px 30px 40px;
+	* { vertical-align:middle; }
+	img.goback { width:20px; opacity:0.5; }
+	.username {
+		display:inline-block;
+		font-size: 16pt;
+		font-style:italics;
+		padding:13px 0px 0px 10px !important;
+		margin-bottom:15px;
+	}
+	.controls {
+		input[type='password'] {
+			margin-top:12px;
+		}			
+		input.submit { width:30px; }		
+	}
+	text-align:center;
+}
+
+.apps-toplevel {
+	h2 {
+		font-size:14pt;
+		font-style: italics;
+		font-weight:200;
+		margin:0px 0px 1em 0px; padding:0px;
+		line-height:1.0em;
+	}
+	a { color:orange; }
+	padding:20px;
+	.applist {
+		list-style-type:none;
+		padding:0px; margin:0px 0px 0px -10px;
+		.app {
+			text-align:left;
+			display:inline-block;		
+			width:120px;
+			height:30px;		
+			font-size:13pt;
+			border:1px solid #fff;
+			padding:10px 10px 3px 10px;
+			margin:0px 0px 0px 0px;
+			* { vertical-align: baseline; }
+			&:hover {
+				border:1px solid #eef;			
+				box-shadow:2px 2px #ee;
+			}
+		}
+	}
+}
+
+
+.animate-enter, 
+.animate-leave { 
+    -webkit-transition: 400ms cubic-bezier(0.250, 0.250, 0.750, 0.750) all;
+    -moz-transition: 400ms cubic-bezier(0.250, 0.250, 0.750, 0.750) all;
+    -ms-transition: 400ms cubic-bezier(0.250, 0.250, 0.750, 0.750) all;
+    -o-transition: 400ms cubic-bezier(0.250, 0.250, 0.750, 0.750) all;
+    transition: 400ms cubic-bezier(0.250, 0.250, 0.750, 0.750) all;
+    position: relative;
+    display: block;
+} 
+ 
+.animate-leave.animate-leave-active,
+.animate-enter {
+    -webkit-transform: scaleY(0);
+    -moz-transform: scaleY(0);
+    -ms-transform: scaleY(0);
+    -o-transform: scaleY(0);
+    transform: scaleY(0);
+    height: 0px;
+    opacity: 0;
+}
+ 
+.animate-enter.animate-enter-active,
+.animate-leave {
+    -webkit-transform: scaleY(1);
+    -moz-transform: scaleY(1);
+    -ms-transform: scaleY(1);
+    -o-transform: scaleY(1);
+    transform: scaleY(1);
+    height: 30px;
+    opacity: 1;
+}

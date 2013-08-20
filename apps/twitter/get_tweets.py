@@ -16,7 +16,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import argparse, logging, getpass, sys, urllib2, json
-from pyindx import IndxClient
+from indxclient import IndxClient
 from tweepy.streaming import StreamListener
 from tweepy import OAuthHandler
 from tweepy import Stream

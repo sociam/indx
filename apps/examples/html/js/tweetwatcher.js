@@ -2,13 +2,12 @@
 /*jslint vars:true, todo:true, sloppy:true */
 
 angular
-	.module('TwitterDemoApp', ['ui', 'webbox-widgets'])
-	.controller('TweetWatcher', function($scope, webbox) {
-		var u, old_box;
-		// TODO do soemthing more dramatic 
-		
+	.module('TwitterDemoApp', ['ui', 'indx'])
+	.controller('TweetWatcher', function($scope, client, utils) {
+		var u = utils, old_box;
+		// TODO do soemthing more dramatic
+	    
 		var error = function(err) {	console.error(err); };
-
 		var token_filter = function(x) {
 			if (x.length === 0) return false;
 			if (x.indexOf('http') === 0) return false;
@@ -84,23 +83,20 @@ angular
 			}).fail(error);
 		};
 
-		webbox.loaded.then(function() {
-			u = webbox.u;
-			var store = webbox.store;
-			store.toolbar.on('change:box', function(b) {
-				if (b !== undefined) {
-					var box = store.get_box(b);
-					box.fetch().then(function() { store.trigger('box-loaded', box);}).fail(error);
-				}
-			});		
-			store.on('box-loaded', proceed);
-			if (store.toolbar.is_logged_in() && store.toolbar.get_selected_box()) {
-				console.log('logged in already setting selected ');
-				var sb = store.get_box(store.toolbar.get_selected_box());
-				old_box = sb;
-				sb.fetch().then(proceed).fail(error); 
-			}
-		});
+	    var store = client.store;
+	    store.toolbar.on('change:box', function(b) {
+		if (b !== undefined) {
+		    var box = store.get_box(b);
+		    box.fetch().then(function() { store.trigger('box-loaded', box);}).fail(error);
+		}
+	    });		
+	    store.on('box-loaded', proceed);
+	    if (store.toolbar.is_logged_in() && store.toolbar.get_selected_box()) {
+		console.log('logged in already setting selected ');
+		var sb = store.get_box(store.toolbar.get_selected_box());
+		old_box = sb;
+		sb.fetch().then(proceed).fail(error); 
+	    }
 	});
 
 

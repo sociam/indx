@@ -31,13 +31,13 @@ angular
 				toolbar.is_logged_in = function() { return false; };
 
 				var get_last_used_box = function() {
-					return localStorage["indx__last_used_box" + document.location.toString()];
+					return localStorage["indx__last_used_box::" + document.location.toString()];
 				};
 				var clear_last_used_box = function() {
-					delete localStorage["indx__last_used_box" + document.location.toString()];
+					delete localStorage["indx__last_used_box::" + document.location.toString()];
 				};
 				var set_last_used_box = function(bid) {
-					localStorage["indx__last_used_box" + document.location.toString()] = bid;
+					localStorage["indx__last_used_box::" + document.location.toString()] = bid;
 				};				
 
 				_($scope).extend({
@@ -133,7 +133,7 @@ angular
 				};
 				$scope.do_logout = function() {
 					getStore().logout();
-					$scope.cb_logout();
+					$scope.cb_logout(); 
 				};
 				var checkLogin = function() {
 					var store = getStore();					
@@ -146,7 +146,7 @@ angular
 						}
 					});
 				};
-				model.on('change:store', function() {
+				var bind_store_listeners = function() {
 					var store = getStore();
 					store.on('login', function(username) {
 						u.debug('store -> toolbar :: login ');
@@ -159,14 +159,15 @@ angular
 						apply(function() { update_boxlist(); });
 					});
 					checkLogin();
-				});
-				
+				};
+
+				model.on('change:store', bind_store_listeners);				
 				model.on('change:visible',function(b) {
 					apply(function() { $scope.visible = model.get('visible');  });
 				});
-				
-				checkLogin();
-				
+
+				bind_store_listeners();
+								
 				// totally not necessary anymore: 
 				// var dom_el = $('<div></div>').addClass('toolbar').prependTo('body');			
 				// $(dom_el).append(templates.main.template);

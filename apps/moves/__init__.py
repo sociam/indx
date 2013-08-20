@@ -15,11 +15,8 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging, traceback, json, re
-from twisted.web.resource import Resource
+import logging, json
 from indx.webserver.handlers.base import BaseHandler
-from indx.objectstore_async import ObjectStoreAsync
-from twisted.internet.defer import Deferred
 from twisted.web.server import NOT_DONE_YET
 import requests
 
@@ -31,12 +28,19 @@ class MovesApp(BaseHandler):
     def render(self, request):
         logging.debug("Moves App, request args: {0}".format(request.args))
         # forwards a POST request (same domain, because of XHR cross-domain security), then through moves.indx.ecs.soton.ac.uk (which holds the client secret ID) to the API at moves-app.com (phew!)
-        if "code" in request.args and "redirect_url" in request.args:
+        if "code" in request.args:
             code = request.args['code'][0]
-            redirect_url = request.args['redirect_url'][0]
-            response = requests.post("http://moves.indx.ecs.soton.ac.uk/get_token/", data = {"code": code, "redirect_url": redirect_url})
+            response = requests.post("https://moves.indx.ecs.soton.ac.uk/get_token/", data = {"code": code})
+            logging.debug("Moves App, returning response from server")
+            self.return_ok(request, data = {"response": json.loads(response.text)})
+        elif "token" in request.args and "suburl" in request.args:
+            token = request.args['token'][0]
+            suburl = request.args['suburl'][0]
+            req_url = "https://api.moves-app.com/api/v1{0}access_token={1}".format(suburl, token)
+            response = requests.get(req_url)
             self.return_ok(request, data = {"response": json.loads(response.text)})
         else:
+            logging.debug("Moves App, returning 404")
             self.return_not_found(request)
         return NOT_DONE_YET
 

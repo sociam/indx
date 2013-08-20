@@ -1,0 +1,25 @@
+{
+  "name": "indxdoc",
+  "version": "0.0.0",
+  "description": "ERROR: No README.md file found!",
+  "main": "build.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": "",
+  "author": "",
+  "license": "BSD",
+  "dependencies": {
+    "underscore": "~1.5.1",
+    "mu2": "~0.5.19",
+    "node-promise": "~0.5.8",
+    "pegjs": "~0.7.0",
+    "circular-json": "~0.1.3",
+    "ncp": "~0.4.2",
+    "glob": "~3.2.3",
+    "cli-color": "~0.2.2",
+    "backbone": "~1.0.0",
+    "marked": "~0.2.9",
+    "handlebars": "~1.0.12"
+  }
+}
