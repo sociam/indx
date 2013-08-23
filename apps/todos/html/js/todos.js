@@ -95,15 +95,15 @@ angular
 			return new Date(dd).valueOf();
 		};
 		var update_todo_list_view = function(todo_list) {
-			var todos = todo_list.get('todos') || [],
+			var todos = set_defaults(todo_list.get('todos') || []),
 				groups = _.map(['For today', 'For another time'], function (group_title, i) {
 					var today = i === 0 ? true : false;
 					return {
 						title: group_title,
-						by_time: _.select(todos_json(todos_sorted_by_time(todos)), function (todo) {
-							return today ? todo.today === true : todo.today !== true;
+						by_time: _.select(todos_sorted_by_time(todos), function (todo) {
+							return today ? todo.get("today") === true : todo.get("today") !== true;
 						})
-					}
+					};
 				});
 
 			console.log('update todo list view ');
@@ -112,9 +112,6 @@ angular
 				console.log(' >>>> by time is ', by_time);
 			});
 		};
-		var todos_json = function (todos) {
-			return _.map(todos, function (t) { return t.toJSON() });
-		}
 		var update_todo_list_watcher = function() {
 			$scope.by_time = [];
 			if (!box) { u.debug('no box, skipping '); return ;}
@@ -128,6 +125,13 @@ angular
 				update_todo_list_view(todo_list);
 			});
 		};
+
+		var set_defaults = function (todos) {
+			return _.map(todos, function (todo) {
+				if (!todo.get('urgency')) { todo.set('urgency', 'low'); }
+				return todo;
+			});
+		}
 		// watches the login stts for changes
 		$scope.$watch('selected_box + selected_user', function() {
 			if ($scope.selected_user && $scope.selected_box) {
@@ -140,4 +144,6 @@ angular
 		});
 		initialise();
 		window.s = client.store;
+
+
 	});

@@ -3,8 +3,10 @@
 
 .todos-container {
   width: 400px;
+  border-top: 1px solid #eee;
   border-left: 1px solid #eee;
   border-right: 1px solid #eee;
+  box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
   margin: 0 auto;
   font-family: 'Port Lligat Slab', serif;
 
@@ -32,11 +34,20 @@
         list-style: none;
         margin: 0;
         padding: 10px 5px 7px;
-        height: 45px;
+        height: 37px;
         border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        transition: height 0.3s;
+        -webkit-transition: height 0.3s; /* Safari */
 
         &:hover {
-          cursor: pointer
+          .todo-left-overflow {
+            width: 18px;
+            transition: width 0.3s;
+            -webkit-transition: width 0.3s; /* Safari */
+          }
+          .todo-hover {
+            display: block;
+          }
         }
         &.completed {
           .todo-title {
@@ -44,57 +55,145 @@
           }
         }
 
-        .todo-title {
-          font-size: 20px;
-          height: 25px;
-        }
-        .todo-meta {
-          font-size: 12px;
-          color: #555;
+        &.editing {
+          height: 57px;
+          transition: height 0.3s;
+          -webkit-transition: height 0.3s; /* Safari */
         }
 
-        .right-overflow {
-          position: absolute;
-          left: 100%;
-          height: 100%;
-          top: 0;
-          width: 105px;
-          border: 1px solid rgba(0, 0, 0, 0.1);
-          background: red;
+        .todo-hover { display: none; }
+
+        .todo-body {
+          position: relative;
+
+          .todo-checkbox {
+            position: absolute;
+            left: 10px;
+            top: 6px;
+            width: 20px;
+            height: 20px;
+            border: 1px solid #ccc;
+            cursor: pointer;
+          }
+          .todo-title {
+            position: absolute;
+            top: 7px;
+            left: 50px;
+            font-size: 20px;
+            height: 25px;
+          }
         }
-        .left-overflow {
+
+        .todo-controls {
+          position: absolute;
+          top: 12px;
+          right: 10px;
+        }
+
+        .todo-left-overflow {
           position: absolute;
           right: 100%;
           height: 100%;
           top: 0;
-          border: 1px solid rgba(0, 0, 0, 0.1);
+          width: 2px;
+          transition: width 0.3s;
+          -webkit-transition: width 0.3s; /* Safari */
 
-          &.urgency-low {
-            background: green;
+          .todo-urgency {
+            text-transform: uppercase;
+            color: white;
+            font-weight: bold;
+            -webkit-transform:rotate(-90deg);
+            width: 50px;
+            -webkit-transform-origin: 26px 26px;
+            text-align: center;
+            font-size: 12px;
           }
-          &.urgency-med {
-            background: yellow;
-          }
-          &.urgency-high {
-            background: orange;
-          }
-          &.urgency-urgent {
-            background: red;
-          }
+
+
         }
 
-        .button-list {
-          a {
-            width: 50px;
-            height: 50px;
-            display: inline-block;
+        .todo-meta {
+          position: absolute;
+          top: 50px;
+          left: 10px;
+          right: 10px;
 
-            i {
-              zoom: 2;
+          .todo-urgency-slider {
+            position: absolute;
+            top: 0;
+            left: 5px;
+            right: 129px;
+
+            .progress {
+              height: 5px;
+              .bar {
+                position: relative;
+                box-shadow: none;
+                -webkit-box-shadow: none;
+                -moz-box-shadow: none;
+                .tick {
+                  position: absolute;
+                  top: 0;
+                  left: 50%;
+                  bottom: 0;
+                  border-left: 1px solid rgba(0,0,0,0.2);
+                }
+              }
+            }
+
+            .pointer {
+              position: absolute;
+              top: 5px;
+              border-bottom: 10px solid black;
+              border-left: 10px solid transparent;
+              border-right: 10px solid transparent;
+              background: transparent !important;
+              width: 0;
+              height: 0;
+              cursor: pointer;
+              opacity: 0.7;
+
+              &:hover {
+                opacity: 1;
+              }
+
+              &.urgency-low {
+                border-bottom-color: #5eb95e !important;
+                left: 22px;
+              }
+              &.urgency-med {
+                border-bottom-color: #faea32 !important;
+                left: 82px;
+              }
+              &.urgency-high {
+                border-bottom-color: #f18d3a !important;
+                left: 144px;
+              }
+              &.urgency-urgent {
+                border-bottom-color: #dd514c !important;
+                left: 205px;
+              }
+
             }
           }
         }
+
+
       }
     }
   }
+}
+
+.urgency-low {
+  background: #5eb95e !important;
+}
+.urgency-med {
+  background: #faea32 !important;
+}
+.urgency-high {
+  background: #f18d3a !important;
+}
+.urgency-urgent {
+  background: #dd514c !important;
 }
