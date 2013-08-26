@@ -56,6 +56,8 @@ angular
 					// hook up scope to model changes
 					$scope.$watch(k, function() { model.trigger('change:'+k, $scope[k]); });
 				});
+
+				$scope.usericon = "<span class='glyphicon glyphicon-user'></span>"; // TODO.
 				
 				$scope.incr_loading = function () {	$scope.loading++; };
 				$scope.decr_loading = function () {	$scope.loading = Math.max(0,$scope.loading-1); };
