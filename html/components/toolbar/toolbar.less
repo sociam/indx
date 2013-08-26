@@ -14,7 +14,7 @@ body.modal-open { margin: 0px !important; }
 	* { box-sizing:border-box; }
 	&.hide { display:none; }	
     .right-align{ text-align:right;   }
-	.navbar-brand { font-weight: 100; font-size:180%; }
+	.navbar-brand { font-weight: 100; font-size:180%; margin-left:15px;}
     .modal-backdrop {
 		// -webkit-filter:	blur(10px) grayscale(.5) opacity(0.8) !important;
     }
@@ -54,15 +54,21 @@ body.modal-open { margin: 0px !important; }
 	}
     .modal-footer { vertical-align:middle;  }
     .login-btn {
-    	font-weight:bold;
     	color:#666;
-    	font-size:150%;
-    	line-height:100%;
     	position:absolute;
-		right:6px; top:5px;
-		background-color:rgba(248,248,248,1.0);
-		border:1px solid rgba(0,0,0,0);
+		right:8px; top:9px;
+		background-color:rgba(247,247,247,1.0);
+		border:1px solid rgba(0,0,0,0.1);
+		padding-top:3px; padding-bottom:8px;
 	}	
+	.box-selector {
+		margin:9px 0px 0px 9px;
+		* { font-size:88%; color:#aaa !important; }
+		.btn {
+			background-color:rgba(0,0,0,0);
+			border:1px solid rgba(0,0,0,0.1);
+		}
+	}
 	 /*
     .login_dialog, .logout_dialog {
 		* { font-weight:100 !important; }
