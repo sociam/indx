@@ -3,7 +3,7 @@
 body.modal-open { margin: 0px !important; }
 .indx-toolbar {
 	color:#aaa;
-	.login-btn, label, .modal-header, #logout-dialog h4 {
+	.login-btn, label, .modal-header {
 		font-variant:small-caps;
 		font-size:120%;
 		line-height:90%;
@@ -20,6 +20,17 @@ body.modal-open { margin: 0px !important; }
     }
     .modal {
 		// -webkit-filter:	blur(0.5px) grayscale(.5) opacity(0.9) !important;
+	}
+	#logout-dialog {
+		.buttons {
+			position:absolute;
+			right:20px; bottom:20px;
+		}
+		.logout-msg {  
+			font-size: 32pt;
+			font-weight:100;
+			padding-bottom:44px;
+		}
 	}
 	#logout-dialog .modal-header .close {
 		margin-right:-5px;
@@ -43,15 +54,15 @@ body.modal-open { margin: 0px !important; }
 	}
     .modal-footer { vertical-align:middle;  }
     .login-btn {
-    	font-weight:100;
-    	color:#aaa;
-    	font-size:130%;
+    	font-weight:bold;
+    	color:#666;
+    	font-size:150%;
     	line-height:100%;
     	position:absolute;
-		right:20px; top:5px;
+		right:6px; top:5px;
 		background-color:rgba(248,248,248,1.0);
-		border:1px solid rgba(255,255,255,0);
-	 }	
+		border:1px solid rgba(0,0,0,0);
+	}	
 	 /*
     .login_dialog, .logout_dialog {
 		* { font-weight:100 !important; }

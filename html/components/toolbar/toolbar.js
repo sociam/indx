@@ -9,6 +9,12 @@ angular
 			templateUrl:'/components/toolbar/toolbar.html',
 			link:function($scope, $element) {
 				$scope.el = $element;
+				$element.find('#login-dialog').on('shown.bs.modal', function() { 
+					$element.find('#login-username').focus(); 
+				});
+				$element.find('#logout-dialog').on('shown.bs.modal', function() { 
+					$element.find('#logout-ok').focus(); 
+				});				
 			},
 			scope: { box:"=boxVar", username:"=usernameVar" },
 			controller: function($scope, client, backbone, utils) {
@@ -17,8 +23,8 @@ angular
 				
 				var model = new Backbone.Model({visible:true});
 				var apply = function(fn) { return utils.safe_apply($scope, fn); };
-				var login_dialog = function() { return $($scope.el).find('.login_dialog'); }
-				var logout_dialog = function() { return $($scope.el).find('.logout_dialog'); }
+				var login_dialog = function() { return $($scope.el).find('#login-dialog'); }
+				var logout_dialog = function() { return $($scope.el).find('#logout-dialog'); }
 				var getStore = function() {
 					// TODO ! 
 					return client.store;

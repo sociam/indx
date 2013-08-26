@@ -8,8 +8,7 @@
 		  </div>
 		  <ul class="nav box-selector">
 			<li ui-if="is_logged_in()" class="btn-group">
-			  <button type="button" class="btn btn-default dropdown-toggle selected-box" ng-bind-html-unsafe="box || 'select a box'"
-				data-toggle="dropdown"></button>
+			  <button type="button" class="btn btn-default dropdown-toggle selected-box" ng-bind-html-unsafe="box || 'select a box'" data-toggle="dropdown"></button>
 			  <ul class="dropdown-menu boxlist" role='menu'>
 				<li ng-repeat="boxid in boxlist" ng-click="cb_box_selected(boxid)" >{{ boxid }}</li>
 			  </ul>
@@ -17,8 +16,8 @@
 		  </ul>
 	      <a data-toggle="modal" href="#login-dialog" ui-if-"!is_logged_in()" class="btn btn-primary login-btn">log in</a>
 		  <a data-toggle="modal" href="#logout-dialog" ui-if="is_logged_in()" class="btn btn-primary login-btn"> 
-			{{ username }} &nbsp; <span ng-bind-html-unsafe="usericon"></span>
-		  </button>
+			{{ username }} <span ng-bind-html-unsafe="usericon"></span>
+		  </a>
 		</div> <!-- navbar-inner -->
 	</div>
   	<!-- login dialog -->
@@ -64,13 +63,12 @@
 					<a type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</a>
 				</div>
 				<div class="modal-body">
-					<h4 class="text">log out of indx?</h4>	
-				</div>	
-				<div class="modal-footer">
-					<button class="btn" data-dismiss="modal" aria-hidden="true">No</button>
-					<button class="logoutbtn btn btn-primary" data-dismiss="modal" ng-click="do_logout()" autofocus>Yes</button>
+					<div class="logout-msg">Log out?</div>
+					<div class='buttons'>
+						<a class="btn" data-dismiss="modal" aria-hidden="true">Cancel</a>
+						<input type='submit' id="logout-ok" class="btn btn-primary" data-dismiss="modal" ng-click="do_logout()" autofocus value="Yes, log out"></button>
+					</div>
 				</div>
-			</div>
 		</div>
 	</div>
 </div>
