@@ -1,12 +1,13 @@
+/* global angular, $, console, _ */
 angular
 	.module('todos', ['ui','indx'])
 	.controller('todos', function($scope, client, utils) {
+		'use strict';
 
-		var box, u = utils, s = client.store;
+		var box,
+			u = utils;
+
 		$scope.loading = 0;
-
-		var initialise = function() {
-		};
 
 		var todos_sorted_by_time = function (todos) {
 			todos = todos.concat([]); // clone
@@ -18,11 +19,9 @@ angular
 
 		// utilities used by html5
 		$scope.to_date_string = function (d) {
-			// console.log('to date string ', d, typeof(d));
 			return (new Date(d)).toDateString();
 		};
 		$scope.to_time_string = function (d) {
-			// console.log('to time string ', d, typeof(d));
 			return (new Date(d)).toLocaleTimeString();
 		};
 
@@ -34,7 +33,7 @@ angular
 
 			u.safe_apply($scope, function() {
 				$scope.loading--;
-				u.debug("todo >> ", title);
+				u.debug('todo >> ', title);
 				u.safe_apply($scope, function() {
 					$scope.add_todo({ title: title });
 				});
@@ -47,8 +46,6 @@ angular
 			box.get_obj('my_todo_list').then(function (todo_list) {
 				var now = (new Date()).valueOf(),
 					todo_list_items = todos_sorted_by_time(todo_list.get('todos') || []);
-
-				console.log("MY TODO LIST ", todo_list_items.length, todo_list);
 
 				u.debug('minting new todo  >> ');
 				// make new readin
@@ -65,35 +62,32 @@ angular
 						.then(function() {
 							console.log('todo list save >> !!!!!!!!!!!!!!!!!!!!! ');
 							todo_list.save()
-								.then(function(h) { u.debug('updated todo list' + todo_list_items.length); })
-								.fail(function(e) { u.error('could not update todo list '); });
+								.then(function () { u.debug('updated todo list' + todo_list_items.length); })
+								.fail(function () { u.error('could not update todo list '); });
 						}).fail(function(e) { u.error('could not create new todo ' + e); });
 				});
 			});
 		};
 
-		$scope.by_time = [];
-
 		$scope.edit_todo = function (todo) {
 			if ($scope.editing_todo) { $scope.editing_todo.editing = false; }
 			$scope.editing_todo = todo;
+			todo.newAttributes = _.clone(todo.attributes);
+			if (todo.newAttributes.urgency.length) {
+				todo.newAttributes.urgency = todo.newAttributes.urgency[0]; /// YEAHHHHHHH!!!!!
+			}
 			if ($scope.editing_todo) { $scope.editing_todo.editing = true; }
 		};
 
-		$scope.select_todo = function (todo) {
-			if ($scope.selected_todo) { $scope.selected_todo.selected = false; }
-			$scope.selected_todo = todo;
-			if ($scope.selected_todo) { $scope.selected_todo.selected = true; }
+		$scope.save_todo = function (todo) {
+			todo.save(todo.newAttributes);
+			$scope.edit_todo();
 		};
 
 		$scope.toggle_todo = function (todo) {
-			todo.completed = !todo.completed;
-		}
-
-		var top_of_day = function(dlong) {
-			var dd = (new Date(dlong)).toDateString();
-			return new Date(dd).valueOf();
+			todo.save('completed', !todo.get('completed') || !todo.get('completed')[0]);
 		};
+
 		var update_todo_list_view = function(todo_list) {
 			var todos = set_defaults(todo_list.get('todos') || []),
 				groups = _.map(['For today', 'For another time'], function (group_title, i) {
@@ -101,7 +95,7 @@ angular
 					return {
 						title: group_title,
 						by_time: _.select(todos_sorted_by_time(todos), function (todo) {
-							return today ? todo.get("today") === true : todo.get("today") !== true;
+							return today ? todo.get('today') === true : todo.get('today') !== true;
 						})
 					};
 				});
@@ -109,13 +103,12 @@ angular
 			console.log('update todo list view ');
 			u.safe_apply($scope, function () {
 				$scope.todo_groups = groups;
-				console.log(' >>>> by time is ', by_time);
 			});
 		};
+
 		var update_todo_list_watcher = function() {
 			$scope.by_time = [];
 			if (!box) { u.debug('no box, skipping '); return ;}
-			console.log("UPDATE TODO LIST WATCHER >> ");
 			box.get_obj('my_todo_list').then(function (todo_list) {
 				console.log('todo list >> ', todo_list, todo_list.get('todos'));
 				todo_list.on('change', function() {
@@ -131,7 +124,8 @@ angular
 				if (!todo.get('urgency')) { todo.set('urgency', 'low'); }
 				return todo;
 			});
-		}
+		};
+
 		// watches the login stts for changes
 		$scope.$watch('selected_box + selected_user', function() {
 			if ($scope.selected_user && $scope.selected_box) {
@@ -142,7 +136,7 @@ angular
 				}).fail(function(e) { u.error('error ', e); });
 			}
 		});
-		initialise();
+
 		window.s = client.store;
 
 

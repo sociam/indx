@@ -1,0 +1,33 @@
+<div class="todo-left-overflow" ng-class="'urgency-' + todo.attributes.urgency[0]">
+	<div class="todo-urgency">{{ todo.attributes.urgency[0] }}</div>
+	<div ng-show="todo.today">Today</div>
+</div>
+<div class="todo-body">
+	<div class="todo-checkbox" ng-click="toggle_todo(todo, this)"><span class="glyphicon glyphicon-ok" ng-show="todo.attributes.completed[0]"></span></div>
+	<div class="todo-title" ng-show="!todo.editing" ng-click="toggle_todo(todo);">{{ todo.attributes.title[0] }}</div>
+	<div class="todo-title" ng-show="todo.editing"><input type="text" ng-model="todo.newAttributes.title" placeholder="todo..."></div>
+</div>
+<div class="todo-controls">
+	<button type="button" ng-show="!todo.editing" class="btn btn-default btn-sm todo-hover" ng-click="edit_todo(todo)">
+		<span class="glyphicon glyphicon-edit"></span> Edit
+	</button>
+	<button type="button" ng-show="todo.editing" class="btn btn-primary btn-sm" ng-click="save_todo(todo)">
+		<span class="glyphicon glyphicon-ok"></span> Save
+	</button>
+	<button type="button" ng-show="todo.editing" class="btn btn-default btn-sm" ng-click="edit_todo()">
+		<span class="glyphicon glyphicon-remove"></span> Cancel
+	</button>
+</div>
+<div class="todo-meta" ng-show="todo.editing">
+	<div class="btn-group">
+		<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" ng-class="'urgency-' + todo.newAttributes.urgency">
+			Urgency: {{ todo.newAttributes.urgency }} <span class="caret"></span>
+		</button>
+		<ul class="dropdown-menu" role="menu">
+			<li><a href="#" ng-click="todo.newAttributes.urgency = 'low'">Low</a></li>
+			<li><a href="#" ng-click="todo.newAttributes.urgency = 'med'">Medium</a></li>
+			<li><a href="#" ng-click="todo.newAttributes.urgency = 'high'">High</a></li>
+			<li><a href="#" ng-click="todo.newAttributes.urgency = 'urgent'">Urgent</a></li>
+		</ul>
+	</div>
+</div>
