@@ -8,9 +8,10 @@
 	<link rel="stylesheet/less" type="text/css" href="css/devtools.less">	
 	<title>INDX Developer Tools</title>
   </head>
-  <body>
-	<div ng-app="devtools" ng-controller="main" class="container" ng-cloak>
-	  <toolbar box-var='selected_box' username-var='selected_user'></toolbar>
+  <body ng-app="devtools" ng-controller="main"  ng-cloak>
+    <toolbar box-var='selected_box' username-var='selected_user'></toolbar>
+	<div>
+
 	  <div ng-show="selected_user && selected_box" class="foo row-fluid tabbable">
 		<div class="foo span12">
 		  <ul class="nav nav-pills">
