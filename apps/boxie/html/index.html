@@ -1,0 +1,59 @@
+<html>
+  <head>
+	<link href="/css/bootstrap.css" rel="stylesheet">
+	<link href="/css/angular-ui.css" rel="stylesheet">
+	<link href="/css/select2.css" rel="stylesheet"/>
+	<link rel="stylesheet/less" type="text/css" href="/components/toolbar/toolbar.less">
+	<link rel="stylesheet/less" type="text/css" href="css/boxie.less">
+	<title>BOXXIE Box Explorer</title>
+  </head>
+  <body>
+	<div ng-app="boxie" ng-controller="boxie" ng-cloak>
+		<toolbar box-var='selected_box' username-var='selected_user'></toolbar>
+
+
+		<div class="container">
+			<div ng-show="!selected_user">
+				<h2> please log in to load your box </h2>
+			</div>
+			<div ng-show="selected_user && !selected_box">
+				<h2> please select a box  </h2>
+			</div>
+		</div>
+
+		<div class="boxie-container" ng-show="selected_user && selected_box">
+			<div class="boxie-titlebar">
+				<h2 class="title">BOXIE</h2>
+				<h3>Box explorer</h3>
+			</div>
+
+			<div class="object-list">
+				<ul>
+					<li ng-repeat="obj in objs" ng-include="'obj.html'" ng-click="an_obj_to_contain_the_selected_obj.selected_obj = obj"></li>
+				</ul>
+			</div>
+
+			<ul class="boxie-footer">
+			</ul>
+		</div>
+
+		<div class="fullpane" >
+			<pre>{{ an_obj_to_contain_the_selected_obj.selected_obj.get('val-string') }}</pre>
+		</div>
+	</div>
+  </body>
+  <script src="/js/vendor/lesscss.min.js" type="text/javascript"></script>
+  <script src="/js/vendor/jquery.min.js" type="text/javascript"></script>
+  <script src="/js/vendor/underscore.min.js" type="text/javascript"></script>
+  <script src="/js/vendor/backbone.min.js" type="text/javascript"></script>
+  <script src="/js/vendor/bootstrap.min.js" type="text/javascript"></script>
+  <!-- angular -->
+  <script src="/js/vendor/angular.min.js" type="text/javascript"></script>
+  <script src="/js/vendor/angular-ui.js" type="text/javascript"></script>
+
+  <!-- indx -->
+  <script src="/js/indx.js" type="text/javascript"></script>
+  <script src="/js/indx-utils.js" type="text/javascript"></script>
+  <script src="/components/toolbar/toolbar.js" type="text/javascript"></script>
+  <script src="js/boxie.js" type="text/javascript"></script>
+</html>
