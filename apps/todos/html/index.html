@@ -11,35 +11,57 @@
 	<div ng-app="todos" ng-controller="todos" ng-cloak>
 		<toolbar box-var='selected_box' username-var='selected_user'></toolbar>
 
-
 		<div class="container">
-			<div ng-show="!selected_user">
-				<h2> please log in to load your todo list </h2>
+			<div ng-show="!selected_user" class="need-log-in">
+				<div class="white-cover"></div>
+				<div class="center-title"><h2 class="alert alert-info">Please log in to load your todo list</h2></div>
+				<div class="instruct-arrow">
+					<div class="arrow-horiz">
+						<div class="arrow-horiz-line"></div>
+					</div>
+					<div class="arrow-vert">
+						<div class="arrow-vert-line"></div>
+						<div class="arrow-head-up"></div>
+					</div>
+				</div>
 			</div>
-			<div ng-show="selected_user && !selected_box">
-				<h2> please select a box  </h2>
+			<div ng-show="selected_user && !selected_box" class="need-select-box">
+				<div class="white-cover"></div>
+				<div class="center-title"><h2 class="alert alert-info">Please select a box</h2></div>
+				<div class="instruct-arrow">
+					<div class="arrow-horiz">
+						<div class="arrow-horiz-line"></div>
+					</div>
+					<div class="arrow-vert">
+						<div class="arrow-vert-line"></div>
+						<div class="arrow-head-up"></div>
+					</div>
+				</div>
 			</div>
 		</div>
 
 		<div class="todos-container" ng-show="selected_user && selected_box">
 			<div class="todos-titlebar">
 				<h2 class="title">Todo list</h2>
-				<div class="title-controls" hidden>
-					<div class="search"><input type="text"></div>
+				<div class="title-controls">
 					<div class="sortby">
-						<select>
-							<option value="urgency" selected>Urgency</option>
-							<option value="time">Created</option>
-						</select>
+						<div class="btn-group">
+							<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+								Sort by: {{ todo_sorter.key }} <span class="caret"></span>
+							</button>
+							<ul class="dropdown-menu" role="menu">
+								<li><a href="#" ng-click="todo_sorter.key = sorter.key" ng-repeat="sorter in sorters">{{ sorter.name }}</a></li>
+							</ul>
+						</div>
 					</div>
 				</div>
 			</div>
 
 			<div class="todo-list">
-				<section ng-repeat="todo_group in todo_groups" ng-show="todo_group.by_time.length > 0">
-					<h3 ng-show="todo_groups[0].by_time.length > 0">{{ todo_group.title }}</h3>
+				<section ng-repeat="todo_group in todo_groups" ng-show="todo_group.todos.length > 0">
+					<h3 ng-show="todo_groups[0].todos.length > 0">&bullet; {{ todo_group.title }} &bullet;</h3>
 					<ul>
-						<li ng-repeat="todo in todo_group.by_time" class="todo-item" ng-class="{ completed: todo.attributes.completed[0], editing: todo.editing }" ng-include="'todo.html'" ng-show="!todo.attributes.completed[0] || todo.attributes.completed[0] && show_completed"></li>
+						<li ng-repeat="todo in todo_group.sorted_by[todo_sorter.key]" class="todo-item" ng-class="{ completed: todo.attributes.completed[0], editing: is_editing(todo) }" ng-include="'todo.html'" ng-show="!todo.attributes.completed[0] || todo.attributes.completed[0] && show_completed"></li>
 
 					</ul>
 				</section>
