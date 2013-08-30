@@ -7,34 +7,34 @@ from fitbit import FitbitIntraDay
 from datetime import datetime, date, time, timedelta
 
 parser = argparse.ArgumentParser(description = "Use the Fitbit API to push data into INDX")
-# parser.add_argument('user', type=str, help="INDX username, e.g. indx")
 # parser.add_argument('address', type=str, help="Address of the INDX server, e.g. http://indx.example.com:8211/")
+# parser.add_argument('user', type=str, help="INDX username, e.g. indx")
+# parser.add_argument('passwd', type=str, help="INDX password for the given username")
 # parser.add_argument('box', type=str, help="Box to assert tweets into")
-# parser.add_argument('from_date', type = str, help = "Start date, like: 2012-03-14")
-# parser.add_argument('to_date', type = str, help = "End date, like: 2012-03-14")
-parser.add_argument('--appid', type=str, default="Data Pusher", help="Override the appid used for the INDX assertions")
-parser.add_argument('--debug', default = False, action="store_true", help = "Turn on verbose debugging")
+# parser.add_argument('--appid', type=str, default="Data Pusher", help="Override the appid used for the INDX assertions")
+# parser.add_argument('--debug', default = False, action="store_true", help = "Turn on verbose debugging")
 args = vars(parser.parse_args())
 
-if args['debug']:
-    logging.basicConfig(level = logging.DEBUG)
-else:
-    logging.basicConfig(level=logging.INFO)
+# if args['debug']:
+#     logging.basicConfig(level = logging.DEBUG)
+# else:
+#     logging.basicConfig(level=logging.INFO)
 
 # set up connection to INDX
 # password = getpass.getpass()
-# indx = IndxClient(args['address'], args['box'], args['user'], password, args['appid'])
+# indx = IndxClient(args['address'], args['box'], args['user'], args['passwd'], "Fitbit Connector")
 
 # set up connection to Fitbit
 consumer_key = "9cc7928d03fa4e1a92eda0d01ede2297"
 consumer_secret = "340ea36a974e47738a335c0cccfe1fcf"
-access_token_key = "66381d348f3118edb2433ae820b8a43c"
-access_token_secret = "3b98143639035cc93d0d5b25b043bf42"
 
-fitbit = Fitbit(consumer_key, consumer_secret, access_token_key, access_token_secret)
+# fitbit = Fitbit(consumer_key, consumer_secret, access_token_key, access_token_secret)
+fitbit = Fitbit(consumer_key, consumer_secret)
 if (fitbit.token == None):
-	fitbit.get_token()
-fitbit_ts = FitbitTimeseries(fitbit)
+	gotourl = fitbit.get_token_url()
+	pin = raw_input("Please input you PIN: ")
+	fitbit.get_token_with_pin(pin)
+
 fitbit_min = FitbitIntraDay(fitbit)
 
 # def get_fitbit_data():
@@ -76,10 +76,11 @@ def write_observation(obs):
 
 if __name__ == '__main__':
 	# get_fitbit_data()
-	start = datetime(2013, 8, 14, 00, 00)
-	end = datetime(2013, 8, 14, 23, 59)
+	start = datetime(2013, 8, 13, 23, 55)
+	end = datetime(2013, 8, 14, 0, 5)
 	response = fitbit_min.get_steps(start, end)
-	transform_fitbit_response(response)
+	print response
+	# transform_fitbit_response(response)
 
 
 
