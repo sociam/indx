@@ -1,22 +1,45 @@
 
 @import url('/components/toolbar/spinner.less');
-
+body.modal-open { margin: 0px !important; }
 .indx-toolbar {
-	.hide { display:none; }
+	color:#aaa;
+	.login-btn, label, .modal-header {
+		font-variant:small-caps;
+		font-size:120%;
+		line-height:90%;
+		font-weight:100;
+	}
 	position:relative;
+	margin:0px 0px 0px 0px !important;
 	* { box-sizing:border-box; }
-	margin-top:5px;
-    .brand {
-		position:relative;
-		margin-left:0px !important;
-    }
+	&.hide { display:none; }	
     .right-align{ text-align:right;   }
+	.navbar-brand { font-weight: 100; font-size:180%; margin-left:15px;}
     .modal-backdrop {
 		// -webkit-filter:	blur(10px) grayscale(.5) opacity(0.8) !important;
     }
     .modal {
 		// -webkit-filter:	blur(0.5px) grayscale(.5) opacity(0.9) !important;
-    }
+	}
+	#logout-dialog {
+		.buttons {
+			position:absolute;
+			right:20px; bottom:20px;
+		}
+		.logout-msg {  
+			font-size: 32pt;
+			font-weight:100;
+			padding-bottom:44px;
+		}
+	}
+	#logout-dialog .modal-header .close {
+		margin-right:-5px;
+		margin-top:-10px;
+	}
+	label {
+		font-weight:100;
+		font-variant:normal;
+	}
 	.navbar .nav .dropdown-toggle .caret {
 		margin-top:8px;
 		margin-bottom:8px;
@@ -30,7 +53,23 @@
 		}
 	}
     .modal-footer { vertical-align:middle;  }
-    .login_logout_btn { position:absolute; right:20px; }
+    .login-btn {
+    	color:#666;
+    	position:absolute;
+		right:8px; top:9px;
+		background-color:rgba(247,247,247,1.0);
+		border:1px solid rgba(0,0,0,0.1);
+		padding-top:3px; padding-bottom:8px;
+	}	
+	.box-selector {
+		margin:9px 0px 0px 9px;
+		* { font-size:88%; color:#aaa !important; }
+		.btn {
+			background-color:rgba(0,0,0,0);
+			border:1px solid rgba(0,0,0,0.1);
+		}
+	}
+	 /*
     .login_dialog, .logout_dialog {
 		* { font-weight:100 !important; }
        .btn { font-weight:200 !important; }
@@ -70,5 +109,6 @@
 			margin:-10px 6px -10px 10px;
 			opacity:0.7;
 		}
-    }    
+    } 
+    */
 }

@@ -9,6 +9,12 @@ angular
 			templateUrl:'/components/toolbar/toolbar.html',
 			link:function($scope, $element) {
 				$scope.el = $element;
+				$element.find('#login-dialog').on('shown.bs.modal', function() { 
+					$element.find('#login-username').focus(); 
+				});
+				$element.find('#logout-dialog').on('shown.bs.modal', function() { 
+					$element.find('#logout-ok').focus(); 
+				});				
 			},
 			scope: { box:"=boxVar", username:"=usernameVar" },
 			controller: function($scope, client, backbone, utils) {
@@ -17,8 +23,8 @@ angular
 				
 				var model = new Backbone.Model({visible:true});
 				var apply = function(fn) { return utils.safe_apply($scope, fn); };
-				var login_dialog = function() { return $($scope.el).find('.login_dialog'); }
-				var logout_dialog = function() { return $($scope.el).find('.logout_dialog'); }
+				var login_dialog = function() { return $($scope.el).find('#login-dialog'); }
+				var logout_dialog = function() { return $($scope.el).find('#logout-dialog'); }
 				var getStore = function() {
 					// TODO ! 
 					return client.store;
@@ -28,7 +34,9 @@ angular
 				toolbar.off = function(msg, fn) {  return model.off(msg,fn); };
 				toolbar.setVisible = function(b) { model.set('visible', b); };
 				toolbar.get_selected_box = function() { return; };
-				toolbar.is_logged_in = function() { return false; };
+				toolbar.is_logged_in = function() { 
+					return $scope.username !== undefined;
+				};
 
 				var get_last_used_box = function() {
 					return localStorage["indx__last_used_box::" + document.location.toString()];
@@ -56,13 +64,16 @@ angular
 					// hook up scope to model changes
 					$scope.$watch(k, function() { model.trigger('change:'+k, $scope[k]); });
 				});
+
+				$scope.usericon = "<span class='glyphicon glyphicon-user'></span>"; // TODO.
+				$scope.caret = "<span class='caret'></span>";
 				
 				$scope.incr_loading = function () {	$scope.loading++; };
 				$scope.decr_loading = function () {	$scope.loading = Math.max(0,$scope.loading-1); };
 				
 				toolbar.get_selected_box = function() { return  $scope.box; };
 				toolbar.is_logged_in = function() { return $scope.is_logged_in(); };
-				
+
 				$scope.cb_login_clicked = function() {
 					login_dialog().modal({ show: true, keyboard:true });
 					login_dialog().on('shown', function() { login_dialog().find('.login_username').focus(); });
