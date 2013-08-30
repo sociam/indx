@@ -1,6 +1,6 @@
 angular
     .module('fitbit', ['ui','indx'])
-    .controller('main', function($scope, client, utils) {
+    .controller('fitbit', function($scope, client, utils) {
 
         var box, u = utils, s = client.store;
         $scope.loading = 0;
@@ -91,7 +91,7 @@ angular
                     $("#step-text").text("INDX was never synced with Fitbit. Click the button below if you would like to start the download now.");
                 }
                 else {
-                    $("#step-text").text("The last sync was on "+config.up_to_date+". Click the button below if you would like to start the download now.");
+                    $("#step-text").text("The last sync was on "+config.get("up_to_date")+". Click the button below if you would like to start the download now.");
                 }
                 $("#step-text").show();
                 $("#step-btn-download").show();
