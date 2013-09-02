@@ -17,8 +17,8 @@
 	</div>
 	<div class="todo-meta" ng-show="is_editing(todo)">
 		<div class="btn-group">
-			<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" ng-class="'urgency-' + todo.newAttributes.urgency">
-				Priority: {{ pop(todo.newAttributes.urgency) }} <span class="caret"></span>
+			<button type="button" class="btn btn-default dropdown-toggle btn-sm" data-toggle="dropdown" ng-class="'urgency-' + todo.newAttributes.urgency">
+				<span class="glyphicon glyphicon-warning-sign"></span> {{ pop(todo.newAttributes.urgency) }} <span class="caret"></span>
 			</button>
 			<ul class="dropdown-menu" role="menu">
 				<li><a href="#" ng-click="todo.newAttributes.urgency = 'low'">Low</a></li>
@@ -27,11 +27,14 @@
 				<li><a href="#" ng-click="todo.newAttributes.urgency = 'urgent'">Urgent</a></li>
 			</ul>
 		</div>
-		<button type="submit" ng-show="is_editing(todo)" class="btn btn-primary" ng-click="save_todo(todo)">
+		<button type="submit" ng-show="is_editing(todo)" class="btn btn-primary btn-sm" ng-click="save_todo(todo)">
 			<span class="glyphicon glyphicon-ok"></span> Save
 		</button>
-		<button type="button" ng-show="is_editing(todo)" class="btn btn-default" ng-click="edit_todo()">
+		<button type="button" ng-show="is_editing(todo)" class="btn btn-default btn-sm" ng-click="edit_todo()">
 			<span class="glyphicon glyphicon-remove"></span> Cancel
+		</button>
+		<button type="button" ng-show="is_editing(todo)" class="btn btn-danger btn-sm" ng-click="delete_todo(todo)">
+			<span class="glyphicon glyphicon-minus"></span> Delete
 		</button>
 	</div>
 </form>

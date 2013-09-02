@@ -12,7 +12,6 @@ angular
 		var to_date_string = function (d) { return (new Date(d)).toDateString(); };
 		var to_time_string = function (d) { return (new Date(d)).toLocaleTimeString(); };
 
-		// called by the refresh button
 		var create_todo = function() {
 			var title = $('#todo_title').val();
 
@@ -25,37 +24,41 @@ angular
 			});
 		};
 
-
+		var get_todo_list = function () {
+			var promise = $.Deferred();
+			if (!box) { u.debug('no box, skipping '); return; }
+			box.get_obj('my_todo_list').then(function (todo_list) {
+				var todo_list_items = todo_list.get('todos') || [];
+				promise.resolve(todo_list, todo_list_items);
+			});
+			return promise;
+		};
 
 		var add_todo = function (todo) {
 			var promise = $.Deferred();
 			console.log('add todo');
-			if (!box) { u.debug('no box, skipping '); return ;}
-			box.get_obj('my_todo_list').then(function (todo_list) {
-				var now = (new Date()).valueOf(),
-					todo_list_items = todos_sorted_by_time(todo_list.get('todos') || []);
 
-				u.debug('minting new todo  >> ');
-				// make new readin
-				box.get_obj('my-todo-' + (new Date()).valueOf()).then(function (o) {
-					console.log('todo ', todo);
+			get_todo_list().then(function (todo_list, todo_list_items) {
+				todo_list_items = todos_sorted_by_time(todo_list_items);
+
+				var now = (new Date()).valueOf();
+
+				// make new todo
+				box.get_obj('my-todo-' + now).then(function (o) {
 					o.set({
 						timestamp : now,
 						title: todo.title,
-						urgency: 'urgent'
+						urgency: todo.urgency
 					});
 					todo_list_items.push(o);
-					todo_list.set({'todos' : todo_list_items });
-					o.save()
-						.then(function() {
-							console.log('todo list save >> !!!!!!!!!!!!!!!!!!!!! ');
-							todo_list.save()
-								.then(function () {
-									u.debug('updated todo list' + todo_list_items.length);
-									promise.resolve(o);
-								})
-								.fail(function () { u.error('could not update todo list '); });
-						}).fail(function(e) { u.error('could not create new todo ' + e); });
+					todo_list.set({ 'todos' : todo_list_items });
+					$scope.new_todo = o;
+					console.log('saving todo');
+					o.save().then(function () {
+						save_todo_list(todo_list, todo_list_items).then(function () {
+							promise.resolve(o);
+						});
+					}).fail(function(e) { u.error('could not create new todo ' + e); });
 				});
 			});
 			return promise;
@@ -73,13 +76,48 @@ angular
 			}
 		};
 
+		var save_todo_list = function (todo_list, todo_list_items) {
+			var promise = $.Deferred();
+			console.log('saving todo list');
+			todo_list.save().then(function () {
+				u.debug('updated todo list ' + todo_list_items.length);
+				promise.resolve();
+			}).fail(function () { u.error('could not update todo list '); });
+			return promise;
+		};
+
+		var delete_todo = function (todo) {
+			var promise = $.Deferred();
+			console.log('delete todo');
+
+			get_todo_list().then(function (todo_list, todo_list_items) {
+				todo_list_items = todos_sorted_by_time(todo_list_items);
+				todo_list_items = _.reject(todo_list_items, function (item) {
+					console.log(item, todo)
+					return item.id === todo.id;
+				});
+
+				todo.destroy().then(function () {
+					save_todo_list(todo_list, todo_list_items).then(function () {
+						promise.resolve();
+					});
+				});
+			});
+			return promise;
+		};
+
 		var is_editing = function (todo) {
 			return $scope.editing_todo && todo.id === $scope.editing_todo.id;
+		};
+
+		var is_new = function (todo) {
+			return $scope.new_todo && todo.id === $scope.new_todo.id;
 		};
 
 		var save_todo = function (todo) {
 			todo.save(todo.newAttributes);
 			$scope.edit_todo();
+			$scope.new_todo = undefined;
 		};
 
 		var toggle_todo = function (todo) {
@@ -121,7 +159,7 @@ angular
 
 		var set_defaults = function (todos) {
 			return _.map(todos, function (todo) {
-				//if (!todo.get('urgency')) { todo.set('urgency', 'low'); }
+				if (!todo.get('urgency')) { todo.set('urgency', 'low'); }
 				//if (!todo.get('title')) { todo.set('title', ''); }
 				return todo;
 			});
@@ -148,7 +186,10 @@ angular
 		};
 
 		var todos_sorted_by_time = function (todos) {
-			return _.sortBy(todos, sorters.date.sort);
+			return _.sortBy(todos, function (todo) {
+				if (is_new(todo)) { return -1; }
+				return sorters[2].sort;
+			});
 		};
 
 		var pop = function (arr) {
@@ -157,7 +198,8 @@ angular
 		};
 
 		var priority_number = function (priority) {
-			return priority === 'low' ? 0 :
+			return priority === 'done' ? -1 :
+				priority === 'low' ? 0 :
 				priority === 'med' ? 1 :
 				priority === 'high' ? 2 : 3;
 		};
@@ -180,9 +222,12 @@ angular
 			add_todo: add_todo,
 			edit_todo: edit_todo,
 			save_todo: save_todo,
+			delete_todo: delete_todo,
 			toggle_todo: toggle_todo,
 			editing_todo: undefined,
+			new_todo: undefined,
 			is_editing: is_editing,
+			is_new: is_new,
 			pop: pop,
 			sorters: sorters,
 			todo_sorter: { key: sorters[0].key, asc: true }
