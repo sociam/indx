@@ -1,0 +1,55 @@
+<html>
+    <head>
+        <link href="/css/bootstrap.css" rel="stylesheet">
+        <link href="/css/angular-ui.css" rel="stylesheet">
+        <link href="/css/select2.css" rel="stylesheet"/>
+        <link rel="stylesheet/less" type="text/css" href="/components/toolbar/toolbar.less">
+        <link rel="stylesheet/less" type="text/css" href="/components/modeltable/modeltable.less"/>	
+        <link rel="stylesheet" href="css/main.css">
+        <title>Fitbit Connector</title>
+    </head>
+    <body>
+        <div class="container" ng-app="fitbit" ng-controller='fitbit'>
+          <toolbar box-var='selected_box' username-var='selected_user'></toolbar>
+
+            <h2>Download Fitbit Data</h2>
+            <div class="container">
+                <div ng-show="!selected_user">
+                    <p>Login to INDX to start the download process.</p>
+                </div>
+                <div ng-show="selected_user && !selected_box">
+                    <p>Please select a box where to download your Fitbit data.</p>
+                </div>      
+            </div>
+            <div ng-show="selected_user && selected_box">
+                <div class="row" id="step-div">
+                    <div class="span12">
+                        <p id="step-text">The first step is to authorise INDX to access your Fitbit data.</p>
+                        <p id="step-authurl">Please <a id="step-authurl-a" target="_blank">click here</a> to log in to Fitbit and authorize the Fitbit Connector app.</p>
+                        <p id="step-pin">Once you have authorized the app, please copy and paste the PIN in the box:<br/>
+                        <input type="text" name="pin" id="pin"></input></p>
+                        <p id="step-btn-pin" ng-class="{authorise_app_pin:true}" ng-click="authorise_app_pin()"><input type="button" value="Set PIN"/></p>
+                        <p id="step-btn-download" ng-class="{start_download:true}" ng-click="start_download()"><input type="button" value="Download data"/></p>
+                        <p id="step-load"><img src="img/load.gif" /></p>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div> 
+
+    <script src="/js/vendor/lesscss.min.js" type="text/javascript"></script>  
+    <script src="/js/vendor/jquery.min.js" type="text/javascript"></script> 
+    <script src="/js/vendor/underscore.min.js" type="text/javascript"></script>
+    <script src="/js/vendor/backbone.min.js" type="text/javascript"></script>
+    <script src="/js/vendor/bootstrap.min.js" type="text/javascript"></script>
+    <!-- angular --> 
+    <script src="/js/vendor/angular-beta.min.js" type="text/javascript"></script>
+    <script src="/js/vendor/angular-ui.js" type="text/javascript"></script>
+    <!-- indx --> 
+    <script src="/js/indx.js" type="text/javascript"></script>
+    <script src="/js/indx-utils.js" type="text/javascript"></script>
+    <script src="/components/toolbar/toolbar.js" type="text/javascript"></script>
+    <script src="js/fitbit.js"></script>
+
+    </body>
+</html>
