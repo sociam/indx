@@ -40,9 +40,32 @@
 			</div>
 		</div>
 
-		<div class="todos-container" ng-show="selected_user && selected_box">
+		<div class="todo-lists-toolbar">
+			<div class="btn-group">
+				<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+					{{ curr_todo_list.title }} <span class="caret"></span>
+				</button>
+				<ul class="dropdown-menu" role="menu">
+					<li ng-repeat="todo_list in todo_lists.models" ng-click="todo_list.show()"><a href="#">{{ pop(todo_list.get('title')) }}</a></li>
+				</ul>
+			</div>
+			<button ng-click="create_todo_list()">Create Todo List</button>
+		</div>
+
+		<div class="todos-container" ng-show="selected_user && selected_box && curr_todo_list">
 			<div class="todos-titlebar">
-				<h2 class="title">Todo list</h2>
+				<h2 class="title" ng-show="!curr_todo_list.is_editing()" ng-click="curr_todo_list.edit()">{{ pop(curr_todo_list.get('title')) }}</h2>
+				<div  ng-show="curr_todo_list.is_editing()">
+					<h2 class="title"><input type="text" placeholder="Title" ng-model="curr_todo_list.newAttributes.title"></h2>
+
+					<button type="submit" class="btn btn-primary btn-sm" ng-click="curr_todo_list.stage_and_save()">
+						<span class="glyphicon glyphicon-ok"></span> Save
+					</button>
+					<button type="button" class="btn btn-default btn-sm" ng-click="curr_todo_list.restore()">
+						<span class="glyphicon glyphicon-remove"></span> Cancel
+					</button>
+				</div>
+
 				<div class="title-controls">
 					<div class="sortby">
 						<div class="btn-group">
@@ -58,17 +81,16 @@
 			</div>
 
 			<div class="todo-list">
-				<section ng-repeat="todo_group in todo_groups" ng-show="todo_group.todos.length > 0">
-					<h3 ng-show="todo_groups[0].todos.length > 0">&bullet; {{ todo_group.title }} &bullet;</h3>
+				<section ng-repeat="todo_group in curr_todo_list.todos_by_group" ng-show="todo_group.todos.length > 0">
+					<h3 ng-show="curr_todo_list.todos_by_group[0].todos.length > 0">&bullet; {{ todo_group.title }} &bullet;</h3>
 					<ul>
 						<li ng-repeat="todo in todo_group.sorted_by[todo_sorter.key]" class="todo-item" ng-class="{ completed: todo.attributes.completed[0], editing: is_editing(todo) }" ng-include="'todo.html'" ng-show="!todo.attributes.completed[0] || todo.attributes.completed[0] && show_completed"></li>
-
 					</ul>
 				</section>
 			</div>
 
 			<ul class="todos-footer">
-				<li class="todo-create"><a href="#" ng-click="create_todo()">New todo...</a></li>
+				<li class="todo-create"><a href="#" ng-click="curr_todo_list.new_todo()">New todo...</a></li>
 				<li class="todo-toolbar">
 					<a href="#" ng-click="show_completed = true;" ng-show="!show_completed">View completed todos</a>
 					<a href="#" ng-click="show_completed = false;" ng-show="show_completed">Hide completed todos</a>
