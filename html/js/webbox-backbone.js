@@ -485,7 +485,7 @@
 					u.when(added_propval_dfds.concat(deleted_propval_dfds)).then(function() {
 						// u.debug("triggering changed properties ", changed_properties);
 						changed_properties.map(function(k) {
-							cached_obj.trigger('change:'+k, (cached_obj.get(k) || []).slice());
+							cached_obj.trigger('change:'+k, ycached_obj, (ycached_obj.get(k) || []).slice());
 							u.debug("trigger! change:"+k);
 						});
 						cdfd.resolve(cached_obj);
