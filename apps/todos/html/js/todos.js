@@ -7,63 +7,140 @@ angular
 		var box,
 			u = utils;
 
-
 		var editable_item = {
-				edit: function () {
+				create: function () {
+					var that = this;
+					console.log('creating item');
+					box.get_obj(this.id).then(function (new_obj) {
+						console.log('new item');
+						new_obj.save(that.newAttributes).then(function () {
+							console.log('saved');
+							that.trigger('created', new_obj);
+						});
+					});
+					return this;
+				},
+				remove: function () { console.warn('remove: override this'); },
+				edit: function (is_new) {
 					console.log('edit');
 					this.newAttributes = _.clone(this.attributes);
+					this._is_new = is_new;
 					this._is_editing = true;
+					return this;
 				},
 				stage_and_save: function () {
 					var that = this;
-					this.save(this.newAttributes).then(function () {
-						console.log('saved');
-						that.restore();
-						u.safe_apply($scope);
-					});
+					console.log('stage and save');
+					if (this.is_new()) {
+						console.log('new, so create');
+						return this.create();
+					} else {
+						this.save(this.newAttributes).then(function () {
+							console.log('saved');
+							that.restore();
+							u.safe_apply($scope);
+						});
+					}
 				},
-				restore: function () { this._is_editing = false; },
+				restore: function () {
+					this._is_editing = false;
+					this.trigger('restore');
+				},
 				is_editing: function () { return this._is_editing; },
-				is_new: function () { return false; }
+				is_new: function () { return this._is_new; }
 			},
 			EditableList = Backbone.Collection.extend({
 				item_prototype: editable_item,
-				add: function (model) {
+				initialize: function (models) {
+					var that = this;
+					this.on('add', function () {
+						console.log('add...');
+						that.save();
+					});
+					this.on('add remove reset', function () {
+						that.set_new_model(that._new_model);
+					});
+					console.log('this is should call first!');
+					this.reset(models);
+					this.set_new_model();
+				},
+				new_model: function (attributes) {
+					var that = this,
+						model = new Backbone.Model(attributes);
+					this.extend_model(model);
+					model
+						.edit(true)
+						.set({ timestamp: now() })
+						.on('created', function (model) {
+							console.log('going for the add');
+							that.add(model);
+							that.set_new_model();
+						})
+						.on('restore', function () {
+							that.set_new_model();
+						});
+					console.log('new model',this._new_model, model);
+					console.log('old', this.all_models.length);
+					this.set_new_model(model);
+					console.log('new', this.all_models.length);
+					//this.reset(this.models); // TODO: ANGULAR GRR's
+					return model;
+				},
+				set_new_model: function (model) {
+					this._new_model = model;
+					this.all_models = model ? this.models.concat([ model ]) : this.models;
+					console.log('update!"!!!', this.models.length, this.all_models.length)
+					this.trigger('update', this);
+				},
+				extend_model: function (model) {
+					_.extend(model, this.item_prototype);
+					if (this.item_prototype.initialize) {
+						this.item_prototype.initialize.apply(model);
+					}
+					if (this.item_prototype.defaults) {
+						_.defaults(model.attributes, this.item_prototype.defaults);
+					}
+				},
+				add: function (model, options) {
 					var that = this;
 					if (_.isArray(model)) {
-						_.each(model, function (model) { that.add(model); });
+						_.each(model, function (model) { that.add(model, options); });
 					} else {
-						_.extend(model, this.item_prototype);
-						if (this.item_prototype.initialize) { this.item_prototype.initialize.apply(model); }
+						if (!_.isObject(model)) { console.error('There was a non-object stored??', model); return; }
+						this.extend_model(model);
 						return Backbone.Collection.prototype.add.apply(this, arguments);
 					}
-				}
+				},
+				save: function () { console.log('save: override this'); }
 			});
 
-
-		var todo_list_prototype = _.extend({
+		var todo_list_prototype = _.extend({}, editable_item, {
+				defaults: { title: 'Todo list' },
 				initialize: function () {
 					var that = this;
+					console.log('curr todos', this.get('todos'));
 					this.todos = new TodoListItems(this.get('todos'), { todo_list: this });
 					that.update_todo_list();
 					this.on('change:todos', function () {
+						console.log('woah, stuff is changing!');
 						that.todos.reset(that.get('todos'));
+					});
+					console.log('@DWS', this.todos.models.length, this.todos.all_models.length)
+					this.todos.on('update change', function () {
+						console.log('kk', that);
 						that.update_todo_list();
 					});
-					this.todos.on('add remove', function () {
-						that.update_todo_list();
+					this.todos.on('add', function (todo) {
+						that.save_todo_list(todo);
 					});
-					EditableList.prototype.initialize.apply(this, arguments);
 				},
-				create_todo: function (todo) {
+				save_todo_list: function () {
 					var that = this,
 						promise = $.Deferred();
-					this.fetch().then(function () {
-						that.todos.add(todo);
-						that.save('todos', that.todos.models).then(function () {
-							that.update_todo_list();
-							promise.resolve();
-						});
+					console.log('save todo list');
+					that.save('todos', that.todos.models).then(function () {
+						that.update_todo_list();
+						promise.resolve();
 					});
 					return promise;
 				},
@@ -88,10 +165,11 @@ angular
 					var that = this;
 					this.todos_by_group = _.map(['For today', 'For another time'], function (group_title, i) {
 						var today = i === 0 ? true : false,
-							filtered_todos = that.todos.filter(function (todo) {
+							filtered_todos = _(that.todos.all_models).filter(function (todo) {
 								var t = pop(todo.get('today'));
 								return today ? t === true : t !== true;
 							});
+						console.log('FILTERED TODOS', that.todos.all_models)
 						return {
 							title: group_title,
 							todos: filtered_todos,
@@ -108,34 +186,16 @@ angular
 				new_todo: function () {
 					var that = this,
 						id = 'todo-item-' + now(),
-						todo = new Backbone.Model({ id: id });
-					this.todos.add(todo); // placeholder
-					_.extend(todo, {
-						is_editing: function () { return true; },
-						is_new: function () { return true; },
-						stage_and_save: function () {
-							this.set(this.newAttributes);
-							console.log('creating todo');
-							box.get_obj(id).then(function (new_todo) {
-								new_todo.set({
-									timestamp: now(),
-									title: todo.get('title'),
-									urgency: todo.get('urgency')
-								});
-								console.log('adding todo');
-								that.todos.remove(todo); // remove placeholder
-								that.create_todo(new_todo).then(function () {
-									console.log('saving new todo', new_todo);
-									new_todo.save().then(function () {
-										console.log('created new todo', new_todo);
-									});
-								});
-							});
-						},
-						restore: function () { that.todos.remove(todo); }
+						todo = this.todos.new_model({ id: id });
+
+					todo.on('restore', function () {
+						if (todo.is_new()) { that.todos.remove(todo); }
 					});
+				},
+				is_shown: function () {
+					return $scope.curr_todo_list === this;
 				}
-			}, editable_item),
+			}),
 
 			TodoLists = EditableList.extend({
 				item_prototype: todo_list_prototype,
@@ -146,6 +206,10 @@ angular
 					box.get_obj('todo_app').then(function (todo_app) {
 						var todo_lists = todo_app.get('todo_lists') || [];
 						that.reset(todo_lists);
+						todo_app.on('change:todo_lists', function (todo_app, todo_lists) {
+							console.log('updating lists -->', arguments);
+							that.reset(todo_lists);
+						});
 						console.log('lists --> ', todo_lists);
 						promise.resolve(that);
 					});
@@ -154,6 +218,7 @@ angular
 				save: function () {
 					var that = this,
 						promise = $.Deferred();
+					console.log('save todo lists ...');
 					box.get_obj('todo_app').then(function (todo_app) {
 						console.log('trying to save todo lists = ', that.models);
 						todo_app.save('todo_lists', that.models).then(function () {
@@ -165,47 +230,8 @@ angular
 			}),
 			todo_lists = new TodoLists();
 
-
-		var initialize = function () {
-			todo_lists.fetch().then(function () {
-				u.safe_apply($scope);
-			});
-		};
-
-
-		var create_todo_list = function () {
-			$scope.curr_todo_list = new Backbone.Model();
-			_.extend($scope.curr_todo_list, {
-				is_editing: function () { return true; },
-				stage_and_save: function () {
-					var that = this;
-					this.set(this.newAttributes);
-					box.get_obj('todo-list-' + now()).then(function (new_todo_list) {
-						new_todo_list.set({
-							timestamp: now(),
-							title: that.get('title')
-						});
-						console.log('fetching todo lists');
-						todo_lists.fetch().then(function () {
-							console.log('add new todo list');
-							todo_lists.add(new_todo_list);
-							console.log('save new todo list');
-							new_todo_list.save().then(function () {
-								console.log('save lists');
-								todo_lists.save().then(function () {
-									$scope.curr_todo_list = new_todo_list;
-									console.log('Created new todo list ' + new_todo_list.get('title'));
-								}).fail(function () { u.error('Could now save todo lists '); });
-							});
-						});
-					});
-				},
-				restore: function () { $scope.curr_todo_list = undefined; }
-			});
-		};
-
-
-		var todo_list_item_prototype = _.extend({
+		var todo_list_item_prototype = _.extend({}, editable_item, {
+				defaults: { title: '', urgency: 'low', completed: false },
 				toggle: function () {
 					this.save('completed', !pop(this.get('completed')));
 				},
@@ -213,7 +239,7 @@ angular
 					console.log('wrtf', this, this.collection)
 					this.collection.todo_list.delete_todo(this);
 				}
-			}, editable_item),
+			}),
 			TodoListItems = EditableList.extend({
 				item_prototype: todo_list_item_prototype,
 				initialize: function (models, options) {
@@ -222,6 +248,29 @@ angular
 					EditableList.prototype.initialize.apply(this, arguments);
 				}
 			});
+
+
+		var initialize = function () {
+			todo_lists.fetch().then(function () {
+				u.safe_apply($scope);
+			});
+		};
+
+		var create_todo_list = function () {
+			var id = 'todo-list-' + now(),
+				todo_list = todo_lists.new_model({ id: id });
+
+			todo_list.on('restore', function () {
+				if (todo_list.is_new()) { $scope.curr_todo_list = undefined; }
+			}).on('created', function (todo_list) {
+				$scope.curr_todo_list = todo_list;
+			});
+
+			$scope.curr_todo_list = todo_list;
+		};
+
+
+
 
 
 		var sorters = [
@@ -275,6 +324,8 @@ angular
 				}).fail(function(e) { u.error('error ', e); });
 			}
 		});
+
+		window.$scope = $scope;
 
 		_.extend($scope, {
 			todo_lists: todo_lists,

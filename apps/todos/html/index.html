@@ -40,62 +40,76 @@
 			</div>
 		</div>
 
-		<div class="todo-lists-toolbar">
-			<div class="btn-group">
-				<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
-					{{ curr_todo_list.title }} <span class="caret"></span>
-				</button>
-				<ul class="dropdown-menu" role="menu">
-					<li ng-repeat="todo_list in todo_lists.models" ng-click="todo_list.show()"><a href="#">{{ pop(todo_list.get('title')) }}</a></li>
+		<div class="row-fluid" ng-show="selected_user && selected_box">
+			<div class="col-md-3">
+				<nav class="navbar navbar-default" role="navigation">
+					<h2 class="title">Todo Lists</h2>
+					<ul class="nav navbar-nav navbar-right">
+  						<li ng-click="create_todo_list()"><a href="#"><i class="glyphicon glyphicon-plus"></i></a></li>
+  					</ul>
+				</nav>
+				<ul class="nav nav-pills nav-stacked">
+					<li ng-repeat="todo_list in todo_lists.all_models" ng-click="todo_list.show()" ng-class="{ active: todo_list.is_shown() }"><a href="#">{{ pop(todo_list.get('title')) }}</a></li>
 				</ul>
 			</div>
-			<button ng-click="create_todo_list()">Create Todo List</button>
-		</div>
 
-		<div class="todos-container" ng-show="selected_user && selected_box && curr_todo_list">
-			<div class="todos-titlebar">
-				<h2 class="title" ng-show="!curr_todo_list.is_editing()" ng-click="curr_todo_list.edit()">{{ pop(curr_todo_list.get('title')) }}</h2>
-				<div  ng-show="curr_todo_list.is_editing()">
-					<h2 class="title"><input type="text" placeholder="Title" ng-model="curr_todo_list.newAttributes.title"></h2>
-
-					<button type="submit" class="btn btn-primary btn-sm" ng-click="curr_todo_list.stage_and_save()">
-						<span class="glyphicon glyphicon-ok"></span> Save
-					</button>
-					<button type="button" class="btn btn-default btn-sm" ng-click="curr_todo_list.restore()">
-						<span class="glyphicon glyphicon-remove"></span> Cancel
-					</button>
-				</div>
-
-				<div class="title-controls">
-					<div class="sortby">
-						<div class="btn-group">
-							<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
-								Sort by: {{ todo_sorter.key }} <span class="caret"></span>
-							</button>
-							<ul class="dropdown-menu" role="menu">
-								<li><a href="#" ng-click="todo_sorter.key = sorter.key" ng-repeat="sorter in sorters">{{ sorter.name }}</a></li>
+			<div class="col-md-9">
+				<div class="todos-container" ng-show="curr_todo_list">
+					<nav class="navbar navbar-default" role="navigation">
+						<div class="collapse navbar-collapse navbar-ex1-collapse">
+							<ul class="nav navbar-nav">
+								<li ng-click="curr_todo_list.search = true" ng-show="!search"><a href="#"><span class="glyphicon glyphicon-search"></span></a></li>
+								<li ng-show="curr_todo_list.search">
+									<form class="navbar-form navbar-left" role="search">
+      									<div class="form-group">
+      										<input type="text" placeholder="search" ng-model="curr_todo_list.search_text">
+      									</div>
+      								</form>
+      							</li>
+								<li ng-click="show_completed = !show_completed;" ng-class="{ active: show_completed }"><a href="#"><i class="glyphicon glyphicon-list"></i></a></li>
+								<li class="dropdown">
+									<a href="#" class="dropdown-toggle" data-toggle="dropdown">Sort by: {{ todo_sorter.key }} <b class="caret"></b></a>
+									<ul class="dropdown-menu">
+										<li><a href="#" ng-click="todo_sorter.key = sorter.key" ng-repeat="sorter in sorters">{{ sorter.name }}</a></li>
+									</ul>
+								</li>
+							</ul>
+							<h2 class="title">{{ pop(curr_todo_list.get('title')) }}</h2>
+							<ul class="nav navbar-nav navbar-right">
+								<li ng-click="curr_todo_list.edit()"><a href="#"><span class="glyphicon glyphicon-edit"></span></a></li>
+								<li ng-click="curr_todo_list.new_todo()"><a href="#"><span class="glyphicon glyphicon-plus"></span></a></li>
 							</ul>
 						</div>
+					</nav>
+					<div class="todo-list">
+						<section ng-repeat="todo_group in curr_todo_list.todos_by_group" ng-show="todo_group.todos.length > 0">
+							<h3 ng-show="curr_todo_list.todos_by_group[0].todos.length > 0">&bullet; {{ todo_group.title }} &bullet;</h3>
+							<ul>
+								<li ng-repeat="todo in todo_group.sorted_by[todo_sorter.key]" class="todo-item" ng-class="{ completed: todo.attributes.completed[0], editing: is_editing(todo) }" ng-include="'todo.html'" ng-show="!todo.attributes.completed[0] || todo.attributes.completed[0] && show_completed"></li>
+							</ul>
+						</section>
 					</div>
 				</div>
 			</div>
-
-			<div class="todo-list">
-				<section ng-repeat="todo_group in curr_todo_list.todos_by_group" ng-show="todo_group.todos.length > 0">
-					<h3 ng-show="curr_todo_list.todos_by_group[0].todos.length > 0">&bullet; {{ todo_group.title }} &bullet;</h3>
-					<ul>
-						<li ng-repeat="todo in todo_group.sorted_by[todo_sorter.key]" class="todo-item" ng-class="{ completed: todo.attributes.completed[0], editing: is_editing(todo) }" ng-include="'todo.html'" ng-show="!todo.attributes.completed[0] || todo.attributes.completed[0] && show_completed"></li>
-					</ul>
-				</section>
-			</div>
-
-			<ul class="todos-footer">
-				<li class="todo-create"><a href="#" ng-click="curr_todo_list.new_todo()">New todo...</a></li>
-				<li class="todo-toolbar">
-					<a href="#" ng-click="show_completed = true;" ng-show="!show_completed">View completed todos</a>
-					<a href="#" ng-click="show_completed = false;" ng-show="show_completed">Hide completed todos</a>
-				</li>
-			</ul>
+		</div>
+		<div ng-show="curr_todo_list.is_editing()">
+			<div class="modal" style="display: block">
+				<div class="modal-dialog">
+					<div class="modal-content">
+						<div class="modal-header">
+							<button type="button" class="close" ng-click="curr_todo_list.restore()" aria-hidden="true">&times;</button>
+							<h4 class="modal-title">Create a todo list</h4>
+						</div>
+						<div class="modal-body">
+							<h2 class="title"><input type="text" placeholder="Title" ng-model="curr_todo_list.newAttributes.title"></h2>
+						</div>
+						<div class="modal-footer">
+							<button type="button" class="btn btn-default" ng-click="curr_todo_list.restore()"><span class="glyphicon glyphicon-remove"></span> Close</button>
+							<button type="button" class="btn btn-primary" ng-click="curr_todo_list.stage_and_save()"><span class="glyphicon glyphicon-ok"></span> Save</button>
+						</div>
+					</div><!-- /.modal-content -->
+				</div><!-- /.modal-dialog -->
+			</div><!-- /.modal -->
 		</div>
 	</div>
   </body>
