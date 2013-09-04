@@ -39,7 +39,7 @@ class FitbitApp(BaseHandler):
             self.fitbit_min = FitbitIntraDay(self.fitbit)
             start = None
             if ("start" in request.args):
-                start = datetime.fromtimestamp(request.args["start"])
+                start = datetime.fromtimestamp(int(request.args["start"][0])/1000)
             response = self.download_data(start)
             self.return_ok(request, data = response)
         else:
@@ -50,10 +50,11 @@ class FitbitApp(BaseHandler):
     def download_data(self, start):
         # end time is end of yesterday 
         end = datetime.combine((datetime.now()+timedelta(days=-1)).date(), time(23,59,59))
+        response = {}
         if (start == None):
             d = timedelta(days=0)
             start = datetime.combine(end.date()+d, time(0,0,0))
-            response = {"from_date": start.isoformat()}
+            response["from_date"] = start.isoformat()
 
         steps = self.fitbit_min.get_steps(start, end)
         calories = self.fitbit_min.get_calories(start, end)
