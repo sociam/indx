@@ -89,15 +89,15 @@
 				<div class="modal-dialog">
 					<div class="modal-content">
 						<div class="modal-header">
-							<button type="button" class="close" ng-click="todo_lists.selected.restore()" aria-hidden="true">&times;</button>
+							<button type="button" class="close" ng-click="objs.selected.restore()" aria-hidden="true">&times;</button>
 							<h4 class="modal-title">Edit object</h4>
 						</div>
 						<div class="modal-body">
 							<textarea>{{ pop(objs.selected.get('val-string')) }}</textarea>
 						</div>
 						<div class="modal-footer">
-							<button type="button" class="btn btn-default" ng-click="todo_lists.selected.restore()"><span class="glyphicon glyphicon-remove"></span> Close</button>
-							<button type="button" class="btn btn-primary" ng-click="todo_lists.selected.stage_and_save()"><span class="glyphicon glyphicon-ok"></span> Save</button>
+							<button type="button" class="btn btn-default" ng-click="objs.selected.restore()"><span class="glyphicon glyphicon-remove"></span> Close</button>
+							<button type="button" class="btn btn-primary" ng-click="objs.selected.stage_and_save()"><span class="glyphicon glyphicon-ok"></span> Save</button>
 						</div>
 					</div><!-- /.modal-content -->
 				</div><!-- /.modal-dialog -->

@@ -19,7 +19,6 @@ angular
 					});
 				},
 				update: function () {
-					this.set('val', this.toJSON());
 					this.set('val-string', JSON.stringify(this.toJSON(), null, ' '));
 				}
 			}),
