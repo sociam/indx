@@ -1,5 +1,5 @@
 import argparse, logging, pprint, json, getpass
-from pyindx import IndxClient
+from indxclient import IndxClient
 from fitbit import Fitbit
 from fitbit import FitbitTimeseries
 from fitbit import FitbitResources

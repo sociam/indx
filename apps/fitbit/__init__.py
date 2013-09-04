@@ -3,7 +3,7 @@ from indx.webserver.handlers.base import BaseHandler
 import requests
 from twisted.web.server import NOT_DONE_YET
 from fitbit import Fitbit, FitbitIntraDay
-from pyindx import IndxClient
+from indxclient import IndxClient
 from datetime import datetime, date, time, timedelta
 
 class FitbitApp(BaseHandler):
