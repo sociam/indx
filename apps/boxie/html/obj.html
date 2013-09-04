@@ -1,2 +1,2 @@
-<h4>{{ obj.get('id') }}</h4>
-<pre>{{ obj.get('val-string') }}</pre>
+<h4>{{ pop(obj.id) }}</h4>
+<pre ng-click="obj.select();obj.edit()"><code class="json">{{ pop(obj.get('val-string')) }}</code></pre>

@@ -1,46 +1,69 @@
-/* global angular, console, _, Backbone */
+/* global angular, console, _, Backbone, $ */
 angular
 	.module('boxie', ['ui','indx'])
-	.controller('boxie', function($scope, client, utils) {
+	.controller('boxie', function($scope, client, utils, collection) {
 		'use strict';
 
 		var box,
 			u = utils;
 
+		var Box = collection.Model.extend({
+				defaults: { title: 'Todo list' },
+				initialize: function () {
+					var that = this;
 
-		var update_view = function (objs) {
-			u.safe_apply($scope, function () {
-				$scope.objs = objs.models;
+					that.update();
+
+					this.on('update change', function () {
+						that.update();
+					});
+				},
+				update: function () {
+					this.set('val', this.toJSON());
+					this.set('val-string', JSON.stringify(this.toJSON(), null, ' '));
+				}
+			}),
+
+			Boxes = collection.Collection.extend({
+				model: Box,
+				fetch: function () {
+					var that = this,
+						promise = $.Deferred(),
+						ids = this.box.get_obj_ids(),
+						objs = [],
+						promises = _.map(ids, function (id) {
+							var promise = $.Deferred();
+							that.box.get_obj(id).then(function (obj) {
+								objs.push(obj);
+								promise.resolve();
+							});
+							return promise;
+						});
+					$.when.apply($, promises).then(function () {
+						that.reset(objs);
+						promise.resolve();
+					});
+					return promise;
+				}
+			});
+
+
+		var initialize = function () {
+			console.log('init');
+			$scope.objs = new Boxes(undefined, { box: box });
+			$scope.objs.fetch();
+			$scope.objs.on('update change', function () {
+				console.log('fetched');
+				u.safe_apply($scope);
 			});
 		};
 
-		var Obj = Backbone.Model.extend({
-			sync: function (method) {
-				var that = this;
-				if (method === 'read') {
-					box.get_obj(this.id).then(function (val) {
-						that.set('val', val);
-						that.set('val-string', JSON.stringify(val, null, ' '));
-					});
-				}
-			}
-		});
-
-		var update_watcher = function() {
-			if (!box) { u.debug('no box, skipping '); return ;}
-			window.box = box;
-			var obj_ids = box.get_obj_ids(),
-				objs = new Backbone.Collection(_.map(obj_ids, function (id) {
-					var obj = new Obj({ id: id });
-					obj.on('change:val', function () {
-						update_view(objs);
-						console.log(arguments)
-					}).fetch();
-					return obj;
-				}));
+		var pop = function (arr) {
+			if (!_.isArray(arr)) { return arr; }
+			return _.first(arr);
 		};
 
-		$scope.an_obj_to_contain_the_selected_obj = { }; // Angular scoping ftw
+		$scope.pop = pop;
 
 		// watches the login stts for changes
 		$scope.$watch('selected_box + selected_user', function() {
@@ -48,7 +71,7 @@ angular
 				console.log('selected ', $scope.selected_user, $scope.selected_box);
 				client.store.get_box($scope.selected_box).then(function(b) {
 					box = b;
-					update_watcher();
+					initialize();
 				}).fail(function(e) { u.error('error ', e); });
 			}
 		});

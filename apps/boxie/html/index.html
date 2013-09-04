@@ -11,35 +11,99 @@
 	<div ng-app="boxie" ng-controller="boxie" ng-cloak>
 		<toolbar box-var='selected_box' username-var='selected_user'></toolbar>
 
-
 		<div class="container">
-			<div ng-show="!selected_user">
-				<h2> please log in to load your box </h2>
+			<div ng-show="!selected_user" class="need-log-in">
+				<div class="white-cover"></div>
+				<div class="center-title"><h2 class="alert alert-info">Please log in</h2></div>
+				<div class="instruct-arrow">
+					<div class="arrow-horiz">
+						<div class="arrow-horiz-line"></div>
+					</div>
+					<div class="arrow-vert">
+						<div class="arrow-vert-line"></div>
+						<div class="arrow-head-up"></div>
+					</div>
+				</div>
 			</div>
-			<div ng-show="selected_user && !selected_box">
-				<h2> please select a box  </h2>
+			<div ng-show="selected_user && !selected_box" class="need-select-box">
+				<div class="white-cover"></div>
+				<div class="center-title"><h2 class="alert alert-info">Please select a box</h2></div>
+				<div class="instruct-arrow">
+					<div class="arrow-horiz">
+						<div class="arrow-horiz-line"></div>
+					</div>
+					<div class="arrow-vert">
+						<div class="arrow-vert-line"></div>
+						<div class="arrow-head-up"></div>
+					</div>
+				</div>
 			</div>
 		</div>
 
-		<div class="boxie-container" ng-show="selected_user && selected_box">
-			<div class="boxie-titlebar">
-				<h2 class="title">BOXIE</h2>
-				<h3>Box explorer</h3>
-			</div>
-
-			<div class="object-list">
-				<ul>
-					<li ng-repeat="obj in objs" ng-include="'obj.html'" ng-click="an_obj_to_contain_the_selected_obj.selected_obj = obj"></li>
+		<div class="row-fluid boxie-container" ng-show="selected_user && selected_box">
+			<div class="col-md-3">
+				<nav class="navbar navbar-default" role="navigation">
+					<h2 class="title">BOXIE</h2>
+					<ul class="nav navbar-nav navbar-right">
+  					</ul>
+				</nav>
+				<ul class="nav nav-pills nav-stacked">
+					<li ng-repeat="obj in objs.all_models" ng-click="obj.select()" ng-class="{ active: obj.selected }"><a href="#">{{ obj.id }}</a></li>
 				</ul>
 			</div>
 
-			<ul class="boxie-footer">
-			</ul>
+			<div class="col-md-9">
+				<nav class="navbar navbar-default" role="navigation">
+					<div class="collapse navbar-collapse navbar-ex1-collapse">
+						<ul class="nav navbar-nav">
+							<li ng-click="objs.search = true" ng-show="!search"><a href="#"><span class="glyphicon glyphicon-search"></span></a></li>
+							<li ng-show="objs.search">
+								<form class="navbar-form navbar-left" role="search">
+  									<div class="form-group">
+  										<input type="text" placeholder="search" ng-model="objs.search_text">
+  									</div>
+  								</form>
+  							</li>
+							<li class="dropdown">
+								<a href="#" class="dropdown-toggle" data-toggle="dropdown">Sort by: {{ curr_sorter.key }} <b class="caret"></b></a>
+								<ul class="dropdown-menu">
+									<li><a href="#" ng-click="curr_sorter.key = sorter.key" ng-repeat="sorter in sorters">{{ sorter.name }}</a></li>
+								</ul>
+							</li>
+						</ul>
+						<h2 class="title">Object explorer</h2>
+						<ul class="nav navbar-nav navbar-right">
+
+						</ul>
+					</div>
+				</nav>
+				<div class="object-list">
+					<ul>
+						<li ng-repeat="obj in objs.models" ng-include="'obj.html'" ng-click="an_obj_to_contain_the_selected_obj.selected_obj = obj"></li>
+					</ul>
+				</div>
+			</div>
+		</div>
+		<div ng-show="objs.selected.is_editing">
+			<div class="modal" style="display: block">
+				<div class="modal-dialog">
+					<div class="modal-content">
+						<div class="modal-header">
+							<button type="button" class="close" ng-click="todo_lists.selected.restore()" aria-hidden="true">&times;</button>
+							<h4 class="modal-title">Edit object</h4>
+						</div>
+						<div class="modal-body">
+							<textarea>{{ pop(objs.selected.get('val-string')) }}</textarea>
+						</div>
+						<div class="modal-footer">
+							<button type="button" class="btn btn-default" ng-click="todo_lists.selected.restore()"><span class="glyphicon glyphicon-remove"></span> Close</button>
+							<button type="button" class="btn btn-primary" ng-click="todo_lists.selected.stage_and_save()"><span class="glyphicon glyphicon-ok"></span> Save</button>
+						</div>
+					</div><!-- /.modal-content -->
+				</div><!-- /.modal-dialog -->
+			</div><!-- /.modal -->
 		</div>
 
-		<div class="fullpane" >
-			<pre>{{ an_obj_to_contain_the_selected_obj.selected_obj.get('val-string') }}</pre>
-		</div>
 	</div>
   </body>
   <script src="/js/vendor/lesscss.min.js" type="text/javascript"></script>
@@ -54,6 +118,10 @@
   <!-- indx -->
   <script src="/js/indx.js" type="text/javascript"></script>
   <script src="/js/indx-utils.js" type="text/javascript"></script>
+  <script src="/js/indx-collection.js" type="text/javascript"></script>
   <script src="/components/toolbar/toolbar.js" type="text/javascript"></script>
   <script src="js/boxie.js" type="text/javascript"></script>
+  <link rel="stylesheet" href="http://yandex.st/highlightjs/7.3/styles/default.min.css">
+<script src="http://yandex.st/highlightjs/7.3/highlight.min.js"></script>
+
 </html>
