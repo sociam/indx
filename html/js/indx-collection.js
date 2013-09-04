@@ -146,7 +146,7 @@ angular
 						that.trigger('select', model);
 					}
 					if (options.save !== false &&
-							(that.options.saveSelected || this.options.syncSelected)) {
+							(that.options.saveSelected || that.options.syncSelected)) {
 						model.save({ selected: selected });
 						that.each(function (m) {
 							if (m !== model && pop(m.get('selected'))) {
@@ -196,6 +196,7 @@ angular
 				return promise;
 			},
 			populate: function () {
+				if (!this.obj || !this.array_key) { return; }
 				var that = this,
 					obj = this.obj,
 					array_key = this.options.array_key,
