@@ -7,8 +7,7 @@ angular
 		var box,
 			u = utils;
 
-		var Box = collection.Model.extend({
-				defaults: { title: 'Todo list' },
+		var Obj = collection.Model.extend({
 				initialize: function () {
 					var that = this;
 
@@ -19,12 +18,20 @@ angular
 					});
 				},
 				update: function () {
-					this.set('val-string', JSON.stringify(this.toJSON(), null, ' '));
+					this.val_string = JSON.stringify(this.toJSON(), null, ' ');
+				},
+				analyse: function () {
+					$scope.curr_obj = this;
+				},
+				attribute_array: function () {
+					return _.map(this.attributes, function (value, key) {
+						return { key: key, value: value };
+					});
 				}
 			}),
 
-			Boxes = collection.Collection.extend({
-				model: Box,
+			Objs = collection.Collection.extend({
+				model: Obj,
 				fetch: function () {
 					var that = this,
 						promise = $.Deferred(),
@@ -49,7 +56,7 @@ angular
 
 		var initialize = function () {
 			console.log('init');
-			$scope.objs = new Boxes(undefined, { box: box });
+			$scope.objs = new Objs(undefined, { box: box });
 			$scope.objs.fetch();
 			$scope.objs.on('update change', function () {
 				console.log('fetched');
@@ -63,6 +70,7 @@ angular
 		};
 
 		$scope.pop = pop;
+		window.$scope = $scope;
 
 		// watches the login stts for changes
 		$scope.$watch('selected_box + selected_user', function() {

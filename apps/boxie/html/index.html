@@ -77,14 +77,15 @@
 						</ul>
 					</div>
 				</nav>
-				<table class="table obj-list">
+				<table class="table obj-list" ng-show="objs && !curr_obj">
 					<thead>
 						<tr><th>ID</th><th width="180">Last edited</th></tr>
 					</thead>
 					<tbody>
 						<tr ng-repeat="obj in objs.models" ng-include="'obj.html'" ng-click="obj.select()"></tr>
 					</tbody>
-				</div>
+				</table>
+				<div class="obj-view" ng-show="curr_obj" ng-include="'obj_view.html'"></div>
 			</div>
 		</div>
 		<div ng-show="objs.selected.is_editing">
