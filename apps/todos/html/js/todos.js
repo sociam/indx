@@ -56,11 +56,7 @@ angular
 				defaults: { title: '', urgency: 'low', completed: false },
 				toggle: function () {
 					this.save('completed', !pop(this.get('completed')));
-				},
-				/*remove: function () {
-					console.log('wrtf', this, this.collection)
-					this.collection.todo_list.delete_todo(this);
-				}*/
+				}
 			}),
 			TodoListItems = collection.Collection.extend({
 				model: TodoListItem,
@@ -82,7 +78,7 @@ angular
 			});
 			$scope.todo_lists.fetch();
 			$scope.todo_lists.on('update change', function () {
-				//console.log('fetched');
+				console.log('fetched');
 				u.safe_apply($scope);
 			});
 		};
