@@ -197,7 +197,7 @@ angular
 				return promise;
 			},
 			populate: function () {
-				if (!this.obj || !this.array_key) { return; }
+				if (!this.obj || !this.options.array_key) { return; }
 				var that = this,
 					obj = this.obj,
 					array_key = this.options.array_key,
