@@ -77,10 +77,13 @@
 						</ul>
 					</div>
 				</nav>
-				<div class="object-list">
-					<ul>
-						<li ng-repeat="obj in objs.models" ng-include="'obj.html'" ng-click="an_obj_to_contain_the_selected_obj.selected_obj = obj"></li>
-					</ul>
+				<table class="table obj-list">
+					<thead>
+						<tr><th>ID</th><th width="180">Last edited</th></tr>
+					</thead>
+					<tbody>
+						<tr ng-repeat="obj in objs.models" ng-include="'obj.html'" ng-click="obj.select()"></tr>
+					</tbody>
 				</div>
 			</div>
 		</div>

@@ -70,10 +70,12 @@ angular
 				console.log('selected ', $scope.selected_user, $scope.selected_box);
 				client.store.get_box($scope.selected_box).then(function(b) {
 					box = b;
+		window.box = box;
 					initialize();
 				}).fail(function(e) { u.error('error ', e); });
 			}
 		});
+
 
 
 	});

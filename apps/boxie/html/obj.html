@@ -1,2 +1,7 @@
-<h4>{{ pop(obj.id) }}</h4>
-<pre ng-click="obj.select();obj.edit()"><code class="json">{{ pop(obj.get('val-string')) }}</code></pre>
+<td class="obj-id">
+	<div ng-class="{ truncate: !obj.is_selected }">
+		{{ pop(obj.id) }}
+		<span class="text-muted">- {{ pop(obj.get('val-string')).substr(0, 100) }}</span>
+	</div>
+</td>
+<td>timestamp (user)</td>
