@@ -11,6 +11,9 @@ angular
 			return F;
 		};
 		_.extend(Model.prototype, {
+			is_new: false,
+			is_editing: false,
+			is_selected: false,
 			create: function () {
 				var that = this;
 				console.log('creating item');
@@ -66,14 +69,12 @@ angular
 				options = options || {};
 				console.log('select', selected);
 				selected = _.isBoolean(selected) ? selected : true;
-				if (this.selected !== selected) {
+				if (this.is_selected !== selected) {
 					console.log('selecting', selected);
-					this.selected = selected;
+					this.is_selected = selected;
 					this.trigger('select', selected, options);
 				}
-			},
-			is_editing: false,
-			is_new: false
+			}
 		});
 		var Collection = Backbone.Collection.extend({
 			model: Model,
