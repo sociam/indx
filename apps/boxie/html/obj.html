@@ -3,6 +3,13 @@
 		{{ pop(obj.id) }}
 		<span class="text-muted" ng-show="!obj.is_selected">- {{ pop(obj.get('val-string')).substr(0, 100) }}</span>
 	</div>
-	<pre ng-show="obj.is_selected">{{ pop(obj.get('val-string')) }}</pre>
+	<div class="obj-preview">
+		<ul class="icons">
+			<a title="Analyse" ng-click="obj.analyse()"></a>
+			<a title="Edit" ng-click="obj.edit()"></a>
+			<a title="Delete" ng-click="obj.delete()"></a>
+		</ul>
+		<pre ng-show="obj.is_selected">{{ pop(obj.get('val-string')) }}</pre>
+	</div>
 </td>
 <td>timestamp (user)</td>
