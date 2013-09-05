@@ -166,15 +166,15 @@ angular
                     device: 'Fitbit Connector',
                 });
                 ds.save()
-                    .then(function(e) { u.debug('created and saved new dataset ' + ds.get('@id')); })
-                    .fail(function(e) { u.error('could not save new dataset ', e); });
+                    // .then(function(e) { u.debug('created and saved dataset ' + ds.get('@id')); })
+                    .fail(function(e) { u.error('could not save dataset ', e); });
                 dps = [];
                 observations.map(function(obs) {
-                    start = Date.parse(obs['start']).valueOf();
-                    box.get_obj('fitbit_obs_' + start).then(function (o) {
+                    st = Date.parse(obs['start']).valueOf();
+                    box.get_obj('fitbit_obs_' + st).then(function (o) {
                         o.set({
                             // @type: 'http://purl.org/linked-data/cube#Observation',
-                            start: start, 
+                            start: Date.parse(obs['start']).valueOf(), 
                             end: Date.parse(obs['end']).valueOf(),
                             dataset: ds.get('@id'),
                         });
@@ -198,9 +198,11 @@ angular
                                 dps.push(o); // should this be o.get('@id') ? 
                                 ds.set({data_points: dps});
                                 ds.save()
-                                    .then(function(e) { u.debug('created and saved new dataset ' + ds.get('@id')); })
+                                    .then(function(e) { 
+                                        // u.debug('created and saved new dataset ' + ds.get('@id')); 
+                                    })
                                     .fail(function(e) { u.error('could not save new dataset ', e); });
-                                u.debug('created and saved new observation ' + o.get('@id')); 
+                                // u.debug('created and saved new observation ' + o.get('@id')); 
                             })
                             .fail(function(e) { u.error('could not save new observation ', e); });
                     }).fail(function(e) {
