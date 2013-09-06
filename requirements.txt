@@ -8,3 +8,4 @@ python-cjson
 python-openid
 tweepy
 requests
+pycrypto

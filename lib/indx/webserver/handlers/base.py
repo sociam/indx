@@ -56,6 +56,8 @@ class BaseHandler(Resource):
             logging.debug("Adding web server handler to path: /" + (self.base_path or ''))
             webserver.root.putChild(self.base_path, self) # register path with webserver
 
+        self.database = self.webserver.database
+
     def _matches_request(self, request, subhandler):
         path_fields = request.path.split("/")
         sub_path = '/'.join(path_fields[2:]) if len(path_fields) >= 3 else ''

@@ -55,7 +55,7 @@ class AuthHandler(BaseHandler):
             wbSession.setPassword(None)            
             self.return_unauthorized(request)
 
-        database.auth(user,pwd).addCallback(lambda loggedin: win() if loggedin else fail())
+        self.database.auth(user,pwd).addCallback(lambda loggedin: win() if loggedin else fail())
 
     def auth_logout(self, request):
         """ User logged out (GET, POST) """

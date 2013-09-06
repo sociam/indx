@@ -58,6 +58,7 @@ parser.add_argument('--ssl-key', default="data/server.key", type=str, help="Path
 parser.add_argument('--no-browser', default=False, action="store_true", help="Don't load a web browser after the server has started")
 parser.add_argument('--address', default="", type=str, help="Specify IP address to bind to")
 parser.add_argument('--password', default=None, type=str, help="Specify password on the command line instead of interactively")
+parser.add_argument('--indx-db', default="indx", type=str, help="Specify the name of the INDX configuration database")
 args = vars(parser.parse_args())
 
 """ Prompt the user for a password. """
@@ -86,6 +87,7 @@ config = {
         "address": args['address'],
         "html_dir": os.path.dirname(os.path.realpath(__file__)) + os.sep + ".." + os.sep + "html",
     },
+    "indx_db": args['indx_db'],
     "no_browser": args['no_browser'],
 }
 

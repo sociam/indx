@@ -65,7 +65,7 @@ class WebServer:
         def auth_cb(can_auth):
             logging.debug("WebServer auth_cb, can_auth: {0}".format(can_auth))
             if can_auth:
-                self.server_setup()
+                self.check_indx_db() # check indx DB exists, otherwise create it - then setup the server
             else:
                 print "Authentication failed, check username and password are correct."
                 reactor.stop()
@@ -75,10 +75,31 @@ class WebServer:
             failure.trap(Exception)
 
         user,password = self.get_indx_user_password()
-        database.auth(user, password).addCallbacks(auth_cb, err_cb)
+        self.database = database.IndxDatabase(config['indx_db'], user, password)
+        self.database.auth_indx(database = "postgres").addCallbacks(auth_cb, err_cb)
+
+
+    def check_indx_db(self):
+        """ Check if the INDX database exists, otherwise create it. """
+        logging.debug("WebServer check_indx_db")
+
+        def success_cb(var):
+            self.server_setup()
+
+        def err_cb(failure):
+            logging.debug("WebServer check_indx_db, err_cb, failure: {0}".format(failure))
+            failure.trap(Exception)
+            #reactor.stop()
+
+        user,password = self.get_indx_user_password()
+        self.database.check_indx_db().addCallbacks(success_cb, err_cb)
+
 
     def server_setup(self):
+        """ Setup the web server. """
         # TODO set up twisted to use gzip compression
+
+
 
         # Disable directory listings
         class FileNoDirectoryListings(File):
@@ -150,8 +171,7 @@ class WebServer:
 
     def get_master_box_list(self):
         ## returns _all_ boxes in this server
-        user,password = self.get_indx_user_password()
-        return database.list_boxes(user,password)
+        return self.database.list_boxes()
 
     def register_boxes(self, parent):
         """ Add the INDXes to the server. """
