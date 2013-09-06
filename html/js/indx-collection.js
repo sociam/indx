@@ -88,35 +88,35 @@ angular
 					console.log('something in the collection has changed');
 					that.save();
 				}).on('add remove reset', function () {
-					that.set_new_model(that._new_model);
+					that._set_new_model(that._new_model);
 				});
 				this.reset(models);
 				this.populate();
-				this.set_new_model();
+				this._set_new_model();
 			},
 			new_model: function (attributes, options) {
 				var that = this,
 					model = new Backbone.Model(attributes);
 				options = options || {};
-				this.extend_model(model);
+				this._extend_model(model);
 				model
 					.edit(true)
 					.set({ timestamp: now() })
 					.on('created', function (model) {
 						console.log('going for the add');
 						that.add(model);
-						that.set_new_model();
+						that._set_new_model();
 						if (options.select) { model.select(); }
 					})
 					.on('restore', function () {
-						that.set_new_model();
+						that._set_new_model();
 						if (options.select) { that.selected = undefined; }
 					});
-				this.set_new_model(model);
+				this._set_new_model(model);
 				if (options.select) { model.select(true, { save: false }); }
 				return model;
 			},
-			set_new_model: function (model) {
+			_set_new_model: function (model) {
 				this._new_model = model;
 				this.all_models = model ? this.models.concat([ model ]) : this.models;
 				//console.log('update');
@@ -127,7 +127,7 @@ angular
 				if (this.selected === model) { this.selected = undefined; }
 				return Backbone.Collection.prototype.remove.apply(this, arguments);
 			},
-			extend_model: function (model) {
+			_extend_model: function (model) {
 				var that = this,
 					prototype = this.model.prototype;
 				_.extend(model, prototype);
@@ -147,7 +147,7 @@ angular
 						that.trigger('select', model);
 					}
 					if (options.save !== false &&
-							(that.options.saveSelected || that.options.syncSelected)) {
+							(that.options.save_selected || that.options.sync_selected)) {
 						model.save({ selected: selected });
 						that.each(function (m) {
 							if (m !== model && pop(m.get('selected'))) {
@@ -173,12 +173,12 @@ angular
 						console.warn('There was a non-object stored??', model);
 						return;
 					}
-					this.extend_model(model);
-					if (this.options.saveSelected || this.options.syncSelected) {
+					this._extend_model(model);
+					if (this.options.save_selected || this.options.sync_selected) {
 						if (pop(model.get('selected')) === true) {
 							model.select();
 						}
-						if (this.options.syncSelected) {
+						if (this.options.sync_selected) {
 							model.on('change:selected', function () {
 								model.select(pop(model.get('selected')));
 							});
