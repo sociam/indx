@@ -42,11 +42,11 @@
 		</div>
 
 		<div class="row-fluid" ng-show="selected_user && selected_box">
-			<div class="col-md-3">
+			<div class="col-md-3 col-left hidden-xs">
 				<nav class="navbar navbar-default" role="navigation">
 					<h2 class="title">Todo Lists</h2>
 					<ul class="nav navbar-nav navbar-right">
-  						<li ng-click="todo_lists.new_model()"><a href="#"><i class="glyphicon glyphicon-plus"></i></a></li>
+  						<li><button class="btn btn-default btn-sm navbar-btn" ng-click="todo_lists.new_model()"><i class="glyphicon glyphicon-plus"></i></button></li>
   					</ul>
 				</nav>
 				<ul class="nav nav-pills nav-stacked">
@@ -54,34 +54,57 @@
 				</ul>
 			</div>
 
-			<div class="col-md-9">
-				<div class="todos-container" ng-show="todo_lists.selected">
-					<nav class="navbar navbar-default" role="navigation">
-						<div class="collapse navbar-collapse navbar-ex1-collapse">
-							<ul class="nav navbar-nav">
-								<li ng-click="todo_lists.selected.search = true" ng-show="!search"><a href="#"><span class="glyphicon glyphicon-search"></span></a></li>
-								<li ng-show="todo_lists.selected.search">
-									<form class="navbar-form navbar-left" role="search">
-      									<div class="form-group">
-      										<input type="text" placeholder="search" ng-model="todo_lists.selected.search_text">
-      									</div>
-      								</form>
-      							</li>
-								<li ng-click="show_completed = !show_completed;" ng-class="{ active: show_completed }"><a href="#"><i class="glyphicon glyphicon-list"></i></a></li>
-								<li class="dropdown">
-									<a href="#" class="dropdown-toggle" data-toggle="dropdown">Sort by: {{ todo_sorter.key }} <b class="caret"></b></a>
-									<ul class="dropdown-menu">
-										<li><a href="#" ng-click="todo_sorter.key = sorter.key" ng-repeat="sorter in sorters">{{ sorter.name }}</a></li>
-									</ul>
-								</li>
-							</ul>
-							<h2 class="title">{{ pop(todo_lists.selected.get('title')) }}</h2>
-							<ul class="nav navbar-nav navbar-right">
-								<li ng-click="todo_lists.selected.remove()"><a href="#"><span class="glyphicon glyphicon-remove"></span></a></li>
-								<li ng-click="todo_lists.selected.edit()"><a href="#"><span class="glyphicon glyphicon-edit"></span></a></li>
-								<li ng-click="todo_lists.selected.todos.new_model()"><a href="#"><span class="glyphicon glyphicon-plus"></span></a></li>
+			<div class="col-md-3 col-left visible-xs">
+				<ul class="nav nav-flat">
+					<li>
+						<div class="btn-group">
+							<button type="button" class="btn btn-link dropdown-toggle" data-toggle="dropdown">Todo list <span class="caret"></span></button>
+							<ul class="dropdown-menu" role="menu">
+								<li><a href="#" ng-click="todo_list.select()" ng-class="{ active: todo_list.selected }" ng-repeat="todo_list in todo_lists.all_models">{{ pop(todo_list.get('title')) }}</a></li>
 							</ul>
 						</div>
+					</li>
+					<li class="dropdown">
+						<div class="btn-group">
+							<button type="button" class="btn btn-link dropdown-toggle" data-toggle="dropdown">Sort <span class="caret"></span></button>
+							<ul class="dropdown-menu" role="menu">
+								<li><a href="#" ng-click="todo_sorter.key = sorter.key" ng-repeat="sorter in sorters">{{ sorter.name }}</a></li>
+							</ul>
+						</div>
+					</li>
+					<li><button class="btn btn-link" ng-click="show_completed = !show_completed;" ng-class="{ active: show_completed }"><i class="glyphicon glyphicon-list"></i></button></li>
+  					<li class="pull-right"><button class="btn btn-link" ng-click="todo_lists.selected.todos.new_model()"><i class="glyphicon glyphicon-plus"></i></button></li>
+  				</ul>
+			</div>
+
+			<div class="col-md-9 col-right">
+				<div class="todos-container" ng-show="todo_lists.selected">
+					<nav class="navbar navbar-default hidden-xs" role="navigation">
+						<ul class="nav navbar-nav">
+	  						<li ng-show="!search"><button class="btn btn-default btn-sm navbar-btn" ng-click="todo_lists.selected.search = true"><i class="glyphicon glyphicon-search"></i></button></li>
+							<li ng-show="todo_lists.selected.search">
+								<form class="navbar-form navbar-left" role="search">
+  									<div class="form-group">
+  										<input type="text" placeholder="search" ng-model="todo_lists.selected.search_text">
+  									</div>
+  								</form>
+  							</li>
+							<li ng-click="show_completed = !show_completed;" ng-class="{ active: show_completed }"><a href="#"><i class="glyphicon glyphicon-list"></i></a></li>
+							<li class="dropdown">
+								<div class="btn-group">
+									<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">Sort <span class="caret"></span></button>
+									<ul class="dropdown-menu" role="menu">
+										<li><a href="#" ng-click="todo_sorter.key = sorter.key" ng-repeat="sorter in sorters">{{ sorter.name }}</a></li>
+									</ul>
+								</div>
+							</li>
+						</ul>
+						<h2 class="title">{{ pop(todo_lists.selected.get('title')) }}</h2>
+						<ul class="nav navbar-nav navbar-right">
+	  						<li><button class="btn btn-default btn-sm navbar-btn" ng-click="todo_lists.selected.remove()"><i class="glyphicon glyphicon-remove"></i></button></li>
+	  						<li><button class="btn btn-default btn-sm navbar-btn" ng-click="todo_lists.selected.edit()"><i class="glyphicon glyphicon-pencil"></i></button></li>
+	  						<li><button class="btn btn-default btn-sm navbar-btn" ng-click="todo_lists.selected.todos.new_model()"><i class="glyphicon glyphicon-plus"></i></button></li>
+						</ul>
 					</nav>
 					<div class="todo-list">
 						<section ng-repeat="todo_group in todo_lists.selected.todos_by_group" ng-show="todo_group.todos.length > 0">

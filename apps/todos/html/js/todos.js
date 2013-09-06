@@ -64,6 +64,11 @@ angular
 					var id = 'todo-item-' + collection.now();
 					return collection.Collection.prototype.new_model.call(this,
 						{ id: id });
+				},
+				search: function (q) {
+					this.filter(function (model) {
+						return model.get('title').indexOf(q) > -1;
+					});
 				}
 			});
 
