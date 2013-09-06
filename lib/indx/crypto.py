@@ -2,6 +2,7 @@
  
 from Crypto import Random
 from Crypto.Cipher import AES
+from Crypto.Hash import SHA256
 import base64
 
 BS = 16
@@ -10,7 +11,10 @@ unpad = lambda s : s[0:-ord(s[-1])]
 
 class AESCipher:
     def __init__( self, key ):
-        self.key = key 
+        # TODO check that a SHA256 hash of the key is a good way to use AES
+        h = SHA256.new()
+        h.update(key)
+        self.key = h.digest()
 
     def encrypt( self, raw ):
         raw = pad(raw)

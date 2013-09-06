@@ -15,7 +15,9 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import os, logging, sys
+import os
+import logging
+import getpass
 from twisted.web import script
 from twisted.web.resource import ForbiddenResource
 from twisted.web.static import File
@@ -65,7 +67,11 @@ class WebServer:
         def auth_cb(can_auth):
             logging.debug("WebServer auth_cb, can_auth: {0}".format(can_auth))
             if can_auth:
-                self.check_indx_db() # check indx DB exists, otherwise create it - then setup the server
+
+                def checked_db_ok():
+                    self.check_users().addCallbacks(lambda checked: self.server_setup(), err_cb)
+
+                self.database.check_indx_db().addCallbacks(lambda checked: checked_db_ok(), err_cb) # check indx DB exists, otherwise create it - then setup the server
             else:
                 print "Authentication failed, check username and password are correct."
                 reactor.stop()
@@ -79,27 +85,35 @@ class WebServer:
         self.database.auth_indx(database = "postgres").addCallbacks(auth_cb, err_cb)
 
 
-    def check_indx_db(self):
-        """ Check if the INDX database exists, otherwise create it. """
-        logging.debug("WebServer check_indx_db")
+    def check_users(self):
+        """ Check that there is at least one user, otherwise prompt the user to create one on the command-line. """
+        logging.debug("WebServer check_users")
+        result_d = Deferred()
 
-        def success_cb(var):
-            self.server_setup()
+        def got_users(users):
+            logging.debug("users: {0}".format(users))
+            if len(users) < 1:
+                logging.debug("No users - prompting user on the command-line now.")
+                print "There are no users in the system, please create an owner user now."
+                new_username = ""
+                while len(new_username) == 0:
+                    new_username = raw_input("Username: ")
+                new_password = ""
+                while len(new_password) == 0:
+                    new_password = getpass.getpass("Password: ")
 
-        def err_cb(failure):
-            logging.debug("WebServer check_indx_db, err_cb, failure: {0}".format(failure))
-            failure.trap(Exception)
-            #reactor.stop()
-
-        user,password = self.get_indx_user_password()
-        self.database.check_indx_db().addCallbacks(success_cb, err_cb)
+                self.database.create_user(new_username, new_password).addCallbacks(result_d.callback, result_d.errback)
+                    
+            else:
+                result_d.callback(True) # users exist - continue
+            
+        self.database.list_users().addCallbacks(got_users, result_d.errback)
+        return result_d
 
 
     def server_setup(self):
         """ Setup the web server. """
         # TODO set up twisted to use gzip compression
-
-
 
         # Disable directory listings
         class FileNoDirectoryListings(File):

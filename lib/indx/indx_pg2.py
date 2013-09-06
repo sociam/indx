@@ -161,13 +161,9 @@ class IndxDatabase:
         pw_hash = make_hash(new_password)
         pw_encrypted = encrypt(new_password, self.db_pass)
 
-        def created(conn, rows):
-            return_d.callback(None)
-            return
-
         def connected(conn):
-            d = conn.runQuery("INSERT INTO tbl_users (username, username_type, password_hash, password_encrypted) VALUES (%s, %s, %s, %s)",[new_username, 'local', pw_hash, pw_encrypted])
-            d.addCallbacks(lambda rows: created(conn, rows), return_d.errback)
+            d = conn.runOperation("INSERT INTO tbl_users (username, username_type, password_hash, password_encrypted) VALUES (%s, %s, %s, %s)",[new_username, 'local', pw_hash, pw_encrypted])
+            d.addCallbacks(lambda *x: return_d.callback(None), return_d.errback)
             return
 
         connect(self.db_name, self.db_user, self.db_pass).addCallbacks(connected, return_d.errback)
