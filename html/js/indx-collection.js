@@ -6,9 +6,10 @@ angular
 
 		var Model = function () {};
 		Model.extend = function (obj) {
-			var F = function () {};
-			F.prototype = _.extend({}, Model.prototype, obj);
-			return F;
+			/// @ignore -- TODO
+			var _F = function () {};
+			_F.prototype = _.extend({}, Model.prototype, obj);
+			return _F;
 		};
 		_.extend(Model.prototype, {
 			is_new: false,
@@ -77,6 +78,7 @@ angular
 			}
 		});
 		var Collection = Backbone.Collection.extend({
+			/// the collection.Model the cast each model to
 			model: Model,
 			selected: undefined,
 			initialize: function (models, options) {
@@ -94,6 +96,14 @@ angular
 				this.populate();
 				this._set_new_model();
 			},
+			///
+			/// @opt <{}> attributes Attributes of new model
+			/// @opt <{}> options
+			///
+			/// @return <model> Model inheriting collection.model
+			///
+			/// Make a new instance of the model. When the model is saved,
+			/// it will be put in the box as an obj and appended to the array.
 			new_model: function (attributes, options) {
 				var that = this,
 					model = new Backbone.Model(attributes);
@@ -122,6 +132,7 @@ angular
 				//console.log('update');
 				this.trigger('update', this);
 			},
+			/// Remove the model from the array
 			remove: function (model) {
 				console.log('!!!remove!!!', arguments);
 				if (this.selected === model) { this.selected = undefined; }
@@ -187,6 +198,7 @@ angular
 					return Backbone.Collection.prototype.add.apply(this, arguments);
 				}
 			},
+			/// Fetch the object and update the collection with models in the array
 			fetch: function () {
 				var that = this,
 					promise = $.Deferred();
@@ -196,6 +208,7 @@ angular
 				});
 				return promise;
 			},
+			/// Update the collection with models in the array. This will happen automatically when the array changes.
 			populate: function () {
 				if (!this.obj || !this.options.array_key) { return; }
 				var that = this,
@@ -210,6 +223,7 @@ angular
 				//console.log('obj --> ', obj, array_key);
 				//console.log('list --> ', arr);
 			},
+			/// Save the obj with the current array state. This will happen automatically when the array changes.
 			save: function () {
 				var that = this,
 					promise = $.Deferred(),

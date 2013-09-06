@@ -13,7 +13,7 @@
   <div>
 
     <div class="description">
-      {{description}}
+      {{{description}}}
     </div>
 
     {{#inheritedFrom}}
@@ -66,6 +66,20 @@
           {{/fail.cases}}
         </ul>
       {{/result.async}}
+
+      {{#result.return}}
+        {{#hasTypes}}
+          ({{#types}}
+            <code>{{type}}</code>
+            {{^last}}or{{/last}}
+          {{/types}})
+        {{/hasTypes}}
+        {{comment}}
+      {{/result.return}}
+
+      {{#result.chain}}
+        <code>this</code> (chains).
+      {{/result.chain}}
     </div>
   </div>
 </div>
