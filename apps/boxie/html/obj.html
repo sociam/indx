@@ -4,7 +4,7 @@
 		<span class="text-muted" ng-show="!obj.is_selected">- {{ pop(obj.val_string).substr(0, 100) }}</span>
 	</div>
 	<div class="obj-preview" ng-show="obj.is_selected">
-		<ul class="icons">
+		<ul class="icons" hidden>
 			<li><a title="Analyse" ng-click="obj.analyse()"><i class="glyphicon glyphicon-eye-open"></i></a></li>
 			<li><a title="Edit" ng-click="obj.edit()"><i class="glyphicon glyphicon-pencil"></i></a></li>
 			<li><a title="Delete" ng-click="obj.delete()"><i class="glyphicon glyphicon-remove"></i></a></li>
@@ -12,4 +12,4 @@
 		<pre>{{ pop(obj.val_string) }}</pre>
 	</div>
 </td>
-<td>timestamp (user)</td>
+<td hidden>timestamp (user)</td>

@@ -43,11 +43,11 @@
 		<div class="row-fluid boxie-container" ng-show="selected_user && selected_box">
 			<div class="col-md-3">
 				<nav class="navbar navbar-default" role="navigation">
-					<h2 class="title">BOXIE</h2>
+					<h2 class="title">BOXIE !</h2>
 					<ul class="nav navbar-nav navbar-right">
   					</ul>
 				</nav>
-				<ul class="nav nav-pills nav-stacked">
+				<ul class="nav nav-pills nav-stacked" hidden>
 					<li ng-repeat="obj in objs.all_models" ng-click="obj.select()" ng-class="{ active: obj.selected }"><a href="#">{{ obj.id }}</a></li>
 				</ul>
 			</div>
@@ -79,7 +79,7 @@
 				</nav>
 				<table class="table obj-list" ng-show="objs && !curr_obj">
 					<thead>
-						<tr><th>ID</th><th width="180">Last edited</th></tr>
+						<tr><th>ID</th><th width="180" hidden>Last edited</th></tr>
 					</thead>
 					<tbody>
 						<tr ng-repeat="obj in objs.models" ng-include="'obj.html'" ng-click="obj.select()"></tr>
