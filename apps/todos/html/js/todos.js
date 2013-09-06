@@ -74,7 +74,7 @@ angular
 				box: box,
 				obj: box._create_model_for_id('todo_app'),
 				array_key: 'todo_lists',
-				saveSelected: true
+				save_selected: true
 			});
 			$scope.todo_lists.fetch();
 			$scope.todo_lists.on('update change', function () {
