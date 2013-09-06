@@ -6,7 +6,6 @@
 	var fs = require('fs'),
 		_ = require('underscore'),
 		mu = require('mu2'),
-		config = require('./config.js'),
 		GrammarParser = require('./lib/grammar-parser.js'),
 		allPromises = require('node-promise').all,
 		Promise = require('node-promise').Promise,
@@ -15,7 +14,8 @@
 		globp = require('glob'),
 		clc = require('cli-color'),
 		Backbone = require('backbone'),
-		marked = require('marked');
+		marked = require('marked'),
+		config;
 
 	mu.root = __dirname + '/template';
 
@@ -36,8 +36,14 @@
 		langPrefix: 'lang-'
 	};
 
-	var methodGrammar = new GrammarParser('./grammars/method-grammar'),
-		fileGrammar = new GrammarParser('./grammars/file-grammar');
+	if (!process.argv[2]) {
+		throw 'Please provide config file';
+	} else {
+		config = require('./' + process.argv[2]); // Hmmm... safe?
+	}
+
+	var methodGrammar = new GrammarParser('./grammars/method-grammar.peg'),
+		fileGrammar = new GrammarParser('./grammars/file-grammar.peg');
 
 
 	var Model = Backbone.Model.extend({
@@ -118,7 +124,8 @@
 
 			log('build', 'rendering to ' + outputDir);
 
-			deleteFolderRecursive(outputDir);
+			rmdirRecursive(outputDir);
+			mkdirRecursive(outputDir);
 			ncp('./template', outputDir, function (err) {
 				if (err) { throw err; }
 				//console.log(that.object().files[1].classes[5].extend.cid)
@@ -193,6 +200,7 @@
 				comment = getCommentAfter(this.data, 0),
 				promise = new Promise();
 			fileGrammar.parse(comment).then(function (rs) {
+				if (!rs.description) { rs.description = []; } // Hack
 				marked(rs.description.join('\n'), markedOptions, function (err, content) {
 					if (err) { throw err; }
 					rs.description = content;
@@ -268,7 +276,7 @@
 		initialize: function () {
 			Class.prototype.initialize.apply(this, arguments);
 			this.regexps = [
-				['([^\\s]*[\\.|\\s]+([A-Z][^\\s\\.]*)) *= *function *\\(([^\\)]*)\\)', function (match, fullName, name, n, pos) {
+				['([^\\s]*(?:\\s+\\.\\s+)?([A-Z][^\\s\\.]*)) *= *function *\\(([^\\)]*)\\)', function (match, fullName, name, n, pos) {
 					return { match: match, name: name, fullName: fullName, start: pos };
 				}],
 				['function\\s*([A-Z][^\\s.]*) *\\(([^\\)]*)\\)', function (match, name, pos) {
@@ -283,7 +291,7 @@
 		initialize: function (models, options) {
 			this.builder = options.builder;
 			this.file = options.file;
-			this.data = options.data
+			this.data = options.data;
 		},
 		parse: function () {
 			var that = this,
@@ -294,6 +302,8 @@
 					var re = new RegExp(regexp[0], 'g');
 					that.data.replace(re, function () {
 						var match = regexp[1].apply(this, arguments);
+						console.log(match);
+						if (match.fullName.indexOf('_') === 0) { return; }
 						that.add(_.extend({
 							extend: superCls.object()
 						}, match), { data: that.data, file: that.file });
@@ -331,24 +341,43 @@
 
 			var that = this;
 			this.parseComment().then(function () {
-				that.arguments.parse().then(function () {;
+				that.arguments.parse().then(function () {
 					if (that.arguments.length > 0) {
 						that.set('hasArgs', true);
 						that.parsed.resolve();
 					}
 				});
+
+				var result = that.get('result');
+				if (result) {
+					console.log('k', result);
+					if (result['return'] && result['return'].types) {
+						muList(result['return'].types);
+						result['return'].hasTypes = true;
+					}
+				}
 			});
 		},
 		parseComment: function () {
 			var that = this,
-				comment = getCommentBefore(this.data, this.get('start'))
-			return methodGrammar.parse(comment).then(function (rs) {
-				that.set(rs);
-				if (that.get('args')) {
-					that.arguments.reset(that.get('args'));
-				}
-				that.unset('args');
+				promise = new Promise(),
+				comment = getCommentBefore(this.data, this.get('start'));
+
+			methodGrammar.parse(comment).then(function (rs) {
+				if (!rs.description) { rs.description = []; } // Hack
+				marked(rs.description.join('\n'), markedOptions, function (err, content) {
+					if (err) { throw err; }
+					rs.description = content;
+					that.set(rs);
+					if (that.get('args')) {
+						that.arguments.reset(that.get('args'));
+					}
+					that.unset('args');
+					promise.resolve();
+				});
 			});
+
+			return promise;
 		},
 		object: function () {
 			if (this.arguments.last()) { this.arguments.last().set('last', true); }
@@ -380,11 +409,11 @@
 			subdata.replace(re, function (match, name, args, pos) {
 				if (name.indexOf('_') === 0) { return; }
 				var method = {
-						name: name,
-						start: start + pos,
-						args: args,
-						line: lineNumber(data, start + pos)
-					};
+					name: name,
+					start: start + pos,
+					args: args,
+					line: lineNumber(data, start + pos)
+				};
 
 				that.add(method, { data: that.data, cls: that.cls });
 
@@ -408,10 +437,7 @@
 			var types = this.get('types');
 			if (types && types.length > 0) {
 				this.set('hasTypes', true);
-				_.each(types, function (type) {
-					type.last = false;
-				});
-				types[types.length - 1].last = true;
+				muList(types);
 			}
 
 			this.parsed.resolve();
@@ -419,7 +445,7 @@
 		uid: function () {
 			return this.method.id + '_argument-' + this.get('name').replace(/\W+/gi, '');
 		}
-	})
+	});
 
 	var Arguments = Collection.extend({
 		model: Argument,
@@ -438,7 +464,7 @@
 
 
 	function getCommentBefore (data, start) {
-		var subdata = data.substring(0, start),
+		var subdata = data.substring(0, start + 1),
 			lines = subdata.split('\n').reverse();
 		return getComment(lines).reverse().join('\n');
 	}
@@ -452,7 +478,7 @@
 	function getComment (lines) {
 		var commentLines = [],
 			i, l, line;
-		for (i = 1, l = lines.length; i < l; i++) {
+		for (i = 0, l = lines.length; i < l; i++) {
 			line = lines[i].trim();
 			if (line.length === 0 || line.indexOf('/*') === 0) { continue; }
 			if (line.indexOf('///') !== 0) { break; }
@@ -460,21 +486,45 @@
 		}
 		return commentLines;
 	}
+	// Gives each element a 'last' boolean property (useful for mustache templates)
+	function muList (list) {
+		_.each(list, function (item) {
+			item.last = false;
+		});
+		list[list.length - 1].last = true;
+	}
 
-	function deleteFolderRecursive (path) {
+	function rmdirRecursive (path) {
 		var files = [];
 		if( fs.existsSync(path) ) {
 			files = fs.readdirSync(path);
-			files.forEach(function(file,index){
-				var curPath = path + "/" + file;
+			files.forEach(function (file) {
+				var curPath = path + '/' + file;
 				if(fs.statSync(curPath).isDirectory()) { // recurse
-					deleteFolderRecursive(curPath);
+					rmdirRecursive(curPath);
 				} else { // delete file
 					fs.unlinkSync(curPath);
 				}
 			});
 			fs.rmdirSync(path);
 		}
+	}
+
+	function mkdirRecursive (path, root) {
+
+		var dirs = path.split('/'),
+			dir = dirs.shift();
+
+		root = (root || '') + dir + '/';
+
+		try {
+			fs.mkdirSync(root);
+		} catch (e) {
+			//dir wasn't made, something went wrong
+			if(!fs.statSync(root).isDirectory()) throw new Error(e);
+		}
+
+		return !dirs.length || mkdirRecursive(dirs.join('/'), root);
 	}
 
 	function lineNumber (data, charNumber) {

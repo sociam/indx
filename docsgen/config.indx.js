@@ -1,6 +1,6 @@
 module.exports = {
 	basePath: '../html/',
-	outputDirectory: '../html/docs/',
+	outputDirectory: '../html/docs/indx/',
 
 	filePaths: [
 		'../docsgen/abstracts/*',

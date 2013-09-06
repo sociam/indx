@@ -22,7 +22,7 @@ description_lines
 			{ return [d]; }
 
 description_line
-	= __ $ _ d:comment
+	= __ $ d:comment
 			{ return d; }
 
 comment
