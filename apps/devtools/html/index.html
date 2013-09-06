@@ -5,7 +5,7 @@
 	<link href="/css/angular-ui.css" rel="stylesheet">
 	<link href="/css/select2.css" rel="stylesheet"/>
 	<link rel="stylesheet/less" type="text/css" href="/components/toolbar/toolbar.less">
-	<link rel="stylesheet/less" type="text/css" href="css/devtools.less">	
+	<link rel="stylesheet/less" type="text/css" href="css/devtools.less">
 	<title>INDX Developer Tools</title>
   </head>
   <body ng-app="devtools" ng-controller="main"  ng-cloak>
@@ -26,17 +26,21 @@
 			  <statuspane></statuspane>
 			</div>
 			<div class="tab-pane" id="apidocs">
+				<p>To create documentation run <code>node docsgen/build.js [config file]</code></p>
+				<p>If node fails with "Maximum call stack size exceeded", run with a larger stack size: <code>node --stack_size=4096 docsgen/build.js [config file]</code></p>
+				<p>Config files are of the form docsgen/config.indx.js.</p>
 			  <ul>
-				<li><a href="/docs">indx.js API documentation</a>
+				<li><a href="/docs/indx">indx.js API documentation</a></li>
+				<li><a href="/docs/indx-collection">indx-collection.js API documentation</a></li>
 			  </ul>
-			</div>		  
+			</div>
 			<div class="tab-pane" id="testing">
 			  <p>testing</p>
-			</div>		  
+			</div>
 			<div class="tab-pane" id="other">
 			  <p>other</p>
 			</div>
-		  </div>		  
+		  </div>
 		</div>
 	  </div>
 	  <div ng-show="!selected_user">
@@ -44,20 +48,20 @@
 	  </div>
 	  <div ng-show="selected_user && !selected_box">
 		<h2> please select a box  </h2>
-	  </div>		
-	</div><!-- main --> 
+	  </div>
+	</div><!-- main -->
   </body>
-  <script src="/js/vendor/lesscss.min.js" type="text/javascript"></script>  
+  <script src="/js/vendor/lesscss.min.js" type="text/javascript"></script>
   <script src="/js/vendor/jquery.min.js" type="text/javascript"></script>
   <script src="/js/vendor/underscore.min.js" type="text/javascript"></script>
   <script src="/js/vendor/backbone.min.js" type="text/javascript"></script>
   <script src="/js/vendor/bootstrap.min.js" type="text/javascript"></script>
-  <!-- angular --> 
+  <!-- angular -->
   <script src="/js/vendor/angular.min.js" type="text/javascript"></script>
   <script src="/js/vendor/angular-ui.js" type="text/javascript"></script>
-  <!-- indx --> 
+  <!-- indx -->
   <script src="/js/indx.js" type="text/javascript"></script>
   <script src="/js/indx-utils.js" type="text/javascript"></script>
   <script src="/components/toolbar/toolbar.js" type="text/javascript"></script>
-  <script src="js/devtools.js" type="text/javascript"></script>  
+  <script src="js/devtools.js" type="text/javascript"></script>
 </html>
