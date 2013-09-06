@@ -25,7 +25,17 @@ angular
 				},
 				attribute_array: function () {
 					return _.map(this.attributes, function (value, key) {
-						return { key: key, value: value };
+						var type = typeof value,
+							is_array = false;
+						if (_.isArray(value)) {
+							is_array = true;
+							type = 'array';
+							/*value = _.map(value, function (value, i) {
+								var type = typeof value;
+								return { index: i, value: value, type: type };
+							});*/
+						}
+						return { type: type, key: key, value: value, is_array: is_array };
 					});
 				}
 			}),
