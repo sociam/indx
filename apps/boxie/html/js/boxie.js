@@ -1,7 +1,14 @@
 /* global angular, console, _, Backbone, $ */
 angular
 	.module('boxie', ['ui','indx'])
-	.controller('boxie', function($scope, client, utils, collection) {
+	.config(['$routeProvider', function ($routeProvider) {
+
+		$routeProvider
+			.when('/', { templateUrl: 'partials/root.html', controller: RootCtrl })
+			.when('/obj/:obj_id', { templateUrl: 'partials/obj-detail.html', controller: ObjDetailCtrl })
+			.otherwise({ redirectTo: '/' });
+	}])
+	.controller('RootCtrl', function ($scope, $routeProvider, client, utils, collection) {
 		'use strict';
 
 		var box,
