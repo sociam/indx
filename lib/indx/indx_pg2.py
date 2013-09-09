@@ -139,13 +139,10 @@ class IndxDatabase:
             "GRANT SELECT ON ALL TABLES IN SCHEMA public TO %s" % (ro_user),
         ]
 
-        def created(conn):
-            return_d.callback((rw_user, rw_user_pass, ro_user, ro_user_pass))
-            return
-
         def connected(conn):
             if len(queries) < 1:
-                created(conn)
+                return_d.callback((rw_user, rw_user_pass, ro_user, ro_user_pass))
+                return
 
             query = queries.pop(0)
             d = conn.runOperation(query)
