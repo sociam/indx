@@ -73,7 +73,14 @@ class AdminHandler(BaseHandler):
             self.return_created(request)
         def do_create():
             logging.debug("Creating box {0} for user {1}".format(box_name,username))
-            self.database.create_box(box_name, username, password).addCallbacks(start, lambda failure: self.return_internal_error(request))
+
+            def handle_err(failure):
+                failure.trap(Exception)
+                e = failure.value
+                logging.error("Error creating box: {0} ({1})".format(failure, e))
+                self.return_internal_error(request)
+
+            self.database.create_box(box_name, username, password).addCallbacks(start, handle_err)
         def check(result):
             try :
                 logging.debug(' result > {0} '.format(result))

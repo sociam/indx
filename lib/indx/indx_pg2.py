@@ -26,6 +26,8 @@ from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
 
 POOLS = {} # dict of txpostgres.ConnectionPools, one pool for each box/user combo
+POOLS_BY_DBNAME = {} # dict of above indexed by dbname, used to close pools when databases are deleted
+
 INDX_PREFIX = "ix_" # prefix to the database names
 
 POSTGRES_DB = "postgres" # default db fallback if db name is none
@@ -131,9 +133,10 @@ class IndxDatabase:
         queries = [
             "CREATE ROLE %s LOGIN ENCRYPTED PASSWORD '%s' NOSUPERUSER INHERIT NOCREATEDB NOCREATEROLE" % (rw_user, rw_user_pass),
             "CREATE ROLE %s LOGIN ENCRYPTED PASSWORD '%s' NOSUPERUSER INHERIT NOCREATEDB NOCREATEROLE" % (ro_user, ro_user_pass),        
+            "GRANT %s TO %s" % (rw_user, self.db_user), # make indx user a member of the rw user role (required)
             "ALTER DATABASE %s OWNER TO %s" % (db_name, rw_user),
             "GRANT ALL PRIVILEGES ON DATABASE %s TO %s" % (db_name, rw_user),
-            "GRANT SELECT ON DATABASE %s TO %s" % (db_name, ro_user),
+            "GRANT SELECT ON ALL TABLES IN SCHEMA public TO %s" % (ro_user),
         ]
 
         def created(conn):
@@ -145,7 +148,7 @@ class IndxDatabase:
                 created(conn)
 
             query = queries.pop(0)
-            d = conn.runQuery(query)
+            d = conn.runOperation(query)
             d.addCallbacks(lambda rows: connected(conn), lambda failure: return_d.errback(failure))
             return
 
@@ -172,14 +175,18 @@ class IndxDatabase:
 
     def create_box(self, box_name, db_owner, db_owner_pass):
         """ Create a new database. """
+        logging.debug("indx_pg2 create_box")
         return_d = Deferred()
         db_name = INDX_PREFIX + box_name 
 
         def connected(conn):
+            logging.debug("indx_pg2 create_box, connected")
 
             def created(val):
+                logging.debug("indx_pg2 create_box, created")
 
                 def connected_newdb(conn_newdb):
+                    logging.debug("indx_pg2 create_box, connected_newdb")
                     queries = ""
                     # ordered list of source database creation files
                     source_files = ['objectstore-schema.sql', 'objectstore-views.sql', 'objectstore-functions.sql', 'objectstore-indexes.sql']
@@ -190,8 +197,10 @@ class IndxDatabase:
                         queries += " " + objsql # concat operations together and run once below
 
                     def operations_cb(empty):
+                        logging.debug("indx_pg2 create_box, operations_cb")
 
                         def created_cb(user_details):
+                            logging.debug("indx_pg2 create_box, created_cb")
                             rw_user, rw_user_pass, ro_user, ro_user_pass = user_details
 
                             # assign ownership now to db_owner
@@ -199,10 +208,11 @@ class IndxDatabase:
                             ro_pw_encrypted = encrypt(ro_user_pass, db_owner_pass)
 
                             def indx_db(conn_indx):
+                                logging.debug("indx_pg2 create_box, indx_db")
                                 d_q = conn_indx.runOperation("INSERT INTO tbl_keychain (user_id, db_name, db_user, db_user_type, db_password_encrypted) VALUES ((SELECT id_user FROM tbl_users WHERE username = %s), %s, %s, %s, %s), ((SELECT id_user FROM tbl_users WHERE username = %s), %s, %s, %s, %s)", [db_owner, db_name, rw_user, 'rw', rw_pw_encrypted, db_owner, db_name, ro_user, 'ro', ro_pw_encrypted])
 
                                 def inserted(empty):
-                                    logging.debug("create_box finished")
+                                    logging.debug("indx_pg2 create_box, inserted - create_box finished")
                                     return_d.callback(True)
 
                                 d_q.addCallbacks(inserted, return_d.errback)
@@ -217,7 +227,7 @@ class IndxDatabase:
 
                 connect(db_name, self.db_user, self.db_pass).addCallbacks(connected_newdb, return_d.errback)  ### XXX finish
             
-            d = conn.runQuery("CREATE DATABASE %s WITH ENCODING='UTF8' OWNER=%s CONNECTION LIMIT=-1" % (db_name, self.db_user))
+            d = conn.runOperation("CREATE DATABASE %s WITH ENCODING='UTF8' OWNER=%s CONNECTION LIMIT=-1" % (db_name, self.db_user))
             d.addCallbacks(created, return_d.errback)
 
         connect(POSTGRES_DB, self.db_user, self.db_pass).addCallbacks(connected, return_d.errback)
@@ -262,9 +272,13 @@ class IndxDatabase:
         return_d = Deferred()
 
         def connected(conn):
-            db_name = INDX_PREFIX + box_name 
             d = conn.runOperation("DROP DATABASE {0}".format(db_name))
             d.addCallbacks(lambda done: return_d.callback(True), return_d.errback)
+
+        db_name = INDX_PREFIX + box_name 
+        for pool in POOLS_BY_DBNAME[db_name]:
+            pool.close()
+            # TODO remove these from here, and from POOLS ?
 
         connect(POSTGRES_DB, self.db_user, self.db_pass).addCallbacks(connected, return_d.errback)
         return return_d
@@ -317,10 +331,13 @@ def connect(db_name, db_user, db_pass):
         def success(pool):
             logging.debug("indx_pg2: returning new pool for db: {0}, user: {1}, pool: {2}".format(db_name, db_user, pool))
             POOLS[conn_str] = pool # only do this if it successfully connects
+            if db_name not in POOLS_BY_DBNAME:
+                POOLS_BY_DBNAME[db_name] = []
+            POOLS_BY_DBNAME[db_name].append(pool)
             result_d.callback(pool)
 
         p = txpostgres.ConnectionPool(None, conn_str)
-        p.start().addCallbacks(success, lambda failure: result_d.errback(failure))
+        p.start().addCallbacks(success, result_d.errback)
 
     return result_d
 
