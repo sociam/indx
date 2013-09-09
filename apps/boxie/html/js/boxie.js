@@ -19,12 +19,13 @@ angular
 				},
 				update: function () {
 					this.val_string = JSON.stringify(this.toJSON(), null, ' ');
+					this._generate_attribute_array();
 				},
 				analyse: function () {
 					$scope.curr_obj = this;
 				},
-				attribute_array: function () {
-					return _.map(this.attributes, function (value, key) {
+				_generate_attribute_array: function () {
+					this.attribute_array = _.map(this.attributes, function (value, key) {
 						var type = typeof value,
 							is_array = false;
 						if (_.isArray(value)) {
