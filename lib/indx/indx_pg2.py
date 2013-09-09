@@ -286,7 +286,7 @@ class IndxDatabase:
 
     def delete_box(self, box_name):
         # delete the database
-        logging.debug("Delete box {0} req from user {1}".format(box_name, db_user))
+        logging.debug("Delete box {0} req".format(box_name))
         return_d = Deferred()
 
         def connected(conn):
