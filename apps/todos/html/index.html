@@ -81,15 +81,15 @@
 				<div class="todos-container" ng-show="todo_lists.selected">
 					<nav class="navbar navbar-default hidden-xs" role="navigation">
 						<ul class="nav navbar-nav">
-	  						<li ng-show="!search"><button class="btn btn-default btn-sm navbar-btn" ng-click="todo_lists.selected.search = true"><i class="glyphicon glyphicon-search"></i></button></li>
-							<li ng-show="todo_lists.selected.search">
+	  						<li ng-show="!search"><button class="btn btn-default btn-sm navbar-btn" ng-click="search = true"><i class="glyphicon glyphicon-search"></i></button></li>
+							<li ng-show="search">
 								<form class="navbar-form navbar-left" role="search">
   									<div class="form-group">
-  										<input type="text" placeholder="search" ng-model="todo_lists.selected.search_text">
+  										<input type="text" placeholder="search" ng-model="search_text" ng-blur="search = false" ng-keyup="search = false">
   									</div>
   								</form>
   							</li>
-							<li ng-click="show_completed = !show_completed;" ng-class="{ active: show_completed }"><a href="#"><i class="glyphicon glyphicon-list"></i></a></li>
+							<li ng-click="show_completed = !show_completed;" ng-class="{ active: show_completed }"><button class="btn btn-default btn-sm navbar-btn"><i class="glyphicon glyphicon-list"></i></button>&nbsp;&nbsp;</li>
 							<li class="dropdown">
 								<div class="btn-group">
 									<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">Sort <span class="caret"></span></button>
