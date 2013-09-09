@@ -4,18 +4,18 @@
 		<div ng-show="todo.today">Today</div>
 	</div>
 	<div class="todo-body">
-		<div class="todo-checkbox" ng-click="todo.toggle()"><span class="glyphicon glyphicon-ok" ng-show="pop(todo.attributes.completed)"></span></div>
-		<div class="todo-title" ng-show="!todo.is_editing()">{{ pop(todo.attributes.title) }}</div>
-		<div class="todo-title" ng-show="todo.is_editing()">
-			<textarea ng-model="todo.newAttributes.title" placeholder="todo..." ui-keydown="{enter:'save_todo(todo)'}"></textarea>
+		<div class="todo-checkbox" ng-show="!todo.is_new" ng-click="todo.toggle()"><span class="glyphicon glyphicon-ok" ng-show="pop(todo.attributes.completed)"></span></div>
+		<div class="todo-title" ng-show="!todo.is_editing">{{ pop(todo.attributes.title) }}</div>
+		<div class="todo-title" ng-show="todo.is_editing">
+			<textarea ng-model="todo.newAttributes.title" placeholder="todo..." ui-keydown="{ enter: 'todo.stage_and_save()' }"></textarea>
 		</div>
 	</div>
 	<div class="todo-controls">
-		<button type="button" ng-show="!todo.is_editing()" class="btn btn-default btn-sm todo-hover" ng-click="todo.edit()">
+		<button type="button" ng-show="!todo.is_editing" class="btn btn-default btn-sm todo-hover" ng-click="todo.edit()">
 			<span class="glyphicon glyphicon-edit"></span> Edit
 		</button>
 	</div>
-	<div class="todo-meta" ng-show="todo.is_editing()">
+	<div class="todo-meta" ng-show="todo.is_editing">
 		<div class="btn-group">
 			<button type="button" class="btn btn-default dropdown-toggle btn-sm" data-toggle="dropdown" ng-class="'urgency-' + todo.newAttributes.urgency">
 				<span class="glyphicon glyphicon-warning-sign"></span> {{ pop(todo.newAttributes.urgency) }} <span class="caret"></span>
@@ -27,15 +27,17 @@
 				<li><a href="#" ng-click="todo.newAttributes.urgency = 'urgent'">Urgent</a></li>
 			</ul>
 		</div>
-		<button type="submit" ng-show="todo.is_editing()" class="btn btn-primary btn-sm" ng-click="todo.stage_and_save()">
-			<span class="glyphicon glyphicon-ok"></span> Save
-		</button>
-		<button type="button" ng-show="todo.is_editing()" class="btn btn-default btn-sm" ng-click="todo.restore()">
-			<span class="glyphicon glyphicon-remove"></span> Cancel
-		</button>
-		<span ng-show="!todo.is_new()" >
-			<button type="button" ng-show="todo.is_editing()" class="btn btn-danger btn-sm" ng-click="todo.remove()">
-				<span class="glyphicon glyphicon-minus"></span> Delete
+		<span class="pull-right">
+			<span ng-show="!todo.is_new" >
+				<button type="button" ng-show="todo.is_editing" class="btn btn-danger btn-sm" ng-click="todo.remove()">
+					<span class="glyphicon glyphicon-minus"></span> Delete
+				</button>
+			</span>
+			<button type="button" ng-show="todo.is_editing" class="btn btn-default btn-sm" ng-click="todo.restore()">
+				<span class="glyphicon glyphicon-remove"></span> Cancel
+			</button>
+			<button type="submit" ng-show="todo.is_editing" class="btn btn-primary btn-sm" ng-click="todo.stage_and_save()">
+				<span class="glyphicon glyphicon-ok"></span> Save
 			</button>
 		</span>
 	</div>

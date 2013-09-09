@@ -6,6 +6,30 @@ angular
         $scope.loading = 0;
         var config;
 
+        if ( !Date.prototype.toISOString ) {
+            ( function() {
+    
+            function pad(number) {
+                var r = String(number);
+                if ( r.length === 1 ) {
+                    r = '0' + r;
+                }
+                return r;
+            }
+         
+            Date.prototype.toISOString = function() {
+                return this.getUTCFullYear()
+                    + '-' + pad( this.getUTCMonth() + 1 )
+                    + '-' + pad( this.getUTCDate() )
+                    + 'T' + pad( this.getUTCHours() )
+                    + ':' + pad( this.getUTCMinutes() )
+                    + ':' + pad( this.getUTCSeconds() )
+                    + '.' + String( (this.getUTCMilliseconds()/1000).toFixed(3) ).slice( 2, 5 )
+                    + 'Z';
+            };
+            }() );
+        }
+
         var initialise = function() {
             $("#step-text").hide();
             $("#step-authurl").hide();
@@ -34,6 +58,7 @@ angular
         };
 
         var authorise_app = function() {
+            $("#step-text").text("The first step is to authorise INDX to access your Fitbit data.");
             $("#step-text").show();
             $.ajax({
                 url: "api",
@@ -91,7 +116,8 @@ angular
                     $("#step-text").text("INDX was never synced with Fitbit. Click the button below if you would like to start the download now.");
                 }
                 else {
-                    $("#step-text").text("The last sync was on "+config.get("up_to_date")+". Click the button below if you would like to start the download now.");
+                    last_sync = new Date(parseInt(config.get("up_to_date")));
+                    $("#step-text").text("The last sync was on "+last_sync.toISOString()+". Click the button below if you would like to start the download now.");
                 }
                 $("#step-text").show();
                 $("#step-btn-download").show();
@@ -103,7 +129,8 @@ angular
             $("#step-load").show();
             var up_to_date, from_date, observations;
             if (config.get("from_date")) {
-                start = Date.parse(config.get("up_to_date"));
+                start = new Date(parseInt(config.get("up_to_date")));
+                console.log(start.toISOString());
                 $.ajax({
                     url: "api",
                     data: {"download": "true", "start": start.valueOf()},
@@ -125,7 +152,7 @@ angular
                         up_to_date = Date.parse(data.up_to_date);
                         from_date = Date.parse(data.from_date);
                         observations = JSON.parse(data.observations);
-                        save_observations(observations, up_to_date);
+                        save_observations(observations, up_to_date, from_date);
                     }
                 });
             }
@@ -133,21 +160,21 @@ angular
 
         var save_observations = function(observations, up_to, from) {
             // config.set(each of the observation in the list);
-            box.get_obj('fitbit_dataset_' + (new Date()).valueOf()).then(function (ds) {
+            box.get_obj('fitbit_dataset').then(function (ds) {
                 ds.set({
                     // @type: 'http://purl.org/linked-data/cube#Dataset',
                     device: 'Fitbit Connector',
                 });
                 ds.save()
-                    .then(function(e) { u.debug('created and saved new dataset ' + ds.get('@id')); })
-                    .fail(function(e) { u.error('could not save new dataset ', e); });
+                    // .then(function(e) { u.debug('created and saved dataset ' + ds.get('@id')); })
+                    .fail(function(e) { u.error('could not save dataset ', e); });
                 dps = [];
                 observations.map(function(obs) {
-                    start = Date.parse(obs['start']).valueOf();
-                    box.get_obj('fitbit_obs_' + start).then(function (o) {
+                    st = Date.parse(obs['start']).valueOf();
+                    box.get_obj('fitbit_obs_' + st).then(function (o) {
                         o.set({
                             // @type: 'http://purl.org/linked-data/cube#Observation',
-                            start: start, 
+                            start: Date.parse(obs['start']).valueOf(), 
                             end: Date.parse(obs['end']).valueOf(),
                             dataset: ds.get('@id'),
                         });
@@ -171,9 +198,11 @@ angular
                                 dps.push(o); // should this be o.get('@id') ? 
                                 ds.set({data_points: dps});
                                 ds.save()
-                                    .then(function(e) { u.debug('created and saved new dataset ' + ds.get('@id')); })
+                                    .then(function(e) { 
+                                        // u.debug('created and saved new dataset ' + ds.get('@id')); 
+                                    })
                                     .fail(function(e) { u.error('could not save new dataset ', e); });
-                                u.debug('created and saved new observation ' + o.get('@id')); 
+                                // u.debug('created and saved new observation ' + o.get('@id')); 
                             })
                             .fail(function(e) { u.error('could not save new observation ', e); });
                     }).fail(function(e) {

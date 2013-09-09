@@ -1,46 +1,86 @@
-/* global angular, console, _, Backbone */
+/* global angular, console, _, Backbone, $ */
 angular
 	.module('boxie', ['ui','indx'])
-	.controller('boxie', function($scope, client, utils) {
+	.controller('boxie', function($scope, client, utils, collection) {
 		'use strict';
 
 		var box,
 			u = utils;
 
+		var Obj = collection.Model.extend({
+				initialize: function () {
+					var that = this;
 
-		var update_view = function (objs) {
-			u.safe_apply($scope, function () {
-				$scope.objs = objs.models;
+					that.update();
+
+					this.on('update change', function () {
+						that.update();
+					});
+				},
+				update: function () {
+					this.val_string = JSON.stringify(this.toJSON(), null, ' ');
+				},
+				analyse: function () {
+					$scope.curr_obj = this;
+				},
+				attribute_array: function () {
+					return _.map(this.attributes, function (value, key) {
+						var type = typeof value,
+							is_array = false;
+						if (_.isArray(value)) {
+							is_array = true;
+							type = 'array';
+							/*value = _.map(value, function (value, i) {
+								var type = typeof value;
+								return { index: i, value: value, type: type };
+							});*/
+						}
+						return { type: type, key: key, value: value, is_array: is_array };
+					});
+				}
+			}),
+
+			Objs = collection.Collection.extend({
+				model: Obj,
+				fetch: function () {
+					var that = this,
+						promise = $.Deferred(),
+						ids = this.box.get_obj_ids(),
+						objs = [],
+						promises = _.map(ids, function (id) {
+							var promise = $.Deferred();
+							that.box.get_obj(id).then(function (obj) {
+								objs.push(obj);
+								promise.resolve();
+							});
+							return promise;
+						});
+					$.when.apply($, promises).then(function () {
+						that.reset(objs);
+						promise.resolve();
+					});
+					return promise;
+				}
+			});
+
+
+		var initialize = function () {
+			console.log('init');
+			$scope.objs = new Objs(undefined, { box: box });
+			$scope.objs.fetch();
+			$scope.objs.on('update change', function () {
+				console.log('fetched');
+				u.safe_apply($scope);
 			});
 		};
 
-		var Obj = Backbone.Model.extend({
-			sync: function (method) {
-				var that = this;
-				if (method === 'read') {
-					box.get_obj(this.id).then(function (val) {
-						that.set('val', val);
-						that.set('val-string', JSON.stringify(val, null, ' '));
-					});
-				}
-			}
-		});
-
-		var update_watcher = function() {
-			if (!box) { u.debug('no box, skipping '); return ;}
-			window.box = box;
-			var obj_ids = box.get_obj_ids(),
-				objs = new Backbone.Collection(_.map(obj_ids, function (id) {
-					var obj = new Obj({ id: id });
-					obj.on('change:val', function () {
-						update_view(objs);
-						console.log(arguments)
-					}).fetch();
-					return obj;
-				}));
+		var pop = function (arr) {
+			if (!_.isArray(arr)) { return arr; }
+			return _.first(arr);
 		};
 
-		$scope.an_obj_to_contain_the_selected_obj = { }; // Angular scoping ftw
+		$scope.pop = pop;
+		window.$scope = $scope;
 
 		// watches the login stts for changes
 		$scope.$watch('selected_box + selected_user', function() {
@@ -48,10 +88,12 @@ angular
 				console.log('selected ', $scope.selected_user, $scope.selected_box);
 				client.store.get_box($scope.selected_box).then(function(b) {
 					box = b;
-					update_watcher();
+		window.box = box;
+					initialize();
 				}).fail(function(e) { u.error('error ', e); });
 			}
 		});
+
 
 
 	});

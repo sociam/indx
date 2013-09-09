@@ -1,5 +1,5 @@
 start
-	= as:arguments?  _$_ r:result? _$_ d:description_lines?
+	= as:arguments? r:result? d:description_lines?
 			{ return { args: as, description: d, result: r }; }
 
 arguments
@@ -9,7 +9,7 @@ arguments
 			{ return [a]; }
 
 argument
-	= $ m:argument_mode _ t:type_statement? _ n:name _ ":"? _ c:comment?
+	= _$_ m:argument_mode _ t:type_statement? _ n:name _ ":"? _ c:comment?
 			{ return { mode: m, types: t, name: n, comment: c }; }
 
 argument_mode
@@ -19,7 +19,14 @@ argument_mode
 		{ return { optional: true }; }
 
 description_lines
-	= d:.* { return d.join(''); }
+	= d:description_line ds:description_lines
+			{ return [d].concat(ds); }
+	/ d:description_line
+			{ return [d]; }
+
+description_line
+	= __ $ d:comment
+			{ return d; }
 
 result
 	= r:return_result
@@ -32,18 +39,19 @@ result
 			{ return { "constructor": true }; }
 
 return_result
-	= $ "@return" _ type_statement? _ comment
+	= _$_ "@return" _ t:type_statement? _ c:comment
+			{ return { comment: c, types: t }; }
 
 async_result
 	= then:async_then_result _$_ fail:async_fail_result
 			{ return { then: then, fail: fail }; }
 
 async_then_result
-	= "@then" _ cb:callback _ c:comment
+	= _$_ "@then" _ cb:callback _ c:comment
 			{ return { comment: c, args: cb }; }
 
 async_fail_result
-	= "@fail" _ c:async_fail_result_cases
+	= _$_ "@fail" _ c:async_fail_result_cases
 			{ return { cases: c }; }
 
 async_fail_result_cases
@@ -76,7 +84,7 @@ callback_argument_comment
 
 
 chain_result
-	= $ "@chain"
+	= _$_ "@chain"
 
 constructor_result
 	= $ "@constructor"
