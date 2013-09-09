@@ -40,6 +40,12 @@ angular
 					});
 					console.log('todos, ', that.todos_by_group);
 					u.safe_apply($scope);
+				},
+				remove: function () {
+					if (confirm('Are you sure you want to delete this todo list?')) {
+						return collection.Model.prototype.remove.apply(this, arguments);
+					}
+					return this;
 				}
 			}),
 
