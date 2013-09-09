@@ -91,12 +91,21 @@ class AuthHandler(BaseHandler):
         password = wbSession.password
         origin = self.get_origin(request)
 
-        def check_app_perms(conn):
-            token = self.webserver.tokens.new(username,password,boxid,appid,origin,request.getClientIP())
-            return self.return_ok(request, {"token":token.id})
+        def got_acct(acct):
+            if acct == False:
+                return self.return_forbidden(request)
 
-        # create a connection pool
-        database.connect_box(boxid,username,password).addCallbacks(check_app_perms, lambda conn: self.return_forbidden(request))
+            db_user, db_pass = acct
+
+            def check_app_perms(acct):
+                token = self.webserver.tokens.new(username,password,boxid,appid,origin,request.getClientIP())
+                return self.return_ok(request, {"token":token.id})
+
+            # create a connection pool
+            database.connect_box(boxid,db_user,db_pass).addCallbacks(check_app_perms, lambda conn: self.return_forbidden(request))
+
+        self.database.lookup_best_acct(boxid, username, password).addCallbacks(got_acct, lambda conn: self.return_forbidden(request))
+
 
 AuthHandler.subhandlers = [
     {

@@ -45,6 +45,10 @@ class IndxDatabase:
         self.db_user = db_user
         self.db_pass = db_pass
 
+    def connect_indx_db(self):
+        """ Connect to the indx database. """
+        return connect(self.db_name, self.db_user, self.db_pass)
+
 
     def auth_indx(self, database = None):
         """ Authenticate the INDX database credentials. """
@@ -78,7 +82,7 @@ class IndxDatabase:
             d.addCallbacks(hash_cb, return_d.errback)
 
         # get a connection to the INDX db from the pool
-        connect(self.db_name, self.db_user, self.db_pass).addCallbacks(connected_cb, return_d.errback)
+        self.connect_indx_db().addCallbacks(connected_cb, return_d.errback)
         return return_d
 
 
@@ -107,8 +111,7 @@ class IndxDatabase:
 
                             conn_indx.runOperation(queries).addCallbacks(lambda success: return_d.callback(True), return_d.errback)
 
-                        connect(self.db_name, self.db_user, self.db_pass).addCallbacks(connect_indx, return_d.errback)
-
+                        self.connect_indx_db().addCallbacks(connect_indx, return_d.errback)
 
                     d2.addCallbacks(create_cb, return_d.errback)
                 else:
@@ -125,32 +128,50 @@ class IndxDatabase:
         """
         return_d = Deferred()
 
-        rw_user = "{0}{1}_rw".format(INDX_PREFIX, db_name)
+        rw_user = "{0}_rw".format(db_name)
         rw_user_pass = binascii.b2a_hex(os.urandom(16))
-        ro_user = "{0}{1}_ro".format(INDX_PREFIX, db_name)
+        ro_user = "{0}_ro".format(db_name)
         ro_user_pass = binascii.b2a_hex(os.urandom(16))
 
+        # queries to be run by INDX user on INDX db
         queries = [
             "CREATE ROLE %s LOGIN ENCRYPTED PASSWORD '%s' NOSUPERUSER INHERIT NOCREATEDB NOCREATEROLE" % (rw_user, rw_user_pass),
             "CREATE ROLE %s LOGIN ENCRYPTED PASSWORD '%s' NOSUPERUSER INHERIT NOCREATEDB NOCREATEROLE" % (ro_user, ro_user_pass),        
             "GRANT %s TO %s" % (rw_user, self.db_user), # make indx user a member of the rw user role (required)
             "ALTER DATABASE %s OWNER TO %s" % (db_name, rw_user),
             "GRANT ALL PRIVILEGES ON DATABASE %s TO %s" % (db_name, rw_user),
-            "GRANT SELECT ON ALL TABLES IN SCHEMA public TO %s" % (ro_user),
         ]
 
         def connected(conn):
             if len(queries) < 1:
-                return_d.callback((rw_user, rw_user_pass, ro_user, ro_user_pass))
+
+                # queries to be run by INDX user on new DB
+                queries_db = [
+                    "GRANT SELECT ON ALL TABLES IN SCHEMA public TO %s" % (ro_user),
+                    "REASSIGN OWNED BY %s TO %s" % (self.db_user, rw_user),
+                ]
+
+                def connected_db(conn_db):
+                
+                    if len(queries_db) < 1:
+                        return_d.callback((rw_user, rw_user_pass, ro_user, ro_user_pass))
+                        return
+                    
+                    query_db = queries_db.pop(0)
+                    d_db = conn_db.runOperation(query_db)
+                    d_db.addCallbacks(lambda nothing: connected_db(conn_db), return_d.errback)
+                    return
+
+                connect(db_name, self.db_user, self.db_pass).addCallbacks(connected_db, return_d.errback)
                 return
 
             query = queries.pop(0)
             d = conn.runOperation(query)
-            d.addCallbacks(lambda rows: connected(conn), lambda failure: return_d.errback(failure))
+            d.addCallbacks(lambda nothing: connected(conn), return_d.errback)
             return
 
         # get connection to INDX database from POOL
-        connect(self.db_name, self.db_user, self.db_pass).addCallbacks(connected, lambda failure: return_d.errback(failure))
+        self.connect_indx_db().addCallbacks(connected, return_d.errback)
         return return_d
 
 
@@ -166,7 +187,7 @@ class IndxDatabase:
             d.addCallbacks(lambda *x: return_d.callback(None), return_d.errback)
             return
 
-        connect(self.db_name, self.db_user, self.db_pass).addCallbacks(connected, return_d.errback)
+        self.connect_indx_db().addCallbacks(connected, return_d.errback)
         return return_d
 
 
@@ -215,7 +236,7 @@ class IndxDatabase:
                                 d_q.addCallbacks(inserted, return_d.errback)
 
                             # connect to INDX db to add new DB accounts to keychain
-                            connect(self.db_name, self.db_user, self.db_pass).addCallbacks(indx_db, return_d.errback)
+                            self.connect_indx_db().addCallbacks(indx_db, return_d.errback)
                             
                         d = self.create_database_users(db_name)
                         d.addCallbacks(created_cb, return_d.errback)
@@ -306,9 +327,40 @@ class IndxDatabase:
 
         logging.debug('indx_pg2.list_users - connecting: {0}'.format(self.db_user));
 
-        connect(self.db_name, self.db_user, self.db_pass).addCallbacks(connected, return_d.errback)
+        self.connect_indx_db().addCallbacks(connected, return_d.errback)
         return return_d
     
+
+    def lookup_best_acct(self, box_name, box_user, box_pass):
+        """ Lookup the best account (i.e. RW if exists, otherwise RO) for this user to this database. """
+        db_name = INDX_PREFIX + box_name
+        result_d = Deferred()
+
+        def connected(conn):
+            def queried(rows):
+                if len(rows) < 1:
+                    result_d.callback(False)
+                    return
+
+                if len(rows) > 1:
+                    while len(rows) > 0:
+                        row = rows.pop(0)
+                        if row[1] == 'rw': # db_user_type is 'rw', then break, we have the best account type
+                            break
+                else:
+                    row = rows[0]
+
+                # now row is the best account
+                db_user, db_user_type, db_password_encrypted = row
+                db_pass = decrypt(db_password_encrypted, box_pass)
+                result_d.callback((db_user, db_pass))
+                return
+
+            conn.runQuery("SELECT tbl_keychain.db_user, tbl_keychain.db_user_type, tbl_keychain.db_password_encrypted FROM tbl_keychain JOIN tbl_users ON (tbl_users.id_user = tbl_keychain.user_id) WHERE tbl_users.username = %s AND tbl_keychain.db_name = %s", [box_user, db_name]).addCallbacks(queried, result_d.errback)
+
+        self.connect_indx_db().addCallbacks(connected, result_d.errback)
+        return result_d
+
 
 
 # Connection Functions
@@ -370,5 +422,11 @@ def connect_box_raw(box_name, db_user, db_pass):
 
 def connect_box(box_name,db_user,db_pass):
     return connect(INDX_PREFIX + box_name, db_user, db_pass)
+
+
+
+
+
+
 
 

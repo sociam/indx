@@ -39,7 +39,6 @@ class WebServer:
     def __init__(self, config):
         """ Set up the server with a INDX. """
 
-        self.tokens = token.TokenKeeper()
         self.config = config
 
         # enable ssl (or not)
@@ -82,6 +81,7 @@ class WebServer:
 
         user,password = self.get_indx_user_password()
         self.database = database.IndxDatabase(config['indx_db'], user, password)
+        self.tokens = token.TokenKeeper(self.database)
         self.database.auth_indx(database = "postgres").addCallbacks(auth_cb, err_cb)
 
 
