@@ -15,7 +15,7 @@
 --    You should have received a copy of the GNU Affero General Public License
 --    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-CREATE TYPE uname_type AS ENUM ('local', 'openid');
+CREATE TYPE uname_type AS ENUM ('local_owner', 'local', 'openid');
 
 CREATE TABLE tbl_users
 (
