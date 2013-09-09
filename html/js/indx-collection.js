@@ -129,8 +129,8 @@ angular
 			_set_new_model: function (model) {
 				this._new_model = model;
 				this.all_models = model ? this.models.concat([ model ]) : this.models;
+				this.filter();
 				//console.log('update');
-				this.trigger('update', this);
 			},
 			/// Remove the model from the array
 			remove: function (model) {
@@ -234,6 +234,16 @@ angular
 				}).fail(function () { promise.reject('Could not save'); });
 				return promise;
 			},
+			filter: function (fn) {
+				if (fn) { this._filter_fn = fn; }
+				if (this._filter_fn) {
+					this.filtered_models = _.filter(this.all_models, fn);
+				} else {
+					this.filtered_models = this.all_models;
+				}
+				this.trigger('update', this);
+				return this;
+			}
 		});
 
 		var now = function () {
