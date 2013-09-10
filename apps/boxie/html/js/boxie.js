@@ -3,13 +3,16 @@ angular
 	.module('boxie', ['ui','indx'])
 	.config(['$routeProvider', function ($routeProvider) {
 
+		console.log('CONFIG')
 		$routeProvider
-			.when('/', { templateUrl: 'partials/root.html', controller: RootCtrl })
-			.when('/obj/:obj_id', { templateUrl: 'partials/obj-detail.html', controller: ObjDetailCtrl })
-			.otherwise({ redirectTo: '/' });
+			.when('/', { templateUrl: 'partials/root.html', controller: 'RootCtrl' })
+			.when('/obj/:obj_id', { templateUrl: 'partials/obj-detail.html', controller: 'ObjDetailCtrl' })
+			.otherwise({ redirectTo: '/obj/1' });
 	}])
 	.controller('RootCtrl', function ($scope, $routeProvider, client, utils, collection) {
 		'use strict';
+
+		console.log('PLEASE WORK')
 
 		var box,
 			u = utils;
