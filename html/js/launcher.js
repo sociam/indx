@@ -14,14 +14,14 @@ angular.module('launcher', ['ui','indx'])
 			link:function($scope, $element) { $scope.el = $element;	},
 			controller: function($scope, client, backbone, utils) {
 				var u = utils, store = client.store, sa = function(f) { return utils.safe_apply($scope,f); };
-				$scope.select_user = function(user) { $scope.user_selected = user;	};				
+				$scope.select_user = function(user) { $scope.user_selected = user;	};
 				// this gets called when the form is submitted
 				$scope.do_submit = function() {
 					store.login($scope.user_selected, $scope.password).then(function() {
 						u.debug('login okay!');
 						sa($scope.back_to_login);
 					}).fail(function() {
-						u.shake($($scope.el).find('input:password').parents('.launcher_window'));						
+						u.shake($($scope.el).find('input:password').parents('.launcher_window'));
 					});
 				};
 				$scope.back_to_login = function() {
@@ -35,7 +35,7 @@ angular.module('launcher', ['ui','indx'])
 					console.log('change on user logged in ', $scope.user_logged_in);
 				});
 				window._set_user_logged_in = function(user) { sa(function() { $scope.user_logged_in = user; }); };
-			}			
+			}
 		};
 	}).directive('appslist',function() {
 		return {
@@ -55,6 +55,31 @@ angular.module('launcher', ['ui','indx'])
 				};
 				store.on('login', get_apps_list);
 				get_apps_list();
+			}
+		};
+	}).directive('boxeslist',function() {
+		return {
+			restrict: 'E',
+			replace: true,
+			templateUrl: 'templates/boxeslist.html',
+			link:function ($scope, $element) { $scope.el = $element;	},
+			controller: function ($scope, client, utils) {
+				var u = utils,
+					store = client.store,
+					sa = function(f) { return utils.safe_apply($scope,f); };
+				var get_boxes_list = function() {
+					store.get_box_list().then(function (boxes) {
+						console.log('boxes --> ', boxes)
+						sa(function() { $scope.boxes = boxes; });
+					}).fail(function() {
+						sa(function() { delete $scope.boxes; });
+						u.error('oops can\'t get boxes - not ready i guess');
+					});
+				};
+
+				store.on('login', get_boxes_list);
+				get_boxes_list();
+				$scope.create_new_box = false;
 			}
 		};
 	}).controller('main', function($scope, client, utils) {});
