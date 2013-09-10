@@ -1,0 +1,29 @@
+<toolbar box-var='selected_box' username-var='selected_user'></toolbar>
+<div class="container">
+	<div ng-show="!selected_user" class="need-log-in">
+		<div class="white-cover"></div>
+		<div class="center-title"><h2 class="alert alert-info">Please log in to load your todo lists</h2></div>
+		<div class="instruct-arrow">
+			<div class="arrow-horiz">
+				<div class="arrow-horiz-line"></div>
+			</div>
+			<div class="arrow-vert">
+				<div class="arrow-vert-line"></div>
+				<div class="arrow-head-up"></div>
+			</div>
+		</div>
+	</div>
+	<div ng-show="selected_user && !selected_box" class="need-select-box">
+		<div class="white-cover"></div>
+		<div class="center-title"><h2 class="alert alert-info">Please select a box</h2></div>
+		<div class="instruct-arrow">
+			<div class="arrow-horiz">
+				<div class="arrow-horiz-line"></div>
+			</div>
+			<div class="arrow-vert">
+				<div class="arrow-vert-line"></div>
+				<div class="arrow-head-up"></div>
+			</div>
+		</div>
+	</div>
+</div>
