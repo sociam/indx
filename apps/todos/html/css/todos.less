@@ -2,27 +2,30 @@
 
 
 .navbar {
-  margin-bottom: 0;
 }
 
-h2.title {
-  font-family: 'Playball', cursive;
-  font-weight: normal;
-  font-size: 29px;
-  color: #777777;
-  margin-top: 9px;
-  margin-bottom: 9px;
-  display: inline-block;
-  margin-left: 16px;
+.col-left {
+  nav {
+    .navbar-brand {
+      font-family: 'Playball', cursive;
+      font-size: 29px;
+    }
+  }
 }
+
+
 
 .col-left, .col-right {
   padding: 0;
   .navbar {
+    height: 80px;
     border-width: 0 0 1px 0;
     border-radius: 0;
-    background: white;
-    padding: 0 15px;
+    padding: 14px 15px;
+    margin-bottom: 0;
+    background: #333;
+    border: 0;
+    color: white;
     .navbar-nav > li > a {
       line-height: 19px;
     }
@@ -335,7 +338,26 @@ h2.title {
 }
 
 @media (max-width: 767px) {
-  .todos-container .todo-list ul li.todo-item {
+  .navbar {
+    & > .navbar-header, & > ul, .nav > li {
+      display: inline-block;
+      vertical-align: top;
+    }
+    .nav.navbar-right {
+      float: right;
+    }
+    .navbar-header {
+      .navbar-brand {
+        padding-left: 0;
+      }
+      .caret {
+        float: left;
+        margin-top: 21px;
+        border-top-color: white;
+      }
+    }
+  }
+  /*.todos-container .todo-list ul li.todo-item {
     padding-top: 5px;
     padding-bottom: 5px;
     form {
@@ -354,5 +376,5 @@ h2.title {
   }
   .navbar-brand {
     display: none;
-  }
+  }*/
 }
