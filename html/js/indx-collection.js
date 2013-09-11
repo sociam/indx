@@ -29,10 +29,11 @@ angular
 				return this;
 			},
 			remove: function () {
+				var that = this;
 				console.log('remove item', this);
 				this.destroy().then(function () {
 					console.log('destroyed item');
-					//that.trigger('destroyed', this);
+					that.trigger('restore', this);
 				});
 			},
 			edit: function (is_new) {
@@ -222,7 +223,12 @@ angular
 				this.reset(arr);
 				obj.on('change:' + array_key, function (obj, arr) {
 					console.log('updating list -->', arguments);
-					that.reset(arr);
+					that.add(arr, { merge: true, silent: true });
+					var ids = _.pluck(arr, 'id');
+					that.remove(that.select(function (model) {
+						return ids.indexOf(model.id) < 0;
+					}), { silent: true });
+					that.trigger('reset');
 				});
 				//console.log('obj --> ', obj, array_key);
 				//console.log('list --> ', arr);
