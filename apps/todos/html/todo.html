@@ -1,5 +1,5 @@
-<div class="todo-body" ng-click="focusInput">
-	<form ui-keydown="{ esc: 'todo.restore()', enter: 'todo.stage_and_save()' }">
+<div class="todo-body">
+	<form>
 		<div class="todo-urgency" ng-class="'urgency-' + (todo.is_editing && pop(todo.newAttributes.urgency) || pop(todo.attributes.urgency))">
 			<div class="todo-urgency-arrows" ng-show="todo.is_editing">
 				<div class="todo-urgency-up" ng-click="todo.set_urgency(+1)"><div class="arrow-head"></div></div>
@@ -9,12 +9,9 @@
 		<div class="todo-checkbox" ng-show="!todo.is_editing" ng-click="todo.toggle()">
 			<span class="glyphicon glyphicon-ok" ng-show="pop(todo.attributes.completed)"></span>
 		</div>
-		<div class="todo-title" ng-show="!todo.is_editing" ng-click="todo.edit()">
-			{{ pop(todo.attributes.title) }}
-		</div>
-		<div class="todo-title" ng-show="todo.is_editing">
+		<div class="todo-title" ng-click="todo.edit()">
 			{{ pop(todo.newAttributes.title) }}
-			<textarea ng-model="todo.newAttributes.title" placeholder="todo..."></textarea>
+			<textarea ng-model="todo.newAttributes.title" placeholder="todo..." ng-focus="todo.edit()"></textarea>
 		</div>
 	</form>
 </div>

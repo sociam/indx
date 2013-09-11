@@ -18,28 +18,9 @@ angular
 						array_key: 'todos'
 					});
 
-					that.update_todo_list();
-
 					this.todos.on('update change', function () {
-						that.update_todo_list();
+						u.safe_apply($scope);
 					});
-				},
-				update_todo_list: function () {
-					var that = this;
-					this.todos_by_group = _.map(['For today', 'For another time'], function (group_title, i) {
-						var today = i === 0 ? true : false,
-							filtered_todos = _(that.todos.all_models).filter(function (todo) {
-								var t = pop(todo.get('today'));
-								return today ? t === true : t !== true;
-							});
-						return {
-							title: group_title,
-							todos: filtered_todos,
-							sorted_by: get_sorted_todo_lists(filtered_todos)
-						};
-					});
-					console.log('todos, ', that.todos_by_group);
-					u.safe_apply($scope);
 				},
 				remove: function () {
 					if (confirm('Are you sure you want to delete this todo list?')) {
@@ -62,7 +43,12 @@ angular
 				defaults: { title: '', urgency: 'low', completed: false },
 				initialize: function () {
 					var that = this;
-					this.on('edit', function () { $scope.editing_todo = that; });
+					this.on('edit', function () {
+						if ($scope.editing_todo && $scope.editing_todo !== that) {
+							$scope.editing_todo.restore();
+						}
+						$scope.editing_todo = that;
+					});
 					this.on('restore', function () { $scope.editing_todo = false; });
 					collection.Model.prototype.initialize.apply(this, arguments);
 				},
@@ -93,6 +79,9 @@ angular
 					this.filter(function (model) {
 						return model.get('title').indexOf(q) > -1;
 					});
+				},
+				comparator: function (m) {
+					return -urgencies.indexOf(pop(m.get('urgency')));
 				}
 			});
 
@@ -110,26 +99,6 @@ angular
 				console.log('fetched');
 				u.safe_apply($scope);
 			});
-		};
-
-		var sorters = [
-			{	key: 'priority',
-				name: 'Priority',
-				sort: function (todo) { return -priority_number(pop(todo.get('urgency'))); } },
-			{	key: 'alphabetical',
-				name: 'Alphabetical',
-				sort: function (todo) { return pop(todo.get('title')); } },
-			{	key: 'date',
-				name: 'Date',
-				sort: function (todo) { return pop(todo.get('timestamp')); } }
-		];
-
-		var get_sorted_todo_lists = function (todos) {
-			var o = {};
-			_.map(sorters, function (sorter) {
-				o[sorter.key] = _.sortBy(todos, sorter.sort);
-			});
-			return o;
 		};
 
 
@@ -168,24 +137,30 @@ angular
 		_.extend($scope, {
 			to_date_string: to_date_string,
 			to_time_string: to_time_string,
-			pop: pop,
-			sorters: sorters,
-			todo_sorter: { key: sorters[0].key, asc: true }
+			pop: pop
 		});
 
-	}).directive('focusMe', function($timeout) {
-		return {
-			scope: { trigger: '=focusMe' },
-			link: function(scope, element) {
-				scope.$watch('trigger', function (value) {
-					if(value === true) {
-						//console.log('trigger',value);
-						//$timeout(function() {
-							element[0].focus();
-							scope.trigger = false;
-						//});
-					}
-				});
+		$(document).keyup(function (e) {
+			if ($scope.editing_todo) {
+				switch (e.keyCode) {
+				case 27: //esc
+					$scope.editing_todo.restore();
+					$('textarea').blur();
+					break;
+				case 13: // enter
+					$scope.editing_todo.stage_and_save();
+					break;
+				}
 			}
-		}
-	});
+		});
+
+	}).directive('ngFocus', ['$parse', function($parse) {
+	  return function(scope, element, attr) {
+	    var fn = $parse(attr['ngFocus']);
+	    element.bind('focus', function(event) {
+	      scope.$apply(function() {
+	        fn(scope, {$event:event});
+	      });
+	    });
+	  }
+	}]);
