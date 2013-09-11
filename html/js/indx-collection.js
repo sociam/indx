@@ -120,6 +120,7 @@ angular
 						that.add(model);
 						that._set_new_model();
 						if (options.select) { model.select(); }
+						model.trigger('restore');
 					})
 					.on('restore', function () {
 						that._set_new_model();
