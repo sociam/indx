@@ -61,7 +61,8 @@ angular
 		var TodoListItem = collection.Model.extend({
 				defaults: { title: '', urgency: 'low', completed: false },
 				initialize: function () {
-					this.on('edit', function () { $scope.editing_todo = true; });
+					var that = this;
+					this.on('edit', function () { $scope.editing_todo = that; });
 					this.on('restore', function () { $scope.editing_todo = false; });
 					collection.Model.prototype.initialize.apply(this, arguments);
 				},
@@ -73,6 +74,12 @@ angular
 					if (urgencies[i + n]) {
 						this.newAttributes.urgency = urgencies[i + n];
 					}
+				},
+				remove: function () {
+					if (confirm('Are you sure you want to delete this todo?')) {
+						return collection.Model.prototype.remove.apply(this, arguments);
+					}
+					return this;
 				}
 			}),
 			TodoListItems = collection.Collection.extend({

@@ -97,7 +97,6 @@
         border-bottom-width: 0;
         z-index: 20;
         margin-top: -1px;
-        height: 81px;
         .todo-body {
           margin-top: 1px;
           .todo-urgency {
@@ -134,20 +133,24 @@
           cursor: pointer;
         }
         .todo-title {
-          margin-left: 90px;
+          margin-left: 105px;
           padding: 24px 0;
           font-size: 20px;
           font-family: verdana, sans-serif;
           font-weight: bold;
           min-height: 26px;
           right: 20px;
+          position: relative;
 
           textarea {
-            width: 100%;
-            height: 40px;
-            margin: -3px;
+            position: absolute;
+            top: 21px;
+            right: 0;
+            left: -3px;
+            bottom: 21px;
             font-weight: bold;
             border-color: white;
+            resize: none;
           }
         }
         .todo-urgency {
@@ -171,7 +174,6 @@
               }
               .arrow-head {
                 position: absolute;
-                top: 16px;
                 left: 30px;
                 border-left: 8px solid transparent;
                 border-right: 8px solid transparent;
@@ -183,12 +185,14 @@
               border-bottom: 1px solid rgba(0, 0, 0, 0.2);
               .arrow-head {
                 border-bottom: 8px solid white;
+                bottom: 40%;
               }
             }
             .todo-urgency-down {
               border-top: 1px solid rgba(255, 255, 255, 0.2);
               .arrow-head {
                 border-top: 8px solid white;
+                top: 40%;
               }
             }
           }
@@ -213,6 +217,7 @@
   background-color: #33CC00 !important;
   border-color: #33CC00 !important;
   color: white;
+  .todo-urgency-down { opacity: 0.4; }
 }
 .urgency-med {
   background-color: #FFCC00 !important;
@@ -228,6 +233,7 @@
   background-color: #FF0000 !important;
   border-color: #FF0000 !important;
   color: white;
+  .todo-urgency-up { opacity: 0.4; }
 }
 
 

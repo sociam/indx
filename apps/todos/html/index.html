@@ -64,7 +64,7 @@
 						<ul class="nav navbar-nav navbar-left hidden-xs">
 							<li><a href="#" ng-click="todo_lists.selected.edit()"><i class="glyphicon glyphicon-cog"></i></a></li>
 						</ul>
-						<ul class="nav navbar-nav navbar-right">
+						<ul class="nav navbar-nav navbar-right" ng-show="!editing_todo">
 							<li ng-show="!search"><a href="#" ng-click="search = true"><i class="glyphicon glyphicon-search"></i></a></li>
 							<li ng-show="search">
 								<form class="navbar-form navbar-left" role="search">
@@ -74,6 +74,10 @@
 								</form>
 							</li>
 	  						<li><a href="#" ng-click="todo_lists.selected.todos.new_model()"><i class="glyphicon glyphicon-plus"></i></a></li>
+						</ul>
+						<ul class="nav navbar-nav navbar-right" ng-show="editing_todo">
+							<li><a href="#" ng-click="editing_todo.remove()"><i class="glyphicon glyphicon-trash"></i></a></li>
+	  						<li><a href="#" ng-click="editing_todo.stage_and_save()"><i class="glyphicon glyphicon-ok"></i></a></li>
 						</ul>
 					</nav>
 				</div>
@@ -113,7 +117,7 @@
 						<li ng-repeat="todo in todo_lists.selected.todos.all_models" class="todo-item" ng-class="{
 							completed: todo.attributes.completed[0],
 							editing: todo.is_editing,
-							disabled: !todo.is_editing && editing_todo
+							disabled: !todo.is_editing && !!editing_todo
 						}" ng-include="'todo.html'" ng-show="!todo.attributes.completed[0] || todo.attributes.completed[0] && show_completed"></li>
 					</ul>
 				</div>

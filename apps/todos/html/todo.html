@@ -13,8 +13,9 @@
 			{{ pop(todo.attributes.title) }}
 		</div>
 		<div class="todo-title" ng-show="todo.is_editing">
+			{{ pop(todo.newAttributes.title) }}
 			<textarea ng-model="todo.newAttributes.title" placeholder="todo..."></textarea>
 		</div>
 	</form>
 </div>
-<div class="modal-cover"></div>
+<div class="modal-cover" ng-click="editing_todo.restore();"></div>
