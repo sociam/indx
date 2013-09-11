@@ -9,9 +9,9 @@
 		<div class="todo-checkbox" ng-show="!todo.is_editing" ng-click="todo.toggle()">
 			<span class="glyphicon glyphicon-ok" ng-show="pop(todo.attributes.completed)"></span>
 		</div>
-		<div class="todo-title" ng-click="todo.edit()">
-			{{ pop(todo.newAttributes.title) }}
-			<textarea ng-model="todo.newAttributes.title" placeholder="todo..." ng-focus="todo.edit()"></textarea>
+		<div class="todo-title">
+			{{ pop(todo.newAttributes.title) }}&nbsp;
+			<textarea ng-model="todo.newAttributes.title" placeholder="todo..." ng-focus="todo.edit()" focus-me="todo.is_editing"></textarea>
 		</div>
 	</form>
 </div>

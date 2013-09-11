@@ -69,7 +69,8 @@
 							<li ng-show="search">
 								<form class="navbar-form navbar-left" role="search">
 									<div class="form-group">
-										<input type="text" placeholder="search" ng-model="search_text" ng-blur="search = false" ng-keyup="search = false">
+										<button class="btn btn-link" ng-click="show_completed = !show_completed;" ng-class="{ active: show_completed }"><i class="glyphicon glyphicon-list"></i></button>
+										<input type="text" placeholder="search" ng-model="search_text">
 									</div>
 								</form>
 							</li>
@@ -114,11 +115,11 @@
 		  				</ul>
 					</div>
 					<ul class="todo-list" ng-show="todo_lists.selected">
-						<li ng-repeat="todo in todo_lists.selected.todos.all_models" class="todo-item" ng-class="{
+						<li ng-animate="'animate'" ng-repeat="todo in todo_lists.selected.todos.all_models | filter:todosFilter" class="todo-item" ng-class="{
 							completed: todo.attributes.completed[0],
 							editing: todo.is_editing,
 							disabled: !todo.is_editing && !!editing_todo
-						}" ng-include="'todo.html'" ng-show="!todo.attributes.completed[0] || todo.attributes.completed[0] && show_completed"></li>
+						}" ng-include="'todo.html'" ></li>
 					</ul>
 				</div>
 			</div>

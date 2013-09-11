@@ -75,13 +75,10 @@ angular
 					return collection.Collection.prototype.new_model.call(this,
 						{ id: id });
 				},
-				search: function (q) {
-					this.filter(function (model) {
-						return model.get('title').indexOf(q) > -1;
-					});
-				},
 				comparator: function (m) {
-					return -urgencies.indexOf(pop(m.get('urgency')));
+					var urgency = pop(m.get('urgency')),
+						completed = pop(m.get('completed'));
+					return completed ? 100 : -urgencies.indexOf(urgency);
 				}
 			});
 
@@ -137,7 +134,17 @@ angular
 		_.extend($scope, {
 			to_date_string: to_date_string,
 			to_time_string: to_time_string,
-			pop: pop
+			pop: pop,
+			todosFilter: function (todo) {
+				var pass = true,
+					completed = pop(todo.get('completed')),
+					title = pop(todo.get('title')),
+					search_text = $scope.search_text || '';
+
+				pass = pass && $scope.show_completed ? true : !completed;
+				pass = pass && (!$scope.search || title.toLowerCase().indexOf(search_text.toLowerCase()) > -1);
+				return pass;
+			}
 		});
 
 		$(document).keyup(function (e) {
@@ -154,6 +161,21 @@ angular
 			}
 		});
 
+	}).directive('focusMe', function($timeout, $parse) {
+	  return {
+	    //scope: true,   // optionally create a child scope
+	    link: function(scope, element, attrs) {
+	      var model = $parse(attrs.focusMe);
+	      scope.$watch(model, function(value) {
+	        console.log('value=',value);
+	        if(value === true) {
+	          $timeout(function() {
+	            element[0].focus();
+	          });
+	        }
+	      });
+	    }
+	  };
 	}).directive('ngFocus', ['$parse', function($parse) {
 	  return function(scope, element, attr) {
 	    var fn = $parse(attr['ngFocus']);
