@@ -1,5 +1,8 @@
+@import "mixins.less";
 @import url(http://fonts.googleapis.com/css?family=Port+Lligat+Slab|Playball);
 
+@t-fn: ease-out;
+@t-dur: 0.3s;
 
 .navbar {
 }
@@ -50,161 +53,110 @@
 
 }
 
-.todos-container {
+.col-right {
   border-left: 1px solid #eee;
   margin: 0 auto;
 
-  h2 {
-    font-family: 'Port Lligat Slab', serif;
-    position: absolute;
-    text-align: center;
-    font-size: 25px;
-    margin-top: 6px;
-    left: 50%;
-    width: 200px;
-    margin-left: -100px;
-    top: 0px;
-  }
-
-
-  .todo-list {
-
-    h3 {
-      font-family: 'Port Lligat Slab', serif;
-      font-size: 15px;
-      text-transform: uppercase;
-      text-align: center;
-    }
-    ul {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-
-      li.todo-item {
-        position: relative;
-        list-style: none;
-        margin: 0;
-        padding: 9px 5px 0px;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-        transition: height 0.3s;
-        -webkit-transition: height 0.3s; /* Safari */
-
-        &:hover {
-          .todo-left-overflow {
-            width: 14px;
-            transition: width 0.3s;
-            -webkit-transition: width 0.3s; /* Safari */
-          }
-          .todo-hover {
-            display: block;
-          }
-        }
-        &.completed .todo-title {
-          text-decoration: line-through;
-        }
-
-        &.editing {
-          .todo-meta {
-            height: 50px;
-            overflow: visible;
-          }
-          .todo-left-overflow { display: none; }
-        }
-
-        .todo-hover { display: none; }
-
-        .todo-body {
-          position: relative;
-
-          .todo-checkbox {
-            position: absolute;
-            left: 10px;
-            top: 4px;
-            width: 20px;
-            height: 20px;
-            border: 1px solid #ccc;
-            cursor: pointer;
-          }
-          .todo-title {
-            margin: 4px 0 0 50px;
-            font-size: 20px;
-            font-family: 'Port Lligat Slab', serif;
-            min-height: 26px;
-
-            textarea {
-              width: 100%;
-              margin: -3px;
-            }
-          }
-        }
-
-        .todo-controls {
-          position: absolute;
-          top: 10px;
-          right: 10px;
-        }
-
-        .todo-left-overflow {
-          position: absolute;
-          left: 0;
-          height: 100%;
-          top: 0;
-          width: 2px;
-          overflow: hidden;
-          transition: width 0.3s;
-          -webkit-transition: width 0.3s; /* Safari */
-
-          .todo-urgency {
-            text-transform: uppercase;
-            font-weight: bold;
-            -webkit-transform:rotate(-90deg);
-            width: 50px;
-            -webkit-transform-origin: 26px 26px;
-            text-align: center;
-            font-size: 10px;
-          }
-
-
-        }
-
-        .todo-meta {
-          margin: 10px 0 0 49px;
-          transition: height 0.3s;
-          -webkit-transition: height 0.3s; /* Safari */
-
-        }
-      }
-    }
-  }
-
-  ul.todos-footer {
+  ul.todo-list {
     list-style: none;
     margin: 0;
     padding: 0;
-    li {
+
+    li.todo-item {
+      position: relative;
       list-style: none;
       margin: 0;
-      padding: 0;
-      border-top: 1px solid #eee;
+      padding: 9px 5px 0px;
+      height: 80px;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 
-      a {
-        display: block;
-        font-size: 12px;
-        width: 100%;
-        font-weight: bold;
-        text-align: center;
-        color: #666;
-        padding: 6px 0;
+      .transition(~"box-shadow @t-dur @t-fn, border-bottom-color @t-dur @t-fn");
+
+      &.completed {
+        background: #eee;
       }
 
-      &.todo-create {
-        a {
+      &.editing {
+        box-shadow: 0px 0px 35px 0px rgba(0, 0, 0, 0.3);
+        border-bottom-width: 0;
+        z-index: 20;
+        margin-top: -1px;
+        height: 81px;
+        .todo-body {
+          top: 1px;
+        }
+      }
+
+      .modal-cover {
+        .transition(~"opacity @t-dur @t-fn 0s, height 0s @t-fn @t-dur");
+        opacity: 0;
+        height: 0;
+      }
+      &.disabled {
+        border-bottom-color: #aaa;
+        .modal-cover {
+          .transition(~"opacity @t-dur @t-fn 0s");
+          opacity: 1;
+          height: 100%;
+        }
+      }
+
+      .todo-body {
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        right: 0;
+
+        .todo-checkbox {
+          position: absolute;
+          left: 32px;
+          top: 24px;
+          width: 30px;
+          height: 30px;
+          border: 1px solid #ccc;
+          cursor: pointer;
+        }
+        .todo-title {
+          position: absolute;
+          left: 90px;
+          top: 24px;
           font-size: 20px;
-          padding: 20px 0;
+          font-family: verdana, sans-serif;
+          font-weight: bold;
+          min-height: 26px;
+          right: 30px;
+
+          textarea {
+            width: 100%;
+            height: 40px;
+            margin: -3px;
+            font-weight: bold;
+            border-color: white;
+          }
+        }
+        .todo-urgency {
+          position: absolute;
+          left: 0;
+          top: 0;
+          bottom: 0;
+          width: 5px;
+          .transition(~"width @t-dur @t-fn");
         }
       }
     }
   }
+
+}
+
+.modal-cover {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.2);
+  .transition(~"opacity 0.3 @t-fn");
+  z-index: 10;
 }
 
 .urgency-low {
@@ -353,7 +305,7 @@
       .caret {
         float: left;
         margin-top: 21px;
-        border-top-color: white;
+        border-top-color: whitez;
       }
     }
   }

@@ -60,6 +60,11 @@ angular
 
 		var TodoListItem = collection.Model.extend({
 				defaults: { title: '', urgency: 'low', completed: false },
+				initialize: function () {
+					this.on('edit', function () { $scope.editing_todo = true; });
+					this.on('restore', function () { $scope.editing_todo = false; });
+					collection.Model.prototype.initialize.apply(this, arguments);
+				},
 				toggle: function () {
 					this.save('completed', !pop(this.get('completed')));
 				}

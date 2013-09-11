@@ -1,12 +1,17 @@
-<form ui-keydown="{ esc: 'todo.restore()' }">
-	<div class="todo-left-overflow" ng-class="'urgency-' + pop(todo.attributes.urgency)">
-		<div class="todo-urgency"></div>
-	</div>
-	<div class="todo-body">
-		<div class="todo-checkbox" ng-show="!todo.is_new" ng-click="todo.toggle()"><span class="glyphicon glyphicon-ok" ng-show="pop(todo.attributes.completed)"></span></div>
-		<div class="todo-title" ng-show="!todo.is_editing">{{ pop(todo.attributes.title) }}</div>
+<div class="todo-body">
+	<form ui-keydown="{ esc: 'todo.restore()' }">
+		<div class="todo-urgency" ng-class="'urgency-' + pop(todo.attributes.urgency)">
+			<div class="" ng-show="todo.is_editing"></div>
+		</div>
+		<div class="todo-checkbox" ng-show="!todo.is_new" ng-click="todo.toggle()">
+			<span class="glyphicon glyphicon-ok" ng-show="pop(todo.attributes.completed)"></span>
+		</div>
+		<div class="todo-title" ng-show="!todo.is_editing" ng-click="todo.edit()">
+			{{ pop(todo.attributes.title) }}
+		</div>
 		<div class="todo-title" ng-show="todo.is_editing">
 			<textarea ng-model="todo.newAttributes.title" placeholder="todo..." ui-keydown="{ enter: 'todo.stage_and_save()' }"></textarea>
 		</div>
-	</div>
-</form>
+	</form>
+</div>
+<div class="modal-cover"></div>

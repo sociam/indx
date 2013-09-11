@@ -101,13 +101,18 @@
 	  					<li class="pull-right"><button class="btn btn-link" ng-click="todo_lists.selected.todos.new_model()"><i class="glyphicon glyphicon-plus"></i></button></li>
 	  				</ul>
 				</div>
-				<div class="todo-list" ng-show="todo_lists.selected">
-					<ul>
-						<li ng-repeat="todo in todo_lists.selected.todos.all_models" class="todo-item" ng-class="{ completed: todo.attributes.completed[0] }" ng-include="'todo.html'" ng-show="!todo.attributes.completed[0] || todo.attributes.completed[0] && show_completed"></li>
-					</ul>
-				</div>
+				<ul class="todo-list" ng-show="todo_lists.selected">
+					<li ng-repeat="todo in todo_lists.selected.todos.all_models" class="todo-item" ng-class="{
+						completed: todo.attributes.completed[0],
+						editing: todo.is_editing,
+						disabled: !todo.is_editing && editing_todo
+					}" ng-include="'todo.html'" ng-show="!todo.attributes.completed[0] || todo.attributes.completed[0] && show_completed"></li>
+				</ul>
 			</div>
 		</div>
+
+		<div class="modal-cover" ng-show="modal"></div>
+
 		<div ng-show="todo_lists.selected.is_editing">
 			<div class="modal" style="display: block">
 				<div class="modal-dialog">
