@@ -15,13 +15,21 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import logging
 from txpostgres import txpostgres
+from twisted.internet.defer import Deferred
 
 class IndxConnectionPool:
     """ A wrapper for txpostgres connection pools, which auto-reconnects. """
 
     def __init__(self, _ignored, *connargs, **connkw):
-        self.pool = txpostgres.ConnectionPool(_ignored, *connargs, **connkw)
+        self._ignored = _ignored
+        self.connargs = connargs
+        self.connkw = connkw
+        self.pool = self._connectPool()
+
+    def _connectPool(self):
+        return txpostgres.ConnectionPool(self._ignored, *self.connargs, **self.connkw)
 
     # Wrap existing functions
     def start(self, *args, **kwargs):
@@ -36,13 +44,59 @@ class IndxConnectionPool:
     def add(self, *args, **kwargs):
         return self.pool.add(*args, **kwargs)
 
+
     # Wrap query functions with auto-reconnection
     def runQuery(self, *args, **kwargs):
         try:
             deferred = self.pool.runQuery(*args, **kwargs)
+            return deferred
         except Exception as e:
+            logging.error("IndxConnectionPool runQuery Exception: reconnecting, e: {0}".format(e))
 
-        return self.pool.runQuery(*args, **kwargs)
+            self.pool = self._connectPool()
 
-    def start(self, *args, **kwargs):
-        return self.pool.start(*args, **kwargs)
+            deferred = Deferred()
+            def connected(conn):
+                conn.runQuery(*args, **kwargs).addCallbacks(deferred.callback, deferred.errback)
+
+            # auto-restart the pool
+            self.pool.start().addCallbacks(connected, deferred.errback)
+            return deferred
+
+
+    def runOperation(self, *args, **kwargs):
+        try:
+            deferred = self.pool.runOperation(*args, **kwargs)
+            return deferred
+        except Exception as e:
+            logging.error("IndxConnectionPool runOperation Exception: reconnecting, e: {0}".format(e))
+
+            self.pool = self._connectPool()
+
+            deferred = Deferred()
+            def connected(conn):
+                conn.runOperation(*args, **kwargs).addCallbacks(deferred.callback, deferred.errback)
+
+            # auto-restart the pool
+            self.pool.start().addCallbacks(connected, deferred.errback)
+            return deferred
+
+
+    def runInteraction(self, *args, **kwargs):
+        try:
+            deferred = self.pool.runInteraction(*args, **kwargs)
+            return deferred
+        except Exception as e:
+            logging.error("IndxConnectionPool runInteraction Exception: reconnecting, e: {0}".format(e))
+
+            self.pool = self._connectPool()
+
+            deferred = Deferred()
+            def connected(conn):
+                conn.runInteraction(*args, **kwargs).addCallbacks(deferred.callback, deferred.errback)
+
+            # auto-restart the pool
+            self.pool.start().addCallbacks(connected, deferred.errback)
+            return deferred
+
+
