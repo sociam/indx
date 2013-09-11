@@ -19,6 +19,7 @@ import os
 import logging
 import psycopg2
 import binascii
+from indx.connectionpool import IndxConnectionPool
 from txpostgres import txpostgres
 from hashing_passwords import make_hash, check_hash
 from indx.crypto import encrypt, decrypt
