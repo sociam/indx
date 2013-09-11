@@ -15,6 +15,7 @@ angular
 			is_new: false,
 			is_editing: false,
 			is_selected: false,
+			initialize: function () {},
 			create: function () {
 				var that = this;
 				console.log('creating item');
@@ -39,6 +40,7 @@ angular
 				this.newAttributes = _.clone(this.attributes);
 				this.is_new = is_new;
 				this.is_editing = true;
+				this.trigger('edit');
 				return this;
 			},
 			stage_and_save: function () {
@@ -65,6 +67,7 @@ angular
 			restore: function () {
 				this.is_editing = false;
 				this.trigger('restore');
+				return this;
 			},
 			select: function (selected, options) {
 				options = options || {};
