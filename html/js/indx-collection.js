@@ -15,7 +15,9 @@ angular
 			is_new: false,
 			is_editing: false,
 			is_selected: false,
-			initialize: function () {},
+			initialize: function () {
+				this.newAttributes = _.clone(this.attributes);
+			},
 			create: function () {
 				var that = this;
 				console.log('creating item');
@@ -37,6 +39,7 @@ angular
 				});
 			},
 			edit: function (is_new) {
+				if (this.is_editing) { return; }
 				console.log('edit item', this);
 				this.newAttributes = _.clone(this.attributes);
 				this.is_new = is_new;
@@ -96,6 +99,13 @@ angular
 				}).on('add remove reset', function () {
 					that._set_new_model(that._new_model);
 				});
+				console.log('setting up');
+				this.on('change', function () {
+					that.sort();
+				}).on('sort', function () {
+					console.log('!!! sorting !!!')
+					that._set_new_model(that._new_model);
+				});
 				this.reset(models);
 				this.populate();
 				this._set_new_model();
@@ -135,7 +145,6 @@ angular
 				this._new_model = model;
 				this.all_models = model ? this.models.concat([ model ]) : this.models;
 				this.filter();
-				//console.log('update');
 			},
 			/// Remove the model from the array
 			remove: function (model) {
