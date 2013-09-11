@@ -17,9 +17,11 @@
 	-moz-opacity: 		@opacity;
 	opacity: 		@opacity;
 }
-.transition (@transition) {
-	-webkit-transition: @transition;
-	-moz-transition:    @transition;
-	-ms-transition:     @transition;
-	-o-transition:      @transition;
+
+// omg less is dumb -- it splits using spaces if there's no semi colon
+.transition (@props; @pointless-thing: 0) {
+    -webkit-transition: @props;
+    -moz-transition: @props;
+    -o-transition: @props;
+    transition: @props;
 }

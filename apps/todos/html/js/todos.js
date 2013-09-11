@@ -67,6 +67,12 @@ angular
 				},
 				toggle: function () {
 					this.save('completed', !pop(this.get('completed')));
+				},
+				set_urgency: function (n) {
+					var i = urgencies.indexOf(pop(this.newAttributes.urgency));
+					if (urgencies[i + n]) {
+						this.newAttributes.urgency = urgencies[i + n];
+					}
 				}
 			}),
 			TodoListItems = collection.Collection.extend({
@@ -137,6 +143,8 @@ angular
 				priority === 'high' ? 2 : 3;
 		};
 
+		var urgencies = [ 'low', 'med', 'high', 'urgent' ];
+
 		// watches the login stts for changes
 		$scope.$watch('selected_box + selected_user', function() {
 			if ($scope.selected_user && $scope.selected_box) {
@@ -158,4 +166,19 @@ angular
 			todo_sorter: { key: sorters[0].key, asc: true }
 		});
 
+	}).directive('focusMe', function($timeout) {
+		return {
+			scope: { trigger: '=focusMe' },
+			link: function(scope, element) {
+				scope.$watch('trigger', function (value) {
+					if(value === true) {
+						//console.log('trigger',value);
+						//$timeout(function() {
+							element[0].focus();
+							scope.trigger = false;
+						//});
+					}
+				});
+			}
+		}
 	});

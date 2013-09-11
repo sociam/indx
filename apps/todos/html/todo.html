@@ -1,16 +1,19 @@
-<div class="todo-body">
-	<form ui-keydown="{ esc: 'todo.restore()' }">
-		<div class="todo-urgency" ng-class="'urgency-' + pop(todo.attributes.urgency)">
-			<div class="" ng-show="todo.is_editing"></div>
+<div class="todo-body" ng-click="focusInput">
+	<form ui-keydown="{ esc: 'todo.restore()', enter: 'todo.stage_and_save()' }">
+		<div class="todo-urgency" ng-class="'urgency-' + (todo.is_editing && pop(todo.newAttributes.urgency) || pop(todo.attributes.urgency))">
+			<div class="todo-urgency-arrows" ng-show="todo.is_editing">
+				<div class="todo-urgency-up" ng-click="todo.set_urgency(+1)"><div class="arrow-head"></div></div>
+				<div class="todo-urgency-down" ng-click="todo.set_urgency(-1)"><div class="arrow-head"></div></div>
+			</div>
 		</div>
-		<div class="todo-checkbox" ng-show="!todo.is_new" ng-click="todo.toggle()">
+		<div class="todo-checkbox" ng-show="!todo.is_editing" ng-click="todo.toggle()">
 			<span class="glyphicon glyphicon-ok" ng-show="pop(todo.attributes.completed)"></span>
 		</div>
 		<div class="todo-title" ng-show="!todo.is_editing" ng-click="todo.edit()">
 			{{ pop(todo.attributes.title) }}
 		</div>
 		<div class="todo-title" ng-show="todo.is_editing">
-			<textarea ng-model="todo.newAttributes.title" placeholder="todo..." ui-keydown="{ enter: 'todo.stage_and_save()' }"></textarea>
+			<textarea ng-model="todo.newAttributes.title" placeholder="todo..."></textarea>
 		</div>
 	</form>
 </div>
