@@ -143,7 +143,7 @@ angular
 			},
 			_set_new_model: function (model) {
 				this._new_model = model;
-				this.all_models = model ? this.models.concat([ model ]) : this.models;
+				this.all_models = model ? [model].concat(this.models) : this.models;
 				this.filter();
 			},
 			/// Remove the model from the array
