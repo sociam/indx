@@ -147,7 +147,7 @@ angular
 			}
 		});
 
-		$(document).keyup(function (e) {
+		$(document).keydown(function (e) {
 			if ($scope.editing_todo) {
 				switch (e.keyCode) {
 				case 27: //esc
@@ -156,6 +156,8 @@ angular
 					break;
 				case 13: // enter
 					$scope.editing_todo.stage_and_save();
+					e.preventDefault();
+					$('textarea').blur();
 					break;
 				}
 			}

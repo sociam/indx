@@ -10,7 +10,7 @@
 			<span class="glyphicon glyphicon-ok" ng-show="pop(todo.attributes.completed)"></span>
 		</div>
 		<div class="todo-title">
-			{{ pop(todo.newAttributes.title) }}&nbsp;
+			{{ todo.is_editing && pop(todo.newAttributes.title) || pop(todo.attributes.title) }}&nbsp;
 			<textarea ng-model="todo.newAttributes.title" placeholder="todo..." ng-focus="todo.edit()" focus-me="todo.is_editing"></textarea>
 		</div>
 	</form>
