@@ -10,113 +10,131 @@
   <body>
 	<div ng-app="todos" ng-controller="todos" ng-cloak>
   		<div class="alert alert-danger" ng-show="false">Failed to load</div>
-		<toolbar box-var='selected_box' username-var='selected_user'></toolbar>
+  		<div ng-show="!selected_user || !selected_box"> <!-- we'll get rid of this one day -->
+			<toolbar box-var='selected_box' username-var='selected_user'></toolbar>
 
-		<div class="container">
-			<div ng-show="!selected_user" class="need-log-in">
-				<div class="white-cover"></div>
-				<div class="center-title"><h2 class="alert alert-info">Please log in to load your todo lists</h2></div>
-				<div class="instruct-arrow">
-					<div class="arrow-horiz">
-						<div class="arrow-horiz-line"></div>
-					</div>
-					<div class="arrow-vert">
-						<div class="arrow-vert-line"></div>
-						<div class="arrow-head-up"></div>
+			<div class="container">
+				<div ng-show="!selected_user" class="need-log-in">
+					<div class="white-cover"></div>
+					<div class="center-title"><h2 class="alert alert-info">Please log in to load your todo lists</h2></div>
+					<div class="instruct-arrow">
+						<div class="arrow-horiz">
+							<div class="arrow-horiz-line"></div>
+						</div>
+						<div class="arrow-vert">
+							<div class="arrow-vert-line"></div>
+							<div class="arrow-head-up"></div>
+						</div>
 					</div>
 				</div>
-			</div>
-			<div ng-show="selected_user && !selected_box" class="need-select-box">
-				<div class="white-cover"></div>
-				<div class="center-title"><h2 class="alert alert-info">Please select a box</h2></div>
-				<div class="instruct-arrow">
-					<div class="arrow-horiz">
-						<div class="arrow-horiz-line"></div>
-					</div>
-					<div class="arrow-vert">
-						<div class="arrow-vert-line"></div>
-						<div class="arrow-head-up"></div>
+				<div ng-show="selected_user && !selected_box" class="need-select-box">
+					<div class="white-cover"></div>
+					<div class="center-title"><h2 class="alert alert-info">Please select a box</h2></div>
+					<div class="instruct-arrow">
+						<div class="arrow-horiz">
+							<div class="arrow-horiz-line"></div>
+						</div>
+						<div class="arrow-vert">
+							<div class="arrow-vert-line"></div>
+							<div class="arrow-head-up"></div>
+						</div>
 					</div>
 				</div>
 			</div>
 		</div>
 
-		<div class="row-fluid" ng-show="selected_user && selected_box">
-			<div class="col-md-3 col-left hidden-xs">
-				<nav class="navbar navbar-default" role="navigation">
-					<h2 class="title">Todo lists</h2>
-					<ul class="nav navbar-nav navbar-right">
-  						<li><button class="btn btn-default btn-sm navbar-btn" ng-click="todo_lists.new_model()"><i class="glyphicon glyphicon-plus"></i></button></li>
-  					</ul>
-				</nav>
-				<ul class="nav nav-pills nav-stacked">
-					<li ng-repeat="todo_list in todo_lists.all_models" ng-click="todo_list.select()" ng-class="{ active: todo_list.selected }"><a href="#">{{ pop(todo_list.get('title')) }}</a></li>
-				</ul>
-			</div>
-
-			<div class="col-md-3 col-left visible-xs">
-				<ul class="nav nav-flat">
-					<li>
-						<div class="btn-group">
-							<button type="button" class="btn btn-link dropdown-toggle" data-toggle="dropdown">Todo list <span class="caret"></span></button>
-							<ul class="dropdown-menu" role="menu">
-								<li><a href="#" ng-click="todo_list.select()" ng-class="{ active: todo_list.selected }" ng-repeat="todo_list in todo_lists.all_models">{{ pop(todo_list.get('title')) }}</a></li>
-							</ul>
+		<div class="todo-app-container row-fluid" ng-show="selected_user && selected_box">
+			<div class="navbars">
+				<div class="col-left hidden-xs">
+					<nav class="navbar navbar-inverse" role="navigation">
+						<div class="navbar-header">
+							<a href="#" class="navbar-brand">Todo lists</a>
 						</div>
-					</li>
-					<li class="dropdown">
-						<div class="btn-group">
-							<button type="button" class="btn btn-link dropdown-toggle" data-toggle="dropdown">Sort <span class="caret"></span></button>
-							<ul class="dropdown-menu" role="menu">
-								<li><a href="#" ng-click="todo_sorter.key = sorter.key" ng-repeat="sorter in sorters">{{ sorter.name }}</a></li>
-							</ul>
-						</div>
-					</li>
-					<li><button class="btn btn-link" ng-click="show_completed = !show_completed;" ng-class="{ active: show_completed }"><i class="glyphicon glyphicon-list"></i></button></li>
-  					<li class="pull-right"><button class="btn btn-link" ng-click="todo_lists.selected.todos.new_model()"><i class="glyphicon glyphicon-plus"></i></button></li>
-  				</ul>
-			</div>
-
-			<div class="col-md-9 col-right">
-				<div class="todos-container" ng-show="todo_lists.selected">
-					<nav class="navbar navbar-default hidden-xs" role="navigation">
-						<ul class="nav navbar-nav">
-	  						<li ng-show="!search"><button class="btn btn-default btn-sm navbar-btn" ng-click="search = true"><i class="glyphicon glyphicon-search"></i></button></li>
-							<li ng-show="search">
-								<form class="navbar-form navbar-left" role="search">
-  									<div class="form-group">
-  										<input type="text" placeholder="search" ng-model="search_text" ng-blur="search = false" ng-keyup="search = false">
-  									</div>
-  								</form>
-  							</li>
-							<li ng-click="show_completed = !show_completed;" ng-class="{ active: show_completed }"><button class="btn btn-default btn-sm navbar-btn"><i class="glyphicon glyphicon-list"></i></button>&nbsp;&nbsp;</li>
-							<li class="dropdown">
-								<div class="btn-group">
-									<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">Sort <span class="caret"></span></button>
-									<ul class="dropdown-menu" role="menu">
-										<li><a href="#" ng-click="todo_sorter.key = sorter.key" ng-repeat="sorter in sorters">{{ sorter.name }}</a></li>
-									</ul>
-								</div>
-							</li>
-						</ul>
-						<h2 class="title">{{ pop(todo_lists.selected.get('title')) }}</h2>
 						<ul class="nav navbar-nav navbar-right">
-	  						<li><button class="btn btn-default btn-sm navbar-btn" ng-click="todo_lists.selected.remove()"><i class="glyphicon glyphicon-remove"></i></button></li>
-	  						<li><button class="btn btn-default btn-sm navbar-btn" ng-click="todo_lists.selected.edit()"><i class="glyphicon glyphicon-pencil"></i></button></li>
-	  						<li><button class="btn btn-default btn-sm navbar-btn" ng-click="todo_lists.selected.todos.new_model()"><i class="glyphicon glyphicon-plus"></i></button></li>
+							<li><a href="#" ng-click="todo_lists.new_model()"><i class="icon-plus"></i></a></li>
 						</ul>
 					</nav>
-					<div class="todo-list">
-						<section ng-repeat="todo_group in todo_lists.selected.todos_by_group" ng-show="todo_group.todos.length > 0">
-							<h3 ng-show="todo_lists.selected.todos_by_group[0].todos.length > 0">&bullet; {{ todo_group.title }} &bullet;</h3>
-							<ul>
-								<li ng-repeat="todo in todo_group.sorted_by[todo_sorter.key]" class="todo-item" ng-class="{ completed: todo.attributes.completed[0] }" ng-include="'todo.html'" ng-show="!todo.attributes.completed[0] || todo.attributes.completed[0] && show_completed"></li>
-							</ul>
-						</section>
+				</div>
+				<div class="col-right">
+					<nav class="navbar navbar-inverse" role="navigation">
+						<div href="#" class="navbar-header">
+							<span class="navbar-brand hidden-xs">{{ pop(todo_lists.selected.get('title')) }}</span>
+							<a href="#" class="navbar-header visible-xs" ng-click="mobile_menu = !mobile_menu">
+								<span class="navbar-brand">{{ pop(todo_lists.selected.get('title')) }}</span>
+								<span class="caret"></span>
+							</a>
+						</div>
+						<ul class="nav navbar-nav navbar-left hidden-xs">
+							<li><a href="#" ng-click="todo_lists.selected.edit()"><i class="icon-cog"></i></a></li>
+						</ul>
+						<ul class="nav navbar-nav navbar-right" ng-show="!editing_todo">
+							<li ng-show="!search"><a href="#" ng-click="search = true"><i class="icon-search"></i></a></li>
+							<li ng-show="search" ng-animate="'fade'">
+								<form role="search">
+									<div class="form-group">
+										<div class="row">
+											<div class="col-sm-2 col-xs-3">
+												<button class="btn btn-default" ng-click="show_completed = !show_completed;" ng-class="{ active: show_completed }" title="Show completed todos"><i class="icon-list"></i></button>
+											</div>
+											<div class="col-sm-10 col-xs-9">
+												<input class="form-control" type="text" placeholder="search" ng-model="search_text">
+												<a href="#" class="clear_search" ng-click="search_text = ''; search = false;"><i class="icon-remove-sign"></i></a>
+											</div>
+										</div>
+									</div>
+								</form>
+							</li>
+	  						<li><a href="#" ng-click="todo_lists.selected.todos.new_model()"><i class="icon-plus"></i></a></li>
+						</ul>
+						<ul class="nav navbar-nav navbar-right" ng-show="editing_todo">
+							<li><a href="#" ng-click="editing_todo.remove()"><i class="icon-trash"></i></a></li>
+	  						<li><a href="#" ng-click="editing_todo.stage_and_save()"><i class="icon-ok"></i></a></li>
+						</ul>
+					</nav>
+				</div>
+			</div>
+
+			<div class="main-body">
+				<div class="visible-xs">
+					<div class="slide-menu todo-list-menu" ng-show="mobile_menu" ng-animate="'slide-menu'">
+						<ul class="nav nav-pills nav-stacked" ng-click="mobile_menu = false;">
+							<li><a href="#" ng-click="todo_lists.selected.edit()"><i class="icon-cog"></i> Todo list settings</a></li>
+							<li ng-show="!show_completed"><a href="#" ng-click="show_completed = true"><i class="icon-check-empty"></i> Show completed todos</a></li>
+							<li ng-show="show_completed"><a href="#" ng-click="show_completed = false"><i class="icon-check"></i> Hide completed todos</a></li>
+							<li class="title">Todo lists</li>
+							<li class="thick separator"></li>
+							<li ng-class="{ active: todo_list.is_selected }" ng-repeat="todo_list in todo_lists.all_models"><a href="#" ng-click="todo_list.select()">
+								<i class="icon-list"></i>
+								{{ pop(todo_list.get('title')) }}
+							</a></li>
+							<li class="separator"></li>
+							<li><a href="#" ng-click="todo_lists.selected.edit()"><i class="icon-plus"></i> New todo list</a></li>
+		  				</ul>
 					</div>
+
+					<div class="modal-cover modal-fixed" ng-show="mobile_menu" ng-animate="fade" ng-click="mobile_menu = false"></div>
+				</div>
+
+				<div class="col-left hidden-xs">
+					<ul class="nav nav-pills nav-stacked todo-lists">
+						<li ng-repeat="todo_list in todo_lists.all_models" ng-click="todo_list.select()" ng-class="{ active: todo_list.is_selected }"><a href="#">{{ pop(todo_list.get('title')) }}</a></li>
+					</ul>
+				</div>
+
+				<div class="col-right">
+					<ul class="todo-list" ng-show="todo_lists.selected">
+						<li ng-repeat="todo in todo_lists.selected.todos.all_models | filter:todosFilter" class="todo-item" ng-class="{
+							completed: todo.attributes.completed[0],
+							editing: todo.is_editing,
+							disabled: !todo.is_editing && !!editing_todo,
+							justcompleted: todo.just_completed
+						}" ng-include="'todo.html'"></li>
+					</ul>
 				</div>
 			</div>
 		</div>
+
+
 		<div ng-show="todo_lists.selected.is_editing">
 			<div class="modal" style="display: block">
 				<div class="modal-dialog">
@@ -129,14 +147,17 @@
 							<h2 class="title"><input type="text" placeholder="Title" ng-model="todo_lists.selected.newAttributes.title"></h2>
 						</div>
 						<div class="modal-footer">
-							<button type="button" class="btn btn-default" ng-click="todo_lists.selected.restore()"><span class="glyphicon glyphicon-remove"></span> Close</button>
-							<button type="button" class="btn btn-primary" ng-click="todo_lists.selected.stage_and_save()"><span class="glyphicon glyphicon-ok"></span> Save</button>
+							<button type="button" class="btn btn-default" ng-click="todo_lists.selected.restore()"><span class="icon-remove"></span> Close</button>
+							<button type="button" class="btn btn-primary" ng-click="todo_lists.selected.stage_and_save()"><span class="icon-ok"></span> Save</button>
 						</div>
 					</div><!-- /.modal-content -->
 				</div><!-- /.modal-dialog -->
 			</div><!-- /.modal -->
 		</div>
 	</div>
+	<!--div class="scrapped">
+		<li><button class="btn btn-default btn-sm navbar-btn" ng-click="todo_lists.selected.remove()"><i class="icon-remove"></i></button></li>
+	</div-->
   </body>
   <script src="/js/vendor/lesscss.min.js" type="text/javascript"></script>
   <script src="/js/vendor/jquery.min.js" type="text/javascript"></script>
@@ -153,4 +174,5 @@
   <script src="/js/indx-collection.js" type="text/javascript"></script>
   <script src="/components/toolbar/toolbar.js" type="text/javascript"></script>
   <script src="js/todos.js" type="text/javascript"></script>
+	<link href="//netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.css" rel="stylesheet">
 </html>

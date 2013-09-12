@@ -1,0 +1,27 @@
+.box-shadow (@string) {
+	-webkit-box-shadow: @string;
+	-moz-box-shadow:    @string;
+	box-shadow:         @string;
+}
+.border-radius (@radius: 5px) {
+	-webkit-border-radius: @radius;
+	-moz-border-radius:    @radius;
+	border-radius:         @radius;
+
+	-moz-background-clip:    padding;
+	-webkit-background-clip: padding-box;
+	background-clip:         padding-box;
+}
+.opacity (@opacity: 0.5) {
+	-webkit-opacity: 	@opacity;
+	-moz-opacity: 		@opacity;
+	opacity: 		@opacity;
+}
+
+// omg less is dumb -- it splits using spaces if there's no semi colon
+.transition (@props; @pointless-thing: 0) {
+    -webkit-transition: @props;
+    -moz-transition: @props;
+    -o-transition: @props;
+    transition: @props;
+}

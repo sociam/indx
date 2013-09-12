@@ -1,37 +1,119 @@
+@import "mixins.less";
 @import url(http://fonts.googleapis.com/css?family=Port+Lligat+Slab|Playball);
 
+@t-fn: cubic-bezier(0.250, 0.460, 0.450, 0.940);
+@t-dur: 0.3s;
 
-.navbar {
-  margin-bottom: 0;
+a:hover {
+  text-decoration: none;
 }
 
-h2.title {
-  font-family: 'Playball', cursive;
-  font-weight: normal;
-  font-size: 29px;
-  color: #777777;
-  margin-top: 9px;
-  margin-bottom: 9px;
-  display: inline-block;
-  margin-left: 16px;
+.navbars {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  .col-left {
+    border-right: 1px solid #494949;
+  }
+  a i {
+    font-size: 18px;
+    line-height: 20px;
+  }
+}
+
+.main-body {
+  margin-top: 80px;
+}
+
+.main-body .col-left {
+  position: fixed;
+  top: 80px;
+  left: 0;
+  bottom: 0;
+  width: 250px;
+}
+
+.navbars .col-right {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+}
+
+.col-left {
+  width: 250px;
+  nav {
+    .navbar-brand {
+      font-family: 'Playball', cursive;
+      font-size: 33px;
+    }
+  }
+  .todo-lists {
+    overflow: auto;
+    padding: 0;
+
+    li {
+      margin: 0;
+      & > a {
+        border-bottom: 1px solid #eee;
+        padding: 15px;
+        border-radius: 0;
+        &:hover, &:focus {
+        }
+        i {
+          width: 18px;
+          display: inline-block;
+          text-align: center;
+          margin-right: 10px;
+        }
+      }
+    }
+  }
 }
 
 .col-left, .col-right {
   padding: 0;
   .navbar {
+    height: 80px;
     border-width: 0 0 1px 0;
     border-radius: 0;
-    background: white;
-    padding: 0 15px;
+    padding: 14px 15px;
+    margin-bottom: 0;
+    background: #333;
+    border: 0;
+    .navbar-nav > li > a, .navbar-brand {
+      color: #ddd;
+    }
     .navbar-nav > li > a {
       line-height: 19px;
     }
-    button {
-      height: 26px;
-      padding-top: 0px;
-      margin-top: 11px;
-      background: #f8f8f8;
-      margin-left: 10px;
+    .navbar-form {
+      border-width: 0;
+    }
+    .form-group {
+      width: 350px;
+      margin: 8px 22px;
+      .row > div {
+        padding: 0 3px;
+        &:first-child {
+          text-align: right;
+        }
+        &:last-child {
+          position: relative;
+          .clear_search {
+            position: absolute;
+            right: 13px;
+            top: 7px;
+            color: #ccc;
+            &:hover {
+              color: #aaa;
+            }
+          }
+        }
+      }
+      button { height: 34px; }
     }
   }
 }
@@ -43,186 +125,228 @@ h2.title {
   }
 }
 
-.col-right .navbar {
+.col-right {
+  margin-left: 250px;
 
-}
-
-.todos-container {
-  border-left: 1px solid #eee;
-  margin: 0 auto;
-
-  h2 {
-    font-family: 'Port Lligat Slab', serif;
-    position: absolute;
-    text-align: center;
-    font-size: 25px;
-    margin-top: 6px;
-    left: 50%;
-    width: 200px;
-    margin-left: -100px;
-    top: 0px;
-  }
-
-
-  .todo-list {
-
-    h3 {
-      font-family: 'Port Lligat Slab', serif;
-      font-size: 15px;
-      text-transform: uppercase;
-      text-align: center;
-    }
-    ul {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-
-      li.todo-item {
-        position: relative;
-        list-style: none;
-        margin: 0;
-        padding: 9px 5px 0px;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-        transition: height 0.3s;
-        -webkit-transition: height 0.3s; /* Safari */
-
-        &:hover {
-          .todo-left-overflow {
-            width: 14px;
-            transition: width 0.3s;
-            -webkit-transition: width 0.3s; /* Safari */
-          }
-          .todo-hover {
-            display: block;
-          }
-        }
-        &.completed .todo-title {
-          text-decoration: line-through;
-        }
-
-        &.editing {
-          .todo-meta {
-            height: 50px;
-            overflow: visible;
-          }
-          .todo-left-overflow { display: none; }
-        }
-
-        .todo-hover { display: none; }
-
-        .todo-body {
-          position: relative;
-
-          .todo-checkbox {
-            position: absolute;
-            left: 10px;
-            top: 4px;
-            width: 20px;
-            height: 20px;
-            border: 1px solid #ccc;
-            cursor: pointer;
-          }
-          .todo-title {
-            margin: 4px 0 0 50px;
-            font-size: 20px;
-            font-family: 'Port Lligat Slab', serif;
-            min-height: 26px;
-
-            textarea {
-              width: 100%;
-              margin: -3px;
-            }
-          }
-        }
-
-        .todo-controls {
-          position: absolute;
-          top: 10px;
-          right: 10px;
-        }
-
-        .todo-left-overflow {
-          position: absolute;
-          left: 0;
-          height: 100%;
-          top: 0;
-          width: 2px;
-          overflow: hidden;
-          transition: width 0.3s;
-          -webkit-transition: width 0.3s; /* Safari */
-
-          .todo-urgency {
-            text-transform: uppercase;
-            font-weight: bold;
-            -webkit-transform:rotate(-90deg);
-            width: 50px;
-            -webkit-transform-origin: 26px 26px;
-            text-align: center;
-            font-size: 10px;
-          }
-
-
-        }
-
-        .todo-meta {
-          margin: 10px 0 0 49px;
-          transition: height 0.3s;
-          -webkit-transition: height 0.3s; /* Safari */
-
-        }
-      }
-    }
-  }
-
-  ul.todos-footer {
+  ul.todo-list {
     list-style: none;
     margin: 0;
     padding: 0;
-    li {
+
+    li.todo-item {
+      position: relative;
       list-style: none;
       margin: 0;
-      padding: 0;
-      border-top: 1px solid #eee;
+      border-bottom: 1px solid #eee;
+      background: #ccc;
+      z-index: 5;
 
-      a {
-        display: block;
-        font-size: 12px;
-        width: 100%;
+      .undo {
+        position: absolute;
+        width: 150px;
         font-weight: bold;
-        text-align: center;
-        color: #666;
-        padding: 6px 0;
+        font-size: 20px;
+        margin-right: -14px;
+        z-index: 0;
+        a {
+          display: block;
+          padding: 24px 0 24px 20px;
+          color: white;
+        }
       }
 
-      &.todo-create {
-        a {
+      .transition(box-shadow @t-dur @t-fn, border-bottom-color @t-dur @t-fn;);
+
+      &.completed {
+        .todo-body, textarea {
+          background: #eee;
+          color: #444;
+        }
+        .todo-urgency {
+          background-color: #666 !important;
+          .todo-urgency-arrows { display: none; }
+        }
+        .todo-body .todo-checkbox .tick {
+          display: block;
+          color: #666;
+        }
+      }
+
+      &.justcompleted {
+        z-index: 4;
+        .todo-body {
+          margin-left: 120px;
+          opacity: 0;
+          margin-top: -80px;
+          .transition(margin-left 0.3s linear, opacity 3s linear, margin-top 0.3s linear 3s;);
+        }
+      }
+
+      &.editing {
+        box-shadow: 0px 0px 35px 0px rgba(0, 0, 0, 0.3);
+        border-bottom-color: white;
+        z-index: 20;
+        .todo-body {
+          .todo-urgency {
+            width: 75px;
+          }
+          .todo-title textarea {
+            opacity: 1;
+          }
+        }
+      }
+
+      .modal-cover {
+        .transition(opacity @t-dur @t-fn 0s, height 0s @t-fn @t-dur;);
+        opacity: 0;
+        height: 0;
+      }
+      &.disabled {
+        border-bottom-color: #aaa;
+        .modal-cover {
+          .transition(opacity @t-dur @t-fn 0s;);
+          opacity: 1;
+          height: 100%;
+        }
+      }
+
+      .todo-body {
+        position: relative;
+        .transition(margin-left @t-dur @t-fn, opacity 0.3s linear;);
+        margin-left: 0;
+        background: white;
+        opacity: 1;
+
+        .todo-checkbox {
+          position: absolute;
+          left: 32px;
+          top: 24px;
+          width: 30px;
+          height: 30px;
+          border: 1px solid #ccc;
+          cursor: pointer;
+          .tick {
+            top: 1px;
+            left: 3px;
+            font-size: 20px;
+            display: none;
+            color: #ccc;
+          }
+          &:hover .tick {
+            display: block;
+          }
+        }
+        .todo-title {
+          margin-left: 80px;
+          padding: 24px 0;
+          padding-left: 5px;
           font-size: 20px;
-          padding: 20px 0;
+          font-family: verdana, sans-serif;
+          font-weight: bold;
+          min-height: 26px;
+          padding-right: 20px;
+          position: relative;
+          cursor: text;
+
+          textarea {
+            position: absolute;
+            top: 0;
+            right: 0;
+            left: -3px;
+            bottom: 0;
+            font-weight: bold;
+            border-color: transparent;
+            resize: none;
+            padding: 23px 20px 23px 7px;
+            outline: 0;
+            opacity: 0;
+          }
+        }
+        .todo-urgency {
+          position: absolute;
+          left: 0;
+          top: 0;
+          bottom: -1px;
+          width: 5px;
+          .transition(width @t-dur @t-fn 0.1s, background-color @t-dur @t-fn;);
+
+          .todo-urgency-arrows {
+            & > div {
+              position: relative;
+              width: 100%;
+              height: 50%;
+              .transition(background-color @t-dur @t-fn;);
+              background-color: rgba(255, 255, 255, 0);
+              cursor: pointer;
+              &:hover {
+                background-color: rgba(255, 255, 255, 0.2);
+              }
+              .arrow-head {
+                position: absolute;
+                left: 30px;
+                border-left: 8px solid transparent;
+                border-right: 8px solid transparent;
+                width: 0;
+                height: 0;
+              }
+            }
+            .todo-urgency-up {
+              border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+              .arrow-head {
+                border-bottom: 8px solid white;
+                bottom: 40%;
+              }
+            }
+            .todo-urgency-down {
+              border-top: 1px solid rgba(255, 255, 255, 0.2);
+              .arrow-head {
+                border-top: 8px solid white;
+                top: 40%;
+              }
+            }
+          }
         }
       }
     }
+  }
+
+}
+
+.modal-cover {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.2);
+  .transition(opacity 0.3 @t-fn;);
+  z-index: 10;
+  &.modal-fixed {
+    position: fixed;
   }
 }
 
 .urgency-low {
-  background: #5eb95e !important;
-  border-color: #5eb95e !important;
+  background-color: #33CC00 !important;
+  border-color: #33CC00 !important;
   color: white;
+  .todo-urgency-down { opacity: 0.4; }
 }
 .urgency-med {
-  background: #faea32 !important;
-  border-color: #faea32 !important;
+  background-color: #FFCC00 !important;
+  border-color: #FFCC00 !important;
   color: black;
 }
 .urgency-high {
-  background: #f18d3a !important;
-  border-color: #f18d3a !important;
+  background-color: #FF9900 !important;
+  border-color: #FF9900 !important;
   color: white;
 }
 .urgency-urgent {
-  background: #dd514c !important;
-  border-color: #dd514c !important;
+  background-color: #FF0000 !important;
+  border-color: #FF0000 !important;
   color: white;
+  .todo-urgency-up { opacity: 0.4; }
 }
 
 
@@ -334,25 +458,171 @@ h2.title {
   }
 }
 
+.visible-mobile {
+  display: none;
+}
+
 @media (max-width: 767px) {
-  .todos-container .todo-list ul li.todo-item {
-    padding-top: 5px;
-    padding-bottom: 5px;
-    form {
-      margin: 0;
-    }
-    .todo-body {
-      .todo-title {
-        font-size: 17px;
-        margin-left: 35px;
-        margin-top: 0;
-      }
-      .todo-checkbox {
-        left: 5px;
-      }
-    }
-  }
-  .navbar-brand {
+  .hidden-mobile {
     display: none;
   }
+  .visible-mobile {
+    display: block;
+  }
+  .navbar {
+    & > .navbar-header, & > ul, .nav > li {
+      display: inline-block;
+      vertical-align: top;
+    }
+    .nav.navbar-right {
+      float: right;
+    }
+    .navbar-header {
+      .navbar-brand {
+        padding-left: 0;
+      }
+      .caret {
+        float: left;
+        margin-top: 21px;
+        border-top-color: whitez;
+      }
+    }
+  }
+}
+
+@media (max-width: 400px) {
+  .col-left {
+    display: none;
+  }
+  .col-right {
+    margin-left: 0;
+    .navbar .form-group {
+      width: 150px;
+      margin-top: 2px;
+    }
+
+    ul.todo-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+
+      li.todo-item {
+        &.editing {
+          .todo-body {
+            .todo-urgency {
+              width: 43px;
+            }
+          }
+        }
+        .todo-body {
+          .todo-urgency {
+            .todo-urgency-arrows {
+              & > div {
+                .arrow-head {
+                  left: 14px;
+                }
+              }
+            }
+          }
+          .todo-checkbox {
+            width: 20px;
+            height: 20px;
+            top: 14px;
+            left: 16px;
+          }
+
+          .todo-title {
+            font-size: 15px;
+            padding-top: 14px;
+            padding-bottom: 14px;
+            min-height: 20px;
+            margin-left: 46px;
+            textarea {
+              padding-top: 13px;
+              padding-bottom: 11px;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+.fade-hide, .fade-show {
+    -webkit-transition:all cubic-bezier(0.250, 0.460, 0.450, 0.940) 0.5s;
+    -moz-transition:all cubic-bezier(0.250, 0.460, 0.450, 0.940) 0.5s;
+    -o-transition:all cubic-bezier(0.250, 0.460, 0.450, 0.940) 0.5s;
+    transition:all cubic-bezier(0.250, 0.460, 0.450, 0.940) 0.5s;
+}
+.fade-hide {
+    opacity:1;
+}
+.fade-hide.fade-hide-active {
+    opacity:0;
+}
+.fade-show {
+    opacity:0;
+}
+.fade-show.fade-show-active {
+    opacity:1;
+}
+
+
+.slide-menu {
+  position: fixed;
+  top: 80px;
+  left: 0;
+  bottom: 0;
+  background: #464646;
+  z-index: 99;
+  overflow: auto;
+  color: white;
+  min-width: 300px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+  .nav > li {
+    margin: 0;
+    & > a {
+      border-bottom: 1px solid #666;
+      padding: 15px;
+      color: white;
+      border-radius: 0;
+      &:hover, &:focus {
+        background: #666;
+      }
+      i {
+        width: 18px;
+        display: inline-block;
+        text-align: center;
+        margin-right: 10px;
+      }
+    }
+  }
+  .separator {
+    border-top: 2px solid #666;
+    &.thick {
+      border-top-width: 4px;
+    }
+  }
+  .title {
+    font-size: 14px;
+    font-weight: bold;
+    padding-top: 20px;
+    padding-left: 15px;
+  }
+}
+
+.slide-menu-hide, .slide-menu-show {
+    .transition(left @t-dur @t-fn;);
+}
+.slide-menu-hide {
+    left: 0;
+}
+.slide-menu-hide.slide-menu-hide-active {
+    left: -100%;
+}
+.slide-menu-show {
+    left: -100%;
+}
+.slide-menu-show.slide-menu-show-active {
+    left: 0;
 }

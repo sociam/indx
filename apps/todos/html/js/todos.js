@@ -18,28 +18,9 @@ angular
 						array_key: 'todos'
 					});
 
-					that.update_todo_list();
-
 					this.todos.on('update change', function () {
-						that.update_todo_list();
+						u.safe_apply($scope);
 					});
-				},
-				update_todo_list: function () {
-					var that = this;
-					this.todos_by_group = _.map(['For today', 'For another time'], function (group_title, i) {
-						var today = i === 0 ? true : false,
-							filtered_todos = _(that.todos.all_models).filter(function (todo) {
-								var t = pop(todo.get('today'));
-								return today ? t === true : t !== true;
-							});
-						return {
-							title: group_title,
-							todos: filtered_todos,
-							sorted_by: get_sorted_todo_lists(filtered_todos)
-						};
-					});
-					console.log('todos, ', that.todos_by_group);
-					u.safe_apply($scope);
 				},
 				remove: function () {
 					if (confirm('Are you sure you want to delete this todo list?')) {
@@ -60,8 +41,58 @@ angular
 
 		var TodoListItem = collection.Model.extend({
 				defaults: { title: '', urgency: 'low', completed: false },
-				toggle: function () {
-					this.save('completed', !pop(this.get('completed')));
+				initialize: function () {
+					var that = this;
+					this.on('edit', function () {
+						if ($scope.editing_todo && $scope.editing_todo !== that) {
+							$scope.editing_todo.restore();
+						}
+						$scope.editing_todo = that;
+					});
+					this.on('restore', function () { $scope.editing_todo = false; });
+					collection.Model.prototype.initialize.apply(this, arguments);
+				},
+				toggle: function (new_state) {
+					var that = this,
+						old_state = pop(this.get('completed'));
+					new_state = _.isUndefined(new_state) ? !old_state : new_state;
+					if (new_state === old_state) { return; }
+					clearTimeout(this.removal_timeout);
+					if (new_state) {
+						this.just_completed = true;
+						this.undo = function () {
+							this.save('completed', old_state);
+							that.undo = undefined;
+							that.just_completed = false;
+							clearTimeout(this.removal_timeout);
+						};
+						this.removal_timeout = setTimeout(function () {
+							that.undo = undefined;
+							that.just_completed = false;
+							that.trigger('change');
+							//u.safe_apply($scope);
+						}, 3300);
+					} else {
+						this.just_completed = false;
+					}
+					this.save('completed', new_state);
+				},
+				set_urgency: function (n) {
+					var i = urgencies.indexOf(pop(this.newAttributes.urgency));
+					if (urgencies[i + n]) {
+						this.newAttributes.urgency = urgencies[i + n];
+						//this.trigger('change');
+					}
+				},
+				restore: function () {
+					collection.Model.prototype.restore.apply(this, arguments);
+					//this.trigger('change');
+				},
+				remove: function () {
+					if (confirm('Are you sure you want to delete this todo?')) {
+						return collection.Model.prototype.remove.apply(this, arguments);
+					}
+					return this;
 				}
 			}),
 			TodoListItems = collection.Collection.extend({
@@ -71,10 +102,11 @@ angular
 					return collection.Collection.prototype.new_model.call(this,
 						{ id: id });
 				},
-				search: function (q) {
-					this.filter(function (model) {
-						return model.get('title').indexOf(q) > -1;
-					});
+				comparator: function (m) {
+					var urgency = m.is_editing ? pop(m.newAttributes.urgency) :
+							pop(m.attributes.urgency),
+						completed = pop(m.attributes.completed) && !m.just_completed;
+					return completed ? 100 : -urgencies.indexOf(urgency);
 				}
 			});
 
@@ -92,26 +124,6 @@ angular
 				console.log('fetched');
 				u.safe_apply($scope);
 			});
-		};
-
-		var sorters = [
-			{	key: 'priority',
-				name: 'Priority',
-				sort: function (todo) { return -priority_number(pop(todo.get('urgency'))); } },
-			{	key: 'alphabetical',
-				name: 'Alphabetical',
-				sort: function (todo) { return pop(todo.get('title')); } },
-			{	key: 'date',
-				name: 'Date',
-				sort: function (todo) { return pop(todo.get('timestamp')); } }
-		];
-
-		var get_sorted_todo_lists = function (todos) {
-			var o = {};
-			_.map(sorters, function (sorter) {
-				o[sorter.key] = _.sortBy(todos, sorter.sort);
-			});
-			return o;
 		};
 
 
@@ -132,6 +144,8 @@ angular
 				priority === 'high' ? 2 : 3;
 		};
 
+		var urgencies = [ 'low', 'med', 'high', 'urgent' ];
+
 		// watches the login stts for changes
 		$scope.$watch('selected_box + selected_user', function() {
 			if ($scope.selected_user && $scope.selected_box) {
@@ -149,8 +163,57 @@ angular
 			to_date_string: to_date_string,
 			to_time_string: to_time_string,
 			pop: pop,
-			sorters: sorters,
-			todo_sorter: { key: sorters[0].key, asc: true }
+			todosFilter: function (todo) {
+				var pass = true,
+					completed = pop(todo.get('completed')),
+					just_completed = todo.just_completed,
+					title = pop(todo.get('title')),
+					search_text = $scope.search_text || '';
+
+				pass = pass && $scope.show_completed ? true : !(completed && !just_completed);
+				pass = pass && (!$scope.search || title.toLowerCase().indexOf(search_text.toLowerCase()) > -1);
+				return pass;
+			}
 		});
 
-	});
+		$(document).keydown(function (e) {
+			if ($scope.editing_todo) {
+				switch (e.keyCode) {
+				case 27: //esc
+					$scope.editing_todo.restore();
+					$('textarea').blur();
+					break;
+				case 13: // enter
+					$scope.editing_todo.stage_and_save();
+					e.preventDefault();
+					$('textarea').blur();
+					break;
+				}
+			}
+		});
+
+	}).directive('focusMe', function($timeout, $parse) {
+	  return {
+	    //scope: true,   // optionally create a child scope
+	    link: function(scope, element, attrs) {
+	      var model = $parse(attrs.focusMe);
+	      scope.$watch(model, function(value) {
+	        console.log('value=',value);
+	        if(value === true) {
+	          $timeout(function() {
+	            element[0].focus();
+	          });
+	        }
+	      });
+	    }
+	  };
+	}).directive('ngFocus', ['$parse', function($parse) {
+	  return function(scope, element, attr) {
+	    var fn = $parse(attr['ngFocus']);
+	    element.bind('focus', function(event) {
+	      scope.$apply(function() {
+	        fn(scope, {$event:event});
+	      });
+	    });
+	  }
+	}]);
