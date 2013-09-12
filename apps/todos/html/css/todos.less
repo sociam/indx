@@ -13,6 +13,10 @@
   .col-left {
     border-right: 1px solid #393939;
   }
+  a i {
+    font-size: 18px;
+    line-height: 20px;
+  }
 }
 
 .main-body {
@@ -80,17 +84,31 @@
       position: relative;
       list-style: none;
       margin: 0;
-      border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+      border-bottom: 1px solid #eee;
+      background: #ccc;
+      z-index: 5;
 
-      form {
-        margin: 0;
+      .undo {
+        position: absolute;
+        width: 150px;
+        font-weight: bold;
+        font-size: 20px;
+        margin-right: -14px;
+        z-index: 0;
+        a {
+          display: block;
+          padding: 24px 0 24px 20px;
+          color: white;
+        }
       }
 
       .transition(box-shadow @t-dur @t-fn, border-bottom-color @t-dur @t-fn;);
 
-      &.completed, &.completed textarea {
-        background: #eee;
-        color: #444;
+      &.completed {
+        .todo-body, textarea {
+          background: #eee;
+          color: #444;
+        }
         .todo-urgency {
           background-color: #666 !important;
           .todo-urgency-arrows { display: none; }
@@ -101,8 +119,18 @@
         }
       }
 
+      &.justcompleted {
+        z-index: 4;
+        .todo-body {
+          margin-left: 120px;
+          opacity: 0;
+          margin-top: -80px;
+          .transition(margin-left 0.3s linear, opacity 3s linear, margin-top 0.3s linear 3s;);
+        }
+      }
+
       &.editing {
-        box-shadow: 0px 0px 35px 0px rgba(0, 0, 0, 0.3);
+        box-shadow: 0px 0px 35px 0px #ccc;
         border-bottom-color: white;
         z-index: 20;
         .todo-body {
@@ -128,6 +156,10 @@
 
       .todo-body {
         position: relative;
+        .transition(margin-left @t-dur @t-fn, opacity 0.3s linear;);
+        margin-left: 0;
+        background: white;
+        opacity: 1;
 
         .todo-checkbox {
           position: absolute;

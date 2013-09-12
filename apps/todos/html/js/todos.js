@@ -52,13 +52,30 @@ angular
 					this.on('restore', function () { $scope.editing_todo = false; });
 					collection.Model.prototype.initialize.apply(this, arguments);
 				},
-				toggle: function (rs) {
-					rs = _.isDefined(rs) ? rs : !pop(this.get('completed'));
-					this.just_completed = true;
-					this.undo = function () {
-						this.save('completed', rs!blah!);
+				toggle: function (new_state) {
+					var that = this,
+						old_state = pop(this.get('completed'));
+					new_state = _.isUndefined(new_state) ? !old_state : new_state;
+					if (new_state === old_state) { return; }
+					clearTimeout(this.removal_timeout);
+					if (new_state) {
+						this.just_completed = true;
+						this.undo = function () {
+							this.save('completed', old_state);
+							that.undo = undefined;
+							that.just_completed = false;
+							clearTimeout(this.removal_timeout);
+						};
+						this.removal_timeout = setTimeout(function () {
+							that.undo = undefined;
+							that.just_completed = false;
+							that.trigger('change');
+							//u.safe_apply($scope);
+						}, 3300);
+					} else {
+						this.just_completed = false;
 					}
-					this.save('completed', rs);
+					this.save('completed', new_state);
 				},
 				set_urgency: function (n) {
 					var i = urgencies.indexOf(pop(this.newAttributes.urgency));
@@ -88,7 +105,7 @@ angular
 				comparator: function (m) {
 					var urgency = m.is_editing ? pop(m.newAttributes.urgency) :
 							pop(m.attributes.urgency),
-						completed = pop(m.attributes.completed) && !m.just_completed;
+						completed = pop(m.attributes.completed);
 					return completed ? 100 : -urgencies.indexOf(urgency);
 				}
 			});

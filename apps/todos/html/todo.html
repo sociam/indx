@@ -1,5 +1,5 @@
-<div class="undo" ng-show="todo.undo">
-	<a href="#" ng-click="todo.undo()">Undo</a>
+<div class="undo">
+	<a href="#" ng-click="todo.undo()"><i class="icon-undo"></i> Undo</a>
 </div>
 <div class="todo-body">
 	<div class="todo-urgency" ng-class="'urgency-' + (todo.is_editing && pop(todo.newAttributes.urgency) || pop(todo.attributes.urgency))">
