@@ -45,7 +45,7 @@
 
 		<div class="todo-app-container row-fluid" ng-show="selected_user && selected_box">
 			<div class="navbars">
-				<div class="col-left col-md-3 hidden-xs">
+				<div class="col-left hidden-xs">
 					<nav class="navbar navbar-inverse" role="navigation">
 						<div class="navbar-header">
 							<a href="#" class="navbar-brand">Todo lists</a>
@@ -55,25 +55,28 @@
 						</ul>
 					</nav>
 				</div>
-				<div class="col-right col-md-9">
+				<div class="col-right">
 					<nav class="navbar navbar-inverse" role="navigation">
-						<a href="#" class="navbar-header">
-							<span class="navbar-brand">{{ pop(todo_lists.selected.get('title')) }}</span>
-							<span class="caret visible-xs"></span>
-						</a>
+						<div href="#" class="navbar-header">
+							<span class="navbar-brand hidden-xs">{{ pop(todo_lists.selected.get('title')) }}</span>
+							<a href="#" class="navbar-header visible-xs" ng-click="mobile_menu = !mobile_menu">
+								<span class="navbar-brand">{{ pop(todo_lists.selected.get('title')) }}</span>
+								<span class="caret"></span>
+							</a>
+						</div>
 						<ul class="nav navbar-nav navbar-left hidden-xs">
 							<li><a href="#" ng-click="todo_lists.selected.edit()"><i class="icon-cog"></i></a></li>
 						</ul>
 						<ul class="nav navbar-nav navbar-right" ng-show="!editing_todo">
 							<li ng-show="!search"><a href="#" ng-click="search = true"><i class="icon-search"></i></a></li>
 							<li ng-show="search" ng-animate="'fade'">
-								<form class="navbar-form navbar-left" role="search">
+								<form role="search">
 									<div class="form-group">
 										<div class="row">
-											<div class="col-lg-2">
+											<div class="col-sm-2 col-xs-3">
 												<button class="btn btn-default" ng-click="show_completed = !show_completed;" ng-class="{ active: show_completed }" title="Show completed todos"><i class="icon-list"></i></button>
 											</div>
-											<div class="col-lg-10">
+											<div class="col-sm-10 col-xs-9">
 												<input class="form-control" type="text" placeholder="search" ng-model="search_text">
 												<a href="#" class="clear_search" ng-click="search_text = ''; search = false;"><i class="icon-remove-sign"></i></a>
 											</div>
@@ -92,35 +95,33 @@
 			</div>
 
 			<div class="main-body">
-				<div class="col-left col-md-3 hidden-xs">
+				<div class="visible-xs">
+					<div class="slide-menu todo-list-menu" ng-show="mobile_menu" ng-animate="'slide-menu'">
+						<ul class="nav nav-pills nav-stacked" ng-click="mobile_menu = false;">
+							<li><a href="#" ng-click="todo_lists.selected.edit()"><i class="icon-cog"></i> Todo list settings</a></li>
+							<li ng-show="!show_completed"><a href="#" ng-click="show_completed = true"><i class="icon-check-empty"></i> Show completed todos</a></li>
+							<li ng-show="show_completed"><a href="#" ng-click="show_completed = false"><i class="icon-check"></i> Hide completed todos</a></li>
+							<li class="title">Todo lists</li>
+							<li class="thick separator"></li>
+							<li ng-class="{ active: todo_list.is_selected }" ng-repeat="todo_list in todo_lists.all_models"><a href="#" ng-click="todo_list.select()">
+								<i class="icon-list"></i>
+								{{ pop(todo_list.get('title')) }}
+							</a></li>
+							<li class="separator"></li>
+							<li><a href="#" ng-click="todo_lists.selected.edit()"><i class="icon-plus"></i> New todo list</a></li>
+		  				</ul>
+					</div>
+
+					<div class="modal-cover modal-fixed" ng-show="mobile_menu" ng-animate="fade" ng-click="mobile_menu = false"></div>
+				</div>
+
+				<div class="col-left hidden-xs">
 					<ul class="nav nav-pills nav-stacked todo-lists">
-						<li ng-repeat="todo_list in todo_lists.all_models" ng-click="todo_list.select()" ng-class="{ active: todo_list.selected }"><a href="#">{{ pop(todo_list.get('title')) }}</a></li>
+						<li ng-repeat="todo_list in todo_lists.all_models" ng-click="todo_list.select()" ng-class="{ active: todo_list.is_selected }"><a href="#">{{ pop(todo_list.get('title')) }}</a></li>
 					</ul>
 				</div>
 
-				<div class="col-right col-md-9">
-					<div class="todo-list-menu visible-xs">
-						<ul class="nav nav-flat">
-							<li>
-								<div class="btn-group">
-									<button type="button" class="btn btn-link dropdown-toggle" data-toggle="dropdown">Todo list <span class="caret"></span></button>
-									<ul class="dropdown-menu" role="menu">
-										<li><a href="#" ng-click="todo_list.select()" ng-class="{ active: todo_list.selected }" ng-repeat="todo_list in todo_lists.all_models">{{ pop(todo_list.get('title')) }}</a></li>
-									</ul>
-								</div>
-							</li>
-							<li class="dropdown">
-								<div class="btn-group">
-									<button type="button" class="btn btn-link dropdown-toggle" data-toggle="dropdown">Sort <span class="caret"></span></button>
-									<ul class="dropdown-menu" role="menu">
-										<li><a href="#" ng-click="todo_sorter.key = sorter.key" ng-repeat="sorter in sorters">{{ sorter.name }}</a></li>
-									</ul>
-								</div>
-							</li>
-							<li><button class="btn btn-link" ng-click="show_completed = !show_completed;" ng-class="{ active: show_completed }"><i class="icon-list"></i></button></li>
-		  					<li class="pull-right"><button class="btn btn-link" ng-click="todo_lists.selected.todos.new_model()"><i class="icon-plus"></i></button></li>
-		  				</ul>
-					</div>
+				<div class="col-right">
 					<ul class="todo-list" ng-show="todo_lists.selected">
 						<li ng-repeat="todo in todo_lists.selected.todos.all_models | filter:todosFilter" class="todo-item" ng-class="{
 							completed: todo.attributes.completed[0],
@@ -133,7 +134,6 @@
 			</div>
 		</div>
 
-		<div class="modal-cover" ng-show="modal"></div>
 
 		<div ng-show="todo_lists.selected.is_editing">
 			<div class="modal" style="display: block">

@@ -1,7 +1,7 @@
 @import "mixins.less";
 @import url(http://fonts.googleapis.com/css?family=Port+Lligat+Slab|Playball);
 
-@t-fn: ease-out;
+@t-fn: cubic-bezier(0.250, 0.460, 0.450, 0.940);
 @t-dur: 0.3s;
 
 a:hover {
@@ -15,7 +15,7 @@ a:hover {
   right: 0;
   z-index: 100;
   .col-left {
-    border-right: 1px solid #393939;
+    border-right: 1px solid #494949;
   }
   a i {
     font-size: 18px;
@@ -27,23 +27,51 @@ a:hover {
   margin-top: 80px;
 }
 
+.main-body .col-left {
+  position: fixed;
+  top: 80px;
+  left: 0;
+  bottom: 0;
+  width: 250px;
+}
+
+.navbars .col-right {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+}
+
 .col-left {
+  width: 250px;
   nav {
     .navbar-brand {
       font-family: 'Playball', cursive;
-      font-size: 29px;
+      font-size: 33px;
     }
   }
   .todo-lists {
-    position: fixed;
-    top: 80px;
-    bottom: 80px;
-    left: 0;
     overflow: auto;
+    padding: 0;
+
+    li {
+      margin: 0;
+      & > a {
+        border-bottom: 1px solid #eee;
+        padding: 15px;
+        border-radius: 0;
+        &:hover, &:focus {
+        }
+        i {
+          width: 18px;
+          display: inline-block;
+          text-align: center;
+          margin-right: 10px;
+        }
+      }
+    }
   }
 }
-
-
 
 .col-left, .col-right {
   padding: 0;
@@ -55,12 +83,18 @@ a:hover {
     margin-bottom: 0;
     background: #333;
     border: 0;
-    color: white;
+    .navbar-nav > li > a, .navbar-brand {
+      color: #ddd;
+    }
     .navbar-nav > li > a {
       line-height: 19px;
     }
+    .navbar-form {
+      border-width: 0;
+    }
     .form-group {
       width: 350px;
+      margin: 8px 22px;
       .row > div {
         padding: 0 3px;
         &:first-child {
@@ -92,7 +126,7 @@ a:hover {
 }
 
 .col-right {
-  margin: 0 auto;
+  margin-left: 250px;
 
   ul.todo-list {
     list-style: none;
@@ -283,9 +317,13 @@ a:hover {
   top: 0;
   left: 0;
   right: 0;
+  bottom: 0;
   background: rgba(0, 0, 0, 0.2);
   .transition(opacity 0.3 @t-fn;);
   z-index: 10;
+  &.modal-fixed {
+    position: fixed;
+  }
 }
 
 .urgency-low {
@@ -453,8 +491,15 @@ a:hover {
 }
 
 @media (max-width: 400px) {
+  .col-left {
+    display: none;
+  }
   .col-right {
-    margin: 0 auto;
+    margin-left: 0;
+    .navbar .form-group {
+      width: 150px;
+      margin-top: 2px;
+    }
 
     ul.todo-list {
       list-style: none;
@@ -520,4 +565,64 @@ a:hover {
 }
 .fade-show.fade-show-active {
     opacity:1;
+}
+
+
+.slide-menu {
+  position: fixed;
+  top: 80px;
+  left: 0;
+  bottom: 0;
+  background: #464646;
+  z-index: 99;
+  overflow: auto;
+  color: white;
+  min-width: 300px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+  .nav > li {
+    margin: 0;
+    & > a {
+      border-bottom: 1px solid #666;
+      padding: 15px;
+      color: white;
+      border-radius: 0;
+      &:hover, &:focus {
+        background: #666;
+      }
+      i {
+        width: 18px;
+        display: inline-block;
+        text-align: center;
+        margin-right: 10px;
+      }
+    }
+  }
+  .separator {
+    border-top: 2px solid #666;
+    &.thick {
+      border-top-width: 4px;
+    }
+  }
+  .title {
+    font-size: 14px;
+    font-weight: bold;
+    padding-top: 20px;
+    padding-left: 15px;
+  }
+}
+
+.slide-menu-hide, .slide-menu-show {
+    .transition(left @t-dur @t-fn;);
+}
+.slide-menu-hide {
+    left: 0;
+}
+.slide-menu-hide.slide-menu-hide-active {
+    left: -100%;
+}
+.slide-menu-show {
+    left: -100%;
+}
+.slide-menu-show.slide-menu-show-active {
+    left: 0;
 }
