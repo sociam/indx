@@ -16,7 +16,16 @@ angular
 			is_editing: false,
 			is_selected: false,
 			initialize: function () {
-				this.newAttributes = _.clone(this.attributes);
+				var that = this;
+				this._update_new_attributes();
+				this.on('change', function () {
+					that._update_new_attributes();
+				})
+			},
+			_update_new_attributes: function () {
+				if (!this.is_editing) {
+					this.newAttributes = _.clone(this.attributes);
+				}
 			},
 			create: function () {
 				var that = this;
@@ -41,7 +50,7 @@ angular
 			edit: function (is_new) {
 				if (this.is_editing) { return; }
 				console.log('edit item', this);
-				this.newAttributes = _.clone(this.attributes);
+				this._update_new_attributes();
 				this.is_new = is_new;
 				this.is_editing = true;
 				this.trigger('edit');
@@ -103,7 +112,6 @@ angular
 				this.on('change', function () {
 					that.sort();
 				}).on('sort', function () {
-					console.log('!!! sorting !!!')
 					that._set_new_model(that._new_model);
 				});
 				this.reset(models);
@@ -262,7 +270,8 @@ angular
 				}
 				this.trigger('update', this);
 				return this;
-			}
+			},
+			comparator: function () { return 1; }
 		});
 
 		var now = function () {
