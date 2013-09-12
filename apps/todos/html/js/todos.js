@@ -105,7 +105,7 @@ angular
 				comparator: function (m) {
 					var urgency = m.is_editing ? pop(m.newAttributes.urgency) :
 							pop(m.attributes.urgency),
-						completed = pop(m.attributes.completed);
+						completed = pop(m.attributes.completed) && !m.just_completed;
 					return completed ? 100 : -urgencies.indexOf(urgency);
 				}
 			});

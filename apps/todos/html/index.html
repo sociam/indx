@@ -66,11 +66,18 @@
 						</ul>
 						<ul class="nav navbar-nav navbar-right" ng-show="!editing_todo">
 							<li ng-show="!search"><a href="#" ng-click="search = true"><i class="icon-search"></i></a></li>
-							<li ng-show="search">
+							<li ng-show="search" ng-animate="'fade'">
 								<form class="navbar-form navbar-left" role="search">
 									<div class="form-group">
-										<button class="btn btn-link" ng-click="show_completed = !show_completed;" ng-class="{ active: show_completed }"><i class="icon-list"></i></button>
-										<input type="text" placeholder="search" ng-model="search_text">
+										<div class="row">
+											<div class="col-lg-2">
+												<button class="btn btn-default" ng-click="show_completed = !show_completed;" ng-class="{ active: show_completed }" title="Show completed todos"><i class="icon-list"></i></button>
+											</div>
+											<div class="col-lg-10">
+												<input class="form-control" type="text" placeholder="search" ng-model="search_text">
+												<a href="#" class="clear_search" ng-click="search_text = ''; search = false;"><i class="icon-remove-sign"></i></a>
+											</div>
+										</div>
 									</div>
 								</form>
 							</li>

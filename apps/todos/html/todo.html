@@ -1,4 +1,4 @@
-<div class="undo">
+<div class="undo" ng-show="todo.just_completed">
 	<a href="#" ng-click="todo.undo()"><i class="icon-undo"></i> Undo</a>
 </div>
 <div class="todo-body">
@@ -12,7 +12,9 @@
 		<span class="glyphicon glyphicon-ok tick"></span>
 	</div>
 	<div class="todo-title">
-		{{ todo.is_editing && pop(todo.newAttributes.title) || pop(todo.attributes.title) }}&nbsp;
+		<span ng-show="todo.is_editing">{{ pop(todo.newAttributes.title) }}</span>
+		<span ng-show="!todo.is_editing">{{ pop(todo.attributes.title) }}</span>
+		&nbsp;
 		<textarea ng-model="todo.newAttributes.title" placeholder="todo..." ng-focus="todo.edit()" focus-me="todo.is_editing"></textarea>
 	</div>
 </div>
