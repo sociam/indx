@@ -52,14 +52,24 @@ angular
 					this.on('restore', function () { $scope.editing_todo = false; });
 					collection.Model.prototype.initialize.apply(this, arguments);
 				},
-				toggle: function () {
-					this.save('completed', !pop(this.get('completed')));
+				toggle: function (rs) {
+					rs = _.isDefined(rs) ? rs : !pop(this.get('completed'));
+					this.just_completed = true;
+					this.undo = function () {
+						this.save('completed', rs!blah!);
+					}
+					this.save('completed', rs);
 				},
 				set_urgency: function (n) {
 					var i = urgencies.indexOf(pop(this.newAttributes.urgency));
 					if (urgencies[i + n]) {
 						this.newAttributes.urgency = urgencies[i + n];
+						//this.trigger('change');
 					}
+				},
+				restore: function () {
+					collection.Model.prototype.restore.apply(this, arguments);
+					//this.trigger('change');
 				},
 				remove: function () {
 					if (confirm('Are you sure you want to delete this todo?')) {
@@ -76,8 +86,9 @@ angular
 						{ id: id });
 				},
 				comparator: function (m) {
-					var urgency = pop(m.get('urgency')),
-						completed = pop(m.get('completed'));
+					var urgency = m.is_editing ? pop(m.newAttributes.urgency) :
+							pop(m.attributes.urgency),
+						completed = pop(m.attributes.completed) && !m.just_completed;
 					return completed ? 100 : -urgencies.indexOf(urgency);
 				}
 			});
@@ -138,10 +149,11 @@ angular
 			todosFilter: function (todo) {
 				var pass = true,
 					completed = pop(todo.get('completed')),
+					just_completed = todo.just_completed,
 					title = pop(todo.get('title')),
 					search_text = $scope.search_text || '';
 
-				pass = pass && $scope.show_completed ? true : !completed;
+				pass = pass && $scope.show_completed ? true : !(completed && !just_completed);
 				pass = pass && (!$scope.search || title.toLowerCase().indexOf(search_text.toLowerCase()) > -1);
 				return pass;
 			}
