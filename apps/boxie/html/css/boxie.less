@@ -4,14 +4,9 @@
   font-family: monospace;
 }
 
-h2.title {
+.indx-navbar.indx-sidebar .navbar-brand {
   font-family: 'Wallpoet', cursive;
-  font-weight: normal;
-  font-size: 20px;
-  margin-top: 15px;
-  color: #777777;
-  display: inline-block;
-  margin-left: 14px;
+    font-size: 33px;
 }
 
 .boxie-container {
@@ -86,6 +81,17 @@ table.obj-list {
 
 .obj-preview {
   position: relative;
+}
+
+.preview-pane {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 30%;
+  background: white;
+  box-shadow: 0 0 5px rgba(0,0,0,0.6);
+  padding: 10px;
   .icons {
     list-style: none;
     margin: 0;
@@ -97,5 +103,13 @@ table.obj-list {
       display: inline;
       padding: 4px;
     }
+  }
+  pre {
+    position: absolute;
+    top: 40px;
+    left: 10px;
+    bottom: 10px;
+    right: 10px;
+    overflow: auto;
   }
 }

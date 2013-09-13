@@ -9,7 +9,7 @@ angular
 			.when('/obj/:obj_id', { templateUrl: 'partials/obj-detail.html', controller: 'ObjDetailCtrl' })
 			.otherwise({ redirectTo: '/obj/1' });
 	}])
-	.controller('RootCtrl', function ($scope, $routeProvider, client, utils, collection) {
+	.controller('RootCtrl', function ($scope, client, utils, collection) {
 		'use strict';
 
 		console.log('PLEASE WORK')

@@ -1,0 +1,34 @@
+<h1>Obj#{{ curr_obj.id }}</h1>
+
+<div>timestamp (user)</div>
+
+<h4>Attributes</h4>
+<table class="table">
+	<thead><th>Name</th><th>Type</th><th>Value</th><th>Language</th></thead>
+	<tbody class="monospace">
+		<tr ng-repeat="attribute in curr_obj.attribute_array">
+			<td>{{ attribute.key }}</td>
+			<td>{{ attribute.type }}</td>
+			<td ng-show="!attribute.is_array">{{ attribute.value }}</td>
+			<td ng-show="attribute.is_array">
+				<ul class="list-unstyled">
+					<li ng-repeat="item in attribute.value">
+						[{{$index}}] =>
+							<span ng-show="item.fetch"><a href="#">Obj#{{item.id}}</a> - </span> <span class="text-muted">{{ item }}</span>
+					</li>
+				</ul>
+			</td>
+			<td>{{ attribute.language }}</td>
+		</tr>
+	</tbody>
+</table>
+
+<h4>JSON</h4>
+<div class="obj-preview">
+	<ul class="icons">
+		<li><a title="Edit" ng-click="curr_obj.edit()"><i class="glyphicon glyphicon-pencil"></i></a></li>
+		<li><a title="Delete" ng-click="curr_obj.delete()"><i class="glyphicon glyphicon-remove"></i></a></li>
+	</ul>
+	<pre>{{ pop(curr_obj.val_string) }}</pre>
+</div>
+
