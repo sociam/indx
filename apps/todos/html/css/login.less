@@ -1,0 +1,100 @@
+
+.need-log-in, .need-select-box {
+  position: fixed;
+  right: 40px;
+  left: 30px;
+  top: 54px;
+  .white-cover {
+    position: absolute;
+    top: 0;
+    height: 60px;
+    background: white;
+    z-index: 5;
+  }
+  .center-title {
+    position: absolute;
+    left: 50%;
+    h2 {
+      position: relative;
+      z-index: 10;
+      top: 0;
+      font-size: 20px;
+      font-weight: bold;
+      left: -50%;
+    }
+  }
+  .instruct-arrow {
+    position: absolute;
+    z-index: 0;
+    top: 47px;
+    left: 0;
+    right: 0;
+    .arrow-horiz {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0px;
+      .arrow-horiz-line { width: 100%; }
+    }
+    .arrow-vert {
+      position: absolute;
+      height: 32px;
+      bottom: 0;
+      .arrow-vert-line { height: 100%; }
+      .arrow-head-up {
+        position: absolute;
+        bottom: 100%;
+        left: -@arrowheadsize + @arrowwidth / 2;
+      }
+    }
+  }
+}
+
+.need-log-in {
+  .white-cover {
+    left: 0;
+    right: 50%;
+  }
+  .instruct-arrow {
+    .arrow-vert {
+      right: 0;
+    }
+  }
+}
+
+.need-select-box {
+  .white-cover {
+    left: 50%;
+    right: 0;
+  }
+  .instruct-arrow {
+    .arrow-horiz {
+      left: 134px;
+    }
+    .arrow-vert {
+      left: 134px;
+    }
+  }
+}
+
+@arrowcolor: #bce8f1;
+@arrowwidth: 2px;
+@arrowheadsize: 8px;
+
+.arrow-horiz-line {
+  border-top: @arrowwidth solid @arrowcolor;
+  height: 0;
+}
+
+.arrow-vert-line {
+  border-left: @arrowwidth solid @arrowcolor;
+  width: 0;
+}
+
+.arrow-head-up {
+  border-bottom: @arrowheadsize solid @arrowcolor;
+  border-right: @arrowheadsize solid transparent;
+  border-left: @arrowheadsize solid transparent;
+  width: 0;
+  height: 0;
+}

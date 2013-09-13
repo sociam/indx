@@ -1,0 +1,62 @@
+.indx-container {
+
+}
+
+.indx-fixed-col {
+}
+
+.indx-sidebar {
+  position: fixed;
+  top: 80px;
+  left: 0;
+  bottom: 0;
+  width: 250px;
+}
+
+.indx-main {
+	margin-left: 250px;
+}
+
+
+
+.indx-navbars {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+	.indx-navbar {
+	  &.indx-sidebar {
+  		position: absolute;
+  		top: 0;
+		left: 0;
+		width: 250px;
+	    border-right: 1px solid #494949;
+	  }
+	  &.indx-main {
+		position: absolute;
+		margin: 0;
+		top: 0;
+		left: 250px;
+		right: 0;
+	  }
+	}
+}
+
+
+.indx-content {
+
+  margin-top: 80px;
+}
+
+@media (max-width: 767px) {
+	.indx-sidebar {
+		display: none;
+	}
+	.indx-main {
+    	margin-left: 0;
+    }
+    .indx-navbars .indx-navbar.indx-main {
+    	left: 0;
+	}
+}
