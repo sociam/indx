@@ -1,0 +1,359 @@
+div {
+   -moz-user-select: -moz-none;
+   -khtml-user-select: none;
+   -webkit-user-select: none;
+  
+   -ms-user-select: none;
+   user-select: none;
+
+   -webkit-overflow-scroll:touch;
+}
+
+
+body
+{
+	font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+	/*background-color: #fff;*/
+}
+
+#debugMenu
+{
+	position: absolute;
+	left: 1020px;
+}
+
+#activities
+{
+	position: absolute;
+	left: 1020px;
+}
+
+#activities .activity
+{
+	background-color: #f9f9f9;
+	padding: 5px;
+	width: 200px;
+	color: #fff;
+	font-size: 12px;
+	text-align: center;
+	margin: 5px;
+}
+
+#activities .activity .checkbox
+{
+	float: left;
+}
+
+#activities .activity .title
+{
+	cursor: pointer;
+}
+
+#activities .activity .info
+{
+	clear: left;
+}
+
+#activities .activity .info .sourceName
+{
+	font-weight: bold;
+	text-align: left;
+}
+
+#left
+{
+	padding: 10px;
+}
+
+.scaleBar
+{
+	height: 3px;
+	top: 58.5px;
+	position:absolute;
+	background-color: #000;
+	cursor: ns-resize;
+	opacity: 0.2;
+}
+
+.showField
+{
+	background-color: #fff;
+}
+
+.hiddenField
+{
+	background-color: rgba(0,0,0, 0.3);
+	border: 0;
+	color: #fff;
+	font-size: 12px;
+}
+.hiddenField:focus 
+{
+    outline: none;
+}
+
+.hidden
+{
+	visibility: hidden;
+}
+
+#channelsWindow
+{
+	position: absolute;
+	left: 10px;
+	top: 10px;
+	width: 200px;
+	color: #000;
+	/*background-color: #eee;*/
+	z-index: 99999999;
+	/*display: inline;*/
+}
+
+#channelsWindow .container .channel
+{
+	background-color: #f9f9f9;
+	padding: 5px;
+	width: 200px;
+	color: #fff;
+	font-size: 12px;
+	text-align: center;
+}
+
+#channelsWindow .container .channel:hover {
+  border-color: white;
+  background-color: #000;
+  color: #fff;
+  cursor: move;
+}
+
+#debugButton
+{
+	position: absolute;
+	right: 10px;
+	bottom: 10px;
+	margin-top: 27px;
+	text-align: center;
+	font-weight: light;
+}
+
+path {
+	fill: none;
+}
+
+#graphSelection
+{
+
+}
+
+.window
+{
+	opacity: 0.2;
+}
+
+.timelineGraph
+{
+	width: 700px;
+	height: 90px;
+	overflow: hidden;
+}
+
+.aGraph
+{
+	border: 1px solid #eee;
+	width: 700px;
+	height: 130px;
+	/*box-shadow: 2px 2px 5px #888888;*/
+	/*position: absolute;*/
+	left: 300px;
+	/*top: 100px;*/
+	overflow: hidden;
+	z-index: 1;
+}
+
+.picker
+{
+	height: 130px;
+	width: 1px;
+	background-color: #000;
+	position: absolute;
+	top: 0px;
+	left: 0px;
+}
+
+.progressBar
+{
+	height: 20px;
+	background-color: #fff;
+	border: #ddd 1px solid;
+	margin: 5px;
+}
+
+.progressBar .bar
+{
+	height: 20px;
+	background-color: #ddd;
+}
+
+.annotationLabel
+{
+	margin: 0 auto;
+	margin-top: 45px;
+	display: block;
+	width: 100px;
+	text-align: center;
+	overflow: auto;
+}
+
+.tooltip
+{
+	position: absolute;
+	border: #000 1px solid;
+}
+
+.annotation
+{
+	height: 120px;
+	width: 10px;
+	background: rgba(100, 100, 100, 0.5);
+	position: absolute;
+	top: 0px;
+	left: 1px;
+	/*border-radius: 5px;*/
+	z-index: 100;
+}
+
+.graphSelection
+{
+	height: 120px;
+	width: 10px;
+	/*background-color: #99f;*/
+	background: rgba(143, 143, 143, 0.5);
+	position: absolute;
+	top: 0px;
+	left: 1px;
+}
+
+.graphSelection svg path
+{
+	stroke-width: 1;
+}
+
+.selectable
+{
+   -moz-user-select: -moz-all;
+   -khtml-user-select: all;
+   -webkit-user-select: all;
+   -ms-user-select: all;
+   user-select: all;
+}
+
+#timeline
+{
+	/*background-color: #000;*/
+	position: absolute;
+	width: 700px;
+	height: 90px;
+	left: 300px;
+	top: 10px;
+	border: 1px solid #eee;
+	text-align: center;
+}
+
+.acceptButton
+{
+	height: 10px;
+	width: 10px;
+	background-color: #9f9;
+	position: absolute;
+	top: 110px;
+	right: 0px;
+}
+
+.removeButton
+{
+	height: 10px;
+	width: 10px;
+	background-color: #f99;
+	position: absolute;
+	top: 0px;
+	right: 0px;
+}
+
+.infoField
+{
+	position: absolute;
+	top: 12px;
+	right: 0px;
+	width: 100px;
+	height: 46px;
+	background-color: rgba(180,180,100, 0.7);
+	font-size: 9px;
+}
+
+.infoField .bold
+{
+	font-weight: bold;
+}
+
+.graph path
+{
+	stroke-width: 1;
+}
+
+.grid .tick {
+    stroke: rgb(247,247,247);
+}
+
+.grid path {
+    stroke-width: 2;
+}
+
+.graphTimestamp
+{
+	font-size: 10px;
+	background-color: #000;
+	color: #fff;
+}
+
+.timelineTimestamp
+{
+	font-size: 12px;
+	background-color: #000;
+	color: #fff;
+}
+
+.graphScale
+{
+	font-size: 10px;
+}
+
+.grid .axis
+{
+	stroke: black;
+	opacity: 0.3;
+}
+
+.crosshair
+{
+	stroke: rgb(0,0,0);
+	stroke-width: 1;
+}
+
+.crosshair .hCrosshair
+{
+	stroke: rgb(0,0,0);
+	stroke-width: 1;
+}
+
+
+.crosshair .valueText
+{
+	stroke-width: 0;
+	font-size: 10px;
+}
+
+.crosshair .dateText
+{
+	stroke-width: 0;
+	font-size: 12px;
+}
