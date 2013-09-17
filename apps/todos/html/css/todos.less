@@ -4,6 +4,9 @@
 @t-fn: cubic-bezier(0.250, 0.460, 0.450, 0.940);
 @t-dur: 0.3s;
 
+body {
+  overflow-x: hidden;
+}
 
 .indx-navbar.indx-sidebar .navbar-brand {
     font-family: 'Playball', cursive;
@@ -19,6 +22,15 @@ ul.todo-list {
   margin: 0;
   padding: 0;
 
+  li.todo-placeholder {
+    height: 0;
+    background: #ccc;
+    box-shadow: 0 0 15px 0 rgba(0, 0, 0, 0.3) inset;
+    &.animate {
+      .transition(height 0.06s linear;);
+    }
+  }
+
   li.todo-item {
     position: relative;
     list-style: none;
@@ -26,6 +38,9 @@ ul.todo-list {
     border-bottom: 1px solid #eee;
     background: #ccc;
     z-index: 5;
+
+    .transition(box-shadow @t-dur @t-fn, border-bottom-color @t-dur @t-fn;);
+
 
     .undo {
       position: absolute;
@@ -41,7 +56,10 @@ ul.todo-list {
       }
     }
 
-    .transition(box-shadow @t-dur @t-fn, border-bottom-color @t-dur @t-fn;);
+    &:hover {
+      .todo-body .todo-handle { display: block; }
+    }
+
 
     &.completed {
       .todo-body, textarea {
@@ -68,6 +86,12 @@ ul.todo-list {
       }
     }
 
+
+    &.ui-draggable-dragging {
+      z-index: 1000;
+      box-shadow: 1px 2px 15px 0px rgba(0, 0, 0, 0.1);
+    }
+
     &.editing {
       box-shadow: 0px 0px 35px 0px rgba(0, 0, 0, 0.3);
       border-bottom-color: white;
@@ -82,23 +106,17 @@ ul.todo-list {
       }
     }
 
-    .modal-cover {
-      .transition(opacity @t-dur @t-fn 0s, height 0s @t-fn @t-dur;);
-      opacity: 0;
-      height: 0;
-    }
     &.disabled {
       border-bottom-color: #aaa;
-      .modal-cover {
-        .transition(opacity @t-dur @t-fn 0s;);
-        opacity: 1;
-        height: 100%;
+      .todo-body, textarea {
+        background: #ddd;
+        color: #444;
       }
     }
 
     .todo-body {
       position: relative;
-      .transition(margin-left @t-dur @t-fn, opacity 0.3s linear;);
+      .transition(margin-left @t-dur @t-fn, opacity 0.3s linear, background-color @t-dur @t-fn;);
       margin-left: 0;
       background: white;
       opacity: 1;
@@ -122,6 +140,17 @@ ul.todo-list {
           display: block;
         }
       }
+      .todo-handle {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        width: 26px;
+        cursor: move;
+        padding: 26px 12px;
+        display: none;
+        z-index: 1;
+      }
       .todo-title {
         margin-left: 80px;
         padding: 24px 0;
@@ -142,6 +171,7 @@ ul.todo-list {
           bottom: 0;
           font-weight: bold;
           border-color: transparent;
+          background: transparent;
           resize: none;
           padding: 23px 20px 23px 7px;
           outline: 0;
@@ -154,6 +184,7 @@ ul.todo-list {
         top: 0;
         bottom: -1px;
         width: 5px;
+        z-index: 2;
         .transition(width @t-dur @t-fn 0.1s, background-color @t-dur @t-fn;);
 
         .todo-urgency-arrows {

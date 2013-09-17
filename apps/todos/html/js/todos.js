@@ -132,10 +132,6 @@ angular
 		var to_time_string = function (d) { return (new Date(d)).toLocaleTimeString(); };
 
 
-		var pop = function (arr) {
-			if (!_.isArray(arr)) { return arr; }
-			return _.first(arr);
-		};
 
 		var priority_number = function (priority) {
 			return priority === 'done' ? -1 :
@@ -216,4 +212,89 @@ angular
 	      });
 	    });
 	  }
-	}]);
+	}]).directive('draggable', function() {
+    	return {
+	        // A = attribute, E = Element, C = Class and M = HTML Comment
+	        restrict:'A',
+	        link: function(scope, element, attrs) {
+	        	element.draggable({
+			        revert:true,
+			        handle: "[draggable-handle]"
+			      });
+	        }
+		};
+	}).directive('sortable', function(utils) {
+    	return {
+	        // A = attribute, E = Element, C = Class and M = HTML Comment
+	        restrict:'A',
+	        link: function(scope, element, attrs) {
+	        	var lastLiAbove = undefined;
+	        	element.sortable({
+			        revert: true,
+			        handle: "[draggable-handle]",
+			        placeholder: 'todo-placeholder',
+			        start: function (ev, ui) {
+			        	var height = ui.item.find('.todo-body').outerHeight() + 1,
+			        		tscope = angular.element(ui.item).scope();
+			        	ui.placeholder.height(height);
+			        	lastLiAbove = ui.placeholder.prev();
+			        	tscope.todo.is_dragging = true;
+			        },
+			        change: function (ev, ui) {
+			        	var liAbove = ui.placeholder.prev('li.todo-item'),
+			        		liBelow = ui.placeholder.next('li.todo-item');
+			        	if (lastLiAbove !== liAbove) {
+			        		var clone = ui.placeholder.clone(),
+			        			height = clone.height();
+			        		$('.todo-placeholder.clone').remove();
+			        		lastLiAbove.after(clone);
+			        		clone.addClass('animate clone').height(0)
+			        		ui.placeholder.removeClass('animate').height(0);
+			        		setTimeout(function () {
+			        			ui.placeholder.addClass('animate').height(height);
+			        		});
+			        		lastLiAbove = liAbove;
+			        		if (liBelow.length) {
+			        			var nextTodo = angular.element(liBelow).scope().todo,
+			        				tscope = angular.element(ui.item).scope(),
+			        				draggingTodo = tscope.todo;
+			        			draggingTodo.newAttributes.urgency = pop(nextTodo.get('urgency'));
+			        			utils.safe_apply(tscope);
+			        		}
+			        	}
+			        },
+			        stop: function (ev, ui) {
+			        	var tscope = angular.element(ui.item).scope(),
+			        		todo = tscope.todo,
+			        		todos = scope.todo_lists.selected.todos,
+			        		new_todos = element.find('li.todo-item').map(function () {
+			        			return angular.element(this).scope().todo;
+			        		}).get();
+			        	lastLiAbove = undefined;
+			        	todo.is_dragging = false;
+			        	todo.stage_and_save();
+			        	todos.reset(new_todos).save();
+			        	utils.safe_apply(tscope);
+			        	console.log(todos);
+			        }
+			      });
+	        }
+		};
+	}).directive('droppable-above', function() {
+    	return {
+	        // A = attribute, E = Element, C = Class and M = HTML Comment
+	        restrict:'A',
+	        link: function(scope, element, attrs) {
+	        	element.draggable({
+			        revert:true,
+			        handle: "[draggable-handle]"
+			      });
+	        }
+		};
+	});
+
+
+		var pop = function (arr) {
+			if (!_.isArray(arr)) { return arr; }
+			return _.first(arr);
+		};
