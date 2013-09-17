@@ -82,6 +82,17 @@ Activity.prototype.switchVisible = function()
 	}
 }
 
+Activity.prototype.addInstancesToGraph = function(graph)
+{
+	if(this.visible == true)
+	{
+		for(var id in this.instances)
+		{
+			tEngine.addAnnotationToGraph(id, this, graph);
+		}
+	}
+}
+
 Activity.prototype.addInstance = function(begin, end, origin)
 {
 	var id = this.title+this.lastID++;

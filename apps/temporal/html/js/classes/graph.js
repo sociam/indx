@@ -267,7 +267,6 @@ Graph.prototype.initDays = function()
 		this.days.push(new Date(moment));
 		moment += day;
 	}
-	console.log(this.days)
 }
 
 Graph.prototype.renderDays = function()

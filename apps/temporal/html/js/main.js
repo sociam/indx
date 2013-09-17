@@ -62,6 +62,12 @@ TemporalEngine.prototype.addAnnotationToGraphs = function(annotationID, activity
 	}
 }
 
+TemporalEngine.prototype.addAnnotationToGraph = function(annotationID, activity, graph)
+{
+	var annotation = graph.addAnnotation(activity.instances[annotationID].begin, activity.instances[annotationID].end, activity, annotationID);
+	annotation.unselect();
+}
+
 TemporalEngine.prototype.removeAnnotationFromGraphs = function(annotationID, origin)
 {
 	for(var x in this.graphList)
@@ -302,7 +308,7 @@ TemporalEngine.prototype.dropChannel = function(draggieInstance, event, pointer,
 		var graph = this.bindGraphAtIndex(this.graphIndexForY(pointer.clientY), this.channelMap[x], pointer.pageY, begin, end);
 		for(var x in this.activityMap)
 		{
-
+			this.activityMap[x].addInstancesToGraph(graph);
 		}
 	}
 }
