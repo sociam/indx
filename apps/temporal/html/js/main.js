@@ -9,6 +9,7 @@ function TemporalEngine()
 	this.lastColor = 0;
 	this.lastAnnotationID = 0;
 
+
 	this.graphListElement = undefined;
 
 	this.debugFlag = false;
@@ -269,6 +270,19 @@ TemporalEngine.prototype.initPackery = function()
 
 TemporalEngine.prototype.dropChannel = function(draggieInstance, event, pointer, channel)
 {
+	var begin = undefined;
+	var end = undefined;
+	
+	for(x in this.graphList)
+	{
+		if(this.graphList[x].graph.timelineLocked == true)
+		{
+			begin = this.graphList[x].graph.timeInterval.begin;
+			end = this.graphList[x].graph.timeInterval.end;
+			break;
+		}
+	}
+
 	var elem = draggieInstance.temporalElem;
 	var x;
 	for(x in this.channelMap)
@@ -285,7 +299,11 @@ TemporalEngine.prototype.dropChannel = function(draggieInstance, event, pointer,
 
 	if(pointer.clientX > 300 && pointer.clientX < 1000)
 	{
-		this.bindGraphAtIndex(this.graphIndexForY(pointer.clientY), this.channelMap[x], pointer.pageY);
+		var graph = this.bindGraphAtIndex(this.graphIndexForY(pointer.clientY), this.channelMap[x], pointer.pageY, begin, end);
+		for(var x in this.activityMap)
+		{
+
+		}
 	}
 }
 
@@ -396,16 +414,27 @@ TemporalEngine.prototype.releaseKey = function(event)
 
 TemporalEngine.prototype.initColors = function ()
 {
-	this.colorArray.push("#6699ff");
-	this.colorArray.push("#ff7a7a");
-	this.colorArray.push("#00ab10");
-	this.colorArray.push("#00dedb");
-	this.colorArray.push("#7f0078");
-	this.colorArray.push("#dde000");
-	this.colorArray.push("#05e000");
-	this.colorArray.push("#e000d3");
-	this.colorArray.push("#6c7f00");
-	this.colorArray.push("#6699ff");
+	// this.colorArray.push("#054948");
+	// this.colorArray.push("#217273");
+	// this.colorArray.push("#c26400");
+	// this.colorArray.push("#c18000");
+	// this.colorArray.push("#461654");
+	// this.colorArray.push("#7a4f85");
+	// this.colorArray.push("#97809d");
+	// this.colorArray.push("#3c740f");
+	// this.colorArray.push("#5b9f26");
+	// this.colorArray.push("#b7347a");
+
+	this.colorArray.push("#054948");
+	this.colorArray.push("#217273");
+	this.colorArray.push("#068e8c");
+	this.colorArray.push("#5fa1a0");
+	this.colorArray.push("#461654");
+	this.colorArray.push("#7a4f85");
+	this.colorArray.push("#97809d");
+	this.colorArray.push("#0e4b68");
+	this.colorArray.push("#2a5a70");
+	this.colorArray.push("#4e7d91");
 }
 
 TemporalEngine.prototype.refreshGraphsWithChannel = function(channel)
@@ -718,10 +747,14 @@ TemporalEngine.prototype.addGraphToTimeline = function(graph)
 	this.timeline.render();
 }
 
-TemporalEngine.prototype.bindGraphAtIndex = function(index, channel, y)
+TemporalEngine.prototype.bindGraphAtIndex = function(index, channel, y, begin, end)
 {
     var graph = new Graph(this.graphListElement, channel);
-    this.addGraphToTimeline(graph);
+    if(typeof begin !== "undefined") 
+    {
+    	graph.timeInterval.begin = begin;
+    	graph.timeInterval.end   = end;
+    }
     
     this.interactiveObjectList[graph.element.id] = graph;
 
@@ -736,10 +769,14 @@ TemporalEngine.prototype.bindGraphAtIndex = function(index, channel, y)
     graphDiv.style("position", "absolute")
 		.style("top", y+"px");
 
+	
 	graph.somethingChanged();
-
 	this.updateGraphsPosition();
+	graph.timeInterval.buildDataInterval();
+	graph.refreshTimeInterval();
+    this.addGraphToTimeline(graph);
 
+    return graph;
 }
 
 TemporalEngine.prototype.bindGraph = function(channel)

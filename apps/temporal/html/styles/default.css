@@ -13,7 +13,14 @@ div {
 body
 {
 	font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
-	/*background-color: #fff;*/
+	background-color: #fafafa;
+}
+
+h3
+{
+	font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+	font-weight: normal;
+	margin-top: 0px;
 }
 
 #debugMenu
@@ -82,7 +89,7 @@ body
 
 .hiddenField
 {
-	background-color: rgba(0,0,0, 0.3);
+	background-color: rgba(0,0,0, 0.5);
 	border: 0;
 	color: #fff;
 	font-size: 12px;
@@ -155,6 +162,8 @@ path {
 	width: 700px;
 	height: 90px;
 	overflow: hidden;
+	box-shadow: 0px 0px 10px #eee;
+	background-color: #fff;
 }
 
 .aGraph
@@ -162,7 +171,7 @@ path {
 	border: 1px solid #eee;
 	width: 700px;
 	height: 130px;
-	/*box-shadow: 2px 2px 5px #888888;*/
+	box-shadow: 0px 0px 10px #eee;
 	/*position: absolute;*/
 	left: 300px;
 	/*top: 100px;*/
@@ -273,7 +282,7 @@ path {
 {
 	height: 10px;
 	width: 10px;
-	background-color: #f99;
+	background-color: #ff5555;
 	position: absolute;
 	top: 0px;
 	right: 0px;
@@ -286,7 +295,7 @@ path {
 	right: 0px;
 	width: 100px;
 	height: 46px;
-	background-color: rgba(180,180,100, 0.7);
+	background-color: rgba(180,180,180, 0.7);
 	font-size: 9px;
 }
 

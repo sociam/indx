@@ -73,8 +73,8 @@ FitbitParser.parseData = function(fbdata)
 	var steps_channel = tEngine.addChannel("Fitbit: Steps", steps);
 	var distance_channel = tEngine.addChannel("Fitbit: Distance", distance);
 
-	// tEngine.bindGraph(calories_channel);
-	// tEngine.bindGraph(steps_channel);
-	// tEngine.bindGraph(distance_channel);
+	tEngine.bindGraph(calories_channel);
+	tEngine.bindGraph(steps_channel);
+	tEngine.bindGraph(distance_channel);
 
 }
