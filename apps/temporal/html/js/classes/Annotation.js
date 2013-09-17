@@ -45,7 +45,6 @@ Annotation.prototype.parent = GraphInterval.prototype;
 
 Annotation.prototype.select = function()
 {
-	this.sourceGraph.unselectAnnotations();
 	this.selected = true;
 	this.selection.style("z-index", tEngine.lastZIndex++);
 	this.selection.style("opacity", 1);
@@ -296,7 +295,7 @@ Annotation.prototype.init = function()
 
 Annotation.prototype.touchStarted = function(touch)
 {
-	this.select();
+	tEngine.selectAnnotation(this.annotationID);
 }
 
 Annotation.prototype.pan = function(touch)

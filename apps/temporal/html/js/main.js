@@ -62,6 +62,22 @@ TemporalEngine.prototype.addAnnotationToGraphs = function(annotationID, activity
 	}
 }
 
+TemporalEngine.prototype.selectAnnotation = function(id)
+{
+	for(var x in this.graphList)
+	{
+		this.graphList[x].graph.selectAnnotation(id);
+	}
+}
+
+TemporalEngine.prototype.unselectAnnotations = function()
+{
+	for(var x in this.graphList)
+	{
+		this.graphList[x].graph.unselectAnnotations();
+	}
+}
+
 TemporalEngine.prototype.addAnnotationToGraph = function(annotationID, activity, graph)
 {
 	var annotation = graph.addAnnotation(activity.instances[annotationID].begin, activity.instances[annotationID].end, activity, annotationID);

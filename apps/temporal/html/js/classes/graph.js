@@ -249,6 +249,21 @@ Graph.prototype.mostConvenientDataScale = function(min, max)
 	}
 }
 
+Graph.prototype.selectAnnotation = function(id)
+{
+	for(var index in this.annotations)
+	{
+		if(index == id)
+		{
+			this.annotations[index].select();
+		}
+		else
+		{
+			this.annotations[index].unselect();
+		}
+	}
+}
+
 Graph.prototype.initDays = function()
 {
 	var firstMoment = new Date(this.readings[0].instant);
@@ -731,7 +746,7 @@ Graph.prototype.touchStarted = function(touch)
 	{
 		this.lastZoom = this.zoom;
 	}
-	this.unselectAnnotations();
+	tEngine.unselectAnnotations();
 }
 
 Graph.prototype.getFirstAnnotationAt = function(touch)
