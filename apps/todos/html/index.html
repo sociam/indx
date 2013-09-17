@@ -125,7 +125,7 @@
 							editing: todo.is_editing,
 							disabled: !todo.is_editing && !!editing_todo,
 							justcompleted: todo.just_completed
-						}" ng-include="'todo.html'"></li>
+						}" ng-include="'todo.html'"  ng-click="if (!todo.is_editing) { editing_todo.restore(); }"></li>
 					</ul>
 				</div>
 			</div>

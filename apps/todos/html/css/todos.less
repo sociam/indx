@@ -82,23 +82,17 @@ ul.todo-list {
       }
     }
 
-    .modal-cover {
-      .transition(opacity @t-dur @t-fn 0s, height 0s @t-fn @t-dur;);
-      opacity: 0;
-      height: 0;
-    }
     &.disabled {
       border-bottom-color: #aaa;
-      .modal-cover {
-        .transition(opacity @t-dur @t-fn 0s;);
-        opacity: 1;
-        height: 100%;
+      .todo-body, textarea {
+        background: #ddd;
+        color: #444;
       }
     }
 
     .todo-body {
       position: relative;
-      .transition(margin-left @t-dur @t-fn, opacity 0.3s linear;);
+      .transition(margin-left @t-dur @t-fn, opacity 0.3s linear, background-color @t-dur @t-fn;);
       margin-left: 0;
       background: white;
       opacity: 1;
@@ -142,6 +136,7 @@ ul.todo-list {
           bottom: 0;
           font-weight: bold;
           border-color: transparent;
+          background: transparent;
           resize: none;
           padding: 23px 20px 23px 7px;
           outline: 0;
