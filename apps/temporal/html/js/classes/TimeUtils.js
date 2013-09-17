@@ -3,6 +3,18 @@ function TimeUtils()
 	
 }
 
+
+TimeUtils.toMidnight = function(instant)
+{
+	var midnight = new Date(instant);
+    midnight.setHours( 24 );
+    midnight.setMinutes( 0 );
+    midnight.setSeconds( 0 );
+    midnight.setMilliseconds( 0 );
+
+    return new Date(Number(midnight)-Number(instant));
+}
+
 TimeUtils.toIntervalString = function(interval)
 {
 	var days = parseInt(Number(interval)/Number(TimeUtils.days(1)));

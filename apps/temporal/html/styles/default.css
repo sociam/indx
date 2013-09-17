@@ -21,6 +21,7 @@ h3
 	font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
 	font-weight: normal;
 	margin-top: 0px;
+	margin-bottom: 5px;
 }
 
 #debugMenu
@@ -313,9 +314,22 @@ path {
     stroke: rgb(247,247,247);
 }
 
+.grid .day {
+    stroke: rgb(0,0,0);
+    stroke-width: 1;
+}
+
 .grid path {
     stroke-width: 2;
 }
+
+.graphDay
+{
+	font-size: 10px;
+	background-color: #000;
+	color: #fff;
+}
+
 
 .graphTimestamp
 {

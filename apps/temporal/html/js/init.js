@@ -61,45 +61,45 @@ var store = indx.store;
 store.login('indx', 'indx').then(function(status)
 {
     // load a box
-    store.get_box('fitbit').then(function(box) 
-    {
-        window.setTimeout(function ()
-        {
-            console.log("Get obj ids...");
-            var objs = box.get_obj_ids();
-            // console.log(objs)
-            var done = 0;
-            var objs = [objs[0], objs[1], objs[2], objs[3], objs[4], objs[5], objs[6]];
-            var pb = new ProgressBar(objs.length, 200, "#debugMenu");
-            tEngine.totalSources++;
-            console.log("Building promises list...");
-            var promises = objs.map(function(oid) 
-            {
-                // console.log(oid);
-                res = box.get_obj(oid);
-                res.then(function() {pb.addProgress(1);});
+    // store.get_box('fitbit').then(function(box) 
+    // {
+    //     window.setTimeout(function ()
+    //     {
+    //         console.log("Get obj ids...");
+    //         var objs = box.get_obj_ids();
+    //         // console.log(objs)
+    //         var done = 0;
+    //         var objs = [objs[0], objs[1], objs[2], objs[3], objs[4], objs[5], objs[6]];
+    //         var pb = new ProgressBar(objs.length, 200, "#debugMenu");
+    //         tEngine.totalSources++;
+    //         console.log("Building promises list...");
+    //         var promises = objs.map(function(oid) 
+    //         {
+    //             // console.log(oid);
+    //             res = box.get_obj(oid);
+    //             res.then(function() {pb.addProgress(1);});
                 
-                return res;
-            });
-            u.when(promises).then(function(results) 
-            {
-                // omg ! i have all objects in results. i am so happy. i can't even ...
+    //             return res;
+    //         });
+    //         u.when(promises).then(function(results) 
+    //         {
+    //             // omg ! i have all objects in results. i am so happy. i can't even ...
 
-                // FitbitParser.parseData(results);
+    //             // FitbitParser.parseData(results);
                 
-                var ds = new DataSource();
-                ds.generateRandomData();
-                tEngine.bindGraph(tEngine.addChannel("Fitbit: Calories", ds));
-                tEngine.bindGraph(tEngine.addChannel("Fitbit: Distance", ds));
-                tEngine.bindGraph(tEngine.addChannel("Fitbit: Steps", ds));
+    //             var ds = new DataSource();
+    //             ds.generateRandomData();
+    //             tEngine.bindGraph(tEngine.addChannel("Fitbit: Calories", ds));
+    //             tEngine.bindGraph(tEngine.addChannel("Fitbit: Distance", ds));
+    //             tEngine.bindGraph(tEngine.addChannel("Fitbit: Steps", ds));
 
-                tEngine.loadedSource();
-            }).fail(function(err) 
-            {
-                console.error('i am so sad, there was an error fetching some dudes', err);
-            });                
-        }, 0);
-    });
+    //             tEngine.loadedSource();
+    //         }).fail(function(err) 
+    //         {
+    //             console.error('i am so sad, there was an error fetching some dudes', err);
+    //         });                
+    //     }, 0);
+    // });
 
     // store.get_box('nike').then(function(box) 
     // {
@@ -108,35 +108,35 @@ store.login('indx', 'indx').then(function(status)
     //     });
     // });
 
-    // store.get_box('nike').then(function(box) 
-    // {
-    //     window.setTimeout(function ()
-    //     {
-    //         console.log("Get obj ids...")
-    //         var objs = box.get_obj_ids();
-    //         // console.log(objs)
-    //         var done = 0;
-    //         // var objs = objs.slice(10);
-    //         var pb = new ProgressBar(objs.length, 200, "#debugMenu");
-    //         tEngine.totalSources++;
-    //         console.log("Building promises list...");
-    //         var promises = [];
-    //         for(var x in objs)
-    //         {
-    //             var res = box.get_obj(objs[x]);
-    //             res.then(function() {pb.addProgress(1);});
-    //             promises.push(res);
-    //         }
-    //         u.when(promises).then(function(results) 
-    //         {
-    //             FuelbandParser.parseData(results);
-    //             tEngine.loadedSource();
-    //         }).fail(function(err) 
-    //         {
-    //             console.error('i am so sad, there was an error fetching some dudes', err);
-    //         });
-    //     }, 0);
-    // });
+    store.get_box('nike').then(function(box) 
+    {
+        window.setTimeout(function ()
+        {
+            console.log("Get obj ids...")
+            var objs = box.get_obj_ids();
+            // console.log(objs)
+            var done = 0;
+            // var objs = objs.slice(10);
+            var pb = new ProgressBar(objs.length, 200, "#debugMenu");
+            tEngine.totalSources++;
+            console.log("Building promises list...");
+            var promises = [];
+            for(var x in objs)
+            {
+                var res = box.get_obj(objs[x]);
+                res.then(function() {pb.addProgress(1);});
+                promises.push(res);
+            }
+            u.when(promises).then(function(results) 
+            {
+                FuelbandParser.parseData(results);
+                tEngine.loadedSource();
+            }).fail(function(err) 
+            {
+                console.error('i am so sad, there was an error fetching some dudes', err);
+            });
+        }, 0);
+    });
 
     ////////////////// FUEL BAND
     // store.get_box('duckies').then(function(box) 

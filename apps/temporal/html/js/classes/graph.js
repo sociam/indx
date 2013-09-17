@@ -9,12 +9,14 @@ function Graph(target, channel)
 	this.dataColor = channel.color;
 	this.dataIdentifier = this.element.id;
 	this.dataSource = this.channel.dataSource;
+	this.days = undefined;
 	this.graph = undefined;
 	this.graphType = 0;
 	this.heightProportion = 0.9;
 	this.invertPan = false;
 	this.isStatic = false;
 	this.iType = "Graph";
+	this.maxHorizontalTicks = 30;
 	this.maxValue = 10;
 	this.minValue = 0;
 	this.readings = this.dataSource.readings;
@@ -225,6 +227,84 @@ Graph.prototype.subtractData = function()
 	}
 }
 
+Graph.prototype.mostConvenientDataScale = function(min, max)
+{
+	var delta = max-min;
+
+	if(delta < this.maxHorizontalTicks)
+	{
+		return 1;
+	}
+	else if(delta/10 < this.maxHorizontalTicks)
+	{
+		return 10;
+	}
+	else if(delta/100 < this.maxHorizontalTicks)
+	{
+		return 100;
+	} 
+	else if(delta/1000 < this.maxHorizontalTicks)
+	{
+		return 1000;
+	}
+}
+
+Graph.prototype.initDays = function()
+{
+	var firstMoment = new Date(this.readings[0].instant);
+	var lastMoment  = new Date(this.readings[this.readings.length-1].instant);
+
+	// console.log(firstMoment, lastMoment);
+
+	var toMidnight = TimeUtils.toMidnight(firstMoment);
+	var day = TimeUtils.days(1);
+
+	var moment = Number(firstMoment)+Number(toMidnight);
+
+	this.days = [];
+	while(moment < Number(lastMoment))
+	{
+		this.days.push(new Date(moment));
+		moment += day;
+	}
+	console.log(this.days)
+}
+
+Graph.prototype.renderDays = function()
+{
+	var lastInstant  = this.timeInterval.end;
+	var firstInstant = this.timeInterval.begin;
+
+	var group = this.graph.selectAll(".days");
+	var n = 0;
+	group.each(function() { ++n; });
+
+	var x = d3.time.scale().domain([firstInstant, lastInstant]).range([0, this.size[0]]);
+	var y = d3.scale.linear().domain([this.maxValue, this.minValue]).range([0, this.size[1]*this.heightProportion]);
+
+
+	if(n == 0)
+	{
+		group = this.graph.append("g").attr("class", "grid days");
+	}
+
+	group = group.selectAll("line").data(this.days);
+
+	group.enter()
+		.append("line")
+		.attr("x1", x)
+		.attr("y1", 0)
+		.attr("x2", x)
+		.attr("y2", this.size[1]*this.heightProportion)
+		.attr("class", "day");
+
+	group
+		.attr("x1", x)
+		.attr("x2", x);
+
+	group.exit().remove();
+}
+
 Graph.prototype.renderGrid = function ()
 {
 	var lastInstant  = this.timeInterval.end;
@@ -279,8 +359,9 @@ Graph.prototype.renderGrid = function ()
 	var diff = this.minValue-parseInt;
 	if(diff != 0) diff = 1;
 
+	var scale = this.mostConvenientDataScale(this.minValue, this.maxValue);
 
-	for(var i=parseInt(this.minValue)-diff; i < parseInt(this.maxValue)+1; i++)
+	for(var i=parseInt(this.minValue)-diff; i < parseInt(this.maxValue)+1; i+=scale)
 	{
 		ticks.push(i);
 	}
@@ -315,6 +396,7 @@ Graph.prototype.renderGrid = function ()
 		.attr("y2", y);
 
 	group.exit().remove();
+	this.renderDays();
 }
 
 
@@ -346,6 +428,7 @@ Graph.prototype.initGraph = function()
 	this.rescale();
 	this.calculateMax();
 	this.calculateMin();
+	this.initDays();
 
 	this.graph = d3.select("#"+this.element.id+" .graph").append("svg:svg").attr("width", "100%").attr("height", "100%");
 	var thisGraph = this;
@@ -386,6 +469,12 @@ Graph.prototype.renderLines = function(readings, color, target, translateX)
 
 Graph.prototype.renderLabels = function(target)
 {
+	var lastInstant  = this.timeInterval.end;
+	var firstInstant = this.timeInterval.begin;
+
+	var x = d3.time.scale().domain([firstInstant, lastInstant]).range([0, this.size[0]]);
+	var y = d3.scale.linear().domain([this.maxValue, this.minValue]).range([0, this.size[1]*this.heightProportion]);
+
 	var labelGroup = target.selectAll(".label");
 
 	n = 0;
@@ -403,6 +492,20 @@ Graph.prototype.renderLabels = function(target)
 
 	labelList.push(new GraphText(beginStr, "graphTimestamp", 0, 113));
 	labelList.push(new GraphText(endStr, "graphTimestamp", 700, 113, "end"));
+
+	var weekday=new Array(7);
+	weekday[0]="Sunday";
+	weekday[1]="Monday";
+	weekday[2]="Tuesday";
+	weekday[3]="Wednesday";
+	weekday[4]="Thursday";
+	weekday[5]="Friday";
+	weekday[6]="Saturday";
+
+	for(var i in this.days)
+	{
+		labelList.push(new GraphText(weekday[this.days[i].getDay()], "graphDay", x(this.days[i])+5, 0));
+	}
 
 	// labelList.push(new GraphText((this.maxValue).toFixed(2), "graphScale", 0, -5));
 
