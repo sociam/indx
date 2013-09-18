@@ -341,6 +341,7 @@ Graph.prototype.renderGrid = function ()
 	{
 		ticks.push(i);
 	}
+	ticks.push(i);
 
 	var group = this.graph.selectAll(".interval");
 	var n = 0;
@@ -350,22 +351,37 @@ Graph.prototype.renderGrid = function ()
 	{
 		group = this.graph.append("g").attr("class", "grid interval");
 	}
-
-	group = group.selectAll("line").data(ticks);
 	
-	group.enter()
-		.append("line")
-		.attr("x1", x)
-		.attr("y1", 0)
-		.attr("x2", x)
-		.attr("y2", this.size[1]*this.heightProportion)
-		.attr("class", "tick");
+	var rects = group.selectAll("rect");
+	rects.remove();
 
-	group
-		.attr("x1", x)
-		.attr("x2", x);
+	for(var i=0;i<ticks.length-1;i++)
+	{
 
-	group.exit().remove();
+		group.append("rect")
+			.attr("x", x(ticks[i]))
+			.attr("y", 0)
+			.attr("width", x(ticks[i+1])-x(ticks[i])+"px")
+			.attr("fill", tEngine.timeUtils.dayColor(ticks[i], tEngine.getColor(this.dataColor)))
+			.attr("height", this.size[1]*this.heightProportion);
+	}
+
+	// group = group.selectAll("line").data(ticks);
+	
+	// group.enter()
+	// 	.append("line")
+	// 	.attr("x1", x)
+	// 	.attr("y1", 0)
+	// 	.attr("x2", x)
+	// 	.attr("y2", this.size[1]*this.heightProportion)
+	// 	.attr("class", "tick");
+
+
+	// group
+	// 	.attr("x1", x)
+	// 	.attr("x2", x);
+
+	// group.exit().remove();
 
 	var ticks = [];
 	

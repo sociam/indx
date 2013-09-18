@@ -37,6 +37,8 @@ function TemporalEngine()
 	this.sourcesLoaded = 0;
 	this.totalSources = 0;
 
+	this.timeUtils = new TimeUtils();
+
 	this.activityMap = {};
 }
 

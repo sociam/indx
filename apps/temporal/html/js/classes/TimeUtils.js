@@ -1,8 +1,19 @@
 function TimeUtils()
 {
-	
+	this.dayLight = [];	
+	for(var x=0;x<24;x++)
+	{
+		this.dayLight.push(1-(-Math.cos(x*2/23*Math.PI)+1)/2+((-Math.cos (x*4*Math.PI/23))+1)/10);
+	}
 }
 
+TimeUtils.prototype.dayColor = function(instant, color)
+{
+	var x = new Date(instant).getHours();
+	var color = tEngine.hexToRgb(color);
+	alpha = this.dayLight[x];
+	return "rgba("+color.r+","+color.g+","+color.b+","+alpha/10+")";
+}
 
 TimeUtils.toMidnight = function(instant)
 {
