@@ -42,8 +42,15 @@ TimeUtils.dateFormatter = function(date, hours)
 	var f = this.fillZeros;
 	var beginStr = f(date.getDate(), 2)+"/"+f(date.getMonth()+1,2)+"/"+f(date.getFullYear(),2);
 	if(typeof hours !== "undefined")
+	{
 		if(hours == true)
+		{
 			beginStr += f(date.getHours(),2)+":"+f(date.getMinutes(),2)+":"+f(date.getSeconds(),2);
+		}
+	}
+	else
+		beginStr += " "+f(date.getHours(),2)+":"+f(date.getMinutes(),2)+":"+f(date.getSeconds(),2);
+
 
 	return beginStr;
 }
