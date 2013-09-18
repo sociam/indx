@@ -21,6 +21,71 @@ Timeline.prototype.parent = InteractiveObject.prototype;
 
 Timeline.prototype.constructor = InteractiveObject;
 
+
+Timeline.prototype.initDays = function()
+{
+	this.weekday = new Array(7);
+	this.weekday[0]="Sunday";
+	this.weekday[1]="Monday";
+	this.weekday[2]="Tuesday";
+	this.weekday[3]="Wednesday";
+	this.weekday[4]="Thursday";
+	this.weekday[5]="Friday";
+	this.weekday[6]="Saturday";
+
+	var firstMoment = this.begin;
+	var lastMoment  = this.end;
+
+	// console.log(firstMoment, lastMoment);
+
+	var toMidnight = TimeUtils.toMidnight(firstMoment);
+	var day = TimeUtils.days(1);
+
+	var moment = Number(firstMoment)+Number(toMidnight);
+
+	this.days = [];
+	while(moment < Number(lastMoment))
+	{
+		this.days.push(new Date(moment));
+		moment += day;
+	}
+	console.log(this.days)
+}
+
+Timeline.prototype.renderDays = function()
+{
+	var lastInstant  = this.end;
+	var firstInstant = this.begin;
+
+	var group = this.graph.selectAll(".days");
+	var n = 0;
+	group.each(function() { ++n; });
+
+	var x = d3.time.scale().domain([firstInstant, lastInstant]).range([0, this.size[0]]);
+
+	if(n == 0)
+	{
+		group = this.graph.append("g").attr("class", "grid days");
+	}
+
+	group = group.selectAll("line").data(this.days);
+
+	group.enter()
+		.append("line")
+		.attr("x1", x)
+		.attr("y1", 0)
+		.attr("x2", x)
+		.attr("y2", 90)
+		.attr("class", "timelineDay");
+
+	group
+		.attr("x1", x)
+		.attr("x2", x);
+
+	group.exit().remove();
+}
+
+
 Timeline.prototype.addGraph = function(graph)
 {
 	var window = new TimelineWindow(this.graph, graph, this);
@@ -30,6 +95,7 @@ Timeline.prototype.addGraph = function(graph)
 
 Timeline.prototype.init = function()
 {
+	this.initDays();
 	this.graph = d3.select("#timeline .timelineGraph").append("svg:svg").attr("width", "100%").attr("height", "100%");
 	this.renderGrid();
 	this.renderLabels(this.graph);
@@ -49,6 +115,10 @@ Timeline.prototype.updateInterval = function()
 
 Timeline.prototype.renderLabels = function(target)
 {
+	var lastInstant  = this.end;
+	var firstInstant = this.begin;
+
+	var x = d3.time.scale().domain([firstInstant, lastInstant]).range([0, this.size[0]]);
 	var labelGroup = target.selectAll(".label");
 
 	n = 0;
@@ -61,11 +131,19 @@ Timeline.prototype.renderLabels = function(target)
 
 	var labelList = [];
 
-	var beginStr = TimeUtils.dateFormatter(this.begin);
-	var endStr = TimeUtils.dateFormatter(this.end);
+	// var beginStr = TimeUtils.dateFormatter(this.begin);
+	// var endStr = TimeUtils.dateFormatter(this.end);
 
-	labelList.push(new GraphText(beginStr, "timelineTimestamp", 0, 0));
-	labelList.push(new GraphText(endStr, "timelineTimestamp", 700, 0, "end"));
+	// labelList.push(new GraphText(beginStr, "timelineTimestamp", 0, 0));
+	// labelList.push(new GraphText(endStr, "timelineTimestamp", 700, 0, "end"));
+
+	for(var i in this.days)
+	{
+		labelList.push(new GraphText(this.weekday[this.days[i].getDay()], "graphDay", x(this.days[i])+2, 0));
+		var timeStr = TimeUtils.dateFormatter(this.days[i], false);
+		labelList.push(new GraphText(timeStr, "graphDay", x(this.days[i])+2, 70));
+	}
+
 
 	labelGroup = labelGroup.selectAll("text").data(labelList);
 	
@@ -180,6 +258,7 @@ Timeline.prototype.renderGrid = function ()
 		.attr("y2", y);
 
 	group.exit().remove();
+	this.renderDays();
 }
 
 

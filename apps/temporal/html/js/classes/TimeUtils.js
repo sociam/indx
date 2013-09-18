@@ -36,11 +36,15 @@ TimeUtils.toIntervalString = function(interval)
 	return string;
 }
 
-TimeUtils.dateFormatter = function(date)
+TimeUtils.dateFormatter = function(date, hours)
 {
 	date = new Date(date);
 	var f = this.fillZeros;
-	var beginStr = f(date.getDate(), 2)+"/"+f(date.getMonth()+1,2)+"/"+f(date.getFullYear(),2)+" "+f(date.getHours(),2)+":"+f(date.getMinutes(),2)+":"+f(date.getSeconds(),2);
+	var beginStr = f(date.getDate(), 2)+"/"+f(date.getMonth()+1,2)+"/"+f(date.getFullYear(),2);
+	if(typeof hours !== "undefined")
+		if(hours == true)
+			beginStr += f(date.getHours(),2)+":"+f(date.getMinutes(),2)+":"+f(date.getSeconds(),2);
+
 	return beginStr;
 }
 
