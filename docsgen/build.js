@@ -282,7 +282,7 @@
 			Class.prototype.initialize.apply(this, arguments);
 			this.regexps = [
 				// TODO: a parser might be a better idea
-				['[\\s\\.]+((?:[^\\s]*\\s+\\.\\s+)?([A-Z][^\\s\\.]*)) *= *function *\\(([^\\)]*)\\)', function (match, fullName, name, n, pos) {
+				['[\\s]+((?:[^\\s\\.]+\\s*\\.\\s*)*([A-Z][^\\s\\.]*)) *= *function *\\(([^\\)]*)\\)', function (match, fullName, name, n, pos) {
 					return { match: match, name: name, fullName: fullName, start: pos };
 				}],
 				['function\\s*([A-Z][^\\s.]*) *\\(([^\\)]*)\\)', function (match, name, pos) {
@@ -300,10 +300,9 @@
 			this.data = options.data;
 		},
 		parse: function () {
-			var that = this,
-				superclasses = builder.superclasses;
+			var that = this;
 			// Find each class that extends each superclass
-			superclasses.each(function (superCls) {
+			builder.superclasses.each(function (superCls) {
 				_.each(superCls.regexps, function (regexp) {
 					var re = new RegExp(regexp[0], 'g');
 					that.data.replace(re, function () {
