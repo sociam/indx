@@ -205,7 +205,7 @@ GraphInterval.prototype.updateSelection = function()
 	this.updateInfo();
 }
 
-GraphInterval.prototype.updateInfo = function()
+GraphInterval.prototype.updateInfo = function(dataInterval)
 {
 	if(this.createdTools == true && this.cloneOf == -1)
 	{
@@ -214,28 +214,53 @@ GraphInterval.prototype.updateInfo = function()
 		var avgValue = 0;
 
 		var n = 0;
-		if(this.interval.indexBegin > this.interval.indexEnd)
+
+		if(typeof dataInterval !== "undefined")
 		{
-			for(var i=this.interval.indexEnd;i<this.interval.indexBegin+1;i++)
+			if(this.interval.indexBegin > this.interval.indexEnd)
 			{
-				sumValue += Number(this.sourceGraph.readings[i].data);
-				if(this.sourceGraph.readings[i].data > maxValue)
-					maxValue = Number(this.sourceGraph.readings[i].data);
-				n++;
+				for(var i=0;i<this.dataInterval.length;i++)
+				{
+					sumValue += Number(this.dataInterval[i].data);
+					if(this.dataInterval[i].data > maxValue)
+						maxValue = Number(this.dataInterval[i].data);
+					n++;
+				}
+			}
+			else
+			{
+				for(var i=0;i<this.dataInterval.length;i++)
+				{
+					sumValue += Number(this.dataInterval[i].data);
+					if(this.dataInterval[i].data > maxValue)
+						maxValue = Number(this.dataInterval[i].data);
+					n++;
+				}
 			}
 		}
 		else
 		{
-			for(var i=this.interval.indexBegin;i<this.interval.indexEnd+1;i++)
+			if(this.interval.indexBegin > this.interval.indexEnd)
 			{
-				sumValue += Number(this.sourceGraph.readings[i].data);
-				if(this.sourceGraph.readings[i].data > maxValue)
-					maxValue = Number(this.sourceGraph.readings[i].data);
-				n++;
+				for(var i=this.interval.indexEnd;i<this.interval.indexBegin+1;i++)
+				{
+					sumValue += Number(this.sourceGraph.readings[i].data);
+					if(this.sourceGraph.readings[i].data > maxValue)
+						maxValue = Number(this.sourceGraph.readings[i].data);
+					n++;
+				}
+			}
+			else
+			{
+				for(var i=this.interval.indexBegin;i<this.interval.indexEnd+1;i++)
+				{
+					sumValue += Number(this.sourceGraph.readings[i].data);
+					if(this.sourceGraph.readings[i].data > maxValue)
+						maxValue = Number(this.sourceGraph.readings[i].data);
+					n++;
+				}
 			}
 		}
-
-
 
 
 		avgValue = sumValue/n;
@@ -294,6 +319,7 @@ GraphInterval.prototype.changedScale = function()
 {
 	this.selection.on("dblclick", null);
 	this.copySelectionData();
+	this.updateInfo(true);
 
 	this.renderDataInterval();
 }
@@ -327,6 +353,7 @@ GraphInterval.prototype.acceptSelection = function()
 	this.hideAccept();
 	this.scaleBar.resetScale();
 	this.closeSelection();
+	this.sourceGraph.refreshAnnotations();
 }
 
 GraphInterval.prototype.hideScaleBar = function()

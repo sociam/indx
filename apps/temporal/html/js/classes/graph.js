@@ -925,6 +925,19 @@ Graph.prototype.indexForX = function(x)
 	return this.timeInterval.indexForX(x, this.size[0]);
 }
 
+Graph.prototype.refreshAnnotations = function()
+{
+	for(var x in this.annotations)
+	{
+		this.annotations[x].timeInterval.refreshData();
+	}
+	for(var x in this.unlabeledAnnotations)
+	{
+		this.unlabeledAnnotations[x].timeInterval.refreshData();
+	}
+	tEngine.refreshActivitiesSummary();	
+}
+
 Graph.prototype.updateAnnotations = function()
 {
 	this.selectedInterval.update();
