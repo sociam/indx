@@ -49,8 +49,26 @@ Timeline.prototype.initDays = function()
 		this.days.push(new Date(moment));
 		moment += day;
 	}
-	console.log(this.days)
 }
+
+Timeline.prototype.updateDays = function()
+{
+	var firstMoment = this.begin;
+	var lastMoment  = this.end;
+
+	var toMidnight = TimeUtils.toMidnight(firstMoment);
+	var day = TimeUtils.days(1);
+
+	var moment = Number(firstMoment)+Number(toMidnight);
+
+	this.days = [];
+	while(moment < Number(lastMoment))
+	{
+		this.days.push(new Date(moment));
+		moment += day;
+	}
+}
+
 
 Timeline.prototype.renderDays = function()
 {
@@ -111,6 +129,7 @@ Timeline.prototype.appendTemplate = function(target)
 Timeline.prototype.updateInterval = function()
 {
 	this.interval = (this.end.valueOf()-this.begin.valueOf())/1000;
+	this.updateDays();
 }
 
 Timeline.prototype.renderLabels = function(target)
@@ -143,7 +162,6 @@ Timeline.prototype.renderLabels = function(target)
 		var timeStr = TimeUtils.dateFormatter(this.days[i], false);
 		labelList.push(new GraphText(timeStr, "graphDay", x(this.days[i])+2, 70));
 	}
-
 
 	labelGroup = labelGroup.selectAll("text").data(labelList);
 	
