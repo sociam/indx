@@ -6,6 +6,7 @@ function InteractiveObject(element)
     this.touchCount = 0; // number of touches over this object
     var box = this.element.getBoundingClientRect();
     this.setSize([box.width, box.height]);
+    this.closing = false;
     this.setPosition([box.left, box.top]);
     this.updateLastPosition();
 	this.isTarget = []; // array of touches that this object is target

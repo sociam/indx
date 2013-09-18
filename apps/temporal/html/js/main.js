@@ -300,6 +300,31 @@ TemporalEngine.prototype.initPackery = function()
 
 }
 
+TemporalEngine.prototype.removeGraph = function(graph)
+{
+	for(var index in graph.annotations)
+	{
+		delete this.interactiveObjectList[graph.annotations[index].identifier];
+	}
+
+	this.timeline.removeGraph(graph);
+	for(var index in this.graphList)
+	{
+		if(graph == this.graphList[index].graph)
+		{
+			delete this.graphList[index];
+		}
+	}
+	for(var index in this.interactiveObjectList)
+	{
+		if(graph == this.interactiveObjectList[index])
+		{
+			delete this.interactiveObjectList[index];
+		}
+	}
+	this.updateGraphsPosition();
+}
+
 TemporalEngine.prototype.dropChannel = function(draggieInstance, event, pointer, channel)
 {
 	var begin = undefined;
@@ -329,7 +354,7 @@ TemporalEngine.prototype.dropChannel = function(draggieInstance, event, pointer,
 
 	var box  = this.graphListElement.getBoundingClientRect();
 
-	if(pointer.clientX > 300 && pointer.clientX < 1000)
+	if(pointer.clientX > 240 && pointer.clientX < 960)
 	{
 		var graph = this.bindGraphAtIndex(this.graphIndexForY(pointer.clientY), this.channelMap[x], pointer.pageY, begin, end);
 		for(var x in this.activityMap)

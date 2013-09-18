@@ -12,7 +12,7 @@ TimeUtils.prototype.dayColor = function(instant, color)
 	var x = new Date(instant).getHours();
 	var color = tEngine.hexToRgb(color);
 	alpha = this.dayLight[x];
-	return "rgba("+color.r+","+color.g+","+color.b+","+alpha/10+")";
+	return "rgba("+color.r+","+color.g+","+color.b+","+alpha/5+")";
 }
 
 TimeUtils.toMidnight = function(instant)
