@@ -346,13 +346,13 @@
 
 			var that = this;
 			this.parseComment().then(function () {
-						that.parsed.resolve();
-				/*that.arguments.parse().then(function () {
+
+				that.arguments.parse().then(function () {
 					if (that.arguments.length > 0) {
 						that.set('hasArgs', true);
-						that.parsed.resolve();
 					}
-				});*/
+					that.parsed.resolve();
+				});
 
 				var result = that.get('result');
 				if (result) {
@@ -469,7 +469,18 @@
 			context.indexOf('method') > -1 ? clc.xterm(43) :
 			context.indexOf('argument') > -1 ? clc.xterm(38) :
 			context.indexOf('file') > -1 ? clc.xterm(33) : clc.xterm(227);
+		context = tree(context);
 		console.log(' ' + color(pad(context, 15)) + ' ' + message);
+	}
+
+
+	function tree (context) {
+		return (
+			context.indexOf('file') > -1 ?     '+-' :
+			context.indexOf('class') > -1 ?    '| +-' :
+			context.indexOf('method') > -1 ?   '| | +-' :
+			context.indexOf('argument') > -1 ? '| | | +-' : ''
+		) + context;
 	}
 
 	function pad(str, len) {
