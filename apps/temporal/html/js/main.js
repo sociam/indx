@@ -158,6 +158,14 @@ TemporalEngine.prototype.removeActivity = function(activity)
 	delete this.activityMap[activity.title];
 }
 
+TemporalEngine.prototype.refreshActivitiesSummary = function()
+{
+	for(var i in this.activityMap)
+	{
+		this.activityMap[i].refreshInfo();
+	}
+}
+
 TemporalEngine.prototype.hexToRgb = function(hex) 
 {
     var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);

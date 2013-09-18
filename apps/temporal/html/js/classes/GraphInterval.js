@@ -353,6 +353,7 @@ GraphInterval.prototype.acceptSelection = function()
 	this.hideAccept();
 	this.scaleBar.resetScale();
 	this.closeSelection();
+	this.sourceGraph.refreshAnnotations();
 }
 
 GraphInterval.prototype.hideScaleBar = function()

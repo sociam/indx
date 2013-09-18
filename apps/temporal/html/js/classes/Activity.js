@@ -138,6 +138,38 @@ Activity.prototype.addInstance = function(begin, end, origin)
 	return id;
 }
 
+Activity.prototype.refreshInfo = function()
+{
+	if(this.showingInfo == true)
+	{
+		this.calculate();
+
+		var htmlContent = "<table width='100%'>";
+		htmlContent += "<tr><td class='sourceName'>Total duration:</td><td>"+TimeUtils.toIntervalString(this.totalDuration)+"</td></tr>";
+		htmlContent += "<tr><td class='sourceName'>Avg. Duration:</td><td>"+TimeUtils.toIntervalString(this.avgDuration)+"</td></tr>";
+		htmlContent += "<tr><td colspan='2'>Total (all instances):</td>";
+		for(var source in this.totalMap)
+		{
+			htmlContent += "<tr><td class='sourceName'>"+source+"</td><td>"+Number(this.totalMap[source]).toFixed(2)+"</td></tr>";
+		}
+		htmlContent += "</tr>";
+		htmlContent += "<tr><td colspan='2'>Average (all instances):</td>";
+		for(var source in this.avgMap)
+		{
+			htmlContent += "<tr><td class='sourceName'>"+source+"</td><td>"+Number(this.avgMap[source]).toFixed(2)+"</td></tr>";
+		}
+		htmlContent += "</tr>";
+		htmlContent += "<tr><td colspan='2'>Max. Value (all instances):</td>";
+		for(var source in this.maxMap)
+		{
+			htmlContent += "<tr><td class='sourceName'>"+source+"</td><td>"+Number(this.maxMap[source]).toFixed(2)+"</td></tr>";
+		}
+		htmlContent += "</tr>";
+		htmlContent += "</table>";
+		this.infoDiv.select(".info").html(htmlContent);
+	}
+}
+
 Activity.prototype.switchInfo = function(div)
 {
 	if(this.showingInfo == false)
