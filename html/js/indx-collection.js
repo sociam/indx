@@ -247,8 +247,6 @@ angular
 					}), { silent: true });
 					that.trigger('reset');
 				});
-				//console.log('obj --> ', obj, array_key);
-				//console.log('list --> ', arr);
 			},
 			/// Save the obj with the current array state. This will happen automatically when the array changes.
 			save: function () {
@@ -271,7 +269,14 @@ angular
 				this.trigger('update', this);
 				return this;
 			},
-			comparator: function () { return 1; }
+			comparator: function () { return 1; },
+			move: function (item, collection) {
+				this.copy(item, collection);
+				this.remove(item);
+			},
+			copy: function (item, collection) { // actually a link
+				collection.add(item);
+			}
 		});
 
 		var now = function () {
