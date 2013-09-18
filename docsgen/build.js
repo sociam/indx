@@ -56,7 +56,10 @@
 				this.parsed = new Promise();
 				this.set('id', this.uid ? this.uid() : Math.random());
 			},
-			afterParsed: function (fn) { return this.parsed.then(fn); },
+			afterParsed: function (fn) {
+				this.parsed.then(fn);
+				return this;
+			},
 			object: function () { return this.toJSON(); }
 		}),
 		Collection = Backbone.Collection.extend({
@@ -69,11 +72,11 @@
 				var that = this,
 					promise = new Promise();
 				if (that.length > 0) {
-					this.each(function (file, i) {
+					this.each(function (model, i) {
 						if (i > 0) {
-							that.at(i - 1).afterParsed(function () { file.parse(); });
+							that.at(i - 1).afterParsed(function () { model.parse(); });
 						} else {
-							file.parse();
+							model.parse();
 						}
 					});
 					this.last()
@@ -181,17 +184,18 @@
 			this.builder = options.builder;
 		},
 		parse: function () {
-			log('parse file', this.get('filename'));
 			var that = this;
+			log('READ FILE', this.get('filename'));
 			fs.readFile(this.get('filename'), function (err, data) {
-				log('read', that.get('filename'));
+				log('PARSE FILE', that.get('filename'));
 				if (err) { throw err; }
 				that.data = data.toString();
 				that.classes = new Classes(undefined, { builder: builder, file: that, data: that.data });
 				that.parseComment().then(function () {
-					that.classes.parse();
-					builder.pushClasses(that.classes);
-					that.parsed.resolve();
+					that.classes.parse().then(function () {
+						builder.pushClasses(that.classes);
+						that.parsed.resolve();
+					});
 				});
 			});
 		},
@@ -235,7 +239,7 @@
 
 			this.set('instanceName', this.get('name').charAt(0).toLowerCase() +
 				this.get('name').substr(1));
-
+			console.log(this.get('fullName') || this.get('name'))
 			this.regexps = [
 				['([^\\s.]*) *= *' + (this.get('fullName') || this.get('name')) + '\\.extend\\(', function (match, name, pos) {
 					return { match: match, name: name, start: pos, fullName: name };
@@ -247,8 +251,9 @@
 			var that = this;
 
 			//this.parseComment().then(function () {
-				that.methods.parse();
-				that.parsed.resolve();
+				that.methods.parse().then(function () {
+					that.parsed.resolve();
+				});
 			//});
 
 		},
@@ -276,7 +281,8 @@
 		initialize: function () {
 			Class.prototype.initialize.apply(this, arguments);
 			this.regexps = [
-				['([^\\s]*(?:\\s+\\.\\s+)?([A-Z][^\\s\\.]*)) *= *function *\\(([^\\)]*)\\)', function (match, fullName, name, n, pos) {
+				// TODO: a parser might be a better idea
+				['[\\s\\.]+((?:[^\\s]*\\s+\\.\\s+)?([A-Z][^\\s\\.]*)) *= *function *\\(([^\\)]*)\\)', function (match, fullName, name, n, pos) {
 					return { match: match, name: name, fullName: fullName, start: pos };
 				}],
 				['function\\s*([A-Z][^\\s.]*) *\\(([^\\)]*)\\)', function (match, name, pos) {
@@ -302,7 +308,6 @@
 					var re = new RegExp(regexp[0], 'g');
 					that.data.replace(re, function () {
 						var match = regexp[1].apply(this, arguments);
-						console.log(match);
 						if (match.fullName.indexOf('_') === 0) { return; }
 						that.add(_.extend({
 							extend: superCls.object()
@@ -335,22 +340,23 @@
 			}).value();
 			this.unset('args');
 			this.arguments = new Arguments(args, { method: this });
+			log('new method', this.cls.get('name') + '.' + this.get('name'));
 		},
 		parse: function () {
-			log('parse method', this.get('name'));
+			log('parse method', this.cls.get('name') + '.' + this.get('name'));
 
 			var that = this;
 			this.parseComment().then(function () {
-				that.arguments.parse().then(function () {
+						that.parsed.resolve();
+				/*that.arguments.parse().then(function () {
 					if (that.arguments.length > 0) {
 						that.set('hasArgs', true);
 						that.parsed.resolve();
 					}
-				});
+				});*/
 
 				var result = that.get('result');
 				if (result) {
-					console.log('k', result);
 					if (result['return'] && result['return'].types) {
 						muList(result['return'].types);
 						result['return'].hasTypes = true;
@@ -459,9 +465,18 @@
 
 
 	function log (context, message) {
-		console.log(' ' + clc.green(context) + ' ' + message);
+		var color =
+			context.indexOf('class') > -1 ? clc.xterm(48) :
+			context.indexOf('method') > -1 ? clc.xterm(43) :
+			context.indexOf('argument') > -1 ? clc.xterm(38) :
+			context.indexOf('file') > -1 ? clc.xterm(33) : clc.xterm(227);
+		console.log(' ' + color(pad(context, 15)) + ' ' + message);
 	}
 
+	function pad(str, len) {
+		str = String(str);
+		return str.length >= len ? str : str + new Array(len - str.length + 1).join(' ');
+	}
 
 	function getCommentBefore (data, start) {
 		var subdata = data.substring(0, start + 1),
