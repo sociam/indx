@@ -5,6 +5,7 @@ angular
 		'use strict';
 
 		var Model = function () {};
+		/// Extend behaviour of Model
 		Model.extend = function (obj) {
 			/// @ignore -- TODO
 			var _F = function () {};
@@ -15,6 +16,7 @@ angular
 			is_new: false,
 			is_editing: false,
 			is_selected: false,
+			/// @constructor
 			initialize: function () {
 				var that = this;
 				this._update_new_attributes();
@@ -27,8 +29,14 @@ angular
 					this.newAttributes = _.clone(this.attributes);
 				}
 			},
+			/// @chain
+			///
+			/// Create an obj in the box based on this model, saving its
+			/// attributes as the obj attributes. This will trigger `created`
+			/// when completed.
 			create: function () {
-				var that = this;
+				var that = this,
+					promise = $.Deferred();
 				console.log('creating item');
 				this.box.get_obj(this.id).then(function (new_obj) {
 					console.log('new item');
@@ -39,23 +47,43 @@ angular
 				});
 				return this;
 			},
+
+			/// @then When model has been destroyed
+			///
+			/// Destroy the model and it's associated object. Triggers
+			/// `restore` when destroyed.
 			remove: function () {
 				var that = this;
 				console.log('remove item', this);
-				this.destroy().then(function () {
+				return this.destroy().then(function () {
 					console.log('destroyed item');
 					that.trigger('restore', this);
 				});
 			},
-			edit: function (is_new) {
+			/// @chain
+			///
+			/// Set the model to edit mode. In this mode, the newAttributes
+			/// attribute may be written to to "stage" changes. To save these
+			/// changes, call `stage_and_save`, or call `restore` to cancel.
+			/// Check if a model is being edited using is_editing attribute.
+			/// Triggers `edit`.
+			edit: function (_is_new) {
 				if (this.is_editing) { return; }
 				console.log('edit item', this);
 				this._update_new_attributes();
-				this.is_new = is_new;
+				this.is_new = _is_new;
 				this.is_editing = true;
 				this.trigger('edit');
 				return this;
 			},
+			/// @then (<Box>) When model has been saved or created successfully
+			/// @fail
+			///   (<{ code: 409 }> response) box already exists
+			///   (<{ code: -1, error: error obj }> response) other error
+			///
+			/// Take all staged changes in newAttributes attribute and save
+			/// them to the obj. If the obj has not been created yet it will
+			/// be created.
 			stage_and_save: function () {
 				var that = this;
 				console.log('stage and save');
@@ -63,13 +91,21 @@ angular
 					console.log('new, so create');
 					return this.create();
 				} else {
-					this.save(this.newAttributes).then(function () {
+					return this.save(this.newAttributes).then(function () {
 						console.log('saved');
 						that.restore();
 						// u.safe_apply($scope); TODO
 					});
 				}
 			},
+			///
+			/// @opt <{}> attributes Attributes to change
+			/// @opt <{}> options
+			///
+			/// @then When model has been created successfully
+			///
+			/// Make a new instance of the model. When the model is saved,
+			/// it will be put in the box as an obj and appended to the array.
 			save: function () {
 				if (this.is_new) {
 					console.warn('supressing save');
@@ -77,11 +113,16 @@ angular
 					return Backbone.Model.prototype.save.apply(this, arguments);
 				}
 			},
+			/// Switch off edit mode. Triggers `restore`.
 			restore: function () {
 				this.is_editing = false;
 				this.trigger('restore');
 				return this;
 			},
+			/// @opt <boolean> selected If true, select the model, otherwise unselect it.
+			/// @opt <{}> options
+			///
+			/// Selects this model. Triggers `select` with selected boolean and options.
 			select: function (selected, options) {
 				options = options || {};
 				console.log('select', selected);
