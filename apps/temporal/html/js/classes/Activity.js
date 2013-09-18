@@ -58,7 +58,7 @@ Activity.prototype.calculate = function()
 			this.avgMap[sourceCopy] += annotation[x][source].timeInterval.sum/(annotation.length);
 		}
 	}
-	console.log(this);
+	// console.log(this);
 }
 
 Activity.prototype.switchVisible = function()
