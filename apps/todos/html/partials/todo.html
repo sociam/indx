@@ -2,7 +2,7 @@
 	<a href="#" ng-click="todo.undo()"><i class="icon-undo"></i> Undo</a>
 </div>
 <div class="todo-body">
-	<div class="todo-urgency" ng-class="'urgency-' + ((todo.is_editing || todo.is_dragging) && pop(todo.newAttributes.urgency) || pop(todo.attributes.urgency))">
+	<div class="todo-urgency" ng-class="'urgency-' + ((todo.is_editing || todo.is_dragging) && todo.get_staged_attribute('urgency') || todo.get_attribute('urgency'))">
 		<div class="todo-urgency-arrows" ng-show="todo.is_editing">
 			<div class="todo-urgency-up" ng-click="todo.set_urgency(+1)"><div class="arrow-head"></div></div>
 			<div class="todo-urgency-down" ng-click="todo.set_urgency(-1)"><div class="arrow-head"></div></div>
@@ -13,9 +13,9 @@
 		<span class="icon icon-ok tick"></span>
 	</div>
 	<div class="todo-title">
-		<span ng-show="todo.is_editing">{{ pop(todo.newAttributes.title) }}</span>
-		<span ng-show="!todo.is_editing">{{ pop(todo.attributes.title) }}</span>
+		<span ng-show="todo.is_editing">{{ todo.get_staged_attribute('title') }}</span>
+		<span ng-show="!todo.is_editing">{{ todo.get_attribute('title') }}</span>
 		&nbsp;
-		<textarea ng-model="todo.newAttributes.title" placeholder="todo..." ng-focus="todo.edit()" focus-me="todo.is_editing"></textarea>
+		<textarea ng-model="todo.staged_attributes.title" placeholder="todo..." ng-focus="todo.edit()" focus-me="todo.is_editing"></textarea>
 	</div>
 </div>

@@ -5,6 +5,7 @@ angular
 		'use strict';
 
 		var Model = function () {};
+		/// Extend behaviour of Model
 		Model.extend = function (obj) {
 			/// @ignore -- TODO
 			var _F = function () {};
@@ -15,6 +16,7 @@ angular
 			is_new: false,
 			is_editing: false,
 			is_selected: false,
+			/// @constructor
 			initialize: function () {
 				var that = this;
 				this._update_new_attributes();
@@ -24,38 +26,64 @@ angular
 			},
 			_update_new_attributes: function () {
 				if (!this.is_editing) {
-					this.newAttributes = _.clone(this.attributes);
+					this.staged_attributes = _.clone(this.attributes);
 				}
 			},
+			/// @chain
+			///
+			/// Create an obj in the box based on this model, saving its
+			/// attributes as the obj attributes. This will trigger `created`
+			/// when completed.
 			create: function () {
-				var that = this;
+				var that = this,
+					promise = $.Deferred();
 				console.log('creating item');
 				this.box.get_obj(this.id).then(function (new_obj) {
 					console.log('new item');
-					new_obj.save(that.newAttributes).then(function () {
+					new_obj.save(that.staged_attributes).then(function () {
 						console.log('saved');
 						that.trigger('created', new_obj);
 					});
 				});
 				return this;
 			},
+
+			/// @then When model has been destroyed
+			///
+			/// Destroy the model and it's associated object. Triggers
+			/// `restore` when destroyed.
 			remove: function () {
 				var that = this;
 				console.log('remove item', this);
-				this.destroy().then(function () {
+				return this.destroy().then(function () {
 					console.log('destroyed item');
 					that.trigger('restore', this);
 				});
 			},
-			edit: function (is_new) {
+			/// @chain
+			///
+			/// Set the model to edit mode. In this mode, the staged_attributes
+			/// attribute may be written to to "stage" changes. To save these
+			/// changes, call `stage_and_save`, or call `restore` to cancel.
+			/// Check if a model is being edited using is_editing attribute.
+			/// Triggers `edit`.
+			edit: function (_is_new) {
 				if (this.is_editing) { return; }
 				console.log('edit item', this);
 				this._update_new_attributes();
-				this.is_new = is_new;
+				this.is_new = _is_new;
 				this.is_editing = true;
 				this.trigger('edit');
 				return this;
 			},
+			/// @then (<Box>) When model has been saved or created successfully
+			/// @fail
+			///   (<{ code: 409 }> response) box already exists
+			///   (<{ code: -1, error: error obj }> response) other error
+			///
+			/// Take all staged changes in staged_attributes attribute and save
+			/// them to the obj. If the obj has not been created yet it will
+			/// be created.
 			stage_and_save: function () {
 				var that = this;
 				console.log('stage and save');
@@ -63,13 +91,21 @@ angular
 					console.log('new, so create');
 					return this.create();
 				} else {
-					this.save(this.newAttributes).then(function () {
+					return this.save(this.staged_attributes).then(function () {
 						console.log('saved');
 						that.restore();
 						// u.safe_apply($scope); TODO
 					});
 				}
 			},
+			///
+			/// @opt <{}> attributes Attributes to change
+			/// @opt <{}> options
+			///
+			/// @then When model has been created successfully
+			///
+			/// Make a new instance of the model. When the model is saved,
+			/// it will be put in the box as an obj and appended to the array.
 			save: function () {
 				if (this.is_new) {
 					console.warn('supressing save');
@@ -77,11 +113,17 @@ angular
 					return Backbone.Model.prototype.save.apply(this, arguments);
 				}
 			},
+			/// Switch off edit mode. Triggers `restore`.
 			restore: function () {
 				this.is_editing = false;
 				this.trigger('restore');
+				console.log('restore!')
 				return this;
 			},
+			/// @opt <boolean> selected If true, select the model, otherwise unselect it.
+			/// @opt <{}> options
+			///
+			/// Selects this model. Triggers `select` with selected boolean and options.
 			select: function (selected, options) {
 				options = options || {};
 				console.log('select', selected);
@@ -91,8 +133,27 @@ angular
 					this.is_selected = selected;
 					this.trigger('select', selected, options);
 				}
+			},
+			/// Get the value of an attribute. Use this instead of `get` if
+			/// you don't want the value in an array.
+			get_attribute: function (key) {
+				var val = this.attributes[key];
+				return get_only_element(val);
+			},
+			/// Get the value of a staged attribute in edit mode.
+			get_staged_attribute: function (key) {
+				var val = this.staged_attributes[key];
+				return get_only_element(val);
 			}
 		});
+
+		var get_only_element = function (arr) {
+			if (_.isArray(arr) && arr.length === 1) {
+				return _.first(arr);
+			}
+			return arr;
+		};
+
 		var Collection = Backbone.Collection.extend({
 			/// the collection.Model the cast each model to
 			model: Model,
@@ -247,8 +308,6 @@ angular
 					}), { silent: true });
 					that.trigger('reset');
 				});
-				//console.log('obj --> ', obj, array_key);
-				//console.log('list --> ', arr);
 			},
 			/// Save the obj with the current array state. This will happen automatically when the array changes.
 			save: function () {
@@ -271,7 +330,14 @@ angular
 				this.trigger('update', this);
 				return this;
 			},
-			comparator: function () { return 1; }
+			comparator: function () { return 1; },
+			move: function (item, collection) {
+				this.copy(item, collection);
+				this.remove(item);
+			},
+			copy: function (item, collection) { // actually a link
+				collection.add(item);
+			}
 		});
 
 		var now = function () {

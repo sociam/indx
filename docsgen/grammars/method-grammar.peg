@@ -43,7 +43,7 @@ return_result
 			{ return { comment: c, types: t }; }
 
 async_result
-	= then:async_then_result _$_ fail:async_fail_result
+	= then:async_then_result fail:async_fail_result
 			{ return { then: then, fail: fail }; }
 
 async_then_result

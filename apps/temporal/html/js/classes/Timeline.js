@@ -111,6 +111,19 @@ Timeline.prototype.addGraph = function(graph)
 	this.windowList.push(window);
 }
 
+Timeline.prototype.removeGraph = function(graph)
+{
+	delete tEngine.interactiveObjectList["timelineWindow"+graph.element.id];
+	for(var index in this.windowList)
+	{
+		if(this.windowList[index].graph == graph)
+		{
+			this.windowList.splice(index, 1);
+		}
+	}
+	this.render();
+}
+
 Timeline.prototype.init = function()
 {
 	this.initDays();
@@ -266,7 +279,7 @@ Timeline.prototype.renderGrid = function ()
 		.append("line")
 		.attr("x1", 0)
 		.attr("y1", y)
-		.attr("x2", 700)
+		.attr("x2", this.size[0])
 		.attr("y2", y)
 		.attr("class", "axis");
 

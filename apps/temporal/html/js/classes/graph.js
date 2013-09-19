@@ -98,6 +98,14 @@ Graph.prototype.appendTemplate = function(target)
 	target = d3.select(target);
 	var graphDiv = target.append("div").attr("id", "graph"+tEngine.lastGraphID++).attr("class", "aGraph");
 
+	this.infoDiv = graphDiv.append("div");
+	
+	this.infoDiv.attr("class", "graphInfo");
+	this.infoDiv.style("background-color", "#000");
+
+
+	this.infoDiv.append("div").attr("class", "label").text("Test");
+
 	graphDiv.append("div").attr("class", "graph").attr("z-index", tEngine.lastGraphID);
 	return graphDiv[0][0];
 }
@@ -460,7 +468,7 @@ Graph.prototype.initGraph = function()
 	this.calculateMin();
 	this.initDays();
 
-	this.graph = d3.select("#"+this.element.id+" .graph").append("svg:svg").attr("width", "100%").attr("height", "100%");
+	this.graph = d3.select("#"+this.element.id+" .graph").append("svg:svg").attr("width", "700px").attr("height", "100%");
 	var thisGraph = this;
 	this.graph.on("mousemove", function() 
 	{ 
@@ -472,6 +480,19 @@ Graph.prototype.initGraph = function()
 		this.renderLines(this.timeInterval.dataInterval, tEngine.getColor(this.dataColor), this.graph);
 		this.renderLabels(this.graph);
 	}
+
+	this.infoDiv.style("background-color", tEngine.getColor(this.dataColor), this.dataColor);
+	this.infoDiv.select(".label").text(this.channel.name);
+
+	var closeButton = this.infoDiv.append("div").attr("class", "removeGraph");
+
+	closeButton.on("click", function() {thisGraph.closeGraph();});
+}
+
+Graph.prototype.closeGraph = function()
+{
+	this.element.remove();
+	tEngine.removeGraph(this);
 }
 
 Graph.prototype.renderLines = function(readings, color, target, translateX)
@@ -481,7 +502,6 @@ Graph.prototype.renderLines = function(readings, color, target, translateX)
 
 	var x = d3.time.scale().domain([firstInstant, lastInstant]).range([0, this.size[0]]);
 	var y = d3.scale.linear().domain([this.maxValue, this.minValue]).range([0, this.size[1]*this.heightProportion]);
-
 	
 	var line = d3.svg.line()
 		.x(function(d,i) { return x(d.instant); })
@@ -793,11 +813,17 @@ Graph.prototype.unselectAnnotations = function()
 
 Graph.prototype.touchEnded = function(touch)
 {
+	if(touch.position[0]-this.element.offsetLeft >= 705 && touch.position[0]-this.element.offsetLeft <= 715
+		&& touch.position[1]-this.element.offsetTop <= 10)
+	{
+		this.closeGraph();
+	}
+
 	this.backToNormal();
 	this.invertPan = false;
 		d3.select(this.element)
 		.style("cursor", "auto");
-	// console.log("touchEnded");
+
 	this.selectingInterval = false;
 
 	// var position = tEngine.getListPosition(this);
@@ -1136,8 +1162,8 @@ Graph.prototype.mouseMove = function(pos)
 
 	var inc = pos[1] > this.size[1]/2 ? -5 : 12;
 
-	var dateText = new GraphText(TimeUtils.dateFormatter(x), "dateText", pos[0], 10, pos[0] < this.size[0]/2 ? undefined : "end");
-	var valueText = new GraphText(invY(pos[1]).toFixed(2), "valueText", this.size[0]-5, pos[1]+inc, "end");
+	var dateText = new GraphText(TimeUtils.dateFormatter(x), "dateText", pos[0], 10, pos[0] < (this.size[0])/2 ? undefined : "end");
+	var valueText = new GraphText(invY(pos[1]).toFixed(2), "valueText", this.size[0]-25, pos[1]+inc, "end");
 
 	if(pos[1] < this.size[1]*this.heightProportion)
 	{

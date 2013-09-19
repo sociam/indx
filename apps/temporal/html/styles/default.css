@@ -33,7 +33,7 @@ h3
 #activities
 {
 	position: absolute;
-	left: 1020px;
+	left: 990px;
 }
 
 #activities .activity
@@ -158,9 +158,52 @@ path {
 	opacity: 0.2;
 }
 
+.graphInfo
+{
+	position: absolute;
+	width: 20px;
+	height: 100%;
+	right:0px;
+}
+
+.graphInfo .removeGraph
+{
+	margin-left: 5px;
+	width: 10px;
+	height: 10px;
+	background-color: #ff5555;
+	color: #fff;
+}
+
+.graphInfo .label
+{
+	position: absolute;
+	top:5px;
+	left:16px;
+
+	color: #fff;
+	cursor: default;
+	font-size: 10px;
+	text-align: center;
+	width: 110px;
+	
+	/*writing-mode:tb-rl;*/
+
+	-webkit-transform: rotate(90deg);
+	-moz-transform: rotate(90deg);
+	-ms-transform: rotate(90deg);
+	-o-transform: rotate(90deg);
+	transform: rotate(90deg);
+
+	-webkit-transform-origin: top left;
+	-moz-transform-origin: top left;
+	-ms-transform-origin: top left;
+	-o-transform-origin: top left;
+	transform-origin: top left;
+}
+
 .timelineGraph
 {
-	width: 700px;
 	height: 90px;
 	overflow: hidden;
 	box-shadow: 0px 0px 10px #eee;
@@ -170,11 +213,11 @@ path {
 .aGraph
 {
 	border: 1px solid #eee;
-	width: 700px;
+	width: 720px;
 	height: 130px;
 	box-shadow: 0px 0px 10px #eee;
 	/*position: absolute;*/
-	left: 300px;
+	left: 240px;
 	/*top: 100px;*/
 	overflow: hidden;
 	z-index: 1;
@@ -261,9 +304,9 @@ path {
 {
 	/*background-color: #000;*/
 	position: absolute;
-	width: 700px;
+	width: 720px;
 	height: 90px;
-	left: 300px;
+	left: 240px;
 	top: 10px;
 	border: 1px solid #eee;
 	text-align: center;
@@ -311,7 +354,7 @@ path {
 }
 
 .grid .tick {
-    stroke: rgb(247,247,247);
+    stroke: rgba(0,0,0,0.05);
 }
 
 .grid .day {
