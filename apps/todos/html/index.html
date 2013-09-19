@@ -57,9 +57,9 @@
 				</nav>
 				<nav class="indx-main indx-navbar" role="navigation">
 					<div href="#" class="navbar-header">
-						<span class="navbar-brand hidden-xs">{{ pop(todo_lists.selected.get('title')) }}</span>
+						<span class="navbar-brand hidden-xs">{{ todo_lists.selected.get_attribute('title') }}</span>
 						<a href="#" class="navbar-header visible-xs" ng-click="mobile_menu = !mobile_menu">
-							<span class="navbar-brand">{{ pop(todo_lists.selected.get('title')) }}</span>
+							<span class="navbar-brand">{{ todo_lists.selected.get_attribute('title') }}</span>
 							<span class="caret"></span>
 						</a>
 					</div>
@@ -103,7 +103,7 @@
 							<li class="thick separator"></li>
 							<li ng-class="{ active: todo_list.is_selected }" ng-repeat="todo_list in todo_lists.all_models"><a href="#" ng-click="todo_list.select()">
 								<i class="icon-list"></i>
-								{{ pop(todo_list.get('title')) }}
+								{{ todo_list.get_attribute('title') }}
 							</a></li>
 							<li class="separator"></li>
 							<li><a href="#" ng-click="todo_lists.selected.edit()"><i class="icon-plus"></i> New todo list</a></li>
@@ -115,7 +115,7 @@
 
 				<div class="indx-sidebar">
 					<ul class="indx-list-flat todo-lists">
-						<li ng-repeat="todo_list in todo_lists.all_models" ng-click="todo_list.select()" ng-class="{ active: todo_list.is_selected }" ><a href="#" droppable>{{ pop(todo_list.get('title')) }}</a></li>
+						<li ng-repeat="todo_list in todo_lists.all_models" ng-click="todo_list.select()" ng-class="{ active: todo_list.is_selected }" ><a href="#" droppable>{{ todo_list.get_attribute('title') }}</a></li>
 					</ul>
 				</div>
 
