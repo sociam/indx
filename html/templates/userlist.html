@@ -13,14 +13,16 @@
 	</ul>
   </div>
   <div ng-show="user_selected" ng-animate="'animate'" class="password-dialog">
-	<form ng-submit="do_submit()">
-	<div ng-click="back_to_login()" class="glyphicon glyphicon-remove goback"></div>
-	<div class="username" ng-click="back_to_login()">{{ user_selected }}</div>
-	  <div class="controls">
-		<input type="password" id="login_password" class="login_password password_field" placeholder="password" ng-model="password"></input>
-		<div class="glyphicon glyphicon-chevron-right submit" ng-click="do_submit()"></div>
-	</div>
-	</form>
+  	<form ng-submit="do_submit()">
+  		<div class="username" ng-click="back_to_login()">
+  			<div class="glyphicon glyphicon-remove goback"></div>
+  			{{ user_selected }} :
+  		</div>
+  		<div class="controls">
+  			<input type="password" id="login_password" class="login_password password_field" ng-model="password"></input>
+  			<div class="glyphicon glyphicon-chevron-right submit" ng-click="do_submit()"></div>
+  		</div>
+  	</form>
   </div>
 </div>
-  
+
