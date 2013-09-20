@@ -58,7 +58,7 @@
 			description: '',
 			last: false
 		},
-		initialize: function () {
+		initialize: function (attributes) {
 			this.parsed = new Promise();
 			this.set('id', this.uid ? this.uid() : Math.random());
 		},
@@ -199,7 +199,6 @@
 			});
 
 			allPromises(promises).then(function () {
-				console.log(fileLists)
 				log('build', 'got ' + (fileLists.require.length + fileLists.files.length) + ' file paths');
 				promise.resolve(fileLists);
 			});
@@ -251,15 +250,7 @@
 				promise = new Promise();
 			fileGrammar.parse(comment)
 				.then(function (rs) {
-					if (!rs.description) {
-						rs.description = [];
-					} // Hack
-					marked(rs.description.join('\n'), markedOptions, function (err, content) {
-						if (err) {
-							throw err;
-						}
-						rs.description = content;
-						that.set(rs);
+					parseMatch(rs, that).then(function () {
 						promise.resolve();
 					});
 
@@ -328,19 +319,12 @@
 		},
 		parseComment: function () {
 			var that = this,
-				comment = getCommentBefore(this.data, this.get('start')),
+				comment = getCommentBefore(this.data, this.get('start'), true),
 				promise = new Promise();
+			console.log('comment', comment, this.get('start'));
 			classGrammar.parse(comment)
 				.then(function (rs) {
-					if (!rs.description) {
-						rs.description = [];
-					} // Hack
-					marked(rs.description.join('\n'), markedOptions, function (err, content) {
-						if (err) {
-							throw err;
-						}
-						rs.description = content;
-						that.set(rs);
+					parseMatch(rs, that).then(function () {
 						promise.resolve();
 					});
 				});
@@ -358,6 +342,29 @@
 	});
 
 
+	var parseMatch = function (rs, model) {
+		var promise = new Promise();
+		if (rs.properties) {
+			_.extend(rs, rs.properties);
+			delete rs.properties;
+		}
+		if (rs.hasOwnProperty('ignore')) {
+			model.collection.remove(model);
+		}
+		if (rs.extend) {
+			rs.extend = { name: rs.extend, fullName: rs.extend };
+		}
+		marked(rs.description.join('\n'), markedOptions, function (err, content) {
+			if (err) {
+				throw err;
+			}
+			rs.description = content;
+			model.set(rs);
+			promise.resolve(rs);
+		});
+		return promise;
+	};
+
 	var ObjectClass = Class.extend({
 		defaults: {
 			name: 'Object',
@@ -369,7 +376,7 @@
 			this.regexps = [
 				// TODO: a parser might be a better idea
 				[
-					'.*[\\s]+((?:[^\\s\\.]+\\s*\\.\\s*)*([A-Z][^\\s\\.]*)) *= *function *\\(([^\\)]*)\\)',
+					'[\\s]+((?:[^\\s\\.]+\\s*\\.\\s*)*([A-Z][^\\s\\.]*)) *= *function *\\(([^\\)]*)\\)',
 					function (match, fullName, name, n, pos) {
 						return {
 							match: match,
@@ -492,15 +499,7 @@
 
 			methodGrammar.parse(comment)
 				.then(function (rs) {
-					if (!rs.description) {
-						rs.description = [];
-					} // Hack
-					marked(rs.description.join('\n'), markedOptions, function (err, content) {
-						if (err) {
-							throw err;
-						}
-						rs.description = content;
-						that.set(rs);
+					parseMatch(rs, that).then(function () {
 						if (that.get('args')) {
 							that.arguments.reset(that.get('args'));
 						}
@@ -537,8 +536,7 @@
 				start = this.cls.get('start'),
 				end = this.cls.get('end'),
 				data = this.data,
-				subdata = data.substring(start, end),
-				methods = [];
+				subdata = data.substring(start, end);
 
 			var re = new RegExp(
 				'[\\.|\\s]+([a-z_][^\\s.]*) *[:=] *function *\\(([^\\)]*)\\)', 'g');
@@ -627,10 +625,12 @@
 			.join(' ');
 	}
 
-	function getCommentBefore(data, start) {
+	function getCommentBefore(data, start, log) {
 		var subdata = data.substring(0, start + 1),
 			lines = subdata.split('\n')
-				.reverse();
+				.reverse().slice(1);
+
+		if(log)console.log('log->\n', lines.slice(0, 3));
 		return getComment(lines)
 			.reverse()
 			.join('\n');

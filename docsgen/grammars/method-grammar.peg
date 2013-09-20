@@ -1,7 +1,7 @@
 @import "utils-grammar.peg"
 
 start
-	= as:arguments? r:result? d:description_lines?
+	= as:arguments? r:result? d:description_lines
 			{ return { args: as, description: d, result: r }; }
 
 arguments

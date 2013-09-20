@@ -61,18 +61,18 @@ Comment should precede the class.
 
 Properties
 
-* `@ignore` - ignore this class (do not document it) Not yet implemented
-* `@extends Some.SuperClass` - Not yet implemented
-* `@name ClassName` Not yet implemented
-* `@fullName theFull.ClassName` Not yet implemented
-* `@instanceName className` Not yet implemented
+* `@ignore` - ignore this class (do not document it)
+* `@extend Some.SuperClass http://example.com/docs/for/superclass` - Partly implemented
+* `@name ClassName`
+* `@fullName theFull.ClassName`
+* `@instanceName className`
 
 Example
 
 	/// @name Cow
 	/// @fullName farm.Cow
 	/// @instanceName daisy
-	/// @extends Animal
+	/// @extend Animal
 	///
 	/// This is my cow class. I use daisy as an example cow.
 

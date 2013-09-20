@@ -1,6 +1,6 @@
 @import "utils-grammar.peg"
 
 start
-	= d:description_lines?
-			{ return { description: d }; }
+	= ps:properties d:description_lines
+			{ return { properties: ps, description: d }; }
 

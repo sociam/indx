@@ -1,8 +1,23 @@
+properties
+	= p:property __ ps:properties
+			{ var k = Object.keys(p); ps[k] = p[k]; return ps; }
+	/ p:property
+			{ return p; }
+	/ ''
+			{ return {}; }
+
+property
+	= _$_ "@" k:name _ v:comment?
+			{ var ps = {}; ps[k] = v; return ps; }
+
+
 description_lines
 	= d:description_line ds:description_lines
 			{ return [d].concat(ds); }
 	/ d:description_line
 			{ return [d]; }
+	/ ''
+			{ return []; }
 
 description_line
 	= __ $ d:comment

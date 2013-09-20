@@ -1,9 +1,5 @@
 @import "utils-grammar.peg"
 
 start
-	= _$_ t:title? d:description_lines?
-			{ return { title: t, description: d }; }
-
-title
-	= "@title" _ t:comment
-			{ return t; }
+	= ps:properties d:description_lines
+			{ return { properties: ps, description: d }; }
