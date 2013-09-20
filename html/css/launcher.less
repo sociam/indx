@@ -8,6 +8,9 @@ body{
   padding:20px;
   width:440px; // todo make reactive
   margin:40px auto 0px auto;
+  position:relative;
+  min-width:300px; min-height:200px;
+
 }
 
 .login-window {
@@ -39,23 +42,48 @@ body{
 }
 
 .password-dialog {
-	padding:50px 40px 30px 40px;
-	* { vertical-align:middle; }
-	img.goback { width:20px; opacity:0.5; }
-	.username {
-		display:inline-block;
-		font-size: 16pt;
-		font-style:italics;
-		padding:13px 0px 0px 10px !important;
-		margin-bottom:15px;
+	// padding:50px 40px 30px 40px;
+	position:absolute; 
+	left:30px; top:50%; bottom:50%; right:30px;
+	margin-top:-12pt; 
+	* {
+	    -webkit-transition: 100ms ease-in all;
+	    -moz-transition: 100ms ease-in all;
+	    -ms-transition: 100ms ease-in all;
+	    -o-transition: 100ms ease-in all;
+	    transition: 100ms ease-in all;
 	}
-	.controls {
-		input[type='password'] {
-			margin-top:12px;
-		}			
-		input.submit { width:30px; }		
+	form {
+		padding:0px;
+		div { display:inline-block; }	
+		.goback {
+			min-width:22px;
+			text-align:center;
+			font-size:12px; // padding-left:8px; 
+			&:hover { 
+				font-size:16px;
+			}
+		}
+		.glyphicon { padding-bottom:2px;}
+		.username {
+			display:inline-block;
+			font-size: 16pt;
+			font-style:italics;
+			padding:11px 0px 0px 3px !important;
+		}
+		.controls {
+			padding:10px;
+			input[type='password'] {
+				// margin-top:5px;
+				min-width:221px;
+			}			
+			.submit { 
+				width:20px;
+				padding-left:0px;
+				&:hover { padding-left:4px; }
+		    }		
+		}
 	}
-	text-align:center;
 }
 
 .apps-toplevel {
