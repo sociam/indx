@@ -87,7 +87,7 @@
 					</ul>
 					<ul class="nav navbar-nav navbar-right" ng-show="editing_todo">
 						<li><a href="#" ng-click="editing_todo.remove()"><i class="icon-trash"></i></a></li>
-  						<li><a href="#" ng-click="editing_todo.stage_and_save()"><i class="icon-ok"></i></a></li>
+  						<li><a href="#" ng-click="editing_todo.save_staged()"><i class="icon-ok"></i></a></li>
 					</ul>
 				</nav>
 			</div>
@@ -146,7 +146,7 @@
 						</div>
 						<div class="modal-footer">
 							<button type="button" class="btn btn-default" ng-click="todo_lists.selected.restore()"><span class="icon-remove"></span> Close</button>
-							<button type="button" class="btn btn-primary" ng-click="todo_lists.selected.stage_and_save()"><span class="icon-ok"></span> Save</button>
+							<button type="button" class="btn btn-primary" ng-click="todo_lists.selected.save_staged()"><span class="icon-ok"></span> Save</button>
 						</div>
 					</div><!-- /.modal-content -->
 				</div><!-- /.modal-dialog -->

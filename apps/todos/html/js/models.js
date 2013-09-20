@@ -112,11 +112,8 @@ angular
 				});
 				col.Collection.prototype.initialize.apply(this, arguments);
 			},
-			new_model: function () {
-				var id = 'todo-item-' + col.now();
-				return col.Collection.prototype.new_model.call(this, {
-					id: id
-				});
+			model_id: function () {
+				return 'todo-item-' + col.now();
 			},
 			comparator: function (m) {
 				var urgency = m.is_editing ? m.get_staged_attribute('urgency') :

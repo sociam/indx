@@ -54,7 +54,7 @@ angular
 							.blur();
 						break;
 					case 13: // enter
-						$scope.editing_todo.stage_and_save();
+						$scope.editing_todo.save_staged();
 						e.preventDefault();
 						$('textarea')
 							.blur();
@@ -184,7 +184,7 @@ angular
 								.get();
 						lastLiAbove = undefined;
 						todo.is_dragging = false;
-						todo.stage_and_save();
+						todo.save_staged();
 						todos.reset(new_todos)
 							.save();
 						utils.safe_apply(tscope);

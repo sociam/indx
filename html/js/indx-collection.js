@@ -11,6 +11,15 @@ angular
 	.factory('collection', function () {
 		'use strict';
 
+		/// A model is an extension of indx Obj, and adds functionality useful
+		/// for maintaining collections or objs.
+		///
+		/// It also provides states which may be useful in developing views -
+		/// a model may be being edited (is_editing), selected (is_selected)
+		/// or not yet created (is_new). While being edited (or new),
+		/// staged_attributes may be written to instead of attributes such
+		/// that changes may be undone by use of `restore`. To save stage
+		/// changes, use `save_staged`.
 		var Model = function () {};
 		/// Extend behaviour of Model
 		Model.extend = function (obj) {
@@ -74,7 +83,7 @@ angular
 			///
 			/// Set the model to edit mode. In this mode, the staged_attributes
 			/// attribute may be written to to "stage" changes. To save these
-			/// changes, call `stage_and_save`, or call `restore` to cancel.
+			/// changes, call `save_staged`, or call `restore` to cancel.
 			/// Check if a model is being edited using is_editing attribute.
 			/// Triggers `edit`.
 			edit: function (_is_new) {
@@ -95,7 +104,7 @@ angular
 			/// Take all staged changes in staged_attributes attribute and save
 			/// them to the obj. If the obj has not been created yet it will
 			/// be created.
-			stage_and_save: function () {
+			save_staged: function () {
 				var that = this;
 				console.log('stage and save');
 				if (this.is_new) {
