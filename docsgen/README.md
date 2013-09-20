@@ -100,10 +100,12 @@ Properties
 * `@ignore` Not yet implemented
 
 For @return, @then and @fail, multiple result statements may be made. E.g.,
+
 	@return <string> if file was successfully read
 	       <boolean> if file failed to be read
 
 Example (asynchronous method)
+
 	/// @arg <string|number> boxid: the id for the box
 	///
 	/// @then (<Box> the box)
