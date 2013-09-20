@@ -8,6 +8,12 @@ body{
   padding:20px;
   width:440px; // todo make reactive
   margin:40px auto 0px auto;
+  position:relative;
+
+  	-moz-box-shadow: 0 0 5px #888;
+	-webkit-box-shadow: 0 0 5px#888;
+	box-shadow: 0 0 5px #888;
+
 }
 
 .login-window {
@@ -39,23 +45,68 @@ body{
 }
 
 .password-dialog {
-	padding:50px 40px 30px 40px;
-	* { vertical-align:middle; }
-	img.goback { width:20px; opacity:0.5; }
-	.username {
-		display:inline-block;
-		font-size: 16pt;
-		font-style:italics;
-		padding:13px 0px 0px 10px !important;
-		margin-bottom:15px;
-	}
-	.controls {
-		input[type='password'] {
-			margin-top:12px;
-		}			
-		input.submit { width:30px; }		
-	}
+	background:white;
+	margin-left:auto; margin-right:auto;
 	text-align:center;
+
+	-moz-user-select: -moz-none;
+    -khtml-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+	textarea:focus, input:focus{
+    	outline: 0;
+	}
+	* {
+	    -webkit-transition: 250ms ease-in all;
+	    -moz-transition: 250ms ease-in all;
+	    -ms-transition: 250ms ease-in all;
+	    -o-transition: 250ms ease-in all;
+	    transition: 250ms ease-in all;
+	}
+	form {
+		padding:30px; margin:0px; 
+		div { display:inline-block; }	
+		.username {
+			display:inline-block;
+			.goback {
+				position:absolute; 
+				z-index:-100;
+				min-width:22px;
+				font-size:12px; // padding-left:8px; 
+				top:50%; margin-top:-6px;
+			}
+			&:hover .goback { margin-left:-32px; z-index:100; }
+			position:relative; // left:28px; top:50%; margin-top:-22px; right:50%;
+			text-align:right;
+			margin-right:15px;
+			display:inline-block;
+			font-size: 22px;
+			font-style:italics;
+		}
+		.controls {
+			display:inline-block;
+			input[type='password'] {
+				display:inline-block;
+				background:rgba(0,0,0,0);
+				// position:absolute; left:50%; top:50%; margin-top:-22px; right:68px;
+				// margin-top:5px;
+				font-size:16pt;
+				border-top:none;
+				border-left:none;
+				border-right:none;
+				border-bottom:1px solid black;
+				&:focus { border-bottom:3px solid black;	}	
+			}	
+			.submit { 
+				display:inline-block;
+				//position:absolute; right:32px; top:50%; margin-top:-14px;
+				width:20px;
+				padding-left:0px;
+				&:hover { padding-left:8px; }
+			}
+	}
+}
 }
 
 .apps-toplevel {
