@@ -3,6 +3,11 @@
 	<h3>{{fullName}}</h3>
 	{{#extend}}
 	  <div class="extends">extends <a target="_blank" href="#{{id}}"><i>{{fullName}}</i></a></div><br>
+	{{/extend}}
+
+	{{{description}}}
+
+	{{#extend}}
 	  <h4>Inherited methods from {{fullName}}</h4>
 	  <ul>
 	  	{{#methods}}

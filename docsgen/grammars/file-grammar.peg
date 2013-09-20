@@ -1,19 +1,9 @@
 @import "utils-grammar.peg"
 
 start
-	= _$_ t:title? p:parameters? d:description_lines?
-			{ return { title: t, description: d, parameters: p }; }
+	= _$_ t:title? d:description_lines?
+			{ return { title: t, description: d }; }
 
 title
 	= "@title" _ t:comment
 			{ return t; }
-
-parameters
-	= p:parameter ps:parameters
-			{ ps[p] = true; return ps; }
-	/ p:parameter
-			{ var ps = {}; ps[p] = true; return ps; }
-parameter
-	= _$_ "@supplementary"
-			{ return "supplementary"; }
-

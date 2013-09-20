@@ -2,10 +2,13 @@ module.exports = {
 	basePath: '../html/',
 	outputDirectory: '../html/docs/indx-collection/',
 
-	filePaths: [
+	require: [
 		'../docsgen/abstracts/*',
+		'js/indx.js'
+	],
+
+	files: [
 		'js/indx-collection.js'
-		//'js/indx-utils.js'
 	],
 
 	project: {

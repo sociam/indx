@@ -108,7 +108,7 @@
   <body>
     <div class="sidebar">
       {{#files}}
-        <div id="sidebar-{{id}}" class="{{#parameters.supplementary}}supplementary{{/parameters.supplementary}}">
+        <div id="sidebar-{{id}}" class="{{#supplementary}}supplementary{{/supplementary}}">
           <a href="#{{id}}"><h3>{{title}}</h3></a>
           <ul class="nav nav-list">
             {{#classes}}
@@ -127,7 +127,7 @@
       {{project.description}}
 
       {{#files}}
-        <section class="file {{#parameters.supplementary}}supplementary{{/parameters.supplementary}}" id="{{id}}">
+        <section class="file {{#supplementary}}supplementary{{/supplementary}}" id="{{id}}">
           {{>partials/file.mu}}
         </section>
       {{/files}}
