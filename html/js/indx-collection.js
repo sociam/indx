@@ -8,8 +8,10 @@
 
 angular
 	.module('indx')
-	.factory('collection', function () {
+	.factory('collection', function (client) {
 		'use strict';
+
+		var Obj = client.Obj;
 
 		/// A model is an extension of indx Obj, and adds functionality useful
 		/// for maintaining collections or objs.
@@ -20,15 +22,7 @@ angular
 		/// staged_attributes may be written to instead of attributes such
 		/// that changes may be undone by use of `restore`. To save stage
 		/// changes, use `save_staged`.
-		var Model = function () {};
-		/// Extend behaviour of Model
-		Model.extend = function (obj) {
-			/// @ignore -- TODO
-			var _F = function () {};
-			_F.prototype = _.extend({}, Model.prototype, obj);
-			return _F;
-		};
-		_.extend(Model.prototype, {
+		var Model = Obj.extend({
 			is_new: false,
 			is_editing: false,
 			is_selected: false,
@@ -51,8 +45,7 @@ angular
 			/// attributes as the obj attributes. This will trigger `created`
 			/// when completed.
 			create: function () {
-				var that = this,
-					promise = $.Deferred();
+				var that = this;
 				console.log('creating item');
 				this.box.get_obj(this.id)
 					.then(function (new_obj) {
