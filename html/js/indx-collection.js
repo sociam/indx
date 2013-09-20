@@ -22,7 +22,7 @@ angular
 				this._update_new_attributes();
 				this.on('change', function () {
 					that._update_new_attributes();
-				})
+				});
 			},
 			_update_new_attributes: function () {
 				if (!this.is_editing) {
@@ -38,13 +38,15 @@ angular
 				var that = this,
 					promise = $.Deferred();
 				console.log('creating item');
-				this.box.get_obj(this.id).then(function (new_obj) {
-					console.log('new item');
-					new_obj.save(that.staged_attributes).then(function () {
-						console.log('saved');
-						that.trigger('created', new_obj);
+				this.box.get_obj(this.id)
+					.then(function (new_obj) {
+						console.log('new item');
+						new_obj.save(that.staged_attributes)
+							.then(function () {
+								console.log('saved');
+								that.trigger('created', new_obj);
+							});
 					});
-				});
 				return this;
 			},
 
@@ -55,10 +57,11 @@ angular
 			remove: function () {
 				var that = this;
 				console.log('remove item', this);
-				return this.destroy().then(function () {
-					console.log('destroyed item');
-					that.trigger('restore', this);
-				});
+				return this.destroy()
+					.then(function () {
+						console.log('destroyed item');
+						that.trigger('restore', this);
+					});
 			},
 			/// @chain
 			///
@@ -68,12 +71,13 @@ angular
 			/// Check if a model is being edited using is_editing attribute.
 			/// Triggers `edit`.
 			edit: function (_is_new) {
-				if (this.is_editing) { return; }
-				console.log('edit item', this);
-				this._update_new_attributes();
-				this.is_new = _is_new;
-				this.is_editing = true;
-				this.trigger('edit');
+				if (!this.is_editing) {
+					console.log('edit item', this);
+					this._update_new_attributes();
+					this.is_new = _is_new;
+					this.is_editing = true;
+					this.trigger('edit');
+				}
 				return this;
 			},
 			/// @then (<Box>) When model has been saved or created successfully
@@ -91,11 +95,12 @@ angular
 					console.log('new, so create');
 					return this.create();
 				} else {
-					return this.save(this.staged_attributes).then(function () {
-						console.log('saved');
-						that.restore();
-						// u.safe_apply($scope); TODO
-					});
+					return this.save(this.staged_attributes)
+						.then(function () {
+							console.log('saved');
+							that.restore();
+							// u.safe_apply($scope); TODO
+						});
 				}
 			},
 			///
@@ -117,7 +122,6 @@ angular
 			restore: function () {
 				this.is_editing = false;
 				this.trigger('restore');
-				console.log('restore!')
 				return this;
 			},
 			/// @opt <boolean> selected If true, select the model, otherwise unselect it.
@@ -163,25 +167,48 @@ angular
 				this.options = options || {};
 				this.box = this.options.box;
 				this.obj = this.options.obj;
-				this.on('add remove', function () {
-					console.log('something in the collection has changed');
-					that.save();
-				}).on('add remove reset', function () {
-					that._set_new_model(that._new_model);
-				});
-				console.log('setting up');
-				this.on('change', function () {
-					that.sort();
-				}).on('sort', function () {
-					that._set_new_model(that._new_model);
-				});
+				this
+					.on('add remove', function () {
+						console.log('something in the collection has changed');
+						that.save();
+					})
+					.on('add remove reset', function () {
+						that._set_new_model(that._new_model);
+					})
+					.on('change', function () {
+						that.sort();
+					})
+					.on('sort', function () {
+						that._set_new_model(that._new_model);
+					})
+					.on('add reset', function (models) {
+						if (!models) {
+							return;
+						}
+						if (models.models) { // collection
+							models = models.models;
+						} else { //model
+							models = [models];
+						}
+						_.each(models, function (model) {
+							model.trigger('add_any', model);
+						});
+					});
 				this.reset(models);
 				this.populate();
 				this._set_new_model();
 			},
+			/// Attribute or function which returns the id to give to a new model
+			model_id: function () {
+				return Math.random();
+			},
+			/// Attribute or function which returns the options to give to a new model
+			model_option: function () {
+				return {};
+			},
 			///
 			/// @opt <{}> attributes Attributes of new model
-			/// @opt <{}> options
+			/// @opt <{}> options select
 			///
 			/// @return <model> Model inheriting collection.model
 			///
@@ -189,25 +216,43 @@ angular
 			/// it will be put in the box as an obj and appended to the array.
 			new_model: function (attributes, options) {
 				var that = this,
-					model = new Backbone.Model(attributes);
-				options = options || {};
+					model,
+					id = _.result(this, 'model_id'),
+					soptions = _.result(this, 'model_options');
+
+				attributes = _.extend({
+					id: id
+				}, attributes);
+				options = _.extend(_.clone(soptions), options);
+				model = new Backbone.Model(attributes, options); // Leave casting to this.model until later
 				this._extend_model(model);
+
 				model
 					.edit(true)
-					.set({ timestamp: now() })
+					.set({
+						timestamp: now()
+					})
 					.on('created', function (model) {
 						console.log('going for the add');
 						that.add(model);
 						that._set_new_model();
-						if (options.select) { model.select(); }
+						if (options.select) {
+							model.select();
+						}
 						model.trigger('restore');
 					})
 					.on('restore', function () {
 						that._set_new_model();
-						if (options.select) { that.selected = undefined; }
+						if (options.select) {
+							that.selected = undefined;
+						}
 					});
 				this._set_new_model(model);
-				if (options.select) { model.select(true, { save: false }); }
+				if (options && options.select) {
+					model.select(true, {
+						save: false
+					});
+				}
 				return model;
 			},
 			_set_new_model: function (model) {
@@ -218,7 +263,9 @@ angular
 			/// Remove the model from the array
 			remove: function (model) {
 				console.log('!!!remove!!!', arguments);
-				if (this.selected === model) { this.selected = undefined; }
+				if (this.selected === model) {
+					this.selected = undefined;
+				}
 				return Backbone.Collection.prototype.remove.apply(this, arguments);
 			},
 			_extend_model: function (model) {
@@ -232,26 +279,36 @@ angular
 					_.defaults(model.attributes, prototype.defaults);
 				}
 				model.box = this.box;
-				model.on('select', function (selected, options) {
-					options = options || {};
-					if (selected && that.selected === model) { return; }
-					if (that.selected) { that.selected.select(false); }
-					if (selected) {
-						that.selected = model;
-						that.trigger('select', model);
-					}
-					if (options.save !== false &&
+				model
+					.on('select', function (selected, options) {
+						options = options || {};
+						if (selected && that.selected === model) {
+							return;
+						}
+						if (that.selected) {
+							that.selected.select(false);
+						}
+						if (selected) {
+							that.selected = model;
+							that.trigger('select', model);
+						}
+						if (options.save !== false &&
 							(that.options.save_selected || that.options.sync_selected)) {
-						model.save({ selected: selected });
-						that.each(function (m) {
-							if (m !== model && pop(m.get('selected'))) {
-								m.save({ selected: false });
-							}
-						});
-					}
-				}).on('restore', function () {
-					that.trigger('update');
-				});
+							model.save({
+								selected: selected
+							});
+							that.each(function (m) {
+								if (m !== model && pop(m.get('selected'))) {
+									m.save({
+										selected: false
+									});
+								}
+							});
+						}
+					})
+					.on('restore', function () {
+						that.trigger('update');
+					});
 				/*
 				model.on('destroyed', function () { // TODO: unbind to prevent memory leaks
 					console.log('detected destroy, removing model');
@@ -261,12 +318,15 @@ angular
 			add: function (model, options) {
 				var that = this;
 				if (_.isArray(model)) {
-					_.each(model, function (model) { that.add(model, options); });
+					_.each(model, function (model) {
+						that.add(model, options);
+					});
 				} else {
 					if (!_.isObject(model)) {
 						console.warn('There was a non-object stored??', model);
 						return;
 					}
+					console.log('adding', model)
 					this._extend_model(model);
 					if (this.options.save_selected || this.options.sync_selected) {
 						if (pop(model.get('selected')) === true) {
@@ -285,15 +345,18 @@ angular
 			fetch: function () {
 				var that = this,
 					promise = $.Deferred();
-				this.obj.fetch().then(function () {
-					that.populate();
-					promise.resolve(that);
-				});
+				this.obj.fetch()
+					.then(function () {
+						that.populate();
+						promise.resolve(that);
+					});
 				return promise;
 			},
 			/// Update the collection with models in the array. This will happen automatically when the array changes.
 			populate: function () {
-				if (!this.obj || !this.options.array_key) { return; }
+				if (!this.obj || !this.options.array_key) {
+					return;
+				}
 				var that = this,
 					obj = this.obj,
 					array_key = this.options.array_key,
@@ -301,11 +364,16 @@ angular
 				this.reset(arr);
 				obj.on('change:' + array_key, function (obj, arr) {
 					console.log('updating list -->', arguments);
-					that.add(arr, { merge: true, silent: true });
+					that.add(arr, {
+						merge: true,
+						silent: true
+					});
 					var ids = _.pluck(arr, 'id');
 					that.remove(that.select(function (model) {
 						return ids.indexOf(model.id) < 0;
-					}), { silent: true });
+					}), {
+						silent: true
+					});
 					that.trigger('reset');
 				});
 			},
@@ -315,13 +383,19 @@ angular
 					promise = $.Deferred(),
 					array_key = that.options.array_key;
 				console.log('trying to save list = ', that.models);
-				this.obj.save(array_key, that.models).then(function () {
-					promise.resolve();
-				}).fail(function () { promise.reject('Could not save'); });
+				this.obj.save(array_key, that.models)
+					.then(function () {
+						promise.resolve();
+					})
+					.fail(function () {
+						promise.reject('Could not save');
+					});
 				return promise;
 			},
 			filter: function (fn) {
-				if (fn) { this._filter_fn = fn; }
+				if (fn) {
+					this._filter_fn = fn;
+				}
 				if (this._filter_fn) {
 					this.filtered_models = _.filter(this.all_models, fn);
 				} else {
@@ -330,7 +404,9 @@ angular
 				this.trigger('update', this);
 				return this;
 			},
-			comparator: function () { return 1; },
+			comparator: function () {
+				return 1;
+			},
 			move: function (item, collection) {
 				this.copy(item, collection);
 				this.remove(item);
@@ -341,10 +417,13 @@ angular
 		});
 
 		var now = function () {
-			return (new Date()).valueOf();
+			return (new Date())
+				.valueOf();
 		};
 		var pop = function (arr) {
-			if (!_.isArray(arr)) { return arr; }
+			if (!_.isArray(arr)) {
+				return arr;
+			}
 			return _.first(arr);
 		};
 
