@@ -41,7 +41,9 @@ body{
 
 .password-dialog {
 	background:white;
-    min-width:300px; min-height:135px;
+	margin-left:auto; margin-right:auto;
+	text-align:center;
+    min-width:285px; min-height:98px;
 	position:absolute; 
 	left:0px; top:0px; bottom:0px; right:0px;
 
@@ -61,9 +63,10 @@ body{
 	    transition: 250ms ease-in all;
 	}
 	form {
-		padding:0px; margin:0px; 
+		padding:30px; margin:0px; 
 		div { display:inline-block; }	
 		.username {
+			display:inline-block;
 			.goback {
 				position:absolute; 
 				z-index:-100;
@@ -72,32 +75,36 @@ body{
 				top:50%; margin-top:-6px;
 			}
 			&:hover .goback { margin-left:-32px; z-index:100; }
-			position:absolute; left:28px; top:50%; margin-top:-22px; right:50%;
+			position:relative; // left:28px; top:50%; margin-top:-22px; right:50%;
 			text-align:right;
 			margin-right:15px;
 			display:inline-block;
 			font-size: 22px;
 			font-style:italics;
 		}
-		input[type='password'] {
-			background:rgba(0,0,0,0);
-			position:absolute; left:50%; top:50%; margin-top:-22px; right:68px;
-			// margin-top:5px;
-			font-size:14pt;
-			border-top:none;
-			border-left:none;
-			border-right:none;
-			border-bottom:1px solid black;
-			&:focus { border-bottom:3px solid black;	}	
-		}	
-		.submit { 
-			position:absolute; right:32px; top:50%; margin-top:-14px;
-			width:20px;
-			padding-left:0px;
-			&:hover { padding-left:8px; }
-		}
-
-		}
+		.controls {
+			display:inline-block;
+			input[type='password'] {
+				display:inline-block;
+				background:rgba(0,0,0,0);
+				// position:absolute; left:50%; top:50%; margin-top:-22px; right:68px;
+				// margin-top:5px;
+				font-size:14pt;
+				border-top:none;
+				border-left:none;
+				border-right:none;
+				border-bottom:1px solid black;
+				&:focus { border-bottom:3px solid black;	}	
+			}	
+			.submit { 
+				display:inline-block;
+				//position:absolute; right:32px; top:50%; margin-top:-14px;
+				width:20px;
+				padding-left:0px;
+				&:hover { padding-left:8px; }
+			}
+	}
+}
 }
 
 .apps-toplevel {
