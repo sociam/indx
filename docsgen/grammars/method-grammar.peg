@@ -1,3 +1,5 @@
+@import "utils-grammar.peg"
+
 start
 	= as:arguments? r:result? d:description_lines?
 			{ return { args: as, description: d, result: r }; }
@@ -17,16 +19,6 @@ argument_mode
 		{ return { mandatory: true }; }
 	/ "@opt"
 		{ return { optional: true }; }
-
-description_lines
-	= d:description_line ds:description_lines
-			{ return [d].concat(ds); }
-	/ d:description_line
-			{ return [d]; }
-
-description_line
-	= __ $ d:comment
-			{ return d; }
 
 result
 	= r:return_result
@@ -105,27 +97,3 @@ type
 			{ return { type: t.join('') }; }
 
 
-name
-	= n:[^ \t\-\n\r\:]+
-			{ return n.join(''); }
-
-comment
-	= c:[^\n\r]*
-			{ return c.join(''); }
-
-
-$
-	= _ "///" _
-
-
-_$_ = __ $ __ _$_
-	/ __ $ __
-	/ __
-
-_
-	= [ \t]*
-			{ return ''; }
-
-__
-	= [ \t\r\n]*
-			{ return ''; }
