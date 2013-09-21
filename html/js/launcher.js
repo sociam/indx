@@ -1,19 +1,5 @@
 
 (function() {
-	var _verifylogin= function($scope, $location, client, u) {
-		var d = u.deferred();
-		client.store.check_login().then(function(login) {
-			if (login.is_authenticated) {
-				u.safe_apply($scope, function() { $location.path('/apps'); });
-				d.resolve();
-			} else {
-				console.log('routing to login');
-				u.safe_apply($scope, function() { $location.path('/login'); });
-				d.reject();
-			}
-		});
-		return d.promise();
-	};
 	angular.module('launcher', ['indx'])
 		.config(['$routeProvider', function($routeProvider) {
 			$routeProvider
@@ -79,15 +65,28 @@
 				u.error('oops can\'t get apps - not ready i guess');
 			});
 		};
-		try {
-			_verifylogin($scope,$location,client,utils).then(function() {
-				try { get_apps_list();	} catch (e) { console.error(e);}
-			});
-		} catch(e) { console.error(e);	}
+		get_apps_list();
 	}).controller('main', function($location, $scope, client, utils) {
 		var u = utils;
+		// we want to route
+		client.store.on('login', function() {
+			// just route
+			u.safe_apply($scope,function() { $location.path('/apps'); });
+		});
 		client.store.on('logout', function() {
+			// route back to login
 			u.safe_apply($scope,function() { $location.path('/login'); });
+		});
+
+		client.store.check_login().then(function(login) {
+			if (login.is_authenticated) {
+				u.safe_apply($scope, function() { $location.path('/apps'); });
+				d.resolve();
+			} else {
+				console.log('routing to login');
+				u.safe_apply($scope, function() { $location.path('/login'); });
+				d.reject();
+			}
 		});
 	});
 })();
