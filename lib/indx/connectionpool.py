@@ -47,8 +47,25 @@ class IndxConnectionPool:
 
     # Wrap query functions with auto-reconnection
     def runQuery(self, *args, **kwargs):
+
         try:
-            deferred = self.pool.runQuery(*args, **kwargs)
+            logging.debug("IndxConnectionPool runQuery")
+            deferred = Deferred()
+            pool_deferred = self.pool.runQuery(*args, **kwargs)
+            pool_deferred.addCallback(deferred.callback)
+
+            def err_cb(failure):
+                # failure!
+                # reconnect and try the query again
+                # TODO check exception is a psycopg2.InterfaceError and a "connection already closed" error first, otherwise send on to the deferred errback instead
+
+                def connected2(conn):
+                    conn.runQuery(*args, **kwargs).addCallbacks(deferred.callback, deferred.errback)
+
+i               self.pool = self._connectPool()
+                self.pool.start().addCallbacks(connected2, deferred.errback) # FIXME is this the best errback?
+
+            pool_deferred.addErrback(err_cb)
             return deferred
         except Exception as e:
             logging.error("IndxConnectionPool runQuery Exception: reconnecting, e: {0}".format(e))
@@ -66,6 +83,7 @@ class IndxConnectionPool:
 
     def runOperation(self, *args, **kwargs):
         try:
+            logging.debug("IndxConnectionPool runOperation")
             deferred = self.pool.runOperation(*args, **kwargs)
             return deferred
         except Exception as e:
@@ -84,6 +102,7 @@ class IndxConnectionPool:
 
     def runInteraction(self, *args, **kwargs):
         try:
+            logging.debug("IndxConnectionPool runInteration")
             deferred = self.pool.runInteraction(*args, **kwargs)
             return deferred
         except Exception as e:

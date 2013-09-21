@@ -386,7 +386,7 @@ def connect(db_name, db_user, db_pass):
             POOLS_BY_DBNAME[db_name].append(pool)
             result_d.callback(pool)
 
-        p = txpostgres.ConnectionPool(None, conn_str)
+        p = IndxConnectionPool(None, conn_str)
         p.start().addCallbacks(success, result_d.errback)
 
     return result_d
