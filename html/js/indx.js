@@ -46,7 +46,7 @@
 
 
 angular
-	.module('indx', ['ui'])
+	.module('indx', [])
 	.factory('client',function(utils) {
 		var u = utils, log = utils.log, error = utils.error, debug = utils.debug;
 		var DEFAULT_HOST = document.location.host; // which may contain the port

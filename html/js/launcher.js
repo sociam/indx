@@ -1,4 +1,4 @@
-angular.module('launcher', ['ui','indx'])
+angular.module('launcher', ['indx'])
 	.directive('user',function() {
 		return {
 			restrict:'E',
@@ -13,6 +13,7 @@ angular.module('launcher', ['ui','indx'])
 			templateUrl:'templates/userlist.html',
 			link:function($scope, $element) { $scope.el = $element;	},
 			controller: function($scope, client, backbone, utils) {
+				window.ls = $scope;
 				var u = utils, store = client.store, sa = function(f) { return utils.safe_apply($scope,f); };
 				$scope.select_user = function(user) { $scope.user_selected = user;	};
 				// this gets called when the form is submitted
@@ -28,9 +29,8 @@ angular.module('launcher', ['ui','indx'])
 					delete $scope.user_selected; delete $scope.password;
 				};
 				store.get_user_list().then(function(result) {
-					u.log('users > ', result);
 					sa(function() { $scope.users = result; });
-				}).fail(function(err) { u.error(err); })
+				}).fail(function(err) { u.error(err); });
 				$scope.$watch('user_logged_in', function() {
 					console.log('change on user logged in ', $scope.user_logged_in);
 				});
