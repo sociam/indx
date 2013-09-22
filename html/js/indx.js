@@ -885,6 +885,7 @@ angular
 				return this.login(this.get('username'),this.get('password'));
 			},
 			logout : function() {
+				console.log('store --- logout');
 				var d = u.deferred();
 				var this_ = this;
 				this._ajax('POST', 'auth/logout')

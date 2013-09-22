@@ -5,6 +5,7 @@
 			$routeProvider
 			.when('/', { templateUrl: 'templates/root.html', controller:"Root"})
 			.when('/login', {templateUrl: 'templates/userlist.html',   controller:"Login"})
+			.when('/logout', {templateUrl: 'templates/root2.html',   controller:"Logout"})
 			.when('/apps', {templateUrl: 'templates/appslist.html', controller:"AppsList"})
 			.otherwise({redirectTo: '/'});
 		}])
@@ -19,6 +20,16 @@
 				u.safe_apply($scope, function() { $location.path('/login'); });
 			}
 		});
+	}).controller('Logout', function($scope, $location, client, utils) {
+		// root just redirects to appropriate places
+		console.log('logout', client);
+		try{
+			client.store.logout().then(function(login) {
+				try {
+					utils.safe_apply($scope, function() { $location.path('/login'); });
+				} catch(e) { console.error(e); }
+			}).fail(function(err) { console.error(err); });
+		} catch(e) { console.error(e); }
 	}).directive('user',function() {
 		return {
 			restrict:'E',
@@ -67,6 +78,7 @@
 		};
 		get_apps_list();
 	}).controller('main', function($location, $scope, client, utils) {
+		console.log(" >>>>>>>>>>>>>>>> main");
 		var u = utils;
 		// we want to route
 		client.store.on('login', function() {
@@ -81,11 +93,9 @@
 		client.store.check_login().then(function(login) {
 			if (login.is_authenticated) {
 				u.safe_apply($scope, function() { $location.path('/apps'); });
-				d.resolve();
 			} else {
 				console.log('routing to login');
 				u.safe_apply($scope, function() { $location.path('/login'); });
-				d.reject();
 			}
 		});
 	});
