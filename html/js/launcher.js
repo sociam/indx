@@ -5,13 +5,14 @@
 			$routeProvider
 			.when('/', { templateUrl: 'templates/root.html', controller:"Root"})
 			.when('/login', {templateUrl: 'templates/userlist.html',   controller:"Login"})
-			.when('/logout', {templateUrl: 'templates/root2.html',   controller:"Logout"})
+			.when('/logout', {templateUrl: 'templates/root.html',   controller:"Logout"})
 			.when('/apps', {templateUrl: 'templates/appslist.html', controller:"AppsList"})
+			.when('/boxeslist', {templateUrl:'templates/boxeslist.html', controller:'BoxesList'})
 			.otherwise({redirectTo: '/'});
 		}])
 	.controller('Root', function($scope, $location, client, utils) {
 		// root just redirects to appropriate places
-		console.log('roooot');
+		console.log('route::roooot');
 		client.store.check_login().then(function(login) {
 			if (login.is_authenticated) {
 				u.safe_apply($scope, function() { $location.path('/apps'); });
@@ -22,7 +23,7 @@
 		});
 	}).controller('Logout', function($scope, $location, client, utils) {
 		// root just redirects to appropriate places
-		console.log('logout', client);
+		console.log('route::logout', client);
 		try{
 			client.store.logout().then(function(login) {
 				try {
@@ -38,10 +39,8 @@
 			replace:true
 		};
 	}).controller('Login',function($scope, $location, client, backbone, utils) {
-		window.ls = $scope;
-		var u = utils, store = client.store, sa = function(f) {
-			return utils.safe_apply($scope,f);
-		};
+		console.log('route::login');
+		var u = utils, store = client.store, sa = function(f) { return utils.safe_apply($scope,f);};
 		$scope.select_user = function(user) { $scope.user_selected = user; };
 		$scope.back_to_login = function() {	delete $scope.user_selected; delete $scope.password;};
 		// this gets called when the form is submitted
@@ -60,10 +59,6 @@
 		store.get_user_list().then(function(result) {
 			sa(function() { $scope.users = result; });
 		}).fail(function(err) { u.error(err); });
-		// $scope.$watch('user_logged_in', function() {
-		// console.log('change on user logged in ', $scope.user_logged_in);
-		// });
-		// window._set_user_logged_in = function(user) { sa(function() { $scope.user_logged_in = user; }); };
 	}).controller('AppsList', function($scope, $location, client, utils) {
 		console.log('hello apps list');
 		var u = utils, store = client.store, sa = function(f) { return utils.safe_apply($scope,f); };
@@ -98,6 +93,20 @@
 				u.safe_apply($scope, function() { $location.path('/login'); });
 			}
 		});
+	}).controller('BoxesList', function($location, $scope, client, utils) {
+		var u = utils,store = client.store, sa = function(f) { return utils.safe_apply($scope,f); };
+		var get_boxes_list = function() {
+			store.get_box_list().then(function (boxes) {
+				console.log('boxes --> ', boxes);
+				sa(function() { $scope.boxes = boxes; });
+			}).fail(function() {
+				sa(function() { delete $scope.boxes; });
+				u.error('oops can\'t get boxes - not ready i guess');
+			});
+		};
+		store.on('login', get_boxes_list);
+		get_boxes_list();
+		$scope.create_new_box = false;
 	});
 })();
 
