@@ -1,5 +1,6 @@
+<hr>
 <a name="{{id}}"></a>
-<div class="method well" id="{{id}}">
+<div class="method " id="{{id}}">
   <h4>{{name}}</h4>
 
   <code class="header-example">{{instanceName}}.{{name}}(
@@ -8,7 +9,7 @@
   {{/args}}
   )</code>
 
-  <div class="lineno">line <a href="#" onclick="showSource('{{file}}', {{line}})">{{line}}</a></div>
+  <a class="lineno" href="#" onclick="showSource('{{file}}', {{line}})">line {{line}}</a>
 
   <div>
 
@@ -22,7 +23,7 @@
 
     {{#hasArgs}}
       <br>
-      Arguments:
+      <b>Arguments</b>:
       <ol class="arguments">
         {{#args}}
           <li>{{name}}
@@ -42,29 +43,29 @@
 
     <br>
 
-    Returns:
     <div class="return">
+      <b>Returns</b>:
       {{#result.async}}
-        Returns a promise. Asynchronous.
-        <h6>{{instanceName}}.{{name}}(...).then (
-          {{#then.args}}
-            &lt;{{type}}&gt; {{comment}},
-          {{/then.args}}
-        )</h6>
-        {{then.comment}}
-        <h6>fail</h6>
-        <ul>
-          {{#fail.cases}}
-          <li>
-            <h6>{{instanceName}}.{{name}}(...).fail (
-              {{#args}}
-                &lt;{{type}}&gt; {{comment}},
-              {{/args}}
-            )</h6>
-            {{comment}}
-          </li>
-          {{/fail.cases}}
-        </ul>
+        a promise.
+        <table class="table table-bordered">
+          <thead><tr><th>On success</th><th>On failure</th></tr></thead>
+          <tbody><tr>
+            <td width="50%"><ul>
+              <li>
+                <code>.then({{#then.args}}&lt;{{type}}&gt; {{comment}},{{/then.args}})</code> -
+                {{then.comment}}
+              </li>
+            </ul></td>
+            <td width="50%"><ul>
+              {{#fail.cases}}
+                <li>
+                  <code>.fail({{#then.args}}&lt;{{type}}&gt; {{comment}},{{/then.args}})</code> -
+                  {{comment}}
+                </li>
+              {{/fail.cases}}
+            </ul></td>
+          </tr></tbody>
+        </table>
       {{/result.async}}
 
       {{#result.return}}
@@ -78,7 +79,7 @@
       {{/result.return}}
 
       {{#result.chain}}
-        <code>this</code> (chains).
+        <code>this</code>.
       {{/result.chain}}
     </div>
   </div>

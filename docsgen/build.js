@@ -381,9 +381,6 @@
 		if (rs.hasOwnProperty('ignore')) {
 			model.collection.remove(model);
 		}
-		if (rs.extend) {
-			rs.extend = { name: rs.extend, fullName: rs.extend };
-		}
 		marked(rs.description.join('\n'), markedOptions, function (err, content) {
 			if (err) {
 				throw err;

@@ -97,3 +97,8 @@ type
 			{ return { type: t.join('') }; }
 
 
+
+
+property
+	= "@a" k:name _ v:comment?
+			{ return [k, v]; }

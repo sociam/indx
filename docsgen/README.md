@@ -62,7 +62,7 @@ Comment should precede the class.
 Properties
 
 * `@ignore` - ignore this class (do not document it)
-* `@extend Some.SuperClass http://example.com/docs/for/superclass` - Partly implemented
+* `@extend Some.SuperClass http://example.com/docs/for/superclass`
 * `@name ClassName`
 * `@fullName theFull.ClassName`
 * `@instanceName className`

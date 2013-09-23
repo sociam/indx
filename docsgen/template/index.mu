@@ -58,6 +58,20 @@
     .supplementary {
       display: none;
     }
+    .method {
+      position: relative;
+    }
+    .lineno {
+      position: absolute;
+      top: 30px;
+      right: 20px;
+      color: #999;
+    }
+    code {
+      color: #111;
+      background: rgba(0, 0, 0, 0.016);
+      border-color: rgba(0, 0, 0, 0.06);
+    }
     </style>
     <script>
     var data = {{{json}}};

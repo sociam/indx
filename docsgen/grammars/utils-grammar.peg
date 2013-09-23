@@ -1,14 +1,14 @@
 properties
-	= p:property __ ps:properties
+	= p:property_obj __ ps:properties
 			{ var k = Object.keys(p); ps[k] = p[k]; return ps; }
-	/ p:property
+	/ p:property_obj
 			{ return p; }
 	/ ''
 			{ return {}; }
 
-property
-	= _$_ "@" k:name _ v:comment?
-			{ var ps = {}; ps[k] = v; return ps; }
+property_obj
+	= _$_ a:property
+			{ var ps = {}; ps[a[0]] = a[1]; return ps; }
 
 
 description_lines
