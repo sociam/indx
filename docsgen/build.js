@@ -5,7 +5,7 @@
 
 	var fs = require('fs'),
 		_ = require('underscore'),
-		mu = require('mu2'),
+		mu = require('mustache'),
 		GrammarParser = require('./lib/grammar-parser.js'),
 		allPromises = require('node-promise')
 			.all,
@@ -41,6 +41,43 @@
 		langPrefix: 'lang-'
 	};
 
+	var templateRoot = 'template/',
+		templateCache = {};
+
+	var cacheTemplates = function (path) {
+		path = path || '';
+		var promise = new Promise();
+		fs.readdir(templateRoot + path, function (err, files) {
+			if (err) {
+				throw err;
+			}
+			var promises = [];
+			_.each(files, function (file) {
+				var filename = path + file;
+				if (fs.lstatSync(templateRoot + filename)
+					.isDirectory()) {
+					promises.push(cacheTemplates(filename + '/'));
+				} else if (file.indexOf('.mu', file.length - 3) > -1) { // ends with .mu
+					var promise = new Promise();
+					log('caching mustache', filename);
+					fs.readFile(templateRoot + filename, function (err, data) {
+						if (err) {
+							throw err;
+						}
+						templateCache[filename] = data.toString();
+						promise.resolve();
+					});
+					promises.push(promise);
+				}
+			});
+			allPromises(promises)
+				.then(function () {
+					promise.resolve();
+				});
+		});
+		return promise;
+	};
+
 	if (!process.argv[2]) {
 		throw 'Please provide config file';
 	} else {
@@ -58,7 +95,7 @@
 			description: '',
 			last: false
 		},
-		initialize: function (attributes) {
+		initialize: function () {
 			this.parsed = new Promise();
 			this.set('id', this.uid ? this.uid() : Math.random());
 		},
@@ -157,17 +194,13 @@
 				if (err) {
 					throw err;
 				}
-				mu.compileAndRender('index.mu', that.object())
-					.on('data', function (dat) {
-						html += dat.toString();
-					})
-					.on('end', function () {
-						fs.writeFile(outputDir + '/index.html', html, function (err) {
-							if (err) {
-								throw err;
-							}
-						});
-					});
+				html = mu.render(templateCache['index.mu'], that.object(), templateCache);
+
+				fs.writeFile(outputDir + '/index.html', html, function (err) {
+					if (err) {
+						throw err;
+					}
+				});
 			});
 		},
 		// Expands globs into paths
@@ -198,16 +231,26 @@
 				promises.push(lastPromise);
 			});
 
-			allPromises(promises).then(function () {
-				log('build', 'got ' + (fileLists.require.length + fileLists.files.length) + ' file paths');
-				promise.resolve(fileLists);
-			});
+			allPromises(promises)
+				.then(function () {
+					log('build', 'got ' + (fileLists.require.length + fileLists.files.length) +
+						' file paths');
+					promise.resolve(fileLists);
+				});
 
 			return promise;
 		},
 		object: function () {
 			var o = _.extend(this.toJSON(), {
 				files: this.files.array()
+			});
+			_.each(o.files, function (file) {
+				_.each(file.classes, function (cls) {
+					cls.file = file;
+					_.each(cls.methods, function (method) {
+						method['class'] = cls;
+					});
+				});
 			});
 			return _.extend({
 				json: CJSON.stringify(o)
@@ -250,9 +293,10 @@
 				promise = new Promise();
 			fileGrammar.parse(comment)
 				.then(function (rs) {
-					parseMatch(rs, that).then(function () {
-						promise.resolve();
-					});
+					parseMatch(rs, that)
+						.then(function () {
+							promise.resolve();
+						});
 
 				});
 			return promise;
@@ -276,6 +320,9 @@
 	});
 
 	var Class = Model.extend({
+		defaults: {
+			extend: false
+		},
 		initialize: function (attributes, options) {
 			this.data = options ? options.data : undefined;
 			this.file = options ? options.file : undefined;
@@ -324,9 +371,10 @@
 			console.log('comment', comment, this.get('start'));
 			classGrammar.parse(comment)
 				.then(function (rs) {
-					parseMatch(rs, that).then(function () {
-						promise.resolve();
-					});
+					parseMatch(rs, that)
+						.then(function () {
+							promise.resolve();
+						});
 				});
 			return promise;
 		},
@@ -350,9 +398,6 @@
 		}
 		if (rs.hasOwnProperty('ignore')) {
 			model.collection.remove(model);
-		}
-		if (rs.extend) {
-			rs.extend = { name: rs.extend, fullName: rs.extend };
 		}
 		marked(rs.description.join('\n'), markedOptions, function (err, content) {
 			if (err) {
@@ -402,9 +447,13 @@
 	var Classes = Collection.extend({
 		model: Class,
 		initialize: function (models, options) {
+			var that = this;
 			this.builder = options.builder;
 			this.file = options.file;
 			this.data = options.data;
+			this.on('change:order', function () {
+				that.sort();
+			});
 		},
 		parse: function () {
 			var that = this;
@@ -443,6 +492,9 @@
 			}
 			// Parse each class
 			return this.parseModels();
+		},
+		comparator: function (m) {
+			return m.has('order') ? Number(m.get('order')) : m.get('start');
 		}
 	});
 
@@ -483,12 +535,27 @@
 							that.parsed.resolve();
 						});
 
-					var result = that.get('result');
-					if (result) {
-						if (result['return'] && result['return'].types) {
+					var result_type =
+						that.has('result_async') ? 'async' :
+						that.has('result_chain') ? 'chain' :
+						that.has('result_return') ? 'return' : undefined;
+
+					if (result_type) {
+						var arr = that.get('result_' + result_type);
+						that.set('result', {});
+						if (result_type === 'async') {
+							that.get('result')[result_type] = {
+								then: _.where(arr, { type: 'then' }),
+								fail: _.where(arr, { type: 'fail' })
+							};
+						} else {
+							that.get('result')[result_type] = arr;
+						}
+						that.unset('result_' + result_type);
+						/*if (result['return'] && result['return'].types) {
 							muList(result['return'].types);
 							result['return'].hasTypes = true;
-						}
+						}*/
 					}
 				});
 		},
@@ -499,13 +566,14 @@
 
 			methodGrammar.parse(comment)
 				.then(function (rs) {
-					parseMatch(rs, that).then(function () {
-						if (that.get('args')) {
-							that.arguments.reset(that.get('args'));
-						}
-						that.unset('args');
-						promise.resolve();
-					});
+					parseMatch(rs, that)
+						.then(function () {
+							if (that.get('args')) {
+								that.arguments.reset(that.get('args'));
+							}
+							that.unset('args');
+							promise.resolve();
+						});
 				});
 
 			return promise;
@@ -528,8 +596,12 @@
 	var Methods = Collection.extend({
 		model: Method,
 		initialize: function (models, options) {
+			var that = this;
 			this.cls = options.cls;
 			this.data = options.data;
+			this.on('change:order', function () {
+				that.sort();
+			});
 		},
 		parse: function () {
 			var that = this,
@@ -561,6 +633,9 @@
 			});
 
 			return this.parseModels();
+		},
+		comparator: function (m) {
+			return m.has('order') ? Number(m.get('order')) : m.get('start');
 		}
 	});
 
@@ -628,9 +703,10 @@
 	function getCommentBefore(data, start, log) {
 		var subdata = data.substring(0, start + 1),
 			lines = subdata.split('\n')
-				.reverse().slice(1);
+				.reverse()
+				.slice(1);
 
-		if(log)console.log('log->\n', lines.slice(0, 3));
+		if (log) console.log('log->\n', lines.slice(0, 3));
 		return getComment(lines)
 			.reverse()
 			.join('\n');
@@ -708,8 +784,11 @@
 			.length + 1;
 	}
 
-
 	var builder = new Builder(config);
-	builder.build();
+
+	cacheTemplates()
+		.then(function () {
+			builder.build();
+		});
 
 }());

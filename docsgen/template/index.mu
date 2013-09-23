@@ -58,6 +58,21 @@
     .supplementary {
       display: none;
     }
+    .method {
+      position: relative;
+    }
+    .lineno {
+      position: absolute;
+      top: 10px;
+      right: 0px;
+      color: #BBB;
+      font-size: 11px;
+    }
+    code {
+      color: #111;
+      background: rgba(0, 0, 0, 0.016);
+      border-color: rgba(0, 0, 0, 0.06);
+    }
     </style>
     <script>
     var data = {{{json}}};
@@ -100,7 +115,9 @@
           }
       }
       setTimeout(function () {
-          $('#' + hash)[0].scrollIntoView(true);
+          if ($('#' + hash).length) {
+            $('#' + hash)[0].scrollIntoView(true);
+          }
       }, 0);
     }
     </script>

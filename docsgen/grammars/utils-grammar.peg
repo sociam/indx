@@ -1,14 +1,23 @@
 properties
-	= p:property __ ps:properties
-			{ var k = Object.keys(p); ps[k] = p[k]; return ps; }
-	/ p:property
+	= p:property_obj __ ps:properties
+			{	var ks = Object.keys(p),
+					i, k;
+				for (i in ks) {
+					k = ks[i];
+					if (!ps[k] || typeof ps[k] !== 'object') { ps[k] = []; }
+					ps[k].unshift(p[k][0]);
+				}
+				return ps; }
+	/ p:property_obj
 			{ return p; }
 	/ ''
 			{ return {}; }
 
-property
-	= _$_ "@" k:name _ v:comment?
-			{ var ps = {}; ps[k] = v; return ps; }
+property_obj
+	= _$_ a:property
+			{	var ps = {};
+				ps[a[0]] = [a[1]];
+				return ps; }
 
 
 description_lines
