@@ -1,17 +1,19 @@
 @import "utils-grammar.peg"
 
 start
-	= as:arguments? r:result? d:description_lines
-			{ return { args: as, description: d, result: r }; }
+	= ps:properties d:description_lines
+			{ return { properties: ps, description: d }; }
 
-arguments
-	= a:argument __ as:arguments
-			{ return [].concat(as, [a]); }
-	/ a:argument
-			{ return [a]; }
+property
+	= a:argument
+			{ return ['args', a]; }
+	/ r:result
+			{ return ['result', r]; }
+	/ "@" k:name _ v:comment?
+			{ return [k, v || true]; }
 
 argument
-	= _$_ m:argument_mode _ t:type_statement? _ n:name _ ":"? _ c:comment?
+	= m:argument_mode _ t:type_statement? _ n:name _ ":"? _ c:comment?
 			{ return { mode: m, types: t, name: n, comment: c }; }
 
 argument_mode
@@ -25,36 +27,34 @@ result
 			{ return { "return": r }; }
     / r:async_result
 			{ return { "async": r }; }
-    / chain_result
+    / "@chain"
 			{ return { "chain": true }; }
-	/ constructor_result
-			{ return { "constructor": true }; }
 
 return_result
-	= _$_ "@return" _ t:type_statement? _ c:comment
+	= "@return" _ t:type_statement? _ c:comment
 			{ return { comment: c, types: t }; }
 
 async_result
-	= then:async_then_result fail:async_fail_result
-			{ return { then: then, fail: fail }; }
+	= c:async_result_case cs:async_result
+			{	var a = c[0] === 'fail' ? cs['fails'] : cs['thens'];
+				a.push(c[1]);
+				return cs; }
+	/ c:async_result_case
+			{	var cs = { thens: [], fails: [] },
+					a = c[0] === 'fail' ? cs['fails'] : cs['thens'];
+				a.push(c[1]);
+				return cs; }
 
-async_then_result
-	= _$_ "@then" _ cb:callback _ c:comment
-			{ return { comment: c, args: cb }; }
+async_result_case
+	= m:async_result_case_mode _ cb:callback? _ c:comment
+			{ return [m, { comment: c, args: cb }]; }
 
-async_fail_result
-	= _$_ "@fail" _ c:async_fail_result_cases
-			{ return { cases: c }; }
 
-async_fail_result_cases
-	= c:async_fail_result_case cs:async_fail_result_cases
-			{ return [].concat(cs, [c]); }
-	/ c:async_fail_result_case
-			{ return [c]; }
-
-async_fail_result_case
-	= __ $ cb:callback _ c:comment
-			{ return { args: cb, comment: c }; }
+async_result_case_mode
+	= "@then"
+			{ return 'then'; }
+	/ "@fail"
+			{ return 'fail'; }
 
 callback
 	= _ "(" _ c:callback_arguments _ ")" _
@@ -74,14 +74,6 @@ callback_argument_comment
 	= c:[^\n\r),]*
 			{ return c.join(''); }
 
-
-chain_result
-	= _$_ "@chain"
-
-constructor_result
-	= $ "@constructor"
-
-
 type_statement
 	= _ "<" _ ts:types _ ">" _
 			{ return ts; }
@@ -95,10 +87,3 @@ types
 type
 	= t: [^|>]+
 			{ return { type: t.join('') }; }
-
-
-
-
-property
-	= "@a" k:name _ v:comment?
-			{ return [k, v]; }

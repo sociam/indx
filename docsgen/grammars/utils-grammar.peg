@@ -1,6 +1,13 @@
 properties
 	= p:property_obj __ ps:properties
-			{ var k = Object.keys(p); ps[k] = p[k]; return ps; }
+			{	var ks = Object.keys(p),
+					i, k;
+				for (i in ks) {
+					k = ks[i];
+					if (!ps[k] || typeof ps[k] !== 'object') { ps[k] = []; }
+					ps[k].unshift(p[k][0]);
+				}
+				return ps; }
 	/ p:property_obj
 			{ return p; }
 	/ ''
@@ -8,7 +15,9 @@ properties
 
 property_obj
 	= _$_ a:property
-			{ var ps = {}; ps[a[0]] = a[1]; return ps; }
+			{	var ps = {};
+				ps[a[0]] = [a[1]];
+				return ps; }
 
 
 description_lines

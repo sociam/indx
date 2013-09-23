@@ -48,26 +48,32 @@
 		path = path || '';
 		var promise = new Promise();
 		fs.readdir(templateRoot + path, function (err, files) {
-			if (err) { throw err; }
+			if (err) {
+				throw err;
+			}
 			var promises = [];
 			_.each(files, function (file) {
 				var filename = path + file;
-				if (fs.lstatSync(templateRoot + filename).isDirectory()) {
+				if (fs.lstatSync(templateRoot + filename)
+					.isDirectory()) {
 					promises.push(cacheTemplates(filename + '/'));
 				} else if (file.indexOf('.mu', file.length - 3) > -1) { // ends with .mu
 					var promise = new Promise();
 					log('caching mustache', filename);
 					fs.readFile(templateRoot + filename, function (err, data) {
-						if (err) { throw err; }
+						if (err) {
+							throw err;
+						}
 						templateCache[filename] = data.toString();
 						promise.resolve();
 					});
 					promises.push(promise);
 				}
 			});
-			allPromises(promises).then(function () {
-				promise.resolve();
-			});
+			allPromises(promises)
+				.then(function () {
+					promise.resolve();
+				});
 		});
 		return promise;
 	};
@@ -89,7 +95,7 @@
 			description: '',
 			last: false
 		},
-		initialize: function (attributes) {
+		initialize: function () {
 			this.parsed = new Promise();
 			this.set('id', this.uid ? this.uid() : Math.random());
 		},
@@ -225,16 +231,26 @@
 				promises.push(lastPromise);
 			});
 
-			allPromises(promises).then(function () {
-				log('build', 'got ' + (fileLists.require.length + fileLists.files.length) + ' file paths');
-				promise.resolve(fileLists);
-			});
+			allPromises(promises)
+				.then(function () {
+					log('build', 'got ' + (fileLists.require.length + fileLists.files.length) +
+						' file paths');
+					promise.resolve(fileLists);
+				});
 
 			return promise;
 		},
 		object: function () {
 			var o = _.extend(this.toJSON(), {
 				files: this.files.array()
+			});
+			_.each(o.files, function (file) {
+				_.each(file.classes, function (cls) {
+					cls.file = file;
+					_.each(cls.methods, function (method) {
+						method['class'] = cls;
+					});
+				});
 			});
 			return _.extend({
 				json: CJSON.stringify(o)
@@ -277,9 +293,10 @@
 				promise = new Promise();
 			fileGrammar.parse(comment)
 				.then(function (rs) {
-					parseMatch(rs, that).then(function () {
-						promise.resolve();
-					});
+					parseMatch(rs, that)
+						.then(function () {
+							promise.resolve();
+						});
 
 				});
 			return promise;
@@ -354,9 +371,10 @@
 			console.log('comment', comment, this.get('start'));
 			classGrammar.parse(comment)
 				.then(function (rs) {
-					parseMatch(rs, that).then(function () {
-						promise.resolve();
-					});
+					parseMatch(rs, that)
+						.then(function () {
+							promise.resolve();
+						});
 				});
 			return promise;
 		},
@@ -433,7 +451,9 @@
 			this.builder = options.builder;
 			this.file = options.file;
 			this.data = options.data;
-			this.on('change:order', function() { that.sort(); });
+			this.on('change:order', function () {
+				that.sort();
+			});
 		},
 		parse: function () {
 			var that = this;
@@ -531,13 +551,14 @@
 
 			methodGrammar.parse(comment)
 				.then(function (rs) {
-					parseMatch(rs, that).then(function () {
-						if (that.get('args')) {
-							that.arguments.reset(that.get('args'));
-						}
-						that.unset('args');
-						promise.resolve();
-					});
+					parseMatch(rs, that)
+						.then(function () {
+							if (that.get('args')) {
+								that.arguments.reset(that.get('args'));
+							}
+							that.unset('args');
+							promise.resolve();
+						});
 				});
 
 			return promise;
@@ -563,7 +584,9 @@
 			var that = this;
 			this.cls = options.cls;
 			this.data = options.data;
-			this.on('change:order', function() { that.sort(); });
+			this.on('change:order', function () {
+				that.sort();
+			});
 		},
 		parse: function () {
 			var that = this,
@@ -665,9 +688,10 @@
 	function getCommentBefore(data, start, log) {
 		var subdata = data.substring(0, start + 1),
 			lines = subdata.split('\n')
-				.reverse().slice(1);
+				.reverse()
+				.slice(1);
 
-		if(log)console.log('log->\n', lines.slice(0, 3));
+		if (log) console.log('log->\n', lines.slice(0, 3));
 		return getComment(lines)
 			.reverse()
 			.join('\n');
@@ -747,8 +771,9 @@
 
 	var builder = new Builder(config);
 
-	cacheTemplates().then(function () {
-		builder.build();
-	});
+	cacheTemplates()
+		.then(function () {
+			builder.build();
+		});
 
 }());

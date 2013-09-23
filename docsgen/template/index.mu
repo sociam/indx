@@ -63,9 +63,10 @@
     }
     .lineno {
       position: absolute;
-      top: 30px;
-      right: 20px;
-      color: #999;
+      top: 10px;
+      right: 0px;
+      color: #BBB;
+      font-size: 11px;
     }
     code {
       color: #111;
