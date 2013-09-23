@@ -17,16 +17,17 @@ angular
 		/// for maintaining collections of objs.
 		///
 		/// It also provides states which may be useful in developing views -
-		/// a model may be being edited (is_editing), selected (is_selected)
-		/// or not yet created (is_new). While being edited (or new),
-		/// staged_attributes may be written to instead of attributes such
-		/// that changes may be undone by use of `restore`. To save stage
-		/// changes, use `save_staged`.
+		/// a model may be being edited (`is_editing`), selected
+		/// (`is_selected`) or not yet created (`is_new`). While being edited
+		/// (or new), staged_attributes may be written to instead of
+		/// attributes such that changes may be undone by use of `restore`. To
+		/// save stage changes, use `save_staged`.
 		var Model = Obj.extend({
 			is_new: false,
 			is_editing: false,
 			is_selected: false,
-			/// @constructor
+			/// @construct
+			/// Create the model
 			initialize: function () {
 				var that = this;
 				this._update_new_attributes();
@@ -113,7 +114,7 @@ angular
 				}
 			},
 			///
-			/// @opt <{}> attributes Attributes to change
+			/// @opt <{}> attributes: Attributes to change
 			/// @opt <{}> options
 			///
 			/// @then When model has been created successfully
@@ -133,7 +134,7 @@ angular
 				this.trigger('restore');
 				return this;
 			},
-			/// @opt <boolean> selected If true, select the model, otherwise unselect it.
+			/// @opt <boolean> selected: If true, select the model, otherwise unselect it.
 			/// @opt <{}> options
 			///
 			/// Selects this model. Triggers `select` with selected boolean and options.
