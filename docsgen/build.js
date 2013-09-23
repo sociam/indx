@@ -194,7 +194,7 @@
 				if (err) {
 					throw err;
 				}
-				html = mu.render(templateCache['index.mu'], that.object(), templateCache)
+				html = mu.render(templateCache['index.mu'], that.object(), templateCache);
 
 				fs.writeFile(outputDir + '/index.html', html, function (err) {
 					if (err) {
@@ -535,12 +535,27 @@
 							that.parsed.resolve();
 						});
 
-					var result = that.get('result');
-					if (result) {
-						if (result['return'] && result['return'].types) {
+					var result_type =
+						that.has('result_async') ? 'async' :
+						that.has('result_chain') ? 'chain' :
+						that.has('result_return') ? 'return' : undefined;
+
+					if (result_type) {
+						var arr = that.get('result_' + result_type);
+						that.set('result', {});
+						if (result_type === 'async') {
+							that.get('result')[result_type] = {
+								then: _.where(arr, { type: 'then' }),
+								fail: _.where(arr, { type: 'fail' })
+							};
+						} else {
+							that.get('result')[result_type] = arr;
+						}
+						that.unset('result_' + result_type);
+						/*if (result['return'] && result['return'].types) {
 							muList(result['return'].types);
 							result['return'].hasTypes = true;
-						}
+						}*/
 					}
 				});
 		},

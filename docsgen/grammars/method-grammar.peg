@@ -8,7 +8,7 @@ property
 	= a:argument
 			{ return ['args', a]; }
 	/ r:result
-			{ return ['result', r]; }
+			{ return ['result_' + r[0], r[1]]; }
 	/ "@" k:name _ v:comment?
 			{ return [k, v || true]; }
 
@@ -24,33 +24,22 @@ argument_mode
 
 result
 	= r:return_result
-			{ return { "return": r }; }
+			{ return ["return", r]; }
     / r:async_result
-			{ return { "async": r }; }
+			{ return ["async", r]; }
     / "@chain"
-			{ return { "chain": true }; }
+			{ return ["chain", true]; }
 
 return_result
 	= "@return" _ t:type_statement? _ c:comment
 			{ return { comment: c, types: t }; }
 
 async_result
-	= c:async_result_case cs:async_result
-			{	var a = c[0] === 'fail' ? cs['fails'] : cs['thens'];
-				a.push(c[1]);
-				return cs; }
-	/ c:async_result_case
-			{	var cs = { thens: [], fails: [] },
-					a = c[0] === 'fail' ? cs['fails'] : cs['thens'];
-				a.push(c[1]);
-				return cs; }
-
-async_result_case
-	= m:async_result_case_mode _ cb:callback? _ c:comment
-			{ return [m, { comment: c, args: cb }]; }
+	= t:async_result_case_type _ cb:callback? _ c:comment
+			{ return { type: t, comment: c, args: cb }; }
 
 
-async_result_case_mode
+async_result_case_type
 	= "@then"
 			{ return 'then'; }
 	/ "@fail"

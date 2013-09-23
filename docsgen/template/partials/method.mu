@@ -64,20 +64,20 @@
             <thead><tr><th>On success</th><th>On failure</th></tr></thead>
             <tbody><tr>
               <td width="50%"><ul>
-                {{#thens}}
+                {{#then}}
                   <li>
                     <code>.then({{#args}}&lt;{{type}}&gt; {{comment}},{{/args}})</code> -
                     {{comment}}
                   </li>
-                {{/thens}}
+                {{/then}}
               </ul></td>
               <td width="50%"><ul>
-                {{#fails}}
+                {{#fail}}
                   <li>
                     <code>.fail({{#args}}&lt;{{type}}&gt; {{comment}},{{/args}})</code> -
                     {{comment}}
                   </li>
-                {{/fails}}
+                {{/fail}}
               </ul></td>
             </tr></tbody>
           </table>
