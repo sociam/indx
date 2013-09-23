@@ -66,6 +66,7 @@ Properties
 * `@name ClassName`
 * `@fullName theFull.ClassName`
 * `@instanceName className`
+* `@order n` - force a particular order for the class
 
 Example
 
@@ -98,6 +99,7 @@ Properties
   * Chaining return: @chain
 * `@name methodName` Not yet implemented
 * `@ignore` Not yet implemented
+* `@order n` - force a particular order for the class
 
 For @return, @then and @fail, multiple result statements may be made. E.g.,
 

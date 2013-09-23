@@ -7,14 +7,7 @@
 
 	{{{description}}}
 
-	{{#extend}}
-	  <h4>Inherited methods from {{fullName}}</h4>
-	  <ul>
-	  	{{#methods}}
-	  		<li>{{>partials/method-abbreviated.mu}}</li>
-	  	{{/methods}}
-	  </ul>
-	{{/extend}}
+	{{>partials/inherited-methods.mu}}
 	<br>
 	{{#methods}}
 	  {{>partials/method.mu}}

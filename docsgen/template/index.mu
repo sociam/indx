@@ -100,7 +100,9 @@
           }
       }
       setTimeout(function () {
-          $('#' + hash)[0].scrollIntoView(true);
+          if ($('#' + hash).length) {
+            $('#' + hash)[0].scrollIntoView(true);
+          }
       }, 0);
     }
     </script>
