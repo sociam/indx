@@ -14,7 +14,7 @@ angular
 		var Obj = client.Obj;
 
 		/// A model is an extension of indx Obj, and adds functionality useful
-		/// for maintaining collections or objs.
+		/// for maintaining collections of objs.
 		///
 		/// It also provides states which may be useful in developing views -
 		/// a model may be being edited (is_editing), selected (is_selected)
@@ -167,6 +167,7 @@ angular
 			return arr;
 		};
 
+		///
 		var Collection = Backbone.Collection.extend({
 			/// the collection.Model the cast each model to
 			model: Model,
