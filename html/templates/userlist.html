@@ -1,23 +1,23 @@
 <div>
-	<div class="login-window" ng-show="!user_selected" ng-animate="{show: 'animate-show',hide: 'animate-hide'}" ng-cloak>
+	<div class="login-window" ng-show="!user.username" ng-animate="{show: 'animate-show',hide: 'animate-hide'}" ng-cloak>
 		<div class="logo">
 			<h4>welcome to</h4>
 			<p><img class="logo" src="img/indx.png"></img></p>
 		</div> 
-		<ul ng-show="!user_selected" class='userlist'>
+		<ul ng-show="!user.username" class='userlist'>
 			<li ng-repeat='u in users'>
 				<a ng-click="select_user(u)"><user model='u' ></user></a>
 			</li>
 		</ul>
 	</div>
-	<div class="password-dialog" ng-show="user_selected" ng-animate="{show: 'animate-show',hide: 'animate-hide'}" ng-cloak>
+	<div class="password-dialog" ng-show="user.username" ng-animate="{show: 'animate-show',hide: 'animate-hide'}" ng-cloak>
 		<form ng-submit="do_submit()">
 			<div class="username" ng-click="back_to_login()">
 				<div class="glyphicon glyphicon-remove goback"></div>
-				{{ user_selected }} :
+				{{ user.username }} :
 			</div>
 			<div class="controls">
-				<input type="password" id="login_password" class="login_password password_field" ng-model="password"></input>
+				<input type="password" id="login_password" class="login_password password_field" focus-on-show="user.username" ng-model="user.password"></input>
 				<div class="glyphicon glyphicon-chevron-right submit" ng-click="do_submit()"></div>
 			</div>
 		</form>

@@ -12,7 +12,6 @@
 		}])
 	.controller('Root', function($scope, $location, client, utils) {
 		// root just redirects to appropriate places
-		console.log('route::roooot');
 		client.store.check_login().then(function(login) {
 			if (login.is_authenticated) {
 				u.safe_apply($scope, function() { $location.path('/apps'); });
@@ -41,24 +40,26 @@
 	}).controller('Login',function($scope, $location, client, backbone, utils) {
 		console.log('route::login');
 		var u = utils, store = client.store, sa = function(f) { return utils.safe_apply($scope,f);};
-		$scope.select_user = function(user) { $scope.user_selected = user; };
-		$scope.back_to_login = function() {	delete $scope.user_selected; delete $scope.password;};
+		$scope.user = {username:undefined, password:undefined};
+		$scope.select_user = function(user) { $scope.user.username = user; };
+		$scope.back_to_login = function() {	delete $scope.user.username; delete $scope.user.password;};
 		// this gets called when the form is submitted
 		$scope.do_submit = function() {
-			store.login($scope.user_selected, $scope.password).then(function() {
+			console.log('logging in ', $scope.user.username, $scope.user.password);
+			store.login($scope.user.username, $scope.user.password).then(function() {
 				u.debug('login okay!');
 				// sa($scope.back_to_login);
 				sa(function() { $location.path('/apps'); });
 			}).fail(function() {
 				sa(function() {
-					delete $scope.password;
+					delete $scope.user.password;
 					u.shake($($scope.el).find('input:password').parents('.password-dialog'));
 				});
 			});
 		};
-		store.get_user_list().then(function(result) {
-			sa(function() { $scope.users = result; });
-		}).fail(function(err) { u.error(err); });
+		store.get_user_list()
+			.then(function(result) {  sa(function() { $scope.users = result; }); })
+			.fail(function(err) { u.error(err); });
 	}).controller('AppsList', function($scope, $location, client, utils) {
 		console.log('hello apps list');
 		var u = utils, store = client.store, sa = function(f) { return utils.safe_apply($scope,f); };
@@ -107,33 +108,43 @@
 		store.on('login', get_boxes_list);
 		get_boxes_list();
 		$scope.create_new_box = false;
+	}).directive('focusOnShow', function() {
+		return {
+			restrict:'A',
+			controller:function($scope, $element, $attrs) {
+				$scope.$watch($attrs['focusOnShow'], function() {
+					if ($scope.$eval($attrs['focusOnShow'])) {
+						// 100ms after transition
+						setTimeout(function() { $element.focus(); }, 100);
+					}
+				});
+			}
+		};
 	});
 })();
+// .directive('boxeslist',function() {
+// 		return {
+// 			restrict: 'E',
+// 			replace: true,
+// 			templateUrl: 'templates/boxeslist.html',
+// 			link:function ($scope, $element) { $scope.el = $element;	},
+// 			controller: function ($scope, client, utils) {
+// 				var u = utils,
+// 					store = client.store,
+// 					sa = function(f) { return utils.safe_apply($scope,f); };
+// 				var get_boxes_list = function() {
+// 					store.get_box_list().then(function (boxes) {
+// 						console.log('boxes --> ', boxes);
+// 						sa(function() { $scope.boxes = boxes; });
+// 					}).fail(function() {
+// 						sa(function() { delete $scope.boxes; });
+// 						u.error('oops can\'t get boxes - not ready i guess');
+// 					});
+// 				};
 
-
-	// .directive('boxeslist',function() {
-	// 	return {
-	// 		restrict: 'E',
-	// 		replace: true,
-	// 		templateUrl: 'templates/boxeslist.html',
-	// 		link:function ($scope, $element) { $scope.el = $element;	},
-	// 		controller: function ($scope, client, utils) {
-	// 			var u = utils,
-	// 				store = client.store,
-	// 				sa = function(f) { return utils.safe_apply($scope,f); };
-	// 			var get_boxes_list = function() {
-	// 				store.get_box_list().then(function (boxes) {
-	// 					console.log('boxes --> ', boxes);
-	// 					sa(function() { $scope.boxes = boxes; });
-	// 				}).fail(function() {
-	// 					sa(function() { delete $scope.boxes; });
-	// 					u.error('oops can\'t get boxes - not ready i guess');
-	// 				});
-	// 			};
-
-	// 			store.on('login', get_boxes_list);
-	// 			get_boxes_list();
-	// 			$scope.create_new_box = false;
-	// 		}
-	// 	};
-	// })
+// 				store.on('login', get_boxes_list);
+// 				get_boxes_list();
+// 				$scope.create_new_box = false;
+// 			}
+// 		};
+// 	})
