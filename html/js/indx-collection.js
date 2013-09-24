@@ -5,6 +5,10 @@
 /// using Backbone. It allows arrays to be managed using Collections and objs
 /// to be managed using Models, both of which are extensions of Backbone's
 /// Collection and Model classes.
+///
+/// ## Events
+/// * add_any
+/// * restore
 
 angular
 	.module('indx')
@@ -202,7 +206,7 @@ angular
 							models = [models];
 						}
 						_.each(models, function (model) {
-							model.trigger('add_any', model);
+							that.trigger('add_any', model);
 						});
 					});
 				this.reset(models);
@@ -234,9 +238,11 @@ angular
 				attributes = _.extend({
 					id: id
 				}, attributes);
-				options = _.extend(_.clone(soptions), options);
+				options = _.extend({}, soptions, options);
 				model = new Backbone.Model(attributes, options); // Leave casting to this.model until later
 				this._extend_model(model);
+
+				this._set_new_model(model);
 
 				model
 					.edit(true)
@@ -258,7 +264,7 @@ angular
 							that.selected = undefined;
 						}
 					});
-				this._set_new_model(model);
+
 				if (options && options.select) {
 					model.select(true, {
 						save: false
@@ -268,7 +274,12 @@ angular
 			},
 			_set_new_model: function (model) {
 				this._new_model = model;
-				this.all_models = model ? [model].concat(this.models) : this.models;
+				if (model) {
+					this.trigger('add_any', model);
+					this.all_models = [model].concat(this.models);
+				} else {
+					this.all_models = this.models;
+				}
 				this.filter();
 			},
 			/// Remove the model from the array
