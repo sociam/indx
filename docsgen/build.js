@@ -700,13 +700,12 @@
 			.join(' ');
 	}
 
-	function getCommentBefore(data, start, log) {
+	function getCommentBefore(data, start, clip) {
 		var subdata = data.substring(0, start + 1),
 			lines = subdata.split('\n')
 				.reverse()
-				.slice(1);
+				.slice(clip ? 1 : 0); // HACK
 
-		if (log) console.log('log->\n', lines.slice(0, 3));
 		return getComment(lines)
 			.reverse()
 			.join('\n');
