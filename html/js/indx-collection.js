@@ -132,6 +132,7 @@ angular
 					return Backbone.Model.prototype.save.apply(this, arguments);
 				}
 			},
+			/// @chain
 			/// Switch off edit mode. Triggers `restore`.
 			restore: function () {
 				this.is_editing = false;
@@ -152,16 +153,45 @@ angular
 					this.trigger('select', selected, options);
 				}
 			},
+			/// @arg key <string|int>: Key of attribute
+			/// @return value
+			///
 			/// Get the value of an attribute. Use this instead of `get` if
 			/// you don't want the value in an array.
 			get_attribute: function (key) {
 				var val = this.attributes[key];
 				return get_only_element(val);
 			},
+			/// @arg key <string|int>: Key of attribute
+			/// @return value
+			///
 			/// Get the value of a staged attribute in edit mode.
 			get_staged_attribute: function (key) {
 				var val = this.staged_attributes[key];
 				return get_only_element(val);
+			},
+			/// @arg key <string|int>: Key of attribute
+			/// @return value
+			///
+			/// Get a staged attribute in edit mode.
+			get_staged: function (key) {
+				return this.staged_attributes[key];
+			},
+			/// @arg attributes <{ key: value }>: object of key value pairs
+			/// @chain
+			///
+			/// Set a staged attribute in edit mode. May also be passed key,
+			/// value as arguments.
+			set_staged: function (attributes, val) {
+				if (_.isObject(attributes)) {
+					_.each(attributes, function (val, key) {
+						that.set_staged(key, val);
+					});
+				} else {
+					var key = attributes;
+					this.staged_attributes[key] = val;
+				}
+				return this;
 			}
 		});
 
@@ -177,6 +207,7 @@ angular
 			/// the collection.Model the cast each model to
 			model: Model,
 			selected: undefined,
+			/// @construct
 			initialize: function (models, options) {
 				var that = this;
 				this.options = options || {};
