@@ -59,6 +59,14 @@ angular
 						$('textarea')
 							.blur();
 						break;
+					case 38: // up
+						e.preventDefault();
+						focusTextarea(-1);
+						break;
+					case 40: // down
+						focusTextarea(+1);
+						e.preventDefault();
+						break;
 					}
 				} else {
 					switch (e.keyCode) {
@@ -69,6 +77,18 @@ angular
 					}
 				}
 			});
+
+		var focusTextarea = function (n) {
+			var $current = $('textarea:focus'),
+				$currentli = $current.parents('li').last(),
+				$nextli = n > 0 ? $currentli.next('li') : $currentli.prev('li'),
+				$next = $nextli.find('textarea'),
+				currentPos = $current.prop('selectionStart');
+			$next.focus().prop({
+				'selectionStart': currentPos,
+				'selectionEnd': currentPos
+			});
+		};
 
 		window.$scope = $scope;
 
