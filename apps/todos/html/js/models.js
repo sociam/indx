@@ -78,8 +78,9 @@ angular
 				this.save('completed', new_state);
 			},
 			set_urgency: function (n) {
-				var urgency = this.get_staged_attribute(urgency),
+				var urgency = this.get_staged_attribute('urgency'),
 					i = urgencies.indexOf(urgency);
+					console.log('set_urgency', urgency)
 				if (urgencies[i + n]) {
 					this.staged_attributes.urgency = urgencies[i + n];
 					//this.trigger('change');

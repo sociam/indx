@@ -48,7 +48,6 @@
     }
     .class {
       padding: 5px 0 20px;
-      border-bottom: 1px solid #eee;
     }
     .file {
       border-top: 1px solid #ccc;
