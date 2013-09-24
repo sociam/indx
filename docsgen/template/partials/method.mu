@@ -1,4 +1,3 @@
-<hr>
 <a name="{{id}}"></a>
 <div class="method " id="{{id}}">
   {{#construct}}
@@ -100,3 +99,4 @@
     {{/result}}
   </div>
 </div>
+<hr>

@@ -5,10 +5,15 @@ function InteractiveObject(element)
     this.positionLink = -1; // the touch that this object position is linked to
     this.touchCount = 0; // number of touches over this object
     var box = this.element.getBoundingClientRect();
-    this.setSize([box.width, box.height]);
+    // this.setSize([box.width, box.height]);
     this.closing = false;
-    this.setPosition([box.left, box.top]);
-    this.updateLastPosition();
+
+    this.lastPosition = [];
+    // this.lastPosition[0] = 0;
+    // this.lastPosition[1] = 0;
+
+    // this.setPosition([box.left, box.top]);
+    // this.updateLastPosition();
 	this.isTarget = []; // array of touches that this object is target
 	this.draggable = true; // if is draggable
 	this.pinchable = true;
@@ -25,6 +30,49 @@ function InteractiveObject(element)
 	this.target = -1; // target object (drag and drop)
 	this.cloneOf = -1; // pointer to original object
 	this.isStatic = false;
+}
+
+InteractiveObject.prototype.setPosition = function(position)
+{
+	d3.select(this.element).style("left", position[0]+"px");
+	d3.select(this.element).style("top", position[1]+"px");
+	// $(this.element).css("left", position[0]+"px");
+	// $(this.element).css("top", position[1]+"px");
+}
+
+InteractiveObject.prototype.setPositionX = function(pos)
+{
+	$(this.element).css("left", pos+"px");
+}
+
+InteractiveObject.prototype.setPositionY = function(pos)
+{
+	$(this.element).css("top", pos+"px");
+}
+
+InteractiveObject.prototype.getPositionX = function()
+{
+	return $(this.element).offset().left;
+}
+
+InteractiveObject.prototype.getPositionY = function()
+{
+	return $(this.element).offset().top;
+}
+
+InteractiveObject.prototype.getWidth = function()
+{
+	return this.element.getBoundingClientRect().width;
+}
+
+InteractiveObject.prototype.getHeight = function()
+{	
+	return this.element.getBoundingClientRect().height;
+}
+
+InteractiveObject.prototype.setHeight = function(size)
+{
+	$(this.element).css("height", size+"px");
 }
 
 InteractiveObject.prototype.isOver = function(target)
@@ -44,54 +92,6 @@ InteractiveObject.prototype.isOver = function(target)
 	return false;
 }
 
-InteractiveObject.prototype.moveHighlight = function()
-{
-	this.lastPosition[0] -= this.highlightDelta;
-	this.lastPosition[1] -= this.highlightDelta;
-}
-
-InteractiveObject.prototype.highlight = function()
-{
-	if(this.highlighted == false)
-	{
-		this.highlighted = true;
-
-		var animation = new Animation(this.element.style);
-		animation.animatedProperty = "top";
-		animation.animateTo = this.position[1]-5;
-		animation.duration = 100;
-		animation.unit = "px";
-		animation.elementOwner = this;
-		animation.callbackFunction = this.moveHighlight;
-		animation.start();
-		// console.log(animation);
-
-		this.animations.push(animation);
-
-		animation = new Animation(this.element.style);
-		animation.animatedProperty = "left";
-		animation.animateTo = this.position[0]-5;
-		animation.duration = 100;
-		animation.unit = "px";
-		animation.elementOwner = this;
-		animation.start();
-		// console.log(animation);
-
-		this.animations.push(animation);
-	}
-}
-
-InteractiveObject.prototype.backToNormal = function()
-{
-	if(this.highlighted == true)
-	{
-		// console.log("backToNormal");
-		this.highlighted = false;
-		this.lastPosition[0] += this.highlightDelta;
-		this.lastPosition[1] += this.highlightDelta;
-	}
-}
-
 InteractiveObject.prototype.bindPositionToTouch = function(touch)
 {
 	if(this.dragging == false)
@@ -108,30 +108,12 @@ InteractiveObject.prototype.unbindPosition = function()
 	this.dragging = false;
 }
 
-InteractiveObject.prototype.setLastPosition = function(position)
-{
-	this.lastPosition = position;
-}
-InteractiveObject.prototype.getLastPosition = function()
-{
-	return this.lastPosition;
-}
 
-InteractiveObject.prototype.setPosition = function(position)
-{
-	// position[0] = parseInt(position[0].match(/\d+/));
-	// position[1] = parseInt(position[1].match(/\d+/));
-	this.position = position;
-}
 
-InteractiveObject.prototype.setSize = function(size)
-{
-	this.size = size;
-}
-InteractiveObject.prototype.getSize = function(size)
-{
-	return this.size;
-}
+// InteractiveObject.prototype.setSize = function(size)
+// {
+// 	this.size = size;
+// }
 
 InteractiveObject.prototype.increaseTouchCount = function()
 {
@@ -142,48 +124,22 @@ InteractiveObject.prototype.decreaseTouchCount = function()
 	this.touchCount -= 1;
 }
 
-
 InteractiveObject.prototype.updateLastPosition = function()
 {
-	this.lastPosition = this.position;
-}
-
-InteractiveObject.prototype.somethingChanged = function()
-{
-	var jbox = $(this.element).offset();
-	// console.log(test);
-	var box = this.element.getBoundingClientRect();
-
-	this.size[0] = box.width;
-	this.size[1] = box.height;
-
-	this.position[0] = jbox.left;
-	this.position[1] = jbox.top;
-
-	// this.position[0] = parseInt(this.element.style.left.match(/\d+/));
-	// if(!tEngine.isNumber(this.position[0]))
-	// {
-	// 	var styleClass = this.getStyle("."+this.element.className);
-	// 	if(typeof styleClass !== "undefined")
-	// 		this.position[0] = parseInt(styleClass.style.left.match(/\d+/));
-	// }
-	// this.position[1] = parseInt(this.element.style.top.match(/\d+/));
-	// if(!tEngine.isNumber(this.position[1]))
-	// {
-	// 	var styleClass = this.getStyle("."+this.element.className);
-	// 	if(typeof styleClass !== "undefined")
-	// 		this.position[1] = parseInt(styleClass.style.top.match(/\d+/));
-	// }
+	this.lastPosition = [];
+	this.lastPosition[0] = this.getPositionX();
+	this.lastPosition[1] = this.getPositionY();
 }
 
 
 InteractiveObject.prototype.updatePosition = function(position)
 {
-	this.position = position;
-	// console.log(position);
+	this.setPosition(position);
 
-	this.element.style.left = position[0]+"px";
-	this.element.style.top  = position[1]+"px";
+	this.element.style.left = this.getPositionX()+"px";
+	this.element.style.top  = this.getPositionY()+"px";
+
+	// console.log(this.element.style)
 }
 
 InteractiveObject.prototype.updatePositionLink = function()

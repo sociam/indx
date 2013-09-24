@@ -13,6 +13,7 @@ function Graph(target, channel)
 	this.graph = undefined;
 	this.graphType = 0;
 	this.heightProportion = 0.9;
+	this.footerHeight = 10;
 	this.invertPan = false;
 	this.isStatic = false;
 	this.iType = "Graph";
@@ -27,6 +28,7 @@ function Graph(target, channel)
 	this.timeInterval.dataSource = this.dataSource;
 	TimeUtils.setDateMinusDays(this.readings[this.readings.length-1].instant, TimeUtils.hours(6)/TimeUtils.days(1), this.timeInterval);
 	this.timeInterval.buildDataInterval();
+	this.updateLastPosition();
 	
 	this.panToEnd();
 	this.initGraph();
@@ -168,7 +170,6 @@ Graph.prototype.sumData = function()
 			newData.push(this.data[i]);
 			for(var j in this.otherData)
 			{
-				// console.log(i, this.otherData[j].length);
 				if(i < this.otherData[j].length)
 				{
 					newData[i] = parseFloat(newData[i])+parseFloat(this.otherData[j][i]);
@@ -181,15 +182,12 @@ Graph.prototype.sumData = function()
 		}
 		newDataIdentifier += ')';
 
-		// console.log(this.derivedDataIdentifier);
-
 		this.data = newData.slice(0);
 		this.dataIdentifier = newDataIdentifier;
 		this.dataColor = tEngine.pickColor();
 		this.otherData = [];
 		this.otherDataIdentifier = [];
 		this.otherDataColor = [];
-		// this.renderOtherData = false;
 		this.calculateMax();
 		this.calculateMin();
 		this.redrawGraph();
@@ -207,7 +205,6 @@ Graph.prototype.subtractData = function()
 			newData.push(this.data[i]);
 			for(var j in this.otherData)
 			{
-				// console.log(i, this.otherData[j].length);
 				if(i < this.otherData[j].length)
 				{
 					newData[i] = parseFloat(newData[i])-parseFloat(this.otherData[j][i]);
@@ -220,15 +217,12 @@ Graph.prototype.subtractData = function()
 		}
 		newDataIdentifier += ')';
 
-		// console.log(this.derivedDataIdentifier);
-
 		this.data = newData.slice(0);
 		this.dataIdentifier = newDataIdentifier;
 		this.dataColor = tEngine.pickColor();
 		this.otherData = [];
 		this.otherDataIdentifier = [];
 		this.otherDataColor = [];
-		// this.renderOtherData = false;
 		this.calculateMax();
 		this.calculateMin();
 		this.redrawGraph();
@@ -277,8 +271,6 @@ Graph.prototype.initDays = function()
 	var firstMoment = new Date(this.readings[0].instant);
 	var lastMoment  = new Date(this.readings[this.readings.length-1].instant);
 
-	// console.log(firstMoment, lastMoment);
-
 	var toMidnight = TimeUtils.toMidnight(firstMoment);
 	var day = TimeUtils.days(1);
 
@@ -301,8 +293,8 @@ Graph.prototype.renderDays = function()
 	var n = 0;
 	group.each(function() { ++n; });
 
-	var x = d3.time.scale().domain([firstInstant, lastInstant]).range([0, this.size[0]]);
-	var y = d3.scale.linear().domain([this.maxValue, this.minValue]).range([0, this.size[1]*this.heightProportion]);
+	var x = d3.time.scale().domain([firstInstant, lastInstant]).range([0, this.getWidth()]);
+	var y = d3.scale.linear().domain([this.maxValue, this.minValue]).range([0, this.getHeight()-this.footerHeight]);
 
 
 	if(n == 0)
@@ -317,7 +309,7 @@ Graph.prototype.renderDays = function()
 		.attr("x1", x)
 		.attr("y1", 0)
 		.attr("x2", x)
-		.attr("y2", this.size[1]*this.heightProportion)
+		.attr("y2", this.getHeight()-this.footerHeight)
 		.attr("class", "day");
 
 	group
@@ -332,8 +324,8 @@ Graph.prototype.renderGrid = function ()
 	var lastInstant  = this.timeInterval.end;
 	var firstInstant = this.timeInterval.begin;
 
-	var x = d3.time.scale().domain([firstInstant, lastInstant]).range([0, this.size[0]]);
-	var y = d3.scale.linear().domain([this.maxValue, this.minValue]).range([0, this.size[1]*this.heightProportion]);
+	var x = d3.time.scale().domain([firstInstant, lastInstant]).range([0, this.getWidth()]);
+	var y = d3.scale.linear().domain([this.maxValue, this.minValue]).range([0, this.getHeight()-this.footerHeight]);
 
 	var begin = TimeUtils.roundMinute(firstInstant);
 	var end   = new Date(+(TimeUtils.roundMinuteUp(lastInstant)));
@@ -371,25 +363,9 @@ Graph.prototype.renderGrid = function ()
 			.attr("y", 0)
 			.attr("width", x(ticks[i+1])-x(ticks[i])+"px")
 			.attr("fill", tEngine.timeUtils.dayColor(ticks[i], tEngine.getColor(this.dataColor)))
-			.attr("height", this.size[1]*this.heightProportion);
+			.attr("height", this.getHeight()-this.footerHeight);
 	}
 
-	// group = group.selectAll("line").data(ticks);
-	
-	// group.enter()
-	// 	.append("line")
-	// 	.attr("x1", x)
-	// 	.attr("y1", 0)
-	// 	.attr("x2", x)
-	// 	.attr("y2", this.size[1]*this.heightProportion)
-	// 	.attr("class", "tick");
-
-
-	// group
-	// 	.attr("x1", x)
-	// 	.attr("x2", x);
-
-	// group.exit().remove();
 
 	var ticks = [];
 	
@@ -419,7 +395,7 @@ Graph.prototype.renderGrid = function ()
 		.append("line")
 		.attr("x1", 0)
 		.attr("y1", y)
-		.attr("x2", this.size[0])
+		.attr("x2", this.getWidth())
 		.attr("y2", y)
 		.attr("class", function(d) 
 			{ 
@@ -447,7 +423,7 @@ Graph.prototype.convertToBars = function()
       .entries(stocks = data);
 
 	var x = d3.scale.linear().domain([0+this.panValue, 10+this.panValue]).range([0, this.zoom]);
-	var y = d3.scale.linear().domain([this.maxValue, this.minValue]).range([0, this.size[1]]);
+	var y = d3.scale.linear().domain([this.maxValue, this.minValue]).range([0, this.getHeight()]);
 		
 	var stack = d3.layout.stack()
       .values(function(d) { return d.values; })
@@ -491,7 +467,7 @@ Graph.prototype.initGraph = function()
 
 Graph.prototype.closeGraph = function()
 {
-	this.element.remove();
+	this.element.parentNode.removeChild(this.element);
 	tEngine.removeGraph(this);
 }
 
@@ -500,8 +476,8 @@ Graph.prototype.renderLines = function(readings, color, target, translateX)
 	var lastInstant  = this.timeInterval.end;
 	var firstInstant = this.timeInterval.begin;
 
-	var x = d3.time.scale().domain([firstInstant, lastInstant]).range([0, this.size[0]]);
-	var y = d3.scale.linear().domain([this.maxValue, this.minValue]).range([0, this.size[1]*this.heightProportion]);
+	var x = d3.time.scale().domain([firstInstant, lastInstant]).range([0, this.getWidth()]);
+	var y = d3.scale.linear().domain([this.maxValue, this.minValue]).range([0, this.getHeight()-this.footerHeight]);
 	
 	var line = d3.svg.line()
 		.x(function(d,i) { return x(d.instant); })
@@ -522,8 +498,8 @@ Graph.prototype.renderLabels = function(target)
 	var lastInstant  = this.timeInterval.end;
 	var firstInstant = this.timeInterval.begin;
 
-	var x = d3.time.scale().domain([firstInstant, lastInstant]).range([0, this.size[0]]);
-	var y = d3.scale.linear().domain([this.maxValue, this.minValue]).range([0, this.size[1]*this.heightProportion]);
+	var x = d3.time.scale().domain([firstInstant, lastInstant]).range([0, this.getWidth()]);
+	var y = d3.scale.linear().domain([this.maxValue, this.minValue]).range([0, this.getHeight()-this.footerHeight]);
 
 	var labelGroup = target.selectAll(".label");
 
@@ -557,8 +533,6 @@ Graph.prototype.renderLabels = function(target)
 		labelList.push(new GraphText(weekday[this.days[i].getDay()], "graphDay", x(this.days[i])+5, 0));
 	}
 
-	// labelList.push(new GraphText((this.maxValue).toFixed(2), "graphScale", 0, -5));
-
 	labelGroup = labelGroup.selectAll("text").data(labelList);
 	
 	labelGroup.enter()
@@ -567,7 +541,6 @@ Graph.prototype.renderLabels = function(target)
 		.attr("class", function(d) { return d.style; })
 		.attr("dx", function(d) { return d.x; } )
 		.attr("dy", function(d) { return d.y; });
-		// .attr("class", "tick");
 
 	labelGroup
 		.text(function(d) { return d.text; } )
@@ -600,7 +573,6 @@ Graph.prototype.dragOver = function()
 
 Graph.prototype.update = function()
 {
-	// this.renderData();
 	if(this.touchCount == 0)
 	{
 		this.element.style.backgroundColor = "#fff";
@@ -609,31 +581,24 @@ Graph.prototype.update = function()
 	{
 		if(this.positionLink != -1)
 		{
-			// console.log("dragging");
-			// console.log(this.positionLink.touch.pageX, this.positionLink.touch.pageY)
-			// console.log(this.element);
 			this.updatePositionLink();
 		}
-		// for(x in this.animations)
-		// {
-		// 	this.animations[x].update();
-		// }
 	}
 }
 
 Graph.prototype.toGraphCoordinates = function(position)
 {
 	var pos = [];
-	pos[0] = position[0]-this.position[0];
-	pos[1] = position[1]-this.position[1];
+	pos[0] = position[0]-this.getPositionX();
+	pos[1] = position[1]-this.getPositionY();
 	if(pos[0] < 0)
 		pos[0] = 0;
 	if(pos[1] < 0)
 		pos[1] = 0;
-	if(pos[0] > this.size[0])
-		pos[0] = this.size[0];
-	if(pos[1] > this.size[1])
-		pos[1] = this.size[1];
+	if(pos[0] > this.getWidth())
+		pos[0] = this.getWidth();
+	if(pos[1] > this.getHeight())
+		pos[1] = this.getHeight();
 
 	return pos;
 }
@@ -650,37 +615,29 @@ Graph.prototype.changeGraphType = function (type)
 Graph.prototype.redrawGraph = function()
 {
 	var aux = this.findSVGGraph();
-	// console.log(aux);
 	if(aux != undefined)
 	{
-		// console.log("aux not null", aux);
 		while (aux.firstChild) 
 		{
-			// console.log("hasChildren", aux.firstChild);
 			aux.removeChild(aux.firstChild);
 		}
 	}
 	
 	this.renderData();
-	// this.convertToBars();
 }	
 
 Graph.prototype.panToEnd = function()
 {
-	this.panValue = this.readings.length-0.5 - 10*this.size[0]/(this.zoom);
+	this.panValue = this.readings.length-0.5 - 10*this.getWidth()/(this.zoom);
 }
 
 Graph.prototype.rescale = function()
 {
 	var dataPrevMin = this.panValue; // first data being rendered
-	var dataPrevMax = this.panValue + 10*this.size[0]/(this.zoom); // last data being rendered
+	var dataPrevMax = this.panValue + 10*this.getWidth()/(this.zoom); // last data being rendered
 	var dataPrevMid = dataPrevMin+(dataPrevMax-dataPrevMin)/2; // data in the middle of the screen, I want to keep it static on the middle of the screen :)
 
-	// this.zoom = this.lastZoom+parseFloat(distance)*1.5;
-	// console.log(this.zoom);
-
-	var minZoom = (10*this.size[0])/(this.readings.length-1);
-	// console.log(minZoom);
+	var minZoom = (10*this.getWidth())/(this.readings.length-1);
 
 	if(this.zoom < minZoom)
 	{
@@ -690,16 +647,12 @@ Graph.prototype.rescale = function()
 	var pixelsLong = this.zoom*(this.readings.length/10); // how many pixels long the graph is at this zoom
 
 	var dataMin = this.panValue; // first data being rendered
-	var dataMax = this.panValue + 10*this.size[0]/(this.zoom); // new last data being rendered
+	var dataMax = this.panValue + 10*this.getWidth()/(this.zoom); // new last data being rendered
 	var dataMid = dataMin+(dataMax-dataMin)/2; // new data in the middle of the screen
-
-	// console.log(dataMid-dataPrevMid);
-
-	// this.panValue -= dataMid-dataPrevMid;
 
 	if(dataMax > this.readings.length-1)
 	{
-		this.panValue = this.readings.length-1 - 10*this.size[0]/(this.zoom);
+		this.panValue = this.readings.length-1 - 10*this.getWidth()/(this.zoom);
 	}
 	if(this.panValue < 0)
 	{
@@ -722,12 +675,10 @@ Graph.prototype.generateRandomData = function(min, max, count)
 
 Graph.prototype.findSVGGraph = function()
 {
-	// console.log(this.element.childNodes);
 	for(var i in this.element.childNodes)
 	{
 		if(tEngine.isNumber(i))
 		{
-		// console.log(i+": ", this.element.childNodes[i].localName);
 		if(this.element.childNodes[i].localName == "svg")
 			return this.element.childNodes[i];
 		}
@@ -738,13 +689,11 @@ Graph.prototype.findSVGGraph = function()
 Graph.prototype.updatePositionLink = function()
 {
 	var deltaMoved = this.positionLink.deltaMoved();
-	this.updatePosition([this.position[0], this.lastPosition[1]+deltaMoved[1]]);
+	this.updatePosition([this.getPositionX(), this.lastPosition[1]+deltaMoved[1]]);
 }
 
 Graph.prototype.checkIfDataExistsInGraph = function(graph, identifier)
 {
-	// console.log(identifier);
-
 	if(graph.dataIdentifier == identifier) return true;
 
 	for(var i in graph.otherDataIdentifier) // check if this data isn't already on the otherData
@@ -791,7 +740,7 @@ Graph.prototype.getFirstAnnotationAt = function(touch)
 	var annotation = undefined;
 	for(var x in this.annotations)
 	{
-		if(mousePos[0] > this.annotations[x].position[0] && mousePos[0] < this.annotations[x].position[0]+this.annotations[x].size[0])
+		if(mousePos[0] > this.annotations[x].getPositionX() && mousePos[0] < this.annotations[x].getPositionX()+this.annotations[x].getWidth())
 		{
 
 		}
@@ -819,14 +768,11 @@ Graph.prototype.touchEnded = function(touch)
 		this.closeGraph();
 	}
 
-	this.backToNormal();
 	this.invertPan = false;
 		d3.select(this.element)
 		.style("cursor", "auto");
 
 	this.selectingInterval = false;
-
-	// var position = tEngine.getListPosition(this);
 	var position = 0;
 
 	this.element.style.opacity = 1;
@@ -839,7 +785,6 @@ Graph.prototype.touchEnded = function(touch)
 	}
 	if(this.link != -1)
 	{
-		// console.log("dropped!");
 		if(this.link != this.cloneOf)
 		{
 			var alreadyThere = this.checkIfDataExistsInGraph(this.link, this.dataIdentifier);
@@ -862,7 +807,6 @@ Graph.prototype.touchEnded = function(touch)
 			this.link.calculateMax();
 			this.link.calculateMin();
 			this.link.redrawGraph();
-			// console.log(this.link.otherDataSource);
 		}
 	}
 
@@ -880,10 +824,10 @@ Graph.prototype.touchEnded = function(touch)
 		animation.elementOwner = this;
 		animation.callbackFunction = this.suicide;
 		animation.start();
-		// console.log(animation);
 
 		this.animations.push(animation);
 	}
+	this.updateLastPosition();
 }
 
 Graph.prototype.hold = function(touch)
@@ -903,52 +847,14 @@ Graph.prototype.hold = function(touch)
 	}
 }
 
-
-Graph.prototype.swipe = function(touch)
-{
-	// console.log("swipe");
-}
-
-Graph.prototype.swipeRight = function(touch)
-{
-	// console.log("swipeRight");
-}
-
-Graph.prototype.swipeLeft = function(touch)
-{
-	// console.log("swipeLeft");
-}
-
-Graph.prototype.swipeUp = function(touch)
-{
-	// console.log("swipeUp");
-}
-
-Graph.prototype.swipeDown = function(touch)
-{
-	// console.log("swipeDown");
-}
-
 Graph.prototype.xForIndex = function(index)
 {
-	// var firstData = this.panValue;
-	// var lastData = this.panValue + 10*this.size[0]/(this.zoom);
-
-	// var delta = lastData-firstData;
-
-	// return (index - firstData) * (this.size[0]/delta);
-	return this.timeInterval.xForIndex(index, this.size[0]);
+	return this.timeInterval.xForIndex(index, this.getWidth());
 }
 
 Graph.prototype.indexForX = function(x)
 {
-	// var dataMin = this.panValue; // first data being rendered
-	// var dataMax = this.panValue + 10*this.size[0]/(this.zoom); // last data being rendered
-
-	// var delta = dataMax - dataMin;
-
-	// return dataMin+(x)*(dataMax-dataMin)/this.size[0];
-	return this.timeInterval.indexForX(x, this.size[0]);
+	return this.timeInterval.indexForX(x, this.getWidth());
 }
 
 Graph.prototype.refreshAnnotations = function()
@@ -997,7 +903,7 @@ Graph.prototype.pan = function(touch, mouse, inverse, interval) // mouse is a va
 		}
 		if(typeof mouse === "undefined")
 		{
-			var delta = (touch.lastPosition[0]-touch.position[0])*interval/this.size[0]*1000;
+			var delta = (touch.lastPosition[0]-touch.position[0])*interval/this.getWidth()*1000;
 			if(this.invertPan == true)
 				delta = -delta;
 			
@@ -1013,7 +919,7 @@ Graph.prototype.pan = function(touch, mouse, inverse, interval) // mouse is a va
 		}
 		else
 		{
-			var delta = -10*mouse*interval/this.size[0]*1000;
+			var delta = -10*mouse*interval/this.getWidth()*1000;
 			if(this.invertPan == true)
 				delta = -delta;
 
@@ -1040,15 +946,14 @@ Graph.prototype.pan = function(touch, mouse, inverse, interval) // mouse is a va
 	{
 		var pos = this.toGraphCoordinates(touch.position);
 
-		var xPercentage = pos[0]/this.size[0];
+		var xPercentage = pos[0]/this.getWidth();
 
 		var dataMin = this.panValue; // first data being rendered
-		var dataMax = this.panValue + 10*this.size[0]/(this.zoom); // last data being rendered
+		var dataMax = this.panValue + 10*this.getWidth()/(this.zoom); // last data being rendered
 
 		var delta = dataMax - dataMin;
 
 		var posIndex = this.indexForX(pos[0]);
-		// console.log(posIndex);
 		pos = this.xForIndex(posIndex);
 
 		if(this.selectingInterval == false)
@@ -1060,7 +965,6 @@ Graph.prototype.pan = function(touch, mouse, inverse, interval) // mouse is a va
 			this.selectedInterval.interval.end = this.xForIndex(posIndex-1);
 
 			this.selectingInterval = true;
-			// console.log(this.selectedInterval.interval.indexBegin);
 		}
 		else if(this.invertPan != true)
 		{
@@ -1069,12 +973,7 @@ Graph.prototype.pan = function(touch, mouse, inverse, interval) // mouse is a va
 				this.selectedInterval.interval.indexEnd = posIndex;
 				this.selectedInterval.interval.end = pos;
 			}
-
-			// console.log(this.selectedInterval.interval.indexEnd);
 		}
-		// tEngine.clearDebug();
-		// var date = new Date(timePos);
-		// tEngine.debug(date.toString());
 		this.selectedInterval.updateSelection();
 		this.redrawGraph();
 		this.updateAnnotations();
@@ -1085,27 +984,13 @@ Graph.prototype.pan = function(touch, mouse, inverse, interval) // mouse is a va
 	}
 	else if(touch.over.length > 1) // hovering other thing
 	{
-		// this.link = -1;
-		// for(var x in touch.over)
-		// {
-		// 	var t = touch.over[x];
-		// 	if(t.element.id != this.element.id)
-		// 	{
-		// 		if(t.iType == "Graph")
-		// 		{
-		// 			t.dragOver();
-		// 			this.link = t;
-		// 		}
-		// 	}
-		// }
 		var cursorPos = tEngine.cursorPosition;
-		tEngine.repositionGraphsToFitGraph(this);
+		tEngine.repositionGraphsToFitMovedGraph(this);
 	}
 }
 
 Graph.prototype.pinch = function(touch, distance, angle, mouse)
 {
-	// console.log("pinch");
 	if(this.dragging == false)
 	{
 		if(typeof mouse === "undefined")
@@ -1113,7 +998,6 @@ Graph.prototype.pinch = function(touch, distance, angle, mouse)
 			mouse = false;
 		}
 		this.cancelHold = true;
-		// console.log("pinch");
 
 		if(this.timelineLocked == false)
 		{
@@ -1125,18 +1009,18 @@ Graph.prototype.pinch = function(touch, distance, angle, mouse)
 		}
 
 		var dataPrevMin = this.panValue; // first data being rendered
-		var dataPrevMax = this.panValue + 10*this.size[0]/(this.zoom); // last data being rendered
+		var dataPrevMax = this.panValue + 10*this.getWidth()/(this.zoom); // last data being rendered
 		var dataPrevMid = dataPrevMin+(dataPrevMax-dataPrevMin)/2; // data in the middle of the screen, I want to keep it static on the middle of the screen :)
 
 		var dataMin = this.panValue; // first data being rendered
-		var dataMax = this.panValue + 10*this.size[0]/(this.zoom); // new last data being rendered
+		var dataMax = this.panValue + 10*this.getWidth()/(this.zoom); // new last data being rendered
 		var dataMid = dataMin+(dataMax-dataMin)/2; // new data in the middle of the screen
 
 		this.panValue -= dataMid-dataPrevMid;
 
 		if(dataMax > this.readings.length-0.5)
 		{
-			this.panValue = this.readings.length-0.5 - 10*this.size[0]/(this.zoom);
+			this.panValue = this.readings.length-0.5 - 10*this.getWidth()/(this.zoom);
 		}
 		if(this.panValue < 0)
 		{
@@ -1149,28 +1033,27 @@ Graph.prototype.pinch = function(touch, distance, angle, mouse)
 
 Graph.prototype.mouseMove = function(pos)
 {
-	// console.log("mouseMove", pos);
 	this.graph.selectAll(".crosshair").remove();
 
 	var lastInstant  = this.timeInterval.end;
 	var firstInstant = this.timeInterval.begin;
 
-	var x = pos[0]/(this.size[0]-2) * (Number(lastInstant)-Number(firstInstant)) + Number(firstInstant);
-	var invY = d3.scale.linear().domain([0, this.size[1]*this.heightProportion]).range([this.maxValue, this.minValue]);
+	var x = pos[0]/(this.getWidth()-2) * (Number(lastInstant)-Number(firstInstant)) + Number(firstInstant);
+	var invY = d3.scale.linear().domain([0, this.getHeight()-this.footerHeight]).range([this.maxValue, this.minValue]);
 
 	var crosshair = this.graph.append("g").attr("class", "crosshair");
 
-	var inc = pos[1] > this.size[1]/2 ? -5 : 12;
+	var inc = pos[1] > this.getHeight()/2 ? -5 : 12;
 
-	var dateText = new GraphText(TimeUtils.dateFormatter(x), "dateText", pos[0], 10, pos[0] < (this.size[0])/2 ? undefined : "end");
-	var valueText = new GraphText(invY(pos[1]).toFixed(2), "valueText", this.size[0]-25, pos[1]+inc, "end");
+	var dateText = new GraphText(TimeUtils.dateFormatter(x), "dateText", pos[0], 10, pos[0] < (this.getWidth())/2 ? undefined : "end");
+	var valueText = new GraphText(invY(pos[1]).toFixed(2), "valueText", this.getWidth()-25, pos[1]+inc, "end");
 
-	if(pos[1] < this.size[1]*this.heightProportion)
+	if(pos[1] < this.getHeight()-this.footerHeight)
 	{
 		crosshair.append("line")
 			.attr("x1", 0)
 			.attr("y1", pos[1])
-			.attr("x2", this.size[0])
+			.attr("x2", this.getWidth())
 			.attr("y2", pos[1])
 			.attr("class", "hCrosshair");
 
@@ -1186,7 +1069,7 @@ Graph.prototype.mouseMove = function(pos)
 		.attr("x1", pos[0])
 		.attr("y1", 0)
 		.attr("x2", pos[0])
-		.attr("y2", this.size[1]*this.heightProportion)
+		.attr("y2", this.getHeight()-this.footerHeight)
 		.attr("class", "vCrosshair");
 
 	crosshair.append("text")

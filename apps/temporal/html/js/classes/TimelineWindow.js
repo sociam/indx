@@ -8,6 +8,7 @@ function TimelineWindow(target, graph, timeline)
 
 	this.init();
 	InteractiveObject.call(this, this.element);
+	this.updateLastPosition();
 }
 
 TimelineWindow.prototype = tEngine.clone(InteractiveObject.prototype);
@@ -25,8 +26,8 @@ TimelineWindow.prototype.init = function()
 	var lastInstant  = this.timeline.end;
 	var firstInstant = this.timeline.begin;
 
-	var x = d3.time.scale().domain([firstInstant, lastInstant]).range([0, this.timeline.size[0]]);
-	var y = d3.scale.linear().domain([1, 0]).range([0, this.timeline.size[1]]);
+	var x = d3.time.scale().domain([firstInstant, lastInstant]).range([0, this.timeline.getWidth()]);
+	var y = d3.scale.linear().domain([1, 0]).range([0, this.timeline.getHeight()]);
 
 	var group = this.renderTarget.append("g").attr("class", "window");
 
@@ -45,8 +46,8 @@ TimelineWindow.prototype.render = function()
 	var lastInstant  = this.timeline.end;
 	var firstInstant = this.timeline.begin;
 
-	var x = d3.time.scale().domain([firstInstant, lastInstant]).range([0, this.timeline.size[0]]);
-	var y = d3.scale.linear().domain([1, 0]).range([0, this.timeline.size[1]]);
+	var x = d3.time.scale().domain([firstInstant, lastInstant]).range([0, this.timeline.getWidth()]);
+	var y = d3.scale.linear().domain([1, 0]).range([0, this.timeline.getHeight()]);
 
 	var group = this.renderTarget.append("g").attr("class", "window");
 
@@ -58,23 +59,6 @@ TimelineWindow.prototype.render = function()
 		.attr("height", 50);
 
 	this.element = element[0][0];
-
-	this.somethingChanged();
-}
-
-TimelineWindow.prototype.touchStarted = function(touch)
-{
-	// console.log("touchStarted");
-}
-
-TimelineWindow.prototype.touchEnded = function(touch)
-{
-	// console.log("touchEnded");
-}
-
-TimelineWindow.prototype.hold = function(touch)
-{
-	// console.log("hold");
 }
 
 TimelineWindow.prototype.pan = function(touch)

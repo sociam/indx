@@ -51,7 +51,7 @@
 					<div class="navbar-header">
 						<a href="#" class="navbar-brand">Todo lists</a>
 					</div>
-					<ul class="nav navbar-nav navbar-right">
+					<ul class="nav navbar-nav navbar-right" ng-show="!editing_todo">
 						<li><a href="#" ng-click="todo_lists.new_model()"><i class="icon-plus"></i></a></li>
 					</ul>
 				</nav>
@@ -64,7 +64,7 @@
 						</a>
 					</div>
 					<ul class="nav navbar-nav navbar-left hidden-xs">
-						<li><a href="#" ng-click="todo_lists.selected.edit()"><i class="icon-cog"></i></a></li>
+						<li><a href="#" ng-click="todo_lists.selected.edit()" ng-show="!editing_todo"><i class="icon-cog"></i></a></li>
 					</ul>
 					<ul class="nav navbar-nav navbar-right" ng-show="!editing_todo">
 						<li ng-show="!search"><a href="#" ng-click="search = true"><i class="icon-search"></i></a></li>
@@ -117,6 +117,7 @@
 					<ul class="indx-list-flat todo-lists">
 						<li ng-repeat="todo_list in todo_lists.all_models" ng-click="todo_list.select()" ng-class="{ active: todo_list.is_selected }" ><a href="#" droppable>{{ todo_list.get_attribute('title') }}</a></li>
 					</ul>
+					<div class="modal-cover" ng-show="editing_todo" ng-animate="fade" ng-click="editing_todo.restore()"></div>
 				</div>
 
 				<div class="indx-main">

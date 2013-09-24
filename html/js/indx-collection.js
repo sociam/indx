@@ -5,6 +5,10 @@
 /// using Backbone. It allows arrays to be managed using Collections and objs
 /// to be managed using Models, both of which are extensions of Backbone's
 /// Collection and Model classes.
+///
+/// ## Events
+/// * add_any
+/// * restore
 
 angular
 	.module('indx')
@@ -128,6 +132,7 @@ angular
 					return Backbone.Model.prototype.save.apply(this, arguments);
 				}
 			},
+			/// @chain
 			/// Switch off edit mode. Triggers `restore`.
 			restore: function () {
 				this.is_editing = false;
@@ -148,16 +153,45 @@ angular
 					this.trigger('select', selected, options);
 				}
 			},
+			/// @arg key <string|int>: Key of attribute
+			/// @return value
+			///
 			/// Get the value of an attribute. Use this instead of `get` if
 			/// you don't want the value in an array.
 			get_attribute: function (key) {
 				var val = this.attributes[key];
 				return get_only_element(val);
 			},
+			/// @arg key <string|int>: Key of attribute
+			/// @return value
+			///
 			/// Get the value of a staged attribute in edit mode.
 			get_staged_attribute: function (key) {
 				var val = this.staged_attributes[key];
 				return get_only_element(val);
+			},
+			/// @arg key <string|int>: Key of attribute
+			/// @return value
+			///
+			/// Get a staged attribute in edit mode.
+			get_staged: function (key) {
+				return this.staged_attributes[key];
+			},
+			/// @arg attributes <{ key: value }>: object of key value pairs
+			/// @chain
+			///
+			/// Set a staged attribute in edit mode. May also be passed key,
+			/// value as arguments.
+			set_staged: function (attributes, val) {
+				if (_.isObject(attributes)) {
+					_.each(attributes, function (val, key) {
+						that.set_staged(key, val);
+					});
+				} else {
+					var key = attributes;
+					this.staged_attributes[key] = val;
+				}
+				return this;
 			}
 		});
 
@@ -173,6 +207,7 @@ angular
 			/// the collection.Model the cast each model to
 			model: Model,
 			selected: undefined,
+			/// @construct
 			initialize: function (models, options) {
 				var that = this;
 				this.options = options || {};
@@ -202,7 +237,7 @@ angular
 							models = [models];
 						}
 						_.each(models, function (model) {
-							model.trigger('add_any', model);
+							that.trigger('add_any', model);
 						});
 					});
 				this.reset(models);
@@ -234,9 +269,11 @@ angular
 				attributes = _.extend({
 					id: id
 				}, attributes);
-				options = _.extend(_.clone(soptions), options);
+				options = _.extend({}, soptions, options);
 				model = new Backbone.Model(attributes, options); // Leave casting to this.model until later
 				this._extend_model(model);
+
+				this._set_new_model(model);
 
 				model
 					.edit(true)
@@ -258,7 +295,7 @@ angular
 							that.selected = undefined;
 						}
 					});
-				this._set_new_model(model);
+
 				if (options && options.select) {
 					model.select(true, {
 						save: false
@@ -268,7 +305,12 @@ angular
 			},
 			_set_new_model: function (model) {
 				this._new_model = model;
-				this.all_models = model ? [model].concat(this.models) : this.models;
+				if (model) {
+					this.trigger('add_any', model);
+					this.all_models = [model].concat(this.models);
+				} else {
+					this.all_models = this.models;
+				}
 				this.filter();
 			},
 			/// Remove the model from the array
