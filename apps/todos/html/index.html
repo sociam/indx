@@ -51,20 +51,20 @@
 					<div class="navbar-header">
 						<a href="#" class="navbar-brand">Todo lists</a>
 					</div>
-					<ul class="nav navbar-nav navbar-right">
+					<ul class="nav navbar-nav navbar-right" ng-show="!editing_todo">
 						<li><a href="#" ng-click="todo_lists.new_model()"><i class="icon-plus"></i></a></li>
 					</ul>
 				</nav>
 				<nav class="indx-main indx-navbar" role="navigation">
 					<div href="#" class="navbar-header">
-						<span class="navbar-brand hidden-xs">{{ pop(todo_lists.selected.get('title')) }}</span>
+						<span class="navbar-brand hidden-xs">{{ todo_lists.selected.get_attribute('title') }}</span>
 						<a href="#" class="navbar-header visible-xs" ng-click="mobile_menu = !mobile_menu">
-							<span class="navbar-brand">{{ pop(todo_lists.selected.get('title')) }}</span>
+							<span class="navbar-brand">{{ todo_lists.selected.get_attribute('title') }}</span>
 							<span class="caret"></span>
 						</a>
 					</div>
 					<ul class="nav navbar-nav navbar-left hidden-xs">
-						<li><a href="#" ng-click="todo_lists.selected.edit()"><i class="icon-cog"></i></a></li>
+						<li><a href="#" ng-click="todo_lists.selected.edit()" ng-show="!editing_todo"><i class="icon-cog"></i></a></li>
 					</ul>
 					<ul class="nav navbar-nav navbar-right" ng-show="!editing_todo">
 						<li ng-show="!search"><a href="#" ng-click="search = true"><i class="icon-search"></i></a></li>
@@ -87,7 +87,7 @@
 					</ul>
 					<ul class="nav navbar-nav navbar-right" ng-show="editing_todo">
 						<li><a href="#" ng-click="editing_todo.remove()"><i class="icon-trash"></i></a></li>
-  						<li><a href="#" ng-click="editing_todo.stage_and_save()"><i class="icon-ok"></i></a></li>
+  						<li><a href="#" ng-click="editing_todo.save_staged()"><i class="icon-ok"></i></a></li>
 					</ul>
 				</nav>
 			</div>
@@ -103,7 +103,7 @@
 							<li class="thick separator"></li>
 							<li ng-class="{ active: todo_list.is_selected }" ng-repeat="todo_list in todo_lists.all_models"><a href="#" ng-click="todo_list.select()">
 								<i class="icon-list"></i>
-								{{ pop(todo_list.get('title')) }}
+								{{ todo_list.get_attribute('title') }}
 							</a></li>
 							<li class="separator"></li>
 							<li><a href="#" ng-click="todo_lists.selected.edit()"><i class="icon-plus"></i> New todo list</a></li>
@@ -115,8 +115,9 @@
 
 				<div class="indx-sidebar">
 					<ul class="indx-list-flat todo-lists">
-						<li ng-repeat="todo_list in todo_lists.all_models" ng-click="todo_list.select()" ng-class="{ active: todo_list.is_selected }" ><a href="#" droppable>{{ pop(todo_list.get('title')) }}</a></li>
+						<li ng-repeat="todo_list in todo_lists.all_models" ng-click="todo_list.select()" ng-class="{ active: todo_list.is_selected }" ><a href="#" droppable>{{ todo_list.get_attribute('title') }}</a></li>
 					</ul>
+					<div class="modal-cover" ng-show="editing_todo" ng-animate="fade" ng-click="editing_todo.restore()"></div>
 				</div>
 
 				<div class="indx-main">
@@ -146,7 +147,7 @@
 						</div>
 						<div class="modal-footer">
 							<button type="button" class="btn btn-default" ng-click="todo_lists.selected.restore()"><span class="icon-remove"></span> Close</button>
-							<button type="button" class="btn btn-primary" ng-click="todo_lists.selected.stage_and_save()"><span class="icon-ok"></span> Save</button>
+							<button type="button" class="btn btn-primary" ng-click="todo_lists.selected.save_staged()"><span class="icon-ok"></span> Save</button>
 						</div>
 					</div><!-- /.modal-content -->
 				</div><!-- /.modal-dialog -->
@@ -170,4 +171,5 @@
   <script src="/js/indx-collection.js" type="text/javascript"></script>
   <script src="/components/toolbar/toolbar.js" type="text/javascript"></script>
   <script src="js/todos.js" type="text/javascript"></script>
+  <script src="js/models.js" type="text/javascript"></script>
 </html>

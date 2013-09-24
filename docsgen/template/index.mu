@@ -48,7 +48,6 @@
     }
     .class {
       padding: 5px 0 20px;
-      border-bottom: 1px solid #eee;
     }
     .file {
       border-top: 1px solid #ccc;
@@ -57,6 +56,21 @@
     }
     .supplementary {
       display: none;
+    }
+    .method {
+      position: relative;
+    }
+    .lineno {
+      position: absolute;
+      top: 10px;
+      right: 0px;
+      color: #BBB;
+      font-size: 11px;
+    }
+    code {
+      color: #111;
+      background: rgba(0, 0, 0, 0.016);
+      border-color: rgba(0, 0, 0, 0.06);
     }
     </style>
     <script>
@@ -100,7 +114,9 @@
           }
       }
       setTimeout(function () {
-          $('#' + hash)[0].scrollIntoView(true);
+          if ($('#' + hash).length) {
+            $('#' + hash)[0].scrollIntoView(true);
+          }
       }, 0);
     }
     </script>
@@ -108,7 +124,7 @@
   <body>
     <div class="sidebar">
       {{#files}}
-        <div id="sidebar-{{id}}" class="{{#parameters.supplementary}}supplementary{{/parameters.supplementary}}">
+        <div id="sidebar-{{id}}" class="{{#supplementary}}supplementary{{/supplementary}}">
           <a href="#{{id}}"><h3>{{title}}</h3></a>
           <ul class="nav nav-list">
             {{#classes}}
@@ -127,7 +143,7 @@
       {{project.description}}
 
       {{#files}}
-        <section class="file {{#parameters.supplementary}}supplementary{{/parameters.supplementary}}" id="{{id}}">
+        <section class="file {{#supplementary}}supplementary{{/supplementary}}" id="{{id}}">
           {{>partials/file.mu}}
         </section>
       {{/files}}

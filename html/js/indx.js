@@ -132,6 +132,7 @@ angular
 
 		var File =  Backbone.Model.extend({
 			idAttribute: "@id", // the URI attribute is '@id' in JSON-LD
+			/// @construct
 			initialize:function(attrs, options) {
 				u.debug('options >> ', attrs, options );
 				this.box = options.box;
@@ -161,6 +162,7 @@ angular
 		// ... which is a collection of Box objects
 		var Obj =  Backbone.Model.extend({
 			idAttribute: "@id", // the URI attribute is '@id' in JSON-LD
+			/// @construct
 			initialize:function(attrs, options) {
 				this.box = options.box;
 			},
@@ -286,6 +288,7 @@ angular
 		var Box = Backbone.Model.extend({
 			idAttribute:"@id",
 			default_options: { use_websockets:true, ws_auto_reconnect:false	},
+			/// @construct
 			initialize:function(attributes, options) {
 				var this_ = this;
 				u.assert(options.store, "no store provided");
@@ -826,7 +829,7 @@ angular
 
 			/// @opt <{}> attributes
 			/// @opt <{}> options
-			/// @constructor
+			/// @construct
 			initialize: function(attributes, options){
 				this.set({boxes : new BoxCollection([], {store: this})});
 			},

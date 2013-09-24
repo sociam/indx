@@ -1,0 +1,58 @@
+properties
+	= p:property_obj __ ps:properties
+			{	var ks = Object.keys(p),
+					i, k;
+				for (i in ks) {
+					k = ks[i];
+					if (!ps[k] || typeof ps[k] !== 'object') { ps[k] = []; }
+					ps[k].unshift(p[k][0]);
+				}
+				return ps; }
+	/ p:property_obj
+			{ return p; }
+	/ ''
+			{ return {}; }
+
+property_obj
+	= _$_ a:property
+			{	var ps = {};
+				ps[a[0]] = [a[1]];
+				return ps; }
+
+
+description_lines
+	= d:description_line ds:description_lines
+			{ return [d].concat(ds); }
+	/ d:description_line
+			{ return [d]; }
+	/ ''
+			{ return []; }
+
+description_line
+	= __ $ d:comment
+			{ return d; }
+
+comment
+	= c:[^\n\r]*
+			{ return c.join(''); }
+
+$
+	= _ "///" _
+
+
+_$_ = __ $ __ _$_
+	/ __ $ __
+	/ __
+
+_
+	= [ \t]*
+			{ return ''; }
+
+__
+	= [ \t\r\n]*
+			{ return ''; }
+
+
+name
+	= n:[^ \t\-\n\r\:]+
+			{ return n.join(''); }
