@@ -85,21 +85,11 @@
 			u.safe_apply($scope,function() { $location.path('/login'); });
 		});
 
-		client.store.check_login().then(function(login) {
-			if (login.is_authenticated) {
-				u.safe_apply($scope, function() { $location.path('/apps'); });
-			} else {
-				console.log('routing to login');
-				u.safe_apply($scope, function() { $location.path('/login'); });
-			}
-		});
-
 		// this code watches for manual route changes, eg if someone goes
 		// and changes the path in their browser in a way that doesn't force
 		// a refresh.  here, we check to see if we're logged in, and if we are
 		// we proceed to the desired target; otherwise, we merely
 		$scope.$on('$routeChangeStart', function(evt, target_template, source_template) {
-			console.log('routeChangeStart', target_template, target_template['$$route']);
 			var requires_login = !target_template.$$route || target_template.$$route.requireslogin;
 			client.store.check_login().then(function(login) {
 				if (!login.is_authenticated && requires_login) {
@@ -109,7 +99,16 @@
 				}
 			});
 		});
-		
+
+		client.store.check_login().then(function(login) {
+			if (login.is_authenticated) {
+				u.safe_apply($scope, function() { $location.path('/apps'); });
+			} else {
+				console.log('routing to login');
+				u.safe_apply($scope, function() { $location.path('/login'); });
+			}
+		});
+
 	}).controller('BoxesList', function($location, $scope, client, utils) {
 		var u = utils,store = client.store, sa = function(f) { return utils.safe_apply($scope,f); };
 		var get_boxes_list = function() {
