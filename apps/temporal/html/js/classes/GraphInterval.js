@@ -33,6 +33,7 @@ function GraphInterval(sourceGraph, cloneOf)
 
 	this.draggingScale = false;
 	this.scaleInitialPos = undefined;
+
 }
 
 GraphInterval.prototype = tEngine.clone(InteractiveObject.prototype);
@@ -120,7 +121,6 @@ GraphInterval.prototype.update = function()
 			this.interval.indexBegin = this.sourceGraph.indexForX(this.interval.pxBegin);
 			this.interval.indexEnd   = this.sourceGraph.indexForX(this.interval.pxEnd);
 		}
-		this.somethingChanged();
 	}
 	if(this.draggable == true)
 	{
@@ -150,7 +150,6 @@ GraphInterval.prototype.updateSelection = function()
 
 				this.scaleBar.d3Element
 						.style("width", (this.interval.pxBegin-this.interval.pxEnd)+"px");
-				this.scaleBar.somethingChanged();
 				this.infoField.style("left", this.interval.pxBegin+1+"px");
 			}
 			else
@@ -159,7 +158,6 @@ GraphInterval.prototype.updateSelection = function()
 						.style("width", (this.interval.pxEnd-this.interval.pxBegin)+"px");
 				this.scaleBar.d3Element
 						.style("width", (this.interval.pxEnd-this.interval.pxBegin)+"px");
-				this.scaleBar.somethingChanged();
 				this.infoField.style("left", this.interval.pxEnd+1+"px");
 			}
 		}
@@ -186,7 +184,6 @@ GraphInterval.prototype.updateSelection = function()
 						.style("width", (this.interval.pxBegin-this.interval.pxEnd)+"px");
 				this.scaleBar.d3Element
 						.style("width", (this.interval.pxBegin-this.interval.pxEnd)+"px");
-				this.scaleBar.somethingChanged();
 				this.infoField.style("left", this.interval.pxEnd+1+"px");
 			}
 			else
@@ -195,11 +192,9 @@ GraphInterval.prototype.updateSelection = function()
 						.style("width", (this.interval.pxEnd-this.interval.pxBegin)+"px");
 				this.scaleBar.d3Element
 						.style("width", (this.interval.pxEnd-this.interval.pxBegin)+"px");
-				this.scaleBar.somethingChanged();
 				this.infoField.style("left", this.interval.pxEnd+1+"px");
 
 			}
-			this.somethingChanged();
 		}
 	}
 	this.updateInfo();
@@ -295,7 +290,7 @@ GraphInterval.prototype.resetInterval = function()
 
 GraphInterval.prototype.calculateWidth = function(deltaT)
 {
-	var x = d3.time.scale().domain([firstInstant, lastInstant]).range([0, this.size[0]]);
+	var x = d3.time.scale().domain([firstInstant, lastInstant]).range([0, this.getWidth()]);
 	return x(+(deltaT)+(+(firstInstant)));
 }
 
@@ -525,7 +520,7 @@ GraphInterval.prototype.touchEnded = function(touch)
 
 			this.link.selectedInterval = new GraphInterval(this.link, this);
 
-			this.link.selectedInterval.interval.pxBegin = this.position[0]-this.link.position[0];
+			this.link.selectedInterval.interval.pxBegin = this.getPositionX()-this.link.getPositionX();
 
 			this.link.selectedInterval.interval.indexBegin = this.link.indexForX(this.link.selectedInterval.interval.pxBegin);
 			this.link.selectedInterval.interval.indexEnd   = this.link.selectedInterval.interval.indexBegin+this.dataInterval.length-1;
@@ -587,6 +582,7 @@ GraphInterval.prototype.hold = function(touch)
 {
 	if(this.draggable == true)
 	{
+		this.updateLastPosition();
 		if(this.touchCount == 1)
 		{
 			this.sourceGraph.pannable = false;
@@ -602,7 +598,6 @@ GraphInterval.prototype.hold = function(touch)
 			this.sourceGraph.renderLines(this.dataInterval, tEngine.getColor(this.sourceGraph.dataColor), this.tgt, this.interval.pxBegin);
 
 			this.animations = [];
-			// this.bindPositionToTouch(touch);
 
 			this.element = this.selection[0][0];
 
@@ -616,9 +611,7 @@ GraphInterval.prototype.hold = function(touch)
 			clone.element.style.opacity = 0.7;
 			clone.element.style.zIndex = tEngine.lastZIndex;
 			tEngine.lastZIndex += 1;
-			// clone.dragging = true;
 			clone.bindPositionToTouch(touch);
-			// clone.highlight();
 
 			tEngine.interactiveObjectList[clone.identifier] = clone;
 
@@ -649,17 +642,11 @@ GraphInterval.prototype.updatePositionLink = function()
 	else if(this.isOver(this.link) == true)
 	{
 		var w = this.interval.pxBegin-this.interval.pxEnd;
-		var indexBegin = this.link.indexForX(this.positionLink.position[0]-this.link.position[0]);
+		var indexBegin = this.link.indexForX(this.positionLink.position[0]-this.link.getPositionX());
 		
-		this.updatePosition([this.link.xForIndex(indexBegin)+this.link.position[0]+w/2, this.link.position[1]]);
+		this.updatePosition([this.link.xForIndex(indexBegin)+this.link.getPositionX()+w/2, this.link.getPositionY()]);
 		
 		var max = this.link.maxIndexRendered();
-		
-		if(indexBegin+this.indexDelta > max)
-		{
-			
-		}
-		// this.renderLines(this.dataInterval.data, instant, tEngine.getColor(this.dataColor), this.graph);
 
 	}
 	else

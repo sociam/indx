@@ -36,8 +36,9 @@ function Annotation(indexBegin, indexEnd, activity, sourceGraph, id)
 		this.labeled = true;
 
 	InteractiveObject.call(this, this.selection[0][0]);
-	this.somethingChanged();
 	tEngine.interactiveObjectList[this.identifier] = this;
+
+	this.updateLastPosition();
 }
 
 Annotation.prototype = tEngine.clone(GraphInterval.prototype);
@@ -189,7 +190,6 @@ Annotation.prototype.update = function()
 				.style("width", (this.interval.end-this.interval.begin)+"px");
 		// this.removeButton.style("left", this.interval.end-10+"px");
 	}
-	this.somethingChanged();
 }
 
 Annotation.prototype.closeSelection = function()
@@ -297,6 +297,12 @@ Annotation.prototype.touchStarted = function(touch)
 {
 	tEngine.selectAnnotation(this.annotationID);
 }
+
+Annotation.prototype.touchEnded = function(touch)
+{
+	this.updateLastPosition();
+}
+
 
 Annotation.prototype.pan = function(touch)
 {

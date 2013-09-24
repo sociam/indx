@@ -22,7 +22,6 @@ ScaleBar.prototype.resetScale = function()
 	this.scale = 1;
 	this.changedScale = false;
 	this.d3Element.style("top", this.centerY+"px");
-	this.somethingChanged();
 }
 
 ScaleBar.prototype.destroy = function()
@@ -57,8 +56,6 @@ ScaleBar.prototype.pan = function(touch)
 		dp = 0;
 	else if(dp > 117)
 		dp = 117;
-
-	// console.log(dp);
 	
 	this.d3Element.style("top", dp+"px");
 
@@ -74,8 +71,5 @@ ScaleBar.prototype.pan = function(touch)
 		this.changedScale = false;
 		this.owner.hideAccept();	
 	}
-	// tEngine.clearDebug();
-	// tEngine.debug(this.scale);
-	this.somethingChanged();
 	this.owner.changedScale();
 }

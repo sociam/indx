@@ -1,6 +1,5 @@
 function Activity(title)
 {
-	// var elemnt = this.appendTemplate(target);
 	this.title = title;
 	this.lastID = 0;
 	this.instances = {};
@@ -16,10 +15,6 @@ function Activity(title)
 	this.maxMap = {};
 
 	this.infoDiv = undefined;
-
-// total of each data source
-// average of each data source
-// maximum of each data source
 }
 
 Activity.prototype.calculate = function()
@@ -201,12 +196,6 @@ Activity.prototype.switchInfo = function(div)
 
 		htmlContent += "</table>";
 
-			// <tr>\
-			// 			<td></td>\
-			// 		</tr>\
-			// 	</table>\
-			// 	"
-
 		this.showingInfo = true;
 		var content = div.append("div");
 
@@ -250,8 +239,4 @@ Activity.prototype.instancesForInterval = function(begin, end)
 	}
 	return ret;
 }
-
-
-
-// clipping
 
