@@ -3,7 +3,7 @@
 	angular.module('launcher', ['indx'])
 		.config(['$routeProvider', function($routeProvider) {
 			$routeProvider
-			.when('/', { templateUrl: 'templates/root.html', controller:"Root"})
+			.when('/', {templateUrl: 'templates/root.html', controller:"Root"})
 			.when('/login', {templateUrl: 'templates/userlist.html',   controller:"Login"})
 			.when('/logout', {templateUrl: 'templates/root.html',   controller:"Logout"})
 			.when('/apps', {templateUrl: 'templates/appslist.html', controller:"AppsList"})
@@ -74,7 +74,6 @@
 		};
 		get_apps_list();
 	}).controller('main', function($location, $scope, client, utils) {
-		console.log(" >>>>>>>>>>>>>>>> main");
 		var u = utils;
 		// we want to route
 		client.store.on('login', function() {
@@ -111,12 +110,20 @@
 	}).directive('focusOnShow', function() {
 		return {
 			restrict:'A',
-			controller:function($scope, $element, $attrs) {
+			controller:function($scope, $element, $attrs, $route, client, $location) {
 				$scope.$watch($attrs['focusOnShow'], function() {
 					if ($scope.$eval($attrs['focusOnShow'])) {
 						// 100ms after transition
 						setTimeout(function() { $element.focus(); }, 100);
 					}
+				});
+				$scope.$on('$routeChangeSuccess', function(evt, one, two) {
+					client.store.check_login().then(function(login) {
+						if (!login.is_authenticated) {
+							console.log('routing to login');
+							u.safe_apply($scope, function() { $location.path('/login'); });
+						}
+					});
 				});
 			}
 		};
