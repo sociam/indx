@@ -3,11 +3,11 @@
 	angular.module('launcher', ['indx'])
 		.config(['$routeProvider', function($routeProvider) {
 			$routeProvider
-			.when('/', {templateUrl: 'templates/root.html', controller:"Root"})
-			.when('/login', {templateUrl: 'templates/userlist.html',   controller:"Login"})
-			.when('/logout', {templateUrl: 'templates/root.html',   controller:"Logout"})
-			.when('/apps', {templateUrl: 'templates/appslist.html', controller:"AppsList"})
-			.when('/boxeslist', {templateUrl:'templates/boxeslist.html', controller:'BoxesList'})
+			.when('/', {templateUrl: 'templates/root.html', controller:"Root", requireslogin:false})
+			.when('/login', {templateUrl: 'templates/userlist.html',   controller:"Login", requireslogin:false})
+			.when('/logout', {templateUrl: 'templates/root.html',   controller:"Logout", requireslogin:true})
+			.when('/apps', {templateUrl: 'templates/appslist.html', controller:"AppsList", requireslogin:true})
+			.when('/boxeslist', {templateUrl:'templates/boxeslist.html', controller:'BoxesList', requireslogin:true})
 			.otherwise({redirectTo: '/'});
 		}])
 	.controller('Root', function($scope, $location, client, utils) {
@@ -93,6 +93,23 @@
 				u.safe_apply($scope, function() { $location.path('/login'); });
 			}
 		});
+
+		// this code watches for manual route changes, eg if someone goes
+		// and changes the path in their browser in a way that doesn't force
+		// a refresh.  here, we check to see if we're logged in, and if we are
+		// we proceed to the desired target; otherwise, we merely
+		$scope.$on('$routeChangeStart', function(evt, target_template, source_template) {
+			console.log('routeChangeStart', target_template, target_template['$$route']);
+			var requires_login = !target_template.$$route || target_template.$$route.requireslogin;
+			client.store.check_login().then(function(login) {
+				if (!login.is_authenticated && requires_login) {
+					return u.safe_apply($scope, function() { $location.path('/login'); });
+				} else if (login.is_authenticated && !requires_login) {
+					return u.safe_apply($scope, function() { $location.path('/apps'); });
+				}
+			});
+		});
+		
 	}).controller('BoxesList', function($location, $scope, client, utils) {
 		var u = utils,store = client.store, sa = function(f) { return utils.safe_apply($scope,f); };
 		var get_boxes_list = function() {
@@ -116,14 +133,6 @@
 						// 100ms after transition
 						setTimeout(function() { $element.focus(); }, 100);
 					}
-				});
-				$scope.$on('$routeChangeSuccess', function(evt, one, two) {
-					client.store.check_login().then(function(login) {
-						if (!login.is_authenticated) {
-							console.log('routing to login');
-							u.safe_apply($scope, function() { $location.path('/login'); });
-						}
-					});
 				});
 			}
 		};
