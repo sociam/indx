@@ -88,7 +88,12 @@ def connect_box(box_name,db_user,db_pass):
 
 def auth(db_user,db_pass):
     d = Deferred()
-    connect_raw(None,db_user,db_pass).addCallbacks(lambda *x: d.callback(True), lambda failure: failure.trap(Exception) and d.callback(False))
+
+    def after_conn(conn):
+        conn.close()
+        d.callback(True)
+
+    connect_raw(None,db_user,db_pass).addCallbacks(after_conn, lambda failure: failure.trap(Exception) and d.callback(False))
     return d
 
 
