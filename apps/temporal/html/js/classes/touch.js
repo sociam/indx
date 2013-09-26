@@ -22,7 +22,6 @@ Touch.prototype.setTarget = function(target)
 
 Touch.prototype.moved = function ()
 {
-	// console.log(this.lastPosition[0], this.position[0], this.lastPosition[1], this.position[1]);
 	if(this.lastPosition[0] != this.position[0] || this.lastPosition[1] != this.position[1]) 
 		return true;
 	else 
@@ -46,8 +45,6 @@ Touch.prototype.distance = function (pointA, pointB)
 Touch.prototype.getOtherTouch = function ()
 {
 	var targetTouchList = this.target.isTarget;
-
-	// console.log(this.target.isTargetCount());
 
 	for(x in targetTouchList) // get the list of touches on the target interactiveObject
 	{
@@ -108,7 +105,6 @@ Touch.prototype.timeSinceStarted = function ()
 
 Touch.prototype.updatePosition = function (position)
 {
-	// this.lastPosition = this.position;
 	this.position = position;
 }
 
@@ -151,10 +147,6 @@ Touch.prototype.firePinch = function ()
 				var pinchAngle = this.angle(this.position, otherTouch.position);
 				if(this.target.pinchable == true)
 					this.target.pinch(this, deltaPinch, pinchAngle);
-				// console.log(deltaPinch);
-				// console.log(pinchAngle);
-				// clearDebug();
-				// debug(pinchAngle);
 			}
 		}
 	}
@@ -226,12 +218,9 @@ Touch.prototype.firePan = function ()
 
 Touch.prototype.end = function ()
 {
-	// console.log("touchEnded");
 	if(this.target != -1)
 	{
 		this.target.touchEnded(this);
-		// console.log("killing touch");
-		// console.log("intouchEnded");
 		this.target.removeTouchTarget(this);
 	}
 	for(x in this.over)
@@ -245,12 +234,9 @@ Touch.prototype.handle = function ()
 {
 	if(this.handled == false)
 	{
-		// console.log("touchStarted");
 		var front = ["", -1];
 		var element = document.elementFromPoint(tEngine.cursorPosition[0], tEngine.cursorPosition[1]);
-		// console.log(element);
 		var target = undefined;
-		// console.log(element)
 		if(this.over.length > 0)
 		{
 			for(x in this.over)
@@ -290,7 +276,6 @@ Touch.prototype.handle = function ()
 				this.target.touchStarted(this);
 			}
 		}
-		// console.log(this.target);
 		if(this.target != -1)
 			this.target.addTouchTarget(this);
 		this.handled = true;

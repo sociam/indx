@@ -11,9 +11,8 @@ function Timeline(target)
 	TimeUtils.setDateMinusDays(new Date(), 5, this);
 	this.updateInterval();
 
-	this.init();
-
 	this.windowList = [];
+	this.updateLastPosition();
 }
 
 Timeline.prototype = tEngine.clone(InteractiveObject.prototype);
@@ -36,7 +35,6 @@ Timeline.prototype.initDays = function()
 	var firstMoment = this.begin;
 	var lastMoment  = this.end;
 
-	// console.log(firstMoment, lastMoment);
 
 	var toMidnight = TimeUtils.toMidnight(firstMoment);
 	var day = TimeUtils.days(1);
@@ -79,7 +77,7 @@ Timeline.prototype.renderDays = function()
 	var n = 0;
 	group.each(function() { ++n; });
 
-	var x = d3.time.scale().domain([firstInstant, lastInstant]).range([0, this.size[0]]);
+	var x = d3.time.scale().domain([firstInstant, lastInstant]).range([0, this.getWidth()]);
 
 	if(n == 0)
 	{
@@ -150,7 +148,7 @@ Timeline.prototype.renderLabels = function(target)
 	var lastInstant  = this.end;
 	var firstInstant = this.begin;
 
-	var x = d3.time.scale().domain([firstInstant, lastInstant]).range([0, this.size[0]]);
+	var x = d3.time.scale().domain([firstInstant, lastInstant]).range([0, this.getWidth()]);
 	var labelGroup = target.selectAll(".label");
 
 	n = 0;
@@ -162,12 +160,6 @@ Timeline.prototype.renderLabels = function(target)
 	}
 
 	var labelList = [];
-
-	// var beginStr = TimeUtils.dateFormatter(this.begin);
-	// var endStr = TimeUtils.dateFormatter(this.end);
-
-	// labelList.push(new GraphText(beginStr, "timelineTimestamp", 0, 0));
-	// labelList.push(new GraphText(endStr, "timelineTimestamp", 700, 0, "end"));
 
 	for(var i in this.days)
 	{
@@ -184,7 +176,6 @@ Timeline.prototype.renderLabels = function(target)
 		.attr("class", function(d) { return d.style; })
 		.attr("dx", function(d) { return d.x; } )
 		.attr("dy", function(d) { return d.y; });
-		// .attr("class", "tick");
 
 	labelGroup.transition()
 		.duration(0)
@@ -215,8 +206,8 @@ Timeline.prototype.renderGrid = function ()
 	var lastInstant  = this.end;
 	var firstInstant = this.begin;
 
-	var x = d3.time.scale().domain([firstInstant, lastInstant]).range([0, this.size[0]]);
-	var y = d3.scale.linear().domain([1, 0]).range([0, this.size[1]]);
+	var x = d3.time.scale().domain([firstInstant, lastInstant]).range([0, this.getWidth()]);
+	var y = d3.scale.linear().domain([1, 0]).range([0, this.getHeight()]);
 
 	var begin = TimeUtils.roundMinute(firstInstant);
 	var end   = new Date(+(TimeUtils.roundMinuteUp(lastInstant)));
@@ -279,7 +270,7 @@ Timeline.prototype.renderGrid = function ()
 		.append("line")
 		.attr("x1", 0)
 		.attr("y1", y)
-		.attr("x2", this.size[0])
+		.attr("x2", this.getWidth())
 		.attr("y2", y)
 		.attr("class", "axis");
 
@@ -292,42 +283,6 @@ Timeline.prototype.renderGrid = function ()
 	this.renderDays();
 }
 
-
-Timeline.prototype.touchStarted = function(touch)
-{
-	// console.log("touchStarted");
-}
-
-Timeline.prototype.touchEnded = function(touch)
-{
-	// console.log("touchEnded");
-}
-
-Timeline.prototype.hold = function(touch)
-{
-	// console.log("hold");
-}
-
-Timeline.prototype.swipe = function(touch)
-{
-	// console.log("swipe");
-}
-Timeline.prototype.swipeRight = function(touch)
-{
-	// console.log("swipeRight");
-}
-Timeline.prototype.swipeLeft = function(touch)
-{
-	// console.log("swipeLeft");
-}
-Timeline.prototype.swipeUp = function(touch)
-{
-	// console.log("swipeUp");
-}
-Timeline.prototype.swipeDown = function(touch)
-{
-	// console.log("swipeDown");
-}
 Timeline.prototype.pan = function(touch, mouse, inverse, interval)
 {
 	if(tEngine.countTouchesObjectIsTarget(this) == 1 && this.dragging == false || typeof mouse !== "undefined")
@@ -335,12 +290,11 @@ Timeline.prototype.pan = function(touch, mouse, inverse, interval)
 		if(typeof mouse === "undefined")
 		{
 			var delta = touch.lastPosition[0]-touch.position[0];
-			this.panTime(delta*this.interval/this.size[0]*1000);
+			this.panTime(delta*this.interval/this.getWidth()*1000);
 		}
 		else
 		{
-			// console.log(-10*mouse*this.interval/this.size[0]*1000);
-			this.panTime(-10*mouse*this.interval/this.size[0]*1000);
+			this.panTime(-10*mouse*this.interval/this.getWidth()*1000);
 		}
 		this.updateInterval();
 		this.render();
@@ -370,7 +324,6 @@ Timeline.prototype.panTime = function(pan)
 
 Timeline.prototype.pinch = function(touch, distance, angle)
 {
-	// console.log("pinch", distance)
 	this.begin = new Date(this.begin.valueOf()-distance*5000);
 	this.end = new Date(this.end.valueOf()+distance*5000);
 	this.updateInterval();

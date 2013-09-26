@@ -42,7 +42,6 @@ Animation.prototype.update = function ()
 			if(this.done >= this.duration)
 			{
 				this.element[this.animatedProperty] = this.animateTo+this.unit;
-				this.elementOwner.somethingChanged();
 				if(this.callbackFunction != undefined)
 					this.callbackFunction.call(this.elementOwner);
 				this.stop();
@@ -60,13 +59,7 @@ Animation.prototype.update = function ()
 					this.element[this.animatedProperty] = parseFloat(this.animateFrom-
 							((this.animateFrom-this.animateTo)/this.duration*this.done))+this.unit;	
 				}
-				this.elementOwner.somethingChanged();
-				// if(this.callbackFunction != undefined)
-					// this.callbackFunction.call(this.elementOwner);
-				// this.elementOwner.animationCallback();
 			}
-			// console.log(this.element[this.animatedProperty]);
-			// console.log(this.element[this.animatedProperty]);
 		}
 	}
 }

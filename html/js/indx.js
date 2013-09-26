@@ -235,33 +235,30 @@ angular
 				}).filter(u.defined);
 				return u.when(dfds);
 			},
+			_load_from_json: function(json) {
+				var objdata = response.data, this_ = this;
+				if (objdata['@version'] === undefined) {
+					// then the server thinks we've been deleted, so let's just die.
+					return u.dreject(this.id);
+				}
+				// we are at current known version as far as we know
+				var obj_save_dfds = _(objdata).map(function(obj,uri) {
+					// top level keys - corresponding to box level properties
+					if (uri[0] === "@") { return; } // ignore "@id", "@version" etc
+					// not one of those, so must be a
+					// < uri > : { prop1 .. prop2 ... }
+					u.assert(uri === this_.id, 'can only deserialise this object ');
+					return this_._deserialise_and_set(obj);
+				});
+				return u.when(obj_save_dfds);
+			},
+			// this code path taken if someone just fetches one model directly using m.fetch()
 			_fetch:function() {
 				var this_ = this, fd = u.deferred(), box = this.box.get_id();
 				this.box._ajax('GET', box, {'id':this.id}).then(function(response) {
 					this_._set_fetched(true);
-					var objdata = response.data;
-					if (objdata['@version'] === undefined) {
-						// then the server thinks we've been deleted, so let's just die.
-						return fd.reject(this_.id);
-						// old code:
-						// according to the server, we're dead.
-						// console.log('zombie detected ', this_.id);
-						// this_.cid = this_.id;
-						// this_.unset({});
-						// delete this_.id;
-						// fd.resolve();
-						// return;
-					}
-					// we are at current known version as far as we know
-					var obj_save_dfds = _(objdata).map(function(obj,uri) {
-						// top level keys - corresponding to box level properties
-						if (uri[0] === "@") { return; } // ignore "@id", "@version" etc
-						// not one of those, so must be a
-						// < uri > : { prop1 .. prop2 ... }
-						u.assert(uri === this_.id, 'can only deserialise this object ');
-						return this_._deserialise_and_set(obj);
-					});
-					u.when(obj_save_dfds).then(function(){ fd.resolve(this_); }).fail(fd.reject);
+					this_._load_from_json(response.data)
+						.then(function(){ fd.resolve(this_); }).fail(fd.reject);
 				});
 				return fd.promise();
 			},
@@ -542,66 +539,84 @@ angular
 			},
 			get_obj:function(objid) {
 				// get_obj always returns a promise
-				u.assert(typeof objid === 'string' || typeof objid === 'number', "objid has to be a number or string");
-				var d = u.deferred(),
-				cachemodel = this._objcache().get(objid),
-				fetching_dfd = this._fetching_queue[objid],
-				hasmodel = cachemodel && fetching_dfd === undefined,
-				this_ = this;
+				u.assert(typeof objid === 'string' || typeof objid === 'number' || _.isArray(objid), "objid has to be a number or string or an array of such things");
+				var multi = _.isArray(objid),
+					d = u.deferred(),
+					this_ = this;
 
-				if (hasmodel) {
-					// debug('returning cached ', objid);
-					d.resolve(cachemodel); return d.promise();
-				}
+				// if has model
+				// to fix a deadlock condition -
+				// if we fetch someone who loops back to us
+				// then we will never resolve with this code:
+				//
+				// fetching_dfd.then(d.resolve).fail(d.reject);
+				// return d.promise();
+				// --
+				// therefore a fix:
 
-				// check to see if already fetching, then we can tag along
-				if (fetching_dfd) {
-					// to fix a deadlock condition -
-					// if we fetch someone who loops back to us
-					// then we will never resolve with this code:
-					//
-					// fetching_dfd.then(d.resolve).fail(d.reject);
-					// return d.promise();
-					// --
-					// therefore a fix:
-					d.resolve(cachemodel);
+				var helper = function(objid) {
+					var	cachemodel = this_._objcache().get(objid),
+						fetching_dfd = this_._fetching_queue[objid],
+						hasmodel = cachemodel && fetching_dfd === undefined,
+						d = u.deferred();
+
+					if (!multi && hasmodel || fetching_dfd) {
+						return u.dresolve(cachemodel);
+					}
+
+					// if not already fetching then we have to fetch
+					this_._fetching_queue[objid] = d;
+					var model = this_._create_model_for_id(objid);
+					// if the serve knows about it, then we fetch its definition
+					// console.log('objlist ', this._objlist());
+
+					model.fetch().then(function() {
+						d.resolve(model);
+						delete this_._fetching_queue[objid];
+					}).fail(function(err) {
+						error('failed.. declaring it new ', objid);
+						// TODO check if 404'd
+						error('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA err - didnt exist ? ', err);
+						model.is_new = true;
+						d.resolve(model);
+						delete this_._fetching_queue[objid];
+					});
+
 					return d.promise();
-				}
+				};
 
-				// if not already fetching then we have to fetch
-				this._fetching_queue[objid] = d;
-				var model = this_._create_model_for_id(objid);
-				// if the serve knows about it, then we fetch its definition
-				// console.log('objlist ', this._objlist());
+				if (multi) {
+					var missing_models = {}, dmissing_by_id = {};
+					var ds = objid.map(Function(oid) {
+						var cachemodel = this_._objcache().get(oid);
+						if (cachemodel) { return u.dresolve(cachemodel); }
+						var model = this_._create_model_for_id(oid);
+						missing_models[oid] = model;
+						dmissing_by_id[oid] = u.deferred();
+						this_._fetching_queue[oid] = d;
+						return dmissing_by_id[oid];
+					};
 
-				// old code ::
-				// if (this._objlist().indexOf(objid) >= 0) {
-				// 	console.log('object exists, going to fetch it ');
-				// 	model.fetch().then(function() {
-				// 		d.resolve(model);
-				// 		delete this_._fetching_queue[objid];
-				// 	}).fail(d.reject);
-				// } else {
-				// 	console.log('object doesnt exist, not going to fetch it ');
-				// 	// otherwise it must be new!
-				// 	model.is_new = true;
-				// 	d.resolve(model);
-				// }
+					var lacks = _(missing_models).keys();
 
-				debug('trying to fetch ', objid);
-				model.fetch().then(function() {
-					d.resolve(model);
-					delete this_._fetching_queue[objid];
-				}).fail(function(err) {
-					error('failed.. declaring it new ', objid);
-					// TODO check if 404'd
-					error('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA err - didnt exist ? ', err);
-					model.is_new = true;
-					d.resolve(model);
-					delete this_._fetching_queue[objid];
-				});
+					this._ajax('GET', box, {'id':lacks}).then(function(response) {
+						response.data.map(function(mraw) {
+							var id = mraw['@id'], model = missing_models[id];
+							u.assert(id, "Got an id undefined");
+							u.assert(model, "Got a model we didnt ask for", id);
+							model._set_fetched(true);
+							model._load_from_json(mraw)
+								.then(function(){ 
+									dmissing_by_id[id].resolve(model); 
+									delete this_._fetching_queue[objid];
+								}).fail(function(e){ dmissing_by_id[id].reject('Error loading ' + id + ' ' + e); });
+						});
+					});
 
-				return d.promise();
+					return ds;
+				};
+				return helper(objid);
+
 			},
 			// ----------------------------------------------------
 			_update_object_list:function(updated_obj_ids, added, deleted) {

@@ -145,19 +145,15 @@ Tool.prototype.touchStarted = function(touch)
 		animation.elementOwner = clone;
 		// animation.callbackFunction = this.moveHighlight;
 		animation.start();
-		// console.log(animation);
 
 		clone.animations.push(animation);
 
-		// clone.updatePosition([380,10]);
 		tEngine.interactiveObjectList[clone.element.id] = clone;
-		// console.log(clone);
 	}
 }
 
 Tool.prototype.touchEnded = function(touch)
 {
-	// console.log("touchEnded");
 	if(this.draggable == true && this.locked == false)
 	{
 		this.locked = true;
@@ -171,7 +167,6 @@ Tool.prototype.touchEnded = function(touch)
 		animation.elementOwner = this;
 		animation.callbackFunction = this.suicide;
 		animation.start();
-		// console.log(animation);
 
 		this.animations.push(animation);
 	}

@@ -115,12 +115,6 @@ TimeInterval.prototype.pan = function(pan)
 
 	var beginLimit = new Date(this.dataSource.readings[0].instant);
 	var endLimit = new Date(this.dataSource.readings[this.dataSource.readings.length-1].instant);
-	// console.log(this.dataSource.readings);
-
-for(var i =0; i<this.dataSource.readings.length; i++)
-{
-	// console.log(this.dataSource.readings[i].instant);
-}
 
 	if(+(begin) >= +(beginLimit) && +(end) <= +(endLimit))
 	{
@@ -193,7 +187,6 @@ TimeInterval.prototype.adjustInterval = function()
 	}
 	else
 	{
-		// data before
 		if(+(this.begin) < +(this.dataInterval[0].instant)) // if begin moved to the past
 		{
 			var i = this.dataInterval[0].originalIndex;
@@ -209,7 +202,6 @@ TimeInterval.prototype.adjustInterval = function()
 				}
 				for(;i < this.dataInterval[0].originalIndex;i++) // add new data to temp lists
 				{
-					// if(+(this.dataSource.instant[i]) >= +(this.begin))
 					if(i>=0)
 					{
 						var temp = [];
@@ -221,8 +213,6 @@ TimeInterval.prototype.adjustInterval = function()
 				}
 				this.dataInterval = tempList.concat(this.dataInterval); // add data to the beginning
 			}
-
-			// delete data from the end
 
 			i = this.dataInterval.length-1;
 			var cnt = 0;
@@ -241,7 +231,6 @@ TimeInterval.prototype.adjustInterval = function()
 		{
 			for(var i=0;i<this.dataInterval.length;i++)
 			{
-				// console.log(+(this.begin), +(this.dataSource.readings[i].instant))
 				if(+(this.begin) <= +(this.dataInterval[i].instant))
 				{
 					break;
