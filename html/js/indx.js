@@ -539,6 +539,8 @@ angular
 			},
 			get_obj:function(objid) {
 				// get_obj always returns a promise
+				// console.log(' get_obj() >> ', objid);
+				
 				u.assert(typeof objid === 'string' || typeof objid === 'number' || _.isArray(objid), "objid has to be a number or string or an array of such things");
 				var multi = _.isArray(objid),
 					ids = multi ? objid : [objid],
@@ -558,12 +560,10 @@ angular
 				var missing_models = {}, dmissing_by_id = {};
 				var ds = ids.map(function(oid) {
 					var cachemodel = this_._objcache().get(oid);
-					if (cachemodel) {
-						console.log('dresolved ');
-						return u.dresolve(cachemodel);
-					}
+					if (cachemodel) { return u.dresolve(cachemodel);	}
 					// otherwise we make a placeholder and loda it
 					var model = this_._create_model_for_id(oid);
+
 					missing_models[oid] = model;
 					dmissing_by_id[oid] = u.deferred();
 					this_._fetching_queue[oid] = d;
@@ -577,8 +577,7 @@ angular
 						_fids = _.union(_fids, lids);
 						// console.log('lids length ', lids.length);
 						this_._ajax('GET', this_.get_id(), {'id':lids}).then(function(response) {
-							console.log('response data >> ', response);
-							_(response.data).map(function(mraw,id) {
+							var resolved_ids = _(response.data).map(function(mraw,id) {
 								if (id[0] === '@') { return; }
 								var model = missing_models[id];
 								u.assert(id, "Got an id undefined");
@@ -590,7 +589,16 @@ angular
 									delete this_._fetching_queue[id];
 								}).fail(function(e){
 									dmissing_by_id[id].reject('Error loading ' + id + ' ' + e);
+									delete this_._fetching_queue[id];
 								});
+								return id;
+							}).filter(u.defined);
+
+							// NOT ACCOUNTED FOR check >> 
+							// models not accounted for were blank.
+							_(lids).difference(resolved_ids).map(function(id) {
+								dmissing_by_id[id].resolve(missing_models[id]);
+								delete this_._fetching_queue[id];
 							});
 						}).fail(function(error) {
 							lids.map(function(id) {
@@ -602,7 +610,7 @@ angular
 				} else {
 					console.log('already have all the models, returning directly ');
 				}
-				console.log('fids versus ds >>>>>>>>>> ', _fids.length, ds.length, ' lacks:>', lacks.length);
+				// console.log('fids versus ds >>>>>>>>>> ', _fids.length, ds.length, ' lacks:>', lacks.length);
 				return multi ? u.when(ds) : ds[0];
 			},
 			// ----------------------------------------------------
