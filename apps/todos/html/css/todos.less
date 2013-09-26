@@ -1,351 +1,382 @@
+@import "/css/indx-ui/mixins.less";
 @import url(http://fonts.googleapis.com/css?family=Port+Lligat+Slab|Playball);
 
+@t-fn: cubic-bezier(0.250, 0.460, 0.450, 0.940);
+@t-dur: 0.3s;
 
-.navbar {
-  margin-bottom: 0;
+body {
+  overflow-x: hidden;
 }
 
-h2.title {
-  font-family: 'Playball', cursive;
-  font-weight: normal;
-  font-size: 25px;
-  margin-top: 12px;
-  color: #777777;
-  display: inline-block;
+.indx-navbar.indx-sidebar .navbar-brand {
+    font-family: 'Playball', cursive;
+    font-size: 33px;
 }
 
-.col-left, .col-right {
+.todo-lists {
+  overflow: auto;
+
+  .dropping {
+    background-color: #fbeed5;
+  }
+}
+
+ul.todo-list {
+  list-style: none;
+  margin: 0;
   padding: 0;
-  .navbar {
-    border-width: 0 0 1px 0;
-    border-radius: 0;
-    background: white;
-    padding: 0 15px;
-    .navbar-nav > li > a {
-      line-height: 19px;
-    }
-    button {
-      height: 26px;
-      padding-top: 0px;
-      margin-top: 11px;
-      background: #f8f8f8;
-      margin-left: 10px;
+
+  li.todo-placeholder {
+    height: 0;
+    background: #ccc;
+    box-shadow: 0 0 15px 0 rgba(0, 0, 0, 0.3) inset;
+    &.animate {
+      .transition(height 0.06s linear;);
     }
   }
-}
 
-.col-left {
-  z-index: 1000;
-}
+  li.todo-item {
+    position: relative;
+    list-style: none;
+    margin: 0;
+    border-bottom: 1px solid #eee;
+    background: #ccc;
+    z-index: 5;
 
-.col-right .navbar {
-
-}
-
-.todos-container {
-  border-left: 1px solid #eee;
-  margin: 0 auto;
-
-  h2 {
-    position: absolute;
-    text-align: center;
-    left: 50%;
-    width: 200px;
-    margin-left: -100px;
-    top: 0px;
-  }
+    .transition(box-shadow @t-dur @t-fn, border-bottom-color @t-dur @t-fn; opacity @t-dur @t-fn;);
 
 
-  .todo-list {
-
-    h3 {
-      font-family: 'Port Lligat Slab', serif;
-      font-size: 15px;
-      text-transform: uppercase;
-      text-align: center;
+    .undo {
+      position: absolute;
+      width: 150px;
+      font-weight: bold;
+      font-size: 20px;
+      margin-right: -14px;
+      z-index: 0;
+      a {
+        display: block;
+        padding: 24px 0 24px 20px;
+        color: white;
+      }
     }
-    ul {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-      border-top: 1px solid rgba(0, 0, 0, 0.1);
 
-      li.todo-item {
+    &:hover {
+      .todo-body .todo-handle { display: block; }
+    }
+
+
+    &.completed {
+      .todo-body, textarea {
+        background: #eee;
+        color: #444;
+      }
+      .todo-urgency {
+        background-color: #666 !important;
+        .todo-urgency-arrows { display: none; }
+      }
+      .todo-body .todo-checkbox .tick {
+        display: block;
+        color: #666;
+      }
+    }
+
+    &.justcompleted {
+      z-index: 4;
+      .todo-body {
+        margin-left: 120px;
+        opacity: 0;
+        margin-top: -80px;
+        .transition(margin-left 0.3s linear, opacity 3s linear, margin-top 0.3s linear 3s;);
+      }
+    }
+
+
+    &.ui-draggable-dragging {
+      z-index: 1000;
+      box-shadow: 1px 2px 15px 0px rgba(0, 0, 0, 0.1);
+    }
+
+    &.editing {
+      box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.3);
+      border-bottom-color: white;
+      z-index: 20;
+      .todo-body {
+        .todo-urgency {
+          width: 75px;
+        }
+        .todo-title textarea {
+          opacity: 1;
+        }
+      }
+    }
+
+    &.disabled {
+      /*border-bottom-color: #aaa;*/
+      opacity: 0.1;
+      /*.todo-body, textarea {
+        background: #ccc;
+        color: #444;
+      }
+      .todo-urgency {
+        opacity: 0.4;
+      }*/
+    }
+
+    .todo-body {
+      position: relative;
+      .transition(margin-left @t-dur @t-fn, opacity 0.3s linear, background-color @t-dur @t-fn;);
+      margin-left: 0;
+      background: white;
+      opacity: 1;
+
+      .todo-checkbox {
+        position: absolute;
+        left: 32px;
+        top: 24px;
+        width: 30px;
+        height: 30px;
+        border: 1px solid #ccc;
+        cursor: pointer;
+        .tick {
+          margin-top: 2px;
+          margin-left: 3px;
+          font-size: 22px;
+          display: none;
+          color: #ccc;
+        }
+        &:hover .tick {
+          display: block;
+        }
+      }
+      .todo-handle {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        width: 26px;
+        cursor: move;
+        padding: 26px 12px;
+        display: none;
+        z-index: 1;
+      }
+      .todo-title {
+        margin-left: 80px;
+        padding: 24px 0;
+        padding-left: 5px;
+        font-size: 20px;
+        font-family: verdana, sans-serif;
+        font-weight: bold;
+        min-height: 26px;
+        padding-right: 20px;
         position: relative;
-        list-style: none;
-        margin: 0;
-        padding: 9px 5px 0px;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-        transition: height 0.3s;
-        -webkit-transition: height 0.3s; /* Safari */
+        cursor: text;
 
-        &:hover {
-          .todo-left-overflow {
-            width: 14px;
-            transition: width 0.3s;
-            -webkit-transition: width 0.3s; /* Safari */
-          }
-          .todo-hover {
-            display: block;
-          }
+        textarea {
+          position: absolute;
+          top: 0;
+          right: 0;
+          left: -3px;
+          bottom: 0;
+          font-weight: bold;
+          border-color: transparent;
+          background: transparent;
+          resize: none;
+          padding: 23px 20px 23px 7px;
+          outline: 0;
+          opacity: 0;
         }
-        &.completed .todo-title {
-          text-decoration: line-through;
-        }
+      }
+      .todo-urgency {
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: -1px;
+        width: 5px;
+        z-index: 2;
+        .transition(width @t-dur @t-fn 0.1s, background-color @t-dur @t-fn;);
 
-        &.editing {
-          .todo-meta {
-            height: 50px;
-            overflow: visible;
-          }
-          .todo-left-overflow { display: none; }
-        }
-
-        .todo-hover { display: none; }
-
-        .todo-body {
-          position: relative;
-
-          .todo-checkbox {
-            position: absolute;
-            left: 10px;
-            top: 4px;
-            width: 20px;
-            height: 20px;
-            border: 1px solid #ccc;
+        .todo-urgency-arrows {
+          & > div {
+            position: relative;
+            width: 100%;
+            height: 50%;
+            .transition(background-color @t-dur @t-fn;);
+            background-color: rgba(255, 255, 255, 0);
             cursor: pointer;
+            &:hover {
+              background-color: rgba(255, 255, 255, 0.2);
+            }
+            .arrow-head {
+              position: absolute;
+              left: 30px;
+              border-left: 8px solid transparent;
+              border-right: 8px solid transparent;
+              width: 0;
+              height: 0;
+            }
           }
-          .todo-title {
-            margin: 4px 0 0 50px;
-            font-size: 20px;
-            font-family: 'Port Lligat Slab', serif;
-            min-height: 26px;
-
-            textarea {
-              width: 100%;
-              margin: -3px;
+          .todo-urgency-up {
+            border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+            .arrow-head {
+              border-bottom: 8px solid white;
+              bottom: 40%;
+            }
+          }
+          .todo-urgency-down {
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            .arrow-head {
+              border-top: 8px solid white;
+              top: 40%;
             }
           }
         }
-
-        .todo-controls {
-          position: absolute;
-          top: 10px;
-          right: 10px;
-        }
-
-        .todo-left-overflow {
-          position: absolute;
-          left: 0;
-          height: 100%;
-          top: 0;
-          width: 2px;
-          overflow: hidden;
-          transition: width 0.3s;
-          -webkit-transition: width 0.3s; /* Safari */
-
-          .todo-urgency {
-            text-transform: uppercase;
-            font-weight: bold;
-            -webkit-transform:rotate(-90deg);
-            width: 50px;
-            -webkit-transform-origin: 26px 26px;
-            text-align: center;
-            font-size: 10px;
-          }
-
-
-        }
-
-        .todo-meta {
-          margin: 10px 0 0 49px;
-          transition: height 0.3s;
-          -webkit-transition: height 0.3s; /* Safari */
-
-        }
-      }
-    }
-  }
-
-  ul.todos-footer {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    li {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-      border-top: 1px solid #eee;
-
-      a {
-        display: block;
-        font-size: 12px;
-        width: 100%;
-        font-weight: bold;
-        text-align: center;
-        color: #666;
-        padding: 6px 0;
-      }
-
-      &.todo-create {
-        a {
-          font-size: 20px;
-          padding: 20px 0;
-        }
       }
     }
   }
 }
+
 
 .urgency-low {
-  background: #5eb95e !important;
-  border-color: #5eb95e !important;
+  background-color: #33CC00 !important;
+  border-color: #33CC00 !important;
   color: white;
+  .todo-urgency-down { opacity: 0.4; }
 }
 .urgency-med {
-  background: #faea32 !important;
-  border-color: #faea32 !important;
+  background-color: #FFCC00 !important;
+  border-color: #FFCC00 !important;
   color: black;
 }
 .urgency-high {
-  background: #f18d3a !important;
-  border-color: #f18d3a !important;
+  background-color: #FF9900 !important;
+  border-color: #FF9900 !important;
   color: white;
 }
 .urgency-urgent {
-  background: #dd514c !important;
-  border-color: #dd514c !important;
+  background-color: #FF0000 !important;
+  border-color: #FF0000 !important;
   color: white;
+  .todo-urgency-up { opacity: 0.4; }
 }
 
 
-
-.need-log-in, .need-select-box {
-  position: fixed;
-  right: 40px;
-  left: 30px;
-  top: 54px;
-  .white-cover {
-    position: absolute;
-    top: 0;
-    height: 60px;
-    background: white;
-    z-index: 5;
-  }
-  .center-title {
-    position: absolute;
-    left: 50%;
-    h2 {
-      position: relative;
-      z-index: 10;
-      top: 0;
-      font-size: 20px;
-      font-weight: bold;
-      left: -50%;
+@media (max-width: 400px) {
+  .indx-main {
+    .indx-navbar .form-group {
+      width: 150px;
+      margin-top: 2px;
     }
-  }
-  .instruct-arrow {
-    position: absolute;
-    z-index: 0;
-    top: 47px;
-    left: 0;
-    right: 0;
-    .arrow-horiz {
-      position: absolute;
-      left: 0;
-      right: 0;
-      bottom: 0px;
-      .arrow-horiz-line { width: 100%; }
-    }
-    .arrow-vert {
-      position: absolute;
-      height: 32px;
-      bottom: 0;
-      .arrow-vert-line { height: 100%; }
-      .arrow-head-up {
-        position: absolute;
-        bottom: 100%;
-        left: -@arrowheadsize + @arrowwidth / 2;
-      }
-    }
-  }
-}
 
-.need-log-in {
-  .white-cover {
-    left: 0;
-    right: 50%;
-  }
-  .instruct-arrow {
-    .arrow-vert {
-      right: 0;
-    }
-  }
-}
-
-.need-select-box {
-  .white-cover {
-    left: 50%;
-    right: 0;
-  }
-  .instruct-arrow {
-    .arrow-horiz {
-      left: 134px;
-    }
-    .arrow-vert {
-      left: 134px;
-    }
-  }
-}
-
-@arrowcolor: #bce8f1;
-@arrowwidth: 2px;
-@arrowheadsize: 8px;
-
-.arrow-horiz-line {
-  border-top: @arrowwidth solid @arrowcolor;
-  height: 0;
-}
-
-.arrow-vert-line {
-  border-left: @arrowwidth solid @arrowcolor;
-  width: 0;
-}
-
-.arrow-head-up {
-  border-bottom: @arrowheadsize solid @arrowcolor;
-  border-right: @arrowheadsize solid transparent;
-  border-left: @arrowheadsize solid transparent;
-  width: 0;
-  height: 0;
-}
-
-.nav-flat {
-  li {
-    vertical-align: top;
-    display: inline-block;
-  }
-}
-
-@media (max-width: 767px) {
-  .todos-container .todo-list ul li.todo-item {
-    padding-top: 5px;
-    padding-bottom: 5px;
-    form {
+    ul.todo-list {
+      list-style: none;
       margin: 0;
-    }
-    .todo-body {
-      .todo-title {
-        font-size: 17px;
-        margin-left: 35px;
-        margin-top: 0;
-      }
-      .todo-checkbox {
-        left: 5px;
+      padding: 0;
+
+      li.todo-item {
+        &.editing {
+          .todo-body {
+            .todo-urgency {
+              width: 43px;
+            }
+          }
+        }
+        .todo-body {
+          .todo-urgency {
+            .todo-urgency-arrows {
+              & > div {
+                .arrow-head {
+                  left: 14px;
+                }
+              }
+            }
+          }
+          .todo-checkbox {
+            width: 20px;
+            height: 20px;
+            top: 14px;
+            left: 16px;
+          }
+
+          .todo-title {
+            font-size: 15px;
+            padding-top: 14px;
+            padding-bottom: 14px;
+            min-height: 20px;
+            margin-left: 46px;
+            textarea {
+              padding-top: 13px;
+              padding-bottom: 11px;
+            }
+          }
+        }
       }
     }
   }
-  .navbar-brand {
-    display: none;
+}
+
+.fade-hide, .fade-show {
+    -webkit-transition:all cubic-bezier(0.250, 0.460, 0.450, 0.940) 0.5s;
+    -moz-transition:all cubic-bezier(0.250, 0.460, 0.450, 0.940) 0.5s;
+    -o-transition:all cubic-bezier(0.250, 0.460, 0.450, 0.940) 0.5s;
+    transition:all cubic-bezier(0.250, 0.460, 0.450, 0.940) 0.5s;
+}
+.fade-hide {
+    opacity:1;
+}
+.fade-hide.fade-hide-active {
+    opacity:0;
+}
+.fade-show {
+    opacity:0;
+}
+.fade-show.fade-show-active {
+    opacity:1;
+}
+
+
+.dlg-container {
+  width: 100%;
+  position: fixed;
+  top: 20%;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  text-align: center;
+  z-index: 1000;
+}
+
+.dlg {
+  display: inline-block;
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0px 0px 7px rgba(0,0,0,0.4);
+  .dlg-title {
+    padding: 10px;
+    font-weight: bold;
+    border-bottom: 1px solid #ddd;
+    font-size: 18px;
+  }
+  .dlg-body {
+    padding: 20px;
+    width: 300px;
+  }
+  .dlg-controls {
+    button {
+      box-sizing: border-box;
+      background: white;
+      border-bottom-width: 0;
+      border-right-width: 0;
+      border-top: 1px solid #ccc;
+      border-left: 1px solid #ccc;
+      width: 50%;
+      height: 40px;
+      &:first-child {
+        border-left-width: 0px;
+        border-radius: 0 0 0 5px;
+      }
+      &:last-child {
+        border-radius: 0 0 5px 0;
+      }
+    }
   }
 }

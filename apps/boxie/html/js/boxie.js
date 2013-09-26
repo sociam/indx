@@ -1,8 +1,18 @@
 /* global angular, console, _, Backbone, $ */
 angular
 	.module('boxie', ['ui','indx'])
-	.controller('boxie', function($scope, client, utils, collection) {
+	.config(['$routeProvider', function ($routeProvider) {
+
+		console.log('CONFIG')
+		$routeProvider
+			.when('/', { templateUrl: 'partials/root.html', controller: 'RootCtrl' })
+			.when('/obj/:obj_id', { templateUrl: 'partials/obj-detail.html', controller: 'ObjDetailCtrl' })
+			.otherwise({ redirectTo: '/obj/1' });
+	}])
+	.controller('RootCtrl', function ($scope, client, utils, collection) {
 		'use strict';
+
+		console.log('PLEASE WORK')
 
 		var box,
 			u = utils;
@@ -19,12 +29,13 @@ angular
 				},
 				update: function () {
 					this.val_string = JSON.stringify(this.toJSON(), null, ' ');
+					this._generate_attribute_array();
 				},
 				analyse: function () {
 					$scope.curr_obj = this;
 				},
-				attribute_array: function () {
-					return _.map(this.attributes, function (value, key) {
+				_generate_attribute_array: function () {
+					this.attribute_array = _.map(this.attributes, function (value, key) {
 						var type = typeof value,
 							is_array = false;
 						if (_.isArray(value)) {

@@ -2,8 +2,11 @@ module.exports = {
 	basePath: '../html/',
 	outputDirectory: '../html/docs/indx/',
 
-	filePaths: [
+	require: [
 		'../docsgen/abstracts/*',
+	],
+
+	files: [
 		'js/indx.js'
 		//'js/indx-utils.js'
 	],

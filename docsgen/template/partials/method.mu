@@ -1,14 +1,26 @@
 <a name="{{id}}"></a>
-<div class="method well" id="{{id}}">
-  <h4>{{name}}</h4>
+<div class="method " id="{{id}}">
+  {{#construct}}
+    <h4>Constructor</h4>
+    <code class="header-example">
+      new {{class.name}}({{#args}}
+        {{#mode.optional}}[{{/mode.optional}}{{name}}{{^last}},{{/last}}{{#mode.optional}}]{{/mode.optional}}
+      {{/args}})
+    </code>
+  {{/construct}}
 
-  <code class="header-example">{{instanceName}}.{{name}}(
-  {{#args}}
-    {{#mode.optional}}[{{/mode.optional}}{{name}}{{^last}},{{/last}}{{#mode.optional}}]{{/mode.optional}}
-  {{/args}}
-  )</code>
 
-  <div class="lineno">line <a href="#" onclick="showSource('{{file}}', {{line}})">{{line}}</a></div>
+  {{^construct}}
+    <h4>{{name}}</h4>
+
+    <code class="header-example">
+      {{instanceName}}.{{name}}({{#args}}
+        {{#mode.optional}}[{{/mode.optional}}{{name}}{{^last}},{{/last}}{{#mode.optional}}]{{/mode.optional}}
+      {{/args}})
+    </code>
+  {{/construct}}
+
+  <a class="lineno" href="#" onclick="showSource('{{file}}', {{line}})">[ line {{line}} ]</a>
 
   <div>
 
@@ -22,10 +34,10 @@
 
     {{#hasArgs}}
       <br>
-      Arguments:
+      <b>Arguments</b>:
       <ol class="arguments">
         {{#args}}
-          <li>{{name}}
+          <li><code>{{name}}</code>
             {{#moreInfo}} -
               {{#hasTypes}}
                 ({{#types}}
@@ -42,44 +54,49 @@
 
     <br>
 
-    Returns:
-    <div class="return">
-      {{#result.async}}
-        Returns a promise. Asynchronous.
-        <h6>{{instanceName}}.{{name}}(...).then (
-          {{#then.args}}
-            &lt;{{type}}&gt; {{comment}},
-          {{/then.args}}
-        )</h6>
-        {{then.comment}}
-        <h6>fail</h6>
-        <ul>
-          {{#fail.cases}}
-          <li>
-            <h6>{{instanceName}}.{{name}}(...).fail (
-              {{#args}}
-                &lt;{{type}}&gt; {{comment}},
-              {{/args}}
-            )</h6>
-            {{comment}}
-          </li>
-          {{/fail.cases}}
-        </ul>
-      {{/result.async}}
+    {{#result}}
+      <div class="return">
+        <b>Returns</b>:
+        {{#async}}
+          a promise.
+          <table class="table table-bordered">
+            <thead><tr><th>On success</th><th>On failure</th></tr></thead>
+            <tbody><tr>
+              <td width="50%"><ul>
+                {{#then}}
+                  <li>
+                    <code>.then({{#args}}&lt;{{type}}&gt; {{comment}},{{/args}})</code> -
+                    {{comment}}
+                  </li>
+                {{/then}}
+              </ul></td>
+              <td width="50%"><ul>
+                {{#fail}}
+                  <li>
+                    <code>.fail({{#args}}&lt;{{type}}&gt; {{comment}},{{/args}})</code> -
+                    {{comment}}
+                  </li>
+                {{/fail}}
+              </ul></td>
+            </tr></tbody>
+          </table>
+        {{/async}}
 
-      {{#result.return}}
-        {{#hasTypes}}
-          ({{#types}}
-            <code>{{type}}</code>
-            {{^last}}or{{/last}}
-          {{/types}})
-        {{/hasTypes}}
-        {{comment}}
-      {{/result.return}}
+        {{#return}}
+          {{#hasTypes}}
+            ({{#types}}
+              <code>{{type}}</code>
+              {{^last}}or{{/last}}
+            {{/types}})
+          {{/hasTypes}}
+          {{comment}}
+        {{/return}}
 
-      {{#result.chain}}
-        <code>this</code> (chains).
-      {{/result.chain}}
-    </div>
+        {{#chain}}
+          <code>this</code>.
+        {{/chain}}
+      </div>
+    {{/result}}
   </div>
 </div>
+<hr>

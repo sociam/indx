@@ -1,0 +1,41 @@
+a:hover {
+    text-decoration: none;
+}
+.visible-mobile {
+    display: none;
+}
+@media (max-width:767px) {
+    .hidden-mobile {
+        display: none;
+    }
+    .visible-mobile {
+        display: block;
+    }
+}
+
+.drag-dots {
+	width: 12px;
+	height: 24px;
+	cursor: move;
+	.dot {
+		display: block;
+		width: 4px;
+		height: 4px;
+		border-radius: 4px;
+		background: #ccc;
+		margin: 3px;
+	}
+}
+
+.no-select {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+form {
+    margin: 0;
+}

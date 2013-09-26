@@ -1,0 +1,430 @@
+div {
+   -moz-user-select: -moz-none;
+   -khtml-user-select: none;
+   -webkit-user-select: none;
+  
+   -ms-user-select: none;
+   user-select: none;
+
+   -webkit-overflow-scroll:touch;
+}
+
+
+body
+{
+	font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+	background-color: #fafafa;
+}
+
+h3
+{
+	font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+	font-weight: normal;
+	margin-top: 0px;
+	margin-bottom: 5px;
+}
+
+#debugMenu
+{
+	position: absolute;
+	left: 1020px;
+}
+
+#activities
+{
+	position: absolute;
+	left: 990px;
+}
+
+#activities .activity
+{
+	background-color: #f9f9f9;
+	padding: 5px;
+	width: 200px;
+	color: #fff;
+	font-size: 12px;
+	text-align: center;
+	margin: 5px;
+}
+
+#activities .activity .checkbox
+{
+	float: left;
+}
+
+#activities .activity .title
+{
+	cursor: pointer;
+}
+
+#activities .activity .info
+{
+	clear: left;
+}
+
+#activities .activity .info .sourceName
+{
+	font-weight: bold;
+	text-align: left;
+}
+
+#left
+{
+	padding: 10px;
+}
+
+.scaleBar
+{
+	height: 3px;
+	top: 58.5px;
+	position:absolute;
+	background-color: #000;
+	cursor: ns-resize;
+	opacity: 0.2;
+}
+
+.showField
+{
+	background-color: #fff;
+}
+
+.hiddenField
+{
+	background-color: rgba(0,0,0, 0.5);
+	border: 0;
+	color: #fff;
+	font-size: 12px;
+}
+.hiddenField:focus 
+{
+    outline: none;
+}
+
+.hidden
+{
+	visibility: hidden;
+}
+
+#channelsWindow
+{
+	position: absolute;
+	left: 10px;
+	top: 10px;
+	width: 200px;
+	color: #000;
+	/*background-color: #eee;*/
+	z-index: 99999999;
+	/*display: inline;*/
+}
+
+#channelsWindow .container .channel
+{
+	background-color: #f9f9f9;
+	padding: 5px;
+	width: 200px;
+	color: #fff;
+	font-size: 12px;
+	text-align: center;
+}
+
+#channelsWindow .container .channel:hover {
+  border-color: white;
+  background-color: #000;
+  color: #fff;
+  cursor: move;
+}
+
+#debugButton
+{
+	position: absolute;
+	right: 10px;
+	bottom: 10px;
+	margin-top: 27px;
+	text-align: center;
+	font-weight: light;
+}
+
+path {
+	fill: none;
+}
+
+#graphSelection
+{
+
+}
+
+.window
+{
+	opacity: 0.2;
+}
+
+.graphInfo
+{
+	position: absolute;
+	width: 20px;
+	height: 100%;
+	right:0px;
+}
+
+.graphInfo .removeGraph
+{
+	margin-left: 5px;
+	width: 10px;
+	height: 10px;
+	background-color: #ff5555;
+	color: #fff;
+}
+
+.graphInfo .label
+{
+	position: absolute;
+	top:5px;
+	left:16px;
+
+	color: #fff;
+	cursor: default;
+	font-size: 10px;
+	text-align: center;
+	width: 110px;
+	
+	/*writing-mode:tb-rl;*/
+
+	-webkit-transform: rotate(90deg);
+	-moz-transform: rotate(90deg);
+	-ms-transform: rotate(90deg);
+	-o-transform: rotate(90deg);
+	transform: rotate(90deg);
+
+	-webkit-transform-origin: top left;
+	-moz-transform-origin: top left;
+	-ms-transform-origin: top left;
+	-o-transform-origin: top left;
+	transform-origin: top left;
+}
+
+.timelineGraph
+{
+	height: 90px;
+	overflow: hidden;
+	box-shadow: 0px 0px 10px #eee;
+	background-color: #fff;
+}
+
+.aGraph
+{
+	border: 1px solid #eee;
+	width: 720px;
+	height: 130px;
+	box-shadow: 0px 0px 10px #eee;
+	/*position: absolute;*/
+	left: 240px;
+	/*top: 100px;*/
+	overflow: hidden;
+	z-index: 1;
+}
+
+.picker
+{
+	height: 130px;
+	width: 1px;
+	background-color: #000;
+	position: absolute;
+	top: 0px;
+	left: 0px;
+}
+
+.progressBar
+{
+	height: 20px;
+	background-color: #fff;
+	border: #ddd 1px solid;
+	margin: 5px;
+}
+
+.progressBar .bar
+{
+	height: 20px;
+	background-color: #ddd;
+}
+
+.annotationLabel
+{
+	margin: 0 auto;
+	margin-top: 45px;
+	display: block;
+	width: 100px;
+	text-align: center;
+	overflow: auto;
+}
+
+.tooltip
+{
+	position: absolute;
+	border: #000 1px solid;
+}
+
+.annotation
+{
+	height: 120px;
+	width: 10px;
+	background: rgba(100, 100, 100, 0.5);
+	position: absolute;
+	top: 0px;
+	left: 1px;
+	/*border-radius: 5px;*/
+	z-index: 100;
+}
+
+.graphSelection
+{
+	height: 120px;
+	width: 10px;
+	/*background-color: #99f;*/
+	background: rgba(143, 143, 143, 0.5);
+	position: absolute;
+	top: 0px;
+	left: 1px;
+}
+
+.graphSelection svg path
+{
+	stroke-width: 1;
+}
+
+.selectable
+{
+   -moz-user-select: -moz-all;
+   -khtml-user-select: all;
+   -webkit-user-select: all;
+   -ms-user-select: all;
+   user-select: all;
+}
+
+#timeline
+{
+	/*background-color: #000;*/
+	position: absolute;
+	width: 720px;
+	height: 90px;
+	left: 240px;
+	top: 10px;
+	border: 1px solid #eee;
+	text-align: center;
+}
+
+.acceptButton
+{
+	height: 10px;
+	width: 10px;
+	background-color: #9f9;
+	position: absolute;
+	top: 110px;
+	right: 0px;
+}
+
+.removeButton
+{
+	height: 10px;
+	width: 10px;
+	background-color: #ff5555;
+	position: absolute;
+	top: 0px;
+	right: 0px;
+}
+
+.infoField
+{
+	position: absolute;
+	top: 12px;
+	right: 0px;
+	width: 100px;
+	height: 46px;
+	background-color: rgba(180,180,180, 0.7);
+	font-size: 9px;
+}
+
+.infoField .bold
+{
+	font-weight: bold;
+}
+
+.graph path
+{
+	stroke-width: 1;
+}
+
+.grid .tick {
+    stroke: rgba(0,0,0,0.05);
+}
+
+.grid .day {
+    stroke: rgb(0,0,0);
+    stroke-width: 1;
+}
+
+.grid .timelineDay {
+    stroke: rgba(0,0,0, 0.5);
+    stroke-width: 1;
+}
+
+.grid path {
+    stroke-width: 2;
+}
+
+.graphDay
+{
+	font-size: 10px;
+	background-color: #000;
+	color: #fff;
+}
+
+
+.graphTimestamp
+{
+	font-size: 10px;
+	background-color: #000;
+	color: #fff;
+}
+
+.timelineTimestamp
+{
+	font-size: 12px;
+	background-color: #000;
+	color: #fff;
+}
+
+.graphScale
+{
+	font-size: 10px;
+}
+
+.grid .axis
+{
+	stroke: black;
+	opacity: 0.3;
+}
+
+.crosshair
+{
+	stroke: rgb(0,0,0);
+	stroke-width: 1;
+}
+
+.crosshair .hCrosshair
+{
+	stroke: rgb(0,0,0);
+	stroke-width: 1;
+}
+
+
+.crosshair .valueText
+{
+	stroke-width: 0;
+	font-size: 10px;
+}
+
+.crosshair .dateText
+{
+	stroke-width: 0;
+	font-size: 12px;
+}

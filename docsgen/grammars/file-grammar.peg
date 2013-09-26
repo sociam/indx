@@ -1,46 +1,10 @@
+@import "utils-grammar.peg"
+
 start
-	= _$_ t:title? p:parameters? d:description_lines?
-			{ return { title: t, description: d, parameters: p }; }
-
-title
-	= "@title" _ t:comment
-			{ return t; }
-
-parameters
-	= p:parameter ps:parameters
-			{ ps[p] = true; return ps; }
-	/ p:parameter
-			{ var ps = {}; ps[p] = true; return ps; }
-parameter
-	= _$_ "@supplementary"
-			{ return "supplementary"; }
-
-description_lines
-	= d:description_line ds:description_lines
-			{ return [d].concat(ds); }
-	/ d:description_line
-			{ return [d]; }
-
-description_line
-	= __ $ d:comment
-			{ return d; }
-
-comment
-	= c:[^\n\r]*
-			{ return c.join(''); }
-
-$
-	= _ "///" _
+	= ps:properties d:description_lines
+			{ return { properties: ps, description: d }; }
 
 
-_$_ = __ $ __ _$_
-	/ __ $ __
-	/ __
-
-_
-	= [ \t]*
-			{ return ''; }
-
-__
-	= [ \t\r\n]*
-			{ return ''; }
+property
+	= "@" k:name _ v:comment?
+			{ return [k, v]; }

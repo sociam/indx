@@ -1,12 +1,13 @@
 ///
 /// @title Backbone.js
-/// @supplementary
+/// @version 1
 /// Provides the structure and documention for Backbone
 (function () {
 	"use strict";
 
 	var Backbone = {};
 
+	/// Backbone model
 	Backbone.Model = function () {
 	};
 

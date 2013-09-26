@@ -426,10 +426,3 @@ def connect_box_raw(box_name, db_user, db_pass):
 def connect_box(box_name,db_user,db_pass):
     return connect(INDX_PREFIX + box_name, db_user, db_pass)
 
-
-
-
-
-
-
-
