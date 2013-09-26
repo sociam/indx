@@ -372,21 +372,23 @@ def connect(db_name, db_user, db_pass):
     result_d = Deferred()
     if conn_str in POOLS:
         logging.debug("indx_pg2: returning existing pool for db: {0}, user: {1}".format(db_name, db_user))
-        pool = POOLS[conn_str]
+        p = POOLS[conn_str]
         # already connected, so just return a defered with itself
-        result_d.callback(pool)
+        result_d.callback(p)
     else:
         # not connected yet, so return after start() finished
 
-        def success(pool):
-            logging.debug("indx_pg2: returning new pool for db: {0}, user: {1}, pool: {2}".format(db_name, db_user, pool))
-            POOLS[conn_str] = pool # only do this if it successfully connects
-            if db_name not in POOLS_BY_DBNAME:
-                POOLS_BY_DBNAME[db_name] = []
-            POOLS_BY_DBNAME[db_name].append(pool)
-            result_d.callback(pool)
 
         p = IndxConnectionPool(None, conn_str)
+
+        def success(pool):
+            logging.debug("indx_pg2: returning new pool for db: {0}, user: {1}, pool: {2}".format(db_name, db_user, pool))
+            POOLS[conn_str] = p # only do this if it successfully connects
+            if db_name not in POOLS_BY_DBNAME:
+                POOLS_BY_DBNAME[db_name] = []
+            POOLS_BY_DBNAME[db_name].append(p)
+            result_d.callback(p)
+
         p.start().addCallbacks(success, result_d.errback)
 
     return result_d

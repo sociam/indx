@@ -62,7 +62,7 @@ class IndxConnectionPool:
                 def connected2(conn):
                     conn.runQuery(*args, **kwargs).addCallbacks(deferred.callback, deferred.errback)
 
-i               self.pool = self._connectPool()
+                self.pool = self._connectPool()
                 self.pool.start().addCallbacks(connected2, deferred.errback) # FIXME is this the best errback?
 
             pool_deferred.addErrback(err_cb)
