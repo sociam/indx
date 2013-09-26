@@ -282,6 +282,8 @@ class BoxHandler(BaseHandler):
 
 
     def do_GET(self,request):
+        BoxHandler.log(logging.DEBUG, "BoxHandler do_GET >>>>>>>>>>>>>>>>>>>>")
+
         token = self.get_token(request)
         if not token:
             return self.return_forbidden(request)
@@ -295,13 +297,15 @@ class BoxHandler(BaseHandler):
             store.setLoggerClass(BoxHandler, extra = {"token": token, "request": request})
             BoxHandler.log(logging.DEBUG, "BoxHandler GET request", extra = {"request": request, "token": token})
 
-            if "id" in request.args:
+            if "id" in request.args or "id[]" in request.args:
                 # return the objects listed in in the id arguments, e.g.:
                     # GET /box/?id=item1&id=item2&id=item3
-                id_list = request.args['id']
+                BoxHandler.log(logging.DEBUG, "BoxHandler GET request", extra = {"request": request, "id": request.args.get('id'), "id[]": request.args.get('id[]')})
+                id_list = request.args.get('id') or request.args.get('id[]')
                 # return ids of the whole box
-                return store.get_latest_objs(id_list).addCallbacks(lambda obj: self.return_ok(request, {"data": obj}), err_cb)   
+                return store.get_latest_objs(id_list).addCallbacks(lambda obj: self.return_ok(request, {"data": obj}), err_cb)
             else:
+                BoxHandler.log(logging.DEBUG, "BoxHandler GET request no id {0}".format(request))
                 # return the whole box
                 return store.get_latest().addCallbacks(lambda obj: self.return_ok(request, {"data": obj}), err_cb)
 

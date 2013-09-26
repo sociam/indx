@@ -541,6 +541,7 @@ angular
 				// get_obj always returns a promise
 				u.assert(typeof objid === 'string' || typeof objid === 'number' || _.isArray(objid), "objid has to be a number or string or an array of such things");
 				var multi = _.isArray(objid),
+					ids = multi ? objid : [objid],
 					d = u.deferred(),
 					this_ = this;
 
@@ -554,69 +555,55 @@ angular
 				// --
 				// therefore a fix:
 
-				var helper = function(objid) {
-					var	cachemodel = this_._objcache().get(objid),
-						fetching_dfd = this_._fetching_queue[objid],
-						hasmodel = cachemodel && fetching_dfd === undefined,
-						d = u.deferred();
-
-					if (!multi && hasmodel || fetching_dfd) {
+				var missing_models = {}, dmissing_by_id = {};
+				var ds = ids.map(function(oid) {
+					var cachemodel = this_._objcache().get(oid);
+					if (cachemodel) {
+						console.log('dresolved ');
 						return u.dresolve(cachemodel);
 					}
-
-					// if not already fetching then we have to fetch
-					this_._fetching_queue[objid] = d;
-					var model = this_._create_model_for_id(objid);
-					// if the serve knows about it, then we fetch its definition
-					// console.log('objlist ', this._objlist());
-
-					model.fetch().then(function() {
-						d.resolve(model);
-						delete this_._fetching_queue[objid];
-					}).fail(function(err) {
-						error('failed.. declaring it new ', objid);
-						// TODO check if 404'd
-						error('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA err - didnt exist ? ', err);
-						model.is_new = true;
-						d.resolve(model);
-						delete this_._fetching_queue[objid];
-					});
-
-					return d.promise();
-				};
-
-				if (multi) {
-					var missing_models = {}, dmissing_by_id = {};
-					var ds = objid.map(Function(oid) {
-						var cachemodel = this_._objcache().get(oid);
-						if (cachemodel) { return u.dresolve(cachemodel); }
-						var model = this_._create_model_for_id(oid);
-						missing_models[oid] = model;
-						dmissing_by_id[oid] = u.deferred();
-						this_._fetching_queue[oid] = d;
-						return dmissing_by_id[oid];
-					};
-
-					var lacks = _(missing_models).keys();
-
-					this._ajax('GET', box, {'id':lacks}).then(function(response) {
-						response.data.map(function(mraw) {
-							var id = mraw['@id'], model = missing_models[id];
-							u.assert(id, "Got an id undefined");
-							u.assert(model, "Got a model we didnt ask for", id);
-							model._set_fetched(true);
-							model._load_from_json(mraw)
-								.then(function(){ 
-									dmissing_by_id[id].resolve(model); 
-									delete this_._fetching_queue[objid];
-								}).fail(function(e){ dmissing_by_id[id].reject('Error loading ' + id + ' ' + e); });
+					// otherwise we make a placeholder and loda it
+					var model = this_._create_model_for_id(oid);
+					missing_models[oid] = model;
+					dmissing_by_id[oid] = u.deferred();
+					this_._fetching_queue[oid] = d;
+					return dmissing_by_id[oid];
+				});
+				var lacks = _(missing_models).keys();
+				var _fids = [];
+				if (lacks.length > 0) {
+					// console.log('calling with lacks ', lacks.length);
+					u.chunked(lacks, 100).map(function(lids) {
+						_fids = _.union(_fids, lids);
+						// console.log('lids length ', lids.length);
+						this_._ajax('GET', this_.get_id(), {'id':lids}).then(function(response) {
+							console.log('response data >> ', response);
+							_(response.data).map(function(mraw,id) {
+								if (id[0] === '@') { return; }
+								var model = missing_models[id];
+								u.assert(id, "Got an id undefined");
+								u.assert(model, "Got a model we didnt ask for", id);
+								model._set_fetched(true);
+								// console.log('calling deserialise and set on ', mraw);
+								model._deserialise_and_set(mraw).then(function() {
+									dmissing_by_id[id].resolve(model);
+									delete this_._fetching_queue[id];
+								}).fail(function(e){
+									dmissing_by_id[id].reject('Error loading ' + id + ' ' + e);
+								});
+							});
+						}).fail(function(error) {
+							lids.map(function(id) {
+								dmissing_by_id[id].reject(error);
+								delete this_._fetching_queue[id];
+							});
 						});
 					});
-
-					return ds;
-				};
-				return helper(objid);
-
+				} else {
+					console.log('already have all the models, returning directly ');
+				}
+				console.log('fids versus ds >>>>>>>>>> ', _fids.length, ds.length, ' lacks:>', lacks.length);
+				return multi ? u.when(ds) : ds[0];
 			},
 			// ----------------------------------------------------
 			_update_object_list:function(updated_obj_ids, added, deleted) {

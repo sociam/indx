@@ -310,7 +310,7 @@ class ObjectStoreAsync:
             return
 
         def row_cb(rows, version):
-            self.debug("get_latest row_cb: version={0}, rows={1}".format(version, rows))
+            self.debug("get_latest row_cb: version={0}, rows={1}".format(version, len(rows)))
             obj_out = self.rows_to_json(rows)
             if version is None:
                 version = 0
