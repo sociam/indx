@@ -19,6 +19,9 @@ body {
   .dropping {
     background-color: #fbeed5;
   }
+  .icon {
+    color: #333;
+  }
 }
 
 ul.todo-list {
@@ -111,15 +114,7 @@ ul.todo-list {
     }
 
     &.disabled {
-      /*border-bottom-color: #aaa;*/
       opacity: 0.1;
-      /*.todo-body, textarea {
-        background: #ccc;
-        color: #444;
-      }
-      .todo-urgency {
-        opacity: 0.4;
-      }*/
     }
 
     .todo-body {
@@ -377,6 +372,30 @@ ul.todo-list {
       &:last-child {
         border-radius: 0 0 5px 0;
       }
+    }
+  }
+}
+
+@icon-w: 35px;
+
+.todo-list-icons {
+  width: (@icon-w) * 7;
+  height: (@icon-w) * 4;
+  margin: 10px 5px 15px;
+  .icon {
+    display: inline-block;
+    width: @icon-w;
+    height: @icon-w;
+    padding: 5px;
+    line-height: @icon-w - 10px;
+    cursor: pointer;
+    color: #333;
+    &:hover {
+      background: #eee;
+    }
+    &.active {
+      background: #fbeed5;
+      color: #000;
     }
   }
 }

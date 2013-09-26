@@ -10,7 +10,8 @@ angular
 
 		var TodoList = col.Model.extend({
 			defaults: {
-				title: 'Todo list'
+				title: 'Todo list',
+				icon: 'group'
 			},
 			initialize: function () {
 				var that = this;
