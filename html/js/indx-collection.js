@@ -427,6 +427,9 @@ angular
 					}), {
 						silent: true
 					});
+					if (that.selected) {
+						that.selected.select();
+					}
 					that.trigger('reset');
 				});
 			},
@@ -457,8 +460,8 @@ angular
 				this.trigger('update', this);
 				return this;
 			},
-			comparator: function () {
-				return this.id;
+			comparator: function (m) {
+				return m.id;
 			},
 			move: function (item, collection) {
 				this.copy(item, collection);
