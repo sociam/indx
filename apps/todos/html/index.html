@@ -141,13 +141,15 @@
 			<div class="dlg-container">
 				<div class="dlg">
 					<div class="dlg-title">Edit todo list</div>
-					<div class="dlg-body">
-						<input class="form-control" width="255" type="text" placeholder="Title" ng-model="todo_lists.selected.newAttributes.title">
-						<!-- icons -->
-					</div>
-					<div class="dlg-controls">
-						<button type="button" ng-click="todo_lists.selected.restore()">Close</button><button type="button" ng-click="todo_lists.selected.save_staged()">Save</button>
-					</div>
+					<form ng-submit="todo_lists.selected.save_staged()">
+						<div class="dlg-body">
+							<input class="form-control" width="255" type="text" placeholder="Title" ng-model="todo_lists.selected.staged_attributes.title">
+							<!-- icons -->
+						</div>
+						<div class="dlg-controls">
+							<button type="button" ng-click="todo_lists.selected.restore()">Close</button><button type="submit">Save</button>
+						</div>
+					</form>
 				</div>
 			</div>
 		</div>
