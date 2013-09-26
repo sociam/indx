@@ -108,6 +108,11 @@ angular
 			}
 		});
 
+		$scope.icons = ['facetime-video', 'gear', 'flag-checkered', 'phone', 'music', 'road',
+			'magic', 'food', 'shield', 'rocket', 'suitcase', 'globe', 'gamepad', 'inbox',
+			'glass', 'umbrella', 'magnet', 'picture', 'book', 'bookmark', 'group', 'bullhorn',
+			'laptop', 'money', 'gift', 'bug', 'truck', 'calendar'];
+
 	})
 	.directive('focusMe', function ($timeout, $parse) {
 		return {

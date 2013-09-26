@@ -115,7 +115,10 @@
 
 				<div class="indx-sidebar">
 					<ul class="indx-list-flat todo-lists">
-						<li ng-repeat="todo_list in todo_lists.all_models" ng-click="todo_list.select()" ng-class="{ active: todo_list.is_selected }" ><a href="#" droppable>{{ todo_list.get_attribute('title') }}</a></li>
+						<li ng-repeat="todo_list in todo_lists.all_models" ng-click="todo_list.select()" ng-class="{ active: todo_list.is_selected }" ><a href="#" droppable>
+							<i class="icon icon-{{ todo_list.get_attribute('icon') }}"></i>
+							{{ todo_list.get_attribute('title') }}
+						</a></li>
 					</ul>
 					<div class="modal-cover" ng-show="editing_todo" ng-animate="fade" ng-click="editing_todo.restore()"></div>
 				</div>
@@ -135,23 +138,26 @@
 
 
 		<div ng-show="todo_lists.selected.is_editing">
-			<div class="modal" style="display: block">
-				<div class="modal-dialog">
-					<div class="modal-content">
-						<div class="modal-header">
-							<button type="button" class="close" ng-click="todo_lists.selected.restore()" aria-hidden="true">&times;</button>
-							<h4 class="modal-title">Create a todo list</h4>
+
+			<div class="modal-cover modal-fixed" ng-animate="fade" ng-click="todo_lists.selected.restore()"></div>
+
+			<div class="dlg-container">
+				<div class="dlg">
+					<div class="dlg-title">Edit todo list</div>
+					<form ng-submit="todo_lists.selected.save_staged()">
+						<div class="dlg-body">
+							<input class="form-control" width="255" type="text" placeholder="Title" ng-model="todo_lists.selected.staged_attributes.title">
+							<div class="todo-list-icons">
+								<a href="#" ng-repeat="icon in icons" ng-click="todo_lists.selected.staged_attributes.icon = icon"><i class="icon icon-{{icon}}" ng-class="{active:todo_lists.selected.get_staged_attribute('icon') === icon}"></i></a>
+							</div>
+							<button type="button" class="btn btn-danger" ng-click="todo_lists.selected.remove()">Delete this todo list</button>
 						</div>
-						<div class="modal-body">
-							<h2 class="title"><input type="text" placeholder="Title" ng-model="todo_lists.selected.newAttributes.title"></h2>
+						<div class="dlg-controls">
+							<button type="button" ng-click="todo_lists.selected.restore()">Close</button><button type="submit">Save</button>
 						</div>
-						<div class="modal-footer">
-							<button type="button" class="btn btn-default" ng-click="todo_lists.selected.restore()"><span class="icon-remove"></span> Close</button>
-							<button type="button" class="btn btn-primary" ng-click="todo_lists.selected.save_staged()"><span class="icon-ok"></span> Save</button>
-						</div>
-					</div><!-- /.modal-content -->
-				</div><!-- /.modal-dialog -->
-			</div><!-- /.modal -->
+					</form>
+				</div>
+			</div>
 		</div>
 	</div>
   </body>
