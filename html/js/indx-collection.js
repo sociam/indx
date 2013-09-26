@@ -458,7 +458,7 @@ angular
 				return this;
 			},
 			comparator: function () {
-				return 1;
+				return this.id;
 			},
 			move: function (item, collection) {
 				this.copy(item, collection);
