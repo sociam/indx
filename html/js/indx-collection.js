@@ -167,6 +167,7 @@ angular
 			///
 			/// Get the value of a staged attribute in edit mode.
 			get_staged_attribute: function (key) {
+				if (!this.staged_attributes) { return; }
 				var val = this.staged_attributes[key];
 				return get_only_element(val);
 			},
@@ -175,6 +176,7 @@ angular
 			///
 			/// Get a staged attribute in edit mode.
 			get_staged: function (key) {
+				if (!this.staged_attributes) { return; }
 				return this.staged_attributes[key];
 			},
 			/// @arg attributes <{ key: value }>: object of key value pairs
@@ -458,6 +460,7 @@ angular
 					this.filtered_models = this.all_models;
 				}
 				this.trigger('update', this);
+				console.log('hello?')
 				return this;
 			},
 			comparator: function (m) {
