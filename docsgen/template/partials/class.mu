@@ -1,4 +1,4 @@
-<a name="{{id}}"></a>
+<a id="{{id}}"></a>
 <article class="class" id="{{id}}">
 	<h3>{{fullName}}</h3>
 	{{#extend}}

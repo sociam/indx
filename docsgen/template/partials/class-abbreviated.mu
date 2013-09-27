@@ -1,4 +1,4 @@
-<a name="{{id}}"></a>
+<a id="{{id}}"></a>
 <h3>{{#fullName}}{{fullName}}{{/fullName}}{{^fullName}}{{name}}{{/fullName}}</h3>
 {{#extends}}
   extends <i>{{name}}</i>

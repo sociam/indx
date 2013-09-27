@@ -1,4 +1,4 @@
-<a name="{{id}}"></a>
+<a id="{{id}}"></a>
 <div class="method " id="{{id}}">
   {{#construct}}
     <h4>Constructor</h4>
