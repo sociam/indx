@@ -25,11 +25,13 @@ function Farm () {
 
 _.extend(Farm.prototype, {
 	fields: undefined,
-	plow: function (field) {
-		// plow those fields!
+	/// Sell the ol' farm
+	sell: function () {
 	}
 });
 
+/// Add a field
+Farm.prototype.addField = function (field) { };
 
 /// A field can have multiple animals
 var Field = function (width, height) {
@@ -40,17 +42,33 @@ Field.prototype.drawCropCircle = function (radius) {
 
 };
 
-var animalClasses = {
+/// Plow those fields!
+Field.prototype.plow = function (radius) {
+
+};
+
+var animals = {
+	/// @fullName animals.Animl
 	Animal: function () {}
 };
 
-animalClasses.Animal.prototype.extend = function () {};
+animals.Animal.prototype.extend = function () {};
 
-animalClasses.Cow = animalClasses.Animal.extend({
+var Cow = Animal.extend({
 	moo: function () {}
 });
 
-animalClasses['Pig'] = animalClasses.Animal.extend({
+// Duck doens't exist so this shouldn't show
+Duck.quack = function () {
+
+};
+
+// Bird isn't defined, so docs shouldn't link superclass
+Goose = Bird.extend({
+
+})
+
+animals['Pig'] = animalClasses.Animal.extend({
 	oink: function () {}
 })
 
