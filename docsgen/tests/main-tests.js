@@ -70,12 +70,13 @@ describe('the documentation', function () {
           !(this.actual instanceof Array);
       },
       toAtMostHaveProperties: function () {
-        var pass = true;
-        if (typeof this.actual !== 'Object') {
+        var pass = true,
+            accepted = Array.prototype.slice.call(arguments, 0);
+        if (typeof this.actual !== 'object') {
           return false;
         }
-        this.actual.keys().forEach(key, function (key) {
-          pass = pass & arguments.indexOf(key) > -1;
+        Object.keys(this.actual).forEach(function (key) {
+          pass = pass && accepted.indexOf(key) > -1;
         });
         return pass;
       }
@@ -196,8 +197,8 @@ describe('the documentation', function () {
         });
       });
       describe('@see', function () {
-        it('should have two references (@sees)', function () {
-          expect(file.sees.length).toBe(2);
+        it('should have two references (@see)', function () {
+          expect(file.see.length).toBe(2);
         })
       });
       describe('@since', function () {
