@@ -111,6 +111,39 @@ something.awesome.Animal = SomeSuperClass.extend({
 	/// This is my cow class. I use *daisy* as an example cow.
 
 
+## Attributes
+
+**Placement**
+
+Comment should precede the attribute.
+
+**Auto detection**
+
+An attribute may be of the following form:
+
+```javascript
+something.something = blah
+something: blah
+```
+
+Attributes beginning with `_` will be considered private and will not be shown
+in the generated docs.
+
+**Tags**
+
+| Tag / parameters	| Description 									| Repeatable | Default 	|
+|-------------------|-----------------------------------------------|------------|----------|
+| `@name methodName` | Name of the method (auto-detected). Not yet implemented | No | - |
+| `@optional | If specified, indicates that the attribute is optional | No | - |
+| `@types <types>` | Types that the attribute may be | No | - |
+| `@ignore` | Ignore this method (do not document it) (auto-detected if name begins with _). Not yet implemented | No | Only if method name begins with `_` in source		 |
+| `@order n` | Force a particular order for the method (auto-detected by order within code).
+| `@since date` | Describes when the functionality first existed. Not yet implemented | No | - |
+| `@see url` | Url to additional documentation. Not yet implemented | No | - |
+| `@deprecated description` | Describes outdated functionality. Not yet implemented | No | - |
+
+Note on `<types>`: Types are pipe (|) separated; types and comment are optional
+
 
 ## Methods
 
