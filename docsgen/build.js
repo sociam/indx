@@ -165,12 +165,6 @@
 					that.ready.resolve();
 				});
 		},
-		pushClasses: function (classes) {
-			var that = this;
-			classes.each(function (cls) {
-				that.superclasses.add(cls);
-			});
-		},
 		build: function () {
 			var that = this;
 			this.ready.then(function () {
@@ -279,9 +273,8 @@
 				});
 				that.parseComment()
 					.then(function () {
-						that.classes.parse()
+						that.classes.parse(builder)
 							.then(function () {
-								builder.pushClasses(that.classes);
 								that.parsed.resolve();
 							});
 					});
@@ -338,7 +331,7 @@
 				this.get('name')
 				.substr(1));
 			this.regexps = [
-				['([^\\s.]*) *= *' + (this.get('fullName') || this.get('name')) +
+				['([^\\s.]*) *(?:=|:) *' + (this.get('fullName') || this.get('name')) +
 					'\\.extend\\(',
 					function (match, name, pos) {
 						return {
@@ -368,7 +361,6 @@
 			var that = this,
 				comment = getCommentBefore(this.data, this.get('start'), true),
 				promise = new Promise();
-			console.log('comment', comment, this.get('start'));
 			classGrammar.parse(comment)
 				.then(function (rs) {
 					parseMatch(rs, that)
@@ -421,7 +413,7 @@
 			this.regexps = [
 				// TODO: a parser might be a better idea
 				[
-					'[\\s]+((?:[^\\s\\.]+\\s*\\.\\s*)*([A-Z][^\\s\\.]*)) *= *function *\\(([^\\)]*)\\)',
+					'[\\s]+((?:[^\\s\\.]+\\s*\\.\\s*)*([A-Z][^\\s\\.]*)) *(?:=|:) *function *\\(([^\\)]*)\\)',
 					function (match, fullName, name, n, pos) {
 						return {
 							match: match,
@@ -436,6 +428,7 @@
 						return {
 							match: match,
 							name: name,
+							fullName: name,
 							start: pos
 						};
 					}
@@ -455,28 +448,53 @@
 				that.sort();
 			});
 		},
-		parse: function () {
-			var that = this;
+		parse: function (builder) {
+			var that = this,
+				// we need to reparse when a new potential superclass is found
+				reparse = false;
 			// Find each class that extends each superclass
 			builder.superclasses.each(function (superCls) {
+				if (reparse) {
+					return;
+				}
+				console.log('CHECKING FOR INHERITANCE ON', superCls.get('name'));
 				_.each(superCls.regexps, function (regexp) {
+					if (reparse) {
+						return;
+					}
 					var re = new RegExp(regexp[0], 'g');
 					that.data.replace(re, function () {
+						if (reparse) {
+							return;
+						}
 						var match = regexp[1].apply(this, arguments);
+						// Ignore classes beginning with _
 						if (match.fullName.indexOf('_') === 0) {
 							return;
 						}
+						// Has this class already been found?
+						if (that.where({ fullName: match.fullName }).length > 0) {
+							console.log('Found already', match.fullName)
+							return;
+						}
 						console.log(match.fullName, superCls.get('name'))
-						that.add(_.extend({
+						var cls = new Class(_.extend({
 							extend: !superCls.atomic ? superCls.object() : undefined
 						}, match), {
 							data: that.data,
 							file: that.file
 						});
+						that.add(cls);
+						builder.superclasses.add(cls)
+						reparse = true;
 					});
 
 				});
 			});
+
+			if (reparse) {
+				return this.parse(builder);
+			}
 
 			// Infer that the end the each class is the start of the next
 			that.each(function (cls, i) {
