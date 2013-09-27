@@ -570,11 +570,9 @@ angular
 					return dmissing_by_id[oid];
 				});
 				var lacks = _(missing_models).keys();
-				var _fids = [];
 				if (lacks.length > 0) {
 					// console.log('calling with lacks ', lacks.length);
-					u.chunked(lacks, 100).map(function(lids) {
-						_fids = _.union(_fids, lids);
+					u.dmap(u.chunked(lacks, 150), function(lids) {
 						// console.log('lids length ', lids.length);
 						this_._ajax('GET', this_.get_id(), {'id':lids}).then(function(response) {
 							var resolved_ids = _(response.data).map(function(mraw,id) {
@@ -606,11 +604,11 @@ angular
 								delete this_._fetching_queue[id];
 							});
 						});
+						return u.when(lids.map(function(id) { return dmissing_by_id[id]; }));
 					});
 				} else {
 					console.log('already have all the models, returning directly ');
 				}
-				// console.log('fids versus ds >>>>>>>>>> ', _fids.length, ds.length, ' lacks:>', lacks.length);
 				return multi ? u.when(ds) : ds[0];
 			},
 			// ----------------------------------------------------
@@ -619,7 +617,7 @@ angular
 				// u.debug('_update_object_list +', added ? added.length : ' ', '-', deleted ? deleted.length : ' ');
 				// u.debug('_update_object_list +', added || ' ', deleted || ' ');
 				if (updated_obj_ids === undefined ) {
-					current = _(olds).chain().union(added).difference(deleted).value();
+					current = _(u.uniqstr(olds.concat(added))).difference(deleted); //_(olds).chain().union(added).difference(deleted).value();
 					news = (added || []).slice(); died = (deleted || []).slice();
 				} else {
 					current = updated_obj_ids.slice();
@@ -628,7 +626,7 @@ angular
 				}
 				// u.debug('old objlist had ', olds.length, ' new has ', current.length, 'news > ', news);
 				this._set_objlist(current);
-				news.map(function(aid) {	this_.trigger('obj-add', aid);	});
+				news.map(function(aid) { this_.trigger('obj-add', aid);	});
 				died.map(function(rid) {
 					this_.trigger('obj-remove', rid);
 					this_._objcache().remove(rid);
@@ -746,9 +744,9 @@ angular
 			_do_update:function(ids) {
 				// this actua
 				debug('box update >> ');
-				var d = u.deferred(), version = this.get('version') || 0, this_ = this,
-				objs = this._objcache().filter(function(x) { return ids === undefined || ids.indexOf(x.id) >= 0; }),
-				obj_ids = objs.map(function(x) { return x.id; }),
+				var d = u.deferred(), version = this.get('version') || 0, this_ = this, oc = this._objcache(),
+				objs = (ids === undefined ? oc.values() : ids.map(function(id) { return oc.get(id); })), // this._objcache().filter(function(x) { return ids === undefined || ids.indexOf(x.id) >= 0; }),
+				obj_ids = (ids === undefined ? oc.keys() : ids.slice()), // objs.map(function(x) { return x.id; }),
 				sobjs = objs.map(function(obj){ return serialize_obj(obj); });
 				this._ajax("PUT",  this.get_id() + "/update", { version: escape(version), data : JSON.stringify(sobjs)  })
 					.then(function(response) {
@@ -819,7 +817,7 @@ angular
 				case "create": return box._create_box();
 				case "read": return box._check_token_and_fetch();
 				case "update": return box.update()[0];  // save whole box?
-				case "delete": return this.delete_box(this.get_id()) // hook up to destroy
+				case "delete": return this.delete_box(this.get_id()); // hook up to destroy
 				}
 			},
 			toString: function() { return 'box:' + this.get_id(); }

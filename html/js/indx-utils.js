@@ -14,6 +14,22 @@
 						return alpha[Math.floor(Math.random()*alpha.length)];
 					}).join('');
 				},
+				uniqstr:function(L) {
+					var o = {}, i, l = L.length, r = [];
+					for(i=0; i<l;i+=1) { o[L[i]] = L[i]; }
+					for(i in o) { r.push(o[i]);	}
+					return r;
+				},
+				dmap: function(L, fn) {
+					if (L.length === 0) { return this.dresolve([]); }
+					var d = this.deferred(), this_ = this;
+					fn(L[0]).then(function(result) {
+						this_.dmap(L.slice(1), fn).then(function(rest) {
+							d.resolve([result].concat(rest));
+						}).fail(d.reject);
+					}).fail(d.reject);
+					return d.promise();
+				},
 				safe_apply: function($scope, fn) { setTimeout(function() { $scope.$apply(fn); }, 0); },
 				log : function() { try { if (DEBUG_LEVEL >= LOG) { console.log.apply(console,arguments);  }} catch(e) { } },
 				warn : function() { try { if (DEBUG_LEVEL >= WARN) { console.warn.apply(console,arguments);  }} catch(e) { } },
@@ -112,4 +128,4 @@
 				}
 			};
 		});
-}())
+}());
