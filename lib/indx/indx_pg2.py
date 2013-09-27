@@ -124,6 +124,64 @@ class IndxDatabase:
         return return_d
 
 
+    def remove_database_users(self, db_name):
+        """ Remove database users for a named database. """
+        return_d = Deferred()
+
+        # select * from tbl_keychain where db_name = %s
+        # delete from tbl_keychain where db_name 
+
+
+
+        rw_user = "{0}_rw".format(db_name)
+        rw_user_pass = binascii.b2a_hex(os.urandom(16))
+        ro_user = "{0}_ro".format(db_name)
+        ro_user_pass = binascii.b2a_hex(os.urandom(16))
+
+        # queries to be run by INDX user on INDX db
+        queries = [
+            "CREATE ROLE %s LOGIN ENCRYPTED PASSWORD '%s' NOSUPERUSER INHERIT NOCREATEDB NOCREATEROLE" % (rw_user, rw_user_pass),
+            "CREATE ROLE %s LOGIN ENCRYPTED PASSWORD '%s' NOSUPERUSER INHERIT NOCREATEDB NOCREATEROLE" % (ro_user, ro_user_pass),        
+            "GRANT %s TO %s" % (rw_user, self.db_user), # make indx user a member of the rw user role (required)
+            "ALTER DATABASE %s OWNER TO %s" % (db_name, rw_user),
+            "GRANT ALL PRIVILEGES ON DATABASE %s TO %s" % (db_name, rw_user),
+        ]
+
+        def connected(conn):
+            if len(queries) < 1:
+
+                # queries to be run by INDX user on new DB
+                queries_db = [
+                    "GRANT SELECT ON ALL TABLES IN SCHEMA public TO %s" % (ro_user),
+                    "REASSIGN OWNED BY %s TO %s" % (self.db_user, rw_user),
+                ]
+
+                def connected_db(conn_db):
+                
+                    if len(queries_db) < 1:
+                        return_d.callback((rw_user, rw_user_pass, ro_user, ro_user_pass))
+                        return
+                    
+                    query_db = queries_db.pop(0)
+                    d_db = conn_db.runOperation(query_db)
+                    d_db.addCallbacks(lambda nothing: connected_db(conn_db), return_d.errback)
+                    return
+
+                connect(db_name, self.db_user, self.db_pass).addCallbacks(connected_db, return_d.errback)
+                return
+
+            query = queries.pop(0)
+            d = conn.runOperation(query)
+            d.addCallbacks(lambda nothing: connected(conn), return_d.errback)
+            return
+
+        # get connection to INDX database from POOL
+        self.connect_indx_db().addCallbacks(connected, return_d.errback)
+        
+
+        return return_d
+
+
     def create_database_users(self, db_name):
         """ Create new database users for a specific database, one with read-write access, and one with read access.
         """
@@ -425,4 +483,3 @@ def connect_box_raw(box_name, db_user, db_pass):
 
 def connect_box(box_name,db_user,db_pass):
     return connect(INDX_PREFIX + box_name, db_user, db_pass)
-
