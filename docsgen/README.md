@@ -25,7 +25,7 @@ must begin with 3 slashes (`///`) to be used for documentation.
 
 A docsgen comment begins with a description and is followed by tags (if any). A tag is of the form @tag [parameters]. Descriptions should be in [Markdown](http://en.wikipedia.org/wiki/Markdown). The description may come after the tags if preferred.
 
-For example, both of the following are valid:
+For example, both of the following are valid ways of describing a class:
 
 	/// This awesome class does
 	/// some awesome things!
@@ -55,7 +55,7 @@ precede it, but all code must be after the Docsgen comment.
 | `@version` 		| Version of file. Not yet implemented			| No | -        |
 | `@author name <email@address.com>` | Author name and optionally email address. Not yet implemented	| Yes, for each author | - |
 | `@since date` 	| Describes when the functionality first existed. Not yet implemented | No | - |
-| `@see url` 		| Url to additional documentation. Not yet implemented | No | - |
+| `@see url` 		| Url to additional documentation. Not yet implemented | Yes, for each relevant source | - |
 
 **Example**
 
@@ -79,6 +79,7 @@ any of the following forms:
 
 ```javascript
 Animal = function () {
+Animal: function () {
 world.Animal = function () {
 function Animal () {
 
@@ -91,6 +92,7 @@ something.awesome.Animal = SomeSuperClass.extend({
 
 | Tag / parameters	| Description 									| Repeatable | Default 	|
 |-------------------|-----------------------------------------------|------------|----------|
+| `@class`          | Force the docsgen comment to be describing a class | No | Only if class is detected |
 | `@ignore` 		| Ignore this class (do not document it).		| No         | Only if class name begins with `_` in source		|
 | `@extend Some.SuperClass url` | Indicate that this class extends another. If a url to documentation is not provided, docsgen will try to find the class within the sourcecode. | Yes, for multiple inheritence | Superclass if .extend is used within source code |
 | `@name ClassName` | Name of class. | No | Name within source code |
@@ -98,7 +100,7 @@ something.awesome.Animal = SomeSuperClass.extend({
 | `@instanceName className` | An example instance name. E.g., instanceName of Cow might be "cow" or "daisy". | No | Classname with first letter lowercase |
 | `@order n` 		| Force a particular order for the class within the documentation. | No | Order in source code |
 | `@since date` 	| Describes when the functionality first existed. Not yet implemented | No | - |
-| `@see url` 		| Url to additional documentation. Not yet implemented | No | - |
+| `@see url` 		| Url to additional documentation. Not yet implemented | Yes, for each relevant source | - |
 | `@deprecated description` | Describes outdated functionality. Not yet implemented | No | - |
 
 **Example**
@@ -133,13 +135,14 @@ in the generated docs.
 
 | Tag / parameters	| Description 									| Repeatable | Default 	|
 |-------------------|-----------------------------------------------|------------|----------|
+| `@attribute`          | Force the docsgen comment to be describing an attribute | No | Only if class is detected |
 | `@name methodName` | Name of the method (auto-detected). Not yet implemented | No | - |
 | `@optional | If specified, indicates that the attribute is optional | No | - |
 | `@types <types>` | Types that the attribute may be | No | - |
 | `@ignore` | Ignore this method (do not document it) (auto-detected if name begins with _). Not yet implemented | No | Only if method name begins with `_` in source		 |
 | `@order n` | Force a particular order for the method (auto-detected by order within code).
 | `@since date` | Describes when the functionality first existed. Not yet implemented | No | - |
-| `@see url` | Url to additional documentation. Not yet implemented | No | - |
+| `@see url` | Url to additional documentation. Not yet implemented | Yes, for each relevant source | - |
 | `@deprecated description` | Describes outdated functionality. Not yet implemented | No | - |
 
 Note on `<types>`: Types are pipe (|) separated; types and comment are optional
@@ -167,6 +170,7 @@ the generated docs.
 
 | Tag / parameters	| Description 									| Repeatable | Default 	|
 |-------------------|-----------------------------------------------|------------|----------|
+| `@method`          | Force the docsgen comment to be describing a method | No | Only if class is detected |
 | `@arg <types> name: comment` | Describe an argument. Use @opt if optional. | Yes, for multiple arguments | Arguments in function definition within source code |
 | `@return <types> comment` | Synchronous return | Yes, for multiple return conditions | - |
 | `@then <types> comment` or `@fail <types> comment` | Asynchronous return | Yes, for multiple result conditions | - |
@@ -176,7 +180,7 @@ the generated docs.
 | `@order n` | Force a particular order for the method (auto-detected by order within code).
 | `@throws <types> comment` | Describe when an exception is thrown (may also use `@exception`). Not yet implemented | Yes, for each exception | - |
 | `@since date` | Describes when the functionality first existed. Not yet implemented | No | - |
-| `@see url` | Url to additional documentation. Not yet implemented | No | - |
+| `@see url` | Url to additional documentation. Not yet implemented | Yes, for each relevant source | - |
 | `@deprecated description` | Describes outdated functionality. Not yet implemented | No | - |
 
 Note on `<types>`: Types are pipe (|) separated; types and comment are optional
