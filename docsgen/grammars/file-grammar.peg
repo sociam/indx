@@ -6,5 +6,8 @@ start
 
 
 property
-	= "@" k:name _ v:comment?
+	= "@author" _ n:[^<\n\r]+ _ e:("<" [^>\n\r]+ ">")?
+			{ 	if (e) { e = e[1].join(''); }
+				return ['author', { name: n.join(''), email: e || undefined }]; }
+	/ "@" k:name _ v:comment?
 			{ return [k, v]; }
