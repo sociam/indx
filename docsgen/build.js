@@ -286,6 +286,7 @@
 				promise = new Promise();
 			fileGrammar.parse(comment)
 				.then(function (rs) {
+					singles(rs, ['title', 'since', 'version']);
 					parseMatch(rs, that)
 						.then(function () {
 							promise.resolve();
@@ -363,6 +364,7 @@
 				promise = new Promise();
 			classGrammar.parse(comment)
 				.then(function (rs) {
+					singles(rs, ['fullName']);
 					parseMatch(rs, that)
 						.then(function () {
 							promise.resolve();
@@ -380,6 +382,17 @@
 				.replace(/\W+/gi, '');
 		}
 	});
+
+	var singles = function (rs, keys) {
+		console.log('rs', rs, keys)
+		var properties = rs.properties;
+		_.each(keys, function (key) {
+			console.log('key', key, properties[key])
+			if (properties[key] && properties[key] instanceof Array) {
+				properties[key] = properties[key][0];
+			}
+		});
+	}
 
 
 	var parseMatch = function (rs, model) {
