@@ -1,6 +1,9 @@
 /* global angular, console, Backbone, _, $ */
 
 /// @title indx-collection
+/// @author Peter West <peter@peter-west.co.uk>
+/// @version 0.1
+///
 /// indx-collection makes it easier to deal with arrays stored in indx by
 /// using Backbone. It allows arrays to be managed using Collections and objs
 /// to be managed using Models, both of which are extensions of Backbone's
