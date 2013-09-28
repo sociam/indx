@@ -136,7 +136,7 @@ in the generated docs.
 | Tag / parameters	| Description 									| Repeatable | Default 	|
 |-------------------|-----------------------------------------------|------------|----------|
 | `@attribute`          | Force the docsgen comment to be describing an attribute | No | Only if class is detected |
-| `@name methodName` | Name of the method (auto-detected). Not yet implemented | No | - |
+| `@name attrName` | Name of the attribute. Not yet implemented | No | Detected within code |
 | `@optional | If specified, indicates that the attribute is optional | No | - |
 | `@types <types>` | Types that the attribute may be | No | - |
 | `@ignore` | Ignore this method (do not document it) (auto-detected if name begins with _). Not yet implemented | No | Only if method name begins with `_` in source		 |
@@ -175,7 +175,7 @@ the generated docs.
 | `@return <types> comment` | Synchronous return | Yes, for multiple return conditions | - |
 | `@then <types> comment` or `@fail <types> comment` | Asynchronous return | Yes, for multiple result conditions | - |
 | `@chain` | Chaining return (i.e., returns `this`) | No | - |
-| `@name methodName` | Name of the method (auto-detected). Not yet implemented | No | - |
+| `@name methodName` | Name of the method. Not yet implemented | No | Detected within code |
 | `@ignore` | Ignore this method (do not document it) (auto-detected if name begins with _). Not yet implemented | No | Only if method name begins with `_` in source		 |
 | `@order n` | Force a particular order for the method (auto-detected by order within code).
 | `@throws <types> comment` | Describe when an exception is thrown (may also use `@exception`). Not yet implemented | Yes, for each exception | - |

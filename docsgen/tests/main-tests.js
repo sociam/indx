@@ -54,6 +54,8 @@ var describeEach = function (thingName) {
 };
 
 describe('the documentation', function () {
+  'use strict';
+
   beforeEach(function () {
     this.addMatchers({
       toBeString: function () {
@@ -98,80 +100,226 @@ describe('the documentation', function () {
   })
 
 
-  describe('data model:', function () {
+  describe('data structure:', function () {
 
     describe('the project', function () {
 
     });
 
+    var checkComment = function (obj, properties) {
+      describe('description', function () {
+        it('should be string', function () {
+          expect(obj.description).ifDefined.toBeString();
+        });
+        it('should have converted description from markdown to html', function () {
+          if (obj.description) {
+            expect(obj.description).ifDefined.toContain('<p>');
+          }
+        })
+      });
+      if (properties.indexOf('author') > -1) {
+        describe('@author', function () {
+          it('should be an array', function () {
+            expect(obj.author).ifDefined.toBeArray();
+          });
+          describeEach('author').withIdenfier('name').inArray(obj.author, function (author) {
+            it('should be an object', function () {
+              expect(author).toBeObject();
+            });
+            it('should have at most a name and email', function () {
+              expect(author).toAtMostHaveProperties('name', 'email');
+            })
+            it('should have a name that is a string (if defined)', function () {
+              expect(author.name).ifDefined.toBeString();
+            });
+            it('should have an email that is a string (if defined)', function () {
+              expect(author.email).ifDefined.toBeString();
+            })
+          });
+        });
+      }
+      if (properties.indexOf('see') > -1) {
+        describe('@see', function () {
+          it('should be an array', function () {
+            expect(obj.see).ifDefined.toBeArray();
+          });
+          describeEach('reference').inArray(obj.see, function (reference) {
+            it('should be an string', function () {
+              expect(reference).toBeString();
+            });
+          });
+        });
+      }
+      if (properties.indexOf('since') > -1) {
+        describe('@since', function () {
+          it('should be a string', function () {
+            expect(obj.since).ifDefined.toBeString();
+          });
+        });
+      }
+      if (properties.indexOf('title') > -1) {
+        describe('@title', function () {
+          it('should be a string', function () {
+            expect(obj.title).toBeString();
+          });
+        });
+      }
+      if (properties.indexOf('name') > -1) {
+        describe('@name', function () {
+          it('should be a string', function () {
+            expect(obj.name).toBeString();
+          });
+        });
+      }
+      if (properties.indexOf('version') > -1) {
+        describe('@version', function () {
+          it('should be a string', function () {
+            expect(obj.version).ifDefined.toBeString();
+          });
+        });
+      }
+      if (properties.indexOf('optional') > -1) {
+        describe('@optional', function () {
+          it('should be a boolean', function () {
+            expect(obj.optional).ifDefined.toBeBoolean();
+          });
+        });
+      }
+      if (properties.indexOf('order') > -1) {
+        describe('@order', function () {
+          it('should be a number', function () {
+            expect(obj.order).ifDefined.toBeNumber();
+          });
+        });
+      }
+      if (properties.indexOf('deprecated') > -1) {
+        describe('@deprecated', function () {
+          it('should be a string', function () {
+            expect(obj.deprecated).ifDefined.toBeString();
+          });
+        });
+      }
+      if (properties.indexOf('types') > -1) {
+        describe('@types', function () {
+          it('should be an array', function () {
+            expect(obj.types).ifDefined.toBeArray();
+          });
+          describeEach('type').withIdenfier('name').inArray(obj.types, function (type) {
+            it('should be an object', function () {
+              expect(type).toBeObject();
+            });
+            /*it('should have at most a name and email', function () {
+              expect(author).toAtMostHaveProperties('name', 'email');
+            })
+            it('should have a name that is a string (if defined)', function () {
+              expect(author.name).ifDefined.toBeString();
+            });
+            it('should have an email that is a string (if defined)', function () {
+              expect(author.email).ifDefined.toBeString();
+            })*/
+          });
+        });
+      }
+      if (properties.indexOf('args') > -1) {
+        describe('@arg / @opt', function () {
+          it('should be an array', function () {
+            expect(obj.args).ifDefined.toBeArray();
+          });
+          describeEach('arg').withIdenfier('name').inArray(obj.args, function (arg) {
+            it('should be an object', function () {
+              expect(arg).toBeObject();
+            });
+            /*it('should have at most a name and email', function () {
+              expect(author).toAtMostHaveProperties('name', 'email');
+            })
+            it('should have a name that is a string (if defined)', function () {
+              expect(author.name).ifDefined.toBeString();
+            });
+            it('should have an email that is a string (if defined)', function () {
+              expect(author.email).ifDefined.toBeString();
+            })*/
+          });
+        });
+      }
+      if (properties.indexOf('throws') > -1) {
+        describe('@throws', function () {
+          it('should be an array', function () {
+            expect(obj['throws']).ifDefined.toBeArray();
+          });
+          describeEach('throw').withIdenfier('name').inArray(obj['throws'], function (thr) {
+            it('should be an object', function () {
+              expect(thr).toBeObject();
+            });
+            /*it('should have at most a name and email', function () {
+              expect(author).toAtMostHaveProperties('name', 'email');
+            })
+            it('should have a name that is a string (if defined)', function () {
+              expect(author.name).ifDefined.toBeString();
+            });
+            it('should have an email that is a string (if defined)', function () {
+              expect(author.email).ifDefined.toBeString();
+            })*/
+          });
+        });
+      }
+      if (properties.indexOf('result') > -1) {
+        describe('@return / @then / @chain', function () {
+          it('should be an array', function () {
+            expect(obj.result).ifDefined.toBeArray();
+          });
+          describeEach('result').withIdenfier('name').inArray(obj.result, function (result) {
+            it('should be an object', function () {
+              expect(result).toBeObject();
+            });
+            /*it('should have at most a name and email', function () {
+              expect(author).toAtMostHaveProperties('name', 'email');
+            })
+            it('should have a name that is a string (if defined)', function () {
+              expect(author.name).ifDefined.toBeString();
+            });
+            it('should have an email that is a string (if defined)', function () {
+              expect(author.email).ifDefined.toBeString();
+            })*/
+          });
+        });
+      }
+    }
+
 
     // Each file
     describeEach('file').withIdenfier('filename').inArray(data.files, function (file) {
-      describe('description', function () {
-        it('should be string', function () {
-          expect(file.description).ifDefined.toBeString();
-        });
-        it('should have converted description from markdown to html', function () {
-          expect(file.description).ifDefined.toContain('<p>');
-        })
-      });
-      describe('@author', function () {
-        it('should be an array', function () {
-          expect(file.author).ifDefined.toBeArray();
-        });
-        describeEach('author').withIdenfier('name').inArray(file.author, function (author) {
-          it('should be an object', function () {
-            expect(author).toBeObject();
-          });
-          it('should have at most a name and email', function () {
-            expect(author).toAtMostHaveProperties('name', 'email');
-          })
-          it('should have a name that is a string (if defined)', function () {
-            expect(author.name).ifDefined.toBeString();
-          });
-          it('should have an email that is a string (if defined)', function () {
-            expect(author.email).ifDefined.toBeString();
-          })
-        });
-      });
-      describe('@see', function () {
-        it('should be an array', function () {
-          expect(file.see).ifDefined.toBeArray();
-        });
-        describeEach('reference').inArray(file.see, function (reference) {
-          it('should be an string', function () {
-            expect(reference).toBeString();
-          });
-        });
-      });
-      describe('@since', function () {
-        it('should be a string', function () {
-          expect(file.since).ifDefined.toBeString();
-        });
-      });
-      describe('@title', function () {
-        it('should be a string', function () {
-          expect(file.title).toBeString();
-        });
-      });
-      describe('@version', function () {
-        it('should be a string', function () {
-          expect(file.version).ifDefined.toBeString();
-        });
-      });
+      checkComment(file, ['author', 'see', 'since', 'title', 'version']);
     });
 
-    describe('all classes', function () {
-
+    var classes = [];
+    data.files.forEach(function (file) {
+      classes = classes.concat(file.classes || []);
     });
-
-    describe('all attributes', function () {
-
+    describeEach('class').withIdenfier('fullName').inArray(classes, function (cls) {
+      checkComment(cls, ['class', 'ignore', 'extend', 'name', 'fullName',
+        'instanceName', 'order', 'since', 'see', 'deprecated']);
     });
-
-    describe('all methods', function () {
-
+    var attributes = [];
+    classes.forEach(function (cls) {
+      attributes = attributes.concat(cls.attributes || []);
     });
+    console.log(attributes)
+    describeEach('attribute').withIdenfier('name').inArray(attributes, function (attribute) {
+      console.log('A', attribute)
+      checkComment(attribute, ['attribute', 'optional', 'types', 'ignore', 'order',
+        'since', 'see', 'deprecated', 'name']);
+    });
+    var methods = [];
+    classes.forEach(function (cls) {
+      methods = methods.concat(cls.methods || []);
+    });
+    describeEach('method').withIdenfier('name').inArray(methods, function (method) {
+      checkComment(method, ['method', 'args', 'result', 'throws', 'ignore', 'order',
+        'since', 'see', 'deprecated']);
+    });
+  });
+
+  describe('data model', function () {
     var file = data.files[1];
 
     describe('the file', function () {
@@ -179,9 +327,7 @@ describe('the documentation', function () {
         it('should have a description', function () {
           expect(file.description).toContain('If the tests succeed');
         });
-        it('should have converted description from markdown to html', function () {
-          expect(file.description).toContain('<p>');
-        })
+        it('should have x classes')
       });
       describe('@author', function () {
         it('should have two authors', function () {
@@ -195,26 +341,52 @@ describe('the documentation', function () {
           expect(file.author[0].email).toBeDefined()
           expect(file.author[1].email).toBeUndefined()
         });
+        it('should be in order', function () {
+          expect(file.author[0].name).toContain('Peter West');
+        })
+        it('should have a Peter West with my email', function () {
+          expect(file.author[0].name).toBe('Peter West');
+          expect(file.author[0].email).toBe('peter@peter-west.co.uk');
+        });
+        it('should have another person', function () {
+          expect(file.author[1].name).toBe('My buddy elsewhere');
+        })
       });
       describe('@see', function () {
         it('should have two references (@see)', function () {
           expect(file.see.length).toBe(2);
         })
+        it('should be two urls', function () {
+          expect(file.see[0]).toMatch(/^http:\/\//);
+          expect(file.see[1]).toMatch(/^http:\/\//);
+        });
+        it('should be in order', function () {
+          expect(file.see[0]).toContain('indx.es');
+        });
       });
       describe('@since', function () {
         it('should have a date that this has been relevant since', function () {
           expect(file.since).toBeDefined();
         });
+        it('should be September 2013', function () {
+          expect(file.since).toBe('September 2013');
+        })
       });
       describe('@title', function () {
         it('should have a title', function () {
           expect(file.title).toBeDefined();
         });
+        it('should be Test javascript framework', function () {
+          expect(file.title).toBe('Test javascript framework');
+        })
       });
       describe('@version', function () {
         it('should have a version', function () {
           expect(file.version).toBeDefined();
         });
+        it('should be 0.1', function () {
+          expect(file.version).toBe('0.1');
+        })
       });
     });
     describe('the Farm class', function () {
