@@ -19,7 +19,10 @@
 	  		<h2>drop a CSV anywhere on this page! </h2>
 	  	</div>
 	  	<div class="btn" ng-show='rows && !saving' ng-disabled="saving" ng-click='do_save()'> Save! </div>
-	  	<img src="cat.gif" ng-show="saving">
+	  	<div class="bluroverlay" ng-show="saving">
+	  		<div class="pleasewait">please wait while saving..</div>
+	  		<img src="cat.gif"></img>
+	  	</div>	
 	  	<div class="loaded" ng-show="rows && !saving">
 	  		<table class="table table-striped">
 	  			<thead>
@@ -50,6 +53,7 @@
   <script src="/js/vendor/d3.min.js" type="text/javascript"></script>
   <script src="/js/vendor/lesscss.min.js" type="text/javascript"></script>
   <script src="/js/vendor/jquery.min.js" type="text/javascript"></script>
+  <script src="/js/vendor/blur.js" type="text/javascript"></script>
   <script src="/js/vendor/underscore.min.js" type="text/javascript"></script>
   <script src="/js/vendor/backbone.min.js" type="text/javascript"></script>
   <script src="/js/vendor/bootstrap.min.js" type="text/javascript"></script>

@@ -26,7 +26,11 @@ angular
 
 		var find_id_column = function() {
 			var cols = $scope.cols;
-			return cols.filter(function(c) { return c.id; })[0].name;
+			var selected = cols.filter(function(c) { return c.id; });
+			if (selected.length > 0) { return selected[0].name; }
+			selected = cols.filter(function(c) { return c.name.toLowerCase().trim() == 'id'; });
+			if (selected.length > 0) { return selected[0].name; }
+			return cols[0].name;
 		};
 
 		var remap_columns = function(src) {
@@ -35,10 +39,13 @@ angular
 			return out;
 		};
 
+		// var make_blur = function() {
+		//	$('.bluroverlay').blurjs({ source: 'body', radius: 4, overlay: 'rgba(255,255,255,0.2)', cache:false });
+		// };
+		// $scope.$watch('saving', make_blur);
+
 		$scope.do_save = function() {
-			u.safe_apply($scope, function() { 
-				$scope.saving = true;
-			});
+			u.safe_apply($scope, function() { $scope.saving = true;	});
 			$scope.save().then(function () {
 				u.safe_apply($scope, function() { delete $scope.saving; });
 			});
@@ -100,6 +107,8 @@ angular
 			}
 		};
 
+		window.$s = $scope;
+		window.setSaving = function(b) { u.safe_apply($scope, function() { $scope.saving = b; }); };
 		// Setup the dnd listeners.
 		var dropZone = $('body')[0]; //  document.getElementById('dropzone');
 		dropZone.addEventListener('dragover', handleDragOver, false);
