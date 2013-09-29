@@ -53,6 +53,43 @@ var describeEach = function (thingName) {
   return new DescribeEach();
 };
 
+['toBeUndefined', 'toBeString', 'toBeNumber', 'toBeString',
+  'toBeArray', 'toBeObject', 'toBeDefined', 'toBeFalsy',
+  'toBeBoolean', 'toAtMostHaveProperties', 'toBe',
+  'toContain'].forEach(function (k) {
+  window[k] = function (val) {
+    return [k, val];
+  }
+});
+
+
+var expectProperties = function (actual) {
+  return {
+    toBe: function (obj) {
+      Object.keys(obj).forEach(function (k) {
+        it('property ' + k, function () {
+          expect(actual[k])[obj[k][0]](obj[k][1]);
+        });
+      });
+    }
+  };
+};
+
+var where = function (arr, match) {
+  var rs;
+  arr.forEach(function (el) {
+    if (rs) { return; }
+    var pass = true;
+    Object.keys(match).forEach(function (k) {
+      pass = pass && el[k] === match[k];
+    })
+    if (pass) {
+      rs = el;
+    }
+  })
+  return rs;
+};
+
 describe('the documentation', function () {
   'use strict';
 
@@ -101,10 +138,6 @@ describe('the documentation', function () {
 
 
   describe('data structure:', function () {
-
-    describe('the project', function () {
-
-    });
 
     var checkComment = function (obj, properties) {
       describe('description', function () {
@@ -285,6 +318,9 @@ describe('the documentation', function () {
       }
     }
 
+    describe('the project', function () {
+      checkComment(data.project, ['title', 'version']);
+    });
 
     // Each file
     describeEach('file').withIdenfier('filename').inArray(data.files, function (file) {
@@ -327,7 +363,9 @@ describe('the documentation', function () {
         it('should have a description', function () {
           expect(file.description).toContain('If the tests succeed');
         });
-        it('should have x classes')
+        it('should have 2 classes', function () {
+          expect(file.classes.length).toBe(2);
+        });
       });
       describe('@author', function () {
         it('should have two authors', function () {
@@ -389,7 +427,30 @@ describe('the documentation', function () {
         })
       });
     });
+
     describe('the Farm class', function () {
+      var cls = where(data.files[1].classes, { name: 'Farm' });
+      it('should exist', function () {
+        expect(cls).toBeDefined();
+      });
+      expectProperties(cls).toBe({
+        title: toBe('Farm'),
+        fullName: toBe('Farm'),
+        instanceName: toBe('farm'),
+        description: toContain('A farm consists'),
+        extend: toBeFalsy(),
+        ignore: toBeUndefined(),
+        order: toBeUndefined(),
+        since: toBeUndefined(),
+        see: toBeUndefined(),
+        deprecated: toBeUndefined(),
+        args: toBeArray(),
+        'throws': toBeUndefined()
+      });
+
+      it('should have an owner argument', function () {
+
+      });
       it('should have two methods', function () {
 
       });
@@ -400,7 +461,74 @@ describe('the documentation', function () {
 
       })
     });
+    describe('the BigBarn class', function () {
+      var cls = where(data.files[1].classes, { name: 'BigBarn' });
+      it('should exist', function () {
+        expect(cls).toBeDefined();
+      });
+      expectProperties(cls).toBe({
+        title: toBe('BigBarn'),
+        fullName: toBe('BigBarn'),
+        instanceName: toBe('bigBarn'),
+        description: toBeUndefined(),
+        extend: toBeFalsy(),
+        order: toBeUndefined(),
+        since: toBeUndefined(),
+        see: toBeUndefined(),
+        deprecated: toBeUndefined(),
+        args: toBeUndefined(),
+        'throws': toBeUndefined()
+      });
+    });
     describe('the Field class', function () {
+      var cls = where(data.files[1].classes, { name: 'Field' });
+      it('should exist', function () {
+        expect(cls).toBeDefined();
+      });
+      expectProperties(cls).toBe({
+        title: toBe('Field'),
+        fullName: toBe('Field'),
+        instanceName: toBe('field'),
+        description: toContain('multiple animals'),
+        extend: toBeFalsy(),
+        order: toBeUndefined(),
+        since: toBeUndefined(),
+        see: toBeUndefined(),
+        deprecated: toBeUndefined(),
+        args: toBeUndefined(),
+        'throws': toBeUndefined()
+      });
+      describe('the drawCropCircle method', function () {
+
+      })
+    })
+    describe('the Cow class', function () {
+      var cls = where(data.files[1].classes, { name: 'Cow' });
+      it('should exist', function () {
+        expect(cls).toBeDefined();
+      });
+      expectProperties(cls).toBe({
+        title: toBe('Cow'),
+        fullName: toBe('Cow'),
+        instanceName: toBe('cow'),
+        description: toBeFalsy(),
+        extend: toBeArray(),
+        order: toBeString(),
+        since: toBeString(),
+        see: toBeArray(),
+        deprecated: toBeUndefined(),
+        args: toBeUndefined(),
+        'throws': toBeUndefined()
+      });
+      it('should have a url to wikipedia', function () {
+        expect(cls.see[0]).toContain('en.wikipedia')
+      });
+      it('should extend Animal', function () {
+        expect(cls.extend[0].name).toBe('Animal');
+      })
+      it('should show complete info about Animal', function () {
+        expect(cls.extend[0].methods).toBeArray();
+      })
       describe('the drawCropCircle method', function () {
 
       })

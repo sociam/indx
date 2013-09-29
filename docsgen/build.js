@@ -364,7 +364,7 @@
 				promise = new Promise();
 			classGrammar.parse(comment)
 				.then(function (rs) {
-					singles(rs, ['fullName']);
+					singles(rs, ['name', 'fullName', 'instanceName', 'since', 'order']);
 					parseMatch(rs, that)
 						.then(function () {
 							promise.resolve();

@@ -19,7 +19,7 @@
 // We're making a farm :)
 
 /// A farm consists of multiple fields
-function Farm () {
+function Farm (owner) {
 
 };
 
@@ -33,7 +33,12 @@ _.extend(Farm.prototype, {
 /// Add a field
 Farm.prototype.addField = function (field) { };
 
+var BigBarn = function () {}
+
 /// A field can have multiple animals
+/// @arg <number> width: Width of the field
+/// @arg height: Height of the field
+/// @
 var Field = function (width, height) {
 
 };
@@ -54,6 +59,11 @@ var animals = {
 
 animals.Animal.prototype.extend = function () {};
 
+/// @instanceName cow
+/// @extend animals.Animal
+/// @see http://en.wikipedia.org/wiki/cow
+/// @order 100
+/// @since 2005
 var Cow = Animal.extend({
 	moo: function () {}
 });
