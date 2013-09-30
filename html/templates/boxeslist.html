@@ -3,12 +3,16 @@
 		<h2>Your boxes:</h2>
 		<ul class="applist">
 			<li ng-repeat='box in boxes' class="app">
-				<a ng-href='#' target="_new">{{ box }}</a>
+				<div class="box">
+					<a ng-href='#' target="_new">{{ box }}</a>
+					<span class="last_updated" ng-bind="latest_obj[box.id]"></span>
+					<span class="obj_count" ng-bind="els_by_box[box.id]"></span>
+				</div>
 			</li>
 		</ul>
-		<button class="btn btn-default" ng-click="create_new_box = true">New box</button>
+		<button class="btn btn-primary" ng-click="create_new_box()">New box</button>
 	</div>
-	<div ng-show="create_new_box">
+	<!--<div ng-show="create_new_box">
 		<div class="modal" style="display: block">
 			<div class="modal-dialog">
 				<div class="modal-content">
@@ -26,7 +30,7 @@
 			</div>
 		</div>
 	</div>
-	<!-- <div ng-show="false">
+	 <div ng-show="false">
 		<div class="modal" style="display: block">
 			<div class="modal-dialog">
 				<div class="modal-content">

@@ -1,5 +1,7 @@
 
 (function() {
+
+
 	angular.module('launcher', ['indx'])
 		.config(['$routeProvider', function($routeProvider) {
 			$routeProvider
@@ -109,21 +111,8 @@
 			}
 		});
 
-	}).controller('BoxesList', function($location, $scope, client, utils) {
-		var u = utils,store = client.store, sa = function(f) { return utils.safe_apply($scope,f); };
-		var get_boxes_list = function() {
-			store.get_box_list().then(function (boxes) {
-				console.log('boxes --> ', boxes);
-				sa(function() { $scope.boxes = boxes; });
-			}).fail(function() {
-				sa(function() { delete $scope.boxes; });
-				u.error('oops can\'t get boxes - not ready i guess');
-			});
-		};
-		store.on('login', get_boxes_list);
-		get_boxes_list();
-		$scope.create_new_box = false;
-	}).directive('focusOnShow', function() {
+	})
+	.directive('focusOnShow', function() {
 		return {
 			restrict:'A',
 			controller:function($scope, $element, $attrs, $route, client, $location) {

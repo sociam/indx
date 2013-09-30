@@ -1,8 +1,11 @@
-<div class="apps-toplevel">
-	<h2>Installed apps:</h2>
-	<ul class="applist">
-		<li ng-repeat='a in apps' class="app">
-			<a ng-href='apps/{{ a }}' target="_new">{{ a }}</a>
-		</li>
-	</ul>
+<div>
+	<div class="apps-toplevel">
+		<h2>Installed apps:</h2>
+		<ul class="applist">
+			<li ng-repeat='a in apps' class="app">
+				<a ng-href='apps/{{ a }}' target="_new">{{ a }}</a>
+			</li>
+		</ul>
+	</div>
+	<boxlist></boxlist>
 </div>
