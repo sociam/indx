@@ -17,9 +17,17 @@
 		clc = require('cli-color'),
 		Backbone = require('backbone'),
 		marked = require('marked'),
+		logging = false,
 		config;
 
 	mu.root = __dirname + '/template';
+
+	process.argv.forEach(function (val) {
+		switch (val) {
+		case '--log-stdout':
+			logging = true;
+		}
+	});
 
 	var markedOptions = {
 		gfm: true,
@@ -194,6 +202,7 @@
 					if (err) {
 						throw err;
 					}
+					log('Successfully built documentation in ' + outputDir, true);
 				});
 			});
 		},
@@ -384,10 +393,8 @@
 	});
 
 	var singles = function (rs, keys) {
-		console.log('rs', rs, keys)
 		var properties = rs.properties;
 		_.each(keys, function (key) {
-			console.log('key', key, properties[key])
 			if (properties[key] && properties[key] instanceof Array) {
 				properties[key] = properties[key][0];
 			}
@@ -470,7 +477,7 @@
 				if (reparse) {
 					return;
 				}
-				console.log('CHECKING FOR INHERITANCE ON', superCls.get('name'));
+				log('CHECKING FOR INHERITANCE ON', superCls.get('name'));
 				_.each(superCls.regexps, function (regexp) {
 					if (reparse) {
 						return;
@@ -487,10 +494,10 @@
 						}
 						// Has this class already been found?
 						if (that.where({ fullName: match.fullName }).length > 0) {
-							console.log('Found already', match.fullName)
+							log('Found already', match.fullName)
 							return;
 						}
-						console.log(match.fullName, superCls.get('name'))
+						log(match.fullName, superCls.get('name'))
 						var cls = new Class(_.extend({
 							extend: !superCls.atomic ? superCls.object() : undefined
 						}, match), {
@@ -705,14 +712,23 @@
 	});
 
 
-	function log(context, message) {
+	function log(context, message, force) {
+		if (typeof message === 'boolean') {
+			force = message;
+			message = undefined;
+		}
+		if (!logging && !force) { return; }
+		if (!message) {
+			message = context;
+			context = '';
+		}
 		var color =
 			context.indexOf('class') > -1 ? clc.xterm(48) :
 			context.indexOf('method') > -1 ? clc.xterm(43) :
 			context.indexOf('argument') > -1 ? clc.xterm(38) :
 			context.indexOf('file') > -1 ? clc.xterm(33) : clc.xterm(227);
-		context = tree(context);
-		console.log(' ' + color(pad(context, 15)) + ' ' + message);
+		context = context ? color(pad(tree(context), 15)) + ' ' : '';
+		console.log(context, message);
 	}
 
 
