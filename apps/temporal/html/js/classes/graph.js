@@ -13,7 +13,7 @@ function Graph(target, channel)
 	this.graph = undefined;
 	this.graphType = 0;
 	this.heightProportion = 0.9;
-	this.footerHeight = 10;
+	this.footerHeight = 15;
 	this.invertPan = false;
 	this.isStatic = false;
 	this.iType = "Graph";
@@ -289,6 +289,8 @@ Graph.prototype.renderDays = function()
 	var lastInstant  = this.timeInterval.end;
 	var firstInstant = this.timeInterval.begin;
 
+	var graphPointer = this;
+
 	var group = this.graph.selectAll(".days");
 	var n = 0;
 	group.each(function() { ++n; });
@@ -309,12 +311,14 @@ Graph.prototype.renderDays = function()
 		.attr("x1", x)
 		.attr("y1", 0)
 		.attr("x2", x)
-		.attr("y2", this.getHeight()-this.footerHeight)
+		.attr("y2", graphPointer.getHeight()-graphPointer.footerHeight)
 		.attr("class", "day");
 
 	group
 		.attr("x1", x)
-		.attr("x2", x);
+		.attr("x2", x)
+		.attr("y1", 0)
+		.attr("y2", graphPointer.getHeight()-graphPointer.footerHeight);
 
 	group.exit().remove();
 }
@@ -367,49 +371,49 @@ Graph.prototype.renderGrid = function ()
 	}
 
 
-	var ticks = [];
+	// var ticks = [];
 	
-	var intVal = parseInt(this.minValue);
-	var diff = this.minValue-parseInt;
-	if(diff != 0) diff = 1;
+	// var intVal = parseInt(this.minValue);
+	// var diff = this.minValue-parseInt;
+	// if(diff != 0) diff = 1;
 
-	var scale = this.mostConvenientDataScale(this.minValue, this.maxValue);
+	// var scale = this.mostConvenientDataScale(this.minValue, this.maxValue);
 
-	for(var i=parseInt(this.minValue)-diff; i < parseInt(this.maxValue)+1; i+=scale)
-	{
-		ticks.push(i);
-	}
+	// for(var i=parseInt(this.minValue)-diff; i < parseInt(this.maxValue)+1; i+=scale)
+	// {
+	// 	ticks.push(i);
+	// }
 
-	group = this.graph.selectAll(".height");
-	n = 0;
-	group.each(function() { ++n; });
+	// group = this.graph.selectAll(".height");
+	// n = 0;
+	// group.each(function() { ++n; });
 
-	if(n == 0)
-	{
-		group = this.graph.append("g").attr("class", "grid height");
-	}
+	// if(n == 0)
+	// {
+	// 	group = this.graph.append("g").attr("class", "grid height");
+	// }
 
-	group = group.selectAll("line").data(ticks);
+	// group = group.selectAll("line").data(ticks);
 
-	group.enter()
-		.append("line")
-		.attr("x1", 0)
-		.attr("y1", y)
-		.attr("x2", this.getWidth())
-		.attr("y2", y)
-		.attr("class", function(d) 
-			{ 
-				if(d == 0) 
-					return "axis";
-				else
-					return "tick";
-			});
+	// group.enter()
+	// 	.append("line")
+	// 	.attr("x1", 0)
+	// 	.attr("y1", y)
+	// 	.attr("x2", this.getWidth())
+	// 	.attr("y2", y)
+	// 	.attr("class", function(d) 
+	// 		{ 
+	// 			if(d == 0) 
+	// 				return "axis";
+	// 			else
+	// 				return "tick";
+	// 		});
 
-	group
-		.attr("y1", y)
-		.attr("y2", y);
+	// group
+	// 	.attr("y1", y)
+	// 	.attr("y2", y);
 
-	group.exit().remove();
+	// group.exit().remove();
 	this.renderDays();
 }
 
@@ -516,8 +520,8 @@ Graph.prototype.renderLabels = function(target)
 	var beginStr = TimeUtils.dateFormatter(this.timeInterval.begin);
 	var endStr = TimeUtils.dateFormatter(this.timeInterval.end);
 
-	labelList.push(new GraphText(beginStr, "graphTimestamp", 0, 113));
-	labelList.push(new GraphText(endStr, "graphTimestamp", 700, 113, "end"));
+	labelList.push(new GraphText(beginStr, "graphTimestamp", 0, this.getHeight()-20));
+	labelList.push(new GraphText(endStr, "graphTimestamp", 700, this.getHeight()-20, "end"));
 
 	var weekday=new Array(7);
 	weekday[0]="Sunday";
