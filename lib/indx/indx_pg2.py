@@ -126,60 +126,45 @@ class IndxDatabase:
 
     def remove_database_users(self, db_name):
         """ Remove database users for a named database. """
+        logging.debug("indx_pg2, remove_database_users: {0}".format(db_name))
         return_d = Deferred()
 
-        # select * from tbl_keychain where db_name = %s
-        # delete from tbl_keychain where db_name 
+        operations = []
 
-        "SELECT db_user FROM tbl_keychain WHERE db_name = %s"
+        def do_operations(conn):
+            """ Perform final operations, performed after ROLEs are found and removed. """
+            logging.debug("indx_pg2, remove_database_users: do_operations, len(operations): {0}".format(len(operations)))
+            if len(operations) < 1:
+                return_d.callback(None)
+                return
+            
+            operation_query = operations.pop(0)
+            d_db = conn.runOperation(operation_query)
+            d_db.addCallbacks(lambda nothing: do_operations(conn), return_d.errback)
+            return
 
+        def connected_cb(conn):
+            logging.debug("indx_pg2, remove_database_users: connected_cb, conn: {0}".format(conn))
 
-        rw_user = "{0}_rw".format(db_name)
-        rw_user_pass = binascii.b2a_hex(os.urandom(16))
-        ro_user = "{0}_ro".format(db_name)
-        ro_user_pass = binascii.b2a_hex(os.urandom(16))
-
-        # queries to be run by INDX user on INDX db
-        queries = [
-            "CREATE ROLE %s LOGIN ENCRYPTED PASSWORD '%s' NOSUPERUSER INHERIT NOCREATEDB NOCREATEROLE" % (rw_user, rw_user_pass),
-            "CREATE ROLE %s LOGIN ENCRYPTED PASSWORD '%s' NOSUPERUSER INHERIT NOCREATEDB NOCREATEROLE" % (ro_user, ro_user_pass),        
-            "GRANT %s TO %s" % (rw_user, self.db_user), # make indx user a member of the rw user role (required)
-            "ALTER DATABASE %s OWNER TO %s" % (db_name, rw_user),
-            "GRANT ALL PRIVILEGES ON DATABASE %s TO %s" % (db_name, rw_user),
-        ]
-
-        def connected(conn):
-            if len(queries) < 1:
-
-                # queries to be run by INDX user on new DB
-                queries_db = [
-                    "GRANT SELECT ON ALL TABLES IN SCHEMA public TO %s" % (ro_user),
-                    "REASSIGN OWNED BY %s TO %s" % (self.db_user, rw_user),
-                ]
-
-                def connected_db(conn_db):
+            def db_user_cb(rows):
+                logging.debug("indx_pg2, remove_database_users: db_user_cb, rows: {0}".format(rows))
+                users_processed = {}
+                for row in rows:
+                    db_user = row[0]
+                    if db_user not in users_processed:
+                        users_processed[db_user] = True
+                        operations.append("DROP ROLE %s" % db_user)
                 
-                    if len(queries_db) < 1:
-                        return_d.callback((rw_user, rw_user_pass, ro_user, ro_user_pass))
-                        return
-                    
-                    query_db = queries_db.pop(0)
-                    d_db = conn_db.runOperation(query_db)
-                    d_db.addCallbacks(lambda nothing: connected_db(conn_db), return_d.errback)
-                    return
-
-                connect(db_name, self.db_user, self.db_pass).addCallbacks(connected_db, return_d.errback)
+                do_operations(conn)
                 return
 
-            query = queries.pop(0)
-            d = conn.runOperation(query)
-            d.addCallbacks(lambda nothing: connected(conn), return_d.errback)
+            operations.append("DELETE FROM tbl_keychain WHERE db_name = '%s'" % db_name)
+            d = conn.runQuery("SELECT db_user FROM tbl_keychain WHERE db_name = %s", [db_name])
+            d.addCallbacks(db_user_cb, return_d.errback)
             return
 
         # get connection to INDX database from POOL
-        self.connect_indx_db().addCallbacks(connected, return_d.errback)
-        
-
+        self.connect_indx_db().addCallbacks(connected_cb, return_d.errback)
         return return_d
 
 
@@ -351,7 +336,11 @@ class IndxDatabase:
 
         def connected(conn):
             d = conn.runOperation("DROP DATABASE {0}".format(db_name))
-            d.addCallbacks(lambda done: return_d.callback(True), return_d.errback)
+
+            def dropped_cb(val):
+                self.remove_database_users(db_name).addCallbacks(lambda done: return_d.callback(True), return_d.errback)
+
+            d.addCallbacks(dropped_cb, return_d.errback)
 
         db_name = INDX_PREFIX + box_name 
         for pool in POOLS_BY_DBNAME[db_name]:
@@ -441,7 +430,7 @@ def connect(db_name, db_user, db_pass):
         p = IndxConnectionPool(None, conn_str)
 
         def success(pool):
-            logging.debug("indx_pg2: returning new pool for db: {0}, user: {1}, pool: {2}".format(db_name, db_user, pool))
+            logging.debug("indx_pg2: returning new pool for db: {0}, user: {1}, pool: {2}, p: {3}".format(db_name, db_user, pool, p))
             POOLS[conn_str] = p # only do this if it successfully connects
             if db_name not in POOLS_BY_DBNAME:
                 POOLS_BY_DBNAME[db_name] = []
