@@ -1,3 +1,6 @@
+var sys = require('sys');
+var exec = require('child_process').exec;
+
 // Karma configuration
 // Generated on Wed Jun 26 2013 01:13:01 GMT+0100 (BST)
 
@@ -10,32 +13,52 @@ basePath = './';
 files = [
   JASMINE,
   JASMINE_ADAPTER,
+  { pattern: '../build.js', watched: true, served: false, included: false },
+  { pattern: '../tests.docs-config.js', watched: true, served: false, included: false },
+  { pattern: 'js/main.js', watched: true, served: false, included: false },
+
   { pattern: 'lib/jquery-1.9.1.min.js', watched: true, served: true, included: true },
   { pattern: 'lib/jasmine-jquery.js', watched: true, served: true, included: true },
   { pattern: 'html/index.html', watched: true, served: true, included: false },
+
   { pattern: 'main-tests.js', watched: true, served: true, included: true }
 ];
 
-preprocessors = {
-  //'../tests/indx-client.js': 'coverage',
-  //'js/indx.js': 'coverage',
-  //'js/indx-utils.js': 'coverage'
+var sys = require('sys');
+var exec = require('child_process').exec;
+
+
+var createDocsgenPreprocessor = function(logger, basePath) {
+  var log = logger.create('preprocessor.docsgen');
+
+  return function(content, file, done) {
+
+    log.debug('Processing "%s".', file.originalPath);
+
+    function puts(error, stdout, stderr) { sys.puts(stdout) }
+    exec("node ../build.js " + file.originalPath, puts);
+
+    done();
+  };
 };
 
-//coverageReporter = {
-  //type : 'html',
-  //dir : '../tests/coverage/'
-//};
+createDocsgenPreprocessor.$inject = ['logger', 'config.basePath'];
+
+plugins = [
+  require('./lib/karma-docsgen-preprocessor.js')
+];
+
+preprocessors = {
+  '../tests.docs-config.js': 'karma-docsgen-preprocessor'
+};
 
 // list of files to exclude
-exclude = [
-
-];
+exclude = [];
 
 
 // test results reporter to use
 // possible values: 'dots', 'progress', 'junit'
-reporters = ['progress'/*, 'coverage'*/];
+reporters = ['progress'];
 
 
 // web server port

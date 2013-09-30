@@ -18,6 +18,7 @@
     "cli-color": "~0.2.3",
     "backbone": "~1.0.0",
     "marked": "~0.2.9",
-    "mustache": "~0.7.2"
+    "mustache": "~0.7.2",
+    "node-ffi": "~0.5.7"
   }
 }
