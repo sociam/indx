@@ -236,7 +236,7 @@ angular
 				return u.when(dfds);
 			},
 			_load_from_json: function(json) {
-				var objdata = response.data, this_ = this;
+				var objdata = json, this_ = this;
 				if (objdata['@version'] === undefined) {
 					// then the server thinks we've been deleted, so let's just die.
 					return u.dreject(this.id);
@@ -540,7 +540,7 @@ angular
 			get_obj:function(objid) {
 				// get_obj always returns a promise
 				// console.log(' get_obj() >> ', objid);
-				
+
 				u.assert(typeof objid === 'string' || typeof objid === 'number' || _.isArray(objid), "objid has to be a number or string or an array of such things");
 				var multi = _.isArray(objid),
 					ids = multi ? objid : [objid],
@@ -592,7 +592,7 @@ angular
 								return id;
 							}).filter(u.defined);
 
-							// NOT ACCOUNTED FOR check >> 
+							// NOT ACCOUNTED FOR check >>
 							// models not accounted for were blank.
 							_(lids).difference(resolved_ids).map(function(id) {
 								dmissing_by_id[id].resolve(missing_models[id]);
