@@ -21,7 +21,9 @@ angular
 		var handleDragOver = function(evt) {
 			evt.stopPropagation();
 			evt.preventDefault();
-			evt.dataTransfer.dropEffect = 'copy'; 
+			evt.dataTransfer.dropEffect = 'copy';
+			console.log('drag over');
+			$('.dropzone').addClass('dragover');
 		};
 
 		var find_id_column = function() {
@@ -39,38 +41,49 @@ angular
 			return out;
 		};
 
-		// var make_blur = function() {
-		//	$('.bluroverlay').blurjs({ source: 'body', radius: 4, overlay: 'rgba(255,255,255,0.2)', cache:false });
-		// };
-		// $scope.$watch('saving', make_blur);
+		var set_wait = function(b) {
+			u.safe_apply($scope, function() { $scope.wait = b;	});
+		};
 
 		$scope.do_save = function() {
-			u.safe_apply($scope, function() { $scope.saving = true;	});
-			$scope.save().then(function () {
-				u.safe_apply($scope, function() { delete $scope.saving; });
-			});
+			set_wait(true);
+			return $scope.save().pipe(function (x) { set_wait(false); });
+		};
+
+		$scope.err = function(e) {
+			u.safe_apply($scope, function() { $scope.error = e.toString(); });
 		};
 
 		$scope.save = function() {
-			var id_col = find_id_column();
-			console.log('id column, ', id_col);
-			var by_id = {};
-			var obj_ids = $scope.rows.map(function(row) {
-				var id = row[id_col];
-				by_id[id] = remap_columns(row);
-				return id;
-			});
-			var d = u.deferred();
-			console.log('saving objects >> ', obj_ids);
-			box.get_obj(obj_ids).then(function(models) {
-				var ds = models.map(function(m) {
-					if (by_id[m.id]) {
-						m.set(by_id[m.id]);
-						return m.save();
-					}
+				try { 
+				var id_col = find_id_column();
+				var by_id = {};
+				var obj_ids = $scope.rows.map(function(row) {
+					var id = row[id_col];
+					by_id[id] = remap_columns(row);
+					return id;
 				});
-				u.when(ds).then(d.resolve).fail(d.reject);
-			});
+				var d = u.deferred();
+				obj_ids = u.uniqstr(obj_ids).filter(function(x) { return x.trim().length > 0; });
+				console.log("asking for ids ", obj_ids);
+				box.get_obj(obj_ids).then(function(models) {
+					var ds = models.map(function(m) {
+						if (by_id[m.id]) {
+							m.set(by_id[m.id]);
+							return m.save();
+						}
+					});
+					u.when(ds).then(function() {
+						u.safe_apply($scope, function() {
+							$scope.savedmodels = models;
+							delete $scope.rows;
+							delete $scope.cols;
+							delete $scope.dropped; 
+						});
+						d.resolve();
+					}).fail(d.reject);
+				});
+			} catch(e) { $scope.err(e); console.error(e); }
 			return d.promise();
 		};
 
@@ -85,6 +98,7 @@ angular
 
 		var parseCSV = function(csvstring) {
 			var rows = d3.csv.parse(csvstring);
+			set_wait(false);
 			u.safe_apply($scope, function() {
 				$scope.cols = _(rows[0]).keys().map(function(x) { return { name: x, newname: x }; });
 				$scope.rows = rows.concat([]);
@@ -92,19 +106,24 @@ angular
 		};
 
 		var handleFileSelect = function(evt) {
-			evt.stopPropagation();
-			evt.preventDefault();
-			var files = evt.dataTransfer.files; // FileList object.
-			window.files = files;
-			for (var i = 0; i < files.length; i++) {
-				var f = files[i], fr = new FileReader();
-				fr.onload = function(e) { parseCSV(fr.result); };
-				fr.readAsText(f);
-				console.log('<li><strong>', escape(f.name), '</strong> (', f.type || 'n/a', ') - ',
-					f.size, ' bytes, last modified: ',
-					f.lastModifiedDate ? f.lastModifiedDate.toLocaleDateString() : 'n/a',
-					'</li>');
-			}
+			try {
+				evt.stopPropagation();
+				evt.preventDefault();
+				u.safe_apply($scope, function() { $scope.dropped = true; });
+				set_wait(true);
+				$('.dropzone').removeClass('dragover');
+				var files = evt.dataTransfer.files; // FileList object.
+				window.files = files;
+				for (var i = 0; i < files.length; i++) {
+					var f = files[i], fr = new FileReader();
+					fr.onload = function(e) { parseCSV(fr.result); };
+					fr.readAsText(f);
+					console.log('<li><strong>', escape(f.name), '</strong> (', f.type || 'n/a', ') - ',
+						f.size, ' bytes, last modified: ',
+						f.lastModifiedDate ? f.lastModifiedDate.toLocaleDateString() : 'n/a',
+						'</li>');
+				}
+			} catch(e) { console.error(e); err(e); }
 		};
 
 		window.$s = $scope;
@@ -112,5 +131,6 @@ angular
 		// Setup the dnd listeners.
 		var dropZone = $('body')[0]; //  document.getElementById('dropzone');
 		dropZone.addEventListener('dragover', handleDragOver, false);
+		dropZone.addEventListener('dragleave', function() { console.log('drag leave!'); $('.dropzone').removeClass('dragover'); });
 		dropZone.addEventListener('drop', handleFileSelect, false);
 	});

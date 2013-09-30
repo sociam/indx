@@ -10,28 +10,44 @@
   </head>
   <body ng-app="importer" ng-controller="main" ng-cloak>
     <toolbar box-var='selected_box' username-var='selected_user'></toolbar>
-	<div class='main'> 
-	  <div class='error' ng-show='error'>
+	<div class='main dropzone'> 
+	  <div class='alert alert-danger' ng-show='error'>
 	  	{{ error }}
 	  </div>
 	  <div ng-show="selected_user && selected_box && !error">
-	  	<div ng-show='!rows'>
-	  		<h2>drop a CSV anywhere on this page! </h2>
+	  	<div class="btn btn-primary savebtn" ng-show='rows && !wait' ng-disabled="wait" ng-click='do_save()'><span class="glyphicon glyphicon-floppy-open"></span> - Save to INDX</div>
+	  	<div ng-show='!dropped'>
+	  		<h2 class="instructions">[ drop a CSV file here ]</h2>
+	  		<h2 class="yesdrophere">go on and drop the file</h2>
+	  		<div class='endresult' ng-show='savedmodels'>
+	  			<b>[ Saved <span ng-bind="savedmodels.length"></span> things ]</b>
+	  			<ul>
+	  				<li ng-repeat="m in savedmodels">
+	  					<span ng-bind="m.id"></span>
+	  					<span ng-bind="m.attributes.name || m.attributes.title" ng-show="m.attributes.name || m.attributes.title"></span>
+	  				</li>
+	  			</ul>
+	  		</div>
 	  	</div>
-	  	<div class="btn" ng-show='rows && !saving' ng-disabled="saving" ng-click='do_save()'> Save! </div>
-	  	<div class="bluroverlay" ng-show="saving">
-	  		<div class="pleasewait">please wait while saving..</div>
-	  		<img src="cat.gif"></img>
+	  	<div class="waitoverlay" ng-show="wait">
+	  		<div class="pleasewait">please wait ..</div>
+	  		<img src="imgs/39.gif"></img>
 	  	</div>	
-	  	<div class="loaded" ng-show="rows && !saving">
+	  	<div ng-class="{loaded:true, blur:wait}" ng-show="rows">
 	  		<table class="table table-striped">
 	  			<thead>
 	  				<tr>
-	  				<th> select </th>
-	  				<th ng-repeat='c in cols' ng-click='clearIDExcept(c)'>
-	  					<input type='checkbox' ng-model='c.id'></input>
-	  					<input type='text' ng-model="c.newname"></input>
-	  				</th>
+	  					<th> select </th>
+	  					<th ng-repeat='c in cols'>
+	  						<input type='text' class="propname" ng-model="c.newname"></input>
+	  					</th>
+	  				</tr>
+	  				<tr class="key">
+	  					<th> use as primary key </th>
+	  					<th ng-repeat='c in cols' ng-click='clearIDExcept(c)'>
+	  						<input type='checkbox' ng-model='c.id'></input>
+	  					</th>
+	  				</tr>
 	  			</thead>
 		  		<tr ng-repeat='r in rows' ng-class="{active:r.selected}">
 		  			<td>
