@@ -115,7 +115,10 @@
 
 				<div class="indx-sidebar">
 					<ul class="indx-list-flat todo-lists">
-						<li ng-repeat="todo_list in todo_lists.all_models" ng-click="todo_list.select()" ng-class="{ active: todo_list.is_selected }" ><a href="#" droppable>{{ todo_list.get_attribute('title') }}</a></li>
+						<li ng-repeat="todo_list in todo_lists.all_models" ng-click="todo_list.select()" ng-class="{ active: todo_list.is_selected }" ><a href="#" droppable>
+							<i class="icon icon-{{ todo_list.get_attribute('icon') }}"></i>
+							{{ todo_list.get_attribute('title') }}
+						</a></li>
 					</ul>
 					<div class="modal-cover" ng-show="editing_todo" ng-animate="fade" ng-click="editing_todo.restore()"></div>
 				</div>
@@ -144,7 +147,10 @@
 					<form ng-submit="todo_lists.selected.save_staged()">
 						<div class="dlg-body">
 							<input class="form-control" width="255" type="text" placeholder="Title" ng-model="todo_lists.selected.staged_attributes.title">
-							<!-- icons -->
+							<div class="todo-list-icons">
+								<a href="#" ng-repeat="icon in icons" ng-click="todo_lists.selected.staged_attributes.icon = icon"><i class="icon icon-{{icon}}" ng-class="{active:todo_lists.selected.get_staged_attribute('icon') === icon}"></i></a>
+							</div>
+							<button type="button" class="btn btn-danger" ng-click="todo_lists.selected.remove()">Delete this todo list</button>
 						</div>
 						<div class="dlg-controls">
 							<button type="button" ng-click="todo_lists.selected.restore()">Close</button><button type="submit">Save</button>

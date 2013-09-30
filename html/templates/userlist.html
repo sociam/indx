@@ -1,28 +1,25 @@
-<div class="launcher_window">
-  <div ng-show="!user_selected" ng-animate="'animate'" class="login-window">
-	<div class="logo">
-	  <h4>welcome to</h4>
-	  <p>
-		<img class="logo" src="img/indx.png">
-	  </p>
+<div>
+	<div class="login-window" ng-show="!user.username" ng-animate="{show: 'animate-show',hide: 'animate-hide'}" ng-cloak>
+		<div class="logo">
+			<h4>welcome to</h4>
+			<p><img class="logo" src="img/indx.png"></img></p>
+		</div> 
+		<ul ng-show="!user.username" class='userlist'>
+			<li ng-repeat='u in users'>
+				<a ng-click="select_user(u)"><user model='u' ></user></a>
+			</li>
+		</ul>
 	</div>
-	<ul ng-show="!user_selected" class='userlist'>
-	  <li ng-repeat='u in users'>
-		<a ng-click="select_user(u)"><user model='u' ></user></a>
-	  </li>
-	</ul>
-  </div>
-  <div ng-show="user_selected" ng-animate="'animate'" class="password-dialog">
-  	<form ng-submit="do_submit()">
-  		<div class="username" ng-click="back_to_login()">
-  			<div class="glyphicon glyphicon-remove goback"></div>
-  			{{ user_selected }} :
-  		</div>
-  		<div class="controls">
-  			<input type="password" id="login_password" class="login_password password_field" ng-model="password"></input>
-  			<div class="glyphicon glyphicon-chevron-right submit" ng-click="do_submit()"></div>
-  		</div>
-  	</form>
-  </div>
+	<div class="password-dialog" ng-show="user.username" ng-animate="{show: 'animate-show',hide: 'animate-hide'}" ng-cloak>
+		<form ng-submit="do_submit()">
+			<div class="username" ng-click="back_to_login()">
+				<div class="glyphicon glyphicon-remove goback"></div>
+				{{ user.username }} :
+			</div>
+			<div class="controls">
+				<input type="password" id="login_password" class="login_password password_field" focus-on-show="user.username" ng-model="user.password"></input>
+				<div class="glyphicon glyphicon-chevron-right submit" ng-click="do_submit()"></div>
+			</div>
+		</form>
+	</div>
 </div>
-

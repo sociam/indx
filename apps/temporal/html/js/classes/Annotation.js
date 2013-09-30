@@ -181,13 +181,15 @@ Annotation.prototype.update = function()
 	if(this.interval.begin > this.interval.end)
 	{
 		this.selection.style("left", this.interval.end+1+"px")
-				.style("width", (this.interval.begin-this.interval.end)+"px");
+				.style("width", (this.interval.begin-this.interval.end)+"px")
+				.style("height", this.sourceGraph.getHeight()-this.sourceGraph.footerHeight+"px");
 		// this.removeButton.style("left", this.interval.begin-10+"px");
 	}
 	else
 	{
 		this.selection.style("left", this.interval.begin+1+"px")
-				.style("width", (this.interval.end-this.interval.begin)+"px");
+				.style("width", (this.interval.end-this.interval.begin)+"px")
+				.style("height", this.sourceGraph.getHeight()-this.sourceGraph.footerHeight+"px");
 		// this.removeButton.style("left", this.interval.end-10+"px");
 	}
 }

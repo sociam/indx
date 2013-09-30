@@ -58,7 +58,7 @@ Activity.prototype.calculate = function()
 
 Activity.prototype.switchVisible = function()
 {
-	console.log("switchVisible")
+	// console.log("switchVisible")
 	if(this.visible == true)
 	{
 		this.visible = false;
@@ -88,6 +88,29 @@ Activity.prototype.addInstancesToGraph = function(graph)
 	}
 }
 
+Activity.prototype.setVisible = function(value)
+{
+	this.visible = value;
+}
+
+Activity.prototype.addInstanceFromINDX = function(begin, end, id)
+{
+
+	var instance = [];
+	instance.begin = begin;
+	instance.end = end;
+	this.instances[id] = instance;
+
+	if(this.showingInfo == true)
+	{
+		var content = this.infoDiv.select(".info");
+		$(content[0]).slideUp(300, function() { content.remove(); });
+		this.showingInfo = false;	
+	}
+
+	tEngine.updateActivityList();
+}
+
 Activity.prototype.addInstance = function(begin, end, origin)
 {
 	var id = this.title+this.lastID++;
@@ -96,6 +119,8 @@ Activity.prototype.addInstance = function(begin, end, origin)
 	instance.begin = begin;
 	instance.end = end;
 	this.instances[id] = instance;
+
+	tEngine.addAnnotationToINDX(id, begin, end, this);
 
 	if(this.showingInfo == true)
 	{
@@ -215,6 +240,7 @@ Activity.prototype.switchInfo = function(div)
 Activity.prototype.removeInstance = function(id, origin)
 {
 	tEngine.removeAnnotationFromGraphs(id, origin);
+	tEngine.removeAnnotationFromINDX(id);
 	
 	delete this.instances[id];
 

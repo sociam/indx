@@ -1,14 +1,12 @@
 <div>
-	<div class="launcher_window">
-	  <div class="apps-toplevel">
+	<div class="apps-toplevel">
 		<h2>Your boxes:</h2>
 		<ul class="applist">
-		  <li ng-repeat='box in boxes' class="app">
-			<a ng-href='#' target="_new">{{ box }}</a>
-		  </li>
+			<li ng-repeat='box in boxes' class="app">
+				<a ng-href='#' target="_new">{{ box }}</a>
+			</li>
 		</ul>
 		<button class="btn btn-default" ng-click="create_new_box = true">New box</button>
-	  </div>
 	</div>
 	<div ng-show="create_new_box">
 		<div class="modal" style="display: block">

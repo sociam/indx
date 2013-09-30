@@ -12,6 +12,9 @@ function InteractiveObject(element)
     // this.lastPosition[0] = 0;
     // this.lastPosition[1] = 0;
 
+    this.size = [];
+    this.sizeCached = false;
+
     // this.setPosition([box.left, box.top]);
     // this.updateLastPosition();
 	this.isTarget = []; // array of touches that this object is target
@@ -60,19 +63,37 @@ InteractiveObject.prototype.getPositionY = function()
 	return $(this.element).offset().top;
 }
 
+InteractiveObject.prototype.cacheSize = function()
+{
+	this.size[0] = $(this.element).width();
+	this.size[1] = $(this.element).height();
+	this.sizeCached = true;
+}
+
 InteractiveObject.prototype.getWidth = function()
 {
-	return this.element.getBoundingClientRect().width;
+	if(this.sizeCached == false)
+	{
+		console.log("W Not cached")
+		this.cacheSize();
+	}
+	return this.size[0];
 }
 
 InteractiveObject.prototype.getHeight = function()
 {	
-	return this.element.getBoundingClientRect().height;
+	if(this.sizeCached == false)
+	{
+		console.log("H Not cached")
+		this.cacheSize();
+	}
+	return this.size[1];
 }
 
 InteractiveObject.prototype.setHeight = function(size)
 {
 	$(this.element).css("height", size+"px");
+	this.size[1] = size;
 }
 
 InteractiveObject.prototype.isOver = function(target)

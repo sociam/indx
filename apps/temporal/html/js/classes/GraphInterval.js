@@ -144,9 +144,9 @@ GraphInterval.prototype.updateSelection = function()
 
 			if(this.interval.pxBegin > this.interval.pxEnd)
 			{
-
 				this.selection.style("left", this.interval.pxEnd+1+"px")
-						.style("width", this.interval.pxBegin-this.interval.pxEnd+"px");
+						.style("width", this.interval.pxBegin-this.interval.pxEnd+"px")
+						.style("height", this.sourceGraph.getHeight()-this.sourceGraph.footerHeight+"px");
 
 				this.scaleBar.d3Element
 						.style("width", (this.interval.pxBegin-this.interval.pxEnd)+"px");
@@ -154,8 +154,10 @@ GraphInterval.prototype.updateSelection = function()
 			}
 			else
 			{
+				console.log("b");
 				this.selection.style("left", this.interval.pxBegin+1+"px")
-						.style("width", (this.interval.pxEnd-this.interval.pxBegin)+"px");
+						.style("width", (this.interval.pxEnd-this.interval.pxBegin)+"px")
+						.style("height", this.sourceGraph.getHeight()-this.sourceGraph.footerHeight+"px");
 				this.scaleBar.d3Element
 						.style("width", (this.interval.pxEnd-this.interval.pxBegin)+"px");
 				this.infoField.style("left", this.interval.pxEnd+1+"px");
@@ -181,15 +183,17 @@ GraphInterval.prototype.updateSelection = function()
 			if(this.interval.pxBegin > this.interval.pxEnd)
 			{
 				this.selection.style("left", this.interval.pxBegin+1+"px")
-						.style("width", (this.interval.pxBegin-this.interval.pxEnd)+"px");
+						.style("width", (this.interval.pxBegin-this.interval.pxEnd)+"px")
+						.style("height", this.sourceGraph.getHeight()-this.sourceGraph.footerHeight+"px");
 				this.scaleBar.d3Element
-						.style("width", (this.interval.pxBegin-this.interval.pxEnd)+"px");
+						.style("width", (this.interval.pxBegin-this.interval.pxEnd)+"px")
 				this.infoField.style("left", this.interval.pxEnd+1+"px");
 			}
 			else
 			{
 				this.selection.style("left", this.interval.pxBegin+1+"px")
-						.style("width", (this.interval.pxEnd-this.interval.pxBegin)+"px");
+						.style("width", (this.interval.pxEnd-this.interval.pxBegin)+"px")
+						.style("height", this.sourceGraph.getHeight()-this.sourceGraph.footerHeight+"px");
 				this.scaleBar.d3Element
 						.style("width", (this.interval.pxEnd-this.interval.pxBegin)+"px");
 				this.infoField.style("left", this.interval.pxEnd+1+"px");
@@ -393,6 +397,7 @@ GraphInterval.prototype.drawSelection = function()
 			this.selection = graphDiv.append("div")
 							.attr("id", "selection")
 							.style("left", xBegin+"px")
+							.style("height", this.sourceGraph.getHeight()-this.sourceGraph.footerHeight+"px")
 							.attr("class", "graphSelection pickerTools")
 							.on("dblclick", function(event){ thisGraph.annotate.call(thisGraph, event) })
 							.style("z-index", tEngine.lastZIndex++);

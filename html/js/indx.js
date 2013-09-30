@@ -46,7 +46,7 @@
 
 
 angular
-	.module('indx', ['ui'])
+	.module('indx', [])
 	.factory('client',function(utils) {
 		var u = utils, log = utils.log, error = utils.error, debug = utils.debug;
 		var DEFAULT_HOST = document.location.host; // which may contain the port
@@ -235,33 +235,30 @@ angular
 				}).filter(u.defined);
 				return u.when(dfds);
 			},
+			_load_from_json: function(json) {
+				var objdata = response.data, this_ = this;
+				if (objdata['@version'] === undefined) {
+					// then the server thinks we've been deleted, so let's just die.
+					return u.dreject(this.id);
+				}
+				// we are at current known version as far as we know
+				var obj_save_dfds = _(objdata).map(function(obj,uri) {
+					// top level keys - corresponding to box level properties
+					if (uri[0] === "@") { return; } // ignore "@id", "@version" etc
+					// not one of those, so must be a
+					// < uri > : { prop1 .. prop2 ... }
+					u.assert(uri === this_.id, 'can only deserialise this object ');
+					return this_._deserialise_and_set(obj);
+				});
+				return u.when(obj_save_dfds);
+			},
+			// this code path taken if someone just fetches one model directly using m.fetch()
 			_fetch:function() {
 				var this_ = this, fd = u.deferred(), box = this.box.get_id();
 				this.box._ajax('GET', box, {'id':this.id}).then(function(response) {
 					this_._set_fetched(true);
-					var objdata = response.data;
-					if (objdata['@version'] === undefined) {
-						// then the server thinks we've been deleted, so let's just die.
-						return fd.reject(this_.id);
-						// old code:
-						// according to the server, we're dead.
-						// console.log('zombie detected ', this_.id);
-						// this_.cid = this_.id;
-						// this_.unset({});
-						// delete this_.id;
-						// fd.resolve();
-						// return;
-					}
-					// we are at current known version as far as we know
-					var obj_save_dfds = _(objdata).map(function(obj,uri) {
-						// top level keys - corresponding to box level properties
-						if (uri[0] === "@") { return; } // ignore "@id", "@version" etc
-						// not one of those, so must be a
-						// < uri > : { prop1 .. prop2 ... }
-						u.assert(uri === this_.id, 'can only deserialise this object ');
-						return this_._deserialise_and_set(obj);
-					});
-					u.when(obj_save_dfds).then(function(){ fd.resolve(this_); }).fail(fd.reject);
+					this_._load_from_json(response.data)
+						.then(function(){ fd.resolve(this_); }).fail(fd.reject);
 				});
 				return fd.promise();
 			},
@@ -542,66 +539,77 @@ angular
 			},
 			get_obj:function(objid) {
 				// get_obj always returns a promise
-				u.assert(typeof objid === 'string' || typeof objid === 'number', "objid has to be a number or string");
-				var d = u.deferred(),
-				cachemodel = this._objcache().get(objid),
-				fetching_dfd = this._fetching_queue[objid],
-				hasmodel = cachemodel && fetching_dfd === undefined,
-				this_ = this;
+				// console.log(' get_obj() >> ', objid);
+				
+				u.assert(typeof objid === 'string' || typeof objid === 'number' || _.isArray(objid), "objid has to be a number or string or an array of such things");
+				var multi = _.isArray(objid),
+					ids = multi ? objid : [objid],
+					d = u.deferred(),
+					this_ = this;
 
-				if (hasmodel) {
-					// debug('returning cached ', objid);
-					d.resolve(cachemodel); return d.promise();
-				}
+				// if has model
+				// to fix a deadlock condition -
+				// if we fetch someone who loops back to us
+				// then we will never resolve with this code:
+				//
+				// fetching_dfd.then(d.resolve).fail(d.reject);
+				// return d.promise();
+				// --
+				// therefore a fix:
 
-				// check to see if already fetching, then we can tag along
-				if (fetching_dfd) {
-					// to fix a deadlock condition -
-					// if we fetch someone who loops back to us
-					// then we will never resolve with this code:
-					//
-					// fetching_dfd.then(d.resolve).fail(d.reject);
-					// return d.promise();
-					// --
-					// therefore a fix:
-					d.resolve(cachemodel);
-					return d.promise();
-				}
+				var missing_models = {}, dmissing_by_id = {};
+				var ds = ids.map(function(oid) {
+					var cachemodel = this_._objcache().get(oid);
+					if (cachemodel) { return u.dresolve(cachemodel);	}
+					// otherwise we make a placeholder and loda it
+					var model = this_._create_model_for_id(oid);
 
-				// if not already fetching then we have to fetch
-				this._fetching_queue[objid] = d;
-				var model = this_._create_model_for_id(objid);
-				// if the serve knows about it, then we fetch its definition
-				// console.log('objlist ', this._objlist());
-
-				// old code ::
-				// if (this._objlist().indexOf(objid) >= 0) {
-				// 	console.log('object exists, going to fetch it ');
-				// 	model.fetch().then(function() {
-				// 		d.resolve(model);
-				// 		delete this_._fetching_queue[objid];
-				// 	}).fail(d.reject);
-				// } else {
-				// 	console.log('object doesnt exist, not going to fetch it ');
-				// 	// otherwise it must be new!
-				// 	model.is_new = true;
-				// 	d.resolve(model);
-				// }
-
-				debug('trying to fetch ', objid);
-				model.fetch().then(function() {
-					d.resolve(model);
-					delete this_._fetching_queue[objid];
-				}).fail(function(err) {
-					error('failed.. declaring it new ', objid);
-					// TODO check if 404'd
-					error('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA err - didnt exist ? ', err);
-					model.is_new = true;
-					d.resolve(model);
-					delete this_._fetching_queue[objid];
+					missing_models[oid] = model;
+					dmissing_by_id[oid] = u.deferred();
+					this_._fetching_queue[oid] = d;
+					return dmissing_by_id[oid];
 				});
+				var lacks = _(missing_models).keys();
+				if (lacks.length > 0) {
+					// console.log('calling with lacks ', lacks.length);
+					u.dmap(u.chunked(lacks, 150), function(lids) {
+						// console.log('lids length ', lids.length);
+						this_._ajax('GET', this_.get_id(), {'id':lids}).then(function(response) {
+							var resolved_ids = _(response.data).map(function(mraw,id) {
+								if (id[0] === '@') { return; }
+								var model = missing_models[id];
+								u.assert(id, "Got an id undefined");
+								u.assert(model, "Got a model we didnt ask for", id);
+								model._set_fetched(true);
+								// console.log('calling deserialise and set on ', mraw);
+								model._deserialise_and_set(mraw).then(function() {
+									dmissing_by_id[id].resolve(model);
+									delete this_._fetching_queue[id];
+								}).fail(function(e){
+									dmissing_by_id[id].reject('Error loading ' + id + ' ' + e);
+									delete this_._fetching_queue[id];
+								});
+								return id;
+							}).filter(u.defined);
 
-				return d.promise();
+							// NOT ACCOUNTED FOR check >> 
+							// models not accounted for were blank.
+							_(lids).difference(resolved_ids).map(function(id) {
+								dmissing_by_id[id].resolve(missing_models[id]);
+								delete this_._fetching_queue[id];
+							});
+						}).fail(function(error) {
+							lids.map(function(id) {
+								dmissing_by_id[id].reject(error);
+								delete this_._fetching_queue[id];
+							});
+						});
+						return u.when(lids.map(function(id) { return dmissing_by_id[id]; }));
+					});
+				} else {
+					console.log('already have all the models, returning directly ');
+				}
+				return multi ? u.when(ds) : ds[0];
 			},
 			// ----------------------------------------------------
 			_update_object_list:function(updated_obj_ids, added, deleted) {
@@ -609,7 +617,7 @@ angular
 				// u.debug('_update_object_list +', added ? added.length : ' ', '-', deleted ? deleted.length : ' ');
 				// u.debug('_update_object_list +', added || ' ', deleted || ' ');
 				if (updated_obj_ids === undefined ) {
-					current = _(olds).chain().union(added).difference(deleted).value();
+					current = _(u.uniqstr(olds.concat(added))).difference(deleted); //_(olds).chain().union(added).difference(deleted).value();
 					news = (added || []).slice(); died = (deleted || []).slice();
 				} else {
 					current = updated_obj_ids.slice();
@@ -618,7 +626,7 @@ angular
 				}
 				// u.debug('old objlist had ', olds.length, ' new has ', current.length, 'news > ', news);
 				this._set_objlist(current);
-				news.map(function(aid) {	this_.trigger('obj-add', aid);	});
+				news.map(function(aid) { this_.trigger('obj-add', aid);	});
 				died.map(function(rid) {
 					this_.trigger('obj-remove', rid);
 					this_._objcache().remove(rid);
@@ -736,9 +744,9 @@ angular
 			_do_update:function(ids) {
 				// this actua
 				debug('box update >> ');
-				var d = u.deferred(), version = this.get('version') || 0, this_ = this,
-				objs = this._objcache().filter(function(x) { return ids === undefined || ids.indexOf(x.id) >= 0; }),
-				obj_ids = objs.map(function(x) { return x.id; }),
+				var d = u.deferred(), version = this.get('version') || 0, this_ = this, oc = this._objcache(),
+				objs = (ids === undefined ? oc.values() : ids.map(function(id) { return oc.get(id); })), // this._objcache().filter(function(x) { return ids === undefined || ids.indexOf(x.id) >= 0; }),
+				obj_ids = (ids === undefined ? oc.keys() : ids.slice()), // objs.map(function(x) { return x.id; }),
 				sobjs = objs.map(function(obj){ return serialize_obj(obj); });
 				this._ajax("PUT",  this.get_id() + "/update", { version: escape(version), data : JSON.stringify(sobjs)  })
 					.then(function(response) {
@@ -809,7 +817,7 @@ angular
 				case "create": return box._create_box();
 				case "read": return box._check_token_and_fetch();
 				case "update": return box.update()[0];  // save whole box?
-				case "delete": return this.delete_box(this.get_id()) // hook up to destroy
+				case "delete": return this.delete_box(this.get_id()); // hook up to destroy
 				}
 			},
 			toString: function() { return 'box:' + this.get_id(); }
@@ -888,6 +896,7 @@ angular
 				return this.login(this.get('username'),this.get('password'));
 			},
 			logout : function() {
+				console.log('store --- logout');
 				var d = u.deferred();
 				var this_ = this;
 				this._ajax('POST', 'auth/logout')
