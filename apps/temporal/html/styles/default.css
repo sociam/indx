@@ -265,7 +265,7 @@ path {
 
 .annotation
 {
-	height: 120px;
+	/*height: 120px;*/
 	width: 10px;
 	background: rgba(100, 100, 100, 0.5);
 	position: absolute;
@@ -277,7 +277,6 @@ path {
 
 .graphSelection
 {
-	height: 120px;
 	width: 10px;
 	/*background-color: #99f;*/
 	background: rgba(143, 143, 143, 0.5);

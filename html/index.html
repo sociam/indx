@@ -12,18 +12,15 @@
 	<link rel="stylesheet/less" type="text/css" href="/components/toolbar/toolbar.less"/>
 	<title>My INDX</title>
 </head>
-<body ng-app="launcher" ng-controller="main">
+<body ng-app="launcher" ng-controller="main" ng-cloak>
   <toolbar box-var='selected_box' username-var='user_logged_in'></toolbar>
-  <loginbox ng-show='!user_logged_in'></loginbox>
-  <appslist ng-show='user_logged_in'></appslist>
-  <boxeslist ng-show='user_logged_in'></boxeslist>
+  <div ng-view ng-animate="{enter: 'animate-show',exit: 'animate-hide'}"></div>
   <script src="js/vendor/jquery.min.js" type="text/javascript"></script>
   <script src="js/vendor/lesscss.min.js" type="text/javascript"></script>
   <script src="js/vendor/underscore.min.js" type="text/javascript"></script>
   <script src="js/vendor/backbone.min.js" type="text/javascript"></script>
   <script src="js/vendor/bootstrap.min.js" type="text/javascript"></script>
   <script src="js/vendor/angular.min.js" type="text/javascript"></script>
-  <script src="js/vendor/angular-ui.js" type="text/javascript"></script>
   <script src="js/indx.js" type="text/javascript"></script>
   <script src="js/indx-utils.js" type="text/javascript"></script>
   <script src="components/toolbar/toolbar.js" type="text/javascript"></script>

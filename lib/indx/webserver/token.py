@@ -28,7 +28,8 @@ class Token:
         An objectstore_async is also kept in the token.
     """
 
-    def __init__(self, username, password, boxid, appid, origin, clientip):
+    def __init__(self, db, username, password, boxid, appid, origin, clientip):
+        self.db = db
         self.username = username
         self.password = password
         self.boxid = boxid
@@ -37,6 +38,7 @@ class Token:
         self.id = str(uuid.uuid1())
         self.clientip = clientip
         self.connections = []
+        self.best_acct = None
 
     def close_all(self):
         """ Close all database connections. """
@@ -50,22 +52,31 @@ class Token:
 
         logging.debug("Token: Getting pooled store for box: {0}, token: {1}".format(self.boxid, self.id))
 
-        def connected_cb(conn):
-            logging.debug("Token get_store connected, returning it.")
-            self.connections.append(conn)
+        def got_acct(new_acct):
 
-            def get_sync():
-                return database.connect_box_sync(self.boxid, self.username, self.password)
+            if self.best_acct is None:
+                self.best_acct = new_acct
 
-            conns = {"conn": conn, "sync_conn": get_sync}
-            store = ObjectStoreAsync(conns, self.username, self.appid, self.clientip)
-            result_d.callback(store)
+            db_user, db_pass = new_acct
 
-        def err_cb(failure):
-            logging.error("Token get_store error on connection: {0}".format(failure))
-            result_d.errback(failure)
+            def connected_cb(conn):
+                logging.debug("Token get_store connected, returning it.")
+                self.connections.append(conn)
 
-        database.connect_box(self.boxid, self.username, self.password).addCallbacks(connected_cb, err_cb)
+                def get_sync():
+                    return database.connect_box_sync(self.boxid, db_user, db_pass)
+
+                conns = {"conn": conn, "sync_conn": get_sync}
+                store = ObjectStoreAsync(conns, self.username, self.appid, self.clientip)
+                result_d.callback(store)
+
+            database.connect_box(self.boxid, db_user, db_pass).addCallbacks(connected_cb, result_d.errback)
+
+        if self.best_acct is None:
+            self.db.lookup_best_acct(self.boxid, self.username, self.password).addCallbacks(got_acct, result_d.errback)
+        else:
+            got_acct(self.best_acct)
+
         return result_d
 
 
@@ -101,22 +112,41 @@ class Token:
         result_d = Deferred()
         logging.debug("Token: Getting raw store for box: {0}, token: {1}".format(self.boxid, self.id))
 
-        def connected_cb(conn):
-            logging.debug("Token get_raw_store connected, returning it.")
-            self.connections.append(conn)
 
-            def get_sync():
-                return database.connect_box_sync(self.boxid, self.username, self.password)
+        def got_acct(new_acct):
+            if new_acct == False:
+                e = Exception("Permission Denied")
+                failure = Failure(e)
+                result_d.errback(failure)
+                return
 
-            conns = {"conn": conn, "sync_conn": get_sync}
-            raw_store = ObjectStoreAsync(conns, self.username, self.appid, self.clientip)
-            result_d.callback(raw_store)
+            if self.best_acct is None:
+                self.best_acct = new_acct
 
-        def err_cb(failure):
-            logging.error("Token get_raw_store error on connection: {0}".format(failure))
-            result_d.errback(failure)
+            db_user, db_pass = new_acct
 
-        database.connect_box_raw(self.boxid, self.username, self.password).addCallbacks(connected_cb, err_cb)
+            def connected_cb(conn):
+                logging.debug("Token get_raw_store connected, returning it.")
+                self.connections.append(conn)
+
+                def get_sync():
+                    return database.connect_box_sync(self.boxid, db_user, db_pass)
+
+                conns = {"conn": conn, "sync_conn": get_sync}
+                raw_store = ObjectStoreAsync(conns, self.username, self.appid, self.clientip)
+                result_d.callback(raw_store)
+
+            def err_cb(failure):
+                logging.error("Token get_raw_store error on connection: {0}".format(failure))
+                result_d.errback(failure)
+
+            database.connect_box_raw(self.boxid, db_user, db_pass).addCallbacks(connected_cb, err_cb)
+
+        if self.best_acct is None:
+            self.db.lookup_best_acct(self.boxid, self.username, self.password).addCallbacks(got_acct, result_d.errback)
+        else:
+            got_acct(self.best_acct)
+
         return result_d
  
     def verify(self,boxname,appname,origin):
@@ -131,8 +161,9 @@ class TokenKeeper:
     """
     # handles token garbage collection at some time in the future!
 
-    def __init__(self):
+    def __init__(self, db):
         self.tokens = {}
+        self.db = db
 
     def close_all(self):
         """ Close all database connections. """
@@ -156,7 +187,8 @@ class TokenKeeper:
         return token
 
     def new(self,username,password,boxid,appid,origin,clientip):
-        token = Token(username,password,boxid,appid,origin,clientip)
+        logging.debug("Token Keeper - new token for: {0} to {1}".format(username, boxid))
+        token = Token(self.db,username,password,boxid,appid,origin,clientip)
         self.add(token)
         return token
 

@@ -25,6 +25,7 @@ function TemporalEngine()
 	this.totalSources = 0;
 	this.timeUtils = new TimeUtils();
 	this.activityMap = {};
+	this.temporalBox = undefined;
 
 	this.graphHeight = 0;
 	this.graphMinHeight = 120;
@@ -50,6 +51,7 @@ TemporalEngine.prototype.getInstancesForAnnotationID = function(id)
 
 TemporalEngine.prototype.addAnnotationToGraphs = function(annotationID, activity, origin)
 {
+	console.log("Adding annotation "+annotationID)
 	for(var x in this.graphList)
 	{
 		if(this.graphList[x].graph != origin)
@@ -73,6 +75,50 @@ TemporalEngine.prototype.unselectAnnotations = function()
 	for(var x in this.graphList)
 	{
 		this.graphList[x].graph.unselectAnnotations();
+	}
+}
+
+TemporalEngine.prototype.unload = function(event)
+{
+	// this.temporalBox.close();
+	// this.temporalAnnotationsBox.close();
+	store.logout();
+	// alert("wut");
+}
+
+TemporalEngine.prototype.addAnnotationToINDX = function(id, begin, end, activity)
+{
+	if(typeof this.temporalAnnotationsBox !== "undefined")
+	{
+		    this.temporalAnnotationsBox.get_obj("annotation-"+id).then(function (ds) 
+                {
+                    ds.set({
+                    	annot_id: id,
+                    	activity: activity.title,
+                    	begin: begin,
+                    	end: end
+                    });
+                    ds.save();
+                });
+	}
+	else
+	{
+		console.error("temporalAnnotationsBox not initialized!");
+	}
+}
+
+TemporalEngine.prototype.removeAnnotationFromINDX = function(id)
+{
+	if(typeof this.temporalAnnotationsBox !== "undefined")
+	{
+		    this.temporalAnnotationsBox.get_obj("annotation-"+id).then(function (ds) 
+                {
+                    ds.destroy();
+                });
+	}
+	else
+	{
+		console.error("temporalAnnotationsBox not initialized!");
 	}
 }
 
@@ -792,8 +838,6 @@ TemporalEngine.prototype.resizeGraphs = function()
 	var windowHeight = this.getPageSize()[1];
 	this.graphHeight = windowHeight - this.timeline.getHeight()-20-size*20;
 	this.graphHeight = this.graphHeight/size;
-
-	console.log(this.graphHeight);
 
 	if(this.graphHeight < this.graphMinHeight)
 		this.graphHeight = this.graphMinHeight;

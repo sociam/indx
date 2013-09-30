@@ -213,7 +213,7 @@ class INDXTests:
 
     def create_box(self):
         """ Test to create a box. """
-        self.check_args(['server','box'])
+        self.check_args(['server','box','username','password'])
         self.auth()
 
         url = "{0}admin/create_box".format(self.args['server'])

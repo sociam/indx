@@ -17,7 +17,7 @@
 
 import logging, re
 from indx.webserver.handlers.base import BaseHandler
-import indx.indx_pg2 as database
+#import indx.indx_pg2 as database
 from twisted.internet.defer import Deferred
 
 BOX_NAME_BLACKLIST = [
@@ -59,19 +59,8 @@ class AdminHandler(BaseHandler):
         """ Delete a box. """
         args = self.get_post_args(request)
         box_name = args['name'][0]
-        username,password = self.get_session(request).username, self.get_session(request).password
-        logging.debug('asking to delete box ' + box_name)
-
-        logging.debug("Deleting box {0} for user {1}".format(box_name,username))
-        try:
-            success = database.delete_box(box_name,username,password) ## TODO make this nonblocking
-            if success:
-                return self.return_no_content(request)
-            else:
-                return self.return_internal_error(request)
-        except Exception as e:
-            logging.debug(' error deleting box {0} '.format(e))
-            return self.return_internal_error(request)
+        logging.debug("Deleting box {0}".format(box_name))
+        self.database.delete_box(box_name).addCallbacks(lambda success: self.return_no_content(request), lambda fail: self.return_internal_error(request))
     
     def create_box_handler(self, request):
         """ Create a new box. """
@@ -79,20 +68,19 @@ class AdminHandler(BaseHandler):
         box_name = args['name'][0]
         username,password = self.get_session(request).username, self.get_session(request).password
         logging.debug('asking to create box ' + box_name)
-        def start():
+        def start(val):
             self.webserver.register_box(box_name,self.webserver.root)
             self.return_created(request)
         def do_create():
             logging.debug("Creating box {0} for user {1}".format(box_name,username))
-            try:
-                success = database.create_box(box_name,username,password) ## TODO make this nonblocking
-                if success:
-                    return start()
-                else:
-                    return self.return_internal_error(request)
-            except Exception as e:
-                logging.debug(' error creating box {0} '.format(e))
-                return self.return_internal_error(request)
+
+            def handle_err(failure):
+                failure.trap(Exception)
+                e = failure.value
+                logging.error("Error creating box: {0} ({1})".format(failure, e))
+                self.return_internal_error(request)
+
+            self.database.create_box(box_name, username, password).addCallbacks(start, handle_err)
         def check(result):
             try :
                 logging.debug(' result > {0} '.format(result))
@@ -104,26 +92,24 @@ class AdminHandler(BaseHandler):
             .addErrback(lambda *er: logging.debug('{0}'.format(er)) and self.return_forbidden(request))        
 
     def list_boxes_handler(self,request):
-        username,password = self.get_session(request).username, self.get_session(request).password
         def boxes(db_list):
             return self.return_ok(request, data={"list": db_list})
-        database.list_boxes(username, password)\
+
+        self.database.list_boxes()\
             .addCallback(boxes)\
             .addErrback(lambda *x: self.return_internal_error(request))
 
     def create_user_handler(self, request):
         args = self.get_post_args(request)
         new_username, new_password = args['username'][0],  args['password'][0]
-        username,password = self.webserver.get_indx_user_password()
         logging.debug("Creating new user with username: {0}".format(new_username))
-        database.create_user(new_username, new_password, username, password)\
+        self.database.create_user(new_username, new_password)\
             .addCallback(lambda *x: self.return_ok())\
             .addErrback(lambda *x: self.return_internal_error(request))
     
     def list_user_handler(self, request):
-        username,password = self.webserver.get_indx_user_password()
-        logging.debug("Getting user list - indx user is {0} - password {0} ".format(username,password))
-        database.list_users(username, password)\
+        logging.debug("Getting user list")
+        self.database.list_users()\
             .addCallback(lambda rows: self.return_ok(request, data={"users":rows}))\
             .addErrback(lambda *x: self.return_internal_error(request))
         
