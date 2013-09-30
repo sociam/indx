@@ -131,6 +131,7 @@ class IndxDatabase:
         # select * from tbl_keychain where db_name = %s
         # delete from tbl_keychain where db_name 
 
+        "SELECT db_user FROM tbl_keychain WHERE db_name = %s"
 
 
         rw_user = "{0}_rw".format(db_name)
