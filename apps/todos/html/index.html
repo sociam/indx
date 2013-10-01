@@ -45,19 +45,14 @@
 			</div>
 		</div>
 
-		<div ng-show="selected_user && selected_box">
+		<div ng-show="selected_user && selected_box" class="app-container" ng-class="{ split: show_lists }">
 			<div class="indx-navbars">
-				<nav class="indx-sidebar indx-navbar" role="navigation">
-					<div class="navbar-header">
-						<a href="#" class="navbar-brand">Todo lists</a>
-					</div>
-					<ul class="nav navbar-nav navbar-right" ng-show="!editing_todo">
-						<li><a href="#" ng-click="todo_lists.new_model()"><i class="icon-plus"></i></a></li>
-					</ul>
-				</nav>
-				<nav class="indx-main indx-navbar" role="navigation">
+				<nav class="indx-navbar" role="navigation">
 					<div href="#" class="navbar-header">
-						<span class="navbar-brand hidden-xs">{{ todo_lists.selected.get_attribute('title') }}</span>
+						<a href="#" class="navbar-header hidden-xs" ng-click="show_lists = !show_lists">
+							<span class="navbar-brand">{{ todo_lists.selected.get_attribute('title') }}</span>
+							<span class="caret"></span>
+						</a>
 						<a href="#" class="navbar-header visible-xs" ng-click="mobile_menu = !mobile_menu">
 							<span class="navbar-brand">{{ todo_lists.selected.get_attribute('title') }}</span>
 							<span class="caret"></span>
@@ -115,9 +110,15 @@
 
 				<div class="indx-sidebar">
 					<ul class="indx-list-flat todo-lists">
-						<li ng-repeat="todo_list in todo_lists.all_models" ng-click="todo_list.select()" ng-class="{ active: todo_list.is_selected }" ><a href="#" droppable>
-							<i class="icon icon-{{ todo_list.get_attribute('icon') }}"></i>
-							{{ todo_list.get_attribute('title') }}
+						<li ng-repeat="todo_list in todo_lists.all_models" ng-class="{ active: todo_list.is_selected }" >
+							<a href="#" ng-click="todo_list.select()" droppable>
+								<i class="icon icon-{{ todo_list.get_attribute('icon') }}"></i>
+								{{ todo_list.get_attribute('title') }}
+							</a>
+						</li>
+						<li><a href="#" ng-click="todo_lists.new_model()">
+							<i class="icon icon-plus"></i>
+							New list
 						</a></li>
 					</ul>
 					<div class="modal-cover" ng-show="editing_todo" ng-animate="fade" ng-click="editing_todo.restore()"></div>
