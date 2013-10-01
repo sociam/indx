@@ -13,10 +13,10 @@ function Graph(target, channel)
 	this.graph = undefined;
 	this.graphType = 0;
 	this.heightProportion = 0.9;
-	this.footerHeight = 10;
+	this.footerHeight = 15;
 	this.invertPan = false;
 	this.isStatic = false;
-	this.iType = "Graph";
+	this.ioType = "Graph";
 	this.maxHorizontalTicks = 30;
 	this.maxValue = 10;
 	this.minValue = 0;
@@ -289,6 +289,8 @@ Graph.prototype.renderDays = function()
 	var lastInstant  = this.timeInterval.end;
 	var firstInstant = this.timeInterval.begin;
 
+	var graphPointer = this;
+
 	var group = this.graph.selectAll(".days");
 	var n = 0;
 	group.each(function() { ++n; });
@@ -309,12 +311,14 @@ Graph.prototype.renderDays = function()
 		.attr("x1", x)
 		.attr("y1", 0)
 		.attr("x2", x)
-		.attr("y2", this.getHeight()-this.footerHeight)
+		.attr("y2", graphPointer.getHeight()-graphPointer.footerHeight)
 		.attr("class", "day");
 
 	group
 		.attr("x1", x)
-		.attr("x2", x);
+		.attr("x2", x)
+		.attr("y1", 0)
+		.attr("y2", graphPointer.getHeight()-graphPointer.footerHeight);
 
 	group.exit().remove();
 }
@@ -507,7 +511,6 @@ Graph.prototype.renderLabels = function(target)
 	labelGroup.each(function() { ++n; });
 	if(n == 0)
 	{
-		console.log("creating labels");
 		labelGroup = target.append("g").attr("class", "grid label").attr("transform", "translate(0,15)");
 	}
 
@@ -516,8 +519,8 @@ Graph.prototype.renderLabels = function(target)
 	var beginStr = TimeUtils.dateFormatter(this.timeInterval.begin);
 	var endStr = TimeUtils.dateFormatter(this.timeInterval.end);
 
-	labelList.push(new GraphText(beginStr, "graphTimestamp", 0, 113));
-	labelList.push(new GraphText(endStr, "graphTimestamp", 700, 113, "end"));
+	labelList.push(new GraphText(beginStr, "graphTimestamp", 0, this.getHeight()-20));
+	labelList.push(new GraphText(endStr, "graphTimestamp", 700, this.getHeight()-20, "end"));
 
 	var weekday=new Array(7);
 	weekday[0]="Sunday";
@@ -884,7 +887,7 @@ Graph.prototype.updateAnnotations = function()
 	}
 }
 
-Graph.prototype.pan = function(touch, mouse, inverse, interval) // mouse is a variable that allows to pan using the magic mouse gestures
+Graph.prototype.pan = function(touch, mouse, inverse, interval) // mouse is a hack that allows to pan using the magic mouse gestures
 {
 	// panning
 	if(tEngine.countTouchesObjectIsTarget(this) == 1 && this.dragging == false && tEngine.keyMap[16] == false || typeof mouse !== "undefined")

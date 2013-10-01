@@ -1,14 +1,13 @@
 function ScaleBar(element, owner, identifier)
 {
-	this.d3Element = element;
-	this.owner = owner;
+	this.owner = owner; // 
 	this.identifier = identifier;
-	InteractiveObject.call(this, element[0][0]);
+	InteractiveObject.call(this, element);
 	this.scale = 1;
 	this.changedScale = false;
 
-	var top = this.d3Element.style("top");
-	this.initialCenterY = parseInt(top.match(/\d+/));
+	this.initialCenterY = (this.owner.sourceGraph.getHeight()-this.owner.sourceGraph.footerHeight)/2;
+	this.range = this.owner.sourceGraph.getHeight()-this.owner.sourceGraph.footerHeight;
 }
 
 ScaleBar.prototype = tEngine.clone(InteractiveObject.prototype);
@@ -21,21 +20,21 @@ ScaleBar.prototype.resetScale = function()
 	this.centerY = this.initialCenterY;
 	this.scale = 1;
 	this.changedScale = false;
-	this.d3Element.style("top", this.centerY+"px");
+	d3.select(this.element).style("top", this.centerY+"px");
 }
 
 ScaleBar.prototype.destroy = function()
 {
 	delete tEngine.interactiveObjectList[this.identifier];
-	this.d3Element.remove();
+	d3.select(this.element).remove();
 }
 
 ScaleBar.prototype.touchStarted = function(touch)
 {
 	this.owner.sourceGraph.pannable = false;
 	this.owner.sourceGraph.pinchable = false;
-	var top = this.d3Element.style("top");
-	this.centerY = parseInt(top.match(/\d+/));;
+	var top = d3.select(this.element).style("top");
+	this.centerY = parseInt(top.match(/\d+/));
 
 }
 
@@ -43,7 +42,7 @@ ScaleBar.prototype.touchEnded = function(touch)
 {
 	this.owner.sourceGraph.pannable = true;
 	this.owner.sourceGraph.pinchable = true;
-	var top = this.d3Element.style("top");
+	var top = d3.select(this.element).style("top");
 	this.centerY = parseInt(top.match(/\d+/));;
 }
 
@@ -54,12 +53,12 @@ ScaleBar.prototype.pan = function(touch)
 	
 	if(dp < 0)
 		dp = 0;
-	else if(dp > 117)
-		dp = 117;
+	else if(dp > this.owner.sourceGraph.getHeight()-this.owner.sourceGraph.footerHeight)
+		dp = this.owner.sourceGraph.getHeight()-this.owner.sourceGraph.footerHeight;
 	
-	this.d3Element.style("top", dp+"px");
+	d3.select(this.element).style("top", dp+"px");
 
-	var s = d3.scale.linear().domain([0, 117]).range([2, 0]);
+	var s = d3.scale.linear().domain([0, this.range]).range([2, 0]);
 	this.scale = s(dp);
 	if(this.scale != 1)
 	{

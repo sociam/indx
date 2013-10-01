@@ -25,6 +25,7 @@ function TemporalEngine()
 	this.totalSources = 0;
 	this.timeUtils = new TimeUtils();
 	this.activityMap = {};
+	this.temporalBox = undefined;
 
 	this.graphHeight = 0;
 	this.graphMinHeight = 120;
@@ -73,6 +74,50 @@ TemporalEngine.prototype.unselectAnnotations = function()
 	for(var x in this.graphList)
 	{
 		this.graphList[x].graph.unselectAnnotations();
+	}
+}
+
+TemporalEngine.prototype.unload = function(event)
+{
+	// this.temporalBox.close();
+	// this.temporalAnnotationsBox.close();
+	store.logout();
+	// alert("wut");
+}
+
+TemporalEngine.prototype.addAnnotationToINDX = function(id, begin, end, activity)
+{
+	if(typeof this.temporalAnnotationsBox !== "undefined")
+	{
+		    this.temporalAnnotationsBox.get_obj("annotation-"+id).then(function (ds) 
+                {
+                    ds.set({
+                    	annot_id: id,
+                    	activity: activity.title,
+                    	begin: begin,
+                    	end: end
+                    });
+                    ds.save();
+                });
+	}
+	else
+	{
+		console.error("temporalAnnotationsBox not initialized!");
+	}
+}
+
+TemporalEngine.prototype.removeAnnotationFromINDX = function(id)
+{
+	if(typeof this.temporalAnnotationsBox !== "undefined")
+	{
+		    this.temporalAnnotationsBox.get_obj("annotation-"+id).then(function (ds) 
+                {
+                    ds.destroy();
+                });
+	}
+	else
+	{
+		console.error("temporalAnnotationsBox not initialized!");
 	}
 }
 
@@ -527,6 +572,7 @@ TemporalEngine.prototype.isNumber = function(n)
 
 TemporalEngine.prototype.testCollision = function(mouseCoords, interactiveObject)
 {
+
 	if(mouseCoords[0] >= interactiveObject.getPositionX() && mouseCoords[1] >= interactiveObject.getPositionY())
 	{
 		if(mouseCoords[0] <= interactiveObject.getPositionX() + interactiveObject.getWidth() && mouseCoords[1] <= interactiveObject.getPositionY() + interactiveObject.getHeight())
@@ -670,7 +716,7 @@ TemporalEngine.prototype.wheel = function (event)
 		if(result == true)
 		{
 			event.preventDefault();
-			if(this.interactiveObjectList[x].iType == "Graph" || this.interactiveObjectList[x].iType == "Timeline")
+			if(this.interactiveObjectList[x].ioType == "Graph" || this.interactiveObjectList[x].ioType == "Timeline")
 			{
 				var fakeTouch = [];
 				fakeTouch.over = [];
@@ -793,8 +839,6 @@ TemporalEngine.prototype.resizeGraphs = function()
 	this.graphHeight = windowHeight - this.timeline.getHeight()-20-size*20;
 	this.graphHeight = this.graphHeight/size;
 
-	console.log(this.graphHeight);
-
 	if(this.graphHeight < this.graphMinHeight)
 		this.graphHeight = this.graphMinHeight;
 
@@ -833,7 +877,8 @@ TemporalEngine.prototype.updateGraphsPosition = function()
 				var graph = this.graphList[x].graph;
 				this.graphList[x].index = i;
 				graphd3.transition().duration(this.animationDuration).style("top", tEngine.graphYForIndex(i)+"px");
-				graph.setPositionY(tEngine.graphYForIndex(i));
+				// console.log(tEngine.graphYForIndex(i)+"px");
+				// graph.setPositionY(tEngine.graphYForIndex(i));
 				graph.updateLastPosition();
 			}
 		}

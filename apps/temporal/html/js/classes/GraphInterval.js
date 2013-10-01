@@ -18,7 +18,7 @@ function GraphInterval(sourceGraph, cloneOf)
 	this.selection = undefined;
 	this.scaleBar = undefined;
 	this.createdTools = false;
-	this.iType = "GraphInterval";
+	this.ioType = "GraphInterval";
 
 	if(typeof cloneOf !== "undefined")
 		this.cloneOf = cloneOf;
@@ -144,20 +144,23 @@ GraphInterval.prototype.updateSelection = function()
 
 			if(this.interval.pxBegin > this.interval.pxEnd)
 			{
-
+				this.setWidth(this.interval.pxBegin-this.interval.pxEnd);
 				this.selection.style("left", this.interval.pxEnd+1+"px")
-						.style("width", this.interval.pxBegin-this.interval.pxEnd+"px");
+						.style("visibility", "visible")
+						// .style("width", this.interval.pxBegin-this.interval.pxEnd+"px")
+						.style("height", this.sourceGraph.getHeight()-this.sourceGraph.footerHeight+"px");
 
-				this.scaleBar.d3Element
-						.style("width", (this.interval.pxBegin-this.interval.pxEnd)+"px");
+				this.scaleBar.setWidth(this.interval.pxBegin-this.interval.pxEnd);
 				this.infoField.style("left", this.interval.pxBegin+1+"px");
 			}
 			else
 			{
+				this.setWidth(this.interval.pxEnd-this.interval.pxBegin);
 				this.selection.style("left", this.interval.pxBegin+1+"px")
-						.style("width", (this.interval.pxEnd-this.interval.pxBegin)+"px");
-				this.scaleBar.d3Element
-						.style("width", (this.interval.pxEnd-this.interval.pxBegin)+"px");
+						.style("visibility", "visible")
+						// .style("width", (this.interval.pxEnd-this.interval.pxBegin)+"px")
+						.style("height", this.sourceGraph.getHeight()-this.sourceGraph.footerHeight+"px");
+				this.scaleBar.setWidth(this.interval.pxEnd-this.interval.pxBegin);
 				this.infoField.style("left", this.interval.pxEnd+1+"px");
 			}
 		}
@@ -180,18 +183,19 @@ GraphInterval.prototype.updateSelection = function()
 
 			if(this.interval.pxBegin > this.interval.pxEnd)
 			{
+				this.setWidth(this.interval.pxBegin-this.interval.pxEnd);
 				this.selection.style("left", this.interval.pxBegin+1+"px")
-						.style("width", (this.interval.pxBegin-this.interval.pxEnd)+"px");
-				this.scaleBar.d3Element
-						.style("width", (this.interval.pxBegin-this.interval.pxEnd)+"px");
+						.style("width", (this.interval.pxBegin-this.interval.pxEnd)+"px")
+						.style("height", this.sourceGraph.getHeight()-this.sourceGraph.footerHeight+"px");
+				this.scaleBar.setWidth(this.interval.pxBegin-this.interval.pxEnd);
 				this.infoField.style("left", this.interval.pxEnd+1+"px");
 			}
 			else
 			{
+				this.setWidth(this.interval.pxEnd-this.interval.pxBegin);
 				this.selection.style("left", this.interval.pxBegin+1+"px")
-						.style("width", (this.interval.pxEnd-this.interval.pxBegin)+"px");
-				this.scaleBar.d3Element
-						.style("width", (this.interval.pxEnd-this.interval.pxBegin)+"px");
+						.style("height", this.sourceGraph.getHeight()-this.sourceGraph.footerHeight+"px");
+				this.scaleBar.setWidth(this.interval.pxEnd-this.interval.pxBegin);
 				this.infoField.style("left", this.interval.pxEnd+1+"px");
 
 			}
@@ -393,9 +397,14 @@ GraphInterval.prototype.drawSelection = function()
 			this.selection = graphDiv.append("div")
 							.attr("id", "selection")
 							.style("left", xBegin+"px")
+							.style("visibility", "hidden")
+							.style("height", this.sourceGraph.getHeight()-this.sourceGraph.footerHeight+"px")
 							.attr("class", "graphSelection pickerTools")
 							.on("dblclick", function(event){ thisGraph.annotate.call(thisGraph, event) })
 							.style("z-index", tEngine.lastZIndex++);
+
+
+			this.element = this.selection[0][0];
 
 			this.removeButton = this.selection.append("div")
 				.attr("id", "remove")
@@ -442,9 +451,10 @@ GraphInterval.prototype.drawSelection = function()
 
 			this.scaleBar = this.selection.append("div")
 				.attr("id", "scaleBar")
+				.style("top", (this.sourceGraph.getHeight()-this.sourceGraph.footerHeight)/2-1.5+"px")
 				.attr("class", "scaleBar pickerTools");
 
-			this.scaleBar = new ScaleBar(this.scaleBar, this, this.sourceGraph.element.id+"selectionScaleBar");
+			this.scaleBar = new ScaleBar(this.scaleBar[0][0], this, this.sourceGraph.element.id+"selectionScaleBar");
 			tEngine.interactiveObjectList[this.sourceGraph.element.id+"selectionScaleBar"] = this.scaleBar;
 
 			this.selection.on("mousemove", function() 
@@ -452,28 +462,6 @@ GraphInterval.prototype.drawSelection = function()
 				thisGraph.sourceGraph.mouseMove.call(thisGraph.sourceGraph, d3.mouse(thisGraph.sourceGraph.element));
 			});
 				//
-		}
-		else /// this thing is never being executed!
-		{
-			console.log("?")
-			if(xBegin > xEnd)
-			{
-				this.selection.style("left", xEnd+1+"px")
-						.style("width", xBegin-xEnd+"px");
-
-				console.log("a")
-				this.scaleBar
-						.style("width", xBegin-xEnd+"px");
-			}
-			else
-			{
-				this.selection.style("left", xBegin+1+"px")
-						.style("width", xEnd-xBegin+"px");
-						
-				console.log("b")
-				this.scaleBar
-						.style("width", (xEnd-xBegin)+"px");
-			}
 		}
 	}
 }
@@ -515,12 +503,19 @@ GraphInterval.prototype.touchEnded = function(touch)
 
 		if(this.link != -1)
 		{
-
+			// this.link is the target graph
 			this.link.selectedInterval.closeSelection();
 
 			this.link.selectedInterval = new GraphInterval(this.link, this);
 
-			this.link.selectedInterval.interval.pxBegin = this.getPositionX()-this.link.getPositionX();
+			if(this.getPositionX()+this.getWidth() < this.link.getPositionX()+this.link.getWidth()-20) // if end of selection inside graph
+			{
+				this.link.selectedInterval.interval.pxBegin = this.getPositionX()-this.link.getPositionX();
+			}
+			else
+			{
+				this.link.selectedInterval.interval.pxBegin = this.link.getWidth()-this.getWidth()-20;
+			}
 
 			this.link.selectedInterval.interval.indexBegin = this.link.indexForX(this.link.selectedInterval.interval.pxBegin);
 			this.link.selectedInterval.interval.indexEnd   = this.link.selectedInterval.interval.indexBegin+this.dataInterval.length-1;
@@ -545,6 +540,8 @@ GraphInterval.prototype.touchEnded = function(touch)
 
 			this.link.selectedInterval.update();
 			this.link.selectedInterval.drawSelection();
+
+			this.link.selectedInterval.selection.style("visibility", "visible");
 
 			this.link.selectedInterval.renderDataInterval(tEngine.getColor(this.sourceGraph.dataColor));
 
@@ -599,8 +596,6 @@ GraphInterval.prototype.hold = function(touch)
 
 			this.animations = [];
 
-			this.element = this.selection[0][0];
-
 			var clone = this.createInstance();
 			touch.target = clone;
 			clone.cloneOf = this;
@@ -623,7 +618,7 @@ GraphInterval.prototype.hold = function(touch)
 				for(var x in touch.over)
 				{
 					var t = touch.over[x];
-					if(t.iType == "Graph")
+					if(t.ioType == "Graph")
 					{
 						clone.link = t;
 						t.dragOver();
@@ -639,11 +634,36 @@ GraphInterval.prototype.updatePositionLink = function()
 	var deltaMoved = this.positionLink.deltaMoved();
 	if(this.link == -1)
 		this.updatePosition([this.lastPosition[0]+deltaMoved[0], this.lastPosition[1]+deltaMoved[1]]);
+
 	else if(this.isOver(this.link) == true)
 	{
+		var outside = false;
 		var w = this.interval.pxBegin-this.interval.pxEnd;
 		var indexBegin = this.link.indexForX(this.positionLink.position[0]-this.link.getPositionX());
-		
+
+		if(this.getPositionX() < this.link.getPositionX()) // dragging with left off the graph
+		{
+			delta = (this.getPositionX()-this.link.getPositionX())*10000;
+			outside = true;
+		}
+		else if(this.getPositionX()+this.getWidth() > this.link.getPositionX()+this.link.getWidth())
+		{
+			delta = (this.getPositionX()+this.getWidth()-this.link.getPositionX()-this.link.getWidth())*10000;
+			outside = true;
+		}
+		if(outside == true)
+		{
+			if(this.link.timelineLocked == false)
+			{
+				this.link.timeInterval.pan(delta);
+				this.link.refreshTimeInterval();
+			}
+			else
+			{
+				tEngine.panLocked(delta, this.link.dataSource.source);
+			}
+		}
+
 		this.updatePosition([this.link.xForIndex(indexBegin)+this.link.getPositionX()+w/2, this.link.getPositionY()]);
 		
 		var max = this.link.maxIndexRendered();
@@ -666,7 +686,7 @@ GraphInterval.prototype.pan = function(touch)
 			for(var x in touch.over)
 			{
 				var t = touch.over[x];
-				if(t.iType == "Graph" && t.dataSource == this.sourceGraph.dataSource)
+				if(t.ioType == "Graph" && t.dataSource == this.sourceGraph.dataSource)
 				{
 					this.link = t;
 					t.dragOver();

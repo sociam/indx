@@ -76,7 +76,6 @@ h3
 .scaleBar
 {
 	height: 3px;
-	top: 58.5px;
 	position:absolute;
 	background-color: #000;
 	cursor: ns-resize;
@@ -164,6 +163,7 @@ path {
 	width: 20px;
 	height: 100%;
 	right:0px;
+	z-index: 999999;
 }
 
 .graphInfo .removeGraph
@@ -249,8 +249,8 @@ path {
 
 .annotationLabel
 {
+	position: absolute;
 	margin: 0 auto;
-	margin-top: 45px;
 	display: block;
 	width: 100px;
 	text-align: center;
@@ -265,7 +265,7 @@ path {
 
 .annotation
 {
-	height: 120px;
+	/*height: 120px;*/
 	width: 10px;
 	background: rgba(100, 100, 100, 0.5);
 	position: absolute;
@@ -277,7 +277,6 @@ path {
 
 .graphSelection
 {
-	height: 120px;
 	width: 10px;
 	/*background-color: #99f;*/
 	background: rgba(143, 143, 143, 0.5);
@@ -318,7 +317,7 @@ path {
 	width: 10px;
 	background-color: #9f9;
 	position: absolute;
-	top: 110px;
+	bottom: 0px;
 	right: 0px;
 }
 

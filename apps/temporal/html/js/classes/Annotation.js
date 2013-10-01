@@ -37,7 +37,6 @@ function Annotation(indexBegin, indexEnd, activity, sourceGraph, id)
 
 	InteractiveObject.call(this, this.selection[0][0]);
 	tEngine.interactiveObjectList[this.identifier] = this;
-
 	this.updateLastPosition();
 }
 
@@ -180,15 +179,19 @@ Annotation.prototype.update = function()
 
 	if(this.interval.begin > this.interval.end)
 	{
+		this.setWidth(this.interval.end-this.interval.begin);
 		this.selection.style("left", this.interval.end+1+"px")
-				.style("width", (this.interval.begin-this.interval.end)+"px");
-		// this.removeButton.style("left", this.interval.begin-10+"px");
+				.style("visibility", "visible")
+				.style("height", this.sourceGraph.getHeight()-this.sourceGraph.footerHeight+"px");
+		this.inputField.style("left", parseInt(this.selection.style("width"))/2+"px");
 	}
 	else
 	{
+		this.setWidth(this.interval.end-this.interval.begin);
 		this.selection.style("left", this.interval.begin+1+"px")
-				.style("width", (this.interval.end-this.interval.begin)+"px");
-		// this.removeButton.style("left", this.interval.end-10+"px");
+				.style("visibility", "visible")
+				.style("height", this.sourceGraph.getHeight()-this.sourceGraph.footerHeight+"px");
+		this.inputField.style("left", parseInt(this.selection.style("width"))/2-50+"px");
 	}
 }
 
@@ -243,6 +246,7 @@ Annotation.prototype.init = function()
 		this.selection = graphDiv.append("div")
 						.attr("id", "selection")
 						.style("left", xBegin+"px")
+						.style("visibility", "hidden")
 						.attr("class", "annotation pickerTools")
 						.style("z-index", tEngine.lastZIndex++)
 						// .attr("contenteditable", "true")
@@ -256,6 +260,8 @@ Annotation.prototype.init = function()
 		});
 
 
+		console.log(parseInt(this.selection.style("width"))/2)
+
 		this.removeButton = this.selection.append("div")
 			.attr("id", "remove")
 			.attr("class", "removeButton pickerTools")
@@ -265,6 +271,8 @@ Annotation.prototype.init = function()
 			.attr("type", "text")
 			.property("value", "Name")
 			.attr("class", "selectable hiddenField annotationLabel")
+			.style("top", (this.sourceGraph.getHeight()-this.sourceGraph.footerHeight)/2-20+"px")
+			.style("left", this.getWidth()/2+"px")
 			.on("mousedown",  function() { thisAnnotation.inputFieldMouseEvent.call(thisAnnotation)})
 			.on("mouseover",  function() { thisAnnotation.inputFieldMouseEvent.call(thisAnnotation)})
 			.on("mouseout",  function() { thisAnnotation.inputFieldMouseEvent.call(thisAnnotation)})

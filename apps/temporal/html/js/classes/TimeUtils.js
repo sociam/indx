@@ -157,7 +157,7 @@ TimeUtils.setDateMinusDays = function(date, days, target)
 		target.begin = new Date().setDate(target.end.getDate()-days);
 	else
 		target.begin = new Date(target.end - 86400000*days);
-	if(target.iType == "TimeInterval")
+	if(target.ioType == "TimeInterval")
 	{
 		target.updateInterval();
 	}

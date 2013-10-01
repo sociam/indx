@@ -2,18 +2,6 @@ tEngine.graphListElement = $("#left")[0];
 
 tEngine.setTimeline($("#timeline"))
 
-// var dataSource = new DataSource();
-// var channel1 = tEngine.addChannel("Fuel Band: Calories", dataSource);
-// var dataSource = new DataSource();
-// var channel2 = tEngine.addChannel("Fuel Band: Steps", dataSource);
-// var dataSource = new DataSource();
-// var channel3 = tEngine.addChannel("Fuel Band: Fuel", dataSource);
-// var dataSource = new DataSource();
-
-// tEngine.bindGraph(channel1);
-// tEngine.bindGraph(channel2);
-// tEngine.bindGraph(channel3);
-
 tEngine.bindButton(document.getElementById('debugButton'));
 
 document.ontouchmove   = function(event) 
@@ -44,6 +32,7 @@ document.onmouseup   = function(event) {tEngine.disableDrag.call(tEngine, event)
 document.onkeydown = function(event) {tEngine.pressKey.call(tEngine, event);};
 document.onkeyup = function(event) {tEngine.releaseKey.call(tEngine, event);};
 document.onmousewheel = function(event) {tEngine.wheel.call(tEngine, event);}; 
+window.onbeforeunload = function(event)   { tEngine.unload.call(tEngine, event);};
 
 window.setTimeout(function() 
 	{
@@ -67,6 +56,7 @@ store.login('indx', 'indx').then(function(status)
     //     {
     //         console.log("Get obj ids...");
     //         var objs = box.get_obj_ids();
+
     //         // console.log(objs)
     //         var done = 0;
     //         var objs = [objs[0], objs[1], objs[2], objs[3], objs[4], objs[5], objs[6]];
@@ -97,9 +87,15 @@ store.login('indx', 'indx').then(function(status)
     //         }).fail(function(err) 
     //         {
     //             console.error('i am so sad, there was an error fetching some dudes', err);
-    //         });                
+    //         });
     //     }, 0);
     // });
+    var ds = new DataSource();
+    ds.generateRandomData();
+    tEngine.bindGraph(tEngine.addChannel("Fitbit: Calories", ds));
+    tEngine.bindGraph(tEngine.addChannel("Fitbit: Distance", ds));
+    tEngine.bindGraph(tEngine.addChannel("Fitbit: Steps", ds));
+    tEngine.loadedSource(); 
 
     // store.get_box('nike').then(function(box) 
     // {
@@ -108,35 +104,40 @@ store.login('indx', 'indx').then(function(status)
     //     });
     // });
 
-    store.get_box('nike').then(function(box) 
-    {
-        window.setTimeout(function ()
-        {
-            console.log("Get obj ids...")
-            var objs = box.get_obj_ids();
-            // console.log(objs)
-            var done = 0;
-            // var objs = objs.slice(10);
-            var pb = new ProgressBar(objs.length, 200, "#debugMenu");
-            tEngine.totalSources++;
-            console.log("Building promises list...");
-            var promises = [];
-            for(var x in objs)
-            {
-                var res = box.get_obj(objs[x]);
-                res.then(function() {pb.addProgress(1);});
-                promises.push(res);
-            }
-            u.when(promises).then(function(results) 
-            {
-                FuelbandParser.parseData(results);
-                tEngine.loadedSource();
-            }).fail(function(err) 
-            {
-                console.error('i am so sad, there was an error fetching some dudes', err);
-            });
-        }, 0);
-    });
+    // store.get_box('nike').then(function(box) 
+    // {
+    //     window.setTimeout(function ()
+    //     {
+    //         console.log("Get obj ids...")
+    //         var objs = box.get_obj_ids();
+    //         box.get_obj(box.get_obj_ids()).then(function(objs) {
+    //             // console.log(objs);
+    //             FuelbandParser.parseData(objs);
+    //             tEngine.loadedSource();
+    //         });
+    //         // console.log(objs)
+    //         // var done = 0;
+    //         // var objs = objs.slice(10);
+    //         // var pb = new ProgressBar(objs.length, 200, "#debugMenu");
+    //         tEngine.totalSources++;
+    //         // console.log("Building promises list...");
+    //         // var promises = [];
+    //         // for(var x in objs)
+    //         // {
+    //         //     var res = box.get_obj(objs[x]);
+    //         //     res.then(function() {pb.addProgress(1);});
+    //         //     promises.push(res);
+    //         // }
+    //         // u.when(promises).then(function(results) 
+    //         // {
+    //             // FuelbandParser.parseData(results);
+    //             // tEngine.loadedSource();
+    //         // }).fail(function(err) 
+    //         // {
+    //         //     console.error('i am so sad, there was an error fetching some dudes', err);
+    //         // });
+    //     }, 0);
+    // });
 
     ////////////////// FUEL BAND
     // store.get_box('duckies').then(function(box) 
@@ -158,4 +159,122 @@ store.login('indx', 'indx').then(function(status)
     // 		// console.log(objs[i]);
     // 	}
     // });
-})
+    // store.get_box('temporal').then(function(box) 
+    // {
+    //     var objs = box.get_obj_ids();
+    //     var promises = objs.map(function(oid) 
+    //     {
+    //         res = box.get_obj(oid).then(function (ds) 
+    //             {
+    //                 ds.destroy();
+    //             });
+    //     });
+    // });
+
+    store.get_box('temporal').then(function(box) 
+    {
+        tEngine.temporalAnnotationsBox = box;
+        
+        box.get_obj(box.get_obj_ids()).then(function (ds) 
+        {
+            for(var i in ds)
+            {
+                console.log(ds[i])
+                var activityLabel = ds[i].attributes.activity[0];
+
+                if(typeof tEngine.activityMap[activityLabel] === "undefined") // if activity doesn't exist
+                {
+                    activity = new Activity(activityLabel);
+                    activity.lastID += Math.abs((Math.random() * 1e10) | 0);
+                    activity.setVisible(false);
+                    tEngine.activityMap[activityLabel] = activity;
+                    tEngine.updateActivityList();
+                }
+                else
+                {
+                    activity = tEngine.activityMap[activityLabel];
+                }
+
+                this.annotationID = activity.addInstanceFromINDX(ds[i].attributes.begin[0], ds[i].attributes.end[0], ds[i].attributes.annot_id[0]);
+            }
+        });
+
+
+
+
+        // u.when(promises).then(function() {
+        // ////////////////////////////////////////
+        //     var dataValues = [];
+        //     for(var i in fuelband_cal.readings)
+        //     {
+        //         dataValues.push(fuelband_cal.readings[i].data);
+        //     }
+        //     var dataSegment = 
+        //     {
+        //         // id: "id",
+        //         start_timestamp: fuelband_cal.readings[0].instant,
+        //         values: dataValues
+        //     };
+
+        //     // RANDOM DATA
+
+        //     var fuelband_cal = new DataSource();
+        //     fuelband_cal.generateRandomData();
+
+        //     var randomID = Math.abs((Math.random() * 1e10) | 0);
+        //     console.log(randomID);
+        //     var identifier = "dataSegment-"+randomID+"-"+(dataSegment["start_timestamp"].valueOf());
+
+        //     var dataSegmentList = [];
+        //     box.get_obj(identifier).then(function (ds) 
+        //     {
+        //         dataSegmentList.push(ds);
+        //         ds.set(dataSegment);
+        //         ds.save().done(function() {
+        //             box.get_obj('fuelband-calories').then(function (ds) 
+        //                 {        
+        //                 ds.set({
+        //                     type: "g_dude",
+        //                     name: 'Calories',
+        //                     owner: undefined,
+        //                     device: 'FuelBand',
+        //                     source: 'Random',
+        //                     unit: 'cal',
+        //                     values: dataSegmentList
+        //                 });
+        //                 ds.save();
+        //             });
+        //         });
+        //     });
+        // /////////////////////////////////////////
+        // });
+
+        // var promises = objs.map(function(oid) 
+        // {
+        //     var activity;
+        //     res = box.get_obj(oid).then(function (ds) 
+        //         {
+        //             var activityLabel = ds.attributes.activity[0];
+
+        //             if(typeof tEngine.activityMap[activityLabel] === "undefined") // if activity doesn't exist
+        //             {
+        //                 activity = new Activity(activityLabel);
+        //                 activity.lastID += Math.abs((Math.random() * 1e10) | 0);
+        //                 activity.setVisible(false);
+        //                 tEngine.activityMap[activityLabel] = activity;
+        //                 tEngine.updateActivityList();
+        //             }
+        //             else
+        //             {
+        //                 activity = tEngine.activityMap[activityLabel];
+        //             }
+
+        //             this.annotationID = activity.addInstanceFromINDX(ds.attributes.begin[0], ds.attributes.end[0], ds.attributes.annot_id[0]);
+        //         });
+        // });
+    // });
+
+
+
+    });
+});

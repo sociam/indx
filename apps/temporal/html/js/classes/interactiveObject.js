@@ -12,6 +12,9 @@ function InteractiveObject(element)
     // this.lastPosition[0] = 0;
     // this.lastPosition[1] = 0;
 
+    this.size = [];
+    this.sizeCached = false;
+
     // this.setPosition([box.left, box.top]);
     // this.updateLastPosition();
 	this.isTarget = []; // array of touches that this object is target
@@ -26,10 +29,11 @@ function InteractiveObject(element)
 	this.clonesCreated = 0; // number of clones created
 	this.locked = false;
 	this.destroyOnRelease = false; // when release the touch from this object, destroy it?
-	this.iType = "InteractiveObject"; // type of the object
+	this.ioType = "InteractiveObject"; // type of the object
 	this.target = -1; // target object (drag and drop)
 	this.cloneOf = -1; // pointer to original object
 	this.isStatic = false;
+	this.isSVG = false;
 }
 
 InteractiveObject.prototype.setPosition = function(position)
@@ -60,19 +64,50 @@ InteractiveObject.prototype.getPositionY = function()
 	return $(this.element).offset().top;
 }
 
+InteractiveObject.prototype.cacheSize = function()
+{
+	if(this.isSVG == false)
+	{
+		this.size[0] = $(this.element).width();
+		this.size[1] = $(this.element).height();
+	}
+	else
+	{
+		this.size[0] = Number($(this.element).attr("width"));
+		this.size[1] = Number($(this.element).attr("height"));
+	}
+	this.sizeCached = true;
+}
+
 InteractiveObject.prototype.getWidth = function()
 {
-	return this.element.getBoundingClientRect().width;
+	if(this.sizeCached == false)
+	{
+		this.cacheSize();
+	}
+	return this.size[0];
 }
 
 InteractiveObject.prototype.getHeight = function()
 {	
-	return this.element.getBoundingClientRect().height;
+	if(this.sizeCached == false)
+	{
+		this.cacheSize();
+	}
+	return this.size[1];
+}
+
+
+InteractiveObject.prototype.setWidth = function(size)
+{
+	$(this.element).css("width", size+"px");
+	this.size[0] = size;
 }
 
 InteractiveObject.prototype.setHeight = function(size)
 {
 	$(this.element).css("height", size+"px");
+	this.size[1] = size;
 }
 
 InteractiveObject.prototype.isOver = function(target)
