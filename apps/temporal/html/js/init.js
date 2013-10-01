@@ -179,7 +179,7 @@ store.login('indx', 'indx').then(function(status)
         {
             for(var i in ds)
             {
-                console.log(ds[i])
+                // console.log(ds[i])
                 var activityLabel = ds[i].attributes.activity[0];
 
                 if(typeof tEngine.activityMap[activityLabel] === "undefined") // if activity doesn't exist

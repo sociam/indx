@@ -91,7 +91,6 @@ GraphInterval.prototype.cancelAnnotate = function()
 	if(this.sourceGraph.annotating == true)
 	{
 		this.sourceGraph.annotating = false;
-		this.closeSelection();
 	}
 }
 
@@ -99,7 +98,9 @@ GraphInterval.prototype.annotate = function()
 {
 	var annotation = new Annotation(this.interval.indexBegin, this.interval.indexEnd, undefined, this.sourceGraph);
 	this.sourceGraph.unlabeledAnnotations.push(annotation);
-	this.closeSelection();	
+	annotation.refresh();
+	this.closeSelection();
+	annotation.highlight();
 }
 
 GraphInterval.prototype.update = function()

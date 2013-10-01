@@ -166,6 +166,10 @@ Annotation.prototype.inputFieldMouseEvent = function()
 
 Annotation.prototype.update = function()
 {
+}
+
+Annotation.prototype.refresh = function()
+{
 	this.interval.begin = this.sourceGraph.xForIndex(this.timeInterval.getIndexBegin());
 	this.interval.end = this.sourceGraph.xForIndex(this.timeInterval.getIndexEnd());
 
@@ -176,6 +180,12 @@ Annotation.prototype.update = function()
 
 	pickerBegin.style("left", this.interval.begin+1+"px");
 	pickerEnd.style("left", this.interval.end+1+"px");
+
+	// console.log(this.selection.style("visibility"))
+	// if()
+	// {
+
+	// }
 
 	if(this.interval.begin > this.interval.end)
 	{
@@ -228,6 +238,12 @@ Annotation.prototype.destroy = function()
 		this.inputField.remove();
 }
 
+Annotation.prototype.highlight = function()
+{
+	$(this.inputField[0][0]).focus();
+	$(this.inputField[0][0]).select();
+}
+
 Annotation.prototype.init = function()
 {
 		var xBegin = this.interval.begin;
@@ -252,15 +268,13 @@ Annotation.prototype.init = function()
 						// .attr("contenteditable", "true")
 						.on("dblclick", function() 
 						{
-							$("#"+thisAnnotation.sourceGraph.element.id+" #annotation input").focus();
+							$(thisAnnotation.inputField[0][0]).focus();
+							$(thisAnnotation.inputField[0][0]).select();
 						})
 						.on("mousemove", function() 
 		{
 			thisAnnotation.sourceGraph.mouseMove.call(thisAnnotation.sourceGraph, d3.mouse(thisAnnotation.sourceGraph.element));
 		});
-
-
-		console.log(parseInt(this.selection.style("width"))/2)
 
 		this.removeButton = this.selection.append("div")
 			.attr("id", "remove")
@@ -290,8 +304,6 @@ Annotation.prototype.init = function()
 
 		}
 
-		$("#"+this.sourceGraph.element.id+" #annotation input").focus();
-
 		// this.scaleBar = graphDiv.append("div")
 		// 		.attr("id", "scaleBar")
 		// 		.style("left", xBegin+"px")
@@ -299,11 +311,16 @@ Annotation.prototype.init = function()
 
 		// 	this.scaleBar = new ScaleBar(this.scaleBar, this, this.sourceGraph.element.id+"selectionScaleBar");
 		// 	tEngine.interactiveObjectList[this.sourceGraph.element.id+"selectionScaleBar"] = this.scaleBar;
+
+		
 }
 
 Annotation.prototype.touchStarted = function(touch)
 {
-	tEngine.selectAnnotation(this.annotationID);
+	if(this.labeled == true)
+		tEngine.selectAnnotation(this.annotationID);
+	else
+		this.select();
 }
 
 Annotation.prototype.touchEnded = function(touch)

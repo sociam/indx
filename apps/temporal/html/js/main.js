@@ -231,6 +231,7 @@ TemporalEngine.prototype.panLocked = function(pan, source)
 		if(graph.timelineLocked == true && graph.dataSource.source == source)
 		{
 			graph.timeInterval.pan(pan);
+			graph.refreshAnnotations();
 			graph.refreshTimeInterval();
 		}
 	}

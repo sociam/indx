@@ -73,6 +73,7 @@ Graph.prototype.addAnnotation = function(begin, end, activity, id)
 
 	var annotation = new Annotation(indexBegin, indexEnd, activity, this, id);
 	this.annotations[annotation.annotationID] = annotation;
+	this.refreshAnnotations();
 	return annotation;
 }
 
@@ -865,10 +866,12 @@ Graph.prototype.refreshAnnotations = function()
 	for(var x in this.annotations)
 	{
 		this.annotations[x].timeInterval.refreshData();
+		this.annotations[x].refresh();
 	}
 	for(var x in this.unlabeledAnnotations)
 	{
 		this.unlabeledAnnotations[x].timeInterval.refreshData();
+		this.unlabeledAnnotations[x].refresh();
 	}
 	tEngine.refreshActivitiesSummary();	
 }
@@ -886,6 +889,8 @@ Graph.prototype.updateAnnotations = function()
 		this.unlabeledAnnotations[x].update();
 	}
 }
+
+
 
 Graph.prototype.pan = function(touch, mouse, inverse, interval) // mouse is a hack that allows to pan using the magic mouse gestures
 {
@@ -914,6 +919,7 @@ Graph.prototype.pan = function(touch, mouse, inverse, interval) // mouse is a ha
 			{
 				this.timeInterval.pan(delta);
 				this.refreshTimeInterval();
+				this.refreshAnnotations();
 			}
 			else
 			{
@@ -936,12 +942,12 @@ Graph.prototype.pan = function(touch, mouse, inverse, interval) // mouse is a ha
 				tEngine.panLocked(delta, this.dataSource.source);
 			}
 		}
-
 		this.selectedInterval.resetInterval();
 		this.updateAnnotations();
 		this.selectedInterval.updateSelection();
 
 		this.redrawGraph();
+
 		tEngine.timeline.render();
 	} 
 	// selecting interval
