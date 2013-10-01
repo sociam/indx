@@ -6,7 +6,7 @@ function Tool(element)
 	this.highlightDelta = 5;
 
 	this.dropFunction = undefined;
-	this.iType = "Tool";
+	this.ioType = "Tool";
 	this.draggable = false;
 }
 
@@ -61,7 +61,7 @@ Tool.prototype.pan = function(touch)
 					var t = touch.over[x];
 					if(t.element.id != this.element.id)
 					{
-						if(t.iType == "Graph")
+						if(t.ioType == "Graph")
 						{
 							t.dragOver();
 							this.target = t;

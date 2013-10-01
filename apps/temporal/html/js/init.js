@@ -159,20 +159,27 @@ store.login('indx', 'indx').then(function(status)
     // 		// console.log(objs[i]);
     // 	}
     // });
+    // store.get_box('temporal').then(function(box) 
+    // {
+    //     var objs = box.get_obj_ids();
+    //     var promises = objs.map(function(oid) 
+    //     {
+    //         res = box.get_obj(oid).then(function (ds) 
+    //             {
+    //                 ds.destroy();
+    //             });
+    //     });
+    // });
+
     store.get_box('temporal').then(function(box) 
     {
-        tEngine.temporalBox = box;
-    });
-
-    store.get_box('temporal_annotations').then(function(box) 
-    {
         tEngine.temporalAnnotationsBox = box;
-
-        // var objs = box.get_obj_ids();
+        
         box.get_obj(box.get_obj_ids()).then(function (ds) 
         {
             for(var i in ds)
             {
+                console.log(ds[i])
                 var activityLabel = ds[i].attributes.activity[0];
 
                 if(typeof tEngine.activityMap[activityLabel] === "undefined") // if activity doesn't exist
@@ -213,15 +220,6 @@ store.login('indx', 'indx').then(function(status)
 
         //     var fuelband_cal = new DataSource();
         //     fuelband_cal.generateRandomData();
-
-        //     var objs = box.get_obj_ids();
-        //     var promises = objs.map(function(oid) 
-        //     {
-        //         res = box.get_obj(oid).then(function (ds) 
-        //             {
-        //                 ds.destroy();
-        //             });
-        //     });
 
         //     var randomID = Math.abs((Math.random() * 1e10) | 0);
         //     console.log(randomID);

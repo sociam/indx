@@ -29,10 +29,11 @@ function InteractiveObject(element)
 	this.clonesCreated = 0; // number of clones created
 	this.locked = false;
 	this.destroyOnRelease = false; // when release the touch from this object, destroy it?
-	this.iType = "InteractiveObject"; // type of the object
+	this.ioType = "InteractiveObject"; // type of the object
 	this.target = -1; // target object (drag and drop)
 	this.cloneOf = -1; // pointer to original object
 	this.isStatic = false;
+	this.isSVG = false;
 }
 
 InteractiveObject.prototype.setPosition = function(position)
@@ -65,8 +66,16 @@ InteractiveObject.prototype.getPositionY = function()
 
 InteractiveObject.prototype.cacheSize = function()
 {
-	this.size[0] = $(this.element).width();
-	this.size[1] = $(this.element).height();
+	if(this.isSVG == false)
+	{
+		this.size[0] = $(this.element).width();
+		this.size[1] = $(this.element).height();
+	}
+	else
+	{
+		this.size[0] = Number($(this.element).attr("width"));
+		this.size[1] = Number($(this.element).attr("height"));
+	}
 	this.sizeCached = true;
 }
 
@@ -74,7 +83,6 @@ InteractiveObject.prototype.getWidth = function()
 {
 	if(this.sizeCached == false)
 	{
-		console.log("W Not cached")
 		this.cacheSize();
 	}
 	return this.size[0];
@@ -84,10 +92,16 @@ InteractiveObject.prototype.getHeight = function()
 {	
 	if(this.sizeCached == false)
 	{
-		console.log("H Not cached")
 		this.cacheSize();
 	}
 	return this.size[1];
+}
+
+
+InteractiveObject.prototype.setWidth = function(size)
+{
+	$(this.element).css("width", size+"px");
+	this.size[0] = size;
 }
 
 InteractiveObject.prototype.setHeight = function(size)

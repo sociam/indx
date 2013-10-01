@@ -9,7 +9,7 @@ function TimeInterval()
 	this.dataInterval = [];
 	this.interval = 0;
 
-	this.iType = "TimeInterval";
+	this.ioType = "TimeInterval";
 	this.dataSource = undefined;
 
 	this.max = 0;
@@ -109,7 +109,6 @@ TimeInterval.prototype.updateInterval = function()
 
 TimeInterval.prototype.pan = function(pan) 
 {
-
 	var begin = new Date(this.begin.valueOf()+pan);
 	var end = new Date(this.end.valueOf()+pan);
 

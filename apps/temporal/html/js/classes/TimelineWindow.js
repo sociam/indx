@@ -6,8 +6,13 @@ function TimelineWindow(target, graph, timeline)
 	this.graph = graph;
 	this.timeline = timeline;
 
+	this.size = [];
+
 	this.init();
 	InteractiveObject.call(this, this.element);
+	this.ioType = "TimelineWindow";
+
+	this.isSVG = true;
 	this.updateLastPosition();
 }
 
@@ -18,7 +23,6 @@ TimelineWindow.prototype.constructor = InteractiveObject;
 
 TimelineWindow.prototype.update = function()
 {
-
 }
 
 TimelineWindow.prototype.init = function()
@@ -29,16 +33,23 @@ TimelineWindow.prototype.init = function()
 	var x = d3.time.scale().domain([firstInstant, lastInstant]).range([0, this.timeline.getWidth()]);
 	var y = d3.scale.linear().domain([1, 0]).range([0, this.timeline.getHeight()]);
 
-	var group = this.renderTarget.append("g").attr("class", "window");
+	var group = this.renderTarget.append("g").attr("class", "window");	
+
+	var width = x(this.graph.timeInterval.end)-x(this.graph.timeInterval.begin);
+	var height = 50;
 
 	var element = group.append("rect")
 		.attr("x", x(this.graph.timeInterval.begin))
 		.attr("y", 20)
-		.attr("width", x(this.graph.timeInterval.end)-x(this.graph.timeInterval.begin)+"px")
+		.attr("width", width)
 		.attr("fill", tEngine.getColor(this.graph.dataColor))
-		.attr("height", 50);
+		.attr("height", height);
 
 	this.element = element[0][0];
+
+	this.setWidth(width);
+	this.setHeight(height);
+	this.sizeCached = true;
 }
 
 TimelineWindow.prototype.render = function()
@@ -51,14 +62,20 @@ TimelineWindow.prototype.render = function()
 
 	var group = this.renderTarget.append("g").attr("class", "window");
 
+	var width = x(this.graph.timeInterval.end)-x(this.graph.timeInterval.begin);
+	var height = 50;
+
 	var element = group.append("rect")
 		.attr("x", x(this.graph.timeInterval.begin))
 		.attr("y", 20)
-		.attr("width", x(this.graph.timeInterval.end)-x(this.graph.timeInterval.begin)+"px")
+		.attr("width", width)
 		.attr("fill", tEngine.getColor(this.graph.dataColor))
-		.attr("height", 50);
+		.attr("height", height);
 
 	this.element = element[0][0];
+
+	this.setWidth(width);
+	this.setHeight(height);
 }
 
 TimelineWindow.prototype.pan = function(touch)

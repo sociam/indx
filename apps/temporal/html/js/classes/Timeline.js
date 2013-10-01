@@ -4,7 +4,7 @@ function Timeline(target)
 	InteractiveObject.call(this, this.element);
 	this.graph = undefined;
 
-	this.iType = "Timeline";
+	this.ioType = "Timeline";
 
 	this.interval = 0;
 

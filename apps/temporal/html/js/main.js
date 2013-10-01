@@ -51,7 +51,6 @@ TemporalEngine.prototype.getInstancesForAnnotationID = function(id)
 
 TemporalEngine.prototype.addAnnotationToGraphs = function(annotationID, activity, origin)
 {
-	console.log("Adding annotation "+annotationID)
 	for(var x in this.graphList)
 	{
 		if(this.graphList[x].graph != origin)
@@ -573,6 +572,7 @@ TemporalEngine.prototype.isNumber = function(n)
 
 TemporalEngine.prototype.testCollision = function(mouseCoords, interactiveObject)
 {
+
 	if(mouseCoords[0] >= interactiveObject.getPositionX() && mouseCoords[1] >= interactiveObject.getPositionY())
 	{
 		if(mouseCoords[0] <= interactiveObject.getPositionX() + interactiveObject.getWidth() && mouseCoords[1] <= interactiveObject.getPositionY() + interactiveObject.getHeight())
@@ -716,7 +716,7 @@ TemporalEngine.prototype.wheel = function (event)
 		if(result == true)
 		{
 			event.preventDefault();
-			if(this.interactiveObjectList[x].iType == "Graph" || this.interactiveObjectList[x].iType == "Timeline")
+			if(this.interactiveObjectList[x].ioType == "Graph" || this.interactiveObjectList[x].ioType == "Timeline")
 			{
 				var fakeTouch = [];
 				fakeTouch.over = [];
@@ -877,7 +877,8 @@ TemporalEngine.prototype.updateGraphsPosition = function()
 				var graph = this.graphList[x].graph;
 				this.graphList[x].index = i;
 				graphd3.transition().duration(this.animationDuration).style("top", tEngine.graphYForIndex(i)+"px");
-				graph.setPositionY(tEngine.graphYForIndex(i));
+				// console.log(tEngine.graphYForIndex(i)+"px");
+				// graph.setPositionY(tEngine.graphYForIndex(i));
 				graph.updateLastPosition();
 			}
 		}
