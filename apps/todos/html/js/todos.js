@@ -113,6 +113,72 @@ angular
 			'glass', 'umbrella', 'magnet', 'picture', 'book', 'bookmark', 'group', 'bullhorn',
 			'laptop', 'money', 'gift', 'bug', 'truck', 'calendar'];
 
+		(function () { // le crazy importer
+
+
+			var isObj = function (obj) {
+				return (typeof obj === 'object') && obj.hasOwnProperty('@id');
+			};
+
+			var createObjArray = function (arr) {
+				var promise = $.Deferred(),
+					promises = [];
+				arr.forEach(function (el, i) {
+					if (isObj(el)) {
+						var promise = $.Deferred();
+						createObj(el).then(function (obj) {
+							arr[i] = obj;
+							promise.resolve();
+						});
+						promises.push(promise);
+					}
+				});
+				$.when.apply(undefined, promises).then(function () {
+					promise.resolve(arr);
+				});
+				return promise;
+			};
+
+			var createObj = function (attrs) {
+				var promise = $.Deferred(),
+					id = attrs['@id'];
+				box.get_obj(id).then(function (obj) {
+					console.log('create obj', obj.id, obj)
+					var promises = [];
+					Object.keys(attrs).forEach(function (k) {
+						var v = attrs[k],
+							promise;
+						if (v instanceof Array) {
+							promise = $.Deferred();
+							createObjArray(v).then(function (arr) {
+								attrs[k] = arr;
+								promise.resolve();
+							});
+							promises.push(promise);
+						} else if (isObj(v)) {
+							promise = $.Deferred();
+							createObj(v).then(function (nobj) {
+								attrs[k] = nobj;
+								promise.resolve();
+							});
+							promises.push(promise);
+						}
+					});
+					$.when.apply(undefined, promises).then(function () {
+						obj.save(attrs).then(function () {
+							console.log('save obj', obj.id, obj)
+							promise.resolve(obj);
+						});
+					});
+				});
+				return promise;
+			};
+
+			window.importJSON = function (json) {
+				createObjArray(json);
+			};
+		}());
+
 	})
 	.directive('focusMe', function ($timeout, $parse) {
 		return {
