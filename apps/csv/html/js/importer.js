@@ -2,6 +2,8 @@ angular
 	.module('importer', ['ui','indx'])
 	.controller('main', function($scope, client, utils) {
 		var box, u = utils;
+		$scope.output = {format:'output_raw'};
+		$scope.cols = [];
 		$scope.$watch('selected_box + selected_user', function() {
 			if ($scope.selected_user && $scope.selected_box) {
 				console.log('getting box', $scope.selected_box);
@@ -13,10 +15,9 @@ angular
 		window.box = box;
 		window.s = client.store;
 
-		if (window.File && window.FileReader && window.FileList && window.Blob) {
-
-		} else {
+		if (!(window.File && window.FileReader && window.FileList && window.Blob)) {
 			$scope.error = 'The File APIs are not fully supported in this browser.';
+			return;
 		}
 		var handleDragOver = function(evt) {
 			evt.stopPropagation();
@@ -54,8 +55,72 @@ angular
 			u.safe_apply($scope, function() { $scope.error = e.toString(); });
 		};
 
+		var filters = {
+			'output_gtime' : function(objs_by_id) {
+				// get the time series, segment into offsets
+				var objs = _(objs_by_id).values(),
+					t = function(o) { return parseInt(o[$scope.output.gtime.timecol.newname]); },
+					v = function(o) { return parseFloat(o[$scope.output.gtime.valcol.newname]); },
+					channel = $scope.output.gtime.channel,
+					source = $scope.output.gtime.source;
+
+				objs.sort(function(o1, o2) { return t(o1) - t(o2); });
+				var make_segment = function(start_obj, next_obj) {
+					if (next_obj) {
+						return { start : t(start_obj), channel: channel, source: source, values: [ v(start_obj), v(next_obj) ], delta : t(next_obj) - t(start_obj) };
+					}
+					return { start : t(start_obj), channel: channel, source: source, values: [ v(start_obj) ], delta: 0};
+				};
+
+				var segments = [];
+				var update_last_segment = function(obj) {
+					var segment = segments[segments.length-1];
+					segment.values.push(v(obj));
+				};
+				var last_delta = function() { return segments[segments.length-1].delta;	};
+				var last_time = function() { return segments[segments.length-1].start + ((segments[segments.length-1].values.length-1) * last_delta());	};
+
+				if (objs.length > 0) {
+					segment = make_segment(objs[0], objs.length > 1 ? objs[1] : undefined);
+					segments.push(segment);
+				}
+
+				for (var i = 2; i < objs.length; i++) {
+					// requires: at least 1 segment
+					var obj = objs[i];
+					console.log("i >> ", i, obj, t(obj), last_time(), segments[segments.length-1],  last_delta());
+
+					if (t(obj) - last_time() !== last_delta()) {
+						// uh oh difference, make new segemnt
+						console.log('new segment! ', t(obj) - last_time(), last_delta());
+						segments.push(make_segment(objs[i], objs[++i]));
+					} else {
+						update_last_segment(obj);
+					}
+				}
+				return u.dict(segments.map(function(s) { return ["gtime-segment-" + s.channel + s.source + s.start, s]; }));
+			},
+			'output_gannotation': function(objs_by_id) {
+				return u.dict(_(objs_by_id).map(function(obj,id) {
+					obj.type = 'gannotation';
+					obj.start = obj[$scope.output.gannotate.startcol];
+					obj.end = obj[$scope.output.gannotate.endcol];
+					obj.label = obj[$scope.output.gannotate.labelcol];
+					obj.source = $scope.output.gannotate.scope;
+					obj.category = $scope.output.gannotate.annotationtype;
+					return [id,obj];
+				}));
+			}
+		};
+
+		var output_filter = function(objs_by_id) {
+			if (filters[$scope.output.format]) {
+				return filters[$scope.output.format](objs_by_id);
+			}
+		};
+
 		$scope.save = function() {
-				try { 
+				try {
 				var id_col = find_id_column();
 				var by_id = {};
 				var obj_ids = $scope.rows.map(function(row) {
@@ -63,6 +128,10 @@ angular
 					by_id[id] = remap_columns(row);
 					return id;
 				});
+
+				var filtered = output_filter(by_id);
+				if (filtered) { by_id = filtered; obj_ids = _(by_id).keys(); }
+
 				var d = u.deferred();
 				obj_ids = u.uniqstr(obj_ids).filter(function(x) { return x.trim().length > 0; });
 				console.log("asking for ids ", obj_ids);
@@ -70,6 +139,7 @@ angular
 					var ds = models.map(function(m) {
 						if (by_id[m.id]) {
 							m.set(by_id[m.id]);
+							console.log('saving ', m.attributes);
 							return m.save();
 						}
 					});
