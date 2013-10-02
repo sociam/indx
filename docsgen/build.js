@@ -18,8 +18,11 @@
 		Backbone = require('backbone'),
 		marked = require('marked'),
 		optimist = require('optimist'),
-		argv = optimist.argv,
+		path = require('path');
+
+	var argv = optimist.argv,
 		logging = false,
+		cwd = process.cwd(),
 		config;
 
 	optimist
@@ -47,16 +50,21 @@
 		process.exit(1);
 	} else {
 		log('loading config ' + argv._[0]);
-		config = require('./' + argv._[0]); // Hmmm... safe?
+		config = require(relativeToCwd(argv._[0]));
 	}
+
+	console.log('k', argv)
 
 	if (argv.o || argv['output-directory']) {
-		config.outputDirectory = argv.o || argv['output-directory'];
+		config.outputDirectory = relativeToCwd(argv.o || argv['output-directory']);
+		console.log("BAH", config.outputDirectory )
 	}
 
-	if (argv.t || argv['template']) {
-		config.outputDirectory = argv.o || argv['template'];
+	if (argv.t || argv.template) {
+		config.template = argv.o || argv.template;
 	}
+
+	config.basePath = relativeTo(config.basePath, path.dirname(relativeToCwd(argv._[0])));
 
 	var markedOptions = {
 		gfm: true,
@@ -79,13 +87,13 @@
 	};
 
 
-	var templateRoot = 'template/' + (config.template || 'clean') + '/',
+	var templateRoot = __dirname + '/template/' + (config.template || 'clean') + '/',
 		templateCache = {};
 
-	mu.root = __dirname + '/' + templateRoot;
+	mu.root = templateRoot;
 
 	var cacheTemplates = function (path) {
-		console.log('cache', path)
+		console.log('cache', path);
 		path = path || '';
 		var promise = new Promise();
 		fs.readdir(templateRoot + path, function (err, files) {
@@ -119,9 +127,9 @@
 		return promise;
 	};
 
-	var methodGrammar = new GrammarParser('./grammars/method-grammar.peg'),
-		fileGrammar = new GrammarParser('./grammars/file-grammar.peg'),
-		classGrammar = new GrammarParser('./grammars/class-grammar.peg');
+	var methodGrammar = new GrammarParser(relativeToScript('grammars/method-grammar.peg')),
+		fileGrammar = new GrammarParser(relativeToScript('grammars/file-grammar.peg')),
+		classGrammar = new GrammarParser(relativeToScript('grammars/class-grammar.peg'));
 
 
 	var Model = Backbone.Model.extend({
@@ -213,7 +221,7 @@
 		render: function () {
 			var that = this,
 				html = '',
-				outputDir = this.get('outputDirectory');
+				outputDir = relativeTo(this.get('outputDirectory'), that.get('basePath'));
 
 			log('build', 'rendering to ' + outputDir);
 
@@ -248,7 +256,7 @@
 				_.each(list, function (glob, i) {
 					var promise = new Promise();
 					lastPromise.then(function () {
-						globp(that.get('basePath') + glob, {}, function (err, globFiles) {
+						globp(relativeTo(glob, that.get('basePath')), {}, function (err, globFiles) {
 							console.log('c', globFiles)
 							if (globFiles.length === 0) {
 								log('warning', glob + ' did not match any files');
@@ -859,6 +867,31 @@
 		return data.substring(0, charNumber)
 			.split('\n')
 			.length + 1;
+	}
+
+	function relativeToScript (path) {
+		return relativeTo(path, __dirname);
+	}
+
+	function relativeToCwd (path) {
+		return relativeTo(path, cwd);
+	}
+
+	function relativeTo (path, root) {
+		if (path.indexOf('/') !== 0) {
+			path = root + '/' + path;
+		}
+		// resolve the ..'s in the path
+		var path_parts = [];
+		path.split('/').forEach(function (bit, i) {
+			if (bit === '..') {
+				path_parts.pop();
+			} else if (i > 0 && bit === '') {
+			} else {
+				path_parts.push(bit);
+			}
+		});
+		return path_parts.join('/');
 	}
 
 	var builder = new Builder(config);
