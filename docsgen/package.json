@@ -19,6 +19,7 @@
     "backbone": "~1.0.0",
     "marked": "~0.2.9",
     "mustache": "~0.7.2",
-    "node-ffi": "~0.5.7"
+    "node-ffi": "~0.5.7",
+    "optimist": "~0.6.0"
   }
 }

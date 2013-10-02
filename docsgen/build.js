@@ -17,17 +17,32 @@
 		clc = require('cli-color'),
 		Backbone = require('backbone'),
 		marked = require('marked'),
+		optimist = require('optimist'),
+		argv = optimist.argv,
 		logging = false,
 		config;
 
-	mu.root = __dirname + '/template';
+	optimist
+		.usage('Usage: $0 [config file]')
+		.alias('l', 'log-stdout')
+		.alias('h', 'help')
+		.describe('l', 'Output logs to stdout')
+		.describe('h', 'Display help');
 
-	process.argv.forEach(function (val) {
-		switch (val) {
-		case '--log-stdout':
-			logging = true;
-		}
-	});
+	if (argv.help || argv.h) {
+		optimist.showHelp();
+		process.exit(0);
+	}
+
+	if (argv['log-stdout'] || argv.l) {
+		logging = true;
+	}
+
+	if (!argv._.length) {
+		throw 'Please provide config file';
+	} else {
+		config = require('./' + argv._[0]); // Hmmm... safe?
+	}
 
 	var markedOptions = {
 		gfm: true,
@@ -49,10 +64,14 @@
 		langPrefix: 'lang-'
 	};
 
-	var templateRoot = 'template/',
+
+	var templateRoot = 'template/' + (config.template || 'clean') + '/',
 		templateCache = {};
 
+	mu.root = __dirname + '/' + templateRoot;
+
 	var cacheTemplates = function (path) {
+		console.log('cache', path)
 		path = path || '';
 		var promise = new Promise();
 		fs.readdir(templateRoot + path, function (err, files) {
@@ -85,12 +104,6 @@
 		});
 		return promise;
 	};
-
-	if (!process.argv[2]) {
-		throw 'Please provide config file';
-	} else {
-		config = require('./' + process.argv[2]); // Hmmm... safe?
-	}
 
 	var methodGrammar = new GrammarParser('./grammars/method-grammar.peg'),
 		fileGrammar = new GrammarParser('./grammars/file-grammar.peg'),
@@ -222,6 +235,10 @@
 					var promise = new Promise();
 					lastPromise.then(function () {
 						globp(that.get('basePath') + glob, {}, function (err, globFiles) {
+							console.log('c', globFiles)
+							if (globFiles.length === 0) {
+								log('warning', glob + ' did not match any files');
+							}
 							fileLists[key] = fileLists[key].concat(globFiles);
 							promise.resolve();
 						});
