@@ -1,6 +1,8 @@
+console.log(__karma__)
 var jf = jasmine.getFixtures();
-jf.fixturesPath = '/base';
-jf.load('html/index.html');
+jf.fixturesPath = '/base/';
+jf.load('html/index.html'); // stupid karma
+
 
 
 // Add ifDefined to jasmine

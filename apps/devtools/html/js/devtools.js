@@ -25,4 +25,25 @@ angular
 				});
 			}).fail(function(x) { console.log(x); });
 		};
+
+		$.get('api/tests', function (r) {
+			$scope.tests = _.map(r.response, function (test) {
+				var name = test.split('.')[0];
+				return {
+					name: name
+				}
+			});
+		});
+
+		$.get('api/docs', function (r) {
+			$scope.docs = _.map(r.response, function (doc) {
+				var name = doc.split('.')[0];
+				return {
+					name: name,
+					url: '/docs/' + name
+				}
+			});
+		});
+
+		window.$scope = $scope;
 	});

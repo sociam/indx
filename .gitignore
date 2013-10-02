@@ -15,3 +15,4 @@ osx_app/*.egg
 *~
 tags
 node_modules
+html/docs

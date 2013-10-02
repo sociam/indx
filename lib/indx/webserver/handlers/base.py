@@ -32,9 +32,9 @@ class BaseHandler(Resource):
     """ Add/remove boxes, add/remove users, change config. """
 
     base_path=None  # Override me , e.g., 'auth'
-    
+
     subhandlers = {
-        # e.g., 
+        # e.g.,
         # 'login': {
         #     'methods': ['POST'],
         #     'require_auth': False,
@@ -43,7 +43,7 @@ class BaseHandler(Resource):
         #     'content-type':'text/plain' # optional
         # }
     }
-    
+
     def __init__(self, webserver, base_path=None, register=True):
         Resource.__init__(self)
         self.webserver = webserver
@@ -62,22 +62,22 @@ class BaseHandler(Resource):
         path_fields = request.path.split("/")
         sub_path = '/'.join(path_fields[2:]) if len(path_fields) >= 3 else ''
 
-        #logging.debug('sub_path {0} {1}'.format(sub_path, subhandler['prefix']))
+        logging.debug('sub_path {0} {1}'.format(sub_path, subhandler['prefix']))
 
         # if the subhandler supports content negotiation, then determine the best one
         assert subhandler['accept'], 'No accept clause in subhandler %s ' % subhandler['prefix']
 
         if not (subhandler["prefix"] == sub_path or subhandler["prefix"] == '*'):
-            # logging.debug("__PREFIX mismatch " + sub_path + "  "  + subhandler["prefix"])
-            #logging.debug('prefix mismatch')
+            logging.debug("__PREFIX mismatch " + sub_path + "  "  + subhandler["prefix"])
+            logging.debug('prefix mismatch')
             return False
         if self._get_best_content_type_match_score(request,subhandler) <= 0:
-            # logging.debug("__NOT content type match " + self._get_best_content_type_match_score(request,subhandler))
-            #logging.debug('content type mismatch ')
+            logging.debug("__NOT content type match " + self._get_best_content_type_match_score(request,subhandler))
+            logging.debug('content type mismatch ')
             return False
         if not request.method in subhandler["methods"]:
-            # logging.debug("__NOT in subhandler " + request.method)
-            #logging.debug('method type mismatch ' + request.method + ' ' + repr(subhandler["methods"]))            
+            logging.debug("__NOT in subhandler " + request.method)
+            logging.debug('method type mismatch ' + request.method + ' ' + repr(subhandler["methods"]))
             return False
         logging.debug("Handler match where path={0} and method={1}".format(sub_path, request.method))
         return True
@@ -115,13 +115,13 @@ class BaseHandler(Resource):
     ## provided in the request.
     ## what we _used_ to do is require
     ##   "apps/enriches/get_next_round" !== "box/url" -> fail.
-    ## ?? 
+    ## ??
     def get_request_box(self,request, force_get=False):
         return self._get_arg(request,'box', force_get=force_get)
 
     def get_request_app(self,request, force_get=False):
         return self._get_arg(request,'app', force_get=force_get)
-    
+
     # revision to protocol
     def _matches_token_requirements(self, request, subhandler):
         if not subhandler['require_token']: return True
@@ -137,7 +137,7 @@ class BaseHandler(Resource):
             return True
         else:
             raise ResponseOverride(403, "Forbidden")
-    
+
     def get_session(self,request):
         session = request.getSession()
         # persists for life of a session (based on the cookie set by the above)
@@ -151,7 +151,7 @@ class BaseHandler(Resource):
         """ Twisted resource handler."""
         logging.debug("Calling base render() - " + '/'.join(request.path.split("/")) + " " + repr( self.__class__)  + ' _ subhandlers::' + repr(len(self.subhandlers)))
         try:
-            self.set_cors_headers(request)            
+            self.set_cors_headers(request)
             matching_handlers = filter(lambda h: self._matches_request(request,h), self.subhandlers)
             logging.debug('Matching handlers %d' % len(matching_handlers))
             matching_handlers.sort(key=lambda h: self._get_best_content_type_match_score(request,h),reverse=True)
@@ -159,7 +159,7 @@ class BaseHandler(Resource):
             logging.debug('Post-auth matching handlers: {0}'.format(matching_auth_hs))
             matching_token_hs = filter(lambda h: self._matches_token_requirements(request,h), matching_auth_hs)
             logging.debug('Post-token matching handlers %d' % len(matching_token_hs))
-            
+
             if matching_token_hs:
                 subhandler = matching_token_hs[0]
                 logging.debug('Using handler %s' % self.__class__.__name__ + " " + matching_token_hs[0]["prefix"])
@@ -172,11 +172,11 @@ class BaseHandler(Resource):
             return NOT_DONE_YET
         except ResponseOverride as roe:
             self._respond(request,roe.status,roe.reason)
-            return NOT_DONE_YET        
+            return NOT_DONE_YET
         except Exception as e:
             logging.debug("Error in AdminHandler.render(), returning 500: %s, exception is: %s" % (str(e), traceback.format_exc()))
             self.return_internal_error(request)
-            return NOT_DONE_YET        
+            return NOT_DONE_YET
         # never get here
         pass
 
@@ -215,15 +215,15 @@ class BaseHandler(Resource):
     def return_ok(self,request,data=None):
         self._respond(request, 200, "OK", data)
     def return_created(self,request,data=None):
-        self._respond(request, 201, "Created",data)        
+        self._respond(request, 201, "Created",data)
     def return_no_content(self,request):
-        self._respond(request, 204, "No Content")        
+        self._respond(request, 204, "No Content")
     def return_not_found(self,request):
         self._respond(request, 404, "Not Found")
     def return_forbidden(self,request):
         self._respond(request, 403, "Forbidden")
     def return_unauthorized(self,request):
-        self._respond(request, 401, "Unauthorized")        
+        self._respond(request, 401, "Unauthorized")
     def return_unsupported_method(self,request):
         self._respond(request, 405, "Method Not Allowed")
     def return_internal_error(self,request):
@@ -250,7 +250,7 @@ class BaseHandler(Resource):
     def get_post_args(self,request):
         request.content.seek(0) # dan's fault.
         return parse_qs(request.content.read())
-    
+
     def set_cors_headers(self,request):
         if self.get_cors_origin(request):
             # logging.debug('setting allow origin {0}'.format(' '.join(self.get_cors_origin(request))))
