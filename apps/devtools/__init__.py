@@ -84,12 +84,12 @@ class DevToolsApp(BaseHandler):
         """ Generate documentation from config file.
         """
         logging.debug('trying to generate docs')
-        #args = self.get_post_args(request)
-        #if not hasattr(args, 'name'):
-        #    self.return_forbidden(request)
-        #    return
-        #config_name = args['name'][0]
-        config_name = 'indx-collection'
+        args = request.args
+        logging.debug('args %s', args['name'])
+        if not args['name']:
+            self.return_forbidden(request)
+            return
+        config_name = args['name'][0]
         config = self.lookup_config(config_name)
         logging.debug('checking name %s' % config['name'])
         logging.debug('generating doc %s' % config['name'])

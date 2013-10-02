@@ -43,7 +43,7 @@ angular
 		$scope.building_docs = {};
 		$scope.build_doc = function (doc) {
 			$scope.building_docs[doc.name] = true;
-			$.post('api/docs/generate_doc', function (r) {
+			$.post('api/docs/generate_doc?name=' + doc.name, function (r) {
 				$scope.building_docs[doc.name] = false;
 				Object.keys(r.response).forEach(function (k) {
 					doc[k] = r.response[k];
