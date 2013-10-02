@@ -65,7 +65,7 @@
 
 	var markedOptions = {
 		gfm: true,
-		highlight: function (code, lang, callback) {
+		/*highlight: function (code, lang, callback) {
 			pygmentize({
 				lang: lang,
 				format: 'html'
@@ -73,7 +73,7 @@
 				if (err) return callback(err);
 				callback(null, result.toString());
 			});
-		},
+		},*/
 		tables: true,
 		breaks: false,
 		pedantic: false,
@@ -181,28 +181,48 @@
 
 	var Builder = Backbone.Model.extend({
 		initialize: function () {
-			var that = this;
+			var that = this,
+				promise = new Promise();
 			this.ready = new Promise();
 			that.files = new Files();
 			this.superclasses = new Classes([new ObjectClass()], {
 				builder: builder
 			});
 
-			this._buildFilePaths()
-				.then(function (files) {
-					that.set('filenames', files);
-					_.each(files, function (filenames, key) {
-						_.each(filenames, function (filename) {
-							that.files.add({
-								filename: filename,
-								supplementary: key === 'require'
-							}, {
-								builder: that
+			if (this.get('readme')) {
+				fs.readFile(relativeTo(this.get('readme'), this.get('basePath')), function (err, content) {
+					if (err) {
+						throw err;
+					}
+					marked(content.toString(), markedOptions, function (err, html) {
+						if (err) {
+							throw err;
+						}
+						that.set('readme_description', html);
+					});
+					promise.resolve();
+				});
+			} else {
+				promise.resolve();
+			}
+
+			promise.then(function () {
+				that._buildFilePaths()
+					.then(function (files) {
+						that.set('filenames', files);
+						_.each(files, function (filenames, key) {
+							_.each(filenames, function (filename) {
+								that.files.add({
+									filename: filename,
+									supplementary: key === 'require'
+								}, {
+									builder: that
+								});
 							});
 						});
+						that.ready.resolve();
 					});
-					that.ready.resolve();
-				});
+			});
 		},
 		build: function () {
 			var that = this;

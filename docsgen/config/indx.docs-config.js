@@ -1,5 +1,5 @@
 module.exports = {
-	basePath: '../html/',
+	basePath: '../../html/',
 	outputDirectory: '../html/docs/indx/',
 
 	require: [
@@ -17,5 +17,7 @@ module.exports = {
 		description: 'INDX is a personal file store being developed at the University of Southampton, for the SOCIAM project.'
 	},
 
-	template: 'clean'
+	template: 'clean',
+
+	readme: '../README.md'
 };

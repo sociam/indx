@@ -140,7 +140,12 @@
     <div class="mainbody">
       <h1>{{ project.title }} {{ project.version }}</h1>
 
-      {{project.description}}
+      {{{project.description}}}
+
+      <div ng-if="readme_description">
+        <h2>README</h2>
+        {{{readme_description}}}
+      </div>
 
       {{#files}}
         <section class="file {{#supplementary}}supplementary{{/supplementary}}" id="{{id}}">

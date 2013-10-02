@@ -46,7 +46,7 @@ var describeEach = function (thingName) {
     if (array) {
       array.forEach(function (element, i) {
         return describe(thingName + ' ' + that.id(element, i), function () {
-          fn(element, i)
+          fn(element, i);
         });
       });
     }
@@ -61,7 +61,7 @@ var describeEach = function (thingName) {
   'toContain'].forEach(function (k) {
   window[k] = function (val) {
     return [k, val];
-  }
+  };
 });
 
 
@@ -129,14 +129,14 @@ describe('the documentation', function () {
       expect(1).ifDefined.toBe(1);
       expect(1).toBe(1);
       expect("k").ifDefined.toBeString();
-    })
-  })
+    });
+  });
 
   describeEach('number').inArray([1, 2, 3], function (n) {
     it('is a number', function () {
       expect(n).toBeNumber();
     });
-  })
+  });
 
 
   describe('data structure:', function () {
@@ -150,7 +150,17 @@ describe('the documentation', function () {
           if (obj.description) {
             expect(obj.description).ifDefined.toContain('<p>');
           }
-        })
+        });
+      });
+      describe('readme_description', function () {
+        it('should be string', function () {
+          expect(obj.description).ifDefined.toBeString();
+        });
+        it('should have converted description from markdown to html', function () {
+          if (obj.description) {
+            expect(obj.description).ifDefined.toContain('<p>');
+          }
+        });
       });
       if (properties.indexOf('author') > -1) {
         describe('@author', function () {
@@ -163,13 +173,13 @@ describe('the documentation', function () {
             });
             it('should have at most a name and email', function () {
               expect(author).toAtMostHaveProperties('name', 'email');
-            })
+            });
             it('should have a name that is a string (if defined)', function () {
               expect(author.name).ifDefined.toBeString();
             });
             it('should have an email that is a string (if defined)', function () {
               expect(author.email).ifDefined.toBeString();
-            })
+            });
           });
         });
       }
@@ -321,7 +331,7 @@ describe('the documentation', function () {
     }
 
     describe('the project', function () {
-      checkComment(data.project, ['title', 'version']);
+      checkComment(data.project, ['title', 'version', 'readme_description']);
     });
 
     // Each file
@@ -341,9 +351,9 @@ describe('the documentation', function () {
     classes.forEach(function (cls) {
       attributes = attributes.concat(cls.attributes || []);
     });
-    console.log(attributes)
+    console.log(attributes);
     describeEach('attribute').withIdenfier('name').inArray(attributes, function (attribute) {
-      console.log('A', attribute)
+      console.log('A', attribute);
       checkComment(attribute, ['attribute', 'optional', 'types', 'ignore', 'order',
         'since', 'see', 'deprecated', 'name']);
     });
@@ -374,28 +384,28 @@ describe('the documentation', function () {
           expect(file.author.length).toBe(2);
         });
         it('should have two authors with names', function () {
-          expect(file.author[0].name).toBeDefined()
-          expect(file.author[1].name).toBeDefined()
-        })
+          expect(file.author[0].name).toBeDefined();
+          expect(file.author[1].name).toBeDefined();
+        });
         it('should have first author with an email address', function () {
-          expect(file.author[0].email).toBeDefined()
-          expect(file.author[1].email).toBeUndefined()
+          expect(file.author[0].email).toBeDefined();
+          expect(file.author[1].email).toBeUndefined();
         });
         it('should be in order', function () {
           expect(file.author[0].name).toContain('Peter West');
-        })
+        });
         it('should have a Peter West with my email', function () {
           expect(file.author[0].name).toBe('Peter West');
           expect(file.author[0].email).toBe('peter@peter-west.co.uk');
         });
         it('should have another person', function () {
           expect(file.author[1].name).toBe('My buddy elsewhere');
-        })
+        });
       });
       describe('@see', function () {
         it('should have two references (@see)', function () {
           expect(file.see.length).toBe(2);
-        })
+        });
         it('should be two urls', function () {
           expect(file.see[0]).toMatch(/^http:\/\//);
           expect(file.see[1]).toMatch(/^http:\/\//);
@@ -410,7 +420,7 @@ describe('the documentation', function () {
         });
         it('should be September 2013', function () {
           expect(file.since).toBe('September 2013');
-        })
+        });
       });
       describe('@title', function () {
         it('should have a title', function () {
@@ -418,7 +428,7 @@ describe('the documentation', function () {
         });
         it('should be Test javascript framework', function () {
           expect(file.title).toBe('Test javascript framework');
-        })
+        });
       });
       describe('@version', function () {
         it('should have a version', function () {
@@ -426,7 +436,7 @@ describe('the documentation', function () {
         });
         it('should be 0.1', function () {
           expect(file.version).toBe('0.1');
-        })
+        });
       });
     });
 
@@ -461,7 +471,7 @@ describe('the documentation', function () {
       });
       describe('the addField method', function () {
 
-      })
+      });
     });
     describe('the BigBarn class', function () {
       var cls = where(data.files[1].classes, { name: 'BigBarn' });
@@ -502,8 +512,8 @@ describe('the documentation', function () {
       });
       describe('the drawCropCircle method', function () {
 
-      })
-    })
+      });
+    });
     describe('the Cow class', function () {
       var cls = where(data.files[1].classes, { name: 'Cow' });
       it('should exist', function () {
@@ -523,19 +533,19 @@ describe('the documentation', function () {
         'throws': toBeUndefined()
       });
       it('should have a url to wikipedia', function () {
-        expect(cls.see[0]).toContain('en.wikipedia')
+        expect(cls.see[0]).toContain('en.wikipedia');
       });
       it('should extend Animal', function () {
         expect(cls.extend[0].name).toBe('Animal');
-      })
+      });
       it('should show complete info about Animal', function () {
         expect(cls.extend[0].methods).toBeArray();
-      })
+      });
       describe('the drawCropCircle method', function () {
 
-      })
-    })
-  })
+      });
+    });
+  });
 
   describe('the documentation html', function () {
     describe('the title', function () {
