@@ -117,12 +117,16 @@ angular
 				return d.promise();
 			},
 			'output_gannotation': function(objs_by_id) {
+				var todate = function(n) {
+					if (isNaN(Number(n))) { return new Date(n); }
+					return new Date(Number(n));
+				};
 				return u.dresolve(u.dict(_(objs_by_id).map(function(obj,id) {
 					obj.type = 'gannotation';
-					obj.start = obj[$scope.output.gannotate.startcol];
-					obj.end = obj[$scope.output.gannotate.endcol];
-					obj.label = obj[$scope.output.gannotate.labelcol];
-					obj.source = $scope.output.gannotate.scope;
+					obj.start =todate(obj[$scope.output.gannotate.startcol.newname]);
+					obj.end = todate(obj[$scope.output.gannotate.endcol.newname]);
+					obj.label = obj[$scope.output.gannotate.labelcol.newname];
+					obj.source = $scope.output.gannotate.source;
 					obj.category = $scope.output.gannotate.annotationtype;
 					return [id,obj];
 				})));
