@@ -26,22 +26,36 @@
 		.usage('Usage: $0 [config file]')
 		.alias('l', 'log-stdout')
 		.alias('h', 'help')
+		.alias('o', 'output-directory')
+		.alias('t', 'template')
 		.describe('l', 'Output logs to stdout')
-		.describe('h', 'Display help');
+		.describe('h', 'Display help')
+		.describe('o', 'Where to create documentation')
+		.describe('t', 'Which template to use');
 
-	if (argv.help || argv.h) {
+	if (argv.h || argv.help) {
 		optimist.showHelp();
 		process.exit(0);
 	}
 
-	if (argv['log-stdout'] || argv.l) {
+	if (argv.l || argv['log-stdout']) {
 		logging = true;
 	}
 
 	if (!argv._.length) {
-		throw 'Please provide config file';
+		optimist.showHelp();
+		process.exit(1);
 	} else {
+		log('loading config ' + argv._[0]);
 		config = require('./' + argv._[0]); // Hmmm... safe?
+	}
+
+	if (argv.o || argv['output-directory']) {
+		config.outputDirectory = argv.o || argv['output-directory'];
+	}
+
+	if (argv.t || argv['template']) {
+		config.outputDirectory = argv.o || argv['template'];
 	}
 
 	var markedOptions = {
@@ -205,7 +219,7 @@
 
 			rmdirRecursive(outputDir);
 			mkdirRecursive(outputDir);
-			ncp('./template', outputDir, function (err) {
+			ncp(templateRoot, outputDir, function (err) {
 				if (err) {
 					throw err;
 				}
