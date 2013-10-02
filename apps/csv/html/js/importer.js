@@ -59,8 +59,8 @@ angular
 			'output_gtime' : function(objs_by_id) {
 				// get the time series, segment into offsets
 				var objs = _(objs_by_id).values(),
-					t = function(o) { return parseInt(o[$scope.output.gtime.timecol.newname]); },
-					v = function(o) { return parseFloat(o[$scope.output.gtime.valcol.newname]); },
+					t = function(o) { return Number(o[$scope.output.gtime.timecol.newname]); },
+					v = function(o) { return Number(o[$scope.output.gtime.valcol.newname]); },
 					channel = $scope.output.gtime.channel,
 					source = $scope.output.gtime.source;
 
