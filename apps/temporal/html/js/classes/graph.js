@@ -16,7 +16,7 @@ function Graph(target, channel)
 	this.footerHeight = 15;
 	this.invertPan = false;
 	this.isStatic = false;
-	this.iType = "Graph";
+	this.ioType = "Graph";
 	this.maxHorizontalTicks = 30;
 	this.maxValue = 10;
 	this.minValue = 0;
@@ -371,49 +371,49 @@ Graph.prototype.renderGrid = function ()
 	}
 
 
-	// var ticks = [];
+	var ticks = [];
 	
-	// var intVal = parseInt(this.minValue);
-	// var diff = this.minValue-parseInt;
-	// if(diff != 0) diff = 1;
+	var intVal = parseInt(this.minValue);
+	var diff = this.minValue-parseInt;
+	if(diff != 0) diff = 1;
 
-	// var scale = this.mostConvenientDataScale(this.minValue, this.maxValue);
+	var scale = this.mostConvenientDataScale(this.minValue, this.maxValue);
 
-	// for(var i=parseInt(this.minValue)-diff; i < parseInt(this.maxValue)+1; i+=scale)
-	// {
-	// 	ticks.push(i);
-	// }
+	for(var i=parseInt(this.minValue)-diff; i < parseInt(this.maxValue)+1; i+=scale)
+	{
+		ticks.push(i);
+	}
 
-	// group = this.graph.selectAll(".height");
-	// n = 0;
-	// group.each(function() { ++n; });
+	group = this.graph.selectAll(".height");
+	n = 0;
+	group.each(function() { ++n; });
 
-	// if(n == 0)
-	// {
-	// 	group = this.graph.append("g").attr("class", "grid height");
-	// }
+	if(n == 0)
+	{
+		group = this.graph.append("g").attr("class", "grid height");
+	}
 
-	// group = group.selectAll("line").data(ticks);
+	group = group.selectAll("line").data(ticks);
 
-	// group.enter()
-	// 	.append("line")
-	// 	.attr("x1", 0)
-	// 	.attr("y1", y)
-	// 	.attr("x2", this.getWidth())
-	// 	.attr("y2", y)
-	// 	.attr("class", function(d) 
-	// 		{ 
-	// 			if(d == 0) 
-	// 				return "axis";
-	// 			else
-	// 				return "tick";
-	// 		});
+	group.enter()
+		.append("line")
+		.attr("x1", 0)
+		.attr("y1", y)
+		.attr("x2", this.getWidth())
+		.attr("y2", y)
+		.attr("class", function(d) 
+			{ 
+				if(d == 0) 
+					return "axis";
+				else
+					return "tick";
+			});
 
-	// group
-	// 	.attr("y1", y)
-	// 	.attr("y2", y);
+	group
+		.attr("y1", y)
+		.attr("y2", y);
 
-	// group.exit().remove();
+	group.exit().remove();
 	this.renderDays();
 }
 
@@ -511,7 +511,6 @@ Graph.prototype.renderLabels = function(target)
 	labelGroup.each(function() { ++n; });
 	if(n == 0)
 	{
-		console.log("creating labels");
 		labelGroup = target.append("g").attr("class", "grid label").attr("transform", "translate(0,15)");
 	}
 
@@ -888,7 +887,7 @@ Graph.prototype.updateAnnotations = function()
 	}
 }
 
-Graph.prototype.pan = function(touch, mouse, inverse, interval) // mouse is a variable that allows to pan using the magic mouse gestures
+Graph.prototype.pan = function(touch, mouse, inverse, interval) // mouse is a hack that allows to pan using the magic mouse gestures
 {
 	// panning
 	if(tEngine.countTouchesObjectIsTarget(this) == 1 && this.dragging == false && tEngine.keyMap[16] == false || typeof mouse !== "undefined")

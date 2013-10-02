@@ -4,6 +4,7 @@ function Button(element)
 
 	this.isStatic = true;
 	this.updateLastPosition();
+	this.ioType = "Button";
 }
 
 Button.prototype = tEngine.clone(InteractiveObject.prototype);
