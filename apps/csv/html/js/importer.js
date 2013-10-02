@@ -180,10 +180,8 @@ angular
 				} else {
 					dosave().then(dd.resolve).fail(dd.reject);
 				}
+				return dd.promise();
 			} catch(e) { $scope.err(e); console.error(e); }
-
-			return dd.promise();
-
 		};
 
 		$scope.clearIDExcept = function(c) {
