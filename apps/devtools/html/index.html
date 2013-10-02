@@ -31,9 +31,14 @@
 			  	<thead><th>Name</th><th>Status</th><th>Actions</th></thead>
 			  	<tbody>
 					<tr ng-repeat="doc in docs">
-						<td><a href="{{doc.url}}">{{doc.name}}</a></td>
-						<td></td>
-						<td><button class="btn btn-primary">Build</button></td>
+						<td ng-if="doc.built"><a href="/{{doc.docs_url}}">{{doc.name}}</a></td>
+						<td ng-if="!doc.built">{{doc.name}}</td>
+						<td>
+							<div ng-if="doc.built">Built</div>
+							<div ng-if="!doc.built">Documentation has not been built.</div>
+						</td>
+						<td><button class="btn btn-primary" ng-disabled="building_docs[doc.name]" ng-click="build_doc(doc)" ng-if="doc.built">Rebuild</button>
+						<button class="btn btn-primary" ng-disabled="building_docs[doc.name]" ng-click="build_doc(doc)" ng-if="!doc.built">Build</button></td>
 					</tr>
 				</tbody>
 			  </table>

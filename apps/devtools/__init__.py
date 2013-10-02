@@ -47,12 +47,14 @@ class DevToolsApp(BaseHandler):
             self.return_ok(request, data = { "response": out })
 
     def config_data(self, filename):
-        name = filename.split('/')[-1].split('.')[0];
+        name = filename.split('/')[-1].split('.')[0]
+        docs_path = 'apps/devtools/html/docs/%s' % name
         return {
             'name': name,
             'config_filename': filename,
-            'docs_path': 'apps/devtools/docs/%s' % name,
-            'docs_url': 'apps/devtools/docs/%s' % name
+            'docs_path': docs_path,
+            'docs_url': 'apps/devtools/docs/%s' % name,
+            'built': os.path.exists(docs_path)
             }
 
     def lookup_config(self, name):
@@ -94,7 +96,9 @@ class DevToolsApp(BaseHandler):
         logging.debug('node docsgen/build.js %s ' % config['config_filename']);
         out = check_output('node docsgen/build.js %s --output-directory=%s' % (config['config_filename'], config['docs_path']), shell=True)
         logging.debug(out);
-        self.return_ok(request, data = { "response": out })
+        config['build_output'] = out;
+        config['built'] = os.path.exists(config['docs_path']);
+        self.return_ok(request, data = { "response": config })
 
 
 DevToolsApp.base_path = "devtools/api"

@@ -53,11 +53,8 @@
 		config = require(relativeToCwd(argv._[0]));
 	}
 
-	console.log('k', argv)
-
 	if (argv.o || argv['output-directory']) {
 		config.outputDirectory = relativeToCwd(argv.o || argv['output-directory']);
-		console.log("BAH", config.outputDirectory )
 	}
 
 	if (argv.t || argv.template) {
@@ -93,7 +90,6 @@
 	mu.root = templateRoot;
 
 	var cacheTemplates = function (path) {
-		console.log('cache', path);
 		path = path || '';
 		var promise = new Promise();
 		fs.readdir(templateRoot + path, function (err, files) {
@@ -253,11 +249,11 @@
 				var list = that.get(key),
 					lastPromise = new Promise();
 				fileLists[key] = [];
-				_.each(list, function (glob, i) {
-					var promise = new Promise();
+				_.each(list, function (globPart, i) {
+					var promise = new Promise(),
+						glob = relativeTo(globPart, that.get('basePath'));
 					lastPromise.then(function () {
-						globp(relativeTo(glob, that.get('basePath')), {}, function (err, globFiles) {
-							console.log('c', globFiles)
+						globp(glob, {}, function (err, globFiles) {
 							if (globFiles.length === 0) {
 								log('warning', glob + ' did not match any files');
 							}
@@ -756,7 +752,7 @@
 			force = message;
 			message = undefined;
 		}
-		if (!logging && !force) { return; }
+		if (!logging && !force && context !== 'warning') { return; }
 		if (!message) {
 			message = context;
 			context = '';
@@ -765,7 +761,8 @@
 			context.indexOf('class') > -1 ? clc.xterm(48) :
 			context.indexOf('method') > -1 ? clc.xterm(43) :
 			context.indexOf('argument') > -1 ? clc.xterm(38) :
-			context.indexOf('file') > -1 ? clc.xterm(33) : clc.xterm(227);
+			context.indexOf('file') > -1 ? clc.xterm(33) :
+			context.indexOf('warning') > -1 ? clc.xterm(227) : clc.xterm(227);
 		context = context ? color(pad(tree(context), 15)) + ' ' : '';
 		console.log(context, message);
 	}

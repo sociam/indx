@@ -1,5 +1,5 @@
 module.exports = {
-	basePath: '../html/',
+	basePath: '../../html/',
 	outputDirectory: '../html/docs/indx-collection/',
 
 	require: [
