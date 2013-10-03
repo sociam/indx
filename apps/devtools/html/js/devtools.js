@@ -27,13 +27,8 @@ angular
 			}).fail(function(x) { console.log(x); });
 		};
 
-		$.get('api/tests', function (r) {
-			$scope.tests = _.map(r.response, function (test) {
-				var name = test.split('.')[0];
-				return {
-					name: name
-				}
-			});
+		$.get('api/tests/list_tests', function (r) {
+			$scope.tests = r.response;
 		});
 
 		$.get('api/docs/list_docs', function (r) {
@@ -50,7 +45,20 @@ angular
 				});
 				u.safe_apply($scope);
 			});
-		}
+		};
+
+		$scope.running_tests = {};
+		$scope.run_test = function (test) {
+			$scope.running_tests[test.name] = true;
+			$.post('api/tests/run_test?name=' + test.name, function (r) {
+				$scope.running_tests[test.name] = false;
+				Object.keys(r.response).forEach(function (k) {
+					test[k] = r.response[k];
+				});
+				u.safe_apply($scope);
+			});
+		};
+
 
 		window.$scope = $scope;
 	});

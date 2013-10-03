@@ -31,7 +31,7 @@
 			  	<thead><th>Name</th><th>Status</th><th>Actions</th></thead>
 			  	<tbody>
 					<tr ng-repeat="doc in docs">
-						<td ng-if="doc.built"><a href="/{{doc.docs_url}}">{{doc.name}}</a></td>
+						<td ng-if="doc.built"><a href="/{{doc.url}}">{{doc.name}}</a></td>
 						<td ng-if="!doc.built">{{doc.name}}</td>
 						<td>
 							<div ng-if="doc.built">Built</div>
@@ -48,9 +48,13 @@
 			  	<thead><th>Name</th><th>Status</th><th>Actions</th></thead>
 			  	<tbody>
 					<tr ng-repeat="test in tests">
-						<td><a href="{{test.url}}">{{test.name}}</a></td>
-						<td></td>
-						<td><button class="btn btn-primary">Run</button></td>
+						<td ng-if="test.built"><a href="/{{test.url}}">{{test.name}}</a></td>
+						<td ng-if="!test.built">{{test.name}}</td>
+						<td>
+							<div ng-if="test.built">---</div>
+							<div ng-if="!test.built">Tests have not been run.</div>
+						</td>
+						<td><button class="btn btn-primary" ng-disabled="running_tests[test.name]" ng-click="run_test(test)" ng-if="!test.built">Run</button></td>
 					</tr>
 				</tbody>
 			  </table>
