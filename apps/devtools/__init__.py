@@ -48,7 +48,17 @@ class DevToolsApp(BaseHandler):
 
     def config_data(self, filename):
         name = filename.split('/')[-1].split('.')[0]
+
+        app_name_r = re.compile('apps/([^/]+)/docs-config.js')
+        app_name = app_name_r.findall(filename)
+        logging.debug("hmm... %s" % app_name)
+        if app_name:
+            name = app_name[0]
+
         docs_path = 'apps/devtools/html/docs/%s' % name
+
+        logging.debug(os.path.exists(docs_path))
+
         return {
             'name': name,
             'config_filename': filename,
@@ -68,9 +78,22 @@ class DevToolsApp(BaseHandler):
     def get_docs_list(self):
         logging.debug('getting list of doc configs')
         currdir = os.path.dirname(os.path.abspath(__file__))
-        tdir = os.path.sep.join([currdir, '..', '..', 'docsgen', 'config'])
-        # todo find in doc configs apps
-        docs = [self.config_data(tdir + '/' + f) for f in os.listdir(tdir)]
+        # look in apps
+        appdir = os.path.sep.join([currdir, '..', '..', 'apps'])
+        doc_dirs = [os.path.normpath(appdir + os.path.sep + d) for d in os.listdir(appdir)]
+        doc_dirs.append(os.path.normpath(os.path.sep.join([currdir, '..', '..', 'docsgen', 'config'])))
+        config_files = []
+        for d in doc_dirs:
+            if os.path.isdir(d):
+                logging.debug('checking directory %s' % d)
+                files = os.listdir(d)
+                for f in files:
+                    f = d + os.path.sep + f;
+                    logging.debug('checking file %s' % f)
+                    if os.path.isfile(f) and f.endswith('docs-config.js'):
+                        logging.debug('found file %s' % f)
+                        config_files.append(f);
+        docs = [self.config_data(f) for f in config_files]
         logging.debug("doc configs: {0}".format(docs))
         return docs;
 
@@ -91,6 +114,9 @@ class DevToolsApp(BaseHandler):
             return
         config_name = args['name'][0]
         config = self.lookup_config(config_name)
+        if not config:
+            self.return_forbidden(request)
+            return
         logging.debug('checking name %s' % config['name'])
         logging.debug('generating doc %s' % config['name'])
         logging.debug('node docsgen/build.js %s ' % config['config_filename']);
