@@ -46,7 +46,7 @@ class DevToolsApp(BaseHandler):
             out = check_output('karma start /home/peter/webbox/lib/indx/tests/docsgen.config.js', shell=True)
             self.return_ok(request, data = { "response": out })
 
-    def config_data(self, filename):
+    def config_data(self, filename, config_type):
         name = filename.split('/')[-1].split('.')[0]
 
         app_name_r = re.compile('apps/([^/]+)/docs-config.js')
@@ -62,8 +62,8 @@ class DevToolsApp(BaseHandler):
         return {
             'name': name,
             'config_filename': filename,
-            'docs_path': docs_path,
-            'docs_url': 'apps/devtools/docs/%s' % name,
+            'path': docs_path,
+            'url': 'apps/devtools/docs/%s' % name,
             'built': os.path.exists(docs_path)
             }
 
@@ -75,33 +75,40 @@ class DevToolsApp(BaseHandler):
         return matches[0];
 
 
-    def get_docs_list(self):
+    def get_config_list(self, config_type):
         logging.debug('getting list of doc configs')
         currdir = os.path.dirname(os.path.abspath(__file__))
         # look in apps
         appdir = os.path.sep.join([currdir, '..', '..', 'apps'])
-        doc_dirs = [os.path.normpath(appdir + os.path.sep + d) for d in os.listdir(appdir)]
-        doc_dirs.append(os.path.normpath(os.path.sep.join([currdir, '..', '..', 'docsgen', 'config'])))
+        dirs = [os.path.normpath(appdir + os.path.sep + d) for d in os.listdir(appdir)]
+        dirs.append(os.path.normpath(os.path.sep.join([currdir, '..', '..', 'lib', config_type, 'config'])))
         config_files = []
-        for d in doc_dirs:
+        for d in dirs:
             if os.path.isdir(d):
                 logging.debug('checking directory %s' % d)
                 files = os.listdir(d)
                 for f in files:
                     f = d + os.path.sep + f;
                     logging.debug('checking file %s' % f)
-                    if os.path.isfile(f) and f.endswith('docs-config.js'):
+                    config_end = config_type + '-config.js'
+                    if os.path.isfile(f) and f.endswith(config_end):
                         logging.debug('found file %s' % f)
                         config_files.append(f);
-        docs = [self.config_data(f) for f in config_files]
-        logging.debug("doc configs: {0}".format(docs))
+        docs = [self.config_data(f, config_type) for f in config_files]
+        logging.debug("configs: {0}".format(docs))
         return docs;
 
     def list_docs(self, request):
         """ Get a list of doc configs.
         """
-        docs = self.get_docs_list()
-        self.return_ok(request, data = { "response": docs })
+        configs = self.get_config_list('docs')
+        self.return_ok(request, data = { "response": configs })
+
+    def list_tests(self, request):
+        """ Get a list of doc configs.
+        """
+        configs = self.get_config_list('tests')
+        self.return_ok(request, data = { "response": configs })
 
     def generate_doc(self, request):
         """ Generate documentation from config file.
@@ -126,16 +133,28 @@ class DevToolsApp(BaseHandler):
         config['built'] = os.path.exists(config['docs_path']);
         self.return_ok(request, data = { "response": config })
 
+    def run_test(self, request):
+        return
+
 
 DevToolsApp.base_path = "devtools/api"
 
 DevToolsApp.subhandlers = [
     {
-        "prefix": "tests",
-        'methods': ['GET', 'PUT'],
+        "prefix": "devtools/api/docs/list_tests",
+        'methods': ['GET'],
         'require_auth': False,
         'require_token': False,
-        'handler': DevToolsApp.tests,
+        'handler': DevToolsApp.list_tests,
+        'accept':['application/json'],
+        'content-type':'application/json'
+        },
+    {
+        "prefix": "devtools/api/docs/run_test",
+        'methods': ['POST'],
+        'require_auth': False,
+        'require_token': False,
+        'handler': DevToolsApp.run_test,
         'accept':['application/json'],
         'content-type':'application/json'
         },
