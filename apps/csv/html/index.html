@@ -15,7 +15,33 @@
 	  	{{ error }}
 	  </div>
 	  <div ng-show="selected_user && selected_box && !error">
-	  	<div class="btn btn-primary savebtn" ng-show='rows && !wait' ng-disabled="wait" ng-click='do_save()'><span class="glyphicon glyphicon-floppy-open"></span> - Save to INDX</div>
+	  	<div class="output" ng-show='rows && !wait' >
+		  	<div class="btn btn-primary savebtn" ng-disabled="wait" ng-click='do_save()'><span class="glyphicon glyphicon-floppy-open"></span> - Save to INDX</div>
+		  	<div class="btn-group">
+		  		<label class="btn btn-warning"><input ng-model='output.format' type="radio" value="output_raw" name="output-type" checked>Raw</label>
+		  		<label class="btn btn-warning"><input ng-model='output.format' type="radio" value="output_gtime" name="output-type">Temporal Data (gData)</label>
+		  		<label class="btn btn-warning"><input class="btn btn-warning" ng-model='output.format' type="radio" value="output_gannotation" name="output-type">Temporal Annotations (gAnnotation)</label>
+		  	</div>	
+		  	<div ng-show='output.format=="output_gtime"' class="output_options">
+		  		<table>
+		  			<tr><td>Timestamp Column: </td><td><select ng-model='output.gtime.timecol'ng-options='c.newname for c in cols'></select></td></tr>
+		  			<tr><td>Value Column:</td><td><select ng-model='output.gtime.valcol' ng-options='c.newname for c in cols'></select></td></tr>
+		  			<tr><td>Channel Name:</td><td><input type='text' ng-model='output.gtime.channel' placeholder="e.g., blood pressure"></input></td></tr>
+		  			<tr><td>Source Name:</td><td><input type='source' ng-model='output.gtime.source' placeholder="e.g., my cool csv file"></input></td></tr>
+		  			<tr><td>Units:</td><td><input type='units' ng-model='output.gtime.units' placeholder='e.g., kg'></input></td></tr>
+		  		</table>	
+		  	</div>	
+		  	<div ng-show='output.format=="output_gannotation"' class="output_options">
+		  		<table>
+		  			<tr><td>Start Time Column: </td><td><select ng-model='output.gannotate.startcol' ng-options='c.newname for c in cols'></select></td></tr>
+		  			<tr><td>End Time Column:</td><td><select ng-model='output.gannotate.endcol' ng-options='c.newname for c in cols'></select></td></tr>
+		  			<tr><td>Value/Label Column:</td><td><select ng-model='output.gannotate.labelcol' ng-options='c.newname for c in cols'></select></td></tr>
+		  			<tr><td>Source Name:</td><td><input type='text' ng-model='output.gannotate.source' placeholder="e.g., my cool csv file"></input></td></tr>
+		  			<tr><td>Annotation Type:</td><td><input type='text' ng-model='output.gannotate.annotationtype' placeholder='e.g., '></input></td></tr>
+		  		</table>
+		  	</div>	
+
+		</div>	
 	  	<div ng-show='!dropped'>
 	  		<h2 class="instructions">[ drop a CSV file here ]</h2>
 	  		<h2 class="yesdrophere">go on and drop the file</h2>
