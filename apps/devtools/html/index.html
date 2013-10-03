@@ -54,7 +54,7 @@
 							<div ng-if="test.built">---</div>
 							<div ng-if="!test.built">Tests have not been run.</div>
 						</td>
-						<td><button class="btn btn-primary" ng-disabled="running_tests[test.name]" ng-click="run_test(test)" ng-if="!test.built">Run</button></td>
+						<td><button class="btn btn-primary" ng-disabled="running_tests[test.name]" ng-click="run_test(test)">Run</button></td>
 					</tr>
 				</tbody>
 			  </table>

@@ -20,6 +20,8 @@ from indx.webserver.handlers.base import BaseHandler
 from twisted.web.server import NOT_DONE_YET
 import requests
 from subprocess import check_output
+import subprocess
+import shutil
 
 
 
@@ -127,8 +129,21 @@ class DevToolsApp(BaseHandler):
         if not config:
             return
         logging.debug('running tests %s' % config['name'])
-        out = check_output('karma start %s' % (config['config_path']), shell=True)
+        cmd_str = 'karma start %s' % (config['config_path'])
+        cmd_str += ' --reporters junit'
+        logging.debug(cmd_str)
+        cmd = subprocess.Popen([cmd_str], stdout=subprocess.PIPE, shell=True)
+        out = cmd.communicate()[0]
         logging.debug(out);
+        results_file = os.path.dirname(config['config_path']) + os.path.sep + 'test-results.xml'
+        logging.debug(results_file)
+        if os.path.exists(results_file):
+            if not os.path.isdir(config['path']):
+                os.makedirs(config['path'])
+            newpath = config['path'] + os.path.sep + 'test-results.xml'
+            if os.path.exists(newpath):
+                os.remove(newpath)
+            shutil.move(results_file, config['path'] + os.path.sep)
         config['build_output'] = out;
         config['built'] = os.path.exists(config['path']);
         self.return_ok(request, data = { "response": config })
