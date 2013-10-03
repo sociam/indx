@@ -1,9 +1,9 @@
 module.exports = {
 	basePath: 'html/',
-	outputDirectory: '../../devtools/html/docs/docsgen/',
+	outputDirectory: 'docs/docs/',
 
 	require: [
-		'../../../docsgen/abstracts/*',
+		'../../../lib/docs/abstracts/*',
 	],
 
 	files: [
