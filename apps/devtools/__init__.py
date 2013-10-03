@@ -127,7 +127,7 @@ class DevToolsApp(BaseHandler):
         if not config:
             return
         logging.debug('running tests %s' % config['name'])
-        out = check_output('karma start %s' % (config['config_path'], shell=True)
+        out = check_output('karma start %s' % (config['config_path']), shell=True)
         logging.debug(out);
         config['build_output'] = out;
         config['built'] = os.path.exists(config['path']);
