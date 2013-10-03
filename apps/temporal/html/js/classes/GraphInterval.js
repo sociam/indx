@@ -65,7 +65,7 @@ GraphInterval.prototype.closeSelection = function()
 	this.sourceGraph.annotating = false;
 	this.sourceGraph.renderData();
 
-	delete tEngine.interactiveObjectList[this.identifier];
+	// delete tEngine.interactiveObjectList[this.identifier];
 	
 	var graphDiv = d3.select("#"+this.sourceGraph.element.id);
 
@@ -448,7 +448,7 @@ GraphInterval.prototype.drawSelection = function()
 			}
 
 			InteractiveObject.call(this, this.selection[0][0]);
-			tEngine.interactiveObjectList[this.identifier] = this;
+			// tEngine.interactiveObjectList[this.identifier] = this;
 
 			this.scaleBar = this.selection.append("div")
 				.attr("id", "scaleBar")
@@ -456,7 +456,7 @@ GraphInterval.prototype.drawSelection = function()
 				.attr("class", "scaleBar pickerTools");
 
 			this.scaleBar = new ScaleBar(this.scaleBar[0][0], this, this.sourceGraph.element.id+"selectionScaleBar");
-			tEngine.interactiveObjectList[this.sourceGraph.element.id+"selectionScaleBar"] = this.scaleBar;
+			// tEngine.interactiveObjectList[this.sourceGraph.element.id+"selectionScaleBar"] = this.scaleBar;
 
 			this.selection.on("mousemove", function() 
 			{
@@ -469,6 +469,11 @@ GraphInterval.prototype.drawSelection = function()
 
 GraphInterval.prototype.touchStarted = function(touch)
 {
+	if(tEngine.testCollision(touch.position, this.scaleBar))
+	{
+		touch.setTarget(this.scaleBar);
+		this.scaleBar.touchStarted(touch);
+	}
 }
 
 GraphInterval.prototype.initClone = function(source)
@@ -581,8 +586,8 @@ GraphInterval.prototype.hold = function(touch)
 	if(this.draggable == true)
 	{
 		this.updateLastPosition();
-		if(this.touchCount == 1)
-		{
+		// if(this.touchCount == 1)
+		// {
 			this.sourceGraph.pannable = false;
 			this.sourceGraph.pinchable = false;
 			this.infoField.remove();
@@ -626,7 +631,7 @@ GraphInterval.prototype.hold = function(touch)
 					}
 				}
 			}
-		}
+		// }
 	}
 }
 

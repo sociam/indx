@@ -305,5 +305,6 @@ TimeInterval.prototype.buildDataInterval = function()
 		}
 	}
 	this.avg = Number(this.sum)/(this.dataInterval.length);
+
 	this.duration = Number(this.dataInterval[this.dataInterval.length-1].instant) - Number(this.dataInterval[0].instant);
 }

@@ -5,6 +5,7 @@ function Graph(target, channel)
 	this.annotations = {};
 	this.unlabeledAnnotations = [];
 	this.channel = channel;
+	this.closeButton = undefined;
 	this.createdInterval = false;
 	this.dataColor = channel.color;
 	this.dataIdentifier = this.element.id;
@@ -68,13 +69,17 @@ Graph.prototype.addUnlabeled = function(annotation) // can be improved
 
 Graph.prototype.addAnnotation = function(begin, end, activity, id)
 {
+
 	var indexBegin = this.timeInterval.indexForInstant(begin);
 	var indexEnd = this.timeInterval.indexForInstant(end);
 
-	var annotation = new Annotation(indexBegin, indexEnd, activity, this, id);
-	this.annotations[annotation.annotationID] = annotation;
-	this.refreshAnnotations();
-	return annotation;
+	if(indexBegin != undefined && indexEnd != undefined)
+	{
+		var annotation = new Annotation(indexBegin, indexEnd, activity, this, id);
+		this.annotations[annotation.annotationID] = annotation;
+		this.refreshAnnotations();
+		return annotation;
+	}
 }
 
 Graph.prototype.removeAnnotation = function(id)
@@ -99,7 +104,8 @@ Graph.prototype.refreshTimeInterval = function()
 Graph.prototype.appendTemplate = function(target)
 {
 	target = d3.select(target);
-	var graphDiv = target.append("div").attr("id", "graph"+tEngine.lastGraphID++).attr("class", "aGraph");
+	var graphDiv = target.append("div").attr("id", "graph"+tEngine.lastGraphID++).attr("class", "aGraph")
+		.property("pointer", this);
 
 	this.infoDiv = graphDiv.append("div");
 	
@@ -110,6 +116,7 @@ Graph.prototype.appendTemplate = function(target)
 	this.infoDiv.append("div").attr("class", "label").text("Test");
 
 	graphDiv.append("div").attr("class", "graph").attr("z-index", tEngine.lastGraphID);
+
 	return graphDiv[0][0];
 }
 
@@ -466,8 +473,25 @@ Graph.prototype.initGraph = function()
 	this.infoDiv.select(".label").text(this.channel.name);
 
 	var closeButton = this.infoDiv.append("div").attr("class", "removeGraph");
+	this.closeButton = new Button(closeButton[0][0]);
+	this.closeButton.graph = this;
+	this.closeButton.touchEnded = function()
+	{
+		this.graph.closeGraph();
+	}
 
-	closeButton.on("click", function() {thisGraph.closeGraph();});
+	var graph = this;
+	var timelineCheckbox = this.infoDiv.append("input").attr("type", "checkbox").attr("class", "timelineLock").property("checked", true)
+		.on("change", function() {
+			if(this.checked == true)
+			{
+				graph.timelineLocked = true;
+			}
+			else
+			{
+				graph.timelineLocked = false;
+			}
+		});
 }
 
 Graph.prototype.closeGraph = function()
@@ -731,6 +755,15 @@ Graph.prototype.updateData = function()
 
 Graph.prototype.touchStarted = function(touch)
 {
+	if(this.selectedInterval.createdTools == true)
+	{
+		if(tEngine.testCollision(touch.position, this.selectedInterval))
+		{
+			touch.setTarget(this.selectedInterval);
+			this.selectedInterval.touchStarted(touch);
+		}
+	}
+
 	if(tEngine.countTouchesObjectIsTarget(this) == 2) // pinch starting?
 	{
 		this.lastZoom = this.zoom;
@@ -766,11 +799,16 @@ Graph.prototype.unselectAnnotations = function()
 
 Graph.prototype.touchEnded = function(touch)
 {
-	if(touch.position[0]-this.element.offsetLeft >= 705 && touch.position[0]-this.element.offsetLeft <= 715
-		&& touch.position[1]-this.element.offsetTop <= 10)
+	// console.log(touch)
+	if(tEngine.testCollision(touch.position, this.closeButton))
 	{
-		this.closeGraph();
+		this.closeButton.touchEnded(touch);
 	}
+	// if(touch.position[0]-this.element.offsetLeft >= 705 && touch.position[0]-this.element.offsetLeft <= 715
+	// 	&& touch.position[1]-this.element.offsetTop <= 10)
+	// {
+	// 	this.closeGraph();
+	// }
 
 	this.invertPan = false;
 		d3.select(this.element)
@@ -836,19 +874,20 @@ Graph.prototype.touchEnded = function(touch)
 
 Graph.prototype.hold = function(touch)
 {
-	if(tEngine.keyMap[16] == false)
-	{
-		// console.log("hold");
-		d3.select(this.element)
-			.style("z-index", tEngine.lastZIndex++)
-			.style("background-color", "#ddd")
-			.style("cursor", "move");
-		if(this.draggable == true)
-		{
-				this.bindPositionToTouch(touch);
 
+		if(tEngine.keyMap[16] == false)
+		{
+			// console.log("hold");
+			d3.select(this.element)
+				.style("z-index", tEngine.lastZIndex++)
+				.style("background-color", "#ddd")
+				.style("cursor", "move");
+			if(this.draggable == true)
+			{
+					this.bindPositionToTouch(touch);
+
+			}
 		}
-	}
 }
 
 Graph.prototype.xForIndex = function(index)
@@ -936,6 +975,7 @@ Graph.prototype.pan = function(touch, mouse, inverse, interval) // mouse is a ha
 			{
 				this.timeInterval.pan(delta);
 				this.refreshTimeInterval();
+				this.refreshAnnotations();
 			}
 			else
 			{
@@ -1040,51 +1080,59 @@ Graph.prototype.pinch = function(touch, distance, angle, mouse)
 	this.redrawGraph();	
 }
 
-Graph.prototype.mouseMove = function(pos)
+Graph.prototype.updateCrosshair = function(pos)
 {
 	this.graph.selectAll(".crosshair").remove();
 
-	var lastInstant  = this.timeInterval.end;
-	var firstInstant = this.timeInterval.begin;
-
-	var x = pos[0]/(this.getWidth()-2) * (Number(lastInstant)-Number(firstInstant)) + Number(firstInstant);
-	var invY = d3.scale.linear().domain([0, this.getHeight()-this.footerHeight]).range([this.maxValue, this.minValue]);
-
-	var crosshair = this.graph.append("g").attr("class", "crosshair");
-
-	var inc = pos[1] > this.getHeight()/2 ? -5 : 12;
-
-	var dateText = new GraphText(TimeUtils.dateFormatter(x), "dateText", pos[0], 10, pos[0] < (this.getWidth())/2 ? undefined : "end");
-	var valueText = new GraphText(invY(pos[1]).toFixed(2), "valueText", this.getWidth()-25, pos[1]+inc, "end");
-
-	if(pos[1] < this.getHeight()-this.footerHeight)
+	if(typeof pos !== "undefined")
 	{
+		var lastInstant  = this.timeInterval.end;
+		var firstInstant = this.timeInterval.begin;
+
+		var x = pos[0]/(this.getWidth()-2) * (Number(lastInstant)-Number(firstInstant)) + Number(firstInstant);
+		var invY = d3.scale.linear().domain([0, this.getHeight()-this.footerHeight]).range([this.maxValue, this.minValue]);
+
+		var crosshair = this.graph.append("g").attr("class", "crosshair");
+
+		var inc = pos[1] > this.getHeight()/2 ? -5 : 12;
+
+		var dateText = new GraphText(TimeUtils.dateFormatter(x), "dateText", pos[0], 10, pos[0] < (this.getWidth())/2 ? undefined : "end");
+		var valueText = new GraphText(invY(pos[1]).toFixed(2), "valueText", this.getWidth()-25, pos[1]+inc, "end");
+
+		if(pos[1] < this.getHeight()-this.footerHeight)
+		{
+			crosshair.append("line")
+				.attr("x1", 0)
+				.attr("y1", pos[1])
+				.attr("x2", this.getWidth())
+				.attr("y2", pos[1])
+				.attr("class", "hCrosshair");
+
+			crosshair.append("text")
+				.text(valueText.text)
+				.style("text-anchor", valueText.anchor)
+				.attr("class", valueText.style)
+				.attr("dx", valueText.x)
+				.attr("dy", valueText.y);
+		}
+
 		crosshair.append("line")
-			.attr("x1", 0)
-			.attr("y1", pos[1])
-			.attr("x2", this.getWidth())
-			.attr("y2", pos[1])
-			.attr("class", "hCrosshair");
+			.attr("x1", pos[0])
+			.attr("y1", 0)
+			.attr("x2", pos[0])
+			.attr("y2", this.getHeight()-this.footerHeight)
+			.attr("class", "vCrosshair");
 
 		crosshair.append("text")
-			.text(valueText.text)
-			.style("text-anchor", valueText.anchor)
-			.attr("class", valueText.style)
-			.attr("dx", valueText.x)
-			.attr("dy", valueText.y);
+			.text(dateText.text)
+			.style("text-anchor", dateText.anchor)
+			.attr("class", dateText.style)
+			.attr("dx", dateText.x)
+			.attr("dy", dateText.y);
 	}
+}
 
-	crosshair.append("line")
-		.attr("x1", pos[0])
-		.attr("y1", 0)
-		.attr("x2", pos[0])
-		.attr("y2", this.getHeight()-this.footerHeight)
-		.attr("class", "vCrosshair");
-
-	crosshair.append("text")
-		.text(dateText.text)
-		.style("text-anchor", dateText.anchor)
-		.attr("class", dateText.style)
-		.attr("dx", dateText.x)
-		.attr("dy", dateText.y);
+Graph.prototype.mouseMove = function(pos)
+{
+	this.updateCrosshair(pos);
 }

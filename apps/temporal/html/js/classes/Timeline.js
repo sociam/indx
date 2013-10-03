@@ -13,6 +13,8 @@ function Timeline(target)
 
 	this.windowList = [];
 	this.updateLastPosition();
+
+	this.annotations = {};
 }
 
 Timeline.prototype = tEngine.clone(InteractiveObject.prototype);
@@ -105,13 +107,13 @@ Timeline.prototype.renderDays = function()
 Timeline.prototype.addGraph = function(graph)
 {
 	var window = new TimelineWindow(this.graph, graph, this);
-	tEngine.interactiveObjectList["timelineWindow"+graph.element.id] = window;
+	// tEngine.interactiveObjectList["timelineWindow"+graph.element.id] = window;
 	this.windowList.push(window);
 }
 
 Timeline.prototype.removeGraph = function(graph)
 {
-	delete tEngine.interactiveObjectList["timelineWindow"+graph.element.id];
+	// delete tEngine.interactiveObjectList["timelineWindow"+graph.element.id];
 	for(var index in this.windowList)
 	{
 		if(this.windowList[index].graph == graph)
@@ -188,6 +190,53 @@ Timeline.prototype.renderLabels = function(target)
 	labelGroup.exit().remove();
 }
 
+Timeline.prototype.addAnnotation = function(annotationID, activity)
+{
+	var aux = [];
+
+	aux.begin = activity.instances[annotationID].begin;
+	aux.end = activity.instances[annotationID].end;
+	aux.activity = activity;
+	aux.visible = false;
+
+	this.annotations[annotationID] = aux;
+
+	this.renderAnnotations();
+}
+
+Timeline.prototype.removeAnnotation = function(annotationID)
+{
+	delete this.annotations[annotationID];
+}
+
+Timeline.prototype.renderAnnotations = function()
+{
+	var x = d3.time.scale().domain([this.begin, this.end]).range([0, this.getWidth()]);
+	var y = d3.scale.linear().domain([this.maxValue, this.minValue]).range([0, this.getHeight()-this.footerHeight]);
+
+	this.graph.selectAll(".timelineAnnotations").remove();
+	
+	group = this.graph.append("g").attr("class", "timelineAnnotations");
+
+	for(var i in this.annotations)
+	{
+		var instance = this.annotations[i];
+		var mid = x(Number(instance.begin)+(Number(instance.end)-Number(instance.begin))/2);
+
+		var points = mid+",35 "+(mid-7)+",20 "+(mid+7)+",20";
+		group.append("polygon")
+			.attr("points", points)
+			.attr("class", "timelineAnnotation")
+			.attr("opacity", function() {
+				if(instance.activity.visible == true)
+					return "0.9";
+				else
+					return "0.2";
+			})
+			.attr("fill",tEngine.getColor(instance.activity.color));
+	}
+}
+
 Timeline.prototype.render = function()
 {
 	this.graph.selectAll(".window").remove();
@@ -196,7 +245,7 @@ Timeline.prototype.render = function()
 	{
 		this.windowList[i].render();
 	}
-
+	this.renderAnnotations();
 	this.renderGrid();
 	this.renderLabels(this.graph);
 }
@@ -283,8 +332,22 @@ Timeline.prototype.renderGrid = function ()
 	this.renderDays();
 }
 
+Timeline.prototype.touchStarted = function(touch)
+{
+	for(var i in this.windowList)
+	{
+		if(tEngine.testCollision(touch.position, this.windowList[i]))
+		{
+			touch.setTarget(this.windowList[i]);
+			this.windowList[i].touchStarted(touch);
+		}
+	}
+}
+
 Timeline.prototype.pan = function(touch, mouse, inverse, interval)
 {
+
+
 	if(tEngine.countTouchesObjectIsTarget(this) == 1 && this.dragging == false || typeof mouse !== "undefined")
 	{
 		if(typeof mouse === "undefined")

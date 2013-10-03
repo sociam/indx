@@ -75,6 +75,7 @@ Activity.prototype.switchVisible = function()
 			tEngine.addAnnotationToGraphs(id, this, undefined);
 		}
 	}
+	tEngine.timeline.render();
 }
 
 Activity.prototype.addInstancesToGraph = function(graph)
@@ -109,6 +110,7 @@ Activity.prototype.addInstanceFromINDX = function(begin, end, id)
 	}
 
 	tEngine.updateActivityList();
+	tEngine.timeline.addAnnotation(id, this);
 }
 
 Activity.prototype.addInstance = function(begin, end, origin)
@@ -154,6 +156,8 @@ Activity.prototype.addInstance = function(begin, end, origin)
 		tEngine.addAnnotationToGraphs(id, this, origin);
 
 	tEngine.updateActivityList();
+
+	tEngine.timeline.addAnnotation(id, this);
 
 	return id;
 }

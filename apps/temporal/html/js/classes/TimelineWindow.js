@@ -23,6 +23,7 @@ TimelineWindow.prototype.constructor = InteractiveObject;
 
 TimelineWindow.prototype.update = function()
 {
+	
 }
 
 TimelineWindow.prototype.init = function()
@@ -63,11 +64,11 @@ TimelineWindow.prototype.render = function()
 	var group = this.renderTarget.append("g").attr("class", "window");
 
 	var width = x(this.graph.timeInterval.end)-x(this.graph.timeInterval.begin);
-	var height = 50;
+	var height = 30;
 
 	var element = group.append("rect")
 		.attr("x", x(this.graph.timeInterval.begin))
-		.attr("y", 20)
+		.attr("y", 40)
 		.attr("width", width)
 		.attr("fill", tEngine.getColor(this.graph.dataColor))
 		.attr("height", height);

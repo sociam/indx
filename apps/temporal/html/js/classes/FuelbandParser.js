@@ -29,10 +29,6 @@ FuelbandParser.parseData = function(fbdata)
 	{
 		if(patt.test(fbdata[i].id) == true)
 		{
-			if(typeof fbdata[i].attributes.metrics[0].attributes.values === "undefined") 
-			{
-				console.log(box);
-			}
 			// console.log(fbdata[i]);
 			var startTime = TimeUtils.parseISO8601(fbdata[i].attributes.startTime[0]);
 			// console.log(startTime, fbdata[i].attributes.startTime[0]);

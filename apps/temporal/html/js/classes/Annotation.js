@@ -67,7 +67,6 @@ Annotation.prototype.inputKeydown = function()
 	}
 }
 
-
 Annotation.prototype.inputFocus = function()
 {
 	this.inputField.attr("class", "selectable hiddenField annotationLabel");
