@@ -31,6 +31,12 @@ function TemporalEngine()
 	this.graphMinHeight = 120;
 }
 
+TemporalEngine.prototype.resize = function()
+{
+	this.resizeGraphs();
+	this.updateGraphsPosition();
+}
+
 TemporalEngine.prototype.getPageSize = function()
 {
 	var size = []; 

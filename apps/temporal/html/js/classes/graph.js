@@ -28,6 +28,11 @@ function Graph(target, channel)
 	this.timeInterval = new TimeInterval();
 	this.timeInterval.dataSource = this.dataSource;
 	TimeUtils.setDateMinusDays(this.readings[this.readings.length-1].instant, TimeUtils.hours(6)/TimeUtils.days(1), this.timeInterval);
+	if(this.timeInterval.begin < this.readings[0].instant)
+	{
+		this.timeInterval.begin = this.readings[0].instant;
+	}
+
 	this.timeInterval.buildDataInterval();
 	this.updateLastPosition();
 	

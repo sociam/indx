@@ -32,7 +32,9 @@ document.onmouseup   = function(event) {tEngine.disableDrag.call(tEngine, event)
 document.onkeydown = function(event) {tEngine.pressKey.call(tEngine, event);};
 document.onkeyup = function(event) {tEngine.releaseKey.call(tEngine, event);};
 document.onmousewheel = function(event) {tEngine.wheel.call(tEngine, event);}; 
+
 window.onbeforeunload = function(event)   { tEngine.unload.call(tEngine, event);};
+window.onresize = function(event) { tEngine.resize.call(tEngine, event);};
 
 window.setTimeout(function() 
 	{

@@ -32,10 +32,10 @@ DataSource.prototype.loadTemporalFormat = function(ds)
 	var begin = Number(ds.attributes.values[0].attributes.begin);
 	var delta = Number(ds.attributes.values[0].attributes.delta);
 
-	var zeroValue = [];
-	zeroValue.data = 0;
-	zeroValue.instant = begin-1;
-	this.readings.push(zeroValue);
+	// var zeroValue = [];
+	// zeroValue.data = 0;
+	// zeroValue.instant = begin-1;
+	// this.readings.push(zeroValue);
 
 	for(var i in ds.attributes.values[0].attributes.values)
 	{
@@ -45,16 +45,16 @@ DataSource.prototype.loadTemporalFormat = function(ds)
 		this.readings.push(aux);
 	}
 
-	var zeroValue = [];
-	zeroValue.data = 0;
-	zeroValue.instant = this.readings[this.readings.length-1].instant+1;
-	this.readings.push(zeroValue);
+	// var zeroValue = [];
+	// zeroValue.data = 0;
+	// zeroValue.instant = this.readings[this.readings.length-1].instant+1;
+	// this.readings.push(zeroValue);
 
 }
 
 DataSource.prototype.loadGFormat = function(ds)
 {
-	console.log(ds)
+	// console.log(ds)
 	if(typeof ds.attributes.source !== "undefined")
 		this.source = ds.attributes.source[0];
 	if(typeof ds.attributes.channel !== "undefined")
@@ -85,7 +85,7 @@ DataSource.prototype.loadGFormat = function(ds)
 		// zeroValue.instant = this.readings[this.readings.length-1].instant+1;
 		// this.readings.push(zeroValue);
 	}
-	console.log(this)
+	// console.log(this)
 
 }
 
