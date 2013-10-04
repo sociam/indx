@@ -32,7 +32,8 @@ function Graph(target, channel)
 	{
 		this.timeInterval.begin = this.readings[0].instant;
 	}
-
+	
+	// console.log(this.timeInterval);
 	this.timeInterval.buildDataInterval();
 	this.updateLastPosition();
 	

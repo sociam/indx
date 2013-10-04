@@ -6,8 +6,8 @@ window.s = indx.store;
 var store = indx.store;
 var temporalBox = undefined;
 
-store.login('indx', 'indx'); //.then(function(status)
-// {
+store.login('indx', 'indx').then(function(status)
+{
     // store.get_box('temporal').then(function(box) 
     // {
     //     var objs = box.get_obj_ids();
@@ -27,4 +27,4 @@ store.login('indx', 'indx'); //.then(function(status)
 	// 		FuelbandImporter.parseData(objs);
 	// 	});
 	// });
-// });
+});

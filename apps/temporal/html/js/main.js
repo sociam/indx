@@ -117,6 +117,8 @@ TemporalEngine.prototype.addAnnotationToINDX = function(id, begin, end, activity
 
 TemporalEngine.prototype.removeAnnotationFromINDX = function(id)
 {
+	this.timeline.removeAnnotation(id);
+	this.timeline.render();
 	if(typeof this.temporalBox !== "undefined")
 	{
 		    this.temporalBox.get_obj("annotation-"+id).then(function (ds) 
@@ -133,7 +135,8 @@ TemporalEngine.prototype.removeAnnotationFromINDX = function(id)
 TemporalEngine.prototype.addAnnotationToGraph = function(annotationID, activity, graph)
 {
 	var annotation = graph.addAnnotation(activity.instances[annotationID].begin, activity.instances[annotationID].end, activity, annotationID);
-	annotation.unselect();
+	if(annotation != undefined)
+		annotation.unselect();
 }
 
 TemporalEngine.prototype.removeAnnotationFromGraphs = function(annotationID, origin)
@@ -240,8 +243,10 @@ TemporalEngine.prototype.panLocked = function(pan, source)
 		if(graph.timelineLocked == true && graph.dataSource.source == source)
 		{
 			graph.timeInterval.pan(pan);
-			graph.refreshAnnotations();
 			graph.refreshTimeInterval();
+			graph.refreshAnnotations();
+			graph.updateAnnotations();
+			graph.selectedInterval.updateSelection();
 		}
 	}
 	this.timeline.render();
@@ -378,6 +383,7 @@ TemporalEngine.prototype.removeGraph = function(graph)
 	}
 	this.resizeGraphs();
 	this.updateGraphsPosition();
+	this.updateTimelineLimits();
 }
 
 TemporalEngine.prototype.dropChannel = function(draggieInstance, event, pointer, channel)
@@ -722,9 +728,12 @@ TemporalEngine.prototype.update = function()
 		{
 			var graph = this.graphList[i].graph;
 
-			graph.timeInterval.pan(1000000);
+			graph.timeInterval.pan(500000);
 			graph.refreshAnnotations();
 			graph.refreshTimeInterval();
+			graph.updateAnnotations();
+			graph.selectedInterval.updateSelection();
+			graph.updateCrosshair();
 		}
 		this.timeline.render();
 	}
@@ -734,9 +743,12 @@ TemporalEngine.prototype.update = function()
 		{
 			var graph = this.graphList[i].graph;
 
-			graph.timeInterval.pinch(1000000);
+			graph.timeInterval.pinch(500000);
 			graph.refreshAnnotations();
 			graph.refreshTimeInterval();
+			graph.updateAnnotations();
+			graph.selectedInterval.updateSelection();
+			graph.updateCrosshair();
 		}
 		this.timeline.render();
 	}
@@ -746,9 +758,11 @@ TemporalEngine.prototype.update = function()
 		{
 			var graph = this.graphList[i].graph;
 
-			graph.timeInterval.pan(-1000000);
+			graph.timeInterval.pan(-500000);
 			graph.refreshAnnotations();
 			graph.refreshTimeInterval();
+			graph.updateAnnotations();
+			graph.selectedInterval.updateSelection();
 			graph.updateCrosshair();
 		}
 		this.timeline.render();
@@ -759,9 +773,12 @@ TemporalEngine.prototype.update = function()
 		{
 			var graph = this.graphList[i].graph;
 
-			graph.timeInterval.pinch(-1000000);
+			graph.timeInterval.pinch(-500000);
 			graph.refreshAnnotations();
 			graph.refreshTimeInterval();
+			graph.updateAnnotations();
+			graph.selectedInterval.updateSelection();
+			graph.updateCrosshair();
 		}
 		this.timeline.render();
 	}
@@ -838,7 +855,30 @@ TemporalEngine.prototype.bindGraphAtIndex = function(index, channel, y, begin, e
     	graph.timeInterval.begin = begin;
     	graph.timeInterval.end   = end;
     }
-    
+
+    if(Number(graph.timeInterval.begin) < Number(graph.readings[0].instant))
+	{
+		graph.timeInterval.begin = graph.readings[0].instant;
+	}
+	if(Number(graph.timeInterval.begin) > Number(graph.readings[graph.readings.length-1].instant))
+	{
+		graph.timeInterval.begin = graph.readings[0].instant;
+		graph.timeInterval.end = graph.readings[graph.readings.length-1].instant;
+		if(Number(graph.timeInterval.end) - Number(graph.timeInterval.begin) > TimeUtils.days(1))
+		{
+			graph.timeInterval.begin = Number(graph.timeInterval.end) - TimeUtils.days(1);
+		}
+	}
+
+	if(graph.timeInterval.end < graph.readings[0].instant)
+	{
+		graph.timeInterval.end = graph.readings[graph.readings.length-1].instant;
+		if(Number(graph.timeInterval.end) - Number(graph.timeInterval.begin) > TimeUtils.days(1))
+		{
+			graph.timeInterval.begin = Number(graph.timeInterval.end) - TimeUtils.days(1);
+		}
+	}
+
     this.interactiveObjectList[graph.element.id] = graph;
 
     this.graphList[graph.element.id] = [];
@@ -853,13 +893,14 @@ TemporalEngine.prototype.bindGraphAtIndex = function(index, channel, y, begin, e
 		.style("top", y+"px");
 
 	
-	this.updateGraphsPosition();
 	graph.timeInterval.buildDataInterval();
 	graph.refreshTimeInterval();
     this.addGraphToTimeline(graph);
 
     this.resizeGraphs();
     this.updateGraphsPosition();
+
+	this.updateTimelineLimits();
 
     return graph;
 }
@@ -892,8 +933,38 @@ TemporalEngine.prototype.bindGraph = function(channel)
 	this.resizeGraphs();
 	this.updateGraphsPosition();
 	graph.updateLastPosition();
+
+	this.updateTimelineLimits();
 }
 
+TemporalEngine.prototype.updateTimelineLimits = function()
+{
+	var begin = 9999999999999999;
+	var end   = -9999999999999999; 
+
+	for(var i in this.graphList)
+	{
+		if(this.graphList[i].graph.timeInterval.begin < begin)
+		{
+			begin = this.graphList[i].graph.timeInterval.begin;
+		}
+		if(this.graphList[i].graph.timeInterval.end > end)
+		{
+			end = this.graphList[i].graph.timeInterval.end;
+		}
+	}
+
+	if(Number(end)-Number(begin) < TimeUtils.days(5))
+	{
+		begin = Number(end)-Number(TimeUtils.days(5));
+	}
+
+	this.timeline.begin = begin;
+	this.timeline.end = end;
+	this.timeline.updateInterval();
+	this.timeline.updateDays();
+	this.timeline.render();
+}
 
 TemporalEngine.prototype.resizeGraphs = function()
 {

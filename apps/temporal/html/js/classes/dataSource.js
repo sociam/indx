@@ -62,15 +62,25 @@ DataSource.prototype.loadGFormat = function(ds)
 	if(typeof ds.attributes.units !== "undefined")
 		this.unit = ds.attributes.units;
 
+	var lastInstant = undefined;
+
 	for(var index in ds.attributes.segments)
 	{
+		// console.log(ds.attributes.segments[index].attributes);
 		var begin = Number(ds.attributes.segments[index].attributes.start[0]);
 		var delta = Number(ds.attributes.segments[index].attributes.delta[0]);
 
-		// var zeroValue = [];
-		// zeroValue.data = 0;
-		// zeroValue.instant = begin-1;
-		// this.readings.push(zeroValue);
+		if(lastInstant == undefined)
+			lastInstant = begin;
+
+		if(begin - lastInstant > 900000) 
+		{
+			var zeroValue = [];
+			zeroValue.data = 0;
+			zeroValue.instant = lastInstant+1;
+			this.readings.push(zeroValue);
+			lastInstant = begin;
+		}
 
 		for(var i in ds.attributes.segments[index].attributes.values)
 		{
@@ -78,15 +88,9 @@ DataSource.prototype.loadGFormat = function(ds)
 			aux.data = ds.attributes.segments[index].attributes.values[i];
 			aux.instant = begin+i*delta;
 			this.readings.push(aux);
+			lastInstant = aux.instant;
 		}
-
-		// var zeroValue = [];
-		// zeroValue.data = 0;
-		// zeroValue.instant = this.readings[this.readings.length-1].instant+1;
-		// this.readings.push(zeroValue);
 	}
-	// console.log(this)
-
 }
 
 DataSource.prototype.importTemporalFormat = function()

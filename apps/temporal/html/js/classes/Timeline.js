@@ -38,17 +38,7 @@ Timeline.prototype.initDays = function()
 	var lastMoment  = this.end;
 
 
-	var toMidnight = TimeUtils.toMidnight(firstMoment);
-	var day = TimeUtils.days(1);
-
-	var moment = Number(firstMoment)+Number(toMidnight);
-
-	this.days = [];
-	while(moment < Number(lastMoment))
-	{
-		this.days.push(new Date(moment));
-		moment += day;
-	}
+	this.updateDays();
 }
 
 Timeline.prototype.updateDays = function()
@@ -57,15 +47,23 @@ Timeline.prototype.updateDays = function()
 	var lastMoment  = this.end;
 
 	var toMidnight = TimeUtils.toMidnight(firstMoment);
-	var day = TimeUtils.days(1);
+	var interval = TimeUtils.mostConvenientDayScale(this.interval);
 
-	var moment = Number(firstMoment)+Number(toMidnight);
+	var moment;
+	if(toMidnight > TimeUtils.hours(23))	
+	{
+		moment = Number(firstMoment)-(TimeUtils.days(1)-Number(toMidnight));
+	}
+	else
+	{
+		moment = Number(firstMoment)+Number(toMidnight);
+	}
 
 	this.days = [];
 	while(moment < Number(lastMoment))
 	{
 		this.days.push(new Date(moment));
-		moment += day;
+		moment += interval;
 	}
 }
 
@@ -266,40 +264,39 @@ Timeline.prototype.renderGrid = function ()
 
 	begin -= delta;
 
-	var ticks = [];
+	// var ticks = [];
 
-	for(var i=+(begin); i < +(end); i+=+(scale))
-	{
-		ticks.push(i);
-	}
+	// for(var i=+(begin); i < +(end); i+=+(scale))
+	// {
+	// 	ticks.push(i);
+	// }
 
-	var group = this.graph.selectAll(".interval");
+	// var group = this.graph.selectAll(".interval");
+
+	// var n = 0;
+	// group.each(function() { ++n; });
+
+	// if(n == 0)
+	// {
+	// 	group = this.graph.append("g").attr("class", "grid interval");
+	// }
+
+	// group = group.selectAll("line").data(ticks);
 	
+	// group.enter()
+	// 	.append("line")
+	// 	.attr("x1", x)
+	// 	.attr("y1", 0)
+	// 	.attr("x2", x)
+	// 	.attr("y2", 90)
+	// 	.attr("class", "tick");
 
-	var n = 0;
-	group.each(function() { ++n; });
+	// group.transition()
+	// 	.duration(0)
+	// 	.attr("x1", x)
+	// 	.attr("x2", x);
 
-	if(n == 0)
-	{
-		group = this.graph.append("g").attr("class", "grid interval");
-	}
-
-	group = group.selectAll("line").data(ticks);
-	
-	group.enter()
-		.append("line")
-		.attr("x1", x)
-		.attr("y1", 0)
-		.attr("x2", x)
-		.attr("y2", 90)
-		.attr("class", "tick");
-
-	group.transition()
-		.duration(0)
-		.attr("x1", x)
-		.attr("x2", x);
-
-	group.exit().remove();
+	// group.exit().remove();
 
 	var ticks = [];
 	ticks.push(0.5);
@@ -387,8 +384,8 @@ Timeline.prototype.panTime = function(pan)
 
 Timeline.prototype.pinch = function(touch, distance, angle)
 {
-	this.begin = new Date(this.begin.valueOf()-distance*5000);
-	this.end = new Date(this.end.valueOf()+distance*5000);
+	this.begin = new Date(this.begin.valueOf()-distance*50000);
+	this.end = new Date(this.end.valueOf()+distance*50000);
 	this.updateInterval();
 	this.render();
 }
