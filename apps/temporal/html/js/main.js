@@ -737,13 +737,13 @@ TemporalEngine.prototype.update = function()
 		}
 		this.timeline.render();
 	}
-	else if(this.keyMap[38] == true) // up
+	else if(this.keyMap[39] == true) // right
 	{
 		for(var i in this.graphList)
 		{
 			var graph = this.graphList[i].graph;
 
-			graph.timeInterval.pinch(500000);
+			graph.timeInterval.pan(-500000);
 			graph.refreshAnnotations();
 			graph.refreshTimeInterval();
 			graph.updateAnnotations();
@@ -752,13 +752,13 @@ TemporalEngine.prototype.update = function()
 		}
 		this.timeline.render();
 	}
-	else if(this.keyMap[39] == true) // right
+	if(this.keyMap[38] == true) // up
 	{
 		for(var i in this.graphList)
 		{
 			var graph = this.graphList[i].graph;
 
-			graph.timeInterval.pan(-500000);
+			graph.timeInterval.pinch(500000);
 			graph.refreshAnnotations();
 			graph.refreshTimeInterval();
 			graph.updateAnnotations();
@@ -782,6 +782,8 @@ TemporalEngine.prototype.update = function()
 		}
 		this.timeline.render();
 	}
+	
+	
 
 	this.updateDebug();
 	this.updateGraphs();
