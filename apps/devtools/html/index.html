@@ -47,17 +47,52 @@
 			  <table class="table">
 			  	<thead><th>Name</th><th>Status</th><th>Actions</th></thead>
 			  	<tbody>
-					<tr ng-repeat="test in tests">
-						<td ng-if="test.built"><a href="/{{test.url}}">{{test.name}}</a></td>
-						<td ng-if="!test.built">{{test.name}}</td>
+					<tr ng-repeat="test in tests.models">
+						<td ng-if="test.get('built')"><a href="/{{test.get('url')}}">{{test.get('name')}}</a></td>
+						<td ng-if="!test.get('built')">{{test.get('name')}}</td>
 						<td>
-							<div ng-if="test.built">---</div>
-							<div ng-if="!test.built">Tests have not been run.</div>
+							<div ng-if="test.get('built')">
+								<div ng-repeat="result in test.get('results')" ng-class="{testpass:result.pass, testfail:!result.pass}">
+									<a href="#" ng-click="activeTest.result = result">{{result.name}} (Failed {{result.failures}} / {{result.tests}})</a>
+								</div>
+							</div>
+							<div ng-if="!test.get('built')">Tests have not been run.</div>
 						</td>
-						<td><button class="btn btn-primary" ng-disabled="running_tests[test.name]" ng-click="run_test(test)">Run</button></td>
+						<td><button class="btn btn-primary" ng-disabled="test.is_running" ng-click="test.run()">Run</button></td>
 					</tr>
 				</tbody>
 			  </table>
+			</div>
+			<div ng-if="activeTest.result" class="dialog">
+				<a href="#" ng-click="activeTest.result = undefined">X</a>
+				<table class="table">
+					<tbody>
+						<tr><th>Browser</th><td>{{activeTest.result.name}} ({{activeTest.result.name}})</td></tr>
+						<tr><th>Tests</th><td>{{activeTest.result.tests}}</td></tr>
+						<tr><th>Errors</th><td>{{activeTest.result.errors}}</td></tr>
+						<tr><th>Failures</th><td>{{activeTest.result.failures}}</td></tr>
+						<tr><th>Timestamp</th><td>{{activeTest.result.timestamp}}</td></tr>
+						<tr><th>Time</th><td>{{activeTest.result.time}}</td></tr>
+					</tbody>
+				</table>
+				<h3>Results</h3>
+				<table class="table">
+					<thead>
+						<tr><th>Name</th><th>Passed</th><th>Time</th></tr>
+					</thead>
+						<tbody ng-repeat="testcase in activeTest.result.testcases">
+							<tr>
+								<td><b>{{testcase.name}}</b> - {{testcase.classname}}</td>
+								<td>{{testcase.passed}}</td>
+								<td>{{testcase.time}}</td>
+							</tr>
+							<tr ng-if="testcase.failure">
+								<td colspan="3" class="testfail">
+									{{testcase.failure}}
+								</td>
+							</tr>
+						</tbody>
+				</table>
 			</div>
 			<div class="tab-pane" id="other">
 			  <p>other</p>
@@ -84,6 +119,7 @@
   <!-- indx -->
   <script src="/js/indx.js" type="text/javascript"></script>
   <script src="/js/indx-utils.js" type="text/javascript"></script>
+  <script src="/js/indx-collection.js" type="text/javascript"></script>
   <script src="/components/toolbar/toolbar.js" type="text/javascript"></script>
   <script src="js/devtools.js" type="text/javascript"></script>
 </html>

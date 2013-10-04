@@ -1,3 +1,4 @@
+/* global $, console, angular */
 angular
 	.module('devtools', ['ui','indx'])
 	.controller('main', function($scope, client, utils) {
@@ -27,8 +28,76 @@ angular
 			}).fail(function(x) { console.log(x); });
 		};
 
+		var Test = Backbone.Model.extend({
+			idAttribute: 'name',
+			initialize: function () {
+				Backbone.Model.prototype.initialize.apply(this, arguments);
+				var that = this;
+				that.get_results();
+			},
+			run: function () {
+				var that = this;
+				this.is_running = true;
+				$.post('api/tests/run_test?name=' + this.get('name'), function (r) {
+					that.is_running = false;
+					that.set(r.response);
+					that.get_results().then(function () {
+						u.safe_apply($scope);
+					});
+				});
+			},
+			get_results: function () {
+				console.log('GET RESULTS', this);
+				var that = this,
+					promise = $.Deferred();
+				$.get('/' + this.get('url') + '/test-results.xml', function (data) {
+					var $tests = $(data).find('testsuite');
+
+					that.set('results', $tests.map(function () {
+						var $test = $(this),
+							failures = Number($test.attr('failures')),
+							errors = Number($test.attr('errors'));
+
+						return {
+							name: $test.attr('name'),
+							//fullname: $test.attr('name'),
+							failures: failures,
+							errors: errors,
+							tests: Number($test.attr('tests')),
+							pass: failures + errors === 0,
+							timestamp: $test.attr('timestamp'),
+							time: $test.attr('time'),
+							testcases: $test.find('testcase').map(function () {
+								var $testcase = $(this),
+									$failure = $testcase.find('failure');
+								return {
+									name: $testcase.attr('name'),
+									classname: $testcase.attr('classname'),
+									time: Number($testcase.attr('time')),
+									passed: !!$failure.length,
+									failure: $failure.text()
+								};
+							}).get()
+						};
+					}).get());
+
+					console.log(that.get('results'))
+					u.safe_apply($scope);
+
+					promise.resolve();
+				});
+				return promise;
+			}
+		});
+
+		var Tests = Backbone.Collection.extend({
+			model: Test
+		});
+
+		var tests = new Tests();
+
 		$.get('api/tests/list_tests', function (r) {
-			$scope.tests = r.response;
+			tests.reset(r.response);
 		});
 
 		$.get('api/docs/list_docs', function (r) {
@@ -47,18 +116,10 @@ angular
 			});
 		};
 
-		$scope.running_tests = {};
-		$scope.run_test = function (test) {
-			$scope.running_tests[test.name] = true;
-			$.post('api/tests/run_test?name=' + test.name, function (r) {
-				$scope.running_tests[test.name] = false;
-				Object.keys(r.response).forEach(function (k) {
-					test[k] = r.response[k];
-				});
-				u.safe_apply($scope);
-			});
-		};
-
+		_.extend($scope, {
+			tests: tests,
+			activeTest: {}
+		});
 
 		window.$scope = $scope;
 	});
