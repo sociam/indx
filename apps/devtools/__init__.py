@@ -129,7 +129,7 @@ class DevToolsApp(BaseHandler):
         if not config:
             return
         logging.debug('running tests %s' % config['name'])
-        cmd_str = 'karma start %s' % (config['config_path'])
+        cmd_str = 'lib/tests/node_modules/.bin/karma start %s' % (config['config_path'])
         cmd_str += ' --reporters junit'
         logging.debug(cmd_str)
         cmd = subprocess.Popen([cmd_str], stdout=subprocess.PIPE, shell=True)
