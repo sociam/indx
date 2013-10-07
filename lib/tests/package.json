@@ -8,8 +8,10 @@
   },
   "author": "",
   "license": "BSD",
-
   "dependencies": {
-    "karma": "~0.8.8"
+    "karma": "~0.8.8",
+    "optimist": "~0.6.0",
+    "node-promise": "~0.5.8",
+    "underscore": "~1.5.2"
   }
 }
