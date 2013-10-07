@@ -37,8 +37,8 @@
 							<div ng-if="doc.built">Built</div>
 							<div ng-if="!doc.built">Documentation has not been built.</div>
 						</td>
-						<td><button class="btn btn-primary" ng-disabled="building_docs[doc.name]" ng-click="build_doc(doc)" ng-if="doc.built">Rebuild</button>
-						<button class="btn btn-primary" ng-disabled="building_docs[doc.name]" ng-click="build_doc(doc)" ng-if="!doc.built">Build</button></td>
+						<td><button class="btn btn-primary btn-build" ng-disabled="building_docs[doc.name]" ng-click="build_doc(doc)" ng-if="doc.built">Rebuild</button>
+						<button class="btn btn-primary btn-build" ng-disabled="building_docs[doc.name]" ng-click="build_doc(doc)" ng-if="!doc.built">Build</button></td>
 					</tr>
 				</tbody>
 			  </table>
@@ -58,7 +58,7 @@
 							</div>
 							<div ng-if="!test.get('built')">Tests have not been run.</div>
 						</td>
-						<td><button class="btn btn-primary" ng-disabled="test.is_running" ng-click="test.run()">Run</button></td>
+						<td><button class="btn btn-primary btn-run" ng-disabled="test.is_running" ng-click="test.run()">Run</button></td>
 					</tr>
 				</tbody>
 			  </table>
