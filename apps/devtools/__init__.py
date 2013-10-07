@@ -129,8 +129,9 @@ class DevToolsApp(BaseHandler):
         if not config:
             return
         logging.debug('running tests %s' % config['name'])
-        cmd_str = 'lib/tests/node_modules/.bin/karma start %s' % (config['config_path'])
+        cmd_str = 'node lib/tests/run.js %s' % (config['config_path'])
         cmd_str += ' --reporters junit'
+        cmd_str += ' --output-directory=%s' % (config['path'])
         logging.debug(cmd_str)
         cmd = subprocess.Popen([cmd_str], stdout=subprocess.PIPE, shell=True)
         out = cmd.communicate()[0]
@@ -143,6 +144,7 @@ class DevToolsApp(BaseHandler):
             newpath = config['path'] + os.path.sep + 'test-results.xml'
             if os.path.exists(newpath):
                 os.remove(newpath)
+            # move test-results.xml to where we want
             shutil.move(results_file, config['path'] + os.path.sep)
         config['build_output'] = out;
         config['built'] = os.path.exists(config['path']);
