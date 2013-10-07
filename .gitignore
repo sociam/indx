@@ -16,4 +16,5 @@ osx_app/*.egg
 tags
 node_modules
 apps/devtools/html/docs
+apps/devtools/html/tests
 lib/docs/tests/html
