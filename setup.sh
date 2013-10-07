@@ -24,3 +24,6 @@ source env/bin/activate
 # install the required modules
 pip install --ignore-installed --upgrade -r requirements.txt
 
+# install doc and test framework dependencies
+(cd lib/docs; npm install)
+(cd lib/tests; npm install)
