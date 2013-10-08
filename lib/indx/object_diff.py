@@ -144,7 +144,7 @@ class ObjectSetDiff:
                 # NEW SUBJECT
                 self.add_diff_query("add_subject", obj_id)
                 for predicate, sub_objs in obj.items():
-                    if predicate[0] == "@":
+                    if len(predicate) > 0 and predicate[0] == "@":
                         continue
 
                     if sub_objs is None or len(sub_objs) < 1:
@@ -163,7 +163,7 @@ class ObjectSetDiff:
                 all_predicates = set(obj.keys() + prev_obj.keys())
                 
                 for predicate in all_predicates:
-                    if predicate[0] == "@":
+                    if len(predicate) > 0 and predicate[0] == "@":
                         continue
 
 
