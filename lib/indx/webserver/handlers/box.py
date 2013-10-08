@@ -251,7 +251,7 @@ class BoxHandler(BaseHandler):
                         actual_version = e.version
                         return self.return_obsolete(request,{"description": "Document obsolete. Please update before putting", '@version':actual_version})            
                     else:
-                        BoxHandler.log(logging.ERROR, "Exception trying to ", extra = {"request": request, "token": token})
+                        BoxHandler.log(logging.ERROR, "Exception trying to PUT {0}".format(e), extra = {"request": request, "token": token})
                         return self.return_internal_error(request);
             elif request.method == 'DELETE':
                 BoxHandler.log(logging.DEBUG, "BoxHandler files DELETE request", extra = {"request": request, "token": token})
@@ -271,7 +271,7 @@ class BoxHandler(BaseHandler):
                         actual_version = e.version
                         return self.return_obsolete(request,{"description": "Document obsolete. Please update before putting", '@version':actual_version})            
                     else:
-                        BoxHandler.log(logging.ERROR, "Exception trying to ", extra = {"request": request, "token": token})
+                        BoxHandler.log(logging.ERROR, "Exception trying to DELETE {0} ".format(e), extra = {"request": request, "token": token})
                         return self.return_internal_error(request);
             else:
                 BoxHandler.log(logging.DEBUG, "BoxHandler files UNKNOWN request", extra = {"request": request, "token": token})
