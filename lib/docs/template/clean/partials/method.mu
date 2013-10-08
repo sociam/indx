@@ -1,5 +1,4 @@
-<a id="{{id}}"></a>
-<div class="method " id="{{id}}">
+<article class="method" id="{{id}}">
   {{#construct}}
     <h4>Constructor</h4>
     <code class="header-example">
@@ -98,5 +97,5 @@
       </div>
     {{/result}}
   </div>
-</div>
+</article>
 <hr>
