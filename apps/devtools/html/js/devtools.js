@@ -113,5 +113,20 @@ angular
 			activeTest: {}
 		});
 
+		// declares box in devtoosl
+
+		var load_box = function(bid) {
+			client.store.get_box(bid).then(function(box) {
+				console.log('boxx > ', box);
+				window.box = box;
+			});
+		};
+
+		$scope.$watch('selected_box + selected_user', function() {
+			if ($scope.selected_box) {
+				load_box($scope.selected_box);
+			}
+		});
+
 		window.$scope = $scope;
 	});
