@@ -1,5 +1,25 @@
 /* global describe, angular, beforeEach, it, waitsFor, dump, expect, runs, console */
 
+/* Some test code from devtools js
+
+		window.s = client.store;
+		window.create_random_objs = function(n, fn) {
+			var ids = u.range(n || 100).map(function() {
+				return 'random-generated-'+u.guid();
+			});
+			window.box.get_obj(ids).then(function(models) {
+				console.log('models >> ', models);
+				models.map(function(m) {
+					if (fn) { m.set(fn()); }
+					else {
+						m.set({i:Math.random(), name:u.guid()});
+					}
+					m.save();
+				});
+			}).fail(function(x) { console.log(x); });
+		};
+*/
+
 (function (jasmine, $, _, Backbone) {
 	'use strict';
 
