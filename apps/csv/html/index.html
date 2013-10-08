@@ -33,7 +33,7 @@
 		  	</div>	
 		  	<div ng-show='output.format=="output_gannotation"' class="output_options">
 		  		<table>
-		  			<tr><td>Start Time Column: </td><td><select ng-model='output.gannotate.startcol'ng-options='c.newname for c in cols'></select></td></tr>
+		  			<tr><td>Start Time Column: </td><td><select ng-model='output.gannotate.startcol' ng-options='c.newname for c in cols'></select></td></tr>
 		  			<tr><td>End Time Column:</td><td><select ng-model='output.gannotate.endcol' ng-options='c.newname for c in cols'></select></td></tr>
 		  			<tr><td>Value/Label Column:</td><td><select ng-model='output.gannotate.labelcol' ng-options='c.newname for c in cols'></select></td></tr>
 		  			<tr><td>Source Name:</td><td><input type='text' ng-model='output.gannotate.source' placeholder="e.g., my cool csv file"></input></td></tr>

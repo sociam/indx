@@ -147,6 +147,13 @@ path {
 	fill: none;
 }
 
+.timelineLock
+{
+	position: absolute;
+	bottom: 0px;
+	left: 2px;
+}
+
 #graphSelection
 {
 

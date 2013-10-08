@@ -90,6 +90,24 @@ TimeUtils.parseISO8601 = function (string) {
     return new Date(time);
 }
 
+TimeUtils.mostConvenientDayLabelScale = function(interval)
+{
+	interval *= 1000;
+	if(+(interval) < +(this.days(6)))
+		return this.days(1);
+	var days = parseInt(interval/6/this.days(1));
+	return days*this.days(1);
+}
+
+TimeUtils.mostConvenientDayScale = function(interval)
+{
+	interval *= 1000;
+	if(+(interval) < +(this.days(6)))
+		return this.days(1);
+	var days = parseInt(interval/6/this.days(1));
+	return days*this.days(1);
+}
+
 TimeUtils.mostConvenientTimeScale = function(interval)
 {
 	interval *= 1000;
@@ -102,7 +120,7 @@ TimeUtils.mostConvenientTimeScale = function(interval)
 	else if(interval < this.days(2))
 		return this.hours(1);
 
-	return this.hours(3);
+	return this.days(1);
 }
 
 TimeUtils.days = function(days)
@@ -148,6 +166,20 @@ TimeUtils.roundHourUp = function(time)
 	var diff = +(time)%3600000;
 	return new Date(+(time)+(3600000-diff));
 }
+
+TimeUtils.roundDay = function(time)
+{
+	var diff = +(time)%86400000;
+	return new Date(+(time)-diff);
+}
+
+TimeUtils.roundDayUp = function(time)
+{
+	var diff = +(time)%86400000;
+	return new Date(+(time)+(86400000-diff));
+}
+
+
 
 TimeUtils.setDateMinusDays = function(date, days, target)
 {

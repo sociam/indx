@@ -13,6 +13,8 @@ function Timeline(target)
 
 	this.windowList = [];
 	this.updateLastPosition();
+
+	this.annotations = {};
 }
 
 Timeline.prototype = tEngine.clone(InteractiveObject.prototype);
@@ -36,17 +38,7 @@ Timeline.prototype.initDays = function()
 	var lastMoment  = this.end;
 
 
-	var toMidnight = TimeUtils.toMidnight(firstMoment);
-	var day = TimeUtils.days(1);
-
-	var moment = Number(firstMoment)+Number(toMidnight);
-
-	this.days = [];
-	while(moment < Number(lastMoment))
-	{
-		this.days.push(new Date(moment));
-		moment += day;
-	}
+	this.updateDays();
 }
 
 Timeline.prototype.updateDays = function()
@@ -55,15 +47,23 @@ Timeline.prototype.updateDays = function()
 	var lastMoment  = this.end;
 
 	var toMidnight = TimeUtils.toMidnight(firstMoment);
-	var day = TimeUtils.days(1);
+	var interval = TimeUtils.mostConvenientDayScale(this.interval);
 
-	var moment = Number(firstMoment)+Number(toMidnight);
+	var moment;
+	if(toMidnight > TimeUtils.hours(23))	
+	{
+		moment = Number(firstMoment)-(TimeUtils.days(1)-Number(toMidnight));
+	}
+	else
+	{
+		moment = Number(firstMoment)+Number(toMidnight);
+	}
 
 	this.days = [];
 	while(moment < Number(lastMoment))
 	{
 		this.days.push(new Date(moment));
-		moment += day;
+		moment += interval;
 	}
 }
 
@@ -105,13 +105,13 @@ Timeline.prototype.renderDays = function()
 Timeline.prototype.addGraph = function(graph)
 {
 	var window = new TimelineWindow(this.graph, graph, this);
-	tEngine.interactiveObjectList["timelineWindow"+graph.element.id] = window;
+	// tEngine.interactiveObjectList["timelineWindow"+graph.element.id] = window;
 	this.windowList.push(window);
 }
 
 Timeline.prototype.removeGraph = function(graph)
 {
-	delete tEngine.interactiveObjectList["timelineWindow"+graph.element.id];
+	// delete tEngine.interactiveObjectList["timelineWindow"+graph.element.id];
 	for(var index in this.windowList)
 	{
 		if(this.windowList[index].graph == graph)
@@ -188,6 +188,53 @@ Timeline.prototype.renderLabels = function(target)
 	labelGroup.exit().remove();
 }
 
+Timeline.prototype.addAnnotation = function(annotationID, activity)
+{
+	var aux = [];
+
+	aux.begin = activity.instances[annotationID].begin;
+	aux.end = activity.instances[annotationID].end;
+	aux.activity = activity;
+	aux.visible = false;
+
+	this.annotations[annotationID] = aux;
+
+	this.renderAnnotations();
+}
+
+Timeline.prototype.removeAnnotation = function(annotationID)
+{
+	delete this.annotations[annotationID];
+}
+
+Timeline.prototype.renderAnnotations = function()
+{
+	var x = d3.time.scale().domain([this.begin, this.end]).range([0, this.getWidth()]);
+	var y = d3.scale.linear().domain([this.maxValue, this.minValue]).range([0, this.getHeight()-this.footerHeight]);
+
+	this.graph.selectAll(".timelineAnnotations").remove();
+	
+	group = this.graph.append("g").attr("class", "timelineAnnotations");
+
+	for(var i in this.annotations)
+	{
+		var instance = this.annotations[i];
+		var mid = x(Number(instance.begin)+(Number(instance.end)-Number(instance.begin))/2);
+
+		var points = mid+",35 "+(mid-7)+",20 "+(mid+7)+",20";
+		group.append("polygon")
+			.attr("points", points)
+			.attr("class", "timelineAnnotation")
+			.attr("opacity", function() {
+				if(instance.activity.visible == true)
+					return "0.9";
+				else
+					return "0.2";
+			})
+			.attr("fill",tEngine.getColor(instance.activity.color));
+	}
+}
+
 Timeline.prototype.render = function()
 {
 	this.graph.selectAll(".window").remove();
@@ -196,7 +243,7 @@ Timeline.prototype.render = function()
 	{
 		this.windowList[i].render();
 	}
-
+	this.renderAnnotations();
 	this.renderGrid();
 	this.renderLabels(this.graph);
 }
@@ -217,40 +264,39 @@ Timeline.prototype.renderGrid = function ()
 
 	begin -= delta;
 
-	var ticks = [];
+	// var ticks = [];
 
-	for(var i=+(begin); i < +(end); i+=+(scale))
-	{
-		ticks.push(i);
-	}
+	// for(var i=+(begin); i < +(end); i+=+(scale))
+	// {
+	// 	ticks.push(i);
+	// }
 
-	var group = this.graph.selectAll(".interval");
+	// var group = this.graph.selectAll(".interval");
+
+	// var n = 0;
+	// group.each(function() { ++n; });
+
+	// if(n == 0)
+	// {
+	// 	group = this.graph.append("g").attr("class", "grid interval");
+	// }
+
+	// group = group.selectAll("line").data(ticks);
 	
+	// group.enter()
+	// 	.append("line")
+	// 	.attr("x1", x)
+	// 	.attr("y1", 0)
+	// 	.attr("x2", x)
+	// 	.attr("y2", 90)
+	// 	.attr("class", "tick");
 
-	var n = 0;
-	group.each(function() { ++n; });
+	// group.transition()
+	// 	.duration(0)
+	// 	.attr("x1", x)
+	// 	.attr("x2", x);
 
-	if(n == 0)
-	{
-		group = this.graph.append("g").attr("class", "grid interval");
-	}
-
-	group = group.selectAll("line").data(ticks);
-	
-	group.enter()
-		.append("line")
-		.attr("x1", x)
-		.attr("y1", 0)
-		.attr("x2", x)
-		.attr("y2", 90)
-		.attr("class", "tick");
-
-	group.transition()
-		.duration(0)
-		.attr("x1", x)
-		.attr("x2", x);
-
-	group.exit().remove();
+	// group.exit().remove();
 
 	var ticks = [];
 	ticks.push(0.5);
@@ -283,8 +329,22 @@ Timeline.prototype.renderGrid = function ()
 	this.renderDays();
 }
 
+Timeline.prototype.touchStarted = function(touch)
+{
+	for(var i in this.windowList)
+	{
+		if(tEngine.testCollision(touch.position, this.windowList[i]))
+		{
+			touch.setTarget(this.windowList[i]);
+			this.windowList[i].touchStarted(touch);
+		}
+	}
+}
+
 Timeline.prototype.pan = function(touch, mouse, inverse, interval)
 {
+
+
 	if(tEngine.countTouchesObjectIsTarget(this) == 1 && this.dragging == false || typeof mouse !== "undefined")
 	{
 		if(typeof mouse === "undefined")
@@ -324,8 +384,8 @@ Timeline.prototype.panTime = function(pan)
 
 Timeline.prototype.pinch = function(touch, distance, angle)
 {
-	this.begin = new Date(this.begin.valueOf()-distance*5000);
-	this.end = new Date(this.end.valueOf()+distance*5000);
+	this.begin = new Date(this.begin.valueOf()-distance*50000);
+	this.end = new Date(this.end.valueOf()+distance*50000);
 	this.updateInterval();
 	this.render();
 }

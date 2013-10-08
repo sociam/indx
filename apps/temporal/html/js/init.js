@@ -2,7 +2,7 @@ tEngine.graphListElement = $("#left")[0];
 
 tEngine.setTimeline($("#timeline"))
 
-tEngine.bindButton(document.getElementById('debugButton'));
+tEngine.bindDebugButton(document.getElementById('debugButton'));
 
 document.ontouchmove   = function(event) 
 {
@@ -32,7 +32,9 @@ document.onmouseup   = function(event) {tEngine.disableDrag.call(tEngine, event)
 document.onkeydown = function(event) {tEngine.pressKey.call(tEngine, event);};
 document.onkeyup = function(event) {tEngine.releaseKey.call(tEngine, event);};
 document.onmousewheel = function(event) {tEngine.wheel.call(tEngine, event);}; 
+
 window.onbeforeunload = function(event)   { tEngine.unload.call(tEngine, event);};
+window.onresize = function(event) { tEngine.resize.call(tEngine, event);};
 
 window.setTimeout(function() 
 	{
@@ -90,12 +92,21 @@ store.login('indx', 'indx').then(function(status)
     //         });
     //     }, 0);
     // });
-    var ds = new DataSource();
-    ds.generateRandomData();
-    tEngine.bindGraph(tEngine.addChannel("Fitbit: Calories", ds));
-    tEngine.bindGraph(tEngine.addChannel("Fitbit: Distance", ds));
-    tEngine.bindGraph(tEngine.addChannel("Fitbit: Steps", ds));
-    tEngine.loadedSource(); 
+    // tEngine.totalSources++;
+    // tEngine.totalSources++;
+    // var ds = new DataSource();
+    // ds.generateRandomData();
+    // tEngine.bindGraph(tEngine.addChannel("Fitbit: Calories", ds));
+
+    // var ds = new DataSource();
+    // ds.generateRandomData();
+    // tEngine.bindGraph(tEngine.addChannel("Fitbit: Distance", ds));
+
+    // var ds = new DataSource();
+    // ds.generateRandomData();
+    // tEngine.bindGraph(tEngine.addChannel("Fitbit: Steps", ds));
+
+    // tEngine.loadedSource(); 
 
     // store.get_box('nike').then(function(box) 
     // {
@@ -109,7 +120,7 @@ store.login('indx', 'indx').then(function(status)
     //     window.setTimeout(function ()
     //     {
     //         console.log("Get obj ids...")
-    //         var objs = box.get_obj_ids();
+    //         // var objs = box.get_obj_ids();
     //         box.get_obj(box.get_obj_ids()).then(function(objs) {
     //             // console.log(objs);
     //             FuelbandParser.parseData(objs);
@@ -119,7 +130,7 @@ store.login('indx', 'indx').then(function(status)
     //         // var done = 0;
     //         // var objs = objs.slice(10);
     //         // var pb = new ProgressBar(objs.length, 200, "#debugMenu");
-    //         tEngine.totalSources++;
+
     //         // console.log("Building promises list...");
     //         // var promises = [];
     //         // for(var x in objs)
@@ -159,7 +170,8 @@ store.login('indx', 'indx').then(function(status)
     // 		// console.log(objs[i]);
     // 	}
     // });
-    // store.get_box('temporal').then(function(box) 
+
+    // store.get_box('nike').then(function(box) 
     // {
     //     var objs = box.get_obj_ids();
     //     var promises = objs.map(function(oid) 
@@ -173,29 +185,57 @@ store.login('indx', 'indx').then(function(status)
 
     store.get_box('temporal').then(function(box) 
     {
-        tEngine.temporalAnnotationsBox = box;
+        tEngine.temporalBox = box;
         
-        box.get_obj(box.get_obj_ids()).then(function (ds) 
+        box.get_obj(box.get_obj_ids()).then(function (ds)
         {
             for(var i in ds)
             {
-                console.log(ds[i])
-                var activityLabel = ds[i].attributes.activity[0];
+                var dataSegmentPattern = /^(data-segment-)/i;
+                var dataSourcePattern  = /^(data-source-)/i;
+                var annotationPattern  = /^(annotation-)/i;
+                var gtimeseries  = /^(gtimeseries-)/i;
+                
 
-                if(typeof tEngine.activityMap[activityLabel] === "undefined") // if activity doesn't exist
+                if(annotationPattern.test(ds[i].id)) // annotation
                 {
-                    activity = new Activity(activityLabel);
-                    activity.lastID += Math.abs((Math.random() * 1e10) | 0);
-                    activity.setVisible(false);
-                    tEngine.activityMap[activityLabel] = activity;
-                    tEngine.updateActivityList();
-                }
-                else
-                {
-                    activity = tEngine.activityMap[activityLabel];
-                }
+                    var activityLabel = ds[i].attributes.activity[0];
 
-                this.annotationID = activity.addInstanceFromINDX(ds[i].attributes.begin[0], ds[i].attributes.end[0], ds[i].attributes.annot_id[0]);
+                    if(typeof tEngine.activityMap[activityLabel] === "undefined") // if activity doesn't exist
+                    {
+                        activity = new Activity(activityLabel);
+                        activity.lastID += Math.abs((Math.random() * 1e10) | 0);
+                        activity.setVisible(false);
+                        tEngine.activityMap[activityLabel] = activity;
+                        tEngine.updateActivityList();
+                    }
+                    else
+                    {
+                        activity = tEngine.activityMap[activityLabel];
+                    }
+
+                    this.annotationID = activity.addInstanceFromINDX(ds[i].attributes.begin[0], ds[i].attributes.end[0], ds[i].attributes.annot_id[0]);
+                }
+                else if(dataSegmentPattern.test(ds[i].id))
+                {
+                    // console.log(ds[i].id)
+                }
+                else if(dataSourcePattern.test(ds[i].id))
+                {
+                    var dataSource = new DataSource();
+                    dataSource.loadTemporalFormat(ds[i]);
+                    var channel = tEngine.addChannel(dataSource.source+": "+dataSource.name, dataSource);
+                    tEngine.bindGraph(channel);
+                    tEngine.loadedSource();
+                }
+                else if(gtimeseries.test(ds[i].id))
+                {
+                    var dataSource = new DataSource();
+                    dataSource.loadGFormat(ds[i]);
+                    var channel = tEngine.addChannel(dataSource.source+": "+dataSource.name, dataSource);
+                    tEngine.bindGraph(channel);
+                    tEngine.loadedSource();
+                }
             }
         });
 

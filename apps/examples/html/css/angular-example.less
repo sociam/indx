@@ -1,6 +1,17 @@
+@font-face
+{
+font-family: "Lato";
+src: url('/fonts/Lato/Lato-Regular.ttf'),
+}
+@font-face
+{
+font-family: "Lato-Light";
+src: url('/fonts/Lato/Lato-Light.ttf'),
+}
 
 * {
   font-size:12pt;
+  font-family:"Lato" !important;
 }
 
 .example input {
@@ -8,5 +19,21 @@
   font-size:15pt !important;
   height:40px !important;
   text-align:left;
+}
+
+div.example {
+	padding:0px 12px 0px 12px;
+}
+h1 { 
+	margin:0px !important;
+	line-height:1em;
+	padding:0px;
+}
+.main { padding:12pt; }
+input[type=text] {
+	outline:none! important;
+  border:none !important;
+  border-bottom:1px solid #bbb !important;
+  font-size:20pt !important;
 }
 

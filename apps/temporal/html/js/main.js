@@ -31,6 +31,12 @@ function TemporalEngine()
 	this.graphMinHeight = 120;
 }
 
+TemporalEngine.prototype.resize = function()
+{
+	this.resizeGraphs();
+	this.updateGraphsPosition();
+}
+
 TemporalEngine.prototype.getPageSize = function()
 {
 	var size = []; 
@@ -56,7 +62,10 @@ TemporalEngine.prototype.addAnnotationToGraphs = function(annotationID, activity
 		if(this.graphList[x].graph != origin)
 		{
 			var annotation = this.graphList[x].graph.addAnnotation(activity.instances[annotationID].begin, activity.instances[annotationID].end, activity, annotationID);
-			annotation.unselect();
+			if(annotation != undefined)
+			{
+				annotation.unselect();
+			}
 		}
 	}
 }
@@ -80,16 +89,16 @@ TemporalEngine.prototype.unselectAnnotations = function()
 TemporalEngine.prototype.unload = function(event)
 {
 	// this.temporalBox.close();
-	// this.temporalAnnotationsBox.close();
+	// this.temporalBox.close();
 	store.logout();
 	// alert("wut");
 }
 
 TemporalEngine.prototype.addAnnotationToINDX = function(id, begin, end, activity)
 {
-	if(typeof this.temporalAnnotationsBox !== "undefined")
+	if(typeof this.temporalBox !== "undefined")
 	{
-		    this.temporalAnnotationsBox.get_obj("annotation-"+id).then(function (ds) 
+		    this.temporalBox.get_obj("annotation-"+id).then(function (ds) 
                 {
                     ds.set({
                     	annot_id: id,
@@ -102,29 +111,32 @@ TemporalEngine.prototype.addAnnotationToINDX = function(id, begin, end, activity
 	}
 	else
 	{
-		console.error("temporalAnnotationsBox not initialized!");
+		console.error("temporalBox not initialized!");
 	}
 }
 
 TemporalEngine.prototype.removeAnnotationFromINDX = function(id)
 {
-	if(typeof this.temporalAnnotationsBox !== "undefined")
+	this.timeline.removeAnnotation(id);
+	this.timeline.render();
+	if(typeof this.temporalBox !== "undefined")
 	{
-		    this.temporalAnnotationsBox.get_obj("annotation-"+id).then(function (ds) 
+		    this.temporalBox.get_obj("annotation-"+id).then(function (ds) 
                 {
                     ds.destroy();
                 });
 	}
 	else
 	{
-		console.error("temporalAnnotationsBox not initialized!");
+		console.error("temporalBox not initialized!");
 	}
 }
 
 TemporalEngine.prototype.addAnnotationToGraph = function(annotationID, activity, graph)
 {
 	var annotation = graph.addAnnotation(activity.instances[annotationID].begin, activity.instances[annotationID].end, activity, annotationID);
-	annotation.unselect();
+	if(annotation != undefined)
+		annotation.unselect();
 }
 
 TemporalEngine.prototype.removeAnnotationFromGraphs = function(annotationID, origin)
@@ -232,6 +244,9 @@ TemporalEngine.prototype.panLocked = function(pan, source)
 		{
 			graph.timeInterval.pan(pan);
 			graph.refreshTimeInterval();
+			graph.refreshAnnotations();
+			graph.updateAnnotations();
+			graph.selectedInterval.updateSelection();
 		}
 	}
 	this.timeline.render();
@@ -366,7 +381,9 @@ TemporalEngine.prototype.removeGraph = function(graph)
 			delete this.interactiveObjectList[index];
 		}
 	}
+	this.resizeGraphs();
 	this.updateGraphsPosition();
+	this.updateTimelineLimits();
 }
 
 TemporalEngine.prototype.dropChannel = function(draggieInstance, event, pointer, channel)
@@ -704,6 +721,70 @@ TemporalEngine.prototype.update = function()
 	{
 		this.interactiveObjectList[x].update();
 	}
+
+	if(this.keyMap[37] == true) // left
+	{
+		for(var i in this.graphList)
+		{
+			var graph = this.graphList[i].graph;
+
+			graph.timeInterval.pan(500000);
+			graph.refreshAnnotations();
+			graph.refreshTimeInterval();
+			graph.updateAnnotations();
+			graph.selectedInterval.updateSelection();
+			graph.updateCrosshair();
+		}
+		this.timeline.render();
+	}
+	else if(this.keyMap[39] == true) // right
+	{
+		for(var i in this.graphList)
+		{
+			var graph = this.graphList[i].graph;
+
+			graph.timeInterval.pan(-500000);
+			graph.refreshAnnotations();
+			graph.refreshTimeInterval();
+			graph.updateAnnotations();
+			graph.selectedInterval.updateSelection();
+			graph.updateCrosshair();
+		}
+		this.timeline.render();
+	}
+	if(this.keyMap[38] == true) // up
+	{
+		for(var i in this.graphList)
+		{
+			var graph = this.graphList[i].graph;
+
+			graph.timeInterval.pinch(500000);
+			graph.refreshAnnotations();
+			graph.refreshTimeInterval();
+			graph.updateAnnotations();
+			graph.selectedInterval.updateSelection();
+			graph.updateCrosshair();
+		}
+		this.timeline.render();
+	}
+	else if(this.keyMap[40] == true) // down
+	{
+		for(var i in this.graphList)
+		{
+			var graph = this.graphList[i].graph;
+
+			graph.timeInterval.pinch(-500000);
+			graph.refreshAnnotations();
+			graph.refreshTimeInterval();
+			graph.updateAnnotations();
+			graph.selectedInterval.updateSelection();
+			graph.updateCrosshair();
+		}
+		this.timeline.render();
+	}
+	
+	
+
 	this.updateDebug();
 	this.updateGraphs();
 }
@@ -776,7 +857,30 @@ TemporalEngine.prototype.bindGraphAtIndex = function(index, channel, y, begin, e
     	graph.timeInterval.begin = begin;
     	graph.timeInterval.end   = end;
     }
-    
+
+    if(Number(graph.timeInterval.begin) < Number(graph.readings[0].instant))
+	{
+		graph.timeInterval.begin = graph.readings[0].instant;
+	}
+	if(Number(graph.timeInterval.begin) > Number(graph.readings[graph.readings.length-1].instant))
+	{
+		graph.timeInterval.begin = graph.readings[0].instant;
+		graph.timeInterval.end = graph.readings[graph.readings.length-1].instant;
+		if(Number(graph.timeInterval.end) - Number(graph.timeInterval.begin) > TimeUtils.days(1))
+		{
+			graph.timeInterval.begin = Number(graph.timeInterval.end) - TimeUtils.days(1);
+		}
+	}
+
+	if(graph.timeInterval.end < graph.readings[0].instant)
+	{
+		graph.timeInterval.end = graph.readings[graph.readings.length-1].instant;
+		if(Number(graph.timeInterval.end) - Number(graph.timeInterval.begin) > TimeUtils.days(1))
+		{
+			graph.timeInterval.begin = Number(graph.timeInterval.end) - TimeUtils.days(1);
+		}
+	}
+
     this.interactiveObjectList[graph.element.id] = graph;
 
     this.graphList[graph.element.id] = [];
@@ -791,12 +895,14 @@ TemporalEngine.prototype.bindGraphAtIndex = function(index, channel, y, begin, e
 		.style("top", y+"px");
 
 	
-	this.updateGraphsPosition();
 	graph.timeInterval.buildDataInterval();
 	graph.refreshTimeInterval();
     this.addGraphToTimeline(graph);
 
     this.resizeGraphs();
+    this.updateGraphsPosition();
+
+	this.updateTimelineLimits();
 
     return graph;
 }
@@ -829,8 +935,38 @@ TemporalEngine.prototype.bindGraph = function(channel)
 	this.resizeGraphs();
 	this.updateGraphsPosition();
 	graph.updateLastPosition();
+
+	this.updateTimelineLimits();
 }
 
+TemporalEngine.prototype.updateTimelineLimits = function()
+{
+	var begin = 9999999999999999;
+	var end   = -9999999999999999; 
+
+	for(var i in this.graphList)
+	{
+		if(this.graphList[i].graph.timeInterval.begin < begin)
+		{
+			begin = this.graphList[i].graph.timeInterval.begin;
+		}
+		if(this.graphList[i].graph.timeInterval.end > end)
+		{
+			end = this.graphList[i].graph.timeInterval.end;
+		}
+	}
+
+	if(Number(end)-Number(begin) < TimeUtils.days(5))
+	{
+		begin = Number(end)-Number(TimeUtils.days(5));
+	}
+
+	this.timeline.begin = begin;
+	this.timeline.end = end;
+	this.timeline.updateInterval();
+	this.timeline.updateDays();
+	this.timeline.render();
+}
 
 TemporalEngine.prototype.resizeGraphs = function()
 {
@@ -876,10 +1012,12 @@ TemporalEngine.prototype.updateGraphsPosition = function()
 				var graphd3 = d3.select(this.graphList[x].graph.element);
 				var graph = this.graphList[x].graph;
 				this.graphList[x].index = i;
-				graphd3.transition().duration(this.animationDuration).style("top", tEngine.graphYForIndex(i)+"px");
-				// console.log(tEngine.graphYForIndex(i)+"px");
-				// graph.setPositionY(tEngine.graphYForIndex(i));
-				graph.updateLastPosition();
+				graphd3.transition()
+					.duration(this.animationDuration).style("top", tEngine.graphYForIndex(i)+"px")
+					.each("end", function() 
+					{
+						d3.select(this).property("pointer").updateLastPosition()
+					});
 			}
 		}
 	}
@@ -922,7 +1060,7 @@ TemporalEngine.prototype.graphSortFunction = function(a, b)
 		return 1;
 }
 
-TemporalEngine.prototype.bindButton = function(element)
+TemporalEngine.prototype.bindDebugButton = function(element)
 {
 	if(typeof this.interactiveObjectList[element.id] === 'undefined')
     {
@@ -930,6 +1068,12 @@ TemporalEngine.prototype.bindButton = function(element)
     }
 
     var button = new Button(element);
+    
+    button.touchEnded = function(touch)
+	{
+		tEngine.switchDebug();
+	}
+
     this.interactiveObjectList[element.id] = button;
 }
 

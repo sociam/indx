@@ -62,7 +62,9 @@ angular
 					t = function(o) { return Number(o[$scope.output.gtime.timecol.newname]); },
 					v = function(o) { return Number(o[$scope.output.gtime.valcol.newname]); },
 					channel = $scope.output.gtime.channel,
-					source = $scope.output.gtime.source;
+					source = $scope.output.gtime.source,
+					units = $scope.output.gtime.units,
+					data_id = 'gtimeseries-'+source+"-"+channel;
 
 				objs.sort(function(o1, o2) { return t(o1) - t(o2); });
 				var make_segment = function(start_obj, next_obj) {
@@ -98,18 +100,36 @@ angular
 						update_last_segment(obj);
 					}
 				}
-				return u.dict(segments.map(function(s) { return ["gtime-segment-" + s.channel + s.source + s.start, s]; }));
+				var segments_by_id = u.dict(segments.map(function(s) { return ["gtime-segment-" + [s.channel, s.source, s.start].join('-'), s]; }));
+				var dsave = u.deferred(), d = u.deferred();
+				box.get_obj(_(segments_by_id).keys()).then(function(seg_models) {
+					var saved = seg_models.map(function(m) {
+						u.assert(segments_by_id[m.id], "something went wrong :(");
+						m.set(segments_by_id[m.id]);
+						return m.save();
+					});
+					u.when(saved).then(function() { dsave.resolve(seg_models); });
+				});
+
+				dsave.then(function(seg_models) {
+					d.resolve(u.dict([[data_id, { source:source, channel:channel, units:units, segments:seg_models } ]]));
+				});
+				return d.promise();
 			},
 			'output_gannotation': function(objs_by_id) {
-				return u.dict(_(objs_by_id).map(function(obj,id) {
+				var todate = function(n) {
+					if (isNaN(Number(n))) { return new Date(n); }
+					return new Date(Number(n));
+				};
+				return u.dresolve(u.dict(_(objs_by_id).map(function(obj,id) {
 					obj.type = 'gannotation';
-					obj.start = obj[$scope.output.gannotate.startcol];
-					obj.end = obj[$scope.output.gannotate.endcol];
-					obj.label = obj[$scope.output.gannotate.labelcol];
-					obj.source = $scope.output.gannotate.scope;
+					obj.start =todate(obj[$scope.output.gannotate.startcol.newname]);
+					obj.end = todate(obj[$scope.output.gannotate.endcol.newname]);
+					obj.label = obj[$scope.output.gannotate.labelcol.newname];
+					obj.source = $scope.output.gannotate.source;
 					obj.category = $scope.output.gannotate.annotationtype;
 					return [id,obj];
-				}));
+				})));
 			}
 		};
 
@@ -127,34 +147,45 @@ angular
 					var id = row[id_col];
 					by_id[id] = remap_columns(row);
 					return id;
-				});
+				}), dd = u.deferred();
+
+				var dosave = function() {
+					var d = u.deferred();
+					obj_ids = u.uniqstr(obj_ids).filter(function(x) { return x.trim().length > 0; });
+					console.log("asking for ids ", obj_ids);
+					box.get_obj(obj_ids).then(function(models) {
+						var ds = models.map(function(m) {
+							if (by_id[m.id]) {
+								m.set(by_id[m.id]);
+								console.log('saving ', m.attributes);
+								return m.save();
+							}
+						});
+						u.when(ds).then(function() {
+							u.safe_apply($scope, function() {
+								$scope.savedmodels = models;
+								delete $scope.rows;
+								delete $scope.cols;
+								delete $scope.dropped;
+							});
+							d.resolve();
+						}).fail(d.reject);
+					}).fail(d.reject);
+					return d.promise();
+				};
 
 				var filtered = output_filter(by_id);
-				if (filtered) { by_id = filtered; obj_ids = _(by_id).keys(); }
-
-				var d = u.deferred();
-				obj_ids = u.uniqstr(obj_ids).filter(function(x) { return x.trim().length > 0; });
-				console.log("asking for ids ", obj_ids);
-				box.get_obj(obj_ids).then(function(models) {
-					var ds = models.map(function(m) {
-						if (by_id[m.id]) {
-							m.set(by_id[m.id]);
-							console.log('saving ', m.attributes);
-							return m.save();
-						}
-					});
-					u.when(ds).then(function() {
-						u.safe_apply($scope, function() {
-							$scope.savedmodels = models;
-							delete $scope.rows;
-							delete $scope.cols;
-							delete $scope.dropped; 
-						});
-						d.resolve();
-					}).fail(d.reject);
-				});
+				if (filtered) {
+					filtered.then(function(by_id_filtered) {
+						by_id = by_id_filtered;
+						obj_ids = _(by_id).keys();
+						dosave().then(dd.resolve).fail(dd.reject);
+					}).fail(function() { console.error('error during filtering ', e); });
+				} else {
+					dosave().then(dd.resolve).fail(dd.reject);
+				}
+				return dd.promise();
 			} catch(e) { $scope.err(e); console.error(e); }
-			return d.promise();
 		};
 
 		$scope.clearIDExcept = function(c) {
