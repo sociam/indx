@@ -68,7 +68,7 @@
 				</tbody>
 			  </table>
 			</div>
-			<div ng-if="activeTest.result" class="dialog">
+			<div ng-if="activeTest.result" class="dialog" ng-init="onlyfailures = true">
 				<a href="#" ng-click="activeTest.result = undefined">X</a>
 				<table class="table">
 					<tbody>
@@ -81,12 +81,13 @@
 					</tbody>
 				</table>
 				<h3>Results</h3>
+				<label><input type="checkbox" selected="selected" ng-model="onlyfailures">Only show failures</label>
 				<table class="table">
 					<thead>
 						<tr><th>Name</th><th>Passed</th><th>Time</th></tr>
 					</thead>
-						<tbody ng-repeat="testcase in activeTest.result.testcases">
-							<tr>
+						<tbody ng-repeat="testcase in activeTest.result.testcases | filter: { failed: onlyfailures ? true : undefined }">
+							<tr ng-class="{testfail:testcase.failure}">
 								<td><b>{{testcase.name}}</b> - {{testcase.classname}}</td>
 								<td>{{testcase.passed}}</td>
 								<td>{{testcase.time}}</td>

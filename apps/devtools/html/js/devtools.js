@@ -51,7 +51,8 @@ angular
 									name: $testcase.attr('name'),
 									classname: $testcase.attr('classname'),
 									time: Number($testcase.attr('time')),
-									passed: !!$failure.length,
+									passed: !$failure.length,
+									failed: !!$failure.length,
 									failure: $failure.text()
 								};
 							}).get()
