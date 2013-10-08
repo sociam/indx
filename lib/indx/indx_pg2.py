@@ -442,7 +442,7 @@ def connect(db_name, db_user, db_pass):
     return result_d
 
 
-def connect_sync(self, db_name, db_user, db_pass):
+def connect_sync(db_name, db_user, db_pass):
     """ Connect synchronously to the database - only used for large object support. """
     conn_str = ("dbname='{0}' user='{1}' password='{2}' host='{3}' port='{4}'".format(db_name or POSTGRES_DB, db_user, db_pass, HOST, PORT))
     conn = psycopg2.connect(conn_str)
