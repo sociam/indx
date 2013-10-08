@@ -1,14 +1,16 @@
 angular
 	.module('devtools', ['ui','indx'])
 	.controller('main', function($scope, client, utils) {
-		$scope.$watch('selected_box + selected_user', function() {
+		var load_box = function() {
 			if ($scope.selected_user && $scope.selected_box) {
 				console.log('getting box', $scope.selected_box);
 				client.store.get_box($scope.selected_box).then(function(b) {
-					box = b;
+					console.log('got', b);
+					window.box = b;
 				}).fail(function(e) { u.error('error ', e); });
 			}
-		});
+		};
+		$scope.$watch('selected_box + selected_user', load_box);
 		window.s = client.store;
 		window.create_random_objs = function(n, fn) {
 			var ids = u.range(n || 100).map(function() {
@@ -25,4 +27,6 @@ angular
 				});
 			}).fail(function(x) { console.log(x); });
 		};
+		console.log(' $scope - ', $scope.selected_box, ' - ', $scope.selected_user);
+		load_box();
 	});
