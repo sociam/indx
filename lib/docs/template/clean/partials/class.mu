@@ -6,9 +6,9 @@
 
 	{{{description}}}
 
-	{{#extends.start}}
+	{{#extend.start}}
 		{{>partials/inherited-methods.mu}}
-	{{/extends.start}}
+	{{/extend.start}}
 
 	<br>
 	{{#methods}}
