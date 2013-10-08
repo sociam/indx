@@ -26,19 +26,24 @@
 			  <statuspane></statuspane>
 			</div>
 			<div class="tab-pane" id="apidocs">
-				<p>See <a href="/docs/docsgen.html">docsgen documentation</a> for instruction on how to build api docs.</p>
+				<!-- <p>See <a href="/docs/docsgen.html">docsgen documentation</a> for instruction on how to build api docs.</p> -->
 			  <table class="table">
 			  	<thead><th>Name</th><th>Status</th><th>Actions</th></thead>
 			  	<tbody>
-					<tr ng-repeat="doc in docs">
-						<td ng-if="doc.built"><a href="/{{doc.url}}">{{doc.name}}</a></td>
-						<td ng-if="!doc.built">{{doc.name}}</td>
+					<tr ng-repeat="doc in docs.models">
+						<td ng-if="doc.get('built')"><a href="/{{doc.get('url')}}">{{doc.get('name')}}</a></td>
+						<td ng-if="!doc.get('built')">{{doc.get('name')}}</td>
 						<td>
-							<div ng-if="doc.built">Built</div>
-							<div ng-if="!doc.built">Documentation has not been built.</div>
+							<div ng-if="doc.get('built')">Built</div>
+							<div ng-if="!doc.get('built')">Documentation has not been built.</div>
+							<div ng-if="doc.err">An error occurred: {{doc.err}}</div>
 						</td>
-						<td><button class="btn btn-primary btn-build" ng-disabled="building_docs[doc.name]" ng-click="build_doc(doc)" ng-if="doc.built">Rebuild</button>
-						<button class="btn btn-primary btn-build" ng-disabled="building_docs[doc.name]" ng-click="build_doc(doc)" ng-if="!doc.built">Build</button></td>
+						<td>
+							<button class="btn btn-primary btn-build" ng-disabled="doc.is_building" ng-click="doc.build()">
+								<span ng-if="doc.get('built')">Rebuild</span>
+								<span ng-if="!doc.get('built')">Build</span>
+							</button>
+						</td>
 					</tr>
 				</tbody>
 			  </table>

@@ -1,39 +1,16 @@
-/* global $, console, angular */
+/* global $, console, angular, Backbone, _ */
 angular
 	.module('devtools', ['ui','indx'])
 	.controller('main', function($scope, client, utils) {
+		'use strict';
+
 		var u = utils;
-		$scope.$watch('selected_box + selected_user', function() {
-			if ($scope.selected_user && $scope.selected_box) {
-				console.log('getting box', $scope.selected_box);
-				client.store.get_box($scope.selected_box).then(function(b) {
-					box = b;
-				}).fail(function(e) { u.error('error ', e); });
-			}
-		});
-		window.s = client.store;
-		window.create_random_objs = function(n, fn) {
-			var ids = u.range(n || 100).map(function() {
-				return 'random-generated-'+u.guid();
-			});
-			window.box.get_obj(ids).then(function(models) {
-				console.log('models >> ', models);
-				models.map(function(m) {
-					if (fn) { m.set(fn()); }
-					else {
-						m.set({i:Math.random(), name:u.guid()});
-					}
-					m.save();
-				});
-			}).fail(function(x) { console.log(x); });
-		};
 
 		var Test = Backbone.Model.extend({
 			idAttribute: 'name',
 			initialize: function () {
 				Backbone.Model.prototype.initialize.apply(this, arguments);
-				var that = this;
-				that.get_results();
+				this.get_results();
 			},
 			run: function () {
 				var that = this;
@@ -81,7 +58,6 @@ angular
 						};
 					}).get());
 
-					console.log(that.get('results'))
 					u.safe_apply($scope);
 
 					promise.resolve();
@@ -90,34 +66,49 @@ angular
 			}
 		});
 
+		var Doc = Backbone.Model.extend({
+			idAttribute: 'name',
+			build: function () {
+				var that = this;
+				this.is_building = true;
+				$.post('api/docs/generate_doc?name=' + this.get('name'))
+					.then(function (r) {
+						that.set(r.response);
+						that.err = false;
+					})
+					.fail(function (r, s, err) {
+						that.err = r.status + ' - ' + err;
+						u.safe_apply($scope);
+					})
+					.always(function () {
+						that.is_building = false;
+						u.safe_apply($scope);
+					});
+			}
+		});
+
 		var Tests = Backbone.Collection.extend({
 			model: Test
 		});
 
-		var tests = new Tests();
+		var Docs = Backbone.Collection.extend({
+			model: Doc
+		});
+
+		var tests = new Tests(),
+			docs = new Docs();
 
 		$.get('api/tests/list_tests', function (r) {
 			tests.reset(r.response);
 		});
 
 		$.get('api/docs/list_docs', function (r) {
-			$scope.docs = r.response;
+			docs.reset(r.response);
 		});
-
-		$scope.building_docs = {};
-		$scope.build_doc = function (doc) {
-			$scope.building_docs[doc.name] = true;
-			$.post('api/docs/generate_doc?name=' + doc.name, function (r) {
-				$scope.building_docs[doc.name] = false;
-				Object.keys(r.response).forEach(function (k) {
-					doc[k] = r.response[k];
-				});
-				u.safe_apply($scope);
-			});
-		};
 
 		_.extend($scope, {
 			tests: tests,
+			docs: docs,
 			activeTest: {}
 		});
 
