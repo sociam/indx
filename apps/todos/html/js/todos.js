@@ -53,12 +53,6 @@ angular
 						$('textarea')
 							.blur();
 						break;
-					//case 13: // enter
-						//$scope.editing_todo.save_staged();
-						//e.preventDefault();
-						//$('textarea')
-							//.blur();
-						//break;
 					case 38: // up
 						e.preventDefault();
 						focusTextarea(-1);

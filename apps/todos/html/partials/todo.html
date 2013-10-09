@@ -20,6 +20,8 @@
 		<textarea
 			placeholder="todo..."
 			focus-me="todo.is_editing"
+			selectionStart="{{todo.cursorPos}}"
+			selectionEnd="{{todo.cursorPos}}"
 			ng-model="todo.staged_attributes.title"
 			ng-focus="todo.edit()"
 			ng-change="todo.check_newline()"

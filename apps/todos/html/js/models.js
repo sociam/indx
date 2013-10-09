@@ -53,6 +53,12 @@ angular
 				urgency: 'low',
 				completed: false
 			},
+			initialize: function (attributes, options) {
+				col.Model.prototype.initialize.apply(this, arguments);
+				if (options && options.cursorPos) {
+					console.log("cursorPos", options.cursorPos)
+				}
+			},
 			toggle: function (new_state) {
 				var that = this,
 					old_state = this.get_attribute('completed');
@@ -108,7 +114,7 @@ angular
 						restofTitle = title.substring(foundNL).trim();
 					this.staged_attributes.title = newTitle;
 					this.save_staged().then(function () {
-						that.trigger('request_new', { title: newTitle });
+						that.trigger('request_new', { title: restofTitle }, { cursorPos: restofTitle.length });
 					});
 				}
 			}
