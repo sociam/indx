@@ -284,7 +284,7 @@ angular
 				}, attributes);
 				options = _.extend({}, soptions, options);
 				model = new Backbone.Model(attributes, options); // Leave casting to this.model until later
-				this._extend_model(model);
+				this._extend_model(model, options);
 
 				this._set_new_model(model);
 
@@ -334,12 +334,12 @@ angular
 				}
 				return Backbone.Collection.prototype.remove.apply(this, arguments);
 			},
-			_extend_model: function (model) {
+			_extend_model: function (model, options) {
 				var that = this,
 					prototype = this.model.prototype;
 				_.extend(model, prototype);
 				if (prototype.initialize) {
-					prototype.initialize.apply(model);
+					prototype.initialize.apply(model, options);
 				}
 				if (prototype.defaults) {
 					_.defaults(model.attributes, prototype.defaults);
