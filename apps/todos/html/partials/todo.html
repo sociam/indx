@@ -2,6 +2,7 @@
 	<a href="#" ng-click="todo.undo()"><i class="icon-undo"></i> Undo</a>
 </div>
 <div class="todo-body">
+	<div class="todo-hover-top"></div>
 	<div class="todo-urgency" ng-class="'urgency-' + ((todo.is_editing || todo.is_dragging) && todo.get_staged_attribute('urgency') || todo.get_attribute('urgency'))">
 		<div class="todo-urgency-arrows" ng-show="todo.is_editing">
 			<div class="todo-urgency-up" ng-click="todo.set_urgency(+1)"><div class="arrow-head"></div></div>
@@ -16,6 +17,14 @@
 		<span ng-show="todo.is_editing">{{ todo.get_staged_attribute('title') }}</span>
 		<span ng-show="!todo.is_editing">{{ todo.get_attribute('title') }}</span>
 		&nbsp;
-		<textarea ng-model="todo.staged_attributes.title" placeholder="todo..." ng-focus="todo.edit()" focus-me="todo.is_editing"></textarea>
+		<textarea
+			placeholder="todo..."
+			focus-me="todo.is_editing"
+			ng-model="todo.staged_attributes.title"
+			ng-focus="todo.edit()"
+			ng-change="todo.check_newline()"
+			ng-trim="false">
+		</textarea>
 	</div>
+	<div class="todo-hover-bottom"></div>
 </div>

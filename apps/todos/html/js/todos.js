@@ -53,12 +53,12 @@ angular
 						$('textarea')
 							.blur();
 						break;
-					case 13: // enter
-						$scope.editing_todo.save_staged();
-						e.preventDefault();
-						$('textarea')
-							.blur();
-						break;
+					//case 13: // enter
+						//$scope.editing_todo.save_staged();
+						//e.preventDefault();
+						//$('textarea')
+							//.blur();
+						//break;
 					case 38: // up
 						e.preventDefault();
 						focusTextarea(-1);
@@ -143,7 +143,6 @@ angular
 				var promise = $.Deferred(),
 					id = attrs['@id'];
 				box.get_obj(id).then(function (obj) {
-					console.log('create obj', obj.id, obj)
 					var promises = [];
 					Object.keys(attrs).forEach(function (k) {
 						var v = attrs[k],
