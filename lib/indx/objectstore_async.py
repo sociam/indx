@@ -406,7 +406,6 @@ class ObjectStoreAsync:
 
         return diff
 
-
     def _get_diff_combined(self, from_version, to_version):
         """ Get a combined diff from from_version to to_version. """
         self.debug("ObjectStore _get_diff_combined, from_version: {0}, to_version: {1}".format(from_version, to_version))
@@ -516,6 +515,21 @@ class ObjectStoreAsync:
 
         return existing_diff
 
+
+    def diff_to_ids(self, diff):
+        """ Extract only the IDs from a full diff. """
+
+        ids = {"added": [], "changed": [], "deleted": []}
+        for id in diff['added']:
+            ids['added'].append(id)
+        for id in diff['changed']:
+            ids['changed'].append(id)
+        for id in diff['deleted']:
+            ids['deleted'].append(id)
+
+        return ids
+
+
     def diff(self, from_version, to_version, return_objs):
         """ Return the differences between two versions of the database.
 
@@ -531,8 +545,14 @@ class ObjectStoreAsync:
             return
 
         def diff_cb(to_version_used, combined_diff, latest_ver):
+            # handles return_objs = "diff"
             self.debug("ObjectStore diff, diff_cb, rows: {0}".format(combined_diff))
             result_d.callback({"data": combined_diff, "@to_version": to_version_used, "@from_version": from_version, "@latest_version": latest_ver})
+
+        def ids_cb(to_version_used, combined_diff, latest_ver):
+            # handles return_objs = "ids"
+            self.debug("ObjectStore diff, ids_cb, rows: {0}".format(combined_diff))
+            result_d.callback({"data": self.diff_to_ids(combined_diff), "@to_version": to_version_used, "@from_version": from_version, "@latest_version": latest_ver})
 
         def got_versions(to_version_used, latest_ver):
             self.debug("ObjectStore diff, got_versions, to_version_used: {0}, latest_ver".format(to_version_used, latest_ver))
@@ -543,8 +563,7 @@ class ObjectStoreAsync:
                 # TODO implement
                 result_d.callback(None)
             elif return_objs == "ids":
-                # TODO implement
-                result_d.callback(None)
+                self._get_diff_combined(from_version, to_version_used).addCallbacks(lambda combined_diff: ids_cb(to_version_used, combined_diff, latest_ver), err_cb)
             else:
                 result_d.errback(Failure(Exception("Did not specify valid value of return_objs.")))
             return
