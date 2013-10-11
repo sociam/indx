@@ -36,7 +36,7 @@
 						
 						var data = counts.keys().filter(function(x) { 
 							return x !== '@id';
-						}).map(function(k) {	return { key : k , value : counts.get(k)[0] || 0 };	});
+						}).map(function(k) { return { key : k , value : counts.get(k)[0] || 0 }; });
 						data.sort(function(x,y) { return y.value - x.value; }); // descending
 						_(data).map(function(v,i) { v.rank = i; });
 						data = data.slice(0,n_bins);
@@ -47,7 +47,6 @@
 							.domain([0, d3.max(data.map(function(x) { return x.value; }))])
 							.range([0,height]);
 						
-						var xAxis = d3.svg.axis().scale(x).orient("bottom");
 
 						// console.log("COUNTS >> ", data, data.map(function(x) { return x.rank; })); // data.map(function(x) { return x.value; }));
 						console.log('counts -- ', data.length, data.map(function(x) { return x.key; }));
@@ -83,6 +82,9 @@
 								});
 						bars.exit().remove();
 
+						var xAxis = d3.svg.axis().scale(x).orient("bottom");
+						$('g.xaxis').remove();
+						console.log("now thre are > ", svg.selectAll('.xaxis').length, ' xaxes');
 						var xaxis = svg.select('.xaxis').data([0]);
 						xaxis.enter().append("g")
 							.attr("class", "xaxis")
