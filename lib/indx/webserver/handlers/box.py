@@ -71,6 +71,10 @@ class BoxHandler(BaseHandler):
 
             try:
                 from_version = request.args['from_version'][0]
+                try:
+                    from_version = int(from_version)
+                except Exception as ee:
+                    BoxHandler.log(logging.DEBUG, "Exception in box.diff converting from_version ({0}) to an int ({1}).".format(from_version, ee))
             except Exception as e:
                 BoxHandler.log(logging.ERROR, "Exception in box.diff getting argument: {0}".format(e), extra = {"request": request, "token": token})
                 return self.return_bad_request(request, "Specify the following arguments in query string: from_version.")
@@ -87,6 +91,10 @@ class BoxHandler(BaseHandler):
             # to_version is optional, if unspecified, the latest version is used.
             if "to_version" in request.args:
                 to_version = request.args['to_version'][0]
+                try:
+                    to_version = int(to_version)
+                except Exception as ee:
+                    BoxHandler.log(logging.DEBUG, "Exception in box.diff converting to_version ({0}) to an int ({1}).".format(to_version, ee))
             else:
                 to_version = None
 
