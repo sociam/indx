@@ -53,12 +53,6 @@ angular
 						$('textarea')
 							.blur();
 						break;
-					case 13: // enter
-						$scope.editing_todo.save_staged();
-						e.preventDefault();
-						$('textarea')
-							.blur();
-						break;
 					case 38: // up
 						e.preventDefault();
 						focusTextarea(-1);
@@ -143,7 +137,6 @@ angular
 				var promise = $.Deferred(),
 					id = attrs['@id'];
 				box.get_obj(id).then(function (obj) {
-					console.log('create obj', obj.id, obj)
 					var promises = [];
 					Object.keys(attrs).forEach(function (k) {
 						var v = attrs[k],
@@ -176,6 +169,20 @@ angular
 
 			window.importJSON = function (json) {
 				createObjArray(json);
+			};
+
+			window.exportJSON = function () {
+				box.get_obj('todo_app').then(function (obj) {
+					var json = obj.toJSON();
+					json.todo_lists = _.map(json.todo_lists, function (todo_list) {
+						var json = todo_list.toJSON();
+						json.todos = _.map(json.todos, function (todos) {
+							return todos.toJSON();
+						});
+						return json;
+					})
+					console.log(JSON.stringify(json, null, '\t'));
+				});
 			};
 		}());
 

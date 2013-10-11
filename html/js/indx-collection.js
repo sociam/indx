@@ -10,8 +10,19 @@
 /// Collection and Model classes.
 ///
 /// ## Events
-/// * add_any
-/// * restore
+/// | Event   | Object | Description  |
+/// |---------|--------|--------------|
+/// | restore | Model  | model is no longer being editing |
+/// | edit    | Model  | model is now being edited |
+/// | select  | Model, Collection  | model has been selected |
+/// | update  | Collection | model has been restored |
+/// | created | Model | when a model has been created and saved |
+/// | add     | Collection | model has been added |
+/// | add_any | Collection | model is added to all_models (including before it has been saved) |
+/// | remove  | Model, Collection | model or model in collection has been removed |
+/// | reset   | Collection | collection has been reset |
+/// | change  | Model, Collection | model or model in collection has changed |
+/// | sort    | Collection | collection has been sorted |
 
 angular
 	.module('indx')
@@ -47,24 +58,25 @@ angular
 					this.staged_attributes = _.clone(this.attributes);
 				}
 			},
-			/// @chain
 			///
 			/// Create an obj in the box based on this model, saving its
 			/// attributes as the obj attributes. This will trigger `created`
 			/// when completed.
 			create: function () {
-				var that = this;
-				console.log('creating item');
+				var promise = $.Deferred(),
+					that = this;
+				//console.log('creating item');
 				this.box.get_obj(this.id)
 					.then(function (new_obj) {
 						console.log('new item');
 						new_obj.save(that.staged_attributes)
 							.then(function () {
 								console.log('saved');
+								promise.resolve();
 								that.trigger('created', new_obj);
 							});
 					});
-				return this;
+				return promise;
 			},
 
 			/// @then When model has been destroyed
@@ -72,13 +84,8 @@ angular
 			/// Destroy the model and it's associated object. Triggers
 			/// `restore` when destroyed.
 			remove: function () {
-				var that = this;
-				console.log('remove item', this);
-				return this.destroy()
-					.then(function () {
-						console.log('destroyed item');
-						that.trigger('restore', this);
-					});
+				//console.log('remove item', this);
+				return this.restore().destroy();
 			},
 			/// @chain
 			///
@@ -89,7 +96,7 @@ angular
 			/// Triggers `edit`.
 			edit: function (_is_new) {
 				if (!this.is_editing) {
-					console.log('edit item', this);
+					//console.log('edit item', this);
 					this._update_new_attributes();
 					this.is_new = _is_new;
 					this.is_editing = true;
@@ -107,14 +114,15 @@ angular
 			/// be created.
 			save_staged: function () {
 				var that = this;
-				console.log('stage and save');
+				//console.log('stage and save');
 				if (this.is_new) {
 					console.log('new, so create');
 					return this.create();
 				} else {
+					console.log('save')
 					return this.save(this.staged_attributes)
 						.then(function () {
-							console.log('saved');
+							//console.log('saved');
 							that.restore();
 							// u.safe_apply($scope); TODO
 						});
@@ -148,10 +156,10 @@ angular
 			/// Selects this model. Triggers `select` with selected boolean and options.
 			select: function (selected, options) {
 				options = options || {};
-				console.log('select', selected);
+				//console.log('select', selected);
 				selected = _.isBoolean(selected) ? selected : true;
 				if (this.is_selected !== selected) {
-					console.log('selecting', selected);
+					//console.log('selecting', selected);
 					this.is_selected = selected;
 					this.trigger('select', selected, options);
 				}
@@ -220,7 +228,7 @@ angular
 				this.obj = this.options.obj;
 				this
 					.on('add remove', function () {
-						console.log('something in the collection has changed');
+						//console.log('something in the collection has changed');
 						that.save();
 					})
 					.on('add remove reset', function () {
@@ -276,7 +284,7 @@ angular
 				}, attributes);
 				options = _.extend({}, soptions, options);
 				model = new Backbone.Model(attributes, options); // Leave casting to this.model until later
-				this._extend_model(model);
+				this._extend_model(model, options);
 
 				this._set_new_model(model);
 
@@ -286,13 +294,13 @@ angular
 						timestamp: now()
 					})
 					.on('created', function (model) {
-						console.log('going for the add');
+						//console.log('going for the add');
 						that.add(model);
 						that._set_new_model();
 						if (options.select) {
 							model.select();
 						}
-						model.trigger('restore');
+						model.trigger('restore'); // TODO .restore()?
 					})
 					.on('restore', function () {
 						that._set_new_model();
@@ -320,18 +328,18 @@ angular
 			},
 			/// Remove the model from the array
 			remove: function (model) {
-				console.log('!!!remove!!!', arguments);
+				//console.log('!!!remove!!!', arguments);
 				if (this.selected === model) {
 					this.selected = undefined;
 				}
 				return Backbone.Collection.prototype.remove.apply(this, arguments);
 			},
-			_extend_model: function (model) {
+			_extend_model: function (model, options) {
 				var that = this,
 					prototype = this.model.prototype;
 				_.extend(model, prototype);
 				if (prototype.initialize) {
-					prototype.initialize.apply(model);
+					prototype.initialize.apply(model, options);
 				}
 				if (prototype.defaults) {
 					_.defaults(model.attributes, prototype.defaults);
@@ -384,7 +392,7 @@ angular
 						console.warn('There was a non-object stored??', model);
 						return;
 					}
-					console.log('adding', model)
+					//console.log('adding', model)
 					this._extend_model(model);
 					if (this.options.save_selected || this.options.sync_selected) {
 						if (pop(model.get('selected')) === true) {
@@ -421,7 +429,7 @@ angular
 					arr = obj.get(array_key) || [];
 				this.reset(arr);
 				obj.on('change:' + array_key, function (obj, arr) {
-					console.log('updating list -->', arguments);
+					//console.log('updating list -->', arguments);
 					that.add(arr, {
 						merge: true,
 						silent: true
@@ -443,7 +451,7 @@ angular
 				var that = this,
 					promise = $.Deferred(),
 					array_key = that.options.array_key;
-				console.log('trying to save list = ', that.models);
+				//console.log('trying to save list = ', that.models);
 				this.obj.save(array_key, that.models)
 					.then(function () {
 						promise.resolve();
@@ -463,7 +471,6 @@ angular
 					this.filtered_models = this.all_models;
 				}
 				this.trigger('update', this);
-				console.log('hello?')
 				return this;
 			},
 			comparator: function (m) {

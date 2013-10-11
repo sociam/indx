@@ -1,10 +1,11 @@
 /* global angular, _, confirm */
 angular
 	.module('todos')
-	.factory('models', function (collection) {
+	.factory('models', function (collection, utils) {
 		'use strict';
 
-		var col = collection;
+		var col = collection,
+			u = utils;
 
 		var urgencies = ['low', 'med', 'high', 'urgent'];
 
@@ -39,7 +40,7 @@ angular
 		var TodoLists = col.Collection.extend({
 			model: TodoList,
 			model_id: function () {
-				return 'todo-list-' + col.now();
+				return 'todo-list-' + u.uuid();
 			},
 			model_options: {
 				select: true
@@ -51,6 +52,12 @@ angular
 				title: '',
 				urgency: 'low',
 				completed: false
+			},
+			initialize: function (attributes, options) {
+				col.Model.prototype.initialize.apply(this, arguments);
+				if (options && options.cursorPos) {
+					console.log("cursorPos", options.cursorPos)
+				}
 			},
 			toggle: function (new_state) {
 				var that = this,
@@ -81,7 +88,7 @@ angular
 			set_urgency: function (n) {
 				var urgency = this.get_staged_attribute('urgency'),
 					i = urgencies.indexOf(urgency);
-					console.log('set_urgency', urgency)
+					console.log('set_urgency', urgency);
 				if (urgencies[i + n]) {
 					this.staged_attributes.urgency = urgencies[i + n];
 					//this.trigger('change');
@@ -96,6 +103,20 @@ angular
 					return col.Model.prototype.remove.apply(this, arguments);
 				}
 				return this;
+			},
+			check_newline: function () {
+				console.log('VALIDATE');
+				var that = this,
+					title = this.staged_attributes.title,
+					foundNL = title.indexOf('\n');
+				if (foundNL > -1) {
+					var newTitle = title.substring(0, foundNL).trim(),
+						restofTitle = title.substring(foundNL).trim();
+					this.staged_attributes.title = newTitle;
+					this.save_staged().then(function () {
+						that.trigger('request_new', { title: restofTitle }, { cursorPos: restofTitle.length });
+					});
+				}
 			}
 		});
 
@@ -110,12 +131,16 @@ angular
 						})
 						.on('restore', function () {
 							that.trigger('edit_change');
+						})
+						.on('request_new', function (attributes) {
+							console.log('creating new');
+							that.new_model(attributes);
 						});
 				});
 				col.Collection.prototype.initialize.apply(this, arguments);
 			},
 			model_id: function () {
-				return 'todo-item-' + col.now();
+				return 'todo-item-' + u.uuid();
 			},
 			comparator: function (m) {
 				var urgency = m.is_editing ? m.get_staged_attribute('urgency') :
@@ -124,6 +149,8 @@ angular
 				return completed ? 100 : -urgencies.indexOf(urgency);
 			}
 		});
+
+
 
 		return {
 			TodoLists: TodoLists,
