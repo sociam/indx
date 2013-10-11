@@ -1,40 +1,51 @@
 <!DOCTYPE html>
 <html lang="en">
-  <link href="../../css/bootstrap.css" rel="stylesheet">
-  <link rel="stylesheet/less" type="text/css" href="css/fb.less">
-  <head><title>save face :: social network profile aggregator</title> </head>
-  <body>
-	<div>
-	  <div id="modes">
-		<div class="box startbox" style="display:none">
-		  <div class="welcome"><h1>save<br>face</h1></div>
-		  <div id="loginbtn" class="btn">log in to facebook - <i class="icon-play"></i></div>
-		</div>
-		<div class="box controls" style="display:none">
-		  <div id="buttons">
-			<div id="me" class="btn" disabled='true'><i class="icon-user"></i> my profile </div>
-			<div id="statuses" class="btn" disabled='true'><i class="icon-comment"></i> my statuses</div>
-			<div id="inbox" class="btn" disabled='true'><i class="icon-pencil"></i> my messages</div>
-			<div id="feed" class="btn" disabled='true'><i class="icon-list"></i> news feed</div>		  
-			<div id="friends" class="btn" disabled='true'><i class="icon-user"></i> friends</div>
-			<div id="logoff" class="btn"><i class="icon-eject"></i> - log out of facebook</div>
-			<div class="mod_container"><div id="last_modified"></div></div>
-		  </div>
-		  <div id="stats"></div>
-		</div>
-		<div class="box denied" style="display:none">
-		  <h1>Oops: not allowed</h1>
-		  Please give save face permission to access your fb?
-		</div>
-	  </div>
-	  <div id="counter"></div>	
-	  <div id="fb-root"></div>
-	</div>
-  </body>
-  <script src="../../js/vendor/jquery.min.js" type="text/javascript"></script>
-  <script src="../../js/vendor/underscore.min.js" type="text/javascript"></script>
-  <script src="../../js/vendor/backbone.min.js" type="text/javascript"></script>
-  <script type="text/javascript" src="../../js/webbox-backbone.js"></script>
-  <script src="../../js/vendor/require.min.js"></script>
-  <script type="text/javascript" src="js/index.js"></script>
+<head>
+	<link href="/css/bootstrap.css" rel="stylesheet">
+	<link href="/css/angular-ui.css" rel="stylesheet">
+	<link href="/css/select2.css" rel="stylesheet"/>
+	<link rel="stylesheet/less" type="text/css" href="/components/toolbar/toolbar.less">
+	<link rel="stylesheet/less" type="text/css" href="css/fb.less">
+	<link rel="stylesheet/less" type="text/css" href="../csv/css/importer.less">
+
+	<title>INDX Social</title>
+  </head>
+  <body ng-app="fb" ng-controller="main" ng-cloak>
+    <toolbar box-var='selected_box' username-var='selected_user'></toolbar>
+    <div id="fb-root"></div>
+    <div>
+    	<div class="waitoverlay" ng-show="wait">
+    		<div class="pleasewait">please wait ..</div>
+    		<img src="../csv/imgs/39.gif"></img>
+    	</div>	
+    	<div ng-show="!selected_user">
+    		<h2> please log in </h2>
+    	</div>
+    	<div ng-show="selected_user && !selected_box">
+    		<h2> please select a box </h2>
+    	</div>
+    </div><!-- main -->
+  <script src="/js/vendor/lesscss.min.js" type="text/javascript"></script>
+  <script src="/js/vendor/jquery.min.js" type="text/javascript"></script>
+  <script src="/js/vendor/underscore.min.js" type="text/javascript"></script>
+  <script src="/js/vendor/backbone.min.js" type="text/javascript"></script>
+  <script src="/js/vendor/bootstrap.min.js" type="text/javascript"></script>
+  <!-- angular -->
+  <script src="/js/vendor/angular.min.js" type="text/javascript"></script>
+  <script src="/js/vendor/angular-ui.js" type="text/javascript"></script>
+  <!-- indx -->
+  <script src="/js/indx.js" type="text/javascript"></script>
+  <script src="/js/indx-utils.js" type="text/javascript"></script>
+  <script src="/components/toolbar/toolbar.js" type="text/javascript"></script>
+  <script src="js/fb.js" type="text/javascript"></script>
+  <script type="text/javascript">
+  		// Load the SDK Asynchronously
+  		(function(d){
+  			var js, id = 'facebook-jssdk', ref = d.getElementsByTagName('script')[0];
+  			if (d.getElementById(id)) {return;}
+  			js = d.createElement('script'); js.id = id; js.async = true;
+  			js.src = "https://connect.facebook.net/en_US/all.js";
+  			ref.parentNode.insertBefore(js, ref);
+  		}(document));
+</script>
 </html>

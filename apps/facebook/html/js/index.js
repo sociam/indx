@@ -3,7 +3,7 @@
 
 var host = document.location.host;
 // if (host.indexOf(':') >= 0) { host = host.slice(0,host.indexOf(':')); }
-var channelURL = '//'+host+'/channel.html';
+var channelURL = 'http://'+host+'/channel.html';
 console.log('checking for channel file at ', channelURL);
 // Additional JS functions here
 window.fbAsyncInit = function() {

@@ -113,20 +113,16 @@ angular
 			activeTest: {}
 		});
 
-		// declares box in devtoosl
-
+		// this pollution created by emax for supprting debugging
+		// declares box in devtools
 		var load_box = function(bid) {
-			client.store.get_box(bid).then(function(box) {
-				console.log('boxx > ', box);
-				window.box = box;
-			});
+			client.store.get_box(bid).then(function(box) {window.box = box; });
 		};
 
 		$scope.$watch('selected_box + selected_user', function() {
-			if ($scope.selected_box) {
-				load_box($scope.selected_box);
-			}
+			if ($scope.selected_box) { load_box($scope.selected_box); }
 		});
 
+		window.store = client.store;
 		window.$scope = $scope;
 	});
