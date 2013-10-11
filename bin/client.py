@@ -63,8 +63,8 @@ class CLIClient:
         for key in required:
             if key not in self.args or self.args[key] is None or self.args[key] == "":
                 not_set.append(key)
-        
-        if len(not_set) > 0:
+       
+        if not self.args['allowempty'] and len(not_set) > 0:
             raise Exception("The following values cannot be empty for this action: {0}".format(", ".join(not_set)))
 
 
@@ -236,6 +236,7 @@ if __name__ == "__main__":
     parser.add_argument('--id', action="store", nargs="+", help="Limit to specific IDs (e.g., for get_by_ids)")
     parser.add_argument('--contenttype', action="store", help="Specify content-type (e.g., for add_file)")
     parser.add_argument('--jsondata', action="store_true", default=False, help="Return the 'data' element of the response as JSON.")
+    parser.add_argument('--allowempty', action="store_true", default=False, help="Allow empty values e.g. for the 'query' value (for testing the server).")
 
     args = vars(parser.parse_args())
 
