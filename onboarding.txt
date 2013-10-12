@@ -1,0 +1,35 @@
+onboarding plan :
+
+first indx, already have openid:
+0. welcome to indx
+this process will guide you through the
+process of setting up your new indx
+1. is this your first indx? [YES]
+2. do you have an openid? [YES]
+3. what is your openid? [http://hip.cat/emax]
+4. great, thanks. now let's take you to the box management interface where you will set up your boxes and other users....
+
+first indx, don't have openid
+0. welcome to indx
+this process will guide you through the
+process of setting up your new indx
+1. is this your first indx? [YES]
+2. do you have an openid? [No]
+3. Okay let's make you an openid.
+   Please choose an openid provider or to have INDX create one for you, choose INDX below. [INDX]
+4. What is this INDX's hostname? [indx0.hip.cat]
+   What is your first/last name - [max van kleek]
+   What do you wish to be called - [emax]
+   Please supply a password  
+   Your openid is now http://indx0.hip.cat/emax
+5. great, thanks. now let's take you to the box management interface where you will set up your boxes and other users....
+
+second indx, have openid
+0. welcome to indx
+this process will guide you through the
+process of setting up your new indx
+1. Is this your first indx? [No]
+2. Please select your INDX or type in its address []
+   (discovered through mdns/etc or type in URL)
+3. OK I have verified that you are Max Van Kleek
+4. Great, thanks. now let's go to the box management interface where you will set up your boxes and other users....
