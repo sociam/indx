@@ -83,7 +83,8 @@
 						bars.exit().remove();
 
 						var xAxis = d3.svg.axis().scale(x).orient("bottom");
-						$('g.xaxis').remove();
+						// $('g.xaxis').remove();
+						d3.select('svg').selectAll('.xaxis').remove();
 						console.log("now thre are > ", svg.selectAll('.xaxis').length, ' xaxes');
 						var xaxis = svg.select('.xaxis').data([0]);
 						xaxis.enter().append("g")
