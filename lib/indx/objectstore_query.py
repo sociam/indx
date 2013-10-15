@@ -106,7 +106,9 @@ class ObjectStoreQuery:
             "wb_v_latest_triples.obj_datatype"
         ]
 
-        sql = "SELECT DISTINCT {0} FROM wb_v_latest_triples {1} WHERE {2}".format(", ".join(selects), " ".join(self.joins), " AND ".join(self.wheres)) 
+        sql = "SELECT DISTINCT {0} FROM wb_v_latest_triples {1}".format(", ".join(selects), " ".join(self.joins))
+        if len(self.wheres) > 0:
+            sql += " WHERE {0}".format(" AND ".join(self.wheres))
         return (sql, self.params)
 
 class InvalidObjectQueryException(Exception):
