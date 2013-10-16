@@ -292,7 +292,7 @@ angular
 				this.store = options.store;
 				this.set({objcache: new ObjCollection(), objlist: [], files : new FileCollection() });
 				this.options = _(this.default_options).chain().clone().extend(options || {}).value();
-				this.set_up_websocket();
+				this._set_up_websocket();
 				this._update_queue = {};
 				this._delete_queue = {};
 				this._fetching_queue = {};
@@ -312,7 +312,7 @@ angular
 				}
 				return files.get(fid);
 			},
-			set_up_websocket:function() {
+			_set_up_websocket:function() {
 				var this_ = this, server_host = this.store.get('server_host');
 				if (! this.get_use_websockets() ) { return; }
 				this.on('new-token', function(token) {
@@ -332,7 +332,7 @@ angular
 						if (pdata.action === 'diff') {
 							this_._diff_update(pdata.data)
 								.then(function() {
-									this_.trigger('update-from-master', this_._get_version());
+									this_.trigger('update-from-master', this_.get_version());
 								}).fail(function(err) {
 									u.error(err); /*  u.log('done diffing '); */
 								});
@@ -361,8 +361,16 @@ angular
 					};
 				});
 			},
+			/// Gets whether the option to use websockets has been set; set this option using the store's options.use_websockets;
+			/// @return <boolean> Whether will try to use websockets.
 			get_use_websockets:function() { return this.options.use_websockets; },
-			get_cache_size:function(i) { return this._objcache().length; },
+
+			/// Returns C, the number of objects that have been loaded from the server. Necessararily C < get_obj_ids.length()
+			/// @return <integer> Number of objects in the cache
+			get_cache_size:function() { return this._objcache().length; },
+
+			/// Gets all of the ids contained in the box
+			/// @return <[<String>]> Set of IDs
 			get_obj_ids:function() { return this._objlist().slice(); },
 			_objcache:function() { return this.attributes.objcache; },
 			_objlist:function() { return this.attributes.objlist !== undefined ? this.attributes.objlist : []; },
@@ -370,7 +378,15 @@ angular
 			_get_cached_token:function() { return this.get("token"); },
 			_set_token:function(token) { this.set("token", token);	},
 			_set_version:function(v) { this.set("version", v);	},
-			_get_version:function(v) { return this.get("version"); },
+
+			/// @return <integer> - Current version of the box
+			/// gets the current version of this box
+			get_version:function() { return this.get("version"); },
+
+			/// @then <Box> gets a token for this box and continues
+			/// @fail <string> return ss an error 
+			/// Gets an auth token for the box. This is done automatically
+			/// by a store when constructed by get_box.
 			get_token:function() {
 				// utils.debug('>> get_token ', ' id: ',this.id, ' cid: ',this.cid);
 				// try { throw new Error(''); } catch(e) { console.error(e); }
@@ -384,6 +400,8 @@ angular
 					}).fail(d.reject);
 				return d.promise();
 			},
+			/// Gets this box's id
+			/// @return <integer> this box's id
 			get_id:function() { return this.id || this.cid;	},
 			_ajax:function(method, path, data) {
 				data = _(_(data||{}).clone()).extend({box: this.id || this.cid, token:this.get('token')});
@@ -418,7 +436,7 @@ angular
 				// // 'http://' + this.store.get('server_host') + "/" +  boxid + "/" + 'files',
 				var boxid = this.id || this.cid,
 				base_url = ['/', this.store.get('server_host'), boxid, 'files'].join('/'),
-				options = { app: this.store.get('app'), id: id, token:this.get('token'),  box: boxid, version: this._get_version() },
+				options = { app: this.store.get('app'), id: id, token:this.get('token'),  box: boxid, version: this.get_version() },
 				option_params = $.param(options),
 				url = base_url+"?"+option_params,
 				d = u.deferred();
@@ -428,6 +446,11 @@ angular
 				);
 				return $.ajax( ajax_args );
 			},
+			/// <object> query_pattern a query pattern to match
+			/// <[<string>]> predicates optional array of predicates to return, or entire objects otherwise
+			/// Issues query to server, which then returns either entire objects or just values of the props specified
+			/// @then <[Objs]> Objects matching query
+			/// @fail <string> Error
 			query: function(query_pattern, predicates){
 				// @param - query_pattern is an object like { key1 : val1, key2: val2 } .. that
 				//   returns / fetches all objects
@@ -471,8 +494,8 @@ angular
 				u.assert(changed_ids !== undefined, 'changed not provided');
 				u.assert(deleted_ids !== undefined, 'deleted _ids not provided');
 
-				if (latest_version <= this_._get_version()) {
-					u.debug('asked to diff update, but already up to date, so just relax!', latest_version, this_._get_version());
+				if (latest_version <= this_.get_version()) {
+					u.debug('asked to diff update, but already up to date, so just relax!', latest_version, this_.get_version());
 					return d.resolve();
 				}
 				u.debug('setting latest version >> ', latest_version, added_ids, changed_ids, deleted_ids);
@@ -537,6 +560,10 @@ angular
 				this._objcache().add(model);
 				return model;
 			},
+			/// <String> or [<String>] - id or ids of objects to retrieve
+			/// retrieves all of the objects by their ids specified from the server into the cache if not loaded, otherwise just returns the cached models
+			/// @then <Obj> or [<Obj>] Array of loaded objects
+			/// @fail <String> Error raised during process
 			get_obj:function(objid) {
 				// get_obj always returns a promise
 				// console.log(' get_obj() >> ', objid);
@@ -656,7 +683,7 @@ angular
 						}).fail(fd.reject);
 				}
 				fd.then(function() {
-					this_.trigger('update-from-master', this_._get_version());
+					this_.trigger('update-from-master', this_.get_version());
 					d.resolve(this_);
 				}).fail(d.reject);
 				return d.promise();
