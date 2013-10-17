@@ -66,11 +66,16 @@ Now, source the virtualenv:
 
     source env/bin/activate
 
-Now, run the INDX server with your PostgreSQL authentication username and hostname:
+Now, run the INDX server with your PostgreSQL authentication username and hostname.
+(It will prompt for your postgresql password):
 
     python bin/server.py <username> <hostname>
 
-(It will prompt for your postgresql password).
+The postgresql user must have CREATEDB and CREATEROLE privileges.
+
+The first time you run the server, you will be prompted to create a new INDX user,
+and supply a username and password.
+
 
 If you wish to specify additional configuration, you can get the list using `--help`:
 
