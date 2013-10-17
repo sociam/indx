@@ -212,10 +212,9 @@ class AuthHandler(BaseHandler):
                 for uri in self.AX_URIS:
                     ax_data[uri] = ax_resp.get(uri)
 
-            request.setResponseCode(200, "OK")
-            request.write("Success of {0}, sreg_resp: {1} (sreg_data: {2}), pape_resp: {3}, ax_resp: {4}, ax_data: {5}".format(display_identifier, sreg_resp, sreg_data, pape_resp, ax_resp, ax_data))
+            logging.debug("openid_process: Success of {0}, sreg_resp: {1} (sreg_data: {2}), pape_resp: {3}, ax_resp: {4}, ax_data: {5}".format(display_identifier, sreg_resp, sreg_data, pape_resp, ax_resp, ax_data))
             if info.endpoint.canonicalID:
-                request.write("...This is an i-name and its persistent ID is: {0}".format(info.endpoint.canonicalID))
+                logging.debug("openid_process, additional: ...This is an i-name and its persistent ID is: {0}".format(info.endpoint.canonicalID))
 
             # Success - User is now INDX authenticated - they can request a token now.
             wbSession = self.get_session(request)
