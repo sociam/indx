@@ -139,7 +139,12 @@ class AuthHandler(BaseHandler):
     def login_openid(self, request):
         """ Verify an OpenID identity. """
         try:
-            identity = request.args['identity'][0]
+            args = self.get_post_args(request)
+            identity = args['identity'][0]
+
+#            if "password" in args and len(args['password']) > 0
+            # TODO check for password in args, then check it isn't blank, then check it first before doing OpenID
+
             logging.debug("OpenID, verify, identity: {0}".format(identity))
         except Exception as e:
             logging.debug("OpenID, verify, exception: {0}".format(e))
@@ -291,7 +296,7 @@ AuthHandler.subhandlers = [
         # for an INDX ID account
         # http://localhost:8211/auth/login_openid?identity=http://id.indx.ecs.soton.ac.uk/identity/ds
         'prefix':'login_openid', # login with openid
-        'methods': ['GET'],
+        'methods': ['POST'],
         'require_auth': False,
         'require_token': False,
         'handler': AuthHandler.login_openid,
