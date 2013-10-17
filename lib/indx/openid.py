@@ -17,6 +17,7 @@
 
 import logging
 from twisted.internet.defer import Deferred
+from hashing_passwords import make_hash, check_hash
 
 class IndxOpenID:
     """ INDX OpenID handler ID. """
@@ -25,6 +26,28 @@ class IndxOpenID:
         logging.debug("IndxOpenID, uri: {0}".format(uri))
         self.db = db
         self.uri = uri
+
+    def set_password(self, password):
+        """ Set the user's password. """
+        logging.debug("IndxOpenID, set_password for user {0}".format(self.uri))
+        return_d = Deferred()
+        
+        pw_hash = make_hash(password)
+
+        def connected_d(conn):
+            logging.debug("IndxOpenID, set_password, connected_d")
+            insert_q = "UPDATE tbl_users SET password_hash = %s WHERE username = %s AND username_type = %s"
+            insert_p = [pw_hash, self.uri, "openid"]
+
+            def inserted_d(empty):
+                logging.debug("IndxOpenID, set_password, connected_d, inserted_d")
+                return_d.callback(True)
+                return
+
+            conn.runOperation(insert_q, insert_p).addCallbacks(inserted_d, return_d.errback)
+
+        self.db.connect_indx_db().addCallbacks(connected_d, return_d.errback)
+        return return_d
 
     def init_user(self):
         """ Check there is a user in the database, and initialise one if not.
