@@ -83,10 +83,10 @@
 
         {{#return}}
           {{#hasTypes}}
-            ({{#types}}
+            {{#types}}
               <code>{{type}}</code>
               {{^last}}or{{/last}}
-            {{/types}})
+            {{/types}}
           {{/hasTypes}}
           {{comment}}
         {{/return}}

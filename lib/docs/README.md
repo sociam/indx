@@ -137,10 +137,10 @@ in the generated docs.
 |-------------------|-----------------------------------------------|------------|----------|
 | `@attribute`          | Force the docsgen comment to be describing an attribute | No | Only if class is detected |
 | `@name attrName` | Name of the attribute. Not yet implemented | No | Detected within code |
-| `@optional | If specified, indicates that the attribute is optional | No | - |
+| `@optional` | If specified, indicates that the attribute is optional | No | - |
 | `@types <types>` | Types that the attribute may be | No | - |
 | `@ignore` | Ignore this method (do not document it) (auto-detected if name begins with _). Not yet implemented | No | Only if method name begins with `_` in source		 |
-| `@order n` | Force a particular order for the method (auto-detected by order within code).
+| `@order n` | Force a particular order for the method (auto-detected by order within code). | No | Order in source code |
 | `@since date` | Describes when the functionality first existed. Not yet implemented | No | - |
 | `@see url` | Url to additional documentation. Not yet implemented | Yes, for each relevant source | - |
 | `@deprecated description` | Describes outdated functionality. Not yet implemented | No | - |
@@ -171,14 +171,14 @@ the generated docs.
 | Tag / parameters	| Description 									| Repeatable | Default 	|
 |-------------------|-----------------------------------------------|------------|----------|
 | `@method`          | Force the docsgen comment to be describing a method | No | Only if class is detected |
-| `@arg <types> name: comment` | Describe an argument. Use @opt if optional. | Yes, for multiple arguments | Arguments in function definition within source code |
-| `@return <types> comment` | Synchronous return | Yes, for multiple return conditions | - |
-| `@then <types> comment` or `@fail <types> comment` | Asynchronous return | Yes, for multiple result conditions | - |
+| `@arg <types> name - comment` | Describe an argument. Use @opt if optional. | Yes, for multiple arguments | Arguments in function definition within source code |
+| `@return <types> - comment` | Synchronous return | Yes, for multiple return conditions | - |
+| `@then <types> name, ... - comment` or `@fail <types> name, ... - comment` | Asynchronous return | Yes, for multiple result conditions | - |
 | `@chain` | Chaining return (i.e., returns `this`) | No | - |
 | `@name methodName` | Name of the method. Not yet implemented | No | Detected within code |
 | `@ignore` | Ignore this method (do not document it) (auto-detected if name begins with _). Not yet implemented | No | Only if method name begins with `_` in source		 |
-| `@order n` | Force a particular order for the method (auto-detected by order within code).
-| `@throws <types> comment` | Describe when an exception is thrown (may also use `@exception`). Not yet implemented | Yes, for each exception | - |
+| `@order n` | Force a particular order for the method (auto-detected by order within code). | No | Order in source code |
+| `@throws <types> - comment` | Describe when an exception is thrown (may also use `@exception`). Not yet implemented | Yes, for each exception | - |
 | `@since date` | Describes when the functionality first existed. Not yet implemented | No | - |
 | `@see url` | Url to additional documentation. Not yet implemented | Yes, for each relevant source | - |
 | `@deprecated description` | Describes outdated functionality. Not yet implemented | No | - |
@@ -187,7 +187,7 @@ Note on `<types>`: Types are pipe (|) separated; types and comment are optional
 
 **Example** (asynchronous method)
 
-	/// @arg <string|number> boxid: the id for the box
+	/// @arg <string|number> boxid - the id for the box
 	///
 	/// @then (<Box> the box)
 	/// @fail (<{ code: 409 }> response) box already exists
@@ -195,7 +195,11 @@ Note on `<types>`: Types are pipe (|) separated; types and comment are optional
 	///
 	/// Attempts to create a box with the given ID
 
+**Example** (synchronous method)
 
+	/// @arg <
+
+	/// @return <string> - A string
 
 ## Building the docs
 

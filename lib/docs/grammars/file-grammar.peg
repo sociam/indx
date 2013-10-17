@@ -1,8 +1,5 @@
 @import "utils-grammar.peg"
 
-start
-	= ps:properties d:description_lines
-			{ return { properties: ps, description: d }; }
 
 
 property

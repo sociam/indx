@@ -1,9 +1,5 @@
 @import "utils-grammar.peg"
 
-start
-	= ps:properties d:description_lines
-			{ return { properties: ps, description: d }; }
-
 property
 	= "@extend" _ n:name _ u:comment?
 			{ return ['extend', { name: n, fullName: n, url: u }]; }

@@ -362,13 +362,13 @@ angular
 				});
 			},
 			/// Gets whether the option to use websockets has been set; set this option using the store's options.use_websockets;
-			/// @return (<boolean> Whether will try to use websockets.)
+			/// @return <boolean> - Whether will try to use websockets.
 			get_use_websockets:function() { return this.options.use_websockets; },
 			/// Returns C, the number of objects that have been loaded from the server. Necessararily C < get_obj_ids.length()
-			/// @return (<integer> Number of objects in the cache)
+			/// @return <integer> - Number of objects in the cache
 			get_cache_size:function() { return this._objcache().length; },
 			/// Gets all of the ids contained in the box
-			/// @return (<[<String>]> Set of IDs)
+			/// @return <[<String>]> - Set of IDs
 			get_obj_ids:function() { return this._objlist().slice(); },
 			_objcache:function() { return this.attributes.objcache; },
 			_objlist:function() { return this.attributes.objlist !== undefined ? this.attributes.objlist : []; },
@@ -377,12 +377,12 @@ angular
 			_set_token:function(token) { this.set("token", token);	},
 			_set_version:function(v) { this.set("version", v);	},
 
-			/// @return (<integer> Current version of the box)
+			/// @return <integer> - Current version of the box
 			/// gets the current version of this box
 			get_version:function() { return this.get("version"); },
 
-			/// @then (<Box> gets a token for this box and continues)
-			/// @fail (<Error> returns the raised error)
+			/// @then <Box> - gets a token for this box and continues
+			/// @fail <Error> - returns the raised error
 			/// Gets an auth token for the box. This is done automatically
 			/// by a store when constructed by get_box.
 			get_token:function() {
@@ -399,7 +399,7 @@ angular
 				return d.promise();
 			},
 			/// Gets this box's id
-			/// @return <integer> this box's id
+			/// @return <integer> - this box's id
 			get_id:function() { return this.id || this.cid;	},
 			_ajax:function(method, path, data) {
 				data = _(_(data||{}).clone()).extend({box: this.id || this.cid, token:this.get('token')});
