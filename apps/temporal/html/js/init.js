@@ -183,61 +183,74 @@ store.login('indx', 'indx').then(function(status)
     //     });
     // });
 
-    store.get_box('temporal').then(function(box) 
-    {
-        tEngine.temporalBox = box;
-        
-        box.get_obj(box.get_obj_ids()).then(function (ds)
-        {
-            for(var i in ds)
-            {
-                var dataSegmentPattern = /^(data-segment-)/i;
-                var dataSourcePattern  = /^(data-source-)/i;
-                var annotationPattern  = /^(annotation-)/i;
-                var gtimeseries  = /^(gtimeseries-)/i;
-                
-
-                if(annotationPattern.test(ds[i].id)) // annotation
-                {
-                    var activityLabel = ds[i].attributes.activity[0];
-
-                    if(typeof tEngine.activityMap[activityLabel] === "undefined") // if activity doesn't exist
-                    {
-                        activity = new Activity(activityLabel);
-                        activity.lastID += Math.abs((Math.random() * 1e10) | 0);
-                        activity.setVisible(false);
-                        tEngine.activityMap[activityLabel] = activity;
-                        tEngine.updateActivityList();
-                    }
-                    else
-                    {
-                        activity = tEngine.activityMap[activityLabel];
-                    }
-
-                    this.annotationID = activity.addInstanceFromINDX(ds[i].attributes.begin[0], ds[i].attributes.end[0], ds[i].attributes.annot_id[0]);
-                }
-                else if(dataSegmentPattern.test(ds[i].id))
-                {
-                    // console.log(ds[i].id)
-                }
-                else if(dataSourcePattern.test(ds[i].id))
-                {
-                    var dataSource = new DataSource();
-                    dataSource.loadTemporalFormat(ds[i]);
-                    var channel = tEngine.addChannel(dataSource.source+": "+dataSource.name, dataSource);
-                    tEngine.bindGraph(channel);
-                    tEngine.loadedSource();
-                }
-                else if(gtimeseries.test(ds[i].id))
-                {
-                    var dataSource = new DataSource();
-                    dataSource.loadGFormat(ds[i]);
-                    var channel = tEngine.addChannel(dataSource.source+": "+dataSource.name, dataSource);
-                    tEngine.bindGraph(channel);
-                    tEngine.loadedSource();
-                }
-            }
+    store.get_box('nike').then(function(boxn) {
+        boxn.get_obj(boxn.get_obj_ids()).then(function(objs) {
+            FuelbandParser.parseData(objs);
+            tEngine.loadedSource();
         });
+    }).then(function() {
+        store.get_box('fitbit').then(function(boxf) {
+            boxf.get_obj(boxf.get_obj_ids()).then(function(objs) {
+                FitbitParser.parseData(objs);
+                tEngine.loadedSource();
+            });
+        }).then(function() {
+            store.get_box('temporal').then(function(box) 
+            {
+                box.get_obj(box.get_obj_ids()).then(function (ds)
+                {
+                    for(var i in ds)
+                    {
+                        var dataSegmentPattern = /^(data-segment-)/i;
+                        var dataSourcePattern  = /^(data-source-)/i;
+                        var annotationPattern  = /^(annotation-)/i;
+                        var gtimeseries  = /^(gtimeseries-)/i;
+                        
+
+                        if(annotationPattern.test(ds[i].id)) // annotation
+                        {
+                            var activityLabel = ds[i].attributes.activity[0];
+
+                            if(typeof tEngine.activityMap[activityLabel] === "undefined") // if activity doesn't exist
+                            {
+                                activity = new Activity(activityLabel);
+                                activity.lastID += Math.abs((Math.random() * 1e10) | 0);
+                                activity.setVisible(false);
+                                tEngine.activityMap[activityLabel] = activity;
+                                tEngine.updateActivityList();
+                            }
+                            else
+                            {
+                                activity = tEngine.activityMap[activityLabel];
+                            }
+
+                            this.annotationID = activity.addInstanceFromINDX(ds[i].attributes.begin[0], ds[i].attributes.end[0], ds[i].attributes.annot_id[0]);
+                        }
+                        else if(dataSegmentPattern.test(ds[i].id))
+                        {
+                            // console.log(ds[i].id)
+                        }
+                        else if(dataSourcePattern.test(ds[i].id))
+                        {
+                            var dataSource = new DataSource();
+                            dataSource.loadTemporalFormat(ds[i]);
+                            var channel = tEngine.addChannel(dataSource.source+": "+dataSource.name, dataSource);
+                            tEngine.bindGraph(channel);
+                            tEngine.loadedSource();
+                        }
+                        else if(gtimeseries.test(ds[i].id))
+                        {
+                            var dataSource = new DataSource();
+                            dataSource.loadGFormat(ds[i]);
+                            var channel = tEngine.addChannel(dataSource.source+": "+dataSource.name, dataSource);
+                            tEngine.bindGraph(channel);
+                            tEngine.loadedSource();
+                        }
+                    }
+                });
+            });
+        });
+    });
 
 
 
@@ -316,5 +329,4 @@ store.login('indx', 'indx').then(function(status)
 
 
 
-    });
 });
