@@ -45,7 +45,7 @@ def setup_logger(logfile, stdout):
 
 """ Set up the arguments, and their defaults. """
 parser = argparse.ArgumentParser(description='Run an INDX server.')
-parser.add_argument('user', type=str, help="PostgreSQL server username, e.g. indx")
+parser.add_argument('user', type=str, help="PostgreSQL server username, e.g. indx - This user must have CREATEDB and CREATEROLE privileges")
 parser.add_argument('hostname', type=str, help="Hostname of the INDX server, e.g. indx.example.com")
 parser.add_argument('--db-host', default="localhost", type=str, help="PostgreSQL host, e.g. localhost")
 parser.add_argument('--db-port', default=5432, type=int, help="PostgreSQL port, e.g. 5432")

@@ -28,6 +28,8 @@ from openid.oidutil import appendArgs
 #from openid.fetchers import setDefaultFetcher, Urllib2Fetcher
 from openid.extensions import pape, sreg, ax
 
+from indx.openid import IndxOpenID
+
 OPENID_PROVIDER_NAME = "INDX OpenID Handler"
 OPENID_PROVIDER_URL = "http://indx.ecs.soton.ac.uk/"
 
@@ -223,7 +225,26 @@ class AuthHandler(BaseHandler):
             wbSession.setUser(display_identifier) # namespace this as a openid or something?
             wbSession.setPassword("") # XXX
 
-            return self.return_ok(request)
+            # Initialise the OpenID user now:
+
+            ix_openid = IndxOpenID(self.database, display_identifier)
+
+            def err_cb(err):
+                logging.error("Error in IndxOpenID: {0}".format(err))
+                return self.return_unauthorized(request)
+
+            def cb(user_info):
+                password_hash = user_info['password_hash']
+                if password_hash == "":
+                    # user should be prompted for a password by the UI now, because they never have set one (new OpenID user)
+                    # TODO do this...
+                    return self.return_ok(request)
+                else:
+                    return self.return_ok(request)
+    
+            ix_openid.init_user().addCallbacks(cb, err_cb)
+            return
+            #return self.return_ok(request)
         elif info.status == consumer.CANCEL:
             #request.setResponseCode(200, "OK")
             logging.error("Error in openid_process: Verification cancelled.")
