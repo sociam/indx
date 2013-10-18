@@ -55,13 +55,11 @@ class AuthHandler(BaseHandler):
         ##                return ok
         ##     else: -> return error
 
-        try:
-            args = self.get_post_args(request)
-            logging.debug(" request args {0} ".format(args))            
-            user = args['username'][0]
-            pwd = args['password'][0]
-        except Exception as e:
-            logging.error("Error  {0}".format(e))
+        user = self.get_arg(request, "username")
+        pwd = self.get_arg(request, "password")
+
+        if user is None or pwd is None:
+            logging.error("auth_login error, user or pwd is None, returning unauthorized")
             return self.return_unauthorized(request)
 
         def win():
@@ -102,13 +100,12 @@ class AuthHandler(BaseHandler):
     def get_token(self,request):
         ## 1. request contains appid & box being requested (?!)
         ## 2. check session is Authenticated, get username/password
-        try:
-            args = self.get_post_args(request)
-            logging.debug(" request args {0} ".format(args))            
-            appid = args['app'][0]
-            boxid = args['box'][0]
-        except Exception as e:
-            logging.error("Error parsing arguments: {0}".format(e))
+
+        appid = self.get_arg(request, "app")
+        boxid = self.get_arg(request, "box")
+
+        if appid is None or boxid is None:
+            logging.error("get_token error, appid or boxid is None, returning bad request.")
             return self.return_bad_request(request)
 
         wbSession = self.get_session(request)
@@ -138,17 +135,17 @@ class AuthHandler(BaseHandler):
     
     def login_openid(self, request):
         """ Verify an OpenID identity. """
-        try:
-            args = self.get_post_args(request)
-            identity = args['identity'][0]
 
-#            if "password" in args and len(args['password']) > 0
-            # TODO check for password in args, then check it isn't blank, then check it first before doing OpenID
+        identity = self.get_arg(request, "identity")
 
-            logging.debug("OpenID, verify, identity: {0}".format(identity))
-        except Exception as e:
-            logging.debug("OpenID, verify, exception: {0}".format(e))
-            return self.return_bad_request(request, "You must specify an 'identity' in the GET query parameters.")
+        if identity is None:
+            logging.error("login_openid error, identity is None, returning bad request.")
+            return self.return_bad_request(request, "You must specify an 'identity' in the POST query parameters.")
+
+        password = self.get_arg(request, "password")
+
+        if password is not None:
+            pass # TODO FIXME handle this - check it before doing OpenID and then return unauthorized
 
         oid_consumer = consumer.Consumer(self.get_openid_session(request), self.store)
         try:

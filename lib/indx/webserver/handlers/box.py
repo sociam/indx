@@ -67,36 +67,33 @@ class BoxHandler(BaseHandler):
             store.setLoggerClass(BoxHandler, extra = {"token": token, "request": request})
             BoxHandler.log(logging.DEBUG, "BoxHandler diff request, args are: {0}".format(request.args), extra = {"request": request, "token": token})
 
-            # TODO replace this mess with a 'defaultdicts' of the default values
-
-            try:
-                from_version = request.args['from_version'][0]
-                try:
-                    from_version = int(from_version)
-                except Exception as ee:
-                    BoxHandler.log(logging.DEBUG, "Exception in box.diff converting from_version ({0}) to an int ({1}).".format(from_version, ee))
-            except Exception as e:
-                BoxHandler.log(logging.ERROR, "Exception in box.diff getting argument: {0}".format(e), extra = {"request": request, "token": token})
+            from_version = self.get_arg(request, "from_version")
+            if from_version is None:
+                BoxHandler.log(logging.ERROR, "Exception in box.diff getting argument from_version: {0}".format(from_version), extra = {"request": request, "token": token})
                 return self.return_bad_request(request, "Specify the following arguments in query string: from_version.")
-
+ 
             try:
-                # return IDs of changed object, full objects or a diff ['ids','objects','diff']
-                return_objs = request.args['return_objs'][0]
-                if return_objs not in ['objects', 'ids', 'diff']:
-                    return self.return_bad_request(request, "Invalid version for 'return_objs', valid values are: ['objects','ids','diff'].") # TODO genericise this as above
-            except Exception as e:
-                BoxHandler.log(logging.ERROR, "Exception in box.diff getting argument: {0}".format(e), extra = {"request": request, "token": token})
-                return self.return_bad_request(request, "Specify the following arguments in query string: return_objs.")
+                from_version = int(from_version)
+            except Exception as ee:
+                BoxHandler.log(logging.DEBUG, "Exception in box.diff converting from_version ({0}) to an int ({1}).".format(from_version, ee))
+                return self.return_bad_request(request, "from_version must be an integer.")
+
+            return_objs = self.get_arg(request, "return_objs")
+            valid_return_objs = ['objects', 'ids', 'diff']
+            if return_objs not in valid_return_objs:
+                BoxHandler.log(logging.ERROR, "Exception in box.diff, argument return_objs not valid: {0}, must be one of: {1}".format(return_objs, valid_return_objs), extra = {"request": request, "token": token})
+                return self.return_bad_request(request, "Invalid version for 'return_objs', valid values are: {0}.".format(valid_return_objs)) # TODO genericise this as above
+
 
             # to_version is optional, if unspecified, the latest version is used.
-            if "to_version" in request.args:
-                to_version = request.args['to_version'][0]
+            # to_version = None is acceptable
+            to_version = self.get_arg(request, "to_version")
+            if "to_version" is not None:
                 try:
                     to_version = int(to_version)
                 except Exception as ee:
                     BoxHandler.log(logging.DEBUG, "Exception in box.diff converting to_version ({0}) to an int ({1}).".format(to_version, ee))
-            else:
-                to_version = None
+                    return self.return_bad_request(request, "when specified, to_version must be an integer.")
 
             try:
                 BoxHandler.log(logging.DEBUG, "BoxHandler calling diff on store", extra = {"request": request, "token": token})
@@ -109,6 +106,7 @@ class BoxHandler(BaseHandler):
 
                 store.diff(from_version, to_version, return_objs).addCallbacks(lambda results: self.return_ok(request, results), handle_add_error)
             except Exception as e:
+                BoxHandler.log(logging.ERROR, "BoxHandler error calling diff on store: {0}".format(e), extra = {"request": request, "token": token})
                 return self.return_internal_error(request)
 
         token.get_store().addCallbacks(store_cb, err_cb)
@@ -151,7 +149,7 @@ class BoxHandler(BaseHandler):
             BoxHandler.log(logging.DEBUG, "BoxHandler query request, args: {0}".format(request.args), extra = {"request": request, "token": token})
 
             try:
-                q = json.loads(request.args['q'][0])
+                q = json.loads(self.get_arg(request, "q"))
             except Exception as e:
                 BoxHandler.log(logging.ERROR, "Exception in box.query decoding JSON in query, 'q': {0}".format(e), extra = {"request": request, "token": token})
                 return self.return_bad_request(request, "Specify query as query string parameter 'q' as valid JSON")
@@ -217,8 +215,9 @@ class BoxHandler(BaseHandler):
             store.setLoggerClass(BoxHandler, extra = {"token": token, "request": request})
             BoxHandler.log(logging.DEBUG, "BoxHandler files request", extra = {"request": request, "token": token})
 
-            # TODO unified argument checker in base handler
-            if "id" not in request.args:
+            file_id = self.get_arg(request, "id")
+
+            if file_id is None:
                 # list files
 
                 def file_list_cb(files):
@@ -228,8 +227,6 @@ class BoxHandler(BaseHandler):
                 store.list_files().addCallbacks(file_list_cb, err_cb)
                 return
             
-            file_id = request.args['id'][0]
-
             if request.method == 'GET':
                 BoxHandler.log(logging.DEBUG, "BoxHandler files GET request", extra = {"request": request, "token": token})
 
@@ -241,10 +238,9 @@ class BoxHandler(BaseHandler):
                 store.get_latest_file(file_id).addCallbacks(file_cb, err_cb)
             elif request.method == 'PUT':
                 BoxHandler.log(logging.DEBUG, "BoxHandler files POST request", extra = {"request": request, "token": token})
-                # TODO unified argument checker in base handler
-                try:
-                    version = int(request.args['version'][0])
-                except Exception as e:
+
+                version = self.get_arg(request, "version")
+                if version is None:
                     BoxHandler.log(logging.DEBUG, "BoxHandler files: no 'version' argument in URL: {0}".format(e), extra = {"request": request, "token": token})
                     return self.return_bad_request(request, "You must specify the 'version' argument for the box.")
 
@@ -261,12 +257,12 @@ class BoxHandler(BaseHandler):
                     else:
                         BoxHandler.log(logging.ERROR, "Exception trying to PUT {0}".format(e), extra = {"request": request, "token": token})
                         return self.return_internal_error(request);
+
             elif request.method == 'DELETE':
                 BoxHandler.log(logging.DEBUG, "BoxHandler files DELETE request", extra = {"request": request, "token": token})
-                # TODO unified argument checker in base handler
-                try:
-                    version = int(request.args['version'][0])
-                except Exception as e:
+
+                version = self.get_arg(request, "version")
+                if version is None:
                     BoxHandler.log(logging.DEBUG, "BoxHandler files: no 'version' argument in URL: {0}".format(e), extra = {"request": request, "token": token})
                     return self.return_bad_request(request, "You must specify the 'version' argument for the box.")
 
@@ -305,11 +301,11 @@ class BoxHandler(BaseHandler):
             store.setLoggerClass(BoxHandler, extra = {"token": token, "request": request})
             BoxHandler.log(logging.DEBUG, "BoxHandler GET request", extra = {"request": request, "token": token})
 
-            if "id" in request.args or "id[]" in request.args:
+            id_list = self.get_arg(request, "id") or self.get_arg(request, "id[]")
+            if id_list is not None:
                 # return the objects listed in in the id arguments, e.g.:
                     # GET /box/?id=item1&id=item2&id=item3
                 BoxHandler.log(logging.DEBUG, "BoxHandler GET request", extra = {"request": request, "id": request.args.get('id'), "id[]": request.args.get('id[]')})
-                id_list = request.args.get('id') or request.args.get('id[]')
                 # return ids of the whole box
                 return store.get_latest_objs(id_list).addCallbacks(lambda obj: self.return_ok(request, {"data": obj}), err_cb)
             else:
@@ -325,8 +321,6 @@ class BoxHandler(BaseHandler):
         if not token:
             return self.return_forbidden(request)
 
-        args = self.get_post_args(request)
-
         def err_cb(failure):
             failure.trap(Exception)
             BoxHandler.log(logging.ERROR, "BoxHandler do_PUT err_cb: {0}".format(failure), extra = {"request": request, "token": token})
@@ -336,11 +330,17 @@ class BoxHandler(BaseHandler):
             store.setLoggerClass(BoxHandler, extra = {"token": token, "request": request})
             BoxHandler.log(logging.DEBUG, "BoxHandler PUT request", extra = {"request": request, "token": token})
 
-            if "version" not in args:
+            prev_version = self.get_arg(request, "version")
+            if prev_version is not None:
+                try:
+                    prev_version = int(prev_version)
+                except Exception as e:
+                    BoxHandler.log(logging.DEBUG, "Exception in do_PUT converting version (prev_version) ({0}) to an int ({1}).".format(prev_version, e))
+                    return self.return_bad_request(request, "version must be an integer.")
+            else:
                 return self.return_bad_request(request,"Specify a previous version with &version=")
-            prev_version = int(args['version'][0])
 
-            objs = json.loads(args['data'][0])
+            objs = json.loads(self.get_arg(request, "data"))
 
             if type(objs) != type([]):
                 objs = [objs]
@@ -389,15 +389,20 @@ class BoxHandler(BaseHandler):
 
         def store_cb(store):
             store.setLoggerClass(BoxHandler, extra = {"token": token, "request": request})
-            args = self.get_post_args(request)
 
             BoxHandler.log(logging.DEBUG, "BoxHandler DELETE request", extra = {"request": request, "token": token})
 
-            if "version" not in args:
-                return self.return_bad_request(request,"Specify a previous version in the body with &version=")
-            prev_version = int(args['version'][0])
+            prev_version = self.get_arg(request, "version")
+            if prev_version is not None:
+                try:
+                    prev_version = int(prev_version)
+                except Exception as e:
+                    BoxHandler.log(logging.DEBUG, "Exception in do_PUT converting version (prev_version) ({0}) to an int ({1}).".format(prev_version, e))
+                    return self.return_bad_request(request, "version must be an integer.")
+            else:
+                return self.return_bad_request(request,"Specify a previous version with &version=")
 
-            id_list = json.loads(args['data'][0])
+            id_list = json.loads(self.get_arg(request, "data"))
 
             if type(id_list) != type([]):
                 id_list = [id_list]
