@@ -18,6 +18,7 @@
 import logging
 from indx.webserver.handlers.base import BaseHandler
 import indx.indx_pg2 as database
+from twisted.internet.defer import Deferred
 
 import urlparse
 from openid.store import memstore
@@ -29,6 +30,7 @@ from openid.oidutil import appendArgs
 from openid.extensions import pape, sreg, ax
 
 from indx.openid import IndxOpenID
+from hashing_passwords import make_hash, check_hash
 
 OPENID_PROVIDER_NAME = "INDX OpenID Handler"
 OPENID_PROVIDER_URL = "http://indx.ecs.soton.ac.uk/"
@@ -132,7 +134,38 @@ class AuthHandler(BaseHandler):
         self.database.lookup_best_acct(boxid, username, password).addCallbacks(got_acct, lambda conn: self.return_forbidden(request))
 
     ### OpenID functions
-    
+
+    def check_openid_pass(self, uri, password):
+        """ Check an OpenID user's password. """
+        return_d = Deferred()
+
+        logging.debug("check_openid_pass for user {0}, where password is none? {1}".format(uri, password is None))
+
+        def connected_cb(conn):
+            """ Get the password hash of a user and check it against the supplied password. """
+            d = conn.runQuery("SELECT username_type, password_hash FROM tbl_users WHERE username = %s AND username_type = %s", [uri, "openid"])
+
+            def hash_cb(rows):
+                if len(rows) == 0:
+                    return_d.callback(False) # return False if user not in DB
+                    return
+
+                username_type, password_hash = rows[0]
+
+                if password_hash == "":
+                    return_d.callback(True) # user's password is not yet set - return True always.
+                    return
+
+                return_d.callback(check_hash(password, password_hash)) # check hash and return result
+                return
+
+            d.addCallbacks(hash_cb, return_d.errback)
+
+        # get a connection to the INDX db from the pool
+        self.database.connect_indx_db().addCallbacks(connected_cb, return_d.errback)
+        return return_d
+
+
     def login_openid(self, request):
         """ Verify an OpenID identity. """
 
@@ -144,48 +177,61 @@ class AuthHandler(BaseHandler):
 
         password = self.get_arg(request, "password")
 
-        if password is not None:
-            pass # TODO FIXME handle this - check it before doing OpenID and then return unauthorized
+        def post_pw():
+            logging.debug("login_openid post_pw")
 
-        oid_consumer = consumer.Consumer(self.get_openid_session(request), self.store)
-        try:
-            oid_req = oid_consumer.begin(identity)
-            
-            # SReg speaks this protocol: http://openid.net/specs/openid-simple-registration-extension-1_1-01.html
-            # and tries to request additional metadata about this OpenID identity
-            sreg_req = sreg.SRegRequest(required=['fullname','nickname','email'], optional=[])
-            oid_req.addExtension(sreg_req)
+            oid_consumer = consumer.Consumer(self.get_openid_session(request), self.store)
+            try:
+                oid_req = oid_consumer.begin(identity)
+                
+                # SReg speaks this protocol: http://openid.net/specs/openid-simple-registration-extension-1_1-01.html
+                # and tries to request additional metadata about this OpenID identity
+                sreg_req = sreg.SRegRequest(required=['fullname','nickname','email'], optional=[])
+                oid_req.addExtension(sreg_req)
 
-            # AX speaks this protocol: http://openid.net/specs/openid-attribute-exchange-1_0.html
-            # and tries to get more attributes (by URI), we request some of the more common ones
-            ax_req = ax.FetchRequest()
-            for uri in self.AX_URIS:
-                ax_req.add(ax.AttrInfo(uri, required = True))
-            oid_req.addExtension(ax_req)
-        except consumer.DiscoveryFailure as exc:
-            #request.setResponseCode(200, message = "OK")
-            #request.write("Error: {0}".format(exc))
-            #request.finish()
-            logging.error("Error in login_openid: {0}".format(exc))
-            return self.return_unauthorized(request)
-        else:
-            if oid_req is None:
+                # AX speaks this protocol: http://openid.net/specs/openid-attribute-exchange-1_0.html
+                # and tries to get more attributes (by URI), we request some of the more common ones
+                ax_req = ax.FetchRequest()
+                for uri in self.AX_URIS:
+                    ax_req.add(ax.AttrInfo(uri, required = True))
+                oid_req.addExtension(ax_req)
+            except consumer.DiscoveryFailure as exc:
                 #request.setResponseCode(200, message = "OK")
-                #request.write("Error, no OpenID services found for: {0}".format(identity))
-                logging.error("Error in login_openid: no OpenID services found for: {0}".format(identity))
+                #request.write("Error: {0}".format(exc))
                 #request.finish()
+                logging.error("Error in login_openid: {0}".format(exc))
                 return self.return_unauthorized(request)
             else:
-                trust_root = self.webserver.server_url
-                return_to = appendArgs(trust_root + "/" + self.base_path + "/openid_process", {})
+                if oid_req is None:
+                    #request.setResponseCode(200, message = "OK")
+                    #request.write("Error, no OpenID services found for: {0}".format(identity))
+                    logging.error("Error in login_openid: no OpenID services found for: {0}".format(identity))
+                    #request.finish()
+                    return self.return_unauthorized(request)
+                else:
+                    trust_root = self.webserver.server_url
+                    return_to = appendArgs(trust_root + "/" + self.base_path + "/openid_process", {})
 
-                logging.debug("OpenID, had oid_req, trust_root: {0}, return_to: {1}, oid_req: {2}".format(trust_root, return_to, oid_req))
+                    logging.debug("OpenID, had oid_req, trust_root: {0}, return_to: {1}, oid_req: {2}".format(trust_root, return_to, oid_req))
 
-                redirect_url = oid_req.redirectURL(trust_root, return_to)
-                # FIXME check this is the best way to redirect here
-                request.setHeader("Location", redirect_url)
-                request.setResponseCode(302, "Found")
-                request.finish()
+                    redirect_url = oid_req.redirectURL(trust_root, return_to)
+                    # FIXME check this is the best way to redirect here
+                    request.setHeader("Location", redirect_url)
+                    request.setResponseCode(302, "Found")
+                    request.finish()
+                    return
+
+
+        def pass_cb(pass_correct):
+            logging.error("login_openid pass_cb, password correct? {0}".format(pass_correct))
+            if pass_correct:
+                return post_pw()
+            else:
+                return self.return_unauthorized(request)
+
+        self.check_openid_pass(identity, password).addCallbacks(pass_cb, lambda failure: self.return_internal_error(request))
+        return
+
 
     def openid_process(self, request):
         """ Process a callback from an identity provider. """
