@@ -1,3 +1,17 @@
+start
+	= ps:properties us:start
+			{ 	var ks = Object.keys(ps),
+					i, k;
+				for (i in ks) {
+					k = ks[i];
+					us.properties[k] = ps[k];
+				}
+				return us; }
+	/ d:description_lines us:start
+		{ us.description = us.description.concat(d); return us; }
+	/ ''
+		{ return { properties: {}, description: [] }; }
+
 properties
 	= p:property_obj __ ps:properties
 			{	var ks = Object.keys(p),
@@ -10,8 +24,6 @@ properties
 				return ps; }
 	/ p:property_obj
 			{ return p; }
-	/ ''
-			{ return {}; }
 
 property_obj
 	= _$_ a:property
@@ -25,16 +37,15 @@ description_lines
 			{ return [d].concat(ds); }
 	/ d:description_line
 			{ return [d]; }
-	/ ''
-			{ return []; }
 
 description_line
 	= __ $ d:comment
 			{ return d; }
 
 comment
-	= c:[^\n\r]*
-			{ return c.join(''); }
+	= c0:[^\n\r@] c:[^\n\r]*
+			{ return c0 + c.join(''); }
+	/ ''
 
 $
 	= _ "///" _

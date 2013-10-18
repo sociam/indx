@@ -267,7 +267,7 @@ angular
 				case "create": return u.assert(false, "create is never used for Objs");
 				case "read"  : return model._fetch();
 				case "update":
-					return  model.box.update([model.id])[0];
+					return  model.box._update([model.id])[0];
 				case "delete":
 					return this.box._delete_models([this.id])[0];
 				}
@@ -302,7 +302,7 @@ angular
 					this_._flush_delete_queue();
 				});
 			},
-			/// <string> fid file id
+			/// @arg fid <string> - file id
 			/// Tries to get a file with given id. If it doesn't exist, a file with that name is created.
 			/// @return <File> the file
 			get_or_create_file:function(fid) {
@@ -362,13 +362,13 @@ angular
 				});
 			},
 			/// Gets whether the option to use websockets has been set; set this option using the store's options.use_websockets;
-			/// @return (<boolean> Whether will try to use websockets.)
+			/// @return <boolean> - Whether will try to use websockets.
 			get_use_websockets:function() { return this.options.use_websockets; },
 			/// Returns C, the number of objects that have been loaded from the server. Necessararily C < get_obj_ids.length()
-			/// @return (<integer> Number of objects in the cache)
+			/// @return <integer> - Number of objects in the cache
 			get_cache_size:function() { return this._objcache().length; },
 			/// Gets all of the ids contained in the box
-			/// @return (<[<String>]> Set of IDs)
+			/// @return <[<String>]> - Set of IDs
 			get_obj_ids:function() { return this._objlist().slice(); },
 			_objcache:function() { return this.attributes.objcache; },
 			_objlist:function() { return this.attributes.objlist !== undefined ? this.attributes.objlist : []; },
@@ -377,12 +377,12 @@ angular
 			_set_token:function(token) { this.set("token", token);	},
 			_set_version:function(v) { this.set("version", v);	},
 
-			/// @return (<integer> Current version of the box)
+			/// @return <integer> - Current version of the box
 			/// gets the current version of this box
 			get_version:function() { return this.get("version"); },
 
-			/// @then (<Box> gets a token for this box and continues)
-			/// @fail (<Error> returns the raised error)
+			/// @then <Box> - gets a token for this box and continues
+			/// @fail <Error> - returns the raised error
 			/// Gets an auth token for the box. This is done automatically
 			/// by a store when constructed by get_box.
 			get_token:function() {
@@ -399,12 +399,19 @@ angular
 				return d.promise();
 			},
 			/// Gets this box's id
-			/// @return <integer> this box's id
+			/// @return <integer> - this box's id
 			get_id:function() { return this.id || this.cid;	},
 			_ajax:function(method, path, data) {
 				data = _(_(data||{}).clone()).extend({box: this.id || this.cid, token:this.get('token')});
 				return this.store._ajax(method, path, data);
 			},
+			// @arg id <String>: Identity to use for hte file
+			// @arg filedata <HTML5File>: HTML5 File object to put
+			// @arg contenttype <String>: Content type to store with the file (for use in serving back)
+			// uploads the file identified by file into the box, watching out for obsolete messages.
+			// Handles obsolete cases by merely waiting for a websocket update
+			// @then(INDX.File): returns created File object
+			// @fail(error): returns Error object
 			put_file:function(id,filedata,contenttype) {
 				// creates a File object and hands it back in the resolve
 				contenttype = contenttype || filedata.type;
@@ -427,11 +434,11 @@ angular
 				});
 				return d.promise();
 			},
+			// now uses relative url scheme '//blah:port/path';
+			// all files must be PUT into boxname/files
+			// here the parameters are get encoded
+			// 'http://' + this.store.get('server_host') + "/" +  boxid + "/" + 'files',
 			_do_put_file:function(id,file,contenttype) {
-				// now uses relative url scheme '//blah:port/path';
-				// all files must be PUT into boxname/files
-				// here the parameters are get encoded
-				// // 'http://' + this.store.get('server_host') + "/" +  boxid + "/" + 'files',
 				var boxid = this.id || this.cid,
 				base_url = ['/', this.store.get('server_host'), boxid, 'files'].join('/'),
 				options = { app: this.store.get('app'), id: id, token:this.get('token'),  box: boxid, version: this.get_version() },
@@ -444,8 +451,8 @@ angular
 				);
 				return $.ajax( ajax_args );
 			},
-			/// <object> query_pattern a query pattern to match
-			/// <[<string>]> predicates optional array of predicates to return, or entire objects otherwise
+			/// @arg query_pattern <object>: a query pattern to match
+			/// @arg predicates <[<string>]>: optional array of predicates to return, or entire objects otherwise
 			/// Issues query to server, which then returns either entire objects or just values of the props specified
 			/// @then <[Objs]> Objects matching query
 			/// @fail <string> Error
@@ -480,6 +487,7 @@ angular
 					}).fail(function(err) { error(err); d.reject(err); });
 				return d.promise();
 			},
+			// handles updates from websockets the server
 			_diff_update:function(response) {
 				var d = u.deferred(), this_ = this, latest_version = response['@to_version'],
 				added_ids  = _(response.data.added).keys(),
@@ -558,10 +566,10 @@ angular
 				this._objcache().add(model);
 				return model;
 			},
-			/// <String> or [<String>] - id or ids of objects to retrieve
+			/// @arg objid <String> or [<String>] - id or ids of objects to retrieve
 			/// retrieves all of the objects by their ids specified from the server into the cache if not loaded, otherwise just returns the cached models
-			/// @then <Obj> or [<Obj>] Array of loaded objects
-			/// @fail <String> Error raised during process
+			/// @then(<Obj> or [<Obj>] )Array of loaded objects
+			/// @fail(<String>) Error raised during process
 			get_obj:function(objid) {
 				// get_obj always returns a promise
 				// console.log(' get_obj() >> ', objid);
@@ -657,9 +665,7 @@ angular
 					this_._objcache().remove(rid);
 				});
 			},
-			_is_fetched: function() {
-				return this.id !== undefined;
-			},
+			_is_fetched: function() {	return this.id !== undefined;	},
 			_fetch:function() {
 				// all fetch really does is retrieve ids!
 				// new client :: this now _only_ fetches object ids
@@ -781,7 +787,7 @@ angular
 					}).fail(d.reject);
 				return d.promise();
 			},
-			update:function(original_ids) {
+			_update:function(original_ids) {
 				// this is called by Backbone.save(),
 				var dfds = this._add_to_update_queue(original_ids);
 				this._flush_update_queue();
@@ -841,7 +847,7 @@ angular
 				{
 				case "create": return box._create_box();
 				case "read": return box._check_token_and_fetch();
-				case "update": return box.update()[0];  // save whole box?
+				case "update": return box._update()[0];  // save whole box?
 				case "delete": return this.delete_box(this.get_id()); // hook up to destroy
 				}
 			},

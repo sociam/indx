@@ -1,19 +1,18 @@
 @import "utils-grammar.peg"
 
-start
-	= ps:properties d:description_lines
-			{ return { properties: ps, description: d }; }
 
 property
 	= a:argument
 			{ return ['args', a]; }
 	/ r:result
 			{ return ['result_' + r[0], r[1]]; }
+	/ t:throws
+			{ return ['throw', t]}
 	/ "@" k:name _ v:comment?
 			{ return [k, v || true]; }
 
 argument
-	= m:argument_mode _ t:type_statement? _ n:name _ ":"? _ c:comment?
+	= m:argument_mode _ t:type_statement? _ n:name _ "-"? _ c:comment?
 			{ return { mode: m, types: t, name: n, comment: c }; }
 
 argument_mode
@@ -30,12 +29,20 @@ result
     / "@chain"
 			{ return ["chain", true]; }
 
+throws
+    = throws_tags _ t:type_statement? _ "-"? _ c:comment
+			{ return { types: t, comment:c }; }
+
+throws_tags
+	= "@throws"
+	/ "@exception"
+
 return_result
-	= "@return" _ t:type_statement? _ c:comment
-			{ return { comment: c, types: t }; }
+	= "@return" _ t:type_statement? _ "-"? _ c:comment
+			{ return { types: t, comment: c }; }
 
 async_result
-	= t:async_result_case_type _ cb:callback? _ c:comment
+	= t:async_result_case_type _ cb:callback? _ "-"? _ c:comment
 			{ return { type: t, comment: c, args: cb }; }
 
 
