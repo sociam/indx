@@ -1,8 +1,14 @@
 start
 	= ps:properties us:start
-		{ us.properties = ps; return us; }
+			{ 	var ks = Object.keys(ps),
+					i, k;
+				for (i in ks) {
+					k = ks[i];
+					us.properties[k] = ps[k];
+				}
+				return us; }
 	/ d:description_lines us:start
-		{ us.description = d; return us; }
+		{ us.description = us.description.concat(d); return us; }
 	/ ''
 		{ return { properties: {}, description: [] }; }
 
