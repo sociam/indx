@@ -1,0 +1,21 @@
+# steps to set up the database for INDX on Fedora, should work on most Linux distros
+
+# 1. create the folder where the data will be stored, change ownership to the postgres user
+mkdir /path/to/database/folder
+sudo chown -R postgres:postgres /path/to/database/folder
+
+# 2. initialize the database space (cluster) - as the postgres user
+sudo su -c "initdb -D /path/to/database/folder" postgres
+
+# 3. run the db server - as the postgres user
+sudo su -c "postgres -D /path/to/database/folder &" postgres
+
+# 4. connect to the db server via the cl client
+psql -U postgres
+
+# 5. in the postgres client, create a role called indx and grant privileges
+create user indx with createdb createrole login password 'indx';
+
+# or 
+# create user indx with createdb login password 'indx';
+# alter user indx with createrole;
