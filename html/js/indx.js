@@ -326,8 +326,8 @@ angular
 					var protocol = (document.location.protocol === 'https:') ? 'wss:/' : 'ws:/';
 					var ws_url = [protocol,server_host,'ws'].join('/');
 					ws = new WebSocket(ws_url);
-					/// @ignore
-					/// dhjo
+/// @ignore
+/// dhjo
 					ws.onmessage = function(evt) {
 						u.debug('websocket :: incoming a message ', evt.data.toString().substring(0,190));
 						var pdata = JSON.parse(evt.data);
@@ -340,7 +340,8 @@ angular
 								});
 						}
 					};
-					/// @ignore
+					/// @arg {blah} - sfd
+					/// fdsafds
 					ws.onopen = function() {
 						var data = WS_MESSAGES_SEND.auth(this_.get('token'));
 						ws.send(data);

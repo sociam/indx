@@ -74,7 +74,7 @@
               <td width="50%"><ul class="callbacks">
                 {{#fail}}
                   <li>
-                    <code>.fail({{#args}} &lt;{{#type}}<span class="types">{{type}}{{^last}}|{{/last}}</span>{{/type}}&gt; {{comment}}{{^last}},{{/last}} {{/args}})</code>
+                    <code>.fail( {{#args}} &lt;{{#type}}<span class="types">{{type}}{{^last}}|{{/last}}</span>{{/type}}&gt; {{comment}}{{^last}},{{/last}} {{/args}} )</code>
                     {{#comment}}- {{comment}}{{/comment}}
                   </li>
                 {{/fail}}
