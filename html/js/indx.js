@@ -302,9 +302,9 @@ angular
 					this_._flush_delete_queue();
 				});
 			},
-			/// @arg fid <string> - file id
+			/// @arg {string} fid - file id
 			/// Tries to get a file with given id. If it doesn't exist, a file with that name is created.
-			/// @return <File> the file
+			/// @return {File} the file
 			get_or_create_file:function(fid) {
 				var files = this.get('files');
 				if (files.get(fid) === undefined) {
@@ -326,6 +326,8 @@ angular
 					var protocol = (document.location.protocol === 'https:') ? 'wss:/' : 'ws:/';
 					var ws_url = [protocol,server_host,'ws'].join('/');
 					ws = new WebSocket(ws_url);
+					/// @ignore
+					/// dhjo
 					ws.onmessage = function(evt) {
 						u.debug('websocket :: incoming a message ', evt.data.toString().substring(0,190));
 						var pdata = JSON.parse(evt.data);
@@ -338,6 +340,7 @@ angular
 								});
 						}
 					};
+					/// @ignore
 					ws.onopen = function() {
 						var data = WS_MESSAGES_SEND.auth(this_.get('token'));
 						ws.send(data);
@@ -346,6 +349,7 @@ angular
 						this_._ws = ws;
 						this_.trigger('ws-connect');
 					};
+					/// @ignore
 					ws.onclose = function(evt) {
 						// what do we do now?!
 						u.error('websocket closed -- ');
@@ -362,13 +366,13 @@ angular
 				});
 			},
 			/// Gets whether the option to use websockets has been set; set this option using the store's options.use_websockets;
-			/// @return <boolean> - Whether will try to use websockets.
+			/// @return {boolean} - Whether will try to use websockets.
 			get_use_websockets:function() { return this.options.use_websockets; },
 			/// Returns C, the number of objects that have been loaded from the server. Necessararily C < get_obj_ids.length()
-			/// @return <integer> - Number of objects in the cache
+			/// @return {integer} - Number of objects in the cache
 			get_cache_size:function() { return this._objcache().length; },
 			/// Gets all of the ids contained in the box
-			/// @return <[<String>]> - Set of IDs
+			/// @return {string[]} - Set of IDs
 			get_obj_ids:function() { return this._objlist().slice(); },
 			_objcache:function() { return this.attributes.objcache; },
 			_objlist:function() { return this.attributes.objlist !== undefined ? this.attributes.objlist : []; },
@@ -377,12 +381,12 @@ angular
 			_set_token:function(token) { this.set("token", token);	},
 			_set_version:function(v) { this.set("version", v);	},
 
-			/// @return <integer> - Current version of the box
+			/// @return {integer} - Current version of the box
 			/// gets the current version of this box
 			get_version:function() { return this.get("version"); },
 
-			/// @then <Box> - gets a token for this box and continues
-			/// @fail <Error> - returns the raised error
+			/// @then({Box}) - gets a token for this box and continues
+			/// @fail({Error}) - returns the raised error
 			/// Gets an auth token for the box. This is done automatically
 			/// by a store when constructed by get_box.
 			get_token:function() {
@@ -399,19 +403,19 @@ angular
 				return d.promise();
 			},
 			/// Gets this box's id
-			/// @return <integer> - this box's id
+			/// @return {integer} - this box's id
 			get_id:function() { return this.id || this.cid;	},
 			_ajax:function(method, path, data) {
 				data = _(_(data||{}).clone()).extend({box: this.id || this.cid, token:this.get('token')});
 				return this.store._ajax(method, path, data);
 			},
-			// @arg id <String>: Identity to use for hte file
-			// @arg filedata <HTML5File>: HTML5 File object to put
-			// @arg contenttype <String>: Content type to store with the file (for use in serving back)
-			// uploads the file identified by file into the box, watching out for obsolete messages.
-			// Handles obsolete cases by merely waiting for a websocket update
-			// @then(INDX.File): returns created File object
-			// @fail(error): returns Error object
+			/// @arg {string} id - Identity to use for hte file
+			/// @arg {HTML5File} filedata - HTML5 File object to put
+			/// @arg {string} contenttype - Content type to store with the file (for use in serving back)
+			/// uploads the file identified by file into the box, watching out for obsolete messages.
+			/// Handles obsolete cases by merely waiting for a websocket update
+			/// @then({INDX.File}) - returns created File object
+			/// @fail(error) - returns Error object
 			put_file:function(id,filedata,contenttype) {
 				// creates a File object and hands it back in the resolve
 				contenttype = contenttype || filedata.type;
@@ -422,6 +426,7 @@ angular
 					d.resolve(newFile);
 				}).fail(function(err) {
 					if (err.status === 409) {
+						/// @ignore
 						var cb = function() {
 							this_.off('update-from-master', cb, newFile);
 							this_._put_file(id, filedata, contenttype).then(d.resolve).fail(d.reject);
@@ -451,11 +456,13 @@ angular
 				);
 				return $.ajax( ajax_args );
 			},
-			/// @arg query_pattern <object>: a query pattern to match
-			/// @arg predicates <[<string>]>: optional array of predicates to return, or entire objects otherwise
+			/// @arg {Object} query_pattern - a query pattern to match
+			/// @opt {string[]} predicates - optional array of predicates to return, or entire objects otherwise
+			///
 			/// Issues query to server, which then returns either entire objects or just values of the props specified
-			/// @then <[Objs]> Objects matching query
-			/// @fail <string> Error
+			///
+			/// @then({Objs[]} Objects matching query) - When the query is successful
+			/// @fail({string} Error) - When the query fails
 			query: function(query_pattern, predicates){
 				// @param - query_pattern is an object like { key1 : val1, key2: val2 } .. that
 				//   returns / fetches all objects
@@ -566,10 +573,10 @@ angular
 				this._objcache().add(model);
 				return model;
 			},
-			/// @arg objid <String> or [<String>] - id or ids of objects to retrieve
+			/// @arg {string|string[]} objid - id or ids of objects to retrieve
 			/// retrieves all of the objects by their ids specified from the server into the cache if not loaded, otherwise just returns the cached models
-			/// @then(<Obj> or [<Obj>] )Array of loaded objects
-			/// @fail(<String>) Error raised during process
+			/// @then({Obj|Obj[]} Array of loaded objects)
+			/// @fail({string} Error raised during process)
 			get_obj:function(objid) {
 				// get_obj always returns a promise
 				// console.log(' get_obj() >> ', objid);
@@ -866,8 +873,8 @@ angular
 				xhrFields: { withCredentials: true }
 			},
 
-			/// @opt <{}> attributes
-			/// @opt <{}> options
+			/// @opt {Object} attributes
+			/// @opt {Object} options
 			/// @construct
 			initialize: function(attributes, options){
 				this.set({boxes : new BoxCollection([], {store: this})});
@@ -889,12 +896,11 @@ angular
 			},
 
 
-			/// @arg <string|number> boxid: the id for the box
+			/// @arg {string|number} boxid - the id for the box
 			///
-			/// @then (<Box> the box)
-			/// @fail
-			///   (<{ code: 409 }> response) box already exists
-			///   (<{ code: -1, error: error obj }> response) other error
+			/// @then({Box} the box)
+			/// @fail({{ code: 409 }} response) - box already exists
+			/// @fail({{ code: -1, error: error_obj }} response) - other error
 			///
 			/// Attempts to create a box with the given ID
 			create_box: function (boxid) {
