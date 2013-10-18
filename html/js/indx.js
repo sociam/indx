@@ -302,7 +302,7 @@ angular
 					this_._flush_delete_queue();
 				});
 			},
-			/// @arg fid <string>: file id
+			/// @arg fid <string> - file id
 			/// Tries to get a file with given id. If it doesn't exist, a file with that name is created.
 			/// @return <File> the file
 			get_or_create_file:function(fid) {
