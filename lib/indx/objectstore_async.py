@@ -186,6 +186,10 @@ class ObjectStoreAsync:
         self.debug("ObjectStoreASync - get_latest_objs, object_ids: {0}".format(object_ids))
         result_d = Deferred()
 
+        # ensure object_ids is a list and not a single id
+        if type(object_ids) != type([]):
+            object_ids = [object_ids]
+
         def rows_cb(rows, version):
             self.error("Objectstore get_latest_objs, rows_cb, rows: {0}, version: {1}".format(rows, version))
             obj_out = self.rows_to_json(rows)
@@ -204,9 +208,6 @@ class ObjectStoreAsync:
 
             query = "SELECT triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples WHERE subject = ANY(%s)"
 
-            # ensure object_ids is a list and not a single id
-            if type(object_ids) != type([]):
-                object_ids = [object_ids]
 
             if cur is None:
                 self.conn.runQuery(query, [object_ids]).addCallbacks(lambda rows: rows_cb(rows, version), err_cb)
