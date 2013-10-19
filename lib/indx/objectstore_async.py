@@ -204,6 +204,10 @@ class ObjectStoreAsync:
 
             query = "SELECT triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples WHERE subject = ANY(%s)"
 
+            # ensure object_ids is a list and not a single id
+            if type(object_ids) != type([]):
+                object_ids = [object_ids]
+
             if cur is None:
                 self.conn.runQuery(query, [object_ids]).addCallbacks(lambda rows: rows_cb(rows, version), err_cb)
             else:
