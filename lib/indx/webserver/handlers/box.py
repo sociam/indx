@@ -301,7 +301,8 @@ class BoxHandler(BaseHandler):
             store.setLoggerClass(BoxHandler, extra = {"token": token, "request": request})
             BoxHandler.log(logging.DEBUG, "BoxHandler GET request", extra = {"request": request, "token": token})
 
-            id_list = self.get_arg(request, "id") or self.get_arg(request, "id[]")
+            
+            id_list = request.args.get("id") or request.args.get("id[]") # don't use self.get_arg() because we need a list, not just [0]
             if id_list is not None:
                 # return the objects listed in in the id arguments, e.g.:
                     # GET /box/?id=item1&id=item2&id=item3
