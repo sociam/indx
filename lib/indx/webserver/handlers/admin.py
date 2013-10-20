@@ -57,17 +57,23 @@ class AdminHandler(BaseHandler):
 
     def delete_box_handler(self, request):
         """ Delete a box. """
-        args = self.get_post_args(request)
-        box_name = args['name'][0]
+        box_name = self.get_arg(request, "name")
         logging.debug("Deleting box {0}".format(box_name))
+        if box_name is None:
+            logging.error("Box name is empty - returning 400.")
+            return self.return_bad_request(request)
+
         self.database.delete_box(box_name).addCallbacks(lambda success: self.return_no_content(request), lambda fail: self.return_internal_error(request))
     
     def create_box_handler(self, request):
         """ Create a new box. """
-        args = self.get_post_args(request)
-        box_name = args['name'][0]
-        username,password = self.get_session(request).username, self.get_session(request).password
+        box_name = self.get_arg(request, "name")
         logging.debug('asking to create box ' + box_name)
+        if box_name is None:
+            logging.error("Box name is empty - returning 400.")
+            return self.return_bad_request(request)
+
+        username,password = self.get_session(request).username, self.get_session(request).password
         def start(val):
             self.webserver.register_box(box_name,self.webserver.root)
             self.return_created(request)
@@ -100,9 +106,13 @@ class AdminHandler(BaseHandler):
             .addErrback(lambda *x: self.return_internal_error(request))
 
     def create_user_handler(self, request):
-        args = self.get_post_args(request)
-        new_username, new_password = args['username'][0],  args['password'][0]
+        new_username, new_password = self.get_arg(request, "username"), self.get_arg(request, "password")
         logging.debug("Creating new user with username: {0}".format(new_username))
+
+        if new_username is None or new_password is None:
+            logging.error("Username or Password is empty - returning 400.")
+
+
         self.database.create_user(new_username, new_password)\
             .addCallback(lambda *x: self.return_ok())\
             .addErrback(lambda *x: self.return_internal_error(request))

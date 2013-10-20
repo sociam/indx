@@ -343,9 +343,10 @@ class IndxDatabase:
             d.addCallbacks(dropped_cb, return_d.errback)
 
         db_name = INDX_PREFIX + box_name 
-        for pool in POOLS_BY_DBNAME[db_name]:
-            pool.close()
-            # TODO remove these from here, and from POOLS ?
+        if db_name in POOLS_BY_DBNAME:
+            for pool in POOLS_BY_DBNAME[db_name]:
+                pool.close()
+                # TODO remove these from here, and from POOLS ?
 
         connect(POSTGRES_DB, self.db_user, self.db_pass).addCallbacks(connected, return_d.errback)
         return return_d

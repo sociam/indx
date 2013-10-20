@@ -58,6 +58,7 @@ class BaseHandler(Resource):
 
         self.database = self.webserver.database
 
+
     def _matches_request(self, request, subhandler):
         path_fields = request.path.split("/")
         sub_path = '/'.join(path_fields[2:]) if len(path_fields) >= 3 else ''
@@ -96,16 +97,18 @@ class BaseHandler(Resource):
         #    raise ForbiddenResource()
         return True
 
-    def _get_arg(self,request,argname, force_get=False):
+    def get_arg(self, request, argname, default = None, force_get = False):
         if request.method == 'GET' or force_get:
-            return request.args.get(argname) and request.args[argname][0]
+            return (request.args.get(argname) and request.args[argname][0]) or default
+
         if request.method in ['POST', 'PUT', 'DELETE', 'COPY', 'MOVE']:
             post_args = self.get_post_args(request)
-            return post_args.get(argname) and post_args[argname][0]
-        return None
+            return (post_args.get(argname) and post_args[argname][0]) or default
 
-    def get_token(self,request, force_get=False):
-        tid = self._get_arg(request,'token', force_get = force_get)
+        return default
+
+    def get_token(self, request, force_get=False):
+        tid = self.get_arg(request,'token', force_get = force_get)
         return self.webserver.tokens.get(tid) if tid else None
 
     def get_origin(self,request):
@@ -117,10 +120,10 @@ class BaseHandler(Resource):
     ##   "apps/enriches/get_next_round" !== "box/url" -> fail.
     ## ??
     def get_request_box(self,request, force_get=False):
-        return self._get_arg(request,'box', force_get=force_get)
+        return self.get_arg(request,'box', force_get=force_get)
 
     def get_request_app(self,request, force_get=False):
-        return self._get_arg(request,'app', force_get=force_get)
+        return self.get_arg(request,'app', force_get=force_get)
 
     # revision to protocol
     def _matches_token_requirements(self, request, subhandler):
