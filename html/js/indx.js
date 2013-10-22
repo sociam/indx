@@ -951,7 +951,7 @@ angular
 			get_user_list:function() {
 				var d = u.deferred();
 				this._ajax('GET','admin/list_users')
-					.success(function(data) {d.resolve(data.users);})
+					.success(function(data) { d.resolve(data.users);})
 					.fail(function(err) { d.reject(err); });
 				return d.promise();
 			},

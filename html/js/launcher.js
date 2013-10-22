@@ -1,5 +1,9 @@
 
+
 (function() {
+
+	var isLocalUser = function(u) { return u.type == 'local_owner' || u.type == 'local_user'; };
+
 	angular.module('launcher', ['indx'])
 		.config(['$routeProvider', function($routeProvider) {
 			$routeProvider
@@ -40,26 +44,45 @@
 	}).controller('Login',function($scope, $location, client, backbone, utils) {
 		console.log('route::login');
 		var u = utils, store = client.store, sa = function(f) { return utils.safe_apply($scope,f);};
-		$scope.user = {username:undefined, password:undefined};
-		$scope.select_user = function(user) { $scope.user.username = user; };
-		$scope.back_to_login = function() {	delete $scope.user.username; delete $scope.user.password;};
+		$scope.selected = {};
+		$scope.select_user = function(user) { 
+			console.log('selected user ', user);
+			$scope.selected.user = user; 
+		};
+		$scope.back_to_login = function() {	delete $scope.selected.user; delete $scope.selected.password;};
 		// this gets called when the form is submitted
 		$scope.do_submit = function() {
-			console.log('logging in ', $scope.user.username, $scope.user.password);
-			store.login($scope.user.username, $scope.user.password).then(function() {
-				u.debug('login okay!');
-				// sa($scope.back_to_login);
-				sa(function() { $location.path('/apps'); });
-			}).fail(function() {
-				sa(function() {
-					delete $scope.user.password;
-					u.shake($($scope.el).find('input:password').parents('.password-dialog'));
+			console.log('logging in ', $scope.selected.user, $scope.selected.password);
+			var u = $scope.selected.user, p = $scope.selected.password;
+			if (isLocalUser(u)) {
+				return store.login($scope.selected.user["@id"], $scope.selected.password).then(function() {
+					u.debug('login okay!');
+					sa(function() { $location.path('/apps'); });
+				}).fail(function() {
+					sa(function() {
+						delete $scope.selected.password;
+						u.shake($($scope.el).find('input:password').parents('.password-dialog'));
+					});
 				});
-			});
+			}
+			throw new Error("No support for openid login yet -- hold your horsies");
 		};
 		store.get_user_list()
-			.then(function(result) {  sa(function() { $scope.users = result; }); })
-			.fail(function(err) { u.error(err); });
+			.then(function(users) {
+				sa(function() {
+					$scope.users = users.map(function(x) {
+						if (_.isObject(x) && x["@id"]) { // latest server
+							if (!x.name) { x.name = x["@id"]; }
+							return x;
+						}
+						if (_.isString(x)) { // old server
+							return {"@id": x, "name": x, "type":'local'};
+						}
+						console.error('unknown user type', x);
+						throw new Error("Unknown user type ", x);
+					});
+				});
+			}).fail(function(err) { u.error(err); });
 	}).controller('AppsList', function($scope, $location, client, utils) {
 		console.log('hello apps list');
 		var u = utils, store = client.store, sa = function(f) { return utils.safe_apply($scope,f); };

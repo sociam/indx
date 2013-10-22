@@ -1,4 +1,4 @@
 <div class='user'>
   <div class="icon"><i class="icon-user"></i></div>
-  <div class="name">{{ user }}</div>
+  <div class="name">{{ user.name || user['@id'] || user.id || user }}</div>
 </div>
