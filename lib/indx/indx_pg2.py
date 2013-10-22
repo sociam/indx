@@ -360,7 +360,7 @@ class IndxDatabase:
             logging.debug("indx_pg2.list_users.done : {0}".format(repr(rows)))        
             users = []
             # TODO add "name": "Dan Smith" to this output
-            for r in rows:  users.append({"username": r[0], "user_type": r[1]})
+            for r in rows:  users.append({"@id": r[0], "type": r[1]})
             # conn.close() # close the connection        
             return_d.callback(users)
             return
