@@ -147,12 +147,14 @@ class AuthHandler(BaseHandler):
 
             def hash_cb(rows):
                 if len(rows) == 0:
-                    return_d.callback(False) # return False if user not in DB
+                    logging.debug("check_openid_pass returning True, user not in DB ")
+                    return_d.callback(True) # return True if user not in DB
                     return
 
                 username_type, password_hash = rows[0]
 
                 if password_hash == "":
+                    logging.debug("check_openid_pass returning True, user password not in DB")
                     return_d.callback(True) # user's password is not yet set - return True always.
                     return
 
@@ -168,12 +170,20 @@ class AuthHandler(BaseHandler):
 
     def login_openid(self, request):
         """ Verify an OpenID identity. """
+        wbSession = self.get_session(request)
 
         identity = self.get_arg(request, "identity")
 
         if identity is None:
             logging.error("login_openid error, identity is None, returning bad request.")
-            return self.return_bad_request(request, "You must specify an 'identity' in the POST query parameters.")
+            return self.return_bad_request(request, "You must specify an 'identity' in the GET/POST query parameters.")
+
+        redirect = self.get_arg(request, "redirect")
+        wbSession.set_openid_redirect(redirect)
+
+        if redirect is None:
+            logging.error("login_openid error, redirect is None, returning bad request.")
+            return self.return_bad_request(request, "You must specify a 'redirect' in the GET/POST query parameters.")
 
         password = self.get_arg(request, "password")
 
@@ -282,13 +292,20 @@ class AuthHandler(BaseHandler):
                 return self.return_unauthorized(request)
 
             def cb(user_info):
-                password_hash = user_info['password_hash']
-                if password_hash == "":
-                    # user should be prompted for a password by the UI now, because they never have set one (new OpenID user)
-                    # TODO do this...
-                    return self.return_ok(request)
-                else:
-                    return self.return_ok(request)
+                #password_hash = user_info['password_hash']
+                #
+                #if password_hash == "":
+                #    # user should be prompted for a password by the UI now, because they never have set one (new OpenID user)
+                #    # TODO do this...
+                #    return self.return_ok(request)
+                #else:
+                #    return self.return_ok(request)
+                
+                redirect_url = wbSession.get_openid_redirect()
+                request.setHeader("Location", redirect_url)
+                request.setResponseCode(302, "Found")
+                request.finish()
+                return
     
             ix_openid.init_user().addCallbacks(cb, err_cb)
             return
@@ -339,7 +356,7 @@ AuthHandler.subhandlers = [
         # for an INDX ID account
         # http://localhost:8211/auth/login_openid?identity=http://id.indx.ecs.soton.ac.uk/identity/ds
         'prefix':'login_openid', # login with openid
-        'methods': ['POST'],
+        'methods': ['POST','GET'],
         'require_auth': False,
         'require_token': False,
         'handler': AuthHandler.login_openid,
