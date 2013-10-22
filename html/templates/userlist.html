@@ -3,12 +3,15 @@
 		<div class="logo">
 			<h4>welcome to</h4>
 			<p><img class="logo" src="img/indx.png"></img></p>
-		</div> 
+        </div>
 		<ul ng-show="!user.username" class='userlist'>
 			<li ng-repeat='u in users'>
 				<a ng-click="select_user(u)"><user model='u' ></user></a>
 			</li>
 		</ul>
+        <div class="openid" style="text-align: center; border: 1px solid #ccc; width: 320px; margin: 0 auto; border-radius: 3px; cursor: pointer;">
+            <p><img style="width: 150px;" src="img/openid-logo-wordmark.png" alt="OpenID" /></p>
+        </div>
 	</div>
 	<div class="password-dialog" ng-show="user.username" ng-animate="{show: 'animate-show',hide: 'animate-hide'}" ng-cloak>
 		<form ng-submit="do_submit()">
