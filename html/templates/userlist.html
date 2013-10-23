@@ -13,7 +13,7 @@
             <p><img style="width: 150px;" src="img/openid-logo-wordmark.png" alt="OpenID" /></p>
         </div>
 	</div>
-	<div class="password-dialog" ng-show="selected.user" ng-animate="{show: 'animate-show',hide: 'animate-hide'}" ng-cloak>
+	<div class="password-dialog" ng-show="isLocalUser(selected.user)" ng-animate="{show: 'animate-show',hide: 'animate-hide'}" ng-cloak>
 		<form ng-submit="do_submit()">
 			<div class="username" ng-click="back_to_login()">
 				<div class="glyphicon glyphicon-remove goback"></div>

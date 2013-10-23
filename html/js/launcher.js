@@ -2,8 +2,6 @@
 
 (function() {
 
-	var isLocalUser = function(u) { return u.type == 'local_owner' || u.type == 'local_user'; };
-
 	angular.module('launcher', ['indx'])
 		.config(['$routeProvider', function($routeProvider) {
 			$routeProvider
@@ -42,21 +40,38 @@
 			replace:true
 		};
 	}).controller('Login',function($scope, $location, client, backbone, utils) {
+
+		$scope.isLocalUser = function(u) { return u && (u.type == 'local_owner' || u.type == 'local_user'); };
+		$scope.isOpenIDUser = function(u) { return u.type == 'openid'; };
+
 		console.log('route::login');
 		var u = utils, store = client.store, sa = function(f) { return utils.safe_apply($scope,f);};
 		$scope.selected = {};
 		$scope.select_user = function(user) { 
 			console.log('selected user ', user);
 			$scope.selected.user = user; 
+			if ($scope.isOpenIDUser(user)) { $scope.do_submit(); }
 		};
 		$scope.back_to_login = function() {	delete $scope.selected.user; delete $scope.selected.password;};
 		// this gets called when the form is submitted
 		$scope.do_submit = function() {
 			console.log('logging in ', $scope.selected.user, $scope.selected.password);
 			var u = $scope.selected.user, p = $scope.selected.password;
-			if (isLocalUser(u)) {
+			if ($scope.isLocalUser(u)) {
+				console.log('local user ', u);
 				return store.login($scope.selected.user["@id"], $scope.selected.password).then(function() {
 					u.debug('login okay!');
+					sa(function() { $location.path('/apps'); });
+				}).fail(function() {
+					sa(function() {
+						delete $scope.selected.password;
+						u.shake($($scope.el).find('input:password').parents('.password-dialog'));
+					});
+				});
+			}
+			if ($scope.isOpenIDUser(u)) {
+				console.log('openid user');
+				return store.login_openid($scope.selected.user["@id"]).then(function() {
 					sa(function() { $location.path('/apps'); });
 				}).fail(function() {
 					sa(function() {

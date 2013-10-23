@@ -54,6 +54,9 @@ angular
 			auth: function(token) { return JSON.stringify({action:'auth', token:token}); },
 			diff: function(token) { return JSON.stringify({action:'diff', operation:"start"}); }
 		};
+
+
+
 		var serialize_obj = function(obj) {
 			var uri = obj.id;
 			var out_obj = {};
@@ -887,8 +890,6 @@ angular
 				}
 				return u.dresolve(b);
 			},
-
-
 			/// @arg <string|number> boxid: the id for the box
 			///
 			/// @then (<Box> the box)
@@ -906,15 +907,44 @@ angular
 				u.debug('creating ', boxid);
 				return c.save().pipe(function() { return this_.get_box(boxid); });
 			},
+			/// checks to see if we currently have a valid cookie/token set
+			/// @then({is_authenticated:true/false}) - Returns true/false depending on auth status
+			/// @fail(<String>) Error raised during process
 			check_login:function() {
 				// checks whether you can connect to the server and who is logged in.
 				// returns a deferred that gets passed an argument
 				// { code:200 (server is okay),  is_authenticated:true/false,  user:<username>  }
 				return this._ajax('GET', 'auth/whoami');
 			},
-			// todo: change to _
+			/// returns info of current logged in user
+			/// @then(<Obj>) - All currently known info about the user
+			/// @fail(<String>) Error raised during process
 			get_info:function() { return this._ajax('GET', 'admin/info'); },
+			/// @arg <string> openid: The OpenID to log in as
+			/// This method initiates a redirect of the current page
+			/// @then(<Obj>) - Continuation with openid success/fail
+			/// @fail(<String>) Error raised during process
+			login_openid : function(openid) {
+				var this_ = this, d = u.deferred();
+				window.__indx_openid_continuation = function(response, foo) {
+					console.log('>> indx openid continuation ', response, foo);
+					d.resolve(openid);
+				};
+				var url = ['/', this.get('server_host'), 'auth', 'login_openid'].join('/');
+				var redir_url = '/openid_return_to.html';
+				var params = { identity: encodeURIComponent(openid), redirect:encodeURIComponent(redir_url) };
+				url = url + "?" + _(params).map(function(v, k) { return k+'='+v; }).join('&');
+				console.log('opening url >>', url);
+				window.open(url, 'indx_openid_popup', 'width=790,height=500');
+				return d.promise();
+			},
+			/// @arg <string> username: username to log in as
+			/// @arg <string> password: password to use for auth
+			/// Local Login - logs in using the traditional (local user) method
+			/// @then(<Obj>) - Continuation with logged in username
+			/// @fail(<String>) Error raised during process
 			login : function(username,password) {
+				// local user method
 				var d = u.deferred();
 				this.set({username:username,password:password});
 				var this_ = this;
