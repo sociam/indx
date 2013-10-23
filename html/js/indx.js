@@ -933,6 +933,7 @@ angular
 						var user_type = u.getParameterByName('username_type', '?'+response);
 						var user = {'@id':username, 'type':user_type, 'name':username};
 						console.log('logging in user >>', user);
+						this_.trigger('login', username);
 						return d.resolve(user); 
 					}
 					d.reject({message:'OpenID authentication failed', status:0});
