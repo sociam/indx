@@ -211,14 +211,26 @@ class AuthHandler(BaseHandler):
                 #request.write("Error: {0}".format(exc))
                 #request.finish()
                 logging.error("Error in login_openid: {0}".format(exc))
-                return self.return_unauthorized(request)
+                #return self.return_unauthorized(request)
+                continuation_params = {
+                    "status": 401,
+                    "message": "Unauthorized",
+                }
+                self._send_openid_redirect(request, continuation_params)
+                return
             else:
                 if oid_req is None:
                     #request.setResponseCode(200, message = "OK")
                     #request.write("Error, no OpenID services found for: {0}".format(identity))
                     logging.error("Error in login_openid: no OpenID services found for: {0}".format(identity))
                     #request.finish()
-                    return self.return_unauthorized(request)
+                    #return self.return_unauthorized(request)
+                    continuation_params = {
+                        "status": 401,
+                        "message": "Unauthorized",
+                    }
+                    self._send_openid_redirect(request, continuation_params)
+                    return
                 else:
                     trust_root = self.webserver.server_url
                     return_to = appendArgs(trust_root + "/" + self.base_path + "/openid_process", {})
@@ -238,7 +250,13 @@ class AuthHandler(BaseHandler):
             if pass_correct:
                 return post_pw()
             else:
-                return self.return_unauthorized(request)
+                #return self.return_unauthorized(request)
+                continuation_params = {
+                    "status": 401,
+                    "message": "Unauthorized",
+                }
+                self._send_openid_redirect(request, continuation_params)
+                return
 
         self.check_openid_pass(identity, password).addCallbacks(pass_cb, lambda failure: self.return_internal_error(request))
         return
@@ -269,7 +287,13 @@ class AuthHandler(BaseHandler):
             #request.setResponseCode(200, "OK")
             logging.error("Verification of {0} failed: {1}".format(display_identifier, info.message))
             #request.finish()
-            return self.return_unauthorized(request)
+            #return self.return_unauthorized(request)
+            continuation_params = {
+                "status": 401,
+                "message": "Unauthorized",
+            }
+            self._send_openid_redirect(request, continuation_params)
+            return
         elif info.status == consumer.SUCCESS:
             sreg_resp = sreg.SRegResponse.fromSuccessResponse(info)
             sreg_data = {}
@@ -299,7 +323,13 @@ class AuthHandler(BaseHandler):
 
             def err_cb(err):
                 logging.error("Error in IndxOpenID: {0}".format(err))
-                return self.return_unauthorized(request)
+                #return self.return_unauthorized(request)
+                continuation_params = {
+                    "status": 401,
+                    "message": "Unauthorized",
+                }
+                self._send_openid_redirect(request, continuation_params)
+                return
 
             def cb(user_info):
                 #password_hash = user_info['password_hash']
@@ -311,11 +341,13 @@ class AuthHandler(BaseHandler):
                 #else:
                 #    return self.return_ok(request)
                 
-                redirect_url = wbSession.get_openid_redirect()
 
-                request.setHeader("Location", self._url_add_params(redirect_url, {"username": display_identifier}))
-                request.setResponseCode(302, "Found")
-                request.finish()
+                continuation_params = {
+                    "username": display_identifier,
+                    "status": 200,
+                    "message": "OK",
+                }
+                self._send_openid_redirect(request, continuation_params)
                 return
     
             ix_openid.init_user().addCallbacks(cb, err_cb)
@@ -325,17 +357,47 @@ class AuthHandler(BaseHandler):
             #request.setResponseCode(200, "OK")
             logging.error("Error in openid_process: Verification cancelled.")
             #request.finish()
-            return self.return_unauthorized(request)
+#            return self.return_unauthorized(request)
+            continuation_params = {
+                "status": 401,
+                "message": "Unauthorized",
+            }
+            self._send_openid_redirect(request, continuation_params)
+            return
         elif info.status == consumer.SETUP_NEEDED:
             #request.setResponseCode(200, "OK")
             logging.error("Error in openid_process: Setup needed at URL: {0}".format(info.setup_url))
             #request.finish()
-            return self.return_unauthorized(request)
+            #return self.return_unauthorized(request)
+            continuation_params = {
+                "status": 401,
+                "message": "Unauthorized",
+            }
+            self._send_openid_redirect(request, continuation_params)
+            return
         else:
             #request.setResponseCode(200, "OK")
             logging.error("Error in openid_process: Verification Failed.")
             #request.finish()
-            return self.return_unauthorized(request)
+            #return self.return_unauthorized(request)
+            continuation_params = {
+                "status": 401,
+                "message": "Unauthorized",
+            }
+            self._send_openid_redirect(request, continuation_params)
+            return
+
+
+    def _send_openid_redirect(self, request, continuation_params):
+        """ OpenID has finished, send a redirect with the specified parameters. """
+        wbSession = self.get_session(request)
+        redirect_url = wbSession.get_openid_redirect()
+
+        continuation_params['username_type'] = "openid"
+
+        request.setHeader("Location", self._url_add_params(redirect_url, continuation_params))
+        request.setResponseCode(302, "Found")
+        request.finish()
 
 
     def get_openid_session(self, request):
