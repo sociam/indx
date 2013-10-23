@@ -29,14 +29,15 @@ angular
 					// TODO ! 
 					return client.store;
 				};
+				var new_box_dialog = function() { return $($scope.el).find('#new-box-dialog'); }
 				
 				toolbar.on = function(msg, fn) {  return model.on(msg,fn); };
 				toolbar.off = function(msg, fn) {  return model.off(msg,fn); };
 				toolbar.setVisible = function(b) { model.set('visible', b); };
 				toolbar.get_selected_box = function() { return; };
-				toolbar.is_logged_in = function() { 
-					return $scope.username !== undefined;
-				};
+				// toolbar.is_logged_in = function() { 
+				// 	return $scope.username !== undefined;
+				// };
 
 				var get_last_used_box = function() {
 					return localStorage["indx__last_used_box::" + document.location.toString()];
@@ -82,6 +83,10 @@ angular
 					logout_dialog().modal({ show: true, keyboard:true });
 					logout_dialog().on('shown', function() { logout_dialog().find('.btn-primary').focus(); });
 				}; 
+				$scope.cb_new_box_clicked = function() {
+					new_box_dialog().modal({ show: true, keyboard:true });
+					new_box_dialog().on('shown', function() { new_box_dialog().find('.btn-primary').focus(); });
+				}
 				
 				var update_boxlist = function() {
 					// get boxes
@@ -90,8 +95,8 @@ angular
 					getStore().get_box_list().then(function(boxlist) {
 						console.log('boxlist >> ', boxlist);
 						apply(function() {
-							$scope.boxlist = boxlist.concat();
-							if ($scope.box === undefined && $scope.boxlist.length > 0 && get_last_used_box()) {
+							$scope.boxlist = boxlist.concat("create new box");
+							if ($scope.box === undefined && $scope.boxlist.length > 1 && get_last_used_box()) {
 								if ($scope.boxlist.indexOf( get_last_used_box() ) >= 0) {
 									$scope.cb_box_selected(get_last_used_box());
 								} else {
@@ -128,8 +133,20 @@ angular
 					});
 				};		
 				$scope.cb_box_selected = function(bid) {
-					$scope.box = bid;
-					set_last_used_box(bid); 
+					if (bid === $scope.boxlist[$scope.boxlist.length-1]) {
+						console.log("create new box selected ");
+						$scope.cb_new_box_clicked(); // TODO get new_bid from user
+					} else {
+						$scope.box = bid;
+						set_last_used_box(bid); 
+					}
+				};
+				$scope.create_new_box = function(new_bid) {
+					getStore().create_box(new_bid).then(function() {
+						$scope.box = new_bid;
+						set_last_used_box(new_bid);
+						update_boxlist();
+					});
 				};
 				$scope.cb_login = function(username) {
 					$scope.username = username;

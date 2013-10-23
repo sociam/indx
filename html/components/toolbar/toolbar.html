@@ -68,6 +68,37 @@
 						<input type='submit' id="logout-ok" class="btn btn-primary" data-dismiss="modal" ng-click="do_logout()" autofocus value="Yes, log out"></button>
 					</div>
 				</div>
+			</div>
 		</div>
 	</div>
+	<div id="new-box-dialog" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="newboxlabel" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<form role="form">
+					<div class="modal-header">
+						<a type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</a>
+						<span class="text">please name your box</span>
+					</div>
+					<div class="modal-body">
+						<!-- 
+							AUTOCOMPLETE TURNED OFF BECAUSE OF HORRIBLE PROBLEMS WITH BROWSERS + ANGULARJS 
+							See: https://github.com/angular/angular.js/issues/1460#issuecomment-18572604
+						-->
+						<div class="form-group">
+							<label for="new-bid">box name:</label>
+							<input type="text" id="new-bid" class="form-control" ng-model="_new_bid" autofocus autocomplete='off'></input>		
+					  	</div>
+					</div>
+				  <div class="modal-footer">
+					<div class='error' ng-show='error' ng-bind-html-unsafe='error'></div>
+					<div class="spinner" ng-show="loading > 0">
+					  <div ng-repeat="i in u.range(12)" class="bar{{ i + 1 }}"></div>
+					</div>		  
+					<a class="btn" data-dismiss="modal" aria-hidden="true">Cancel</a>
+					<input type="submit" data-dismiss="modal" class="btn btn-primary" value="Create box" ng-click="create_new_box(_new_bid)"></input>
+				  </div>
+				</form>
+			</div> <!-- modal-content -->
+		</div> <!-- modal-dialog -->
+	</div> <!-- modal -->
 </div>

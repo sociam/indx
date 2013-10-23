@@ -43,12 +43,14 @@ class AdminHandler(BaseHandler):
     def invalid_name(self, name):
         # import indx.server
         """ Check if this name is safe (only contains a-z0-9_-). """ 
-        return re.match("^[a-z0-9_-]*$", name) is None and name not in BOX_NAME_BLACKLIST
+        return re.match("^[a-zA-Z0-9_-]*$", name) is None and name not in BOX_NAME_BLACKLIST
 
     def _is_box_name_okay(self, name):
         """ checks new box, listening on /name. """
         d = Deferred()
-        if self.invalid_name(name): return d.callback(False)
+        if self.invalid_name(name): 
+            logging.debug('box name is invalid: '+name)
+            return d.callback(False)
         def cont(boxes):
             logging.debug('boxes {0}, {1}'.format(boxes, not name in boxes))
             return d.callback(not name in boxes)
@@ -95,7 +97,7 @@ class AdminHandler(BaseHandler):
                 logging.debug('{0}'.format(e))
         self._is_box_name_okay(box_name)\
             .addCallback(check)\
-            .addErrback(lambda *er: logging.debug('{0}'.format(er)) and self.return_forbidden(request))        
+            .addErrback(lambda *er: logging.debug('{0}'.format(er)) and self.return_forbidden(request))
 
     def list_boxes_handler(self,request):
         def boxes(db_list):
