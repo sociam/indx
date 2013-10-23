@@ -21,6 +21,7 @@ import indx.indx_pg2 as database
 from twisted.internet.defer import Deferred
 
 import urlparse
+import urllib
 from openid.store import memstore
 #from openid.store import filestore
 from openid.consumer import consumer
@@ -242,6 +243,15 @@ class AuthHandler(BaseHandler):
         self.check_openid_pass(identity, password).addCallbacks(pass_cb, lambda failure: self.return_internal_error(request))
         return
 
+    def _url_add_params(self, url, params):
+
+        url_parts = list(urlparse.urlparse(url))
+        query = dict(urlparse.parse_qsl(url_parts[4]))
+        query.update(params)
+
+        url_parts[4] = urllib.urlencode(query)
+
+        return urlparse.urlunparse(url_parts)
 
     def openid_process(self, request):
         """ Process a callback from an identity provider. """
@@ -302,7 +312,8 @@ class AuthHandler(BaseHandler):
                 #    return self.return_ok(request)
                 
                 redirect_url = wbSession.get_openid_redirect()
-                request.setHeader("Location", redirect_url)
+
+                request.setHeader("Location", self._url_add_params(redirect_url, {"username": display_identifier}))
                 request.setResponseCode(302, "Found")
                 request.finish()
                 return
