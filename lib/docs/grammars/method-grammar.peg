@@ -71,7 +71,7 @@ callback_argument_comment
 			{ return c.join(''); }
 
 type_statement
-	= _ "<" _ ts:types _ ">" _
+	= _ "{" _ ts:types _ "}" _
 			{ return ts; }
 
 types
@@ -81,5 +81,5 @@ types
 			{ return [t]; }
 
 type
-	= t: [^|>]+
+	= t: [^|}]+
 			{ return { type: t.join('') }; }

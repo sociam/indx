@@ -39,10 +39,12 @@
           <li><code>{{name}}</code>
             {{#moreInfo}} -
               {{#hasTypes}}
-                ({{#types}}
+                <span class="types">
+                {{#types}}
                   <code>{{type}}</code>
                   {{^last}}or{{/last}}
-                {{/types}})
+                {{/types}}
+                </span>
               {{/hasTypes}}
               {{comment}}
             {{/moreInfo}}
@@ -61,19 +63,19 @@
           <table class="table table-bordered">
             <thead><tr><th>On success</th><th>On failure</th></tr></thead>
             <tbody><tr>
-              <td width="50%"><ul>
+              <td width="50%"><ul class="callbacks">
                 {{#then}}
                   <li>
-                    <code>.then({{#args}}&lt;{{type}}&gt; {{comment}},{{/args}})</code> -
-                    {{comment}}
+                    <code>.then( {{#args}}&lt;{{#type}}<span class="types">{{type}}{{^last}}|{{/last}}</span>{{/type}}&gt; {{comment}}{{^last}},{{/last}}{{/args}} )</code>
+                    {{#comment}}- {{comment}}{{/comment}}
                   </li>
                 {{/then}}
               </ul></td>
-              <td width="50%"><ul>
+              <td width="50%"><ul class="callbacks">
                 {{#fail}}
                   <li>
-                    <code>.fail({{#args}}&lt;{{type}}&gt; {{comment}},{{/args}})</code> -
-                    {{comment}}
+                    <code>.fail( {{#args}} &lt;{{#type}}<span class="types">{{type}}{{^last}}|{{/last}}</span>{{/type}}&gt; {{comment}}{{^last}},{{/last}} {{/args}} )</code>
+                    {{#comment}}- {{comment}}{{/comment}}
                   </li>
                 {{/fail}}
               </ul></td>
@@ -83,10 +85,12 @@
 
         {{#return}}
           {{#hasTypes}}
+            <span class="types">
             {{#types}}
               <code>{{type}}</code>
               {{^last}}or{{/last}}
             {{/types}}
+            </span>
           {{/hasTypes}}
           {{comment}}
         {{/return}}

@@ -95,3 +95,16 @@ h2 {
 	color: #c17878;
 	padding-left: 0;
 }
+
+.types, .types code {
+	color: #905103;
+}
+
+code {
+	white-space: normal;
+}
+
+ul.callbacks {
+	list-style: none;
+	padding: 0;
+}
