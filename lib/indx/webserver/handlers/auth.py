@@ -307,6 +307,21 @@ class AuthHandler(BaseHandler):
                     ax_data[uri] = ax_resp.get(uri)
 
             logging.debug("openid_process: Success of {0}, sreg_resp: {1} (sreg_data: {2}), pape_resp: {3}, ax_resp: {4}, ax_data: {5}".format(display_identifier, sreg_resp, sreg_data, pape_resp, ax_resp, ax_data))
+
+            if len(ax_data.keys()) > 0:
+                user_metadata = {
+                    "name": ax_data['http://schema.openid.net/namePerson/first'][0] + " " + ax_data['http://schema.openid.net/namePerson/last'][0],
+                    "email": ax_data['http://schema.openid.net/contact/email'][0],
+                }
+            elif len(sreg_data.keys()) > 0:
+                user_metadata = {
+                    "name": sreg_data['fullname'],
+                    "nickname": sreg_data['nickname'],
+                    "email": sreg_data['email'],
+                }
+            else:
+                user_metadata = {}
+
             if info.endpoint.canonicalID:
                 logging.debug("openid_process, additional: ...This is an i-name and its persistent ID is: {0}".format(info.endpoint.canonicalID))
 
@@ -346,11 +361,12 @@ class AuthHandler(BaseHandler):
                     "username": display_identifier,
                     "status": 200,
                     "message": "OK",
+                    "user_metadata": user_metadata,
                 }
                 self._send_openid_redirect(request, continuation_params)
                 return
     
-            ix_openid.init_user().addCallbacks(cb, err_cb)
+            ix_openid.init_user(user_metadata).addCallbacks(cb, err_cb)
             return
             #return self.return_ok(request)
         elif info.status == consumer.CANCEL:

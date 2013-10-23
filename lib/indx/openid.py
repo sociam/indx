@@ -16,6 +16,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
+import json
 from twisted.internet.defer import Deferred
 from hashing_passwords import make_hash, check_hash
 
@@ -49,7 +50,34 @@ class IndxOpenID:
         self.db.connect_indx_db().addCallbacks(connected_d, return_d.errback)
         return return_d
 
-    def init_user(self):
+
+    def get_user_metadata(self):
+        """ Get user's metadata."""
+        logging.debug("IndxOpenID, get_user_metadata for uri {0}".format(self.uri))
+        return_d = Deferred()
+
+        def connected_d(conn):
+            logging.debug("IndxOpenID, get_user_metadata, connected_d")
+
+            query = "SELECT user_metadata_json FROM tbl_users WHERE username = %s AND username_type = %s AND user_metadata_json IS NOT NULL"
+            params = [self.uri, "openid"]
+
+            def query_d(conn, rows):
+                logging.debug("IndxOpenID, get_user_metadata, connected_d, query_d, rows: {0}".format(rows))
+
+                if len(rows) < 1:
+                    return_d.callback(None) # no user metadata
+                else:
+                    return_d.callback(json.loads(rows[0][0]))
+
+            conn.runQuery(query, params).addCallbacks(lambda rows: query_d(conn, rows), return_d.errback)
+
+        self.db.connect_indx_db().addCallbacks(connected_d, return_d.errback)
+
+        return return_d
+
+
+    def init_user(self, user_metadata):
         """ Check there is a user in the database, and initialise one if not.
 
             If there are pending permission requests, initialise them too.
@@ -71,8 +99,8 @@ class IndxOpenID:
                 if len(rows) < 1:
                     # user does not exist: create a new user in the table now, with empty password hash
 
-                    insert_q = "INSERT INTO tbl_users (username, username_type, password_hash, password_encrypted) VALUES (%s, %s, %s, %s)"
-                    insert_p = [self.uri, "openid", "", ""]
+                    insert_q = "INSERT INTO tbl_users (username, username_type, password_hash, password_encrypted, user_metadata_json) VALUES (%s, %s, %s, %s, %s)"
+                    insert_p = [self.uri, "openid", "", "", json.dumps(user_metadata)]
 
                     def inserted_d(empty):
                         logging.debug("IndxOpenID, init_user, connected_d, query_d, inserted_d")
