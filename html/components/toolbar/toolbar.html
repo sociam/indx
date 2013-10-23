@@ -6,9 +6,9 @@
 					<div ng-repeat="i in u.range(12)" class="bar{{ i + 1 }}"></div>
 				</div>
 			</div>
-			<button data-toggle="modal" href="#login-dialog" ng-show="!is_logged_in()" class="btn btn-primary login-btn">	log in </button>
-			<button data-toggle="modal" href="#logout-dialog" ng-show="is_logged_in()" class="btn btn-primary login-btn"> 
-				{{ username }} <div ng-bind-html-unsafe="usericon"></div>
+			<button data-toggle="modal" href="#login-dialog" ng-show="!is_logged_in()" class="btn btn-primary login-btn">	<label>log in</label> </button>
+			<button data-toggle="modal" href="#logout-dialog" ng-show="is_logged_in()" class="btn btn-primary login-btn">
+				<label>{{ username }}</label><div class='usericon' ng-bind-html-unsafe="usericon"></div>
 			</button>
 			<div ng-show="is_logged_in()"  class="btn-group box-selector">
 				<button type="button" class="btn btn-default dropdown-toggle selected-box" ng-bind-html-unsafe="(box || 'select a box') + ' &nbsp; ' + caret" data-toggle="dropdown"></button>  
