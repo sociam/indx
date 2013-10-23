@@ -35,6 +35,7 @@ angular
 				toolbar.setVisible = function(b) { model.set('visible', b); };
 				toolbar.get_selected_box = function() { return; };
 				toolbar.is_logged_in = function() { 
+					console.log('is logged in ', $scope.username);
 					return $scope.username !== undefined;
 				};
 
@@ -65,7 +66,7 @@ angular
 					$scope.$watch(k, function() { model.trigger('change:'+k, $scope[k]); });
 				});
 
-				$scope.usericon = "<span class='glyphicon glyphicon-user'></span>"; // TODO.
+				$scope.usericon = "<div class='glyphicon glyphicon-user'></div>"; // TODO.
 				$scope.caret = "<span class='caret'></span>";
 				
 				$scope.incr_loading = function () {	$scope.loading++; };
