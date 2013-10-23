@@ -1,5 +1,6 @@
 
 
+
 (function() {
 
 	angular.module('launcher', ['indx'])
@@ -40,10 +41,8 @@
 			replace:true
 		};
 	}).controller('Login',function($scope, $location, client, backbone, utils) {
-
 		$scope.isLocalUser = function(u) { return u && (u.type == 'local_owner' || u.type == 'local_user'); };
 		$scope.isOpenIDUser = function(u) { return u.type == 'openid'; };
-
 		console.log('route::login');
 		var u = utils, store = client.store, sa = function(f) { return utils.safe_apply($scope,f);};
 		$scope.selected = {};
@@ -56,11 +55,9 @@
 		// this gets called when the form is submitted
 		$scope.do_submit = function() {
 			console.log('logging in ', $scope.selected.user, $scope.selected.password);
-			var u = $scope.selected.user, p = $scope.selected.password;
-			if ($scope.isLocalUser(u)) {
-				console.log('local user ', u);
+			var user = $scope.selected.user, p = $scope.selected.password;
+			if ($scope.isLocalUser(user)) {
 				return store.login($scope.selected.user["@id"], $scope.selected.password).then(function() {
-					u.debug('login okay!');
 					sa(function() { $location.path('/apps'); });
 				}).fail(function() {
 					sa(function() {
@@ -69,14 +66,20 @@
 					});
 				});
 			}
-			if ($scope.isOpenIDUser(u)) {
+			if ($scope.isOpenIDUser(user)) {
 				console.log('openid user');
-				return store.login_openid($scope.selected.user["@id"]).then(function() {
-					sa(function() { $location.path('/apps'); });
-				}).fail(function() {
+				return store.login_openid(user["@id"]).then(function() {
+					console.log('launcherjs >> openid_login success continuation ---------------- ');
+					sa(function() { 
+						delete $scope.openid_error; 
+						$location.path('/apps'); 
+					});
+				}).fail(function(error) {
+					console.log('launcherjs >> openid_login failure continuation ---------------- ', error);
 					sa(function() {
+						$scope.openid_error = error;
 						delete $scope.selected.password;
-						u.shake($($scope.el).find('input:password').parents('.password-dialog'));
+						u.shake($($scope.el).find('input:password').parents('.special'));
 					});
 				});
 			}

@@ -77,11 +77,11 @@
 				NotImplementedYet:function() {
 					throw new Error('Not Implemented Yet');
 				},
-				getParameterByName: function(name) {
+				getParameterByName: function(name,str) {
 					name = name.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
 					var regexS = "[\\?&]" + name + "=([^&#]*)";
 					var regex = new RegExp(regexS);
-					var results = regex.exec(window.location.search);
+					var results = regex.exec(str || window.location.search);
 					if (results === null)
 						return "";
 					else

@@ -927,15 +927,26 @@ angular
 			login_openid : function(openid) {
 				var this_ = this, d = u.deferred();
 				window.__indx_openid_continuation = function(response, foo) {
-					console.log('>> indx openid continuation ', response, foo);
-					d.resolve(openid);
+					console.log('response >> ', response);
+					var username = u.getParameterByName('username', '?'+response);
+					console.log('openid continuation username', username);
+					if (username) { return d.resolve(username); }
+					d.reject({message:'OpenID authentication failed', status:0});
 				};
 				var url = ['/', this.get('server_host'), 'auth', 'login_openid'].join('/');
 				var redir_url = '/openid_return_to.html';
 				var params = { identity: encodeURIComponent(openid), redirect:encodeURIComponent(redir_url) };
 				url = url + "?" + _(params).map(function(v, k) { return k+'='+v; }).join('&');
 				console.log('opening url >>', url);
-				window.open(url, 'indx_openid_popup', 'width=790,height=500');
+				var popup = window.open(url, 'indx_openid_popup', 'width=790,height=500');
+				// todo - handle cancel
+				// popup.onbeforeunload = function() {
+				// 	console.log('onbeforeunload -----------------');
+				// 	if (!d.isResolved()) {
+				// 		console.log('not resolved so we assume cancelled -----------------');
+				// 		d.reject({status:0, message:"Cancelled"});
+				// 	}
+				// };
 				return d.promise();
 			},
 			/// @arg <string> username: username to log in as

@@ -51,15 +51,29 @@ body{
 		h1 { font-size:80%; } 
 		list-style-type:none;
 		li {
-			.user {
+			.user, .special {
 				border:1px solid white;
 				&:hover { border:1px solid #eee; }
 				padding:10px;
-				.icon { float:left; clear:both; padding:2px; margin-right:10px; }
-				.name { padding-left:10px; }
+				// .icon { float:left; clear:both; padding:2px; margin-right:10px; }
+				// .name { padding-left:10px; }
 				margin:8px;
 			}
-		}
+			.special {
+				position:relative;
+				color:#aaa;
+				font-style:italic;
+				.openid-icon {
+					position:absolute; right:12px; top:50%; 
+					margin-top:-15px; 
+					width:30px; height:30px; 
+				}
+				.openid-error {
+					background:rgba(255,0,0,0.2);
+					color:red;
+				}
+			}
+		}		
 	}
   .logo {
 	  text-align:center;
@@ -167,6 +181,8 @@ body{
 		}
 	}
 }
+
+
 
 
 
