@@ -929,8 +929,12 @@ angular
 				window.__indx_openid_continuation = function(response, foo) {
 					console.log('response >> ', response);
 					var username = u.getParameterByName('username', '?'+response);
-					console.log('openid continuation username', username);
-					if (username) { return d.resolve(username); }
+					if (username) {
+						var user_type = u.getParameterByName('username_type', '?'+response);
+						var user = {'@id':username, 'type':user_type, 'name':username};
+						console.log('logging in user >>', user);
+						return d.resolve(user); 
+					}
 					d.reject({message:'OpenID authentication failed', status:0});
 				};
 				var url = ['/', this.get('server_host'), 'auth', 'login_openid'].join('/');

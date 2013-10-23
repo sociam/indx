@@ -77,8 +77,9 @@
 				}).fail(function(error) {
 					console.log('launcherjs >> openid_login failure continuation ---------------- ', error);
 					sa(function() {
-						$scope.openid_error = error;
+						$scope.openid_error = error.message;
 						delete $scope.selected.password;
+						delete $scope.selected.user;
 						u.shake($($scope.el).find('input:password').parents('.special'));
 					});
 				});
