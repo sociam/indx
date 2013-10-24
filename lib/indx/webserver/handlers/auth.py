@@ -368,7 +368,7 @@ class AuthHandler(BaseHandler):
                     "username": display_identifier,
                     "status": 200,
                     "message": "OK",
-                    "user_metadata": json.dumps(user_metadata),
+                    "user_metadata": user_info['user_metadata_json'],
                 }
                 self._send_openid_redirect(request, continuation_params)
                 return
@@ -413,6 +413,8 @@ class AuthHandler(BaseHandler):
 
     def _send_openid_redirect(self, request, continuation_params):
         """ OpenID has finished, send a redirect with the specified parameters. """
+        logging.debug("Auth: sending openid redirect with continuation params: {0}".format(continuation_params))
+
         wbSession = self.get_session(request)
         redirect_url = wbSession.get_openid_redirect()
 
