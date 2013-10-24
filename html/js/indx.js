@@ -933,12 +933,24 @@ angular
 			/// @fail(<String>) Error raised during process
 			login_openid : function(openid) {
 				var this_ = this, d = u.deferred();
-				window.__indx_openid_continuation = function(response, foo) {
+				window.__indx_openid_continuation = function(response) {
+					var getparam = function(pname) { return u.getParameterByName(pname, '?'+response); };
 					console.log('response >> ', response);
-					var username = u.getParameterByName('username', '?'+response);
+					var username = getparam('username');
 					if (username) {
-						var user_type = u.getParameterByName('username_type', '?'+response);
-						var user = {'@id':username, 'type':user_type, 'name':username};
+						var user_type = getparam('username_type'), 
+							user = {'@id':username, 'type':user_type, 'name':username},
+							user_metadata = getparam('user_metadata');
+							if (user_metadata) {
+								console.log('user_metadata', user_metadata, typeof user_metadata);
+								try {
+									user_metadata = JSON.parse(user_metadata);
+							 		console.info('legit user metadata', user_metadata);
+									_(user).extend(user_metadata);
+							 	} catch(e) {
+							 		console.error('error parsing json ', user_metadata);
+							 	}
+							 }
 						console.log('logging in user >>', user);
 						this_.trigger('login', username);
 						return d.resolve(user); 
