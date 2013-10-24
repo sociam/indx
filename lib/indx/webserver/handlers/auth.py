@@ -103,10 +103,17 @@ class AuthHandler(BaseHandler):
 
         user = IndxUser(self.database, wbSession.username)
 
-        def metadata_cb(user_metadata):
-            self.return_ok(request, { "user" : wbSession and wbSession.username or 'nobody', "is_authenticated" : wbSession and wbSession.is_authenticated, "user_metadata": json.dumps(user_metadata) })
+        def info_cb(user_info):
+            if user_info is None:
+                user_info = {}
 
-        user.get_user_metadata().addCallbacks(metadata_cb, lambda failure: self.return_internal_error(request))
+            # add our user and is_authenticated information
+            user_info['user'] = wbSession and wbSession.username or 'nobody'
+            user_info['is_authenticated'] = wbSession and wbSession.is_authenticated
+            self.return_ok(request, user_info)
+
+        # don't decode the user_metadata string, leave as a json string
+        user.get_user_info(decode_json = False).addCallbacks(info_cb, lambda failure: self.return_internal_error(request))
 
         
     def get_token(self,request):

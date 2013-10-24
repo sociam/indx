@@ -50,6 +50,33 @@ class IndxUser:
         self.db.connect_indx_db().addCallbacks(connected_d, return_d.errback)
         return return_d
 
+    def get_user_info(self, decode_json = False):
+        """ Get user's info (type, metadata) in one call, optionally decode user_metadata JSON string."""
+        logging.debug("IndxUser, get_user_info for username {0}".format(self.username))
+        return_d = Deferred()
+
+        def connected_d(conn):
+            logging.debug("IndxUser, get_user_info, connected_d")
+
+            query = "SELECT username_type, user_metadata_json FROM tbl_users WHERE username = %s"
+            params = [self.username]
+
+            def query_d(conn, rows):
+                logging.debug("IndxUser, get_user_info, connected_d, query_d, rows: {0}".format(rows))
+
+                if len(rows) < 1:
+                    return_d.callback(None) # no user info available
+                else:
+                    if decode_json:
+                        return_d.callback({"type": rows[0][0], "user_metadata": json.loads(rows[0][1])})
+                    else:
+                        return_d.callback({"type": rows[0][0], "user_metadata": rows[0][1]})
+
+            conn.runQuery(query, params).addCallbacks(lambda rows: query_d(conn, rows), return_d.errback)
+
+        self.db.connect_indx_db().addCallbacks(connected_d, return_d.errback)
+
+        return return_d
 
     def get_user_metadata(self):
         """ Get user's metadata."""
