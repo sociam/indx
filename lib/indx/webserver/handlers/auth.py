@@ -32,6 +32,7 @@ from openid.oidutil import appendArgs
 from openid.extensions import pape, sreg, ax
 
 from indx.openid import IndxOpenID
+from indx.user import IndxUser
 from hashing_passwords import make_hash, check_hash
 
 OPENID_PROVIDER_NAME = "INDX OpenID Handler"
@@ -99,7 +100,14 @@ class AuthHandler(BaseHandler):
     def auth_whoami(self, request):
         wbSession = self.get_session(request)
         logging.debug('auth whoami ' + repr(wbSession))
-        self.return_ok(request, { "user" : wbSession and wbSession.username or 'nobody', "is_authenticated" : wbSession and wbSession.is_authenticated })
+
+        user = IndxUser(self.database, wbSession.username)
+
+        def metadata_cb(user_metadata):
+            self.return_ok(request, { "user" : wbSession and wbSession.username or 'nobody', "is_authenticated" : wbSession and wbSession.is_authenticated, "user_metadata": json.dumps(user_metadata) })
+
+        user.get_user_metadata().addCallbacks(metadata_cb, lambda failure: self.return_internal_error(request))
+
         
     def get_token(self,request):
         ## 1. request contains appid & box being requested (?!)

@@ -19,61 +19,23 @@ import logging
 import json
 from twisted.internet.defer import Deferred
 from hashing_passwords import make_hash, check_hash
+from indx.user import IndxUser
 
 class IndxOpenID:
-    """ INDX OpenID handler ID. """
+    """ INDX OpenID handler. """
 
     def __init__(self, db, uri):
         logging.debug("IndxOpenID, uri: {0}".format(uri))
         self.db = db
         self.uri = uri
 
-    def set_password(self, password):
-        """ Set the user's password. """
-        logging.debug("IndxOpenID, set_password for user {0}".format(self.uri))
-        return_d = Deferred()
-        
-        pw_hash = make_hash(password)
-
-        def connected_d(conn):
-            logging.debug("IndxOpenID, set_password, connected_d")
-            insert_q = "UPDATE tbl_users SET password_hash = %s WHERE username = %s AND username_type = %s"
-            insert_p = [pw_hash, self.uri, "openid"]
-
-            def inserted_d(empty):
-                logging.debug("IndxOpenID, set_password, connected_d, inserted_d")
-                return_d.callback(True)
-                return
-
-            conn.runOperation(insert_q, insert_p).addCallbacks(inserted_d, return_d.errback)
-
-        self.db.connect_indx_db().addCallbacks(connected_d, return_d.errback)
-        return return_d
-
-
     def get_user_metadata(self):
         """ Get user's metadata."""
         logging.debug("IndxOpenID, get_user_metadata for uri {0}".format(self.uri))
         return_d = Deferred()
 
-        def connected_d(conn):
-            logging.debug("IndxOpenID, get_user_metadata, connected_d")
-
-            query = "SELECT user_metadata_json FROM tbl_users WHERE username = %s AND username_type = %s AND user_metadata_json IS NOT NULL"
-            params = [self.uri, "openid"]
-
-            def query_d(conn, rows):
-                logging.debug("IndxOpenID, get_user_metadata, connected_d, query_d, rows: {0}".format(rows))
-
-                if len(rows) < 1:
-                    return_d.callback(None) # no user metadata
-                else:
-                    return_d.callback(json.loads(rows[0][0]))
-
-            conn.runQuery(query, params).addCallbacks(lambda rows: query_d(conn, rows), return_d.errback)
-
-        self.db.connect_indx_db().addCallbacks(connected_d, return_d.errback)
-
+        user = IndxUser(self.db, self.uri)
+        user.get_user_metadata().addCallbacks(return_d.callback, return_d.errback)
         return return_d
 
 
