@@ -329,8 +329,8 @@ angular
 					var protocol = (document.location.protocol === 'https:') ? 'wss:/' : 'ws:/';
 					var ws_url = [protocol,server_host,'ws'].join('/');
 					ws = new WebSocket(ws_url);
-/// @ignore
-/// dhjo
+					/// @ignore
+					/// dhjo
 					ws.onmessage = function(evt) {
 						u.debug('websocket :: incoming a message ', evt.data.toString().substring(0,190));
 						var pdata = JSON.parse(evt.data);
@@ -343,9 +343,8 @@ angular
 								});
 						}
 					};
-					/// @arg {blah} - sfd
-					/// fdsafds
 					ws.onopen = function() {
+						u.debug("!!!!!!!!!!!!!!!! websocket open >>>>>>>>> ");
 						var data = WS_MESSAGES_SEND.auth(this_.get('token'));
 						ws.send(data);
 						data = WS_MESSAGES_SEND.diff();
@@ -356,7 +355,7 @@ angular
 					/// @ignore
 					ws.onclose = function(evt) {
 						// what do we do now?!
-						u.error('websocket closed -- ');
+						u.error("!!!!!!!!!!!!!!!! websocket closed ");
 						// TODO
 						var interval;
 						interval = setInterval(function() {
@@ -914,13 +913,12 @@ angular
 				u.debug('creating ', boxid);
 				return c.save().pipe(function() { return this_.get_box(boxid); });
 			},
-			/// checks to see if we currently have a valid cookie/token set
+			/// checks to see if we currently have a valid cookie/token set, and if so
+			/// update our internal state so that we know who we are.
 			/// @then({is_authenticated:true/false}) - Returns true/false depending on auth status
 			/// @fail(<String>) Error raised during process
 			check_login:function() {
-				// checks whether you can connect to the server and who is logged in.
-				// returns a deferred that gets passed an argument
-				// { code:200 (server is okay),  is_authenticated:true/false,  user:<username>  }
+				// TODO: fix this to set the credentials if we don't know who we are
 				return this._ajax('GET', 'auth/whoami');
 			},
 			/// returns info of current logged in user
@@ -932,28 +930,26 @@ angular
 			/// @then(<Obj>) - Continuation with openid success/fail
 			/// @fail(<String>) Error raised during process
 			login_openid : function(openid) {
-				var this_ = this, d = u.deferred();
+				var this_ = this, d = u.deferred(), popup, int_popup_checker;
 				window.__indx_openid_continuation = function(response) {
 					var getparam = function(pname) { return u.getParameterByName(pname, '?'+response); };
-					console.log('response >> ', response);
 					var username = getparam('username');
 					if (username) {
-						var user_type = getparam('username_type'), 
+						var user_type = getparam('username_type'),
 							user = {'@id':username, 'type':user_type, 'name':username},
 							user_metadata = getparam('user_metadata');
-							if (user_metadata) {
-								console.log('user_metadata', user_metadata, typeof user_metadata);
-								try {
-									user_metadata = JSON.parse(user_metadata);
-							 		console.info('legit user metadata', user_metadata);
-									_(user).extend(user_metadata);
-							 	} catch(e) {
-							 		console.error('error parsing json ', user_metadata);
-							 	}
-							 }
-						console.log('logging in user >>', user);
+						if (user_metadata) {
+							u.log('user_metadata', user_metadata, typeof user_metadata);
+							try {
+								user_metadata = JSON.parse(user_metadata);
+								_(user).extend(user_metadata);
+							} catch(e) { console.error('error parsing json, no biggie', user_metadata);	}
+						}
+						u.log('logging in user >>', user);
 						this_.trigger('login', username);
-						return d.resolve(user); 
+						this_.set({user_type:'openid',username:openid});
+						console.log('successful login! setting user type OPENID, id', this_.get('user_type'), " - ", this_.get('username'));
+						return d.resolve(user);
 					}
 					d.reject({message:'OpenID authentication failed', status:0});
 				};
@@ -961,16 +957,21 @@ angular
 				var redir_url = '/openid_return_to.html';
 				var params = { identity: encodeURIComponent(openid), redirect:encodeURIComponent(redir_url) };
 				url = url + "?" + _(params).map(function(v, k) { return k+'='+v; }).join('&');
-				console.log('opening url >>', url);
-				var popup = window.open(url, 'indx_openid_popup', 'width=790,height=500');
-				// todo - handle cancel
-				// popup.onbeforeunload = function() {
-				// 	console.log('onbeforeunload -----------------');
-				// 	if (!d.isResolved()) {
-				// 		console.log('not resolved so we assume cancelled -----------------');
-				// 		d.reject({status:0, message:"Cancelled"});
-				// 	}
-				// };
+				u.log('opening url >>', url);
+				popup = window.open(url, 'indx_openid_popup', 'width=790,height=500');
+				int_popup_checker = setInterval(function() {
+					if (!popup.closed) { return; }
+					if (d.state() !== 'pending') {
+						// success/failure has been achieved, just continue
+						// console.info('popup closed naturally, continuing');
+						clearInterval(int_popup_checker);
+						return;
+					}
+					// console.error('popup force closed, continuing reject');
+					// popup force closed
+					clearInterval(int_popup_checker);
+					d.reject({status:0, message:"Cancelled"});
+				});
 				return d.promise();
 			},
 			/// @arg <string> username: username to log in as
@@ -981,16 +982,26 @@ angular
 			login : function(username,password) {
 				// local user method
 				var d = u.deferred();
-				this.set({username:username,password:password});
 				var this_ = this;
 				this._ajax('POST', 'auth/login', { username: username, password: password })
-					.then(function(l) { this_.trigger('login', username); d.resolve(l); })
-					.fail(function(l) { d.reject(l); });
+					.then(function(l) { 
+						console.log('>>>>>>>>> setting local user login ', username, password);
+						this_.set({user_type:'local',username:username,password:password});
+						this_.trigger('login', username); d.resolve(l); 
+					}).fail(function(l) { d.reject(l); });
 				return d.promise();
 			},
 			reconnect:function() {
-				return this.login(this.get('username'),this.get('password'));
+				if (this.get('user_type') === 'openid') {
+					u.log('reconnecting as openid ', this.get('username'));
+					return this.login_openid(this.get('username'));
+				}
+				u.log('reconnecting as local ', this.get('username'), this.get('password'));
+			 	return this.login(this.get('username'),this.get('password'));
 			},
+			/// Logs out local and remote users
+			/// @then(): Logout complete
+			/// @fail(): Logout failed
 			logout : function() {
 				console.log('store --- logout');
 				var d = u.deferred();
