@@ -441,7 +441,7 @@ class IndxDatabase:
             logging.debug("indx_pg2.list_users.done : {0}".format(repr(rows)))        
             users = []
             # TODO add "name": "Dan Smith" to this output
-            for r in rows:  users.append({"@id": r[0], "type": r[1]})
+            for r in rows:  users.append({"@id": r[0], "type": r[1], "user_metadata": r[2] or {}})
             # conn.close() # close the connection        
             return_d.callback(users)
             return
@@ -453,7 +453,7 @@ class IndxDatabase:
 
         def connected(conn):
             logging.debug("indx_pg2.list_users : connected")
-            d = conn.runQuery("SELECT DISTINCT username, username_type FROM tbl_users")
+            d = conn.runQuery("SELECT DISTINCT username, username_type, user_metadata_json FROM tbl_users")
             d.addCallbacks(lambda rows: done(conn, rows), lambda failure: fail(failure))
             return
 
