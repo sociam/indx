@@ -11,10 +11,11 @@
 			<li>
 				<a>
 					<div class="special">
-						<form ng-submit="select_user({type:'openid', '@id':selected.new_openid_url})">
-							<input class="openid-input" type="text" placeholder="Login with another OpenID" ng-model="selected.new_openid_url">
-							<img ng-click="select_user({type:'openid', '@id':selected.new_openid_url})" src="img/openid.png" class="openid-icon">
+						<form ng-submit="openid_validate(selected.new_openid_url) && openid_select_user(selected.new_openid_url)">
+							<input class="openid-input" type="text" placeholder="Login with another OpenID" ng-model="selected.new_openid_url" ng-keyup="openid_validate(selected.new_openid_url)">
+							<img ng-click="openid_validate(selected.new_openid_url) && openid_select_user(selected.new_openid_url)" src="img/openid.png" ng-class="{'openid-icon':true, 'openid-disabled':!openid_validate(selected.new_openid_url)}">
 						</form>	
+						<div class="openid-error" ng-bind="openid_error"></div>
 					</div>
 				</a>
 			</li>

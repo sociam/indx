@@ -67,6 +67,9 @@ body{
 					position:absolute; right:12px; top:50%; 
 					margin-top:-15px; 
 					width:30px; height:30px; 
+					&.openid-disabled {
+						opacity:0.2;
+					}
 				}
 				.openid-input {
 					color:#888;
@@ -80,10 +83,12 @@ body{
 					width:260px;
 				}
 				.openid-error {
-					background:rgba(255,0,0,0.02);
-					color:red;
-					text-decoration:none;
-					font-size:90%;
+					position:absolute;
+					bottom:3px;
+					left:121px;
+					color:rgba(176,113,177,1.0);
+					text-decoration:none !important;
+					font-size:80%;
 				}
 			}
 		}		

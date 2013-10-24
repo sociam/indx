@@ -51,6 +51,15 @@
 			$scope.selected.user = user; 
 			if ($scope.isOpenIDUser(user)) { $scope.do_submit(); }
 		};
+		$scope.set_openid_error= function(err) { $scope.openid_error = err; };
+		$scope.openid_validate = function(id) {
+			if (u.isValidURL(id)) { $scope.set_openid_error(''); return true; }
+			$scope.set_openid_error(id && id.length > 0 ? 'Please provide an OpenID URL' : '');
+			return false;
+		};
+		$scope.openid_select_user = function(openid_url) {
+			$scope.select_user({type:'openid', '@id':openid_url})
+		};
 		$scope.back_to_login = function() {	delete $scope.selected.user; delete $scope.selected.password;};
 		// this gets called when the form is submitted
 		$scope.do_submit = function() {
