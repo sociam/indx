@@ -145,15 +145,15 @@ class AuthHandler(BaseHandler):
 
         def connected_cb(conn):
             """ Get the password hash of a user and check it against the supplied password. """
-            d = conn.runQuery("SELECT username_type, password_hash FROM tbl_users WHERE username = %s AND username_type = %s", [uri, "openid"])
+            d = conn.runQuery("SELECT username_type, password_hash, user_metadata_json FROM tbl_users WHERE username = %s AND username_type = %s", [uri, "openid"])
 
             def hash_cb(rows):
                 if len(rows) == 0:
                     logging.debug("check_openid_pass returning True, user not in DB ")
-                    return_d.callback(True) # return True if user not in DB
+                    return_d.callback(None) # return None if user not in DB
                     return
 
-                username_type, password_hash = rows[0]
+                username_type, password_hash, user_metadata_json = rows[0]
 
                 if password_hash == "":
                     logging.debug("check_openid_pass returning True, user password not in DB")
@@ -189,24 +189,24 @@ class AuthHandler(BaseHandler):
 
         password = self.get_arg(request, "password")
 
-        def post_pw():
-            logging.debug("login_openid post_pw")
+        def post_pw(request_user_metadata):
+            logging.debug("login_openid post_pw, request_user_metadata: {0}".format(request_user_metadata))
 
             oid_consumer = consumer.Consumer(self.get_openid_session(request), self.store)
             try:
                 oid_req = oid_consumer.begin(identity)
-                
-                # SReg speaks this protocol: http://openid.net/specs/openid-simple-registration-extension-1_1-01.html
-                # and tries to request additional metadata about this OpenID identity
-                sreg_req = sreg.SRegRequest(required=['fullname','nickname','email'], optional=[])
-                oid_req.addExtension(sreg_req)
+                if request_user_metadata:                    
+                    # SReg speaks this protocol: http://openid.net/specs/openid-simple-registration-extension-1_1-01.html
+                    # and tries to request additional metadata about this OpenID identity
+                    sreg_req = sreg.SRegRequest(required=['fullname','nickname','email'], optional=[])
+                    oid_req.addExtension(sreg_req)
 
-                # AX speaks this protocol: http://openid.net/specs/openid-attribute-exchange-1_0.html
-                # and tries to get more attributes (by URI), we request some of the more common ones
-                ax_req = ax.FetchRequest()
-                for uri in self.AX_URIS:
-                    ax_req.add(ax.AttrInfo(uri, required = True))
-                oid_req.addExtension(ax_req)
+                    # AX speaks this protocol: http://openid.net/specs/openid-attribute-exchange-1_0.html
+                    # and tries to get more attributes (by URI), we request some of the more common ones
+                    ax_req = ax.FetchRequest()
+                    for uri in self.AX_URIS:
+                        ax_req.add(ax.AttrInfo(uri, required = True))
+                    oid_req.addExtension(ax_req)
             except consumer.DiscoveryFailure as exc:
                 #request.setResponseCode(200, message = "OK")
                 #request.write("Error: {0}".format(exc))
@@ -248,9 +248,15 @@ class AuthHandler(BaseHandler):
 
         def pass_cb(pass_correct):
             logging.error("login_openid pass_cb, password correct? {0}".format(pass_correct))
-            if pass_correct:
-                return post_pw()
+
+            request_user_metadata = pass_correct is None # request user metadata if user isn't in the database
+
+            if request_user_metadata or pass_correct:
+                # password is correct / user didn't have one (e.g. openid)
+                return post_pw(request_user_metadata)
             else:
+                # password is incorrect
+
                 #return self.return_unauthorized(request)
                 continuation_params = {
                     "status": 401,
