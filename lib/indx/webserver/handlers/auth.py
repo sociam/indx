@@ -16,6 +16,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
+import json
 from indx.webserver.handlers.base import BaseHandler
 import indx.indx_pg2 as database
 from twisted.internet.defer import Deferred
@@ -361,7 +362,7 @@ class AuthHandler(BaseHandler):
                     "username": display_identifier,
                     "status": 200,
                     "message": "OK",
-                    "user_metadata": user_metadata,
+                    "user_metadata": json.dumps(user_metadata),
                 }
                 self._send_openid_redirect(request, continuation_params)
                 return
