@@ -28,14 +28,14 @@
 			<div class="tab-pane" id="apidocs">
 				<!-- <p>See <a href="/docs/docsgen.html">docsgen documentation</a> for instruction on how to build api docs.</p> -->
 			  <table class="table">
-			  	<thead><th>Name</th><th>Status</th><th>Actions</th></thead>
+			  	<thead><th width="200">Name</th><th>Status</th><th width="200">Actions</th></thead>
 			  	<tbody>
 					<tr ng-repeat="doc in docs.models">
 						<td ng-if="doc.get('built')"><a href="/{{doc.get('url')}}">{{doc.get('name')}}</a></td>
 						<td ng-if="!doc.get('built')">{{doc.get('name')}}</td>
 						<td>
-							<div ng-if="doc.get('built')">Built</div>
-							<div ng-if="!doc.get('built')">Documentation has not been built.</div>
+							<div ng-if="!doc.err && doc.get('built')">Built</div>
+							<div ng-if="!doc.err && !doc.get('built')">Documentation has not been built.</div>
 							<div ng-if="doc.err">An error occurred: {{doc.err}}</div>
 						</td>
 						<td>
@@ -50,18 +50,19 @@
 			</div>
 			<div class="tab-pane" id="testing">
 			  <table class="table">
-			  	<thead><th>Name</th><th>Status</th><th>Actions</th></thead>
+			  	<thead><th width="200">Name</th><th>Status</th><th width="200">Actions</th></thead>
 			  	<tbody>
 					<tr ng-repeat="test in tests.models">
 						<td ng-if="test.get('built')"><a href="/{{test.get('url')}}">{{test.get('name')}}</a></td>
 						<td ng-if="!test.get('built')">{{test.get('name')}}</td>
 						<td>
-							<div ng-if="test.get('built')">
+							<div ng-if="!doc.err && test.get('built')">
 								<div ng-repeat="result in test.get('results')" ng-class="{testpass:result.pass, testfail:!result.pass}">
 									<a href="#" ng-click="activeTest.result = result">{{result.name}} (Failed {{result.failures}} / {{result.tests}})</a>
 								</div>
 							</div>
-							<div ng-if="!test.get('built')">Tests have not been run.</div>
+							<div ng-if="!test.err && !test.get('built')">Tests have not been run.</div>
+							<div ng-if="test.err">Could not run tests</div>
 						</td>
 						<td><button class="btn btn-primary btn-run" ng-disabled="test.is_running" ng-click="test.run()">Run</button></td>
 					</tr>
