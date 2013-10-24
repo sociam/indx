@@ -316,8 +316,38 @@ angular
 				return files.get(fid);
 			},
 			_set_up_websocket:function() {
-				var this_ = this, server_host = this.store.get('server_host');
+				var this_ = this, server_host = this.store.get('server_host'), store = this.store;
 				if (! this.get_use_websockets() ) { return; }
+
+				var reconnect = function() {
+					this_.get_token().then(function() {
+						// new token will trigger a refreshing/reconnection
+						return;
+					}).fail(function(error_code) {
+						// connection failure, server's still down.
+						if (error_code.status === 0) {
+							console.error('connection failure, server still down');
+							return setTimeout(reconnect, 1000);
+						}
+						if (error_code.status === 404) {
+							console.info('server back up! tokens are expired.');
+							// tokens aren't valid any more, let's try to reconnect.
+							if (store.get('user_type') === 'openid') {
+								console.info('Reconnecting using OpenID >> ');
+								store.reconnect().then(function() {
+									this_.get_token()
+										.then(function() {	return;	})
+										.fail(function() { u.error('failed to get a token this time, give up.');});
+								}).fail(function() { 
+									u.error('failed to failed to re-authenticate, give up.');
+								});
+							} else {
+								console.error('Local user, cannot reauthenitcate');
+								store.trigger('ask-user-to-log-in');
+							}
+						}
+					});
+				};				
 				this.on('new-token', function(token) {
 					var ws = this_._ws;
 					if (ws) {
@@ -355,16 +385,8 @@ angular
 					/// @ignore
 					ws.onclose = function(evt) {
 						// what do we do now?!
-						u.error("!!!!!!!!!!!!!!!! websocket closed ");
-						// TODO
-						var interval;
-						interval = setInterval(function() {
-							this_.store.reconnect().then(function() {
-								this_.get_token().then(function() {
-									clearInterval(interval);
-								});
-							});
-						},1000);
+						u.error("!!!!!!!!!!!!!!!! websocket closed -- lost connection to server");
+						reconnect();
 					};
 				});
 			},
@@ -919,7 +941,18 @@ angular
 			/// @fail(<String>) Error raised during process
 			check_login:function() {
 				// TODO: fix this to set the credentials if we don't know who we are
-				return this._ajax('GET', 'auth/whoami');
+				var d = u.deferred(), this_ = this;
+				this._ajax('GET', 'auth/whoami').then(function(response) {
+					if (response.is_authenticated) {
+						console.log('response >> ', response);
+						u.assert(response.user, "No username returned from whoami, server problem");
+						u.assert(response.type, "No user_type returned from whoami, server problem");
+						this_.set({username:response.user, user_type:response.type});
+						this_.trigger('login', response.user);
+					}
+					d.resolve.apply(d,arguments);
+				}).fail(function() { d.reject.apply(d,arguments); });
+				return d.promise();
 			},
 			/// returns info of current logged in user
 			/// @then(<Obj>) - All currently known info about the user
