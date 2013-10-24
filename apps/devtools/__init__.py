@@ -117,7 +117,13 @@ class DevToolsApp(BaseHandler):
         if not config:
             return
         logging.debug('generating doc %s' % config['name'])
-        out = check_output('node lib/docs/build.js %s --output-directory=%s' % (config['config_path'], config['path']), shell=True)
+        try:
+            out = check_output('node lib/docs/build.js %s --output-directory=%s' % (config['config_path'], config['path']), shell=True)
+        except subprocess.CalledProcessError, e:
+            logging.debug('Failed to run builder', e.output)
+            self.return_internal_error('Failed to run builder')
+            raise
+
         logging.debug(out);
         config['build_output'] = out;
         config['built'] = os.path.exists(config['path']);
