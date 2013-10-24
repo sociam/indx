@@ -10,14 +10,11 @@
 			</li>
 			<li>
 				<a>
-					<div class="special" ng-click="new_openid=!new_openid">Login with another OpenID<img src="img/openid.png" class="openid-icon">
-					</div>	
-					<div class="special" ng-show="new_openid">
-						<div class="openid-error" ng-show="openid_error"> {{ openid_error }} </div>
+					<div class="special">
 						<form ng-submit="select_user({type:'openid', '@id':selected.new_openid_url})">
-						  <input type="text" ng-model="selected.new_openid_url">
-						  <span ng-click="select_user({type:'openid', '@id':selected.new_openid_url})" class="glyphicon glyphicon-log-in openid-icon"></span>
-  					    </form>
+							<input class="openid-input" type="text" placeholder="Login with another OpenID" ng-model="selected.new_openid_url">
+							<img ng-click="select_user({type:'openid', '@id':selected.new_openid_url})" src="img/openid.png" class="openid-icon">
+						</form>	
 					</div>
 				</a>
 			</li>
