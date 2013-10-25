@@ -25,6 +25,7 @@ angular
 					this.on('update change', function () {
 						that.update();
 					});
+					this.icon();
 					this.flatCollection = this.collection;
 				},
 				// identify and dereference links to objs within the attributes
@@ -67,6 +68,39 @@ angular
 				},
 				analyse: function () {
 					$scope.curr_obj = this;
+				},
+				icon: function () {
+					var keys = _(this.attributes).keys().sort(),
+						cols = [[], [], [], [], []],
+						colours = ['#F30021', '#FF8300', '#06799F', '#34D800', '#4F10AD', '#FFE500'],
+						hash = function (key) {
+							return {
+								col: (_(key.split("")).reduce(function(memo, letter){return memo+letter.charCodeAt(0);},0))%5,
+								colour: colours[-(_(key.split("").slice(1)).reduce(function(memo, letter){return memo-letter.charCodeAt(0);},0))%colours.length]
+							}
+						};
+					console.log(cols)
+					_.each(keys, function (key) {
+						var h = hash(key);
+						console.log(key, h)
+						cols[h.col].push({ key: key, colour: h.colour });
+					});
+					_.each(cols, function (col) {
+						console.log(col)
+						var k = _.reduce(col, function (i, cell) { console.log(cell); return cell.key.length; }, 0) % 2;
+						if (col.length > 0 && col.length % 2 === 0) {
+							if (k) {
+								col.push({ colour: 'transparent' });
+							} else {
+								col.unshift({ colour: 'transparent' });
+							}
+						}
+						if (col.length > 4) {
+							col = col.slice(0, 4);
+						}
+					})
+					this._icon = cols;
+					return cols;
 				},
 				_generate_attribute_array: function () {
 					this.attribute_array = _.map(this.attributes, function (value, key) {
