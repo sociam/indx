@@ -152,39 +152,6 @@ class AuthHandler(BaseHandler):
 
     ### OpenID functions
 
-    def check_openid_pass(self, uri, password):
-        """ Check an OpenID user's password. """
-        return_d = Deferred()
-
-        logging.debug("check_openid_pass for user {0}, where password is none? {1}".format(uri, password is None))
-
-        def connected_cb(conn):
-            """ Get the password hash of a user and check it against the supplied password. """
-            d = conn.runQuery("SELECT username_type, password_hash, user_metadata_json FROM tbl_users WHERE username = %s AND username_type = %s", [uri, "openid"])
-
-            def hash_cb(rows):
-                if len(rows) == 0:
-                    logging.debug("check_openid_pass returning True, user not in DB ")
-                    return_d.callback(None) # return None if user not in DB
-                    return
-
-                username_type, password_hash, user_metadata_json = rows[0]
-
-                if password_hash == "":
-                    logging.debug("check_openid_pass returning True, user password not in DB")
-                    return_d.callback(True) # user's password is not yet set - return True always.
-                    return
-
-                return_d.callback(check_hash(password, password_hash)) # check hash and return result
-                return
-
-            d.addCallbacks(hash_cb, return_d.errback)
-
-        # get a connection to the INDX db from the pool
-        self.database.connect_indx_db().addCallbacks(connected_cb, return_d.errback)
-        return return_d
-
-
     def login_openid(self, request):
         """ Verify an OpenID identity. """
         wbSession = self.get_session(request)
@@ -202,10 +169,9 @@ class AuthHandler(BaseHandler):
             logging.error("login_openid error, redirect is None, returning bad request.")
             return self.return_bad_request(request, "You must specify a 'redirect' in the GET/POST query parameters.")
 
-        password = self.get_arg(request, "password")
 
-        def post_pw(request_user_metadata):
-            logging.debug("login_openid post_pw, request_user_metadata: {0}".format(request_user_metadata))
+        def post_user_info(request_user_metadata):
+            logging.debug("login_openid post_user_info, request_user_metadata: {0}".format(request_user_metadata))
 
             oid_consumer = consumer.Consumer(self.get_openid_session(request), self.store)
             try:
@@ -223,29 +189,13 @@ class AuthHandler(BaseHandler):
                         ax_req.add(ax.AttrInfo(uri, required = True))
                     oid_req.addExtension(ax_req)
             except consumer.DiscoveryFailure as exc:
-                #request.setResponseCode(200, message = "OK")
-                #request.write("Error: {0}".format(exc))
-                #request.finish()
                 logging.error("Error in login_openid: {0}".format(exc))
-                #return self.return_unauthorized(request)
-                continuation_params = {
-                    "status": 401,
-                    "message": "Unauthorized",
-                }
-                self._send_openid_redirect(request, continuation_params)
+                self._send_openid_redirect(request, {"status": 401, "message": "Unauthorized"})
                 return
             else:
                 if oid_req is None:
-                    #request.setResponseCode(200, message = "OK")
-                    #request.write("Error, no OpenID services found for: {0}".format(identity))
                     logging.error("Error in login_openid: no OpenID services found for: {0}".format(identity))
-                    #request.finish()
-                    #return self.return_unauthorized(request)
-                    continuation_params = {
-                        "status": 401,
-                        "message": "Unauthorized",
-                    }
-                    self._send_openid_redirect(request, continuation_params)
+                    self._send_openid_redirect(request, {"status": 401, "message": "Unauthorized"})
                     return
                 else:
                     trust_root = self.webserver.server_url
@@ -254,33 +204,14 @@ class AuthHandler(BaseHandler):
                     logging.debug("OpenID, had oid_req, trust_root: {0}, return_to: {1}, oid_req: {2}".format(trust_root, return_to, oid_req))
 
                     redirect_url = oid_req.redirectURL(trust_root, return_to)
-                    # FIXME check this is the best way to redirect here
                     request.setHeader("Location", redirect_url)
                     request.setResponseCode(302, "Found")
                     request.finish()
                     return
 
-
-        def pass_cb(pass_correct):
-            logging.error("login_openid pass_cb, password correct? {0}".format(pass_correct))
-
-            request_user_metadata = pass_correct is None # request user metadata if user isn't in the database
-
-            if request_user_metadata or pass_correct:
-                # password is correct / user didn't have one (e.g. openid)
-                return post_pw(request_user_metadata)
-            else:
-                # password is incorrect
-
-                #return self.return_unauthorized(request)
-                continuation_params = {
-                    "status": 401,
-                    "message": "Unauthorized",
-                }
-                self._send_openid_redirect(request, continuation_params)
-                return
-
-        self.check_openid_pass(identity, password).addCallbacks(pass_cb, lambda failure: self.return_internal_error(request))
+        user = IndxUser(self.database, identity)
+        user.get_user_info().addCallbacks(lambda user_info: post_user_info(user_info is None), lambda failure: self.return_internal_error(request))
+        # if user_info is None, then request_user_metadata = True
         return
 
     def _url_add_params(self, url, params):
@@ -306,15 +237,8 @@ class AuthHandler(BaseHandler):
         display_identifier = info.getDisplayIdentifier()
 
         if info.status == consumer.FAILURE and display_identifier:
-            #request.setResponseCode(200, "OK")
             logging.error("Verification of {0} failed: {1}".format(display_identifier, info.message))
-            #request.finish()
-            #return self.return_unauthorized(request)
-            continuation_params = {
-                "status": 401,
-                "message": "Unauthorized",
-            }
-            self._send_openid_redirect(request, continuation_params)
+            self._send_openid_redirect(request, {"status": 401, "message": "Unauthorized"})
             return
         elif info.status == consumer.SUCCESS:
             sreg_resp = sreg.SRegResponse.fromSuccessResponse(info)
@@ -355,74 +279,32 @@ class AuthHandler(BaseHandler):
             wbSession.setPassword("") # XXX
 
             # Initialise the OpenID user now:
-
             ix_openid = IndxOpenID(self.database, display_identifier)
 
             def err_cb(err):
                 logging.error("Error in IndxOpenID: {0}".format(err))
-                #return self.return_unauthorized(request)
-                continuation_params = {
-                    "status": 401,
-                    "message": "Unauthorized",
-                }
-                self._send_openid_redirect(request, continuation_params)
+                self._send_openid_redirect(request, {"status": 401, "message": "Unauthorized"})
                 return
 
             def cb(user_info):
-                #password_hash = user_info['password_hash']
-                #
-                #if password_hash == "":
-                #    # user should be prompted for a password by the UI now, because they never have set one (new OpenID user)
-                #    # TODO do this...
-                #    return self.return_ok(request)
-                #else:
-                #    return self.return_ok(request)
-                
-
-                continuation_params = {
-                    "username": display_identifier,
-                    "status": 200,
-                    "message": "OK",
-                    "user_metadata": user_info['user_metadata_json'],
-                }
-                self._send_openid_redirect(request, continuation_params)
+                user_info['status'] = 200
+                user_info['message'] = "OK"
+                self._send_openid_redirect(request, user_info)
                 return
     
             ix_openid.init_user(user_metadata).addCallbacks(cb, err_cb)
             return
-            #return self.return_ok(request)
         elif info.status == consumer.CANCEL:
-            #request.setResponseCode(200, "OK")
             logging.error("Error in openid_process: Verification cancelled.")
-            #request.finish()
-#            return self.return_unauthorized(request)
-            continuation_params = {
-                "status": 401,
-                "message": "Unauthorized",
-            }
-            self._send_openid_redirect(request, continuation_params)
+            self._send_openid_redirect(request, {"status": 401, "message": "Unauthorized"})
             return
         elif info.status == consumer.SETUP_NEEDED:
-            #request.setResponseCode(200, "OK")
             logging.error("Error in openid_process: Setup needed at URL: {0}".format(info.setup_url))
-            #request.finish()
-            #return self.return_unauthorized(request)
-            continuation_params = {
-                "status": 401,
-                "message": "Unauthorized",
-            }
-            self._send_openid_redirect(request, continuation_params)
+            self._send_openid_redirect(request, {"status": 401, "message": "Unauthorized"})
             return
         else:
-            #request.setResponseCode(200, "OK")
             logging.error("Error in openid_process: Verification Failed.")
-            #request.finish()
-            #return self.return_unauthorized(request)
-            continuation_params = {
-                "status": 401,
-                "message": "Unauthorized",
-            }
-            self._send_openid_redirect(request, continuation_params)
+            self._send_openid_redirect(request, {"status": 401, "message": "Unauthorized"})
             return
 
 
