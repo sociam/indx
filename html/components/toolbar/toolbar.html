@@ -8,7 +8,7 @@
 			</div>
 			<button data-toggle="modal" href="#login-dialog" ng-show="!is_logged_in()" class="btn btn-primary login-btn">	<label>log in</label> </button>
 			<button data-toggle="modal" href="#logout-dialog" ng-show="is_logged_in()" class="btn btn-primary login-btn">
-				<label>{{ username }}</label><div class='usericon' ng-bind-html-unsafe="usericon"></div>
+				<label>{{ user.name }}</label><div class='usericon' ng-bind-html-unsafe="usericon"></div>
 			</button>
 			<div ng-show="is_logged_in()"  class="btn-group box-selector">
 				<button type="button" class="btn btn-default dropdown-toggle selected-box" ng-bind-html-unsafe="(box || 'select a box') + ' &nbsp; ' + caret" data-toggle="dropdown"></button>  
@@ -62,7 +62,7 @@
 					LOG OUT
 				</div>
 				<div class="modal-body">
-					<div class="logout-msg">Log out {{ username }}?</div>
+					<div class="logout-msg">Log out {{ user.name }}?</div>
 					<div class='buttons'>
 						<a class="btn" data-dismiss="modal" aria-hidden="true">Cancel</a>
 						<input type='submit' id="logout-ok" class="btn btn-primary" data-dismiss="modal" ng-click="do_logout()" autofocus value="Yes, log out"></button>

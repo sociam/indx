@@ -55,7 +55,9 @@ angular
 			diff: function(token) { return JSON.stringify({action:'diff', operation:"start"}); }
 		};
 
-
+		var _make_local_user = function(name) {
+			return {"@id":name,user_type:'local',username:name,name:name};
+		};
 
 		var serialize_obj = function(obj) {
 			var uri = obj.id;
@@ -947,13 +949,17 @@ angular
 				var d = u.deferred(), this_ = this;
 				this._ajax('GET', 'auth/whoami').then(function(response) {
 					if (response.is_authenticated) {
-						console.log('response >> ', response);
+						// make user
+						var user = {'@id': response.user, type:response.type, name:response.user, username: response.user};
+						if (response.user_metadata) { _(user).extend(JSON.parse(response.user_metadata)); }
 						u.assert(response.user, "No username returned from whoami, server problem");
 						u.assert(response.type, "No user_type returned from whoami, server problem");
 						this_.set({username:response.user, user_type:response.type});
-						this_.trigger('login', response.user);
+						this_.trigger('login', user);
+						var to_return = _({}).chain().extend(response).extend(user).value();
+						return d.resolve(to_return);
 					}
-					d.resolve.apply(d,arguments);
+					d.resolve(response);
 				}).fail(function() { d.reject.apply(d,arguments); });
 				return d.promise();
 			},
@@ -972,7 +978,7 @@ angular
 					var username = getparam('username');
 					if (username) {
 						var user_type = getparam('username_type'),
-							user = {'@id':username, 'type':user_type, 'name':username},
+							user = {'@id':username, type:user_type, name:username},
 							user_metadata = getparam('user_metadata');
 						if (user_metadata) {
 							u.log('user_metadata', user_metadata, typeof user_metadata);
@@ -982,7 +988,7 @@ angular
 							} catch(e) { console.error('error parsing json, no biggie', user_metadata);	}
 						}
 						u.log('logging in user >>', user);
-						this_.trigger('login', username);
+						this_.trigger('login', user);
 						this_.set({user_type:'openid',username:openid});
 						console.log('successful login! setting user type OPENID, id', this_.get('user_type'), " - ", this_.get('username'));
 						return d.resolve(user);
@@ -1021,9 +1027,10 @@ angular
 				var this_ = this;
 				this._ajax('POST', 'auth/login', { username: username, password: password })
 					.then(function(l) { 
-						console.log('>>>>>>>>> setting local user login ', username, password);
+						var local_user =  _make_local_user(username);
 						this_.set({user_type:'local',username:username,password:password});
-						this_.trigger('login', username); d.resolve(l); 
+						this_.trigger('login', local_user); 
+						d.resolve(local_user); 
 					}).fail(function(l) { d.reject(l); });
 				return d.promise();
 			},

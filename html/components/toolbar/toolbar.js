@@ -25,10 +25,7 @@ angular
 				var apply = function(fn) { return utils.safe_apply($scope, fn); };
 				var login_dialog = function() { return $($scope.el).find('#login-dialog'); }
 				var logout_dialog = function() { return $($scope.el).find('#logout-dialog'); }
-				var getStore = function() {
-					// TODO ! 
-					return client.store;
-				};
+				var getStore = function() {	return client.store;};
 				var new_box_dialog = function() { return $($scope.el).find('#new-box-dialog'); }
 				
 				toolbar.on = function(msg, fn) {  return model.on(msg,fn); };
@@ -54,7 +51,7 @@ angular
 					loading: 0,
 					_login_username:undefined,
 					_login_password:undefined,
-					is_logged_in : function() { return $scope.username !== undefined; },
+					is_logged_in : function() { return $scope.user !== undefined; },
 				});
 
 				// reflect everything in to the model >> 
@@ -83,7 +80,7 @@ angular
 				$scope.cb_new_box_clicked = function() {
 					new_box_dialog().modal({ show: true, keyboard:true });
 					new_box_dialog().on('shown', function() { new_box_dialog().find('.btn-primary').focus(); });
-				}
+				};
 				
 				var update_boxlist = function() {
 					// get boxes
@@ -111,24 +108,24 @@ angular
 				$scope.loginbox_try_login = function(username,password) {
 					console.log('loginbox try login ' ,username, password);
 					$scope.incr_loading();
-					getStore().login(username,password).then(function() {
-						console.log('worked!',username, password);
-						apply(function() { 
-							$scope.decr_loading();				
+					getStore().login(username,password).then(function(user) {
+						console.log('log in complete!',username, password);
+						apply(function() {
+							$scope.decr_loading();
 							login_dialog().modal('hide');
 							$scope.set_error();
 							$scope._login_username = '';
 							$scope._login_password = '';
-							$scope.cb_login(username);													
+							$scope.cb_login(user);
 						});
 					}).fail(function(err) {
-						console.error('login failed!',err);						
+						console.error('login failed!',err);
 						apply(function() {
 							$scope.decr_loading();
 							$scope.set_error('username/password incorrect');
 						});
 					});
-				};		
+				};
 				$scope.cb_box_selected = function(bid) {
 					if (bid === $scope.boxlist[$scope.boxlist.length-1]) {
 						console.log("create new box selected ");
@@ -145,13 +142,13 @@ angular
 						update_boxlist();
 					});
 				};
-				$scope.cb_login = function(username) {
-					$scope.username = username;
+				$scope.cb_login = function(user) {
+					$scope.user = user;
 					update_boxlist();
-					model.trigger('login', username);
+					model.trigger('login', user);
 				};		
 				$scope.cb_logout = function() {
-					delete $scope.username;
+					delete $scope.user;
 					delete $scope.box;
 					$scope.boxlist = [];
 					model.trigger('logout');			
@@ -173,9 +170,9 @@ angular
 				};
 				var bind_store_listeners = function() {
 					var store = getStore();
-					store.on('login', function(username) {
+					store.on('login', function(user) {
 						u.debug('store -> toolbar :: login ');
-						apply(function() { $scope.cb_login(username); });
+						apply(function() { $scope.cb_login(user); });
 					}).on('logout', function(username) {
 						u.debug('store -> toolbar :: logout ');				
 						apply(function() { $scope.cb_logout(); });
