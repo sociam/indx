@@ -68,9 +68,9 @@ class IndxUser:
                     return_d.callback(None) # no user info available
                 else:
                     if decode_json:
-                        return_d.callback({"type": rows[0][0], "user_metadata": json.loads(rows[0][1]), "username": rows[0][2]})
+                        return_d.callback({"type": rows[0][0], "user_metadata": json.loads(rows[0][1] or '{}'), "username": rows[0][2]})
                     else:
-                        return_d.callback({"type": rows[0][0], "user_metadata": rows[0][1], "username": rows[0][2]})
+                        return_d.callback({"type": rows[0][0], "user_metadata": rows[0][1] or '{}', "username": rows[0][2]})
 
             conn.runQuery(query, params).addCallbacks(lambda rows: query_d(conn, rows), return_d.errback)
 
