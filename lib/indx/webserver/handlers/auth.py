@@ -107,8 +107,10 @@ class AuthHandler(BaseHandler):
             if user_info is None:
                 user_info = {}
 
-            # add our user and is_authenticated information
-            user_info['user'] = wbSession and wbSession.username or 'nobody'
+            # add our username and is_authenticated information
+            if 'username' not in user_info: 
+                user_info['username'] = wbSession and wbSession.username or 'nobody'
+
             user_info['is_authenticated'] = wbSession and wbSession.is_authenticated
             self.return_ok(request, user_info)
 
