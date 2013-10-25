@@ -1,4 +1,7 @@
 <div class='user'>
   <div class="icon"><i class="icon-user"></i></div>
-  <div class="name">{{ user.name || user['@id'] || user.id || user }}</div>
+  <div class="name">
+  	{{ user.name }} 
+  	<div class="openid-domain" ng-show="user.type === 'openid'">at {{ user['@id'] }}</div>
+  </div>
 </div>

@@ -100,7 +100,25 @@
 				sa(function() {
 					$scope.users = users.map(function(x) {
 						if (_.isObject(x) && x["@id"]) { // latest server
-							if (!x.name) { x.name = x["@id"]; }
+							if (x.user_metadata) {
+								if (typeof(x.user_metadata) === 'string') {
+									try {
+										x.user_metadata = JSON.parse(x.user_metadata); 
+									} catch(e) { console.error('error unpacking user metadata for ', x, ' skipping '); }
+								}
+								if (_.isObject(x.user_metadata)) {
+									_(x).extend(x.user_metadata);
+								}
+							}
+							console.log(" user is >> ", x);
+							if (!x.name) { 
+								var id = x["@id"];
+								if (id.indexOf('http') == 0) {
+									id = id.split('/');
+									id = id[id.length-1];
+								}
+								x.name = id;
+							}
 							return x;
 						}
 						if (_.isString(x)) { // old server

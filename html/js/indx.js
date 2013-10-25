@@ -920,11 +920,11 @@ angular
 				return u.dresolve(b);
 			},
 			/// @arg <string|number> boxid: the id for the box
-			/// Creates a box with id id.
+			/// Creates a box with id boxid.  The user should have appropriate permissions
+			/// to create a box first.
 			/// @then({Box} the box)
 			/// @fail({{ code: 409 }} response) - box already exists
 			/// @fail({{ code: -1, error: error_obj }} response) - other error
-			///
 			/// Attempts to create a box with the given ID
 			create_box: function (boxid) {
 				u.debug('create box ', boxid);
@@ -935,8 +935,11 @@ angular
 				u.debug('creating ', boxid);
 				return c.save().pipe(function() { return this_.get_box(boxid); });
 			},
-			/// checks to see if we currently have a valid cookie/token set, and if so
-			/// update our internal state so that we know who we are.
+			/// Called by apps to see if we are currently authenticated; this is the preferred
+			/// method to do so over login()/login_openid(), which potentially destroys/resets cookies.
+			/// Instead, this method interrogates the server, which implicitly passes cookies if we have them
+			/// and is verified against the server's set.  If we do have cookies, the server essentially tells
+			/// us we're still logged in, so we can proceed from there....
 			/// @then({is_authenticated:true/false}) - Returns true/false depending on auth status
 			/// @fail(<String>) Error raised during process
 			check_login:function() {
