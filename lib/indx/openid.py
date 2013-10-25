@@ -29,59 +29,42 @@ class IndxOpenID:
         self.db = db
         self.uri = uri
 
-    def get_user_metadata(self):
-        """ Get user's metadata."""
-        logging.debug("IndxOpenID, get_user_metadata for uri {0}".format(self.uri))
-        return_d = Deferred()
-
-        user = IndxUser(self.db, self.uri)
-        user.get_user_metadata().addCallbacks(return_d.callback, return_d.errback)
-        return return_d
-
-
-    def init_user(self, user_metadata):
+    def init_user(self, new_user_metadata):
         """ Check there is a user in the database, and initialise one if not.
 
             If there are pending permission requests, initialise them too.
 
-            Callsback with an object with user details, e.g. the "password_hash" - if the password hash is empty, the user must be prompted to set a password.
+            Callsback with an object with user details.
         """
         logging.debug("IndxOpenID, init_user")
         return_d = Deferred()
         
-        def connected_d(conn):
-            logging.debug("IndxOpenID, init_user, connected_d")
+        user = IndxUser(self.db, self.uri)
 
-            query = "SELECT username, username_type, password_hash, user_metadata_json FROM tbl_users WHERE username = %s AND username_type = %s"
-            params = [self.uri, "openid"]
-            
-            def query_d(conn, rows):
-                logging.debug("IndxOpenID, init_user, connected_d, query_d")
+        def info_cb(user_metadata):
+            logging.debug("IndxOpenID, init_user, info_cb user_metadata: {0}".format(user_metadata))
 
-                if len(rows) < 1:
-                    # user does not exist: create a new user in the table now, with empty password hash
+            if user_metadata is None:
+                # user does not exist: create a new user in the table now, with empty password hash
 
-                    user_metadata_json = json.dumps(user_metadata)
+                def connected_cb(conn):
+                    user_metadata_json = json.dumps(new_user_metadata)
 
                     insert_q = "INSERT INTO tbl_users (username, username_type, password_hash, password_encrypted, user_metadata_json) VALUES (%s, %s, %s, %s, %s)"
                     insert_p = [self.uri, "openid", "", "", user_metadata_json]
 
                     def inserted_d(empty):
                         logging.debug("IndxOpenID, init_user, connected_d, query_d, inserted_d")
-                        return_d.callback({"password_hash": "", "user_metadata_json": user_metadata_json})
-                        return
+                        user.get_user_info(decode_json = False).addCallbacks(return_d.callback, return_d.errback)
 
                     conn.runOperation(insert_q, insert_p).addCallbacks(inserted_d, return_d.errback)
-                    
-                else:
-                    # user already exists, no init required here
-                    password_hash = rows[0][2]
-                    user_metadata_json = rows[0][3] or '{}'
-                    return_d.callback({"password_hash": password_hash, "user_metadata_json": user_metadata_json}) # if password_hash is empty, user must be prompted to set a password
-                    return
+                
+                self.db.connect_indx_db().addCallbacks(connected_cb, return_d.errback)
 
-            conn.runQuery(query, params).addCallbacks(lambda rows: query_d(conn, rows), return_d.errback)
+            else:
+                # user already exists, no init required here
+                return_d.callback(user_metadata)
 
-        self.db.connect_indx_db().addCallbacks(connected_d, return_d.errback)
+        user.get_user_info(decode_json = False).addCallbacks(info_cb, return_d.errback)
         return return_d
 
