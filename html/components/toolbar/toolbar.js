@@ -16,7 +16,7 @@ angular
 					$element.find('#logout-ok').focus();
 				});
 			},
-			scope: { box:"=boxVar", username:"=usernameVar" },
+			scope: { box:"=boxVar", user:"=usernameVar" },
 			controller: function($scope, client, backbone, utils) {
 				var u = utils;
 				var toolbar = {}; // public interface
@@ -159,10 +159,9 @@ angular
 				};
 				var checkLogin = function() {
 					var store = getStore();					
-					store.check_login().then(function(response) {
-						u.debug('checklogin ', response);
-						if (response.is_authenticated) {
-							apply(function() { $scope.cb_login(response.user);	});
+					store.check_login().then(function(user) {
+						if (user.is_authenticated) {
+							apply(function() { $scope.cb_login(user);	});
 						} else {
 							apply(function() { $scope.cb_logout();	});
 						}

@@ -101,7 +101,6 @@
 					  '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*'+ // port and path
 					  '(\\?[;&a-z\\d%_.~+=-]*)?'+ // query string
 					  '(\\#[-a-z\\d_]*)?$','i');
-					console.log('valid url? ', str, pattern.test(str));
 					return pattern.test(str);
 				},
 				to_numeric:function(v) {

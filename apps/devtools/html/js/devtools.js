@@ -116,13 +116,19 @@ angular
 		// this pollution created by emax for supprting debugging
 		// declares box in devtools
 		var load_box = function(bid) {
-			client.store.get_box(bid).then(function(box) {window.box = box; });
+			client.store.get_box(bid).then(function(box) { 
+				console.log('got box >> ', box.id);
+				window.box = box; 
+			});
+		};		
+		var init = function() {
+			console.log('change on box and user --- init >> ', $scope.selected_box, $scope.selected_user);
+			if ($scope.selected_user && $scope.selected_box) { 
+				load_box($scope.selected_box); 
+			}
 		};
-
-		$scope.$watch('selected_box + selected_user', function() {
-			if ($scope.selected_box) { load_box($scope.selected_box); }
-		});
-
+		$scope.$watch('selected_box + selected_user', init);
+		init();
 		window.store = client.store;
 		window.$scope = $scope;
 	});

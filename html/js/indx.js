@@ -950,11 +950,12 @@ angular
 				this._ajax('GET', 'auth/whoami').then(function(response) {
 					if (response.is_authenticated) {
 						// make user
-						var user = {'@id': response.user, type:response.type, name:response.user, username: response.user};
+						console.log('whoami response ', response);
+						var user = {'@id': response.username, type:response.type, name:response.username };
 						if (response.user_metadata) { _(user).extend(JSON.parse(response.user_metadata)); }
-						u.assert(response.user, "No username returned from whoami, server problem");
+						u.assert(response.username, "No username returned from whoami, server problem");
 						u.assert(response.type, "No user_type returned from whoami, server problem");
-						this_.set({username:response.user, user_type:response.type});
+						this_.set({username:response.username, user_type:response.type});
 						this_.trigger('login', user);
 						var to_return = _({}).chain().extend(response).extend(user).value();
 						return d.resolve(to_return);
@@ -974,6 +975,7 @@ angular
 			login_openid : function(openid) {
 				var this_ = this, d = u.deferred(), popup, int_popup_checker;
 				window.__indx_openid_continuation = function(response) {
+					console.info("openid continuation >> ", response);
 					var getparam = function(pname) { return u.getParameterByName(pname, '?'+response); };
 					var username = getparam('username');
 					if (username) {
