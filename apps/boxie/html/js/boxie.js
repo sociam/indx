@@ -12,13 +12,12 @@ angular
 	.controller('RootCtrl', function ($scope, client, utils, collection) {
 		'use strict';
 
-		console.log('PLEASE WORK')
-
 		var box,
 			u = utils;
 
-		var Obj = collection.Model.extend({
+		var TreeObj = collection.Model.extend({
 				initialize: function () {
+					collection.Model.prototype.initialize.apply(this, arguments);
 					var that = this;
 
 					that.update();
@@ -26,6 +25,41 @@ angular
 					this.on('update change', function () {
 						that.update();
 					});
+					this.flatCollection = this.collection;
+				},
+				// identify and dereference links to objs within the attributes
+				links_to: function (obj, links_to) {
+					console.log('links to')
+					var that = this,
+						cache = false;
+					links_to = links_to || [];
+					if (typeof obj === "undefined") {
+						obj = this.attributes;
+						cache = true;
+					}
+					_(obj).each(function (v, k) {
+						if (typeof v === "object") {
+							if (v instanceof client.Obj) {
+								obj[k] = that.flatCollection.get(v.id);
+								links_to.push(v);
+							} else {
+								that.links_to(v, links_to);
+							}
+						}
+					});
+					if (cache) {
+						this._links_to = links_to;
+					}
+					return links_to;
+				},
+				links_from: function () {
+					var that = this;
+					return this.flatCollection.filter(function (obj) {
+						return obj.links_to().indexOf(that) > -1;
+					});
+				},
+				is_root: function () {
+					return this.links_from().length === 0;
 				},
 				update: function () {
 					this.val_string = JSON.stringify(this.toJSON(), null, ' ');
@@ -52,7 +86,7 @@ angular
 			}),
 
 			Objs = collection.Collection.extend({
-				model: Obj,
+				model: TreeObj,
 				fetch: function () {
 					var that = this,
 						promise = $.Deferred(),
@@ -67,17 +101,36 @@ angular
 							return promise;
 						});
 					$.when.apply($, promises).then(function () {
+						console.log('objs', objs);
 						that.reset(objs);
 						promise.resolve();
 					});
 					return promise;
+				}
+			}),
+
+			ObjsTree = collection.Collection.extend({
+				initialize: function (models, options) {
+					this.flatCollection = new Objs(undefined, options);
+					collection.Collection.prototype.initialize.apply(this, arguments);
+				},
+				fetch: function () {
+					var that = this;
+					return this.flatCollection.fetch().then(function () {
+						that.buildTree();
+					});
+				},
+				buildTree: function () {
+					this.reset(this.flatCollection.select(function (obj) {
+						return obj.is_root();
+					}));
 				}
 			});
 
 
 		var initialize = function () {
 			console.log('init');
-			$scope.objs = new Objs(undefined, { box: box });
+			$scope.objs = new ObjsTree(undefined, { box: box });
 			$scope.objs.fetch();
 			$scope.objs.on('update change', function () {
 				console.log('fetched');
@@ -99,7 +152,7 @@ angular
 				console.log('selected ', $scope.selected_user, $scope.selected_box);
 				client.store.get_box($scope.selected_box).then(function(b) {
 					box = b;
-		window.box = box;
+					window.box = box;
 					initialize();
 				}).fail(function(e) { u.error('error ', e); });
 			}
