@@ -76,7 +76,7 @@ class IndxOpenID:
                 else:
                     # user already exists, no init required here
                     password_hash = rows[0][2]
-                    user_metadata_json = rows[0][3] or {}
+                    user_metadata_json = rows[0][3] or '{}'
                     return_d.callback({"password_hash": password_hash, "user_metadata_json": user_metadata_json}) # if password_hash is empty, user must be prompted to set a password
                     return
 
