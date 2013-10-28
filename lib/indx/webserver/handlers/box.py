@@ -434,6 +434,7 @@ BoxHandler.subhandlers = [
         'methods': ['GET', 'PUT', 'DELETE'],
         'require_auth': False,
         'require_token': True,
+        'require_acl': ['read', 'write'], # split this function into separate ones to allow for read-only file reading
         'force_get': True, # force the token function to get it from the query string for every method
         'handler': BoxHandler.files,
         'accept':['*/*'],
@@ -444,6 +445,7 @@ BoxHandler.subhandlers = [
         'methods': ['GET'],
         'require_auth': False,
         'require_token': True,
+        'require_acl': ['read'],
         'handler': BoxHandler.get_object_ids,
         'accept':['application/json'],
         'content-type':'application/json'
@@ -453,6 +455,7 @@ BoxHandler.subhandlers = [
         'methods': ['GET'],
         'require_auth': False,
         'require_token': True,
+        'require_acl': ['read'],
         'handler': BoxHandler.diff,
         'accept':['application/json'],
         'content-type':'application/json'
@@ -462,6 +465,7 @@ BoxHandler.subhandlers = [
         'methods': ['GET'],
         'require_auth': False,
         'require_token': True,
+        'require_acl': ['read'],
         'handler': BoxHandler.query,
         'accept':['application/json'],
         'content-type':'application/json'
@@ -472,6 +476,7 @@ BoxHandler.subhandlers = [
         'methods': ['GET'],
         'require_auth': False,
         'require_token': True,
+        'require_acl': ['read'],
         'handler': BoxHandler.do_GET,
         'accept':['application/json'],
         'content-type':'application/json'
@@ -482,6 +487,7 @@ BoxHandler.subhandlers = [
         'methods': ['PUT'],
         'require_auth': False,
         'require_token': True,
+        'require_acl': ['read', 'write'],
         'handler': BoxHandler.do_PUT,
         'accept':['application/json'],
         'content-type':'application/json'        
@@ -491,6 +497,7 @@ BoxHandler.subhandlers = [
         'methods': ['DELETE'],
         'require_auth': False,
         'require_token': True,
+        'require_acl': ['read', 'write'],
         'handler': BoxHandler.do_DELETE,
         'accept':['application/json'],
         'content-type':'application/json'        
@@ -500,6 +507,7 @@ BoxHandler.subhandlers = [
         'methods': ['OPTIONS'],
         'require_auth': False,
         'require_token': False,
+        'require_acl': [],
         'handler': BaseHandler.return_ok,
         'content-type':'text/plain', # optional
         'accept':['application/json']                

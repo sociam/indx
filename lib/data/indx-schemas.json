@@ -21,7 +21,7 @@
         "first-version": "20131013-ADD_INDX_CORE_AND_USER_METADATA",
         "versions": {
             "20131013-ADD_INDX_CORE_AND_USER_METADATA": {
-                "next-version": "",
+                "next-version": "20131028-ADD_ACL_TABLE",
                 "sql": [
                     "CREATE TABLE tbl_indx_core",
                     "(",
@@ -35,6 +35,25 @@
                     ");",
                     "",
                     "ALTER TABLE tbl_users ADD COLUMN user_metadata_json text NULL;"
+                ]
+            },
+            "20131028-ADD_ACL_TABLE": {
+                "next-version": "",
+                "sql": [
+                    "CREATE TABLE tbl_acl",
+                    "(",
+                    "  id_acl serial NOT NULL,",
+                    "  database_name text NOT NULL,",
+                    "  user_id integer NOT NULL,",
+                    "  acl_read boolean NOT NULL,",
+                    "  acl_write boolean NOT NULL,",
+                    "  acl_owner boolean NOT NULL,",
+                    "  acl_control boolean NOT NULL,",
+                    "  CONSTRAINT pk_id_acl PRIMARY KEY (id_acl)",
+                    ")",
+                    "WITH (",
+                    "    OIDS=FALSE",
+                    ");"
                 ]
             }
         }
