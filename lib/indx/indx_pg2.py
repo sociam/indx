@@ -356,8 +356,15 @@ class IndxDatabase:
                                 d_q = conn_indx.runOperation("INSERT INTO tbl_keychain (user_id, db_name, db_user, db_user_type, db_password_encrypted) VALUES ((SELECT id_user FROM tbl_users WHERE username = %s), %s, %s, %s, %s), ((SELECT id_user FROM tbl_users WHERE username = %s), %s, %s, %s, %s)", [db_owner, db_name, rw_user, 'rw', rw_pw_encrypted, db_owner, db_name, ro_user, 'ro', ro_pw_encrypted])
 
                                 def inserted(empty):
-                                    logging.debug("indx_pg2 create_box, inserted - create_box finished")
-                                    return_d.callback(True)
+                                    logging.debug("indx_pg2 create_box, inserted, next ACL")
+
+                                    acl_q = conn_indx.runOperation("INSERT INTO tbl_acl (database_name, user_id, acl_read, acl_write, acl_owner, acl_control) VALUES (%s, (SELECT id_user FROM tbl_users WHERE username = %s), %s, %s, %s, %s)", [box_name, db_owner, True, True, True, True])
+
+                                    def inserted_acl(empty):
+                                        logging.debug("indx_pg2 create_box, inserted_acl - create_box finished")
+                                        return_d.callback(True)
+
+                                    acl_q.addCallbacks(inserted_acl, return_d.errback)
 
                                 d_q.addCallbacks(inserted, return_d.errback)
 
