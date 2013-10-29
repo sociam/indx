@@ -142,7 +142,7 @@ class IndxUser:
         def connected_cb(conn):
             logging.debug("IndxUser, set_acl, connected_cb")
 
-            # verify the target user exists and has 'control' and/or 'owner ACL permissions on that database
+            # verify the target user exists
             user_check_q = "SELECT EXISTS(SELECT * FROM tbl_users WHERE username = %s)"
             user_check_p = [target_username]
 
@@ -155,7 +155,7 @@ class IndxUser:
                     return_d.errback(failure)
                     return
 
-                # verify this user has 'control' ACL permissions on that database
+                # verify logged in user has 'control' ACL permissions on that database
                 # or verify that have owner permissions (either mean they can change something)
                 acl_check_q = "SELECT acl_control, acl_owner FROM tbl_acl WHERE user_id = (SELECT id_user FROM tbl_users WHERE username = %s) AND DATABASE_NAME = %s"
                 acl_check_p = [self.username, database_name]
@@ -168,21 +168,43 @@ class IndxUser:
                         return_d.errback(failure)
                         return
                     
-                    # read the existing ACL - read the owner and keep it the same)
                     existing_acl_control = rows[0][0]
                     existing_acl_owner = rows[0][1]
-    
-                    # delete any pre-existing acl for this database and target user
-                    del_query = "DELETE FROM tbl_acl WHERE database_name = %s AND user_id = (SELECT id_user FROM tbl_users WHERE username = %s)"
-                    del_params = [database_name, target_username]
 
-                    def del_query_cb(empty):
-                        logging.debug("IndxUser, set_acl, connected_cb, del_query_cb")
+                    # check that logged in user is control or owner
+                    if not (existing_acl_control or existing_acl_owner):
+                        e = Exception("User '{0}' does not have permission to make this ACL change to database '{1}'.".format(self.username, database_name))
+                        failure = Failure(e)
+                        return_d.errback(failure)
+                        return
+                        
 
-                        # create a new ACL
-                        conn.runOperation("INSERT INTO tbl_acl (database_name, user_id, acl_read, acl_write, acl_owner, acl_control) VALUES (%s, (SELECT id_user FROM tbl_users WHERE username = %s), %s, %s, %s, %s)", [database_name, target_username, acl['read'], acl['write'], existing_acl_owner, existing_acl_control]).addCallbacks(return_d.callback, return_d.errback)
+                    # read the existing ACL - read the owner value and keep it the same (prevent non-owner users from de-ownering the original owner)
+   
+                    acl2_check_q = "SELECT acl_owner FROM tbl_acl WHERE user_id = (SELECT id_user FROM tbl_users WHERE username = %s) AND DATABASE_NAME = %s"
+                    acl2_check_p = [target_username, database_name]
 
-                    conn.runOperation(del_query, del_params).addCallbacks(del_query_cb, return_d.errback)
+                    def acl2_check_cb(rows):
+                        logging.debug("IndxUser, set_acl, connected_cb, acl2_check_cb")
+ 
+                        if len(rows) < 1:
+                            current_owner_value = False
+                        else:
+                            current_owner_value = rows[0][0]
+
+                        # delete any pre-existing acl for this database and target user
+                        del_query = "DELETE FROM tbl_acl WHERE database_name = %s AND user_id = (SELECT id_user FROM tbl_users WHERE username = %s)"
+                        del_params = [database_name, target_username]
+
+                        def del_query_cb(empty):
+                            logging.debug("IndxUser, set_acl, connected_cb, del_query_cb")
+
+                            # create a new ACL
+                            conn.runOperation("INSERT INTO tbl_acl (database_name, user_id, acl_read, acl_write, acl_owner, acl_control) VALUES (%s, (SELECT id_user FROM tbl_users WHERE username = %s), %s, %s, %s, %s)", [database_name, target_username, acl['read'], acl['write'], current_owner_value, acl['control']]).addCallbacks(return_d.callback, return_d.errback)
+
+                        conn.runOperation(del_query, del_params).addCallbacks(del_query_cb, return_d.errback)
+                       
+                    conn.runQuery(acl2_check_q, acl2_check_p).addCallbacks(acl2_check_cb, return_d.errback)
 
                 conn.runQuery(acl_check_q, acl_check_p).addCallbacks(acl_check_cb, return_d.errback)
 
