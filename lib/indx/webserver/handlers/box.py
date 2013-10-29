@@ -133,8 +133,13 @@ class BoxHandler(BaseHandler):
         user = IndxUser(self.database, wbSession.username)
 
         # box is set by the token (token.boxid)
-        req_acl = self.get_arg(request, "acl")
-        req_username = self.get_arg(request, "username") # username of the user of which to change the ACL
+        try:
+            req_acl = json.loads(self.get_arg(request, "acl"))
+        except Exception as e:
+            BoxHandler.log(logging.ERROR, "Exception in box.set_acl decoding JSON in query, 'acl': {0}".format(e), extra = {"request": request, "token": token})
+            return self.return_bad_request(request, "Specify acl as query string parameter 'acl' as valid JSON")
+
+        req_username = self.get_arg(request, "target_username") # username of the user of which to change the ACL
 
         def err_cb(failure):
             failure.trap(Exception)

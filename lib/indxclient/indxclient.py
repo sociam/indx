@@ -357,6 +357,18 @@ class IndxClient:
         return self._get(url, {'q': query})
 
     @require_token
+    def set_acl(self, acl, target_username):
+        """ Set an ACL on a database for a target username.
+
+            acl -- The ACL to set, must have "read", "write" and "control" fields, all boolean, e.g. {"read": true, "write": true, "control": false}
+            target_username -- username of the user whose access will be set/change
+        """
+        self._debug("Called API: set_acl with acl: {0}, target_username: {1}".format(acl, target_username))
+
+        url = "{0}/set_acl".format(self.base)
+        return self._get(url, {'acl': acl, 'target_username': target_username})
+
+    @require_token
     def diff(self, return_objs, from_version, to_version = None):
         """ Get the difference between two versions of the objects in the box.
         

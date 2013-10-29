@@ -37,7 +37,8 @@ class INDXTests:
                       'add_file': self.add_file,
                       'get_file': self.get_file,
                       'list_files': self.list_files,
-                      'delete_file': self.delete_file
+                      'delete_file': self.delete_file,
+                      'set_acl': self.set_acl
                      }
 
         self.token = None
@@ -367,6 +368,28 @@ class INDXTests:
         else:
             pretty = pprint.pformat(status, indent=2, width=80)
             logging.info("Querying successful, the objects are: \n" + pretty)
+
+    def set_acl(self):
+        """ 
+           Set an ACL on this box, logged in user must have 'control' permission on the box.
+             e.g., acl = '{"read": true, "write": true, "control": false}'
+                   target_username = "http://plus.google.com/21864143984"
+                   box = example
+        """
+        self.check_args(['server', 'box', 'acl', 'target_username'])
+        self.auth()
+        self.get_token()
+
+        url = "{0}{1}/set_acl".format(self.args['server'], self.args['box'])
+
+        logging.debug("Set ACL on server '{0}' to box '{1}'".format(self.args['server'], self.args['box']))
+        status = self.get(url, {'acl': self.args['acl'], 'target_username': self.args['target_username']})
+
+        if status['code'] != 200:
+            raise Exception("Setting ACL failed, response is {0} with code {1}".format(status['message'], status['code']))
+        else:
+            pretty = pprint.pformat(status, indent=2, width=80)
+            logging.info("Setting ACL successful, return is: \n" + pretty)
 
 
     def diff(self):
