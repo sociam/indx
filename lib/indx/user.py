@@ -78,6 +78,37 @@ class IndxUser:
         self.db.connect_indx_db().addCallbacks(connected_d, return_d.errback)
         return return_d
 
+    def get_acls(self, database_name):
+        """ Get all ACLs for the specified database. """
+        logging.debug("IndxUser, get_acls database_name {0}".format(database_name))
+        return_d = Deferred()
+
+        def connected_d(conn):
+            logging.debug("IndxUser, get_acls, connected_d")
+
+            query = "SELECT acl_read, acl_write, acl_owner, acl_control, tbl_users.username FROM tbl_acl JOIN tbl_users ON (tbl_users.id_user = tbl_acl.user_id) WHERE database_name = %s"
+            params = [database_name]
+
+            results = []
+            def query_d(conn, rows):
+                logging.debug("IndxUser, get_acl, connected_d, query_d, rows: {0}".format(rows))
+
+                for row in rows:
+                    acl = {
+                        "database": database_name,
+                        "username": row[4],
+                        "acl": {"read": row[0], "write": row[1], "owner": row[2], "control": row[3]}
+                    }
+                    results.append(acl)
+
+                return_d.callback(results)
+
+            conn.runQuery(query, params).addCallbacks(lambda rows: query_d(conn, rows), return_d.errback)
+
+        self.db.connect_indx_db().addCallbacks(connected_d, return_d.errback)
+        return return_d
+
+
     def get_acl(self, database_name):
         """ Get the user's ACL permissions for specified database. """
         logging.debug("IndxUser, get_acl database_name {0} for user {1}".format(database_name, self.username))
@@ -100,7 +131,7 @@ class IndxUser:
                 # make an ACL object
                 acl = {
                     "database": database_name,
-                    "user": self.username,
+                    "username": self.username,
                     "acl": permissions,
                 }
                 return_d.callback(acl)

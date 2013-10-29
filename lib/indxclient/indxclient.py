@@ -369,6 +369,14 @@ class IndxClient:
         return self._get(url, {'acl': acl, 'target_username': target_username})
 
     @require_token
+    def get_acls(self):
+        """ Get ACLs for a database (requires "control" permissions)"""
+        self._debug("Called API: get_acls")
+
+        url = "{0}/get_acls".format(self.base)
+        return self._get(url)
+
+    @require_token
     def diff(self, return_objs, from_version, to_version = None):
         """ Get the difference between two versions of the objects in the box.
         

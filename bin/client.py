@@ -38,6 +38,7 @@ class CLIClient:
                       'get_file': {'f': self.get_file, 'args': ['box','id']},
                       'list_files': {'f': self.list_files, 'args': ['box']},
                       'set_acl': {'f': self.set_acl, 'args': ['box','acl','target_username']},
+                      'get_acls': {'f': self.get_acls, 'args': ['box']},
                      }
 
         self.appid = appid
@@ -221,6 +222,11 @@ class CLIClient:
         """ Set an ACL for a target user for a database. """
         logging.debug("Calling set_acl on server '{0}' in box '{1}'".format(self.args['server'], self.args['box']))
         return self.indx.set_acl(self.args['acl'], self.args['target_username'])
+
+    def get_acls(self):
+        """ Get ACLs for a database. """
+        logging.debug("Calling get_acls on server '{0}' in box '{1}'".format(self.args['server'], self.args['box']))
+        return self.indx.get_acls()
 
 
 if __name__ == "__main__":

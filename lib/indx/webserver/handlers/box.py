@@ -112,6 +112,28 @@ class BoxHandler(BaseHandler):
 
         token.get_store().addCallbacks(store_cb, err_cb)
 
+    def get_acls(self, request):
+        """ Get all of the ACLs for this box.
+
+            You must have 'control' permission to be able to do this.
+        """
+        token = self.get_token(request)
+        if not token:
+            return self.return_forbidden(request)
+        BoxHandler.log(logging.DEBUG, "BoxHandler get_acls", extra = {"request": request, "token": token})
+
+        wbSession = self.get_session(request)
+        user = IndxUser(self.database, wbSession.username)
+        
+        def err_cb(failure):
+            failure.trap(Exception)
+            BoxHandler.log(logging.ERROR, "BoxHandler get_acls err_cb: {0}".format(failure), extra = {"request": request, "token": token})
+            return self.return_internal_error(request)
+
+        user.get_acls(token.boxid).addCallbacks(lambda results: self.return_ok(request, {"data": results}), err_cb)
+
+
+
     def set_acl(self, request):
         """ Set an ACL for this box.
 
@@ -476,6 +498,16 @@ BoxHandler.subhandlers = [
         'force_get': True, # force the token function to get it from the query string for every method
         'handler': BoxHandler.files,
         'accept':['*/*'],
+        'content-type':'application/json'
+        },
+    {
+        "prefix": "get_acls",
+        'methods': ['GET'],
+        'require_auth': False,
+        'require_token': True,
+        'require_acl': ['control'],
+        'handler': BoxHandler.get_acls,
+        'accept':['application/json'],
         'content-type':'application/json'
         },
     {
