@@ -18,6 +18,7 @@
 import logging, json
 from indx.webserver.handlers.base import BaseHandler
 from indx.objectstore_async import IncorrectPreviousVersionException, FileNotFoundException
+from indx.user import IndxUser
 
 class BoxHandler(BaseHandler):
     base_path = ''
@@ -111,6 +112,37 @@ class BoxHandler(BaseHandler):
 
         token.get_store().addCallbacks(store_cb, err_cb)
 
+    def set_acl(self, request):
+        """ Set an ACL for this box.
+
+            RULES (these are in box.py and in user.py)
+            The logged in user sets an ACL for a different, target user.
+            The logged in user must have a token, and the box of the token is the box that will have the ACL changed/set.
+            If there is already an ACL for the target user, it will be replaced.
+            The logged in user must have "control" permissions on the box.
+            The logged in user can give/take read, write or control permissions. They cannot change "owner" permissions.
+            If the user has owner permissions, it doesn't matter if they dont have "control" permissions, they can change anything.
+            Only the user that created the box has owner permissions.
+        """
+        token = self.get_token(request)
+        if not token:
+            return self.return_forbidden(request)
+        BoxHandler.log(logging.DEBUG, "BoxHandler set_acl", extra = {"request": request, "token": token})
+
+        wbSession = self.get_session(request)
+        user = IndxUser(self.database, wbSession.username)
+
+        # box is set by the token (token.boxid)
+        req_acl = self.get_arg(request, "acl")
+        req_username = self.get_arg(request, "username") # username of the user of which to change the ACL
+
+        def err_cb(failure):
+            failure.trap(Exception)
+            BoxHandler.log(logging.ERROR, "BoxHandler set_acl err_cb: {0}".format(failure), extra = {"request": request, "token": token})
+            return self.return_internal_error(request)
+
+        user.set_acl(token.boxid, req_username, req_acl).addCallbacks(lambda empty: self.return_ok(request), err_cb)
+
 
     def get_object_ids(self, request):
         """ Get a list of object IDs in this box.
@@ -118,6 +150,7 @@ class BoxHandler(BaseHandler):
         token = self.get_token(request)
         if not token:
             return self.return_forbidden(request)
+        BoxHandler.log(logging.DEBUG, "BoxHandler get_object_ids", extra = {"request": request, "token": token})
 
         def err_cb(failure):
             failure.trap(Exception)
@@ -441,6 +474,16 @@ BoxHandler.subhandlers = [
         'content-type':'application/json'
         },
     {
+        "prefix": "set_acl",
+        'methods': ['GET'],
+        'require_auth': False,
+        'require_token': True,
+        'require_acl': ['control'],
+        'handler': BoxHandler.set_acl,
+        'accept':['application/json'],
+        'content-type':'application/json'
+        },
+    {
         "prefix": "get_object_ids",
         'methods': ['GET'],
         'require_auth': False,
@@ -487,7 +530,7 @@ BoxHandler.subhandlers = [
         'methods': ['PUT'],
         'require_auth': False,
         'require_token': True,
-        'require_acl': ['read', 'write'],
+        'require_acl': ['write'],
         'handler': BoxHandler.do_PUT,
         'accept':['application/json'],
         'content-type':'application/json'        
@@ -497,7 +540,7 @@ BoxHandler.subhandlers = [
         'methods': ['DELETE'],
         'require_auth': False,
         'require_token': True,
-        'require_acl': ['read', 'write'],
+        'require_acl': ['owner'],
         'handler': BoxHandler.do_DELETE,
         'accept':['application/json'],
         'content-type':'application/json'        

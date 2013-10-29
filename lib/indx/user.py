@@ -19,6 +19,7 @@ import logging
 import json
 from twisted.internet.defer import Deferred
 from hashing_passwords import make_hash, check_hash
+from twisted.python.failure import Failure
 
 class IndxUser:
     """ INDX User handler. """
@@ -109,7 +110,84 @@ class IndxUser:
         self.db.connect_indx_db().addCallbacks(connected_d, return_d.errback)
         return return_d
 
+    def set_acl(self, database_name, target_username, acl):
+        """ Sets an ACL by this user, for a different target user.
+
+            RULES (these are in box.py and in user.py)
+            The logged in user sets an ACL for a different, target user.
+            The logged in user must have a token, and the box of the token is the box that will have the ACL changed/set.
+            If there is already an ACL for the target user, it will be replaced.
+            The logged in user must have "control" permissions on the box.
+            The logged in user can give/take read, write or control permissions. They cannot change "owner" permissions.
+            If the user has owner permissions, it doesn't matter if they dont have "control" permissions, they can change anything.
+            Only the user that created the box has owner permissions.
+        """
+        logging.debug("IndxUser, set_acl database_name {0} for target_username {1} for acl {2}".format(database_name, target_username, acl))
+        return_d = Deferred()
+
+        # verify that 'acl' is valid, throw Failure to errback if not
+        try:
+            # check that the properties all exist, and all values are booleans
+            assert(type(acl['read']) == type(True))
+            assert(type(acl['write']) == type(True))
+            assert(type(acl['control']) == type(True))
+        except Exception as e:
+            logging.error("IndxUser, set_acl, error asserting types in 'acl', object is invalid: {0}, error: {1}".format(acl, e))
+            return_d.errback(Failure(e))
+            return return_d # immediately return
 
 
+        # TODO FIXME XXX do this in a runInteraction transaction !
 
+        def connected_cb(conn):
+            logging.debug("IndxUser, set_acl, connected_cb")
+
+            # verify the target user exists and has 'control' and/or 'owner ACL permissions on that database
+            user_check_q = "SELECT EXISTS(SELECT * FROM tbl_users WHERE username = %s)"
+            user_check_p = [target_username]
+
+            def user_check_cb(rows):
+                logging.debug("IndxUser, set_acl, connected_cb, user_check_cb")
+                present = rows[0][0] # EXISTS returns true/false 
+                if not present:
+                    e = Exception("User with username '{0}' does not exist.".format(target_username))
+                    failure = Failure(e)
+                    return_d.errback(failure)
+                    return
+
+                # verify this user has 'control' ACL permissions on that database
+                # or verify that have owner permissions (either mean they can change something)
+                acl_check_q = "SELECT acl_control, acl_owner FROM tbl_acl WHERE user_id = (SELECT id_user FROM tbl_users WHERE username = %s) AND DATABASE_NAME = %s"
+                acl_check_p = [self.username, database_name]
+
+                def acl_check_cb(rows):
+                    logging.debug("IndxUser, set_acl, connected_cb, acl_check_cb")
+                    if len(rows) < 1:
+                        e = Exception("User '{0}' does not have permission to make this ACL change to database '{1}'.".format(self.username, database_name))
+                        failure = Failure(e)
+                        return_d.errback(failure)
+                        return
+                    
+                    # read the existing ACL - read the owner and keep it the same)
+                    existing_acl_control = rows[0][0]
+                    existing_acl_owner = rows[0][1]
+    
+                    # delete any pre-existing acl for this database and target user
+                    del_query = "DELETE FROM tbl_acl WHERE database_name = %s AND user_id = (SELECT id_user FROM tbl_users WHERE username = %s)"
+                    del_params = [database_name, target_username]
+
+                    def del_query_cb(empty):
+                        logging.debug("IndxUser, set_acl, connected_cb, del_query_cb")
+
+                        # create a new ACL
+                        conn.runOperation("INSERT INTO tbl_acl (database_name, user_id, acl_read, acl_write, acl_owner, acl_control) VALUES (%s, (SELECT id_user FROM tbl_users WHERE username = %s), %s, %s, %s, %s)", [database_name, target_username, acl['read'], acl['write'], existing_acl_owner, existing_acl_control]).addCallbacks(return_d.callback, return_d.errback)
+
+                    conn.runOperation(del_query, del_params).addCallbacks(del_query_cb, return_d.errback)
+
+                conn.runQuery(acl_check_q, acl_check_p).addCallbacks(acl_check_cb, return_d.errback)
+
+            conn.runQuery(user_check_q, user_check_p).addCallbacks(user_check_cb, return_d.errback)
+
+        self.db.connect_indx_db().addCallbacks(connected_cb, return_d.errback)
+        return return_d
 
