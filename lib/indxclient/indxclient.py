@@ -276,6 +276,14 @@ class IndxClient:
         url = "{0}admin/list_boxes".format(self.address)
         return self._get(url)
 
+    def create_user(self, username, password):
+        """ Create a new user. """
+        self._debug("Called API: create_user with username: {0}".format(username))
+
+        url = "{0}admin/create_user".format(self.address)
+        values = {"username": username, "password": password}
+        return self._post(url, values)
+
     @require_token
     def get_object_ids(self):
         """ Get the IDs of every object in this box. """

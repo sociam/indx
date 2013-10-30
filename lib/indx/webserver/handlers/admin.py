@@ -113,11 +113,15 @@ class AdminHandler(BaseHandler):
 
         if new_username is None or new_password is None:
             logging.error("Username or Password is empty - returning 400.")
+            return self.return_bad_request(request)
 
+        def err_cb(failure):
+            failure.trap(Exception)
+            e = failure.value
+            logging.error("AdminHandler create_user_handler err_cb: {0} {1}".format(e, failure))
+            self.return_internal_error(request)
 
-        self.database.create_user(new_username, new_password)\
-            .addCallback(lambda *x: self.return_ok())\
-            .addErrback(lambda *x: self.return_internal_error(request))
+        self.database.create_user(new_username, new_password).addCallbacks(lambda *x: self.return_ok(request), err_cb)
     
     def list_user_handler(self, request):
         logging.debug("Getting user list")
