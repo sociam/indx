@@ -109,7 +109,7 @@ class WebServer:
                 while len(new_password) == 0:
                     new_password = getpass.getpass("Password: ")
 
-                self.database.create_user(new_username, new_password).addCallbacks(result_d.callback, result_d.errback)
+                self.database.create_user(new_username, new_password, 'local_owner').addCallbacks(result_d.callback, result_d.errback)
                     
             else:
                 result_d.callback(True) # users exist - continue

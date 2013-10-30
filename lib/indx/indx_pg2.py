@@ -301,7 +301,7 @@ class IndxDatabase:
         return return_d
 
 
-    def create_user(self, new_username, new_password):
+    def create_user(self, new_username, new_password, typ):
         """ Create a new INDX user. """
         return_d = Deferred()
 
@@ -309,7 +309,7 @@ class IndxDatabase:
         pw_encrypted = encrypt(new_password, self.db_pass)
 
         def connected(conn):
-            d = conn.runOperation("INSERT INTO tbl_users (username, username_type, password_hash, password_encrypted) VALUES (%s, %s, %s, %s)",[new_username, 'local_owner', pw_hash, pw_encrypted])
+            d = conn.runOperation("INSERT INTO tbl_users (username, username_type, password_hash, password_encrypted) VALUES (%s, %s, %s, %s)",[new_username, typ, pw_hash, pw_encrypted])
             d.addCallbacks(lambda *x: return_d.callback(None), return_d.errback)
             return
 

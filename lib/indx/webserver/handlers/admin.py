@@ -121,7 +121,7 @@ class AdminHandler(BaseHandler):
             logging.error("AdminHandler create_user_handler err_cb: {0} {1}".format(e, failure))
             self.return_internal_error(request)
 
-        self.database.create_user(new_username, new_password).addCallbacks(lambda *x: self.return_ok(request), err_cb)
+        self.database.create_user(new_username, new_password, 'local').addCallbacks(lambda *x: self.return_ok(request), err_cb)
     
     def list_user_handler(self, request):
         logging.debug("Getting user list")
