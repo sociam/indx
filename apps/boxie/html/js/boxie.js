@@ -30,7 +30,7 @@ angular
 				},
 				// identify and dereference links to objs within the attributes
 				links_to: function (obj, links_to) {
-					console.log('links to')
+					//console.log('links to')
 					var that = this,
 						cache = false;
 					links_to = links_to || [];
@@ -79,14 +79,12 @@ angular
 								colour: colours[-(_(key.split("").slice(1)).reduce(function(memo, letter){return memo-letter.charCodeAt(0);},0))%colours.length]
 							}
 						};
-					console.log(cols)
 					_.each(keys, function (key) {
 						var h = hash(key);
 						console.log(key, h)
 						cols[h.col].push({ key: key, colour: h.colour });
 					});
 					_.each(cols, function (col) {
-						console.log(col)
 						var k = _.reduce(col, function (i, cell) { console.log(cell); return cell.key.length; }, 0) % 2;
 						if (col.length > 0 && col.length % 2 === 0) {
 							if (k) {
@@ -124,18 +122,9 @@ angular
 				fetch: function () {
 					var that = this,
 						promise = $.Deferred(),
-						ids = this.box.get_obj_ids(),
-						objs = [],
-						promises = _.map(ids, function (id) {
-							var promise = $.Deferred();
-							that.box.get_obj(id).then(function (obj) {
-								objs.push(obj);
-								promise.resolve();
-							});
-							return promise;
-						});
-					$.when.apply($, promises).then(function () {
-						console.log('objs', objs);
+						ids = this.box.get_obj_ids();
+					that.box.get_obj(ids).then(function (objs) {
+						console.log(objs);
 						that.reset(objs);
 						promise.resolve();
 					});
