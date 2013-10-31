@@ -55,7 +55,12 @@ class IndxOpenID:
 
                     def inserted_d(empty):
                         logging.debug("IndxOpenID, init_user, connected_d, query_d, inserted_d")
-                        user.get_user_info(decode_json = False).addCallbacks(return_d.callback, return_d.errback)
+
+                        def generated_cb(empty):
+                            logging.debug("IndxOpenID, init_user, connected_d, query_d, inserted_d, generated_cb")
+                            user.get_user_info(decode_json = False).addCallbacks(return_d.callback, return_d.errback)
+
+                        user.generate_encryption_keys().addCallbacks(generated_cb, return_d.errback)
 
                     conn.runOperation(insert_q, insert_p).addCallbacks(inserted_d, return_d.errback)
                 

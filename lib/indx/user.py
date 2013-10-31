@@ -20,14 +20,91 @@ import json
 from twisted.internet.defer import Deferred
 from hashing_passwords import make_hash, check_hash
 from twisted.python.failure import Failure
+from indx.crypto import generate_rsa_keypair, load_key
 
 class IndxUser:
     """ INDX User handler. """
+
+    RSA_KEYSIZE = 3072
 
     def __init__(self, db, username):
         logging.debug("IndxUser, username: {0}".format(username))
         self.db = db
         self.username = username
+
+    def get_keys(self):
+        """ Get the user's key pair from the database. """
+        logging.debug("IndxUser, get_keys for user {0}".format(self.username))
+        return_d = Deferred()
+
+        # XXX TODO FIXME decrypt the private key
+
+        def connected_cb(conn):
+            logging.debug("IndxUser, get_keys, connected_cb")
+
+            check_q = "SELECT public_key_rsa, private_key_rsa_env FROM tbl_users WHERE username = %s"
+            check_p = [self.username]
+
+            def check_cb(rows):
+                logging.debug("IndxUser, get_keys, connected_cb, check_cb")
+                if len(rows) < 1:
+                    return_d.callback(None)
+                    return
+                
+                try:
+                    return_d.callback({"public": load_key(rows[0][0]), "private": load_key(rows[0][1])})
+                except Exception as e:
+                    logging.error("IndxUser, get_keys, Exception loading keys from database: {0}".format(e))
+                    return_d.errback(Failure(e))
+
+            conn.runQuery(check_q, check_p).addCallbacks(check_cb, return_d.errback)
+
+        self.db.connect_indx_db().addCallbacks(connected_cb, return_d.errback)
+        return return_d
+
+
+    def generate_encryption_keys(self, overwrite = False):
+        """ Generate and save encryption keys for this user.
+        
+            overwrite -- Force overwriting the keys if they already exist, default is False, which means that the function will check first and do nothing if they user already has encryption keys
+        """
+        logging.debug("IndxUser, generate_encryption_keys for user {0}".format(self.username))
+        return_d = Deferred()
+
+        # TODO FIXME XXX do this in a runInteraction transaction
+
+        def connected_cb(conn):
+            logging.debug("IndxUser, generate_encryption_keys, connected_cb")
+
+            check_q = "SELECT EXISTS(SELECT * FROM tbl_users WHERE username = %s AND public_key_rsa IS NOT NULL AND private_key_rsa_env IS NOT NULL)"
+            check_p = [self.username]
+
+            def check_cb(rows):
+                logging.debug("IndxUser, generate_encryption_keys, connected_cb, check_cb")
+
+                exists = rows[0][0]
+                if exists and not overwrite:
+                    return_d.callback(False)
+                    return # already has keys, and we are not overwriting
+
+                keys = generate_rsa_keypair(self.RSA_KEYSIZE)
+                public_key = keys['public']
+                private_key = keys['private'] # TODO FIXME XXX encrypt private key with password / client cert (decide mechanism)
+
+                insert_q = "UPDATE tbl_users SET private_key_rsa_env = %s, public_key_rsa = %s WHERE username = %s"
+                insert_p = [private_key, public_key, self.username]
+
+                def insert_cb(empty):
+                    logging.debug("IndxUser, generate_encryption_keys, insert_cb")
+                    return_d.callback(True)
+
+                conn.runOperation(insert_q, insert_p).addCallbacks(insert_cb, return_d.errback)
+
+            conn.runQuery(check_q, check_p).addCallbacks(check_cb, return_d.errback)
+
+        self.db.connect_indx_db().addCallbacks(connected_cb, return_d.errback)
+        return return_d
+
 
     def set_password(self, password):
         """ Set the user's password. """
@@ -36,19 +113,19 @@ class IndxUser:
         
         pw_hash = make_hash(password)
 
-        def connected_d(conn):
-            logging.debug("IndxUser, set_password, connected_d")
+        def connected_cb(conn):
+            logging.debug("IndxUser, set_password, connected_cb")
             insert_q = "UPDATE tbl_users SET password_hash = %s WHERE username = %s"
             insert_p = [pw_hash, self.username]
 
-            def inserted_d(empty):
-                logging.debug("IndxUser, set_password, connected_d, inserted_d")
+            def inserted_cb(empty):
+                logging.debug("IndxUser, set_password, connected_cb, inserted_cb")
                 return_d.callback(True)
                 return
 
-            conn.runOperation(insert_q, insert_p).addCallbacks(inserted_d, return_d.errback)
+            conn.runOperation(insert_q, insert_p).addCallbacks(inserted_cb, return_d.errback)
 
-        self.db.connect_indx_db().addCallbacks(connected_d, return_d.errback)
+        self.db.connect_indx_db().addCallbacks(connected_cb, return_d.errback)
         return return_d
 
     def get_user_info(self, decode_json = False):
@@ -56,14 +133,14 @@ class IndxUser:
         logging.debug("IndxUser, get_user_info for username {0}".format(self.username))
         return_d = Deferred()
 
-        def connected_d(conn):
-            logging.debug("IndxUser, get_user_info, connected_d")
+        def connected_cb(conn):
+            logging.debug("IndxUser, get_user_info, connected_cb")
 
             query = "SELECT username_type, user_metadata_json, username FROM tbl_users WHERE username = %s"
             params = [self.username]
 
-            def query_d(conn, rows):
-                logging.debug("IndxUser, get_user_info, connected_d, query_d, rows: {0}".format(rows))
+            def query_cb(conn, rows):
+                logging.debug("IndxUser, get_user_info, connected_cb, query_cb, rows: {0}".format(rows))
 
                 if len(rows) < 1:
                     return_d.callback(None) # no user info available
@@ -73,9 +150,9 @@ class IndxUser:
                     else:
                         return_d.callback({"type": rows[0][0], "user_metadata": rows[0][1] or '{}', "username": rows[0][2]})
 
-            conn.runQuery(query, params).addCallbacks(lambda rows: query_d(conn, rows), return_d.errback)
+            conn.runQuery(query, params).addCallbacks(lambda rows: query_cb(conn, rows), return_d.errback)
 
-        self.db.connect_indx_db().addCallbacks(connected_d, return_d.errback)
+        self.db.connect_indx_db().addCallbacks(connected_cb, return_d.errback)
         return return_d
 
     def get_acls(self, database_name):
@@ -83,15 +160,15 @@ class IndxUser:
         logging.debug("IndxUser, get_acls database_name {0}".format(database_name))
         return_d = Deferred()
 
-        def connected_d(conn):
-            logging.debug("IndxUser, get_acls, connected_d")
+        def connected_cb(conn):
+            logging.debug("IndxUser, get_acls, connected_cb")
 
             query = "SELECT acl_read, acl_write, acl_owner, acl_control, tbl_users.username FROM tbl_acl JOIN tbl_users ON (tbl_users.id_user = tbl_acl.user_id) WHERE database_name = %s"
             params = [database_name]
 
             results = []
-            def query_d(conn, rows):
-                logging.debug("IndxUser, get_acl, connected_d, query_d, rows: {0}".format(rows))
+            def query_cb(conn, rows):
+                logging.debug("IndxUser, get_acl, connected_cb, query_cb, rows: {0}".format(rows))
 
                 for row in rows:
                     acl = {
@@ -103,9 +180,9 @@ class IndxUser:
 
                 return_d.callback(results)
 
-            conn.runQuery(query, params).addCallbacks(lambda rows: query_d(conn, rows), return_d.errback)
+            conn.runQuery(query, params).addCallbacks(lambda rows: query_cb(conn, rows), return_d.errback)
 
-        self.db.connect_indx_db().addCallbacks(connected_d, return_d.errback)
+        self.db.connect_indx_db().addCallbacks(connected_cb, return_d.errback)
         return return_d
 
 
@@ -114,14 +191,14 @@ class IndxUser:
         logging.debug("IndxUser, get_acl database_name {0} for user {1}".format(database_name, self.username))
         return_d = Deferred()
 
-        def connected_d(conn):
-            logging.debug("IndxUser, get_acl, connected_d")
+        def connected_cb(conn):
+            logging.debug("IndxUser, get_acl, connected_cb")
 
             query = "SELECT acl_read, acl_write, acl_owner, acl_control FROM tbl_acl JOIN tbl_users ON (tbl_users.id_user = tbl_acl.user_id) WHERE database_name = %s AND tbl_users.username = %s"
             params = [database_name, self.username]
 
-            def query_d(conn, rows):
-                logging.debug("IndxUser, get_acl, connected_d, query_d, rows: {0}".format(rows))
+            def query_cb(conn, rows):
+                logging.debug("IndxUser, get_acl, connected_cb, query_cb, rows: {0}".format(rows))
 
                 if len(rows) < 1:
                     permissions = {"read": False, "write": False, "owner": False, "control": False} # no acl available, all permissions set to False
@@ -136,9 +213,9 @@ class IndxUser:
                 }
                 return_d.callback(acl)
 
-            conn.runQuery(query, params).addCallbacks(lambda rows: query_d(conn, rows), return_d.errback)
+            conn.runQuery(query, params).addCallbacks(lambda rows: query_cb(conn, rows), return_d.errback)
 
-        self.db.connect_indx_db().addCallbacks(connected_d, return_d.errback)
+        self.db.connect_indx_db().addCallbacks(connected_cb, return_d.errback)
         return return_d
 
     def set_acl(self, database_name, target_username, acl):
@@ -230,8 +307,24 @@ class IndxUser:
                         def del_query_cb(empty):
                             logging.debug("IndxUser, set_acl, connected_cb, del_query_cb")
 
+                            def acl_done_cb(empty):
+                                logging.debug("IndxUser, set_acl, connected_cb, acl_done_cb")
+
+                                # only transfer the 'rw' user if the user has been given the 'write' permission
+                                # FIXME remove the 'rw' user row if their permission is revoked ?
+                                user_types = ['ro']
+                                if acl['write']:
+                                    user_types.append('rw')
+
+                                def transfer_cb(empty):
+                                    logging.debug("IndxUser, set_acl, connected_cb, transfer_cb")
+                                    return_d.callback(True)
+
+                                self.db.transfer_keychain_users(database_name, self.username, target_username, user_types).addCallbacks(transfer_cb, return_d.errback)
+
+
                             # create a new ACL
-                            conn.runOperation("INSERT INTO tbl_acl (database_name, user_id, acl_read, acl_write, acl_owner, acl_control) VALUES (%s, (SELECT id_user FROM tbl_users WHERE username = %s), %s, %s, %s, %s)", [database_name, target_username, acl['read'], acl['write'], current_owner_value, acl['control']]).addCallbacks(return_d.callback, return_d.errback)
+                            conn.runOperation("INSERT INTO tbl_acl (database_name, user_id, acl_read, acl_write, acl_owner, acl_control) VALUES (%s, (SELECT id_user FROM tbl_users WHERE username = %s), %s, %s, %s, %s)", [database_name, target_username, acl['read'], acl['write'], current_owner_value, acl['control']]).addCallbacks(acl_done_cb, return_d.errback)
 
                         conn.runOperation(del_query, del_params).addCallbacks(del_query_cb, return_d.errback)
                        
