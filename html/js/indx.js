@@ -1019,6 +1019,7 @@ angular
 							try {
 								userMetadata = JSON.parse(userMetadata);
 								_(user).extend(userMetadata);
+								console.log('user is now --' , user)
 							} catch(e) { console.error('error parsing json, no biggie', userMetadata);	}
 						}
 						u.log('logging in user >>', user);

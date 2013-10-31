@@ -100,14 +100,14 @@
 				sa(function() {
 					$scope.users = users.map(function(x) {
 						if (_.isObject(x) && x["@id"]) { // latest server
-							if (x.userMetadata) {
-								if (typeof(x.userMetadata) === 'string') {
+							if (x.user_metadata) {
+								if (typeof(x.user_metadata) === 'string') {
 									try {
-										x.userMetadata = JSON.parse(x.userMetadata); 
+										x.user_metadata = JSON.parse(x.user_metadata); 
 									} catch(e) { console.error('error unpacking user metadata for ', x, ' skipping '); }
 								}
-								if (_.isObject(x.userMetadata)) {
-									_(x).extend(x.userMetadata);
+								if (_.isObject(x.user_metadata)) {
+									_(x).extend(x.user_metadata);
 								}
 							}
 							console.log(" user is >> ", x);

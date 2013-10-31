@@ -161,7 +161,7 @@ angular
 				var checkLogin = function() {
 					var store = getStore();					
 					store.checkLogin().then(function(user) {
-						if (user.isAuthenticated) {
+						if (user.is_authenticated) {
 							apply(function() { $scope.cbLogin(user);	});
 						} else {
 							apply(function() { $scope.cbLogout();	});
