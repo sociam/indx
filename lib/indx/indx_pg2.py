@@ -26,6 +26,7 @@ from hashing_passwords import make_hash, check_hash
 from indx.crypto import encrypt, decrypt
 from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
+from indx.user import IndxUser
 
 POOLS = {} # dict of txpostgres.ConnectionPools, one pool for each box/user combo
 POOLS_BY_DBNAME = {} # dict of above indexed by dbname, used to close pools when databases are deleted
@@ -310,7 +311,12 @@ class IndxDatabase:
 
         def connected(conn):
             d = conn.runOperation("INSERT INTO tbl_users (username, username_type, password_hash, password_encrypted) VALUES (%s, %s, %s, %s)",[new_username, typ, pw_hash, pw_encrypted])
-            d.addCallbacks(lambda *x: return_d.callback(None), return_d.errback)
+
+            def added_cb(empty):
+                user = IndxUser(self, new_username)
+                user.generate_encryption_keys().addCallbacks(lambda *x: return_d.callback(None), return_d.errback)
+
+            d.addCallbacks(added_cb, return_d.errback)
             return
 
         self.connect_indx_db().addCallbacks(connected, return_d.errback)
