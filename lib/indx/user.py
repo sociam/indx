@@ -307,8 +307,24 @@ class IndxUser:
                         def del_query_cb(empty):
                             logging.debug("IndxUser, set_acl, connected_cb, del_query_cb")
 
+                            def acl_done_cb(empty):
+                                logging.debug("IndxUser, set_acl, connected_cb, acl_done_cb")
+
+                                # only transfer the 'rw' user if the user has been given the 'write' permission
+                                # FIXME remove the 'rw' user row if their permission is revoked ?
+                                user_types = ['ro']
+                                if acl['write']:
+                                    user_types.append('rw')
+
+                                def transfer_cb(empty):
+                                    logging.debug("IndxUser, set_acl, connected_cb, transfer_cb")
+                                    return_d.callback(True)
+
+                                self.db.transfer_keychain_users(database_name, self.username, target_username, user_types).addCallbacks(transfer_cb, return_d.errback)
+
+
                             # create a new ACL
-                            conn.runOperation("INSERT INTO tbl_acl (database_name, user_id, acl_read, acl_write, acl_owner, acl_control) VALUES (%s, (SELECT id_user FROM tbl_users WHERE username = %s), %s, %s, %s, %s)", [database_name, target_username, acl['read'], acl['write'], current_owner_value, acl['control']]).addCallbacks(return_d.callback, return_d.errback)
+                            conn.runOperation("INSERT INTO tbl_acl (database_name, user_id, acl_read, acl_write, acl_owner, acl_control) VALUES (%s, (SELECT id_user FROM tbl_users WHERE username = %s), %s, %s, %s, %s)", [database_name, target_username, acl['read'], acl['write'], current_owner_value, acl['control']]).addCallbacks(acl_done_cb, return_d.errback)
 
                         conn.runOperation(del_query, del_params).addCallbacks(del_query_cb, return_d.errback)
                        
