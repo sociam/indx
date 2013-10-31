@@ -98,10 +98,10 @@ TemporalEngine.prototype.addAnnotationToINDX = function(id, begin, end, activity
 {
 	if(typeof this.temporalBox !== "undefined")
 	{
-		    this.temporalBox.get_obj("annotation-"+id).then(function (ds) 
+		    this.temporalBox.getObj("annotation-"+id).then(function (ds) 
                 {
                     ds.set({
-                    	annot_id: id,
+                    	annotId: id,
                     	activity: activity.title,
                     	begin: begin,
                     	end: end
@@ -121,7 +121,7 @@ TemporalEngine.prototype.removeAnnotationFromINDX = function(id)
 	this.timeline.render();
 	if(typeof this.temporalBox !== "undefined")
 	{
-		    this.temporalBox.get_obj("annotation-"+id).then(function (ds) 
+		    this.temporalBox.getObj("annotation-"+id).then(function (ds) 
                 {
                     ds.destroy();
                 });

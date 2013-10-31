@@ -23,13 +23,13 @@ $(document).ready(function(){
         url: "/admin/info",
         dataType: "json",
         success: function(data){
-            $("#index_indx_uri").html(data['indx_uri']);
+            $("#indexIndxUri").html(data['indxUri']);
         },
     });
 
-    $("#login_form").submit(function(){
-        var username = $("#login_username").val();
-        var password = $("#login_password").val();
+    $("#loginForm").submit(function(){
+        var username = $("#loginUsername").val();
+        var password = $("#loginPassword").val();
 
         console.debug("Calling login.");
         $.ajax({
@@ -44,7 +44,7 @@ $(document).ready(function(){
     });
     
 
-    /* for: setup_webbox */
+    /* for: setupWebbox */
     function validURIPath(path){
         // check if a uri path contains all valid characters
         var pathChars = /^([!#$&-:;=?-\[\]\*\+,.@'\(\)_a-zA-Z0-9~]|%[0-9a-fA-F]{2})+$/;
@@ -77,22 +77,22 @@ $(document).ready(function(){
         }
         return condition;
     }
-    $("#form_setup").submit(function(){
+    $("#formSetup").submit(function(){
         // validate the webbox setup form input and set up
-        var name_input = $("#input_name");
-        var uri_input = $("#input_uri");
+        var nameInput = $("#inputName");
+        var uriInput = $("#inputUri");
 
         var error = false;
-        if (checkError(name_input, "Name cannot be blank.", name_input.val() == "")){ error = true; }
-        if (checkError(uri_input, "Contains invalid characters.", !validURIPath(uri_input.val()))){ error = true; }
+        if (checkError(nameInput, "Name cannot be blank.", nameInput.val() == "")){ error = true; }
+        if (checkError(uriInput, "Contains invalid characters.", !validURIPath(uriInput.val()))){ error = true; }
 
         if (!error){
             // submit setup information via ajax
-            var uri = window.webbox_vars.server_url + "/" + uri_input.val();
-            var rdf =   "<"+uri+"> <http://webbox.ecs.soton.ac.uk/ns#address> <"+window.webbox_vars.server_url+"> .\n"+
-                        "<"+uri+"> <http://xmlns.com/foaf/0.1/name> \""+addslashes(name_input.val())+"\" .\n"+
+            var uri = window.webboxVars.serverUrl + "/" + uriInput.val();
+            var rdf =   "<"+uri+"> <http://webbox.ecs.soton.ac.uk/ns#address> <"+window.webboxVars.serverUrl+"> .\n"+
+                        "<"+uri+"> <http://xmlns.com/foaf/0.1/name> \""+addslashes(nameInput.val())+"\" .\n"+
                         "<"+uri+"> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://xmlns.com/foaf/0.1/Person> . \n"+
-                        "<"+uri+"> <http://www.w3.org/2000/01/rdf-schema#label> \""+addslashes(name_input.val())+"\" .\n";
+                        "<"+uri+"> <http://www.w3.org/2000/01/rdf-schema#label> \""+addslashes(nameInput.val())+"\" .\n";
 
             $.ajax({
                 "url": uri,

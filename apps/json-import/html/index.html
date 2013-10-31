@@ -9,13 +9,13 @@
 	<title>INDX Developer Tools</title>
   </head>
   <body ng-app="importer" ng-controller="main" ng-cloak>
-    <toolbar box-var='selected_box' username-var='selected_user'></toolbar>
+    <toolbar box-var='selectedBox' username-var='selectedUser'></toolbar>
 	<div class='main dropzone'>
 	  <div class='alert alert-danger' ng-show='error'>
 	  	{{ error }}
 	  </div>
-	  <div ng-show="selected_user && selected_box && !error">
-	  	<div class="btn btn-primary savebtn" ng-show='rows && !wait' ng-disabled="wait" ng-click='do_save()'><span class="glyphicon glyphicon-floppy-open"></span> - Save to INDX</div>
+	  <div ng-show="selectedUser && selectedBox && !error">
+	  	<div class="btn btn-primary savebtn" ng-show='rows && !wait' ng-disabled="wait" ng-click='doSave()'><span class="glyphicon glyphicon-floppy-open"></span> - Save to INDX</div>
 	  	<div ng-show='!dropped'>
 	  		<h2 class="instructions">[ drop a JSON file here ]</h2>
 	  		<h2 class="yesdrophere">go on and drop the file</h2>
@@ -58,10 +58,10 @@
 		  	</table>
 	  	</div>
 	  </div>
-	  <div ng-show="!selected_user">
+	  <div ng-show="!selectedUser">
 		<h2> please log in </h2>
 	  </div>
-	  <div ng-show="selected_user && !selected_box">
+	  <div ng-show="selectedUser && !selectedBox">
 		<h2> please select a box </h2>
 	  </div>
 	</div><!-- main -->

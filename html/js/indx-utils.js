@@ -5,7 +5,7 @@
 			var DEBUG=0, INFO=1, LOG=2, WARN=3, ERROR=4, DEBUG_LEVEL = DEBUG;
 			return {
 				DEBUG_LEVELS: { INFO:INFO, LOG:LOG, WARN:WARN, ERROR:ERROR },
-				set_debug_level:function(lvl) {	DEBUG_LEVEL = lvl; return lvl; },
+				setDebugLevel:function(lvl) {	DEBUG_LEVEL = lvl; return lvl; },
                 uuid: function(){ return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {var r = Math.random()*16|0,v=c=='x'?r:r&0x3|0x8;return v.toString(16);});},
 				guid: function(len) {
 					len = len || 64;
@@ -30,7 +30,7 @@
 					}).fail(d.reject);
 					return d.promise();
 				},
-				safe_apply: function($scope, fn) { setTimeout(function() { $scope.$apply(fn); }, 0); },
+				safeApply: function($scope, fn) { setTimeout(function() { $scope.$apply(fn); }, 0); },
 				log : function() { try { if (DEBUG_LEVEL >= LOG) { console.log.apply(console,arguments);  }} catch(e) { } },
 				warn : function() { try { if (DEBUG_LEVEL >= WARN) { console.warn.apply(console,arguments);  }} catch(e) { } },
 				debug : function() { try { if (DEBUG_LEVEL >= DEBUG) { console.debug.apply(console,arguments); }} catch(e) { } },
@@ -62,7 +62,7 @@
 					d.reject(err);
 					return d.promise();
 				},
-				whend:function(deferred_array) { return $.when.apply($,deferred_array); },
+				whend:function(deferredArray) { return $.when.apply($,deferredArray); },
 				t:function(template,v) { return _(template).template(v); },
 				assert:function(t,s) { if (!t) { throw new Error(s); }},
 				TO_OBJ: function(pairs) { var o = {};	pairs.map(function(pair) { o[pair[0]] = pair[1]; }); return o; },
@@ -70,7 +70,7 @@
 				flatten:function(l) { return l.reduce(function(x,y) { return x.concat(y); }, []); },
 				DEFINED:function(x) { return (!_.isUndefined(x)) && x !== null; },
 				defined:function(x) { return (!_.isUndefined(x)) && x !== null; },
-				indexOf_uk_postcode:function(s) {
+				indexOfUkPostcode:function(s) {
 					var re = /^([Gg][Ii][Rr] 0[Aa]{2})|((([A-Za-z][0-9]{1,2})|(([A-Za-z][A-Ha-hJ-Yj-y][0-9]{1,2})|(([A-Za-z][0-9][A-Za-z])|([A-Za-z][A-Ha-hJ-Yj-y][0-9]?[A-Za-z])))) {0,1}[0-9][A-Za-z]{2})$/g;
 					return s.search(re);
 				},
@@ -93,7 +93,7 @@
 					for (var i = l; i < h; i++) { a.push(i); }
 					return a;
 				},
-				to_numeric:function(v) {
+				toNumeric:function(v) {
 					if (_(v).isNumber()) { return v ; }
 					if (typeof(v) == 'string') { return parseFloat(v, 10); }
 					return undefined; // throw new Error("Could not convert ", v);
@@ -103,7 +103,7 @@
 					$.when.apply($,x).then(function() {	d.resolve(_.toArray(arguments)); }).fail(d.reject);
 					return d.promise();
 				},
-				when_steps:function(fns, fail_fast) {
+				whenSteps:function(fns, failFast) {
 					// executes a bunch of functions that return deferreds in sequence
 					var me = arguments.callee;
 					var d = new $.Deferred();
@@ -111,7 +111,7 @@
 					fns[0]().then(function() {
 						me(fns.slice(1));
 					}).fail(function() {
-						if (fail_fast === true) { return; }
+						if (failFast === true) { return; }
 						me(fn.slice(1));
 					});
 					return d;

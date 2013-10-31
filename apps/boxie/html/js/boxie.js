@@ -6,7 +6,7 @@ angular
 		console.log('CONFIG')
 		$routeProvider
 			.when('/', { templateUrl: 'partials/root.html', controller: 'RootCtrl' })
-			.when('/obj/:obj_id', { templateUrl: 'partials/obj-detail.html', controller: 'ObjDetailCtrl' })
+			.when('/obj/:objId', { templateUrl: 'partials/obj-detail.html', controller: 'ObjDetailCtrl' })
 			.otherwise({ redirectTo: '/obj/1' });
 	}])
 	.controller('RootCtrl', function ($scope, client, utils, collection) {
@@ -29,11 +29,11 @@ angular
 					this.flatCollection = this.collection;
 				},
 				// identify and dereference links to objs within the attributes
-				links_to: function (obj, links_to) {
+				linksTo: function (obj, linksTo) {
 					//console.log('links to')
 					var that = this,
 						cache = false;
-					links_to = links_to || [];
+					linksTo = linksTo || [];
 					if (typeof obj === "undefined") {
 						obj = this.attributes;
 						cache = true;
@@ -42,32 +42,32 @@ angular
 						if (typeof v === "object") {
 							if (v instanceof client.Obj) {
 								obj[k] = that.flatCollection.get(v.id);
-								links_to.push(v);
+								linksTo.push(v);
 							} else {
-								that.links_to(v, links_to);
+								that.linksTo(v, linksTo);
 							}
 						}
 					});
 					if (cache) {
-						this._links_to = links_to;
+						this._linksTo = linksTo;
 					}
-					return links_to;
+					return linksTo;
 				},
-				links_from: function () {
+				linksFrom: function () {
 					var that = this;
 					return this.flatCollection.filter(function (obj) {
-						return obj.links_to().indexOf(that) > -1;
+						return obj.linksTo().indexOf(that) > -1;
 					});
 				},
-				is_root: function () {
-					return this.links_from().length === 0;
+				isRoot: function () {
+					return this.linksFrom().length === 0;
 				},
 				update: function () {
-					this.val_string = JSON.stringify(this.toJSON(), null, ' ');
-					this._generate_attribute_array();
+					this.valString = JSON.stringify(this.toJSON(), null, ' ');
+					this._generateAttributeArray();
 				},
 				analyse: function () {
-					$scope.curr_obj = this;
+					$scope.currObj = this;
 				},
 				icon: function () {
 					var keys = _(this.attributes).keys().sort(),
@@ -100,19 +100,19 @@ angular
 					this._icon = cols;
 					return cols;
 				},
-				_generate_attribute_array: function () {
-					this.attribute_array = _.map(this.attributes, function (value, key) {
+				_generateAttributeArray: function () {
+					this.attributeArray = _.map(this.attributes, function (value, key) {
 						var type = typeof value,
-							is_array = false;
+							isArray = false;
 						if (_.isArray(value)) {
-							is_array = true;
+							isArray = true;
 							type = 'array';
 							/*value = _.map(value, function (value, i) {
 								var type = typeof value;
 								return { index: i, value: value, type: type };
 							});*/
 						}
-						return { type: type, key: key, value: value, is_array: is_array };
+						return { type: type, key: key, value: value, isArray: isArray };
 					});
 				}
 			}),
@@ -122,8 +122,8 @@ angular
 				fetch: function () {
 					var that = this,
 						promise = $.Deferred(),
-						ids = this.box.get_obj_ids();
-					that.box.get_obj(ids).then(function (objs) {
+						ids = this.box.getObjIds();
+					that.box.getObj(ids).then(function (objs) {
 						console.log(objs);
 						that.reset(objs);
 						promise.resolve();
@@ -145,7 +145,7 @@ angular
 				},
 				buildTree: function () {
 					this.reset(this.flatCollection.select(function (obj) {
-						return obj.is_root();
+						return obj.isRoot();
 					}));
 				}
 			});
@@ -157,7 +157,7 @@ angular
 			$scope.objs.fetch();
 			$scope.objs.on('update change', function () {
 				console.log('fetched');
-				u.safe_apply($scope);
+				u.safeApply($scope);
 			});
 		};
 
@@ -170,10 +170,10 @@ angular
 		window.$scope = $scope;
 
 		// watches the login stts for changes
-		$scope.$watch('selected_box + selected_user', function() {
-			if ($scope.selected_user && $scope.selected_box) {
-				console.log('selected ', $scope.selected_user, $scope.selected_box);
-				client.store.get_box($scope.selected_box).then(function(b) {
+		$scope.$watch('selectedBox + selectedUser', function() {
+			if ($scope.selectedUser && $scope.selectedBox) {
+				console.log('selected ', $scope.selectedUser, $scope.selectedBox);
+				client.store.getBox($scope.selectedBox).then(function(b) {
 					box = b;
 					window.box = box;
 					initialize();

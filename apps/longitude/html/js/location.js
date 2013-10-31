@@ -5,7 +5,7 @@ angular
 		var box, u = utils, s = client.store;
 		$scope.loading = 0;
 
-		var initialise_map = function() { 
+		var initialiseMap = function() { 
 			$scope.map = L.map($('#map')[0]).setView([51.505, -0.09], 13);
 			
 			L.tileLayer('http://{s}.tile.cloudmade.com/285675b50972436798d67ce55ab7ddde/997/256/{z}/{x}/{y}.png', {
@@ -14,47 +14,47 @@ angular
 			}).addTo($scope.map);
 			
 			// feedback
-			var choose_me_popup = (new L.Popup());
+			var chooseMePopup = (new L.Popup());
 
 			var $injector = angular.injector(['ng', 'sensors']);
 			$injector.invoke(function($rootScope, $compile) {
 				var c = $compile('<div class="btn" ng-click="setLocationButton()">Set location</div>')($scope);
-				choose_me_popup.setContent(c[0]);				
+				chooseMePopup.setContent(c[0]);				
 			});
 
-			var choose_me_marker = new L.Marker([51.505, -0.09]);
-			$scope.choose_me_marker = choose_me_marker;
-			choose_me_marker.bindPopup(choose_me_popup);			
+			var chooseMeMarker = new L.Marker([51.505, -0.09]);
+			$scope.chooseMeMarker = chooseMeMarker;
+			chooseMeMarker.bindPopup(chooseMePopup);			
 			$scope.map.on('click', function(c) {
 				var ll = $scope.map.layerPointToLatLng(c.layerPoint);
-				choose_me_marker.setLatLng(ll);
-				choose_me_marker.addTo($scope.map);
-				choose_me_marker.togglePopup();
+				chooseMeMarker.setLatLng(ll);
+				chooseMeMarker.addTo($scope.map);
+				chooseMeMarker.togglePopup();
 				return false;				
 			});
 			$scope.setLocationButton = function() {
-				var ll= choose_me_marker.getLatLng();
-				$scope.update_logger([ll.lat, ll.lng]);
+				var ll= chooseMeMarker.getLatLng();
+				$scope.updateLogger([ll.lat, ll.lng]);
 			};			
 		};
 
-		var readings_sorted_by_time = function(locs) {
+		var readingsSortedByTime = function(locs) {
 			locs = locs.concat([]);
 			locs.sort(function(x,y) { return y.get('start')[0] - x.get('start')[0]; });
 			return locs;
 		};
-		var get_location = function() {			
+		var getLocation = function() {			
 			var d = u.deferred();
 			navigator.geolocation.getCurrentPosition(d.resolve, d.reject, {timeout: 1500});
 			return d.promise();
 		};
 
 		// utilities used by html5
-		$scope.to_date_string = function(d) {
+		$scope.toDateString = function(d) {
 			// console.log('to date string ', d, typeof(d));
 			return (new Date(d)).toDateString();
 		};
-		$scope.to_time_string = function(d) {
+		$scope.toTimeString = function(d) {
 			// console.log('to time string ', d, typeof(d));
 			return (new Date(d)).toLocaleTimeString();
 		};		
@@ -63,17 +63,17 @@ angular
 		$scope.locate = function() {
 			$scope.loading++;
 			$scope.error = undefined;			
-			get_location().then(function(x) {
-				u.safe_apply($scope, function() { 
+			getLocation().then(function(x) {
+				u.safeApply($scope, function() { 
 					$scope.loading--;				
 					u.debug("detected location >> ", x.coords);
-					u.safe_apply($scope, function() {
+					u.safeApply($scope, function() {
 						$scope.location = _(x.coords).clone();
-						$scope.update_logger();
+						$scope.updateLogger();
 					});
 				});
 			}).fail(function(e) {
-				u.safe_apply($scope, function() { 				
+				u.safeApply($scope, function() { 				
 					$scope.loading--; u.error('couldnt locate ', e);
 					$scope.error = 'Could not estimate location ' + e.message;
 				});
@@ -82,7 +82,7 @@ angular
 
 		
 
-		// utility used by update_logger
+		// utility used by updateLogger
 		var dist = function(ll1, ll2) {
 			return Math.sqrt(_.zip(ll1, ll2).map(function(l) { return Math.pow(l[1]-l[0], 2); }).reduce(function(x, y) { return x + y; }));
 		};
@@ -104,34 +104,34 @@ angular
 			}
 		});
 		// updates the location log
-		$scope.update_logger = function(force_new) {
+		$scope.updateLogger = function(forceNew) {
 			if (!box) { u.debug('no box, skipping '); return ;}
 			var loc = $scope.location && [$scope.location.latitude, $scope.location.longitude];
 			console.log(' loc >> ', loc);
-			if (!(loc || force_new)) { u.debug('no location, skipping '); return; }
+			if (!(loc || forceNew)) { u.debug('no location, skipping '); return; }
 			console.log("UPDATING LOCATION LOG >>>>>>>>> ");
-			box.get_obj('my_location_diary').then(function(diary) {
+			box.getObj('myLocationDiary').then(function(diary) {
 				var now = (new Date()).valueOf(),
-					history = readings_sorted_by_time(diary.get('locations') || []),
+					history = readingsSortedByTime(diary.get('locations') || []),
 					reading = history && history[0],
 					readloc = reading && [(reading.get('latitude') || [0])[0],(reading.get('longitude') || [0])[0]	];
 				
 				console.log("MY LOCATION DIARY ", history.length, diary);
 
-				if (reading && !force_new && (dist(readloc,loc) < 0.02)) {
+				if (reading && !forceNew && (dist(readloc,loc) < 0.02)) {
 					u.debug('updating existing location  >> ');
 					reading.set({end:now});
 					reading.save();
 				} else {
 					u.debug('minting new location  >> ');
 					// make new readin
-					box.get_obj('my-location-' + (new Date()).valueOf()).then(function(o) {
+					box.getObj('my-location-' + (new Date()).valueOf()).then(function(o) {
 						console.log('loc ', loc);
 						o.set({
 							start : now,
 							end: now,
-							latitude : force_new && force_new[0] || loc[0],
-							longitude: force_new && force_new[1] || loc[1],
+							latitude : forceNew && forceNew[0] || loc[0],
+							longitude: forceNew && forceNew[1] || loc[1],
 						});
 						history.push(o);
 						diary.set({'locations' : history });
@@ -147,62 +147,62 @@ angular
 			});
 		};
 
-		$scope.by_day = [];
+		$scope.byDay = [];
 
-		var top_of_day = function(dlong) {
+		var topOfDay = function(dlong) {
 			var dd = (new Date(dlong)).toDateString();
 			return new Date(dd).valueOf();			
 		};
-		$scope.hover_history = function(lat,lng) {
+		$scope.hoverHistory = function(lat,lng) {
 			console.log('hover history ', lat, lng);
 			var hoverltlng = new L.LatLng(lat,lng);
 			$scope.map.panTo(hoverltlng);
-			$scope.choose_me_marker.setLatLng(hoverltlng);
-			$scope.choose_me_marker.addTo($scope.map);
+			$scope.chooseMeMarker.setLatLng(hoverltlng);
+			$scope.chooseMeMarker.addTo($scope.map);
 		};		
-		var update_diary_view = function(diary) {
-			var locs = readings_sorted_by_time(diary.get('locations') || []);
+		var updateDiaryView = function(diary) {
+			var locs = readingsSortedByTime(diary.get('locations') || []);
 			console.log('update diary view >> ', locs.length);
 			var bd = [];
-			var cur_day;
+			var curDay;
 			locs.map(function(loc) {
 				var start = loc.get('start')[0];
-				if ( cur_day === undefined || (top_of_day(start) > cur_day.start)) {
-					if (cur_day) { bd.push(cur_day); }
-					cur_day = { start: top_of_day(start), locations:[loc] };
+				if ( curDay === undefined || (topOfDay(start) > curDay.start)) {
+					if (curDay) { bd.push(curDay); }
+					curDay = { start: topOfDay(start), locations:[loc] };
 				} else {
-					cur_day.locations.push(loc);
+					curDay.locations.push(loc);
 				}
 			});
-			if (cur_day) { bd.push(cur_day); }
-			u.safe_apply($scope,function(){
-				$scope.by_day = bd;
+			if (curDay) { bd.push(curDay); }
+			u.safeApply($scope,function(){
+				$scope.byDay = bd;
 				console.log(' >>>> by day is ', bd);
 			});			
 		};		
-		var update_diary_watcher = function() {
-			$scope.by_day = [];
+		var updateDiaryWatcher = function() {
+			$scope.byDay = [];
 			if (!box) { u.debug('no box, skipping '); return ;}
 			console.log("UPDATE DIARY WATCHER >> ");
-			box.get_obj('my_location_diary').then(function(diary) {
+			box.getObj('myLocationDiary').then(function(diary) {
 				console.log('locations of diary >> ', diary, diary.get('locations'));
 				diary.on('change', function() {
 					console.log('diary change !! ');
-					update_diary_view(diary);
+					updateDiaryView(diary);
 				});
-				update_diary_view(diary);
+				updateDiaryView(diary);
 			});
 		};
 		// watches the login stts for changes
-		$scope.$watch('selected_box + selected_user', function() {
-			if ($scope.selected_user && $scope.selected_box) {
-				console.log('selected ', $scope.selected_user, $scope.selected_box);
-				client.store.get_box($scope.selected_box).then(function(b) {
-					box = b; $scope.update_logger();
-					update_diary_watcher();
+		$scope.$watch('selectedBox + selectedUser', function() {
+			if ($scope.selectedUser && $scope.selectedBox) {
+				console.log('selected ', $scope.selectedUser, $scope.selectedBox);
+				client.store.getBox($scope.selectedBox).then(function(b) {
+					box = b; $scope.updateLogger();
+					updateDiaryWatcher();
 				}).fail(function(e) { u.error('error ', e); });
 			}
 		});
-		initialise_map();
+		initialiseMap();
 		window.s = client.store;
 	});

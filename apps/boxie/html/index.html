@@ -12,11 +12,11 @@
   <body>
   <div ng-app="boxie" ng-cloak>
   		<div class="alert alert-danger" ng-show="false">Failed to load</div>
-  		<div ng-show="!selected_user || !selected_box"> <!-- we'll get rid of this one day -->
-			<toolbar box-var='selected_box' username-var='selected_user'></toolbar>
+  		<div ng-show="!selectedUser || !selectedBox"> <!-- we'll get rid of this one day -->
+			<toolbar box-var='selectedBox' username-var='selectedUser'></toolbar>
 
 			<div class="container">
-				<div ng-show="!selected_user" class="need-log-in">
+				<div ng-show="!selectedUser" class="need-log-in">
 					<div class="white-cover"></div>
 					<div class="center-title"><h2 class="alert alert-info">Please log in</h2></div>
 					<div class="instruct-arrow">
@@ -29,7 +29,7 @@
 						</div>
 					</div>
 				</div>
-				<div ng-show="selected_user && !selected_box" class="need-select-box">
+				<div ng-show="selectedUser && !selectedBox" class="need-select-box">
 					<div class="white-cover"></div>
 					<div class="center-title"><h2 class="alert alert-info">Please select a box</h2></div>
 					<div class="instruct-arrow">
@@ -45,7 +45,7 @@
 			</div>
 		</div>
 
-		<div ng-show="selected_user && selected_box">
+		<div ng-show="selectedUser && selectedBox">
 			<div class="indx-navbars">
 				<nav class="indx-sidebar indx-navbar" role="navigation">
 					<div class="navbar-header">
@@ -60,7 +60,7 @@
 						<span class="navbar-brand hidden-xs">Object Explorer</span>
 					</div>
 					<ul class="nav navbar-nav navbar-left hidden-xs">
-						<li><a href="#" ng-click="todo_lists.selected.edit()"><i class="icon-cog"></i></a></li>
+						<li><a href="#" ng-click="todoLists.selected.edit()"><i class="icon-cog"></i></a></li>
 					</ul>
 					<ul class="nav navbar-nav navbar-right">
 						<li ng-show="!search"><a href="#" ng-click="search = true"><i class="icon-search"></i></a></li>
@@ -69,17 +69,17 @@
 								<div class="form-group">
 									<div class="row">
 										<div class="col-sm-2 col-xs-3">
-											<button class="btn btn-default" ng-click="show_completed = !show_completed;" ng-class="{ active: show_completed }" title="Show completed todos"><i class="icon-list"></i></button>
+											<button class="btn btn-default" ng-click="showCompleted = !showCompleted;" ng-class="{ active: showCompleted }" title="Show completed todos"><i class="icon-list"></i></button>
 										</div>
 										<div class="col-sm-10 col-xs-9">
-											<input class="form-control" type="text" placeholder="search" ng-model="search_text">
-											<a href="#" class="clear_search" ng-click="search_text = ''; search = false;"><i class="icon-remove-sign"></i></a>
+											<input class="form-control" type="text" placeholder="search" ng-model="searchText">
+											<a href="#" class="clearSearch" ng-click="searchText = ''; search = false;"><i class="icon-remove-sign"></i></a>
 										</div>
 									</div>
 								</div>
 							</form>
 						</li>
-  						<li><a href="#" ng-click="todo_lists.selected.todos.new_model()"><i class="icon-plus"></i></a></li>
+  						<li><a href="#" ng-click="todoLists.selected.todos.newModel()"><i class="icon-plus"></i></a></li>
 					</ul>
 				</nav>
 			</div>
@@ -88,14 +88,14 @@
 			<div class="indx-content">
 				<div class="indx-sidebar">
 					<ul class="indx-list-flat todo-lists">
-						<li ng-repeat="todo_list in todo_lists.all_models" ng-click="todo_list.select()" ng-class="{ active: todo_list.is_selected }"><a href="#">{{ pop(todo_list.get('title')) }}</a></li>
+						<li ng-repeat="todoList in todoLists.allModels" ng-click="todoList.select()" ng-class="{ active: todoList.isSelected }"><a href="#">{{ pop(todoList.get('title')) }}</a></li>
 					</ul>
 				</div>
 
 				<div class="indx-main" ng-view></div>
 			</div>
 		</div>
-		<div ng-show="objs.selected.is_editing">
+		<div ng-show="objs.selected.isEditing">
 			<div class="modal" style="display: block">
 				<div class="modal-dialog">
 					<div class="modal-content">
@@ -108,7 +108,7 @@
 						</div>
 						<div class="modal-footer">
 							<button type="button" class="btn btn-default" ng-click="objs.selected.restore()"><span class="glyphicon glyphicon-remove"></span> Close</button>
-							<button type="button" class="btn btn-primary" ng-click="objs.selected.save_staged()"><span class="glyphicon glyphicon-ok"></span> Save</button>
+							<button type="button" class="btn btn-primary" ng-click="objs.selected.saveStaged()"><span class="glyphicon glyphicon-ok"></span> Save</button>
 						</div>
 					</div><!-- /.modal-content -->
 				</div><!-- /.modal-dialog -->

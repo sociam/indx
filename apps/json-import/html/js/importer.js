@@ -2,10 +2,10 @@ angular
 	.module('importer', ['ui','indx'])
 	.controller('main', function($scope, client, utils) {
 		var box, u = utils;
-		$scope.$watch('selected_box + selected_user', function() {
-			if ($scope.selected_user && $scope.selected_box) {
-				console.log('getting box', $scope.selected_box);
-				client.store.get_box($scope.selected_box).then(function(b) {
+		$scope.$watch('selectedBox + selectedUser', function() {
+			if ($scope.selectedUser && $scope.selectedBox) {
+				console.log('getting box', $scope.selectedBox);
+				client.store.getBox($scope.selectedBox).then(function(b) {
 					box = b;
 				}).fail(function(e) { u.error('error ', e); });
 			}
@@ -26,7 +26,7 @@ angular
 			$('.dropzone').addClass('dragover');
 		};
 
-		var find_id_column = function() {
+		var findIdColumn = function() {
 			var cols = $scope.cols;
 			var selected = cols.filter(function(c) { return c.id; });
 			if (selected.length > 0) { return selected[0].name; }
@@ -35,47 +35,47 @@ angular
 			return cols[0].name;
 		};
 
-		var remap_columns = function(src) {
+		var remapColumns = function(src) {
 			var out = {}, cols = $scope.cols;
 			_(cols).map(function(c) { out[c.newname] = src[c.name];	});
 			return out;
 		};
 
-		var set_wait = function(b) {
-			u.safe_apply($scope, function() { $scope.wait = b;	});
+		var setWait = function(b) {
+			u.safeApply($scope, function() { $scope.wait = b;	});
 		};
 
-		$scope.do_save = function() {
-			set_wait(true);
-			return $scope.save().pipe(function (x) { set_wait(false); });
+		$scope.doSave = function() {
+			setWait(true);
+			return $scope.save().pipe(function (x) { setWait(false); });
 		};
 
 		$scope.err = function(e) {
-			u.safe_apply($scope, function() { $scope.error = e.toString(); });
+			u.safeApply($scope, function() { $scope.error = e.toString(); });
 		};
 
 		$scope.save = function() {
 				try {
-				var id_col = find_id_column();
-				var by_id = {};
-				var obj_ids = $scope.rows.map(function(row) {
-					var id = row[id_col];
-					by_id[id] = remap_columns(row);
+				var idCol = findIdColumn();
+				var byId = {};
+				var objIds = $scope.rows.map(function(row) {
+					var id = row[idCol];
+					byId[id] = remapColumns(row);
 					return id;
 				});
-				console.log(id_col, obj_ids);
+				console.log(idCol, objIds);
 				var d = u.deferred();
-				obj_ids = u.uniqstr(obj_ids).filter(function(x) { return x.trim().length > 0; });
-				console.log("asking for ids ", obj_ids);
-				box.get_obj(obj_ids).then(function(models) {
+				objIds = u.uniqstr(objIds).filter(function(x) { return x.trim().length > 0; });
+				console.log("asking for ids ", objIds);
+				box.getObj(objIds).then(function(models) {
 					var ds = models.map(function(m) {
-						if (by_id[m.id]) {
-							m.set(by_id[m.id]);
+						if (byId[m.id]) {
+							m.set(byId[m.id]);
 							return m.save();
 						}
 					});
 					u.when(ds).then(function() {
-						u.safe_apply($scope, function() {
+						u.safeApply($scope, function() {
 							$scope.savedmodels = models;
 							delete $scope.rows;
 							delete $scope.cols;
@@ -89,7 +89,7 @@ angular
 		};
 
 		$scope.clearIDExcept = function(c) {
-			u.safe_apply($scope, function() {
+			u.safeApply($scope, function() {
 				$scope.cols.map(function(col) {
 					if (c === col) return;
 					col.id = false;
@@ -144,8 +144,8 @@ angular
 			}
 			var rows = flattenObjArray(arr);
 			console.log(':)', rows)
-			set_wait(false);
-			u.safe_apply($scope, function() {
+			setWait(false);
+			u.safeApply($scope, function() {
 				var cols = $scope.cols = [];
 				_.each(rows, function (obj) {
 					_.each(obj, function (v, k) {
@@ -162,8 +162,8 @@ angular
 			try {
 				evt.stopPropagation();
 				evt.preventDefault();
-				u.safe_apply($scope, function() { $scope.dropped = true; });
-				set_wait(true);
+				u.safeApply($scope, function() { $scope.dropped = true; });
+				setWait(true);
 				$('.dropzone').removeClass('dragover');
 				var files = evt.dataTransfer.files; // FileList object.
 				window.files = files;
@@ -180,7 +180,7 @@ angular
 		};
 
 		window.$s = $scope;
-		window.setSaving = function(b) { u.safe_apply($scope, function() { $scope.saving = b; }); };
+		window.setSaving = function(b) { u.safeApply($scope, function() { $scope.saving = b; }); };
 		// Setup the dnd listeners.
 		var dropZone = $('body')[0]; //  document.getElementById('dropzone');
 		dropZone.addEventListener('dragover', handleDragOver, false);

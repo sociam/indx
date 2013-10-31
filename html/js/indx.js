@@ -54,48 +54,48 @@ angular
 			auth: function(token) { return JSON.stringify({action:'auth', token:token}); },
 			diff: function(token) { return JSON.stringify({action:'diff', operation:"start"}); }
 		};
-		var serialize_obj = function(obj) {
+		var serializeObj = function(obj) {
 			var uri = obj.id;
-			var out_obj = {};
+			var outObj = {};
 			$.each(obj.attributes, function(pred, vals){
 				if (pred[0] === "_" || pred[0] === "@"){
 					// don't expand @id etc.
 					return;
 				}
-				var obj_vals = [];
+				var objVals = [];
 				if (!(vals instanceof Array)){
 					vals = [vals];
 				}
 				$.each(vals, function(){
 					var val = this;
 					if (val instanceof File) {
-						obj_vals.push({"@value": val.id, "@type":"indx-file", "@language":val.get('content-type')});
+						objVals.push({"@value": val.id, "@type":"indx-file", "@language":val.get('content-type')});
 					} else if (val instanceof Obj) {
-						obj_vals.push({"@id": val.id });
+						objVals.push({"@id": val.id });
 					} else if (typeof val === "object" && (val["@value"] || val["@id"])) {
-						obj_vals.push(val); // fully expanded string, e.g. {"@value": "foo", "@language": "en" ... }
+						objVals.push(val); // fully expanded string, e.g. {"@value": "foo", "@language": "en" ... }
 					} else if (typeof val === "string" || val instanceof String ){
-						obj_vals.push({"@value": val});
+						objVals.push({"@value": val});
 					} else if (_.isDate(val)) {
-						obj_vals.push({"@value": val.toISOString(), "@type":"http://www.w3.org/2001/XMLSchema#dateTime"});
+						objVals.push({"@value": val.toISOString(), "@type":"http://www.w3.org/2001/XMLSchema#dateTime"});
 					} else if (_.isNumber(val) && u.isInteger(val)) {
-						obj_vals.push({"@value": val.toString(), "@type":"http://www.w3.org/2001/XMLSchema#integer"});
+						objVals.push({"@value": val.toString(), "@type":"http://www.w3.org/2001/XMLSchema#integer"});
 					} else if (_.isNumber(val)) {
-						obj_vals.push({"@value": val.toString(), "@type":"http://www.w3.org/2001/XMLSchema#float"});
+						objVals.push({"@value": val.toString(), "@type":"http://www.w3.org/2001/XMLSchema#float"});
 					} else if (_.isBoolean(val)) {
-						obj_vals.push({"@value": val.toString(), "@type":"http://www.w3.org/2001/XMLSchema#boolean"});
+						objVals.push({"@value": val.toString(), "@type":"http://www.w3.org/2001/XMLSchema#boolean"});
 					} else {
 						u.warn("Could not determine type of val ", pred, val);
-						obj_vals.push({"@value": val.toString()});
+						objVals.push({"@value": val.toString()});
 					}
 				});
-				out_obj[pred] = obj_vals;
+				outObj[pred] = objVals;
 			});
-			out_obj['@id'] = uri;
-			return out_obj;
+			outObj['@id'] = uri;
+			return outObj;
 		};
 
-		var literal_deserializers = {
+		var literalDeserializers = {
 			'': function(o) { return o['@value']; },
 			"http://www.w3.org/2001/XMLSchema#integer": function(o) { return parseInt(o['@value'], 10); },
 			"http://www.w3.org/2001/XMLSchema#float": function(o) { return parseFloat(o['@value'], 10); },
@@ -103,29 +103,29 @@ angular
 			"http://www.w3.org/2001/XMLSchema#boolean": function(o) { return o['@value'].toLowerCase() === 'true'; },
 			"http://www.w3.org/2001/XMLSchema#dateTime": function(o) { return new Date(Date.parse(o['@value'])); },
 			"indx-file": function(o,box) {
-				var f = box.get_or_create_file(o['@value']);
+				var f = box.getOrCreateFile(o['@value']);
 				f.set("content-type", o['@language']);
 				return f;
 			}
 		};
-		var deserialize_literal = function(obj, box) {
-			return obj['@value'] !== undefined ? literal_deserializers[ obj['@type'] || '' ](obj, box) : obj;
+		var deserializeLiteral = function(obj, box) {
+			return obj['@value'] !== undefined ? literalDeserializers[ obj['@type'] || '' ](obj, box) : obj;
 		};
 
-		var deserialize_value = function(s_val, box) {
+		var deserializeValue = function(sVal, box) {
 			var vd = u.deferred();
 			// it's an object, so return that
-			if (s_val.hasOwnProperty("@id")) {
+			if (sVal.hasOwnProperty("@id")) {
 				// object
-				box.get_obj(s_val["@id"]).then(vd.resolve).fail(vd.reject);
+				box.getObj(sVal["@id"]).then(vd.resolve).fail(vd.reject);
 			}
-			else if (s_val.hasOwnProperty("@value")) {
+			else if (sVal.hasOwnProperty("@value")) {
 				// literal
-				vd.resolve(deserialize_literal(s_val, box));
+				vd.resolve(deserializeLiteral(sVal, box));
 			}
 			else {
 				// don't know what it is!
-				vd.reject('cannot unpack value ', s_val);
+				vd.reject('cannot unpack value ', sVal);
 			}
 			return vd.promise();
 		};
@@ -137,14 +137,14 @@ angular
 				u.debug('options >> ', attrs, options );
 				this.box = options.box;
 			},
-			get_id:function() { return this.id;	},
-			get_url:function() {
+			getId:function() { return this.id;	},
+			getUrl:function() {
 				var params = {
-					id:this.get_id(),
+					id:this.getId(),
 					app:this.box.store.get('app'),
 					token:this.box.get('token'),
-					box:this.box.get_id()
-				}, url = ['/', this.box.store.get('server_host'), this.box.id, 'files'].join('/') + '?' + $.param(params);
+					box:this.box.getId()
+				}, url = ['/', this.box.store.get('serverHost'), this.box.id, 'files'].join('/') + '?' + $.param(params);
 				// u.debug("IMAGE URL IS ", url, params);
 				return url;
 			}
@@ -166,22 +166,22 @@ angular
 			initialize:function(attrs, options) {
 				this.box = options.box;
 			},
-			_is_fetched: function() { return this._fetched || false; },
-			_set_fetched : function() { this._fetched = true; },
-			get_id:function() { return this.id;	},
-			_value_to_array:function(k,v) {
+			_isFetched: function() { return this._fetched || false; },
+			_setFetched : function() { this._fetched = true; },
+			getId:function() { return this.id;	},
+			_valueToArray:function(k,v) {
 				if (k === '@id') { return v; }
 				if (!_(v).isUndefined() && !_(v).isArray()) {
 					return [v];
 				}
 				return v;
 			},
-			_all_values_to_arrays:function(o) {
+			_allValuesToArrays:function(o) {
 				if (!_(o).isObject()) { utils.error(' not an object', o); return o; }
 				var this_ = this;
 				// ?!?! this isn't doing anything (!!)
 				return u.dict(_(o).map(function(v,k) {
-					var val = this_._value_to_array(k,v);
+					var val = this_._valueToArray(k,v);
 					if (u.defined(val)) { return [k,val]; }
 					return undefined;
 				}).filter(u.defined));
@@ -189,31 +189,31 @@ angular
 			set:function(k,v,options) {
 				// set is tricky because it can be called like
 				// set('foo',123) or set({foo:123})
-				if (typeof k === 'string') { v = this._value_to_array(k,v);	}
-				else {	k = this._all_values_to_arrays(k);	}
+				if (typeof k === 'string') { v = this._valueToArray(k,v);	}
+				else {	k = this._allValuesToArrays(k);	}
 				return Backbone.Model.prototype.set.apply(this,[k,v,options]);
 			},
-			delete_properties:function(props, silent)  {
+			deleteProperties:function(props, silent)  {
 				var this_ = this;
 				props.map(function(p) { this_.unset(p, silent ? {silent:true} : {}); });
 			},
-			_deserialise_and_set:function(s_obj, silent) {
+			_deserialiseAndSet:function(sObj, silent) {
 				// returns a promise
 				var this_ = this;
-				var dfds = _(s_obj).map(function(vals, key) {
+				var dfds = _(sObj).map(function(vals, key) {
 					var kd = u.deferred();
 					// skip "@id" etc etc
 					if (key.indexOf('@') === 0) { return; }
-					var val_dfds = vals.map(function(val) {
+					var valDfds = vals.map(function(val) {
 						var vd = u.deferred();
 						// it's an object, so return that
 						if (val.hasOwnProperty("@id")) {
 							// object
-							this_.box.get_obj(val["@id"]).then(vd.resolve).fail(vd.reject);
+							this_.box.getObj(val["@id"]).then(vd.resolve).fail(vd.reject);
 						}
 						else if (val.hasOwnProperty("@value")) {
 							// literal
-							vd.resolve(deserialize_literal(val, this_.box));
+							vd.resolve(deserializeLiteral(val, this_.box));
 						}
 						else {
 							// don't know what it is!
@@ -221,13 +221,13 @@ angular
 						}
 						return vd.promise();
 					});
-					u.when(val_dfds).then(function(obj_vals) {
+					u.when(valDfds).then(function(objVals) {
 						// only update keys that have changed
-						var prev_vals = this_.get(key);
-						if ( prev_vals === undefined || obj_vals.length !== prev_vals.length ||
-							 _(obj_vals).difference(prev_vals).length > 0 ||
-							 _(prev_vals).difference(obj_vals).length > 0) {
-							this_.set(key, obj_vals, { silent : silent });
+						var prevVals = this_.get(key);
+						if ( prevVals === undefined || objVals.length !== prevVals.length ||
+							 _(objVals).difference(prevVals).length > 0 ||
+							 _(prevVals).difference(objVals).length > 0) {
+							this_.set(key, objVals, { silent : silent });
 						}
 						kd.resolve();
 					}).fail(kd.reject);
@@ -235,29 +235,29 @@ angular
 				}).filter(u.defined);
 				return u.when(dfds);
 			},
-			_load_from_json: function(json) {
+			_loadFromJson: function(json) {
 				var objdata = json, this_ = this;
 				if (objdata['@version'] === undefined) {
 					// then the server thinks we've been deleted, so let's just die.
 					return u.dreject(this.id);
 				}
 				// we are at current known version as far as we know
-				var obj_save_dfds = _(objdata).map(function(obj,uri) {
+				var objSaveDfds = _(objdata).map(function(obj,uri) {
 					// top level keys - corresponding to box level properties
 					if (uri[0] === "@") { return; } // ignore "@id", "@version" etc
 					// not one of those, so must be a
 					// < uri > : { prop1 .. prop2 ... }
 					u.assert(uri === this_.id, 'can only deserialise this object ');
-					return this_._deserialise_and_set(obj);
+					return this_._deserialiseAndSet(obj);
 				});
-				return u.when(obj_save_dfds);
+				return u.when(objSaveDfds);
 			},
 			// this code path taken if someone just fetches one model directly using m.fetch()
 			_fetch:function() {
-				var this_ = this, fd = u.deferred(), box = this.box.get_id();
+				var this_ = this, fd = u.deferred(), box = this.box.getId();
 				this.box._ajax('GET', box, {'id':this.id}).then(function(response) {
-					this_._set_fetched(true);
-					this_._load_from_json(response.data)
+					this_._setFetched(true);
+					this_._loadFromJson(response.data)
 						.then(function(){ fd.resolve(this_); }).fail(fd.reject);
 				});
 				return fd.promise();
@@ -269,7 +269,7 @@ angular
 				case "update":
 					return  model.box._update([model.id])[0];
 				case "delete":
-					return this.box._delete_models([this.id])[0];
+					return this.box._deleteModels([this.id])[0];
 				}
 			}
 		});
@@ -284,37 +284,37 @@ angular
 		// lazily get objects as you go
 		var Box = Backbone.Model.extend({
 			idAttribute:"@id",
-			default_options: { use_websockets:true, ws_auto_reconnect:false	},
+			defaultOptions: { useWebsockets:true, wsAutoReconnect:false	},
 			/// @construct
 			initialize:function(attributes, options) {
 				var this_ = this;
 				u.assert(options.store, "no store provided");
 				this.store = options.store;
 				this.set({objcache: new ObjCollection(), objlist: [], files : new FileCollection() });
-				this.options = _(this.default_options).chain().clone().extend(options || {}).value();
-				this._set_up_websocket();
-				this._update_queue = {};
-				this._delete_queue = {};
-				this._fetching_queue = {};
+				this.options = _(this.defaultOptions).chain().clone().extend(options || {}).value();
+				this._setUpWebsocket();
+				this._updateQueue = {};
+				this._deleteQueue = {};
+				this._fetchingQueue = {};
 				this.on('update-from-master', function() {
 					// u.log("UPDATE FROM MASTER >> flushing ");
-					this_._flush_update_queue();
-					this_._flush_delete_queue();
+					this_._flushUpdateQueue();
+					this_._flushDeleteQueue();
 				});
 			},
 			/// @arg {string} fid - file id
 			/// Tries to get a file with given id. If it doesn't exist, a file with that name is created.
 			/// @return {File} the file
-			get_or_create_file:function(fid) {
+			getOrCreateFile:function(fid) {
 				var files = this.get('files');
 				if (files.get(fid) === undefined) {
 					files.add(new File({"@id": fid}, { box: this }));
 				}
 				return files.get(fid);
 			},
-			_set_up_websocket:function() {
-				var this_ = this, server_host = this.store.get('server_host');
-				if (! this.get_use_websockets() ) { return; }
+			_setUpWebsocket:function() {
+				var this_ = this, serverHost = this.store.get('serverHost');
+				if (! this.getUseWebsockets() ) { return; }
 				this.on('new-token', function(token) {
 					var ws = this_._ws;
 					if (ws) {
@@ -324,17 +324,17 @@ angular
 						} catch(e) { u.error(); }
 					}
 					var protocol = (document.location.protocol === 'https:') ? 'wss:/' : 'ws:/';
-					var ws_url = [protocol,server_host,'ws'].join('/');
-					ws = new WebSocket(ws_url);
+					var wsUrl = [protocol,serverHost,'ws'].join('/');
+					ws = new WebSocket(wsUrl);
 /// @ignore
 /// dhjo
 					ws.onmessage = function(evt) {
 						u.debug('websocket :: incoming a message ', evt.data.toString().substring(0,190));
 						var pdata = JSON.parse(evt.data);
 						if (pdata.action === 'diff') {
-							this_._diff_update(pdata.data)
+							this_._diffUpdate(pdata.data)
 								.then(function() {
-									this_.trigger('update-from-master', this_.get_version());
+									this_.trigger('update-from-master', this_.getVersion());
 								}).fail(function(err) {
 									u.error(err); /*  u.log('done diffing '); */
 								});
@@ -358,7 +358,7 @@ angular
 						var interval;
 						interval = setInterval(function() {
 							this_.store.reconnect().then(function() {
-								this_.get_token().then(function() {
+								this_.getToken().then(function() {
 									clearInterval(interval);
 								});
 							});
@@ -366,38 +366,38 @@ angular
 					};
 				});
 			},
-			/// Gets whether the option to use websockets has been set; set this option using the store's options.use_websockets;
+			/// Gets whether the option to use websockets has been set; set this option using the store's options.useWebsockets;
 			/// @return {boolean} - Whether will try to use websockets.
-			get_use_websockets:function() { return this.options.use_websockets; },
-			/// Returns C, the number of objects that have been loaded from the server. Necessararily C < get_obj_ids.length()
+			getUseWebsockets:function() { return this.options.useWebsockets; },
+			/// Returns C, the number of objects that have been loaded from the server. Necessararily C < getObjIds.length()
 			/// @return {integer} - Number of objects in the cache
-			get_cache_size:function() { return this._objcache().length; },
+			getCacheSize:function() { return this._objcache().length; },
 			/// Gets all of the ids contained in the box
 			/// @return {string[]} - Set of IDs
-			get_obj_ids:function() { return this._objlist().slice(); },
+			getObjIds:function() { return this._objlist().slice(); },
 			_objcache:function() { return this.attributes.objcache; },
 			_objlist:function() { return this.attributes.objlist !== undefined ? this.attributes.objlist : []; },
-			_set_objlist:function(ol) { return this.set({objlist:ol.slice()}); },
-			_get_cached_token:function() { return this.get("token"); },
-			_set_token:function(token) { this.set("token", token);	},
-			_set_version:function(v) { this.set("version", v);	},
+			_setObjlist:function(ol) { return this.set({objlist:ol.slice()}); },
+			_getCachedToken:function() { return this.get("token"); },
+			_setToken:function(token) { this.set("token", token);	},
+			_setVersion:function(v) { this.set("version", v);	},
 
 			/// @return {integer} - Current version of the box
 			/// gets the current version of this box
-			get_version:function() { return this.get("version"); },
+			getVersion:function() { return this.get("version"); },
 
 			/// @then({Box}) - gets a token for this box and continues
 			/// @fail({Error}) - returns the raised error
 			/// Gets an auth token for the box. This is done automatically
-			/// by a store when constructed by get_box.
-			get_token:function() {
-				// utils.debug('>> get_token ', ' id: ',this.id, ' cid: ',this.cid);
+			/// by a store when constructed by getBox.
+			getToken:function() {
+				// utils.debug('>> getToken ', ' id: ',this.id, ' cid: ',this.cid);
 				// try { throw new Error(''); } catch(e) { console.error(e); }
 				var this_ = this, d = u.deferred();
 				this._ajax('POST', 'auth/get_token', { app: this.store.get('app') })
 					.then(function(data) {
 						debug('setting token ', data.token);
-						this_._set_token( data.token );
+						this_._setToken( data.token );
 						this_.trigger('new-token', data.token);
 						d.resolve(this_);
 					}).fail(d.reject);
@@ -405,7 +405,7 @@ angular
 			},
 			/// Gets this box's id
 			/// @return {integer} - this box's id
-			get_id:function() { return this.id || this.cid;	},
+			getId:function() { return this.id || this.cid;	},
 			_ajax:function(method, path, data) {
 				data = _(_(data||{}).clone()).extend({box: this.id || this.cid, token:this.get('token')});
 				return this.store._ajax(method, path, data);
@@ -417,12 +417,12 @@ angular
 			/// Handles obsolete cases by merely waiting for a websocket update
 			/// @then({INDX.File}) - returns created File object
 			/// @fail(error) - returns Error object
-			put_file:function(id,filedata,contenttype) {
+			putFile:function(id,filedata,contenttype) {
 				// creates a File object and hands it back in the resolve
 				contenttype = contenttype || filedata.type;
-				var d = u.deferred(), this_ = this, newFile = this.get_or_create_file(id);
+				var d = u.deferred(), this_ = this, newFile = this.getOrCreateFile(id);
 				newFile.set({"content-type": contenttype});
-				this._do_put_file(id,filedata,contenttype).then(function(){
+				this._doPutFile(id,filedata,contenttype).then(function(){
 					u.debug('image put success ');
 					d.resolve(newFile);
 				}).fail(function(err) {
@@ -430,7 +430,7 @@ angular
 						/// @ignore
 						var cb = function() {
 							this_.off('update-from-master', cb, newFile);
-							this_._put_file(id, filedata, contenttype).then(d.resolve).fail(d.reject);
+							this_._putFile(id, filedata, contenttype).then(d.resolve).fail(d.reject);
 						};
 						this_.on('update-from-master', cb, newFile);
 					} else {
@@ -443,36 +443,36 @@ angular
 			// now uses relative url scheme '//blah:port/path';
 			// all files must be PUT into boxname/files
 			// here the parameters are get encoded
-			// 'http://' + this.store.get('server_host') + "/" +  boxid + "/" + 'files',
-			_do_put_file:function(id,file,contenttype) {
+			// 'http://' + this.store.get('serverHost') + "/" +  boxid + "/" + 'files',
+			_doPutFile:function(id,file,contenttype) {
 				var boxid = this.id || this.cid,
-				base_url = ['/', this.store.get('server_host'), boxid, 'files'].join('/'),
-				options = { app: this.store.get('app'), id: id, token:this.get('token'),  box: boxid, version: this.get_version() },
-				option_params = $.param(options),
-				url = base_url+"?"+option_params,
+				baseUrl = ['/', this.store.get('serverHost'), boxid, 'files'].join('/'),
+				options = { app: this.store.get('app'), id: id, token:this.get('token'),  box: boxid, version: this.getVersion() },
+				optionParams = $.param(options),
+				url = baseUrl+"?"+optionParams,
 				d = u.deferred();
 				debug("PUTTING FILE ", url);
-				var ajax_args  = _(_(this.store.ajax_defaults).clone()).extend(
+				var ajaxArgs  = _(_(this.store.ajaxDefaults).clone()).extend(
 					{ url: url, method : 'PUT', crossDomain:false, data:file, contentType: contenttype, processData:false }
 				);
-				return $.ajax( ajax_args );
+				return $.ajax( ajaxArgs );
 			},
-			/// @arg {Object} query_pattern - a query pattern to match
+			/// @arg {Object} queryPattern - a query pattern to match
 			/// @opt {string[]} predicates - optional array of predicates to return, or entire objects otherwise
 			///
 			/// Issues query to server, which then returns either entire objects or just values of the props specified
 			///
 			/// @then({Objs[]} Objects matching query) - When the query is successful
 			/// @fail({string} Error) - When the query fails
-			query: function(query_pattern, predicates){
-				// @param - query_pattern is an object like { key1 : val1, key2: val2 } .. that
+			query: function(queryPattern, predicates){
+				// @param - queryPattern is an object like { key1 : val1, key2: val2 } .. that
 				//   returns / fetches all objects
 				var d = u.deferred();
 				var cache = this._objcache();
-				var parameters = {"q": JSON.stringify(query_pattern)};
+				var parameters = {"q": JSON.stringify(queryPattern)};
 				var this_ = this;
 				if (predicates) {
-					_(parameters).extend({predicate_list: predicates });
+					_(parameters).extend({predicateList: predicates });
 					console.log('new query pattern >> ', parameters);
 				}
 				this._ajax("GET", [this.id, "query"].join('/'), parameters)
@@ -488,89 +488,89 @@ angular
 							console.log('getting id ', id);
 							if (cache.get(id)) { console.log('cached! ', id); return cache.get(id); }
 							console.log('not cached! ', id);
-							var model = this_._create_model_for_id(id);
-							model._deserialise_and_set(dobj, true);
+							var model = this_._createModelForId(id);
+							model._deserialiseAndSet(dobj, true);
 							return model;
 						}));
 					}).fail(function(err) { error(err); d.reject(err); });
 				return d.promise();
 			},
 			// handles updates from websockets the server
-			_diff_update:function(response) {
-				var d = u.deferred(), this_ = this, latest_version = response['@to_version'],
-				added_ids  = _(response.data.added).keys(),
-				changed_ids = _(response.data.changed).keys(),
-				deleted_ids = _(response.data.deleted).keys(),
-				changed_objs = response.data.changed;
+			_diffUpdate:function(response) {
+				var d = u.deferred(), this_ = this, latestVersion = response['@to_version'],
+				addedIds  = _(response.data.added).keys(),
+				changedIds = _(response.data.changed).keys(),
+				deletedIds = _(response.data.deleted).keys(),
+				changedObjs = response.data.changed;
 
-				u.assert(latest_version !== undefined, 'latest version not provided');
-				u.assert(added_ids !== undefined, 'added_ids not provided');
-				u.assert(changed_ids !== undefined, 'changed not provided');
-				u.assert(deleted_ids !== undefined, 'deleted _ids not provided');
+				u.assert(latestVersion !== undefined, 'latest version not provided');
+				u.assert(addedIds !== undefined, 'addedIds not provided');
+				u.assert(changedIds !== undefined, 'changed not provided');
+				u.assert(deletedIds !== undefined, 'deleted _ids not provided');
 
-				if (latest_version <= this_.get_version()) {
-					u.debug('asked to diff update, but already up to date, so just relax!', latest_version, this_.get_version());
+				if (latestVersion <= this_.getVersion()) {
+					u.debug('asked to diff update, but already up to date, so just relax!', latestVersion, this_.getVersion());
 					return d.resolve();
 				}
-				u.debug('setting latest version >> ', latest_version, added_ids, changed_ids, deleted_ids);
-				this_._set_version(latest_version);
-				this_._update_object_list(undefined, added_ids, deleted_ids);
-				var change_dfds = _(changed_objs).map(function(obj, uri) {
+				u.debug('setting latest version >> ', latestVersion, addedIds, changedIds, deletedIds);
+				this_._setVersion(latestVersion);
+				this_._updateObjectList(undefined, addedIds, deletedIds);
+				var changeDfds = _(changedObjs).map(function(obj, uri) {
 					u.debug(' checking to see if in --- ', uri, this_._objcache().get(uri));
 					u.debug('obj >> ', obj);
-					var cached_obj = this_._objcache().get(uri), cdfd = u.deferred();
-					if (cached_obj) {
+					var cachedObj = this_._objcache().get(uri), cdfd = u.deferred();
+					if (cachedObj) {
 						// { prop : [ {sval1 - @type:""}, {sval2 - @type} ... ]
-						var changed_properties = [];
-						var deleted_propval_dfds = _(obj.deleted).map(function(vs, k) {
-							changed_properties = _(changed_properties).union([k]);
+						var changedProperties = [];
+						var deletedPropvalDfds = _(obj.deleted).map(function(vs, k) {
+							changedProperties = _(changedProperties).union([k]);
 							var dd = u.deferred();
-							u.when(vs.map(function(v) {	return deserialize_value(v, this_);	})).then(function(values) {
-								var new_vals = _(cached_obj.get(k) || []).difference(values);
-								cached_obj.set(k,new_vals);
+							u.when(vs.map(function(v) {	return deserializeValue(v, this_);	})).then(function(values) {
+								var newVals = _(cachedObj.get(k) || []).difference(values);
+								cachedObj.set(k,newVals);
 								// semantics - if a property has no value then we delete it
-								if (new_vals.length === 0) { cached_obj.unset(k); }
+								if (newVals.length === 0) { cachedObj.unset(k); }
 								dd.resolve();
 							}).fail(dd.reject);
 							return dd.promise();
 						});
-						var added_propval_dfds = _(obj.added).map(function(vs, k) {
-							changed_properties = _(changed_properties).union([k]);
+						var addedPropvalDfds = _(obj.added).map(function(vs, k) {
+							changedProperties = _(changedProperties).union([k]);
 							var dd = u.deferred();
-							u.when(vs.map(function(v) {	return deserialize_value(v, this_);	})).then(function(values) {
-								var new_vals = (cached_obj.get(k) || []).concat(values);
-								cached_obj.set(k,new_vals);
+							u.when(vs.map(function(v) {	return deserializeValue(v, this_);	})).then(function(values) {
+								var newVals = (cachedObj.get(k) || []).concat(values);
+								cachedObj.set(k,newVals);
 								dd.resolve();
 							}).fail(dd.reject);
 							return dd.promise();
 						});
-                        var replaced_propval_dfs = _(obj.replaced).map(function(vs, k) {
+                        var replacedPropvalDfs = _(obj.replaced).map(function(vs, k) {
                             debug("Processing replaced property");
-                            changed_properties = _(changed_properties).union([k]);
+                            changedProperties = _(changedProperties).union([k]);
                             var dd = u.deferred();
-                            u.when(vs.map(function(v) { return deserialize_value(v, this_); })).then(function(values) {
-                                var new_vals = values; // this is the difference from added - just replace (by DS)
-                                cached_obj.set(k,new_vals);
+                            u.when(vs.map(function(v) { return deserializeValue(v, this_); })).then(function(values) {
+                                var newVals = values; // this is the difference from added - just replace (by DS)
+                                cachedObj.set(k,newVals);
                                 dd.resolve();
                             }).fail(dd.reject);
                             return dd.promise();
                         });
-                        u.when(added_propval_dfds.concat(deleted_propval_dfds).concat(replaced_propval_dfs)).then(function() {
-							// u.debug("triggering changed properties ", changed_properties);
-							changed_properties.map(function(k) {
-								cached_obj.trigger('change:'+k, cached_obj, (cached_obj.get(k) || []).slice());
+                        u.when(addedPropvalDfds.concat(deletedPropvalDfds).concat(replacedPropvalDfs)).then(function() {
+							// u.debug("triggering changed properties ", changedProperties);
+							changedProperties.map(function(k) {
+								cachedObj.trigger('change:'+k, cachedObj, (cachedObj.get(k) || []).slice());
 								u.debug("trigger! change:"+k);
 							});
-							cdfd.resolve(cached_obj);
+							cdfd.resolve(cachedObj);
 						}).fail(cdfd.reject);
 						return cdfd.promise();
 					}
 				});
-				u.when(change_dfds).then(d.resolve).fail(d.reject);
+				u.when(changeDfds).then(d.resolve).fail(d.reject);
 				return d.promise();
 			},
-			_create_model_for_id: function(obj_id){
-				var model = new Obj({"@id":obj_id}, {box:this});
+			_createModelForId: function(objId){
+				var model = new Obj({"@id":objId}, {box:this});
 				this._objcache().add(model);
 				return model;
 			},
@@ -578,9 +578,9 @@ angular
 			/// retrieves all of the objects by their ids specified from the server into the cache if not loaded, otherwise just returns the cached models
 			/// @then({Obj|Obj[]} Array of loaded objects)
 			/// @fail({string} Error raised during process)
-			get_obj:function(objid) {
-				// get_obj always returns a promise
-				// console.log(' get_obj() >> ', objid);
+			getObj:function(objid) {
+				// getObj always returns a promise
+				// console.log(' getObj() >> ', objid);
 
 				u.assert(typeof objid === 'string' || typeof objid === 'number' || _.isArray(objid), "objid has to be a number or string or an array of such things");
 				var multi = _.isArray(objid),
@@ -593,59 +593,59 @@ angular
 				// if we fetch someone who loops back to us
 				// then we will never resolve with this code:
 				//
-				// fetching_dfd.then(d.resolve).fail(d.reject);
+				// fetchingDfd.then(d.resolve).fail(d.reject);
 				// return d.promise();
 				// --
 				// therefore a fix:
 
-				var missing_models = {}, dmissing_by_id = {};
+				var missingModels = {}, dmissingById = {};
 				var ds = ids.map(function(oid) {
 					var cachemodel = this_._objcache().get(oid);
 					if (cachemodel) { return u.dresolve(cachemodel);	}
 					// otherwise we make a placeholder and loda it
-					var model = this_._create_model_for_id(oid);
+					var model = this_._createModelForId(oid);
 
-					missing_models[oid] = model;
-					dmissing_by_id[oid] = u.deferred();
-					this_._fetching_queue[oid] = d;
-					return dmissing_by_id[oid];
+					missingModels[oid] = model;
+					dmissingById[oid] = u.deferred();
+					this_._fetchingQueue[oid] = d;
+					return dmissingById[oid];
 				});
-				var lacks = _(missing_models).keys();
+				var lacks = _(missingModels).keys();
 				if (lacks.length > 0) {
 					// console.log('calling with lacks ', lacks.length);
 					u.dmap(u.chunked(lacks, 150), function(lids) {
 						// console.log('lids length ', lids.length);
-						this_._ajax('GET', this_.get_id(), {'id':lids}).then(function(response) {
-							var resolved_ids = _(response.data).map(function(mraw,id) {
+						this_._ajax('GET', this_.getId(), {'id':lids}).then(function(response) {
+							var resolvedIds = _(response.data).map(function(mraw,id) {
 								if (id[0] === '@') { return; }
-								var model = missing_models[id];
+								var model = missingModels[id];
 								u.assert(id, "Got an id undefined");
 								u.assert(model, "Got a model we didnt ask for", id);
-								model._set_fetched(true);
+								model._setFetched(true);
 								// console.log('calling deserialise and set on ', mraw);
-								model._deserialise_and_set(mraw).then(function() {
-									dmissing_by_id[id].resolve(model);
-									delete this_._fetching_queue[id];
+								model._deserialiseAndSet(mraw).then(function() {
+									dmissingById[id].resolve(model);
+									delete this_._fetchingQueue[id];
 								}).fail(function(e){
-									dmissing_by_id[id].reject('Error loading ' + id + ' ' + e);
-									delete this_._fetching_queue[id];
+									dmissingById[id].reject('Error loading ' + id + ' ' + e);
+									delete this_._fetchingQueue[id];
 								});
 								return id;
 							}).filter(u.defined);
 
 							// NOT ACCOUNTED FOR check >>
 							// models not accounted for were blank.
-							_(lids).difference(resolved_ids).map(function(id) {
-								dmissing_by_id[id].resolve(missing_models[id]);
-								delete this_._fetching_queue[id];
+							_(lids).difference(resolvedIds).map(function(id) {
+								dmissingById[id].resolve(missingModels[id]);
+								delete this_._fetchingQueue[id];
 							});
 						}).fail(function(error) {
 							lids.map(function(id) {
-								dmissing_by_id[id].reject(error);
-								delete this_._fetching_queue[id];
+								dmissingById[id].reject(error);
+								delete this_._fetchingQueue[id];
 							});
 						});
-						return u.when(lids.map(function(id) { return dmissing_by_id[id]; }));
+						return u.when(lids.map(function(id) { return dmissingById[id]; }));
 					});
 				} else {
 					console.log('already have all the models, returning directly ');
@@ -653,198 +653,198 @@ angular
 				return multi ? u.when(ds) : ds[0];
 			},
 			// ----------------------------------------------------
-			_update_object_list:function(updated_obj_ids, added, deleted) {
+			_updateObjectList:function(updatedObjIds, added, deleted) {
 				var current, olds = this._objlist().slice(), this_ = this, news, died;
-				// u.debug('_update_object_list +', added ? added.length : ' ', '-', deleted ? deleted.length : ' ');
-				// u.debug('_update_object_list +', added || ' ', deleted || ' ');
-				if (updated_obj_ids === undefined ) {
+				// u.debug('_updateObjectList +', added ? added.length : ' ', '-', deleted ? deleted.length : ' ');
+				// u.debug('_updateObjectList +', added || ' ', deleted || ' ');
+				if (updatedObjIds === undefined ) {
 					current = _(u.uniqstr(olds.concat(added))).difference(deleted); //_(olds).chain().union(added).difference(deleted).value();
 					news = (added || []).slice(); died = (deleted || []).slice();
 				} else {
-					current = updated_obj_ids.slice();
+					current = updatedObjIds.slice();
 					news = _(current).difference(olds);
 					died = _(olds).difference(current);
 				}
 				// u.debug('old objlist had ', olds.length, ' new has ', current.length, 'news > ', news);
-				this._set_objlist(current);
+				this._setObjlist(current);
 				news.map(function(aid) { this_.trigger('obj-add', aid);	});
 				died.map(function(rid) {
 					this_.trigger('obj-remove', rid);
 					this_._objcache().remove(rid);
 				});
 			},
-			_is_fetched: function() {	return this.id !== undefined;	},
+			_isFetched: function() {	return this.id !== undefined;	},
 			_fetch:function() {
 				// all fetch really does is retrieve ids!
 				// new client :: this now _only_ fetches object ids
 				// return a list of models (each of type Object) to populate a GraphCollection
 				var d = u.deferred(), fd = u.deferred(), this_ = this;
-				if (this._is_fetched()) {
+				if (this._isFetched()) {
 					// Nope - don't do anything -- we just wait for websockets to update us.
 					fd.resolve();
 				} else {
 					// otherwise we aren't fetched, so we just do it
-					var box = this.get_id();
+					var box = this.getId();
 					this._ajax("GET",[box,'get_object_ids'].join('/')).then(
 						function(response){
 							u.assert(response['@version'] !== undefined, 'no version provided');
-							this_.id = this_.get_id(); // sets so that _is_fetched later returns true
-							this_._set_version(response['@version']);
-							this_._update_object_list(response.ids);
+							this_.id = this_.getId(); // sets so that _isFetched later returns true
+							this_._setVersion(response['@version']);
+							this_._updateObjectList(response.ids);
 							fd.resolve(this_);
 						}).fail(fd.reject);
 				}
 				fd.then(function() {
-					this_.trigger('update-from-master', this_.get_version());
+					this_.trigger('update-from-master', this_.getVersion());
 					d.resolve(this_);
 				}).fail(d.reject);
 				return d.promise();
 			},
 			// -----------------------------------------------
-			_check_token_and_fetch : function() {
+			_checkTokenAndFetch : function() {
 				var this_ = this;
 				if (this.get('token') === undefined) {
 					var d = u.deferred();
-					this.get_token()
+					this.getToken()
 						.then(function() { this_._fetch().then(d.resolve).fail(d.reject);	})
 						.fail(d.reject);
 					return d.promise();
 				}
 				return this_._fetch();
 			},
-			_create_box:function() {
+			_createBox:function() {
 				var d = u.deferred();
 				var this_ = this;
-				this.store._ajax('POST', 'admin/create_box', { name: this.get_id() } )
+				this.store._ajax('POST', 'admin/create_box', { name: this.getId() } )
 					.then(function() {
 						this_.fetch().then(function() { d.resolve(); }).fail(function(err) { d.reject(err); });
 					}).fail(function(err) { d.reject(err); });
 				return d.promise();
 			},
-			delete_box:function(boxid) {
+			deleteBox:function(boxid) {
 				return this.store._ajax('POST','admin/delete_box', { name: boxid } );
 			},
 			// =============== :: UPDATE ::  ======================
 			WHOLE_BOX: "__UPDATE__WHOLE__BOX__",
-			_add_to_update_queue:function(ids_to_update) {
-				var this_ = this, uq = this._update_queue;
+			_addToUpdateQueue:function(idsToUpdate) {
+				var this_ = this, uq = this._updateQueue;
 				// returns the deferreds
-				ids_to_update = ids_to_update === undefined ? [ this.WHOLE_BOX ] : ids_to_update;
-				return ids_to_update.map(function(id) {
+				idsToUpdate = idsToUpdate === undefined ? [ this.WHOLE_BOX ] : idsToUpdate;
+				return idsToUpdate.map(function(id) {
 					uq[id] = uq[id] || u.deferred();
 					return uq[id];
 				});
 			},
-			_requeue_update:function() {
+			_requeueUpdate:function() {
 				var this_ = this;
-				if (!this._update_timeout) {
-					this._update_timeout = setTimeout(function() {
-						delete this_._update_timeout;
-						this_._flush_update_queue();
+				if (!this._updateTimeout) {
+					this._updateTimeout = setTimeout(function() {
+						delete this_._updateTimeout;
+						this_._flushUpdateQueue();
 					}, 300);
 				}
 			},
-			_flush_update_queue:function() {
-				var this_ = this, uq = this._update_queue, ids_to_update = _(uq).keys();
-				if (ids_to_update.length === 0) { return ; }
+			_flushUpdateQueue:function() {
+				var this_ = this, uq = this._updateQueue, idsToUpdate = _(uq).keys();
+				if (idsToUpdate.length === 0) { return ; }
 				if (this._updating || this._deleting) {
-					return this._requeue_update();
+					return this._requeueUpdate();
 				}
 
-				this._update_queue = {};
-				var update_arguments = ids_to_update.indexOf(this.WHOLE_BOX) >= 0 ? undefined : ids_to_update;
+				this._updateQueue = {};
+				var updateArguments = idsToUpdate.indexOf(this.WHOLE_BOX) >= 0 ? undefined : idsToUpdate;
 				this_._updating = true;
 
-				this_._do_update(update_arguments).then(function() {
+				this_._doUpdate(updateArguments).then(function() {
 					delete this_._updating;
 					// TODO: resolve all of our deferreds now and delete them
-					ids_to_update.map(function(id) { uq[id].resolve();		});
+					idsToUpdate.map(function(id) { uq[id].resolve();		});
 				}).fail(function(err) {
 					delete this_._updating;
 					if (err.status === 409) {
 						// add the defferds back in
 						_(uq).map(function(d,id) {
-							if (this_._update_queue[id]) {
+							if (this_._updateQueue[id]) {
 								// someone's already added one back in! let's chain them
 								u.debug('HEYYYYYYYYYYYYYYYYYYYYYY already added in - lets go');
-								this_._update_queue[id].then(uq[id].resolve).fail(uq[id].reject);
+								this_._updateQueue[id].then(uq[id].resolve).fail(uq[id].reject);
 							} else {
 								u.debug('sneaking him back in - lets go');
-								this_._update_queue[id] = uq[id];
+								this_._updateQueue[id] = uq[id];
 							}
 						});
-						return this_._requeue_update();
+						return this_._requeueUpdate();
 					}
 					// something bad happened, we'd better reject on those deferreds
 					u.error('UPDATE error ', err);
-					ids_to_update.map(function(id) { uq[id].reject(err);});
+					idsToUpdate.map(function(id) { uq[id].reject(err);});
 				});
 			},
-			_do_update:function(ids) {
+			_doUpdate:function(ids) {
 				// this actua
 				debug('box update >> ');
 				var d = u.deferred(), version = this.get('version') || 0, this_ = this, oc = this._objcache(),
 				objs = (ids === undefined ? oc.values() : ids.map(function(id) { return oc.get(id); })), // this._objcache().filter(function(x) { return ids === undefined || ids.indexOf(x.id) >= 0; }),
-				obj_ids = (ids === undefined ? oc.keys() : ids.slice()), // objs.map(function(x) { return x.id; }),
-				sobjs = objs.map(function(obj){ return serialize_obj(obj); });
-				this._ajax("PUT",  this.get_id() + "/update", { version: escape(version), data : JSON.stringify(sobjs)  })
+				objIds = (ids === undefined ? oc.keys() : ids.slice()), // objs.map(function(x) { return x.id; }),
+				sobjs = objs.map(function(obj){ return serializeObj(obj); });
+				this._ajax("PUT",  this.getId() + "/update", { version: escape(version), data : JSON.stringify(sobjs)  })
 					.then(function(response) {
-						this_._set_version(response.data["@version"]);
-						this_._update_object_list(undefined, obj_ids, []); // update object list
+						this_._setVersion(response.data["@version"]);
+						this_._updateObjectList(undefined, objIds, []); // update object list
 						d.resolve(this_);
 					}).fail(d.reject);
 				return d.promise();
 			},
-			_update:function(original_ids) {
+			_update:function(originalIds) {
 				// this is called by Backbone.save(),
-				var dfds = this._add_to_update_queue(original_ids);
-				this._flush_update_queue();
+				var dfds = this._addToUpdateQueue(originalIds);
+				this._flushUpdateQueue();
 				return dfds;
 			},
 			// =============== :: DELETE ::  ======================
-			_add_to_delete_queue:function(ids) {
-				var this_ = this, dq = this._delete_queue;
+			_addToDeleteQueue:function(ids) {
+				var this_ = this, dq = this._deleteQueue;
 				return ids.map(function(id) {
 					dq[id] = dq[id] || u.deferred();
 					return dq[id];
 				});
 			},
-			_delete_models:function(ids) {
-				var dfds =  this._add_to_delete_queue(ids);
-				this._flush_delete_queue();
+			_deleteModels:function(ids) {
+				var dfds =  this._addToDeleteQueue(ids);
+				this._flushDeleteQueue();
 				return dfds;
 			},
-			_requeue_delete:function() {
+			_requeueDelete:function() {
 				var this_ = this;
-				if (!this._delete_timeout) {
-					this._delete_timeout = setTimeout(function() {
-						delete this_._delete_timeout;
-						this_._flush_delete_queue();
+				if (!this._deleteTimeout) {
+					this._deleteTimeout = setTimeout(function() {
+						delete this_._deleteTimeout;
+						this_._flushDeleteQueue();
 					}, 300);
 				}
 			},
-			_flush_delete_queue:function() {
-				var this_ = this, dq = this._delete_queue, delete_ids = _(dq).keys();
-				if (delete_ids.length === 0) { return ; }
-				if (this._deleting || this._updating) { return this._requeue_delete();  }
+			_flushDeleteQueue:function() {
+				var this_ = this, dq = this._deleteQueue, deleteIds = _(dq).keys();
+				if (deleteIds.length === 0) { return ; }
+				if (this._deleting || this._updating) { return this._requeueDelete();  }
 				this_._deleting = true;
-				this_._do_delete(delete_ids).then(function() {
+				this_._doDelete(deleteIds).then(function() {
 					delete this_._deleting;
-					delete_ids.map(function(id) {
+					deleteIds.map(function(id) {
 						dq[id].resolve(); delete dq[id];
 					});
 				}).fail(function(err) {
 					delete this_._deleting;
-					if (err.status === 409) { this_._requeue_delete();	}
+					if (err.status === 409) { this_._requeueDelete();	}
 				});
 			},
-			_do_delete:function(m_ids) {
+			_doDelete:function(mIds) {
 				var version = this.get('version') || 0, d = u.deferred(), this_ = this;
-				this._ajax('DELETE', this.id+'/', { version:version, data: JSON.stringify(m_ids) })
+				this._ajax('DELETE', this.id+'/', { version:version, data: JSON.stringify(mIds) })
 					.then(function(response) {
 						u.debug('DELETE response NEW version > ', response.data["@version"]);
-						this_._set_version(response.data["@version"]);
-						this_._update_object_list(undefined, [], m_ids); // update object list
+						this_._setVersion(response.data["@version"]);
+						this_._updateObjectList(undefined, [], mIds); // update object list
 						d.resolve(this_);
 					}).fail(d.reject);
 				return d.promise();
@@ -853,23 +853,23 @@ angular
 			sync: function(method, box, options){
 				switch(method)
 				{
-				case "create": return box._create_box();
-				case "read": return box._check_token_and_fetch();
+				case "create": return box._createBox();
+				case "read": return box._checkTokenAndFetch();
 				case "update": return box._update()[0];  // save whole box?
-				case "delete": return this.delete_box(this.get_id()); // hook up to destroy
+				case "delete": return this.deleteBox(this.getId()); // hook up to destroy
 				}
 			},
-			toString: function() { return 'box:' + this.get_id(); }
+			toString: function() { return 'box:' + this.getId(); }
 		});
 
 		var BoxCollection = Backbone.Collection.extend({ model: Box });
 
 		var Store =  Backbone.Model.extend({
 			defaults: {
-				server_host:DEFAULT_HOST,
+				serverHost:DEFAULT_HOST,
 				app:"--default-app-id--"
 			},
-			ajax_defaults : {
+			ajaxDefaults : {
 				jsonp: false, contentType: "application/json",
 				xhrFields: { withCredentials: true }
 			},
@@ -882,14 +882,14 @@ angular
 			},
 
 			/// Check that the
-			is_same_domain:function() {
-				return this.get('server_host').indexOf(document.location.host) >= 0 && (document.location.port === (this.get('server_port') || ''));
+			isSameDomain:function() {
+				return this.get('serverHost').indexOf(document.location.host) >= 0 && (document.location.port === (this.get('serverPort') || ''));
 			},
 			boxes:function() { return this.attributes.boxes;	},
-			get_box: function(boxid) {
+			getBox: function(boxid) {
 				var b = this.boxes().get(boxid) || this._create(boxid);
-				if (!b._get_cached_token()) {
-					return b.get_token().pipe(function() {
+				if (!b._getCachedToken()) {
+					return b.getToken().pipe(function() {
 						return b.fetch();
 					});
 				}
@@ -901,26 +901,26 @@ angular
 			///
 			/// @then({Box} the box)
 			/// @fail({{ code: 409 }} response) - box already exists
-			/// @fail({{ code: -1, error: error_obj }} response) - other error
+			/// @fail({{ code: -1, error: errorObj }} response) - other error
 			///
 			/// Attempts to create a box with the given ID
-			create_box: function (boxid) {
+			createBox: function (boxid) {
 				u.debug('create box ', boxid);
 				if (this.boxes().get(boxid)) {
 					return u.dreject({ code: 409, message: 'Box already exists: ' + boxid });
 				}
 				var c = this._create(boxid), this_ = this;
 				u.debug('creating ', boxid);
-				return c.save().pipe(function() { return this_.get_box(boxid); });
+				return c.save().pipe(function() { return this_.getBox(boxid); });
 			},
-			check_login:function() {
+			checkLogin:function() {
 				// checks whether you can connect to the server and who is logged in.
 				// returns a deferred that gets passed an argument
-				// { code:200 (server is okay),  is_authenticated:true/false,  user:<username>  }
+				// { code:200 (server is okay),  isAuthenticated:true/false,  user:<username>  }
 				return this._ajax('GET', 'auth/whoami');
 			},
 			// todo: change to _
-			get_info:function() { return this._ajax('GET', 'admin/info'); },
+			getInfo:function() { return this._ajax('GET', 'admin/info'); },
 			login : function(username,password) {
 				var d = u.deferred();
 				this.set({username:username,password:password});
@@ -948,21 +948,21 @@ angular
 				this.boxes().add(b);
 				return b;
 			},
-			get_box_list:function() {
+			getBoxList:function() {
 				var d = u.deferred();
 				this._ajax('GET','admin/list_boxes')
 					.success(function(data) {d.resolve(data.list);})
 					.fail(function(err) { d.reject(err); });
 				return d.promise();
 			},
-			get_user_list:function() {
+			getUserList:function() {
 				var d = u.deferred();
 				this._ajax('GET','admin/list_users')
 					.success(function(data) {d.resolve(data.users);})
 					.fail(function(err) { d.reject(err); });
 				return d.promise();
 			},
-			get_apps_list:function() {
+			getAppsList:function() {
 				var d = u.deferred();
 				this._ajax('GET','admin/list_apps')
 					.success(function(data) { d.resolve(data.apps); })
@@ -977,7 +977,7 @@ angular
 				var this_ = this, d = u.deferred();
 				this._ajax('GET','admin/list_boxes')
 					.success(function(data) {
-						u.when(data.list.map(function(boxid) { return this_.get_box(boxid); })).then(function(boxes) {
+						u.when(data.list.map(function(boxid) { return this_.getBox(boxid); })).then(function(boxes) {
 							// console.log("boxes !! ", boxes);
 							this_.boxes().reset(boxes);
 							d.resolve(boxes);
@@ -988,10 +988,10 @@ angular
 			},
 			_ajax:function(method, path, data) {
 				// now uses relative url scheme '//blah:port/path';
-				var url = ['/', this.get('server_host'), path].join('/');
-				var default_data = { app: this.get('app') };
-				var options = _(_(this.ajax_defaults).clone()).extend(
-					{ url: url, method : method, crossDomain: !this.is_same_domain(), data: _(default_data).extend(data) }
+				var url = ['/', this.get('serverHost'), path].join('/');
+				var defaultData = { app: this.get('app') };
+				var options = _(_(this.ajaxDefaults).clone()).extend(
+					{ url: url, method : method, crossDomain: !this.isSameDomain(), data: _(defaultData).extend(data) }
 				);
 				return $.ajax( options ); // returns a deferred
 			},
@@ -1005,7 +1005,7 @@ angular
 			}
 		});
 		var exports = {
-			safe_apply:utils.safe_apply,
+			safeApply:utils.safeApply,
 			u : utils,
 			Store:Store,
 			Obj: Obj,
@@ -1023,14 +1023,14 @@ angular
 	}).factory('backbone', function(client, utils) {
 		// this manages backbone-angular mystification
 		var deregfns = [];
-		var deep_clone_obj = function(o) {
+		var deepCloneObj = function(o) {
 			return utils.dict(_(o).map(function(v,k) { return [k, v.concat()]; }));
 		};
-		var scope_bind = function($scope, name, model) {
+		var scopeBind = function($scope, name, model) {
 			utils.assert(model instanceof Backbone.Model, "tried to bind something that was not a model");
 			window._m = model;
-			var clone = deep_clone_obj(_(model.attributes));
-			utils.safe_apply($scope, function() { $scope[name] = clone;	});
+			var clone = deepCloneObj(_(model.attributes));
+			utils.safeApply($scope, function() { $scope[name] = clone;	});
 			var findchanges = function(old,new_,fn) {
 				var changes = [];
 				_(old).map(function(v,k) {
@@ -1052,14 +1052,14 @@ angular
 			deregfns.push([$scope,name,model,dereg]);
 			// backbone -> angular
 			model.on('change', function(data) {
-				utils.safe_apply($scope, function() {
+				utils.safeApply($scope, function() {
 					findchanges(clone, model.attributes, function(k,v) { clone[k] = v;	});
 				});
 			},$scope);
 		};
 		return {
-			scope_bind: scope_bind,
-			scope_unbind:function($scope,name) {
+			scopeBind: scopeBind,
+			scopeUnbind:function($scope,name) {
 				deregfns.map(function(tuple) {
 					var scope = tuple[0],name = tuple[1],model = tuple[2],dereg = tuple[3];
 					model.off('change', null, scope);

@@ -12,12 +12,12 @@
 		}])
 	.controller('Root', function($scope, $location, client, utils) {
 		// root just redirects to appropriate places
-		client.store.check_login().then(function(login) {
+		client.store.checkLogin().then(function(login) {
 			if (login.is_authenticated) {
-				u.safe_apply($scope, function() { $location.path('/apps'); });
+				u.safeApply($scope, function() { $location.path('/apps'); });
 			} else {
 				console.log('routing to login');
-				u.safe_apply($scope, function() { $location.path('/login'); });
+				u.safeApply($scope, function() { $location.path('/login'); });
 			}
 		});
 	}).controller('Logout', function($scope, $location, client, utils) {
@@ -26,7 +26,7 @@
 		try{
 			client.store.logout().then(function(login) {
 				try {
-					utils.safe_apply($scope, function() { $location.path('/login'); });
+					utils.safeApply($scope, function() { $location.path('/login'); });
 				} catch(e) { console.error(e); }
 			}).fail(function(err) { console.error(err); });
 		} catch(e) { console.error(e); }
@@ -39,16 +39,16 @@
 		};
 	}).controller('Login',function($scope, $location, client, backbone, utils) {
 		console.log('route::login');
-		var u = utils, store = client.store, sa = function(f) { return utils.safe_apply($scope,f);};
+		var u = utils, store = client.store, sa = function(f) { return utils.safeApply($scope,f);};
 		$scope.user = {username:undefined, password:undefined};
-		$scope.select_user = function(user) { $scope.user.username = user; };
-		$scope.back_to_login = function() {	delete $scope.user.username; delete $scope.user.password;};
+		$scope.selectUser = function(user) { $scope.user.username = user; };
+		$scope.backToLogin = function() {	delete $scope.user.username; delete $scope.user.password;};
 		// this gets called when the form is submitted
-		$scope.do_submit = function() {
+		$scope.doSubmit = function() {
 			console.log('logging in ', $scope.user.username, $scope.user.password);
 			store.login($scope.user.username, $scope.user.password).then(function() {
 				u.debug('login okay!');
-				// sa($scope.back_to_login);
+				// sa($scope.backToLogin);
 				sa(function() { $location.path('/apps'); });
 			}).fail(function() {
 				sa(function() {
@@ -57,14 +57,14 @@
 				});
 			});
 		};
-		store.get_user_list()
+		store.getUserList()
 			.then(function(result) {  sa(function() { $scope.users = result; }); })
 			.fail(function(err) { u.error(err); });
 	}).controller('AppsList', function($scope, $location, client, utils) {
 		console.log('hello apps list');
-		var u = utils, store = client.store, sa = function(f) { return utils.safe_apply($scope,f); };
-		var get_apps_list = function() {
-			client.store.get_apps_list().then(function(apps) {
+		var u = utils, store = client.store, sa = function(f) { return utils.safeApply($scope,f); };
+		var getAppsList = function() {
+			client.store.getAppsList().then(function(apps) {
 				console.log('got apps list', apps);
 				sa(function() { $scope.apps = apps; });
 			}).fail(function() {
@@ -72,47 +72,51 @@
 				u.error('oops can\'t get apps - not ready i guess');
 			});
 		};
-		get_apps_list();
+		getAppsList();
 	}).controller('main', function($location, $scope, client, utils) {
 		var u = utils;
 		// we want to route
 		client.store.on('login', function() {
+			console.log('trigger login');
 			// just route
-			u.safe_apply($scope,function() { $location.path('/apps'); });
+			u.safeApply($scope,function() { $location.path('/apps'); });
 		});
 		client.store.on('logout', function() {
+			console.log('trigger logout');
 			// route back to login
-			u.safe_apply($scope,function() { $location.path('/login'); });
+			u.safeApply($scope,function() { $location.path('/login'); });
 		});
 
 		// this code watches for manual route changes, eg if someone goes
 		// and changes the path in their browser in a way that doesn't force
 		// a refresh.  here, we check to see if we're logged in, and if we are
 		// we proceed to the desired target; otherwise, we merely
-		$scope.$on('$routeChangeStart', function(evt, target_template, source_template) {
-			var requires_login = !target_template.$$route || target_template.$$route.requireslogin;
-			client.store.check_login().then(function(login) {
-				if (!login.is_authenticated && requires_login) {
-					return u.safe_apply($scope, function() { $location.path('/login'); });
-				} else if (login.is_authenticated && !requires_login) {
-					return u.safe_apply($scope, function() { $location.path('/apps'); });
+		$scope.$on('$routeChangeStart', function(evt, targetTemplate, sourceTemplate) {
+			var requiresLogin = !targetTemplate.$$route || targetTemplate.$$route.requireslogin;
+			client.store.checkLogin().then(function(login) {
+				console.log('check login -->', login)
+				if (!login.is_authenticated && requiresLogin) {
+					console.log('not authenticated --> routing to login')
+					return u.safeApply($scope, function() { $location.path('/login'); });
+				} else if (login.is_authenticated && !requiresLogin) { // TODO: what's this for?
+					return u.safeApply($scope, function() { $location.path('/apps'); });
 				}
 			});
 		});
 
-		client.store.check_login().then(function(login) {
+		client.store.checkLogin().then(function(login) {
 			if (login.is_authenticated) {
-				u.safe_apply($scope, function() { $location.path('/apps'); });
+				u.safeApply($scope, function() { $location.path('/apps'); });
 			} else {
 				console.log('routing to login');
-				u.safe_apply($scope, function() { $location.path('/login'); });
+				u.safeApply($scope, function() { $location.path('/login'); });
 			}
 		});
 
 	}).controller('BoxesList', function($location, $scope, client, utils) {
-		var u = utils,store = client.store, sa = function(f) { return utils.safe_apply($scope,f); };
-		var get_boxes_list = function() {
-			store.get_box_list().then(function (boxes) {
+		var u = utils,store = client.store, sa = function(f) { return utils.safeApply($scope,f); };
+		var getBoxesList = function() {
+			store.getBoxList().then(function (boxes) {
 				console.log('boxes --> ', boxes);
 				sa(function() { $scope.boxes = boxes; });
 			}).fail(function() {
@@ -120,9 +124,9 @@
 				u.error('oops can\'t get boxes - not ready i guess');
 			});
 		};
-		store.on('login', get_boxes_list);
-		get_boxes_list();
-		$scope.create_new_box = false;
+		store.on('login', getBoxesList);
+		getBoxesList();
+		$scope.createNewBox = false;
 	}).directive('focusOnShow', function() {
 		return {
 			restrict:'A',
@@ -146,9 +150,9 @@
 // 			controller: function ($scope, client, utils) {
 // 				var u = utils,
 // 					store = client.store,
-// 					sa = function(f) { return utils.safe_apply($scope,f); };
-// 				var get_boxes_list = function() {
-// 					store.get_box_list().then(function (boxes) {
+// 					sa = function(f) { return utils.safeApply($scope,f); };
+// 				var getBoxesList = function() {
+// 					store.getBoxList().then(function (boxes) {
 // 						console.log('boxes --> ', boxes);
 // 						sa(function() { $scope.boxes = boxes; });
 // 					}).fail(function() {
@@ -157,9 +161,9 @@
 // 					});
 // 				};
 
-// 				store.on('login', get_boxes_list);
-// 				get_boxes_list();
-// 				$scope.create_new_box = false;
+// 				store.on('login', getBoxesList);
+// 				getBoxesList();
+// 				$scope.createNewBox = false;
 // 			}
 // 		};
 // 	})

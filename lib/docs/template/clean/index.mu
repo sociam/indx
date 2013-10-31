@@ -61,7 +61,7 @@
 			{{{project.description}}}
 			{{#readme}}
 			<h2 class="splittitle">Readme</h2>
-			{{{readme_description}}}
+			{{{readmeDescription}}}
 			{{/readme}}
 		</section>
 

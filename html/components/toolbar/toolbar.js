@@ -22,31 +22,31 @@ angular
 				var toolbar = {}; // public interface
 				
 				var model = new Backbone.Model({visible:true});
-				var apply = function(fn) { return utils.safe_apply($scope, fn); };
-				var login_dialog = function() { return $($scope.el).find('#login-dialog'); }
-				var logout_dialog = function() { return $($scope.el).find('#logout-dialog'); }
+				var apply = function(fn) { return utils.safeApply($scope, fn); };
+				var loginDialog = function() { return $($scope.el).find('#login-dialog'); }
+				var logoutDialog = function() { return $($scope.el).find('#logout-dialog'); }
 				var getStore = function() {
 					// TODO ! 
 					return client.store;
 				};
-				var new_box_dialog = function() { return $($scope.el).find('#new-box-dialog'); }
+				var newBoxDialog = function() { return $($scope.el).find('#new-box-dialog'); }
 				
 				toolbar.on = function(msg, fn) {  return model.on(msg,fn); };
 				toolbar.off = function(msg, fn) {  return model.off(msg,fn); };
 				toolbar.setVisible = function(b) { model.set('visible', b); };
-				toolbar.get_selected_box = function() { return; };
-				// toolbar.is_logged_in = function() { 
+				toolbar.getSelectedBox = function() { return; };
+				// toolbar.isLoggedIn = function() { 
 				// 	return $scope.username !== undefined;
 				// };
 
-				var get_last_used_box = function() {
-					return localStorage["indx__last_used_box::" + document.location.toString()];
+				var getLastUsedBox = function() {
+					return localStorage["indx__lastUsedBox::" + document.location.toString()];
 				};
-				var clear_last_used_box = function() {
-					delete localStorage["indx__last_used_box::" + document.location.toString()];
+				var clearLastUsedBox = function() {
+					delete localStorage["indx__lastUsedBox::" + document.location.toString()];
 				};
-				var set_last_used_box = function(bid) {
-					localStorage["indx__last_used_box::" + document.location.toString()] = bid;
+				var setLastUsedBox = function(bid) {
+					localStorage["indx__lastUsedBox::" + document.location.toString()] = bid;
 				};				
 
 				_($scope).extend({
@@ -55,9 +55,9 @@ angular
 					error:undefined,
 					boxlist: [],
 					loading: 0,
-					_login_username:undefined,
-					_login_password:undefined,
-					is_logged_in : function() { return $scope.username !== undefined; },
+					_loginUsername:undefined,
+					_loginPassword:undefined,
+					isLoggedIn : function() { return $scope.username !== undefined; },
 				});
 
 				// reflect everything in to the model >> 
@@ -69,139 +69,139 @@ angular
 				$scope.usericon = "<span class='glyphicon glyphicon-user'></span>"; // TODO.
 				$scope.caret = "<span class='caret'></span>";
 				
-				$scope.incr_loading = function () {	$scope.loading++; };
-				$scope.decr_loading = function () {	$scope.loading = Math.max(0,$scope.loading-1); };
+				$scope.incrLoading = function () {	$scope.loading++; };
+				$scope.decrLoading = function () {	$scope.loading = Math.max(0,$scope.loading-1); };
 				
-				toolbar.get_selected_box = function() { return  $scope.box; };
-				toolbar.is_logged_in = function() { return $scope.is_logged_in(); };
+				toolbar.getSelectedBox = function() { return  $scope.box; };
+				toolbar.isLoggedIn = function() { return $scope.isLoggedIn(); };
 
-				$scope.cb_login_clicked = function() {
-					login_dialog().modal({ show: true, keyboard:true });
-					login_dialog().on('shown', function() { login_dialog().find('.login_username').focus(); });
+				$scope.cbLoginClicked = function() {
+					loginDialog().modal({ show: true, keyboard:true });
+					loginDialog().on('shown', function() { loginDialog().find('.loginUsername').focus(); });
 				};
-				$scope.cb_logout_clicked = function() {
-					logout_dialog().modal({ show: true, keyboard:true });
-					logout_dialog().on('shown', function() { logout_dialog().find('.btn-primary').focus(); });
+				$scope.cbLogoutClicked = function() {
+					logoutDialog().modal({ show: true, keyboard:true });
+					logoutDialog().on('shown', function() { logoutDialog().find('.btn-primary').focus(); });
 				}; 
-				$scope.cb_new_box_clicked = function() {
-					new_box_dialog().modal({ show: true, keyboard:true });
-					new_box_dialog().on('shown', function() { new_box_dialog().find('.btn-primary').focus(); });
+				$scope.cbNewBoxClicked = function() {
+					newBoxDialog().modal({ show: true, keyboard:true });
+					newBoxDialog().on('shown', function() { newBoxDialog().find('.btn-primary').focus(); });
 				}
 				
-				var update_boxlist = function() {
+				var updateBoxlist = function() {
 					// get boxes
 					var this_ = this, d = u.deferred();
-					$scope.incr_loading();
-					getStore().get_box_list().then(function(boxlist) {
+					$scope.incrLoading();
+					getStore().getBoxList().then(function(boxlist) {
 						console.log('boxlist >> ', boxlist);
 						apply(function() {
 							$scope.boxlist = boxlist.concat("create new box");
-							if ($scope.box === undefined && $scope.boxlist.length > 1 && get_last_used_box()) {
-								if ($scope.boxlist.indexOf( get_last_used_box() ) >= 0) {
-									$scope.cb_box_selected(get_last_used_box());
+							if ($scope.box === undefined && $scope.boxlist.length > 1 && getLastUsedBox()) {
+								if ($scope.boxlist.indexOf( getLastUsedBox() ) >= 0) {
+									$scope.cbBoxSelected(getLastUsedBox());
 								} else {
-									clear_last_used_box(); 
+									clearLastUsedBox(); 
 									// don't do anything --
 								}
 							}
-							$scope.decr_loading();
+							$scope.decrLoading();
 						});
 					});
 					return d.promise();
 				};
 				
-				$scope.set_error = function(err) {$scope.error = err;  };
-				$scope.loginbox_try_login = function(username,password) {
+				$scope.setError = function(err) {$scope.error = err;  };
+				$scope.loginboxTryLogin = function(username,password) {
 					console.log('loginbox try login ' ,username, password);
-					$scope.incr_loading();
+					$scope.incrLoading();
 					getStore().login(username,password).then(function() {
 						console.log('worked!',username, password);
 						apply(function() { 
-							$scope.decr_loading();				
-							login_dialog().modal('hide');
-							$scope.set_error();
-							$scope._login_username = '';
-							$scope._login_password = '';
-							$scope.cb_login(username);													
+							$scope.decrLoading();				
+							loginDialog().modal('hide');
+							$scope.setError();
+							$scope._loginUsername = '';
+							$scope._loginPassword = '';
+							$scope.cbLogin(username);													
 						});
 					}).fail(function(err) {
 						console.error('login failed!',err);						
 						apply(function() {
-							$scope.decr_loading();
-							$scope.set_error('username/password incorrect');
+							$scope.decrLoading();
+							$scope.setError('username/password incorrect');
 						});
 					});
 				};		
-				$scope.cb_box_selected = function(bid) {
+				$scope.cbBoxSelected = function(bid) {
 					if (bid === $scope.boxlist[$scope.boxlist.length-1]) {
 						console.log("create new box selected ");
-						$scope.cb_new_box_clicked(); // TODO get new_bid from user
+						$scope.cbNewBoxClicked(); // TODO get newBid from user
 					} else {
 						$scope.box = bid;
-						set_last_used_box(bid); 
+						setLastUsedBox(bid); 
 					}
 				};
-				$scope.create_new_box = function(new_bid) {
-					getStore().create_box(new_bid).then(function() {
-						$scope.box = new_bid;
-						set_last_used_box(new_bid);
-						update_boxlist();
+				$scope.createNewBox = function(newBid) {
+					getStore().createBox(newBid).then(function() {
+						$scope.box = newBid;
+						setLastUsedBox(newBid);
+						updateBoxlist();
 					});
 				};
-				$scope.cb_login = function(username) {
+				$scope.cbLogin = function(username) {
 					$scope.username = username;
-					update_boxlist();
+					updateBoxlist();
 					model.trigger('login', username);
 				};		
-				$scope.cb_logout = function() {
+				$scope.cbLogout = function() {
 					delete $scope.username;
 					delete $scope.box;
 					$scope.boxlist = [];
 					model.trigger('logout');			
 				};
-				$scope.do_logout = function() {
+				$scope.doLogout = function() {
 					getStore().logout();
-					$scope.cb_logout(); 
+					$scope.cbLogout(); 
 				};
 				var checkLogin = function() {
 					var store = getStore();					
-					store.check_login().then(function(response) {
+					store.checkLogin().then(function(response) {
 						u.debug('checklogin ', response);
 						if (response.is_authenticated) {
-							apply(function() { $scope.cb_login(response.user);	});
+							apply(function() { $scope.cbLogin(response.user);	});
 						} else {
-							apply(function() { $scope.cb_logout();	});
+							apply(function() { $scope.cbLogout();	});
 						}
 					});
 				};
-				var bind_store_listeners = function() {
+				var bindStoreListeners = function() {
 					var store = getStore();
 					store.on('login', function(username) {
 						u.debug('store -> toolbar :: login ');
-						apply(function() { $scope.cb_login(username); });
+						apply(function() { $scope.cbLogin(username); });
 					}).on('logout', function(username) {
 						u.debug('store -> toolbar :: logout ');				
-						apply(function() { $scope.cb_logout(); });
+						apply(function() { $scope.cbLogout(); });
 					}).on('change:boxes', function() {
 						u.debug('store -> toolbar :: change boxes ');
-						apply(function() { update_boxlist(); });
+						apply(function() { updateBoxlist(); });
 					});
 					checkLogin();
 				};
 
-				model.on('change:store', bind_store_listeners);				
+				model.on('change:store', bindStoreListeners);				
 				model.on('change:visible',function(b) {
 					apply(function() { $scope.visible = model.get('visible');  });
 				});
 
-				bind_store_listeners();
+				bindStoreListeners();
 								
 				// totally not necessary anymore: 
-				// var dom_el = $('<div></div>').addClass('toolbar').prependTo('body');			
-				// $(dom_el).append(templates.main.template);
+				// var domEl = $('<div></div>').addClass('toolbar').prependTo('body');			
+				// $(domEl).append(templates.main.template);
 				// var app = angular.module('WebboxToolbar', []);
 				// app.controller('ToolbarController', ToolbarController);
-				// angular.bootstrap(dom_el, ["WebboxToolbar"]);
+				// angular.bootstrap(domEl, ["WebboxToolbar"]);
 				return toolbar;
 			}
 		};

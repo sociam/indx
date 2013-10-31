@@ -9,10 +9,10 @@
 	<title>INDX Developer Tools</title>
   </head>
   <body ng-app="devtools" ng-controller="main"  ng-cloak>
-    <toolbar box-var='selected_box' username-var='selected_user'></toolbar>
+    <toolbar box-var='selectedBox' username-var='selectedUser'></toolbar>
 	<div>
 
-	  <div ng-show="selected_user && selected_box" class="foo row-fluid tabbable">
+	  <div ng-show="selectedUser && selectedBox" class="foo row-fluid tabbable">
 		<div class="foo span12">
 		  <ul class="nav nav-pills">
 			<li class="active"><a href="#status" data-toggle="tab">Status</a></li>
@@ -39,7 +39,7 @@
 							<div ng-if="doc.err">An error occurred: {{doc.err}}</div>
 						</td>
 						<td>
-							<button class="btn btn-primary btn-build" ng-disabled="doc.is_building" ng-click="doc.build()">
+							<button class="btn btn-primary btn-build" ng-disabled="doc.isBuilding" ng-click="doc.build()">
 								<span ng-if="doc.get('built')">Rebuild</span>
 								<span ng-if="!doc.get('built')">Build</span>
 							</button>
@@ -64,7 +64,7 @@
 							<div ng-if="!test.err && !test.get('built')">Tests have not been run.</div>
 							<div ng-if="test.err">Could not run tests</div>
 						</td>
-						<td><button class="btn btn-primary btn-run" ng-disabled="test.is_running" ng-click="test.run()">Run</button></td>
+						<td><button class="btn btn-primary btn-run" ng-disabled="test.isRunning" ng-click="test.run()">Run</button></td>
 					</tr>
 				</tbody>
 			  </table>
@@ -107,10 +107,10 @@
 		  </div>
 		</div>
 	  </div>
-	  <div ng-show="!selected_user">
+	  <div ng-show="!selectedUser">
 		<h2> please log in  </h2>
 	  </div>
-	  <div ng-show="selected_user && !selected_box">
+	  <div ng-show="selectedUser && !selectedBox">
 		<h2> please select a box  </h2>
 	  </div>
 	</div><!-- main -->

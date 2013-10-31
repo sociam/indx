@@ -18,7 +18,7 @@
 /// | update  | Collection | model has been restored |
 /// | created | Model | when a model has been created and saved |
 /// | add     | Collection | model has been added |
-/// | add_any | Collection | model is added to all_models (including before it has been saved) |
+/// | addAny | Collection | model is added to allModels (including before it has been saved) |
 /// | remove  | Model, Collection | model or model in collection has been removed |
 /// | reset   | Collection | collection has been reset |
 /// | change  | Model, Collection | model or model in collection has changed |
@@ -35,27 +35,27 @@ angular
 		/// for maintaining collections of objs.
 		///
 		/// It also provides states which may be useful in developing views -
-		/// a model may be being edited (`is_editing`), selected
-		/// (`is_selected`) or not yet created (`is_new`). While being edited
-		/// (or new), staged_attributes may be written to instead of
+		/// a model may be being edited (`isEditing`), selected
+		/// (`isSelected`) or has been created (`isCreated`). While being edited
+		/// (or new), stagedAttributes may be written to instead of
 		/// attributes such that changes may be undone by use of `restore`. To
-		/// save stage changes, use `save_staged`.
+		/// save stage changes, use `saveStaged`.
 		var Model = Obj.extend({
-			is_new: false,
-			is_editing: false,
-			is_selected: false,
+			isCreated: true,
+			isEditing: false,
+			isSelected: false,
 			/// @construct
 			/// Create the model
 			initialize: function () {
 				var that = this;
-				this._update_new_attributes();
+				this._updateNewAttributes();
 				this.on('change', function () {
-					that._update_new_attributes();
+					that._updateNewAttributes();
 				});
 			},
-			_update_new_attributes: function () {
-				if (!this.is_editing) {
-					this.staged_attributes = _.clone(this.attributes);
+			_updateNewAttributes: function () {
+				if (!this.isEditing) {
+					this.stagedAttributes = _.clone(this.attributes);
 				}
 			},
 			///
@@ -66,14 +66,14 @@ angular
 				var promise = $.Deferred(),
 					that = this;
 				//console.log('creating item');
-				this.box.get_obj(this.id)
-					.then(function (new_obj) {
+				this.box.getObj(this.id)
+					.then(function (newObj) {
 						console.log('new item');
-						new_obj.save(that.staged_attributes)
+						newObj.save(that.stagedAttributes)
 							.then(function () {
 								console.log('saved');
 								promise.resolve();
-								that.trigger('created', new_obj);
+								that.trigger('created', newObj);
 							});
 					});
 				return promise;
@@ -89,17 +89,19 @@ angular
 			},
 			/// @chain
 			///
-			/// Set the model to edit mode. In this mode, the staged_attributes
+			/// Set the model to edit mode. In this mode, the stagedAttributes
 			/// attribute may be written to to "stage" changes. To save these
-			/// changes, call `save_staged`, or call `restore` to cancel.
-			/// Check if a model is being edited using is_editing attribute.
+			/// changes, call `saveStaged`, or call `restore` to cancel.
+			/// Check if a model is being edited using isEditing attribute.
 			/// Triggers `edit`.
-			edit: function (_is_new) {
-				if (!this.is_editing) {
+			edit: function (_isCreated) {
+				if (!this.isEditing) {
 					//console.log('edit item', this);
-					this._update_new_attributes();
-					this.is_new = _is_new;
-					this.is_editing = true;
+					this._updateNewAttributes();
+					if (!_.isUndefined(_isCreated)) {
+						this.isCreated = _isCreated;
+					}
+					this.isEditing = true;
 					this.trigger('edit');
 				}
 				return this;
@@ -109,22 +111,22 @@ angular
 			///   (<{ code: 409 }> response) box already exists
 			///   (<{ code: -1, error: error obj }> response) other error
 			///
-			/// Take all staged changes in staged_attributes attribute and save
+			/// Take all staged changes in stagedAttributes attribute and save
 			/// them to the obj. If the obj has not been created yet it will
 			/// be created.
-			save_staged: function () {
+			saveStaged: function () {
 				var that = this;
 				//console.log('stage and save');
-				if (this.is_new) {
+				if (!this.isCreated) {
 					console.log('new, so create');
 					return this.create();
 				} else {
 					console.log('save')
-					return this.save(this.staged_attributes)
+					return this.save(this.stagedAttributes)
 						.then(function () {
 							//console.log('saved');
 							that.restore();
-							// u.safe_apply($scope); TODO
+							// u.safeApply($scope); TODO
 						});
 				}
 			},
@@ -137,7 +139,7 @@ angular
 			/// Make a new instance of the model. When the model is saved,
 			/// it will be put in the box as an obj and appended to the array.
 			save: function () {
-				if (this.is_new) {
+				if (!this.isCreated) {
 					console.warn('supressing save');
 				} else {
 					return Backbone.Model.prototype.save.apply(this, arguments);
@@ -146,7 +148,7 @@ angular
 			/// @chain
 			/// Switch off edit mode. Triggers `restore`.
 			restore: function () {
-				this.is_editing = false;
+				this.isEditing = false;
 				this.trigger('restore');
 				return this;
 			},
@@ -158,9 +160,9 @@ angular
 				options = options || {};
 				//console.log('select', selected);
 				selected = _.isBoolean(selected) ? selected : true;
-				if (this.is_selected !== selected) {
+				if (this.isSelected !== selected) {
 					//console.log('selecting', selected);
-					this.is_selected = selected;
+					this.isSelected = selected;
 					this.trigger('select', selected, options);
 				}
 			},
@@ -169,46 +171,46 @@ angular
 			///
 			/// Get the value of an attribute. Use this instead of `get` if
 			/// you don't want the value in an array.
-			get_attribute: function (key) {
+			getAttribute: function (key) {
 				var val = this.attributes[key];
-				return get_only_element(val);
+				return getOnlyElement(val);
 			},
 			/// @arg key <string|int>: Key of attribute
 			/// @return value
 			///
 			/// Get the value of a staged attribute in edit mode.
-			get_staged_attribute: function (key) {
-				if (!this.staged_attributes) { return; }
-				var val = this.staged_attributes[key];
-				return get_only_element(val);
+			getStagedAttribute: function (key) {
+				if (!this.stagedAttributes) { return; }
+				var val = this.stagedAttributes[key];
+				return getOnlyElement(val);
 			},
 			/// @arg key <string|int>: Key of attribute
 			/// @return value
 			///
 			/// Get a staged attribute in edit mode.
-			get_staged: function (key) {
-				if (!this.staged_attributes) { return; }
-				return this.staged_attributes[key];
+			getStaged: function (key) {
+				if (!this.stagedAttributes) { return; }
+				return this.stagedAttributes[key];
 			},
 			/// @arg attributes <{ key: value }>: object of key value pairs
 			/// @chain
 			///
 			/// Set a staged attribute in edit mode. May also be passed key,
 			/// value as arguments.
-			set_staged: function (attributes, val) {
+			setStaged: function (attributes, val) {
 				if (_.isObject(attributes)) {
 					_.each(attributes, function (val, key) {
-						that.set_staged(key, val);
+						that.setStaged(key, val);
 					});
 				} else {
 					var key = attributes;
-					this.staged_attributes[key] = val;
+					this.stagedAttributes[key] = val;
 				}
 				return this;
 			}
 		});
 
-		var get_only_element = function (arr) {
+		var getOnlyElement = function (arr) {
 			if (_.isArray(arr) && arr.length === 1) {
 				return _.first(arr);
 			}
@@ -232,13 +234,13 @@ angular
 						that.save();
 					})
 					.on('add remove reset', function () {
-						that._set_new_model(that._new_model);
+						that._setNewModel(that._newModel);
 					})
 					.on('change', function () {
 						that.sort();
 					})
 					.on('sort', function () {
-						that._set_new_model(that._new_model);
+						that._setNewModel(that._newModel);
 					})
 					.on('add reset', function (models) {
 						if (!models) {
@@ -250,19 +252,19 @@ angular
 							models = [models];
 						}
 						_.each(models, function (model) {
-							that.trigger('add_any', model);
+							that.trigger('addAny', model);
 						});
 					});
 				this.reset(models);
 				this.populate();
-				this._set_new_model();
+				this._setNewModel();
 			},
 			/// Attribute or function which returns the id to give to a new model
-			model_id: function () {
+			modelId: function () {
 				return Math.random();
 			},
 			/// Attribute or function which returns the options to give to a new model
-			model_option: function () {
+			modelOption: function () {
 				return {};
 			},
 			///
@@ -273,37 +275,37 @@ angular
 			///
 			/// Make a new instance of the model. When the model is saved,
 			/// it will be put in the box as an obj and appended to the array.
-			new_model: function (attributes, options) {
+			newModel: function (attributes, options) {
 				var that = this,
 					model,
-					id = _.result(this, 'model_id'),
-					soptions = _.result(this, 'model_options');
+					id = _.result(this, 'modelId'),
+					soptions = _.result(this, 'modelOptions');
 
 				attributes = _.extend({
 					id: id
 				}, attributes);
 				options = _.extend({}, soptions, options);
 				model = new Backbone.Model(attributes, options); // Leave casting to this.model until later
-				this._extend_model(model, options);
+				this._extendModel(model, options);
 
-				this._set_new_model(model);
+				this._setNewModel(model);
 
 				model
-					.edit(true)
+					.edit(false)
 					.set({
 						timestamp: now()
 					})
 					.on('created', function (model) {
 						//console.log('going for the add');
 						that.add(model);
-						that._set_new_model();
+						that._setNewModel();
 						if (options.select) {
 							model.select();
 						}
 						model.trigger('restore'); // TODO .restore()?
 					})
 					.on('restore', function () {
-						that._set_new_model();
+						that._setNewModel();
 						if (options.select) {
 							that.selected = undefined;
 						}
@@ -316,13 +318,13 @@ angular
 				}
 				return model;
 			},
-			_set_new_model: function (model) {
-				this._new_model = model;
+			_setNewModel: function (model) {
+				this._newModel = model;
 				if (model) {
-					this.trigger('add_any', model);
-					this.all_models = [model].concat(this.models);
+					this.trigger('addAny', model);
+					this.allModels = [model].concat(this.models);
 				} else {
-					this.all_models = this.models;
+					this.allModels = this.models;
 				}
 				this.filter();
 			},
@@ -334,7 +336,7 @@ angular
 				}
 				return Backbone.Collection.prototype.remove.apply(this, arguments);
 			},
-			_extend_model: function (model, options) {
+			_extendModel: function (model, options) {
 				var that = this,
 					prototype = this.model.prototype;
 				_.extend(model, prototype);
@@ -359,7 +361,7 @@ angular
 							that.trigger('select', model);
 						}
 						if (options.save !== false &&
-							(that.options.save_selected || that.options.sync_selected)) {
+							(that.options.saveSelected || that.options.syncSelected)) {
 							model.save({
 								selected: selected
 							});
@@ -393,12 +395,12 @@ angular
 						return;
 					}
 					//console.log('adding', model)
-					this._extend_model(model);
-					if (this.options.save_selected || this.options.sync_selected) {
+					this._extendModel(model);
+					if (this.options.saveSelected || this.options.syncSelected) {
 						if (pop(model.get('selected')) === true) {
 							model.select();
 						}
-						if (this.options.sync_selected) {
+						if (this.options.syncSelected) {
 							model.on('change:selected', function () {
 								model.select(pop(model.get('selected')));
 							});
@@ -420,15 +422,15 @@ angular
 			},
 			/// Update the collection with models in the array. This will happen automatically when the array changes.
 			populate: function () {
-				if (!this.obj || !this.options.array_key) {
+				if (!this.obj || !this.options.arrayKey) {
 					return;
 				}
 				var that = this,
 					obj = this.obj,
-					array_key = this.options.array_key,
-					arr = obj.get(array_key) || [];
+					arrayKey = this.options.arrayKey,
+					arr = obj.get(arrayKey) || [];
 				this.reset(arr);
-				obj.on('change:' + array_key, function (obj, arr) {
+				obj.on('change:' + arrayKey, function (obj, arr) {
 					//console.log('updating list -->', arguments);
 					that.add(arr, {
 						merge: true,
@@ -450,9 +452,9 @@ angular
 			save: function () {
 				var that = this,
 					promise = $.Deferred(),
-					array_key = that.options.array_key;
+					arrayKey = that.options.arrayKey;
 				//console.log('trying to save list = ', that.models);
-				this.obj.save(array_key, that.models)
+				this.obj.save(arrayKey, that.models)
 					.then(function () {
 						promise.resolve();
 					})
@@ -463,12 +465,12 @@ angular
 			},
 			filter: function (fn) {
 				if (fn) {
-					this._filter_fn = fn;
+					this._filterFn = fn;
 				}
-				if (this._filter_fn) {
-					this.filtered_models = _.filter(this.all_models, fn);
+				if (this._filterFn) {
+					this.filteredModels = _.filter(this.allModels, fn);
 				} else {
-					this.filtered_models = this.all_models;
+					this.filteredModels = this.allModels;
 				}
 				this.trigger('update', this);
 				return this;

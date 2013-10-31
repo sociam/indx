@@ -2,12 +2,12 @@ angular
 	.module('importer', ['ui','indx'])
 	.controller('main', function($scope, client, utils) {
 		var box, u = utils;
-		$scope.output = {format:'output_raw'};
+		$scope.output = {format:'outputRaw'};
 		$scope.cols = [];
-		$scope.$watch('selected_box + selected_user', function() {
-			if ($scope.selected_user && $scope.selected_box) {
-				console.log('getting box', $scope.selected_box);
-				client.store.get_box($scope.selected_box).then(function(b) {
+		$scope.$watch('selectedBox + selectedUser', function() {
+			if ($scope.selectedUser && $scope.selectedBox) {
+				console.log('getting box', $scope.selectedBox);
+				client.store.getBox($scope.selectedBox).then(function(b) {
 					box = b;
 				}).fail(function(e) { u.error('error ', e); });
 			}
@@ -27,7 +27,7 @@ angular
 			$('.dropzone').addClass('dragover');
 		};
 
-		var find_id_column = function() {
+		var findIdColumn = function() {
 			var cols = $scope.cols;
 			var selected = cols.filter(function(c) { return c.id; });
 			if (selected.length > 0) { return selected[0].name; }
@@ -36,92 +36,92 @@ angular
 			return cols[0].name;
 		};
 
-		var remap_columns = function(src) {
+		var remapColumns = function(src) {
 			var out = {}, cols = $scope.cols;
 			_(cols).map(function(c) { out[c.newname] = src[c.name];	});
 			return out;
 		};
 
-		var set_wait = function(b) {
-			u.safe_apply($scope, function() { $scope.wait = b;	});
+		var setWait = function(b) {
+			u.safeApply($scope, function() { $scope.wait = b;	});
 		};
 
-		$scope.do_save = function() {
-			set_wait(true);
-			return $scope.save().pipe(function (x) { set_wait(false); });
+		$scope.doSave = function() {
+			setWait(true);
+			return $scope.save().pipe(function (x) { setWait(false); });
 		};
 
 		$scope.err = function(e) {
-			u.safe_apply($scope, function() { $scope.error = e.toString(); });
+			u.safeApply($scope, function() { $scope.error = e.toString(); });
 		};
 
 		var filters = {
-			'output_gtime' : function(objs_by_id) {
+			'outputGtime' : function(objsById) {
 				// get the time series, segment into offsets
-				var objs = _(objs_by_id).values(),
+				var objs = _(objsById).values(),
 					t = function(o) { return Number(o[$scope.output.gtime.timecol.newname]); },
 					v = function(o) { return Number(o[$scope.output.gtime.valcol.newname]); },
 					channel = $scope.output.gtime.channel,
 					source = $scope.output.gtime.source,
 					units = $scope.output.gtime.units,
-					data_id = 'gtimeseries-'+source+"-"+channel;
+					dataId = 'gtimeseries-'+source+"-"+channel;
 
 				objs.sort(function(o1, o2) { return t(o1) - t(o2); });
-				var make_segment = function(start_obj, next_obj) {
-					if (next_obj) {
-						return { start : t(start_obj), channel: channel, source: source, values: [ v(start_obj), v(next_obj) ], delta : t(next_obj) - t(start_obj) };
+				var makeSegment = function(startObj, nextObj) {
+					if (nextObj) {
+						return { start : t(startObj), channel: channel, source: source, values: [ v(startObj), v(nextObj) ], delta : t(nextObj) - t(startObj) };
 					}
-					return { start : t(start_obj), channel: channel, source: source, values: [ v(start_obj) ], delta: 0};
+					return { start : t(startObj), channel: channel, source: source, values: [ v(startObj) ], delta: 0};
 				};
 
 				var segments = [];
-				var update_last_segment = function(obj) {
+				var updateLastSegment = function(obj) {
 					var segment = segments[segments.length-1];
 					segment.values.push(v(obj));
 				};
-				var last_delta = function() { return segments[segments.length-1].delta;	};
-				var last_time = function() { return segments[segments.length-1].start + ((segments[segments.length-1].values.length-1) * last_delta());	};
+				var lastDelta = function() { return segments[segments.length-1].delta;	};
+				var lastTime = function() { return segments[segments.length-1].start + ((segments[segments.length-1].values.length-1) * lastDelta());	};
 
 				if (objs.length > 0) {
-					segment = make_segment(objs[0], objs.length > 1 ? objs[1] : undefined);
+					segment = makeSegment(objs[0], objs.length > 1 ? objs[1] : undefined);
 					segments.push(segment);
 				}
 
 				for (var i = 2; i < objs.length; i++) {
 					// requires: at least 1 segment
 					var obj = objs[i];
-					console.log("i >> ", i, obj, t(obj), last_time(), segments[segments.length-1],  last_delta());
+					console.log("i >> ", i, obj, t(obj), lastTime(), segments[segments.length-1],  lastDelta());
 
-					if (t(obj) - last_time() !== last_delta()) {
+					if (t(obj) - lastTime() !== lastDelta()) {
 						// uh oh difference, make new segemnt
-						console.log('new segment! ', t(obj) - last_time(), last_delta());
-						segments.push(make_segment(objs[i], objs[++i]));
+						console.log('new segment! ', t(obj) - lastTime(), lastDelta());
+						segments.push(makeSegment(objs[i], objs[++i]));
 					} else {
-						update_last_segment(obj);
+						updateLastSegment(obj);
 					}
 				}
-				var segments_by_id = u.dict(segments.map(function(s) { return ["gtime-segment-" + [s.channel, s.source, s.start].join('-'), s]; }));
+				var segmentsById = u.dict(segments.map(function(s) { return ["gtime-segment-" + [s.channel, s.source, s.start].join('-'), s]; }));
 				var dsave = u.deferred(), d = u.deferred();
-				box.get_obj(_(segments_by_id).keys()).then(function(seg_models) {
-					var saved = seg_models.map(function(m) {
-						u.assert(segments_by_id[m.id], "something went wrong :(");
-						m.set(segments_by_id[m.id]);
+				box.getObj(_(segmentsById).keys()).then(function(segModels) {
+					var saved = segModels.map(function(m) {
+						u.assert(segmentsById[m.id], "something went wrong :(");
+						m.set(segmentsById[m.id]);
 						return m.save();
 					});
-					u.when(saved).then(function() { dsave.resolve(seg_models); });
+					u.when(saved).then(function() { dsave.resolve(segModels); });
 				});
 
-				dsave.then(function(seg_models) {
-					d.resolve(u.dict([[data_id, { source:source, channel:channel, units:units, segments:seg_models } ]]));
+				dsave.then(function(segModels) {
+					d.resolve(u.dict([[dataId, { source:source, channel:channel, units:units, segments:segModels } ]]));
 				});
 				return d.promise();
 			},
-			'output_gannotation': function(objs_by_id) {
+			'outputGannotation': function(objsById) {
 				var todate = function(n) {
 					if (isNaN(Number(n))) { return new Date(n); }
 					return new Date(Number(n));
 				};
-				return u.dresolve(u.dict(_(objs_by_id).map(function(obj,id) {
+				return u.dresolve(u.dict(_(objsById).map(function(obj,id) {
 					obj.type = 'gannotation';
 					obj.start =todate(obj[$scope.output.gannotate.startcol.newname]);
 					obj.end = todate(obj[$scope.output.gannotate.endcol.newname]);
@@ -133,36 +133,36 @@ angular
 			}
 		};
 
-		var output_filter = function(objs_by_id) {
+		var outputFilter = function(objsById) {
 			if (filters[$scope.output.format]) {
-				return filters[$scope.output.format](objs_by_id);
+				return filters[$scope.output.format](objsById);
 			}
 		};
 
 		$scope.save = function() {
 				try {
-				var id_col = find_id_column();
-				var by_id = {};
-				var obj_ids = $scope.rows.map(function(row) {
-					var id = row[id_col];
-					by_id[id] = remap_columns(row);
+				var idCol = findIdColumn();
+				var byId = {};
+				var objIds = $scope.rows.map(function(row) {
+					var id = row[idCol];
+					byId[id] = remapColumns(row);
 					return id;
 				}), dd = u.deferred();
 
 				var dosave = function() {
 					var d = u.deferred();
-					obj_ids = u.uniqstr(obj_ids).filter(function(x) { return x.trim().length > 0; });
-					console.log("asking for ids ", obj_ids);
-					box.get_obj(obj_ids).then(function(models) {
+					objIds = u.uniqstr(objIds).filter(function(x) { return x.trim().length > 0; });
+					console.log("asking for ids ", objIds);
+					box.getObj(objIds).then(function(models) {
 						var ds = models.map(function(m) {
-							if (by_id[m.id]) {
-								m.set(by_id[m.id]);
+							if (byId[m.id]) {
+								m.set(byId[m.id]);
 								console.log('saving ', m.attributes);
 								return m.save();
 							}
 						});
 						u.when(ds).then(function() {
-							u.safe_apply($scope, function() {
+							u.safeApply($scope, function() {
 								$scope.savedmodels = models;
 								delete $scope.rows;
 								delete $scope.cols;
@@ -174,11 +174,11 @@ angular
 					return d.promise();
 				};
 
-				var filtered = output_filter(by_id);
+				var filtered = outputFilter(byId);
 				if (filtered) {
-					filtered.then(function(by_id_filtered) {
-						by_id = by_id_filtered;
-						obj_ids = _(by_id).keys();
+					filtered.then(function(byIdFiltered) {
+						byId = byIdFiltered;
+						objIds = _(byId).keys();
 						dosave().then(dd.resolve).fail(dd.reject);
 					}).fail(function() { console.error('error during filtering ', e); });
 				} else {
@@ -189,7 +189,7 @@ angular
 		};
 
 		$scope.clearIDExcept = function(c) {
-			u.safe_apply($scope, function() {
+			u.safeApply($scope, function() {
 				$scope.cols.map(function(col) {
 					if (c === col) return;
 					col.id = false;
@@ -199,8 +199,8 @@ angular
 
 		var parseCSV = function(csvstring) {
 			var rows = d3.csv.parse(csvstring);
-			set_wait(false);
-			u.safe_apply($scope, function() {
+			setWait(false);
+			u.safeApply($scope, function() {
 				$scope.cols = _(rows[0]).keys().map(function(x) { return { name: x, newname: x }; });
 				$scope.rows = rows.concat([]);
 			});
@@ -210,8 +210,8 @@ angular
 			try {
 				evt.stopPropagation();
 				evt.preventDefault();
-				u.safe_apply($scope, function() { $scope.dropped = true; });
-				set_wait(true);
+				u.safeApply($scope, function() { $scope.dropped = true; });
+				setWait(true);
 				$('.dropzone').removeClass('dragover');
 				var files = evt.dataTransfer.files; // FileList object.
 				window.files = files;
@@ -228,7 +228,7 @@ angular
 		};
 
 		window.$s = $scope;
-		window.setSaving = function(b) { u.safe_apply($scope, function() { $scope.saving = b; }); };
+		window.setSaving = function(b) { u.safeApply($scope, function() { $scope.saving = b; }); };
 		// Setup the dnd listeners.
 		var dropZone = $('body')[0]; //  document.getElementById('dropzone');
 		dropZone.addEventListener('dragover', handleDragOver, false);

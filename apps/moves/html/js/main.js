@@ -6,7 +6,7 @@ window.s = indx.store;
 
 // Generic Objects to INDX box objects walker code
 // puts objects into the box and returns the object specified
-function objs_to_objs(id, prefix, obj, box){
+function objsToObjs(id, prefix, obj, box){
     // id is the is of the outer object
     // prefix is the prefix for all of the inner objects
     // obj is the actual JS object structure
@@ -14,29 +14,29 @@ function objs_to_objs(id, prefix, obj, box){
 
     // TODO optimise this so that it doesn't save a version per value!
 
-    box.get_obj(id).then(function(newobj){
+    box.getObj(id).then(function(newobj){
         $.each(obj, function(key, subobj){
             if (subobj instanceof Object){
-                var sub_id = prefix + "-" + u.uuid();
-                box.get_obj(sub_id).then(function(sub_obj_inbox){
-                    newobj.set(key, sub_obj_inbox); // put new subobject as the value of this property
+                var subId = prefix + "-" + u.uuid();
+                box.getObj(subId).then(function(subObjInbox){
+                    newobj.set(key, subObjInbox); // put new subobject as the value of this property
                     newobj.save();
-                    objs_to_objs(sub_id, prefix, subobj, box); // then recurse to deal with its properties
+                    objsToObjs(subId, prefix, subobj, box); // then recurse to deal with its properties
                 });
             } else if (subobj instanceof Array){
                 newobj.set(key, []);
                 newobj.save();
                 $.each(subobj, function(){
-                    var subobj_i = this;
-                    if (subobj_i instanceof Object){
-                        var sub_id = prefix + "-" + u.uuid();
-                        box.get_obj(sub_id_i).then(function(sub_obj_inbox){
-                            newobj.set(key, newobj.get(key).push(sub_obj_inbox)); // push new subobject into the array value of this property
+                    var subobjI = this;
+                    if (subobjI instanceof Object){
+                        var subId = prefix + "-" + u.uuid();
+                        box.getObj(subIdI).then(function(subObjInbox){
+                            newobj.set(key, newobj.get(key).push(subObjInbox)); // push new subobject into the array value of this property
                             newobj.save();
-                            objs_to_objs(sub_id, prefix, subobj_i, box); // then recurse to deal with its properties
+                            objsToObjs(subId, prefix, subobjI, box); // then recurse to deal with its properties
                         });
                     } else {
-                        newobj.set(key, newobj.get(key).push(subobj_i));
+                        newobj.set(key, newobj.get(key).push(subobjI));
                         newobj.save();
                     }
                 });
@@ -54,12 +54,12 @@ function objs_to_objs(id, prefix, obj, box){
 
 // MOVES code
 
-function movesdate_to_date(date){
+function movesdateToDate(date){
     date = date[0]+date[1]+date[2]+date[3]+"/"+date[4]+date[5]+"/"+date[6]+date[7];
     return new Date(date);
 }
 
-function date_to_movesdate(date){
+function dateToMovesdate(date){
     // convert a javascript date object into a date in moves api format (YYYYMMDD)
     var d = date.getDate();
     var m = date.getMonth() + 1;
@@ -67,51 +67,51 @@ function date_to_movesdate(date){
     return '' + y + '' + (m<=9 ? '0' + m : m) + '' + (d <= 9 ? '0' + d : d);
 }
 
-function moves_access(token){
+function movesAccess(token){
     // access moves, sync to box, update visuals
-    u.debug("moves_access, token: "+token);
+    u.debug("movesAccess, token: "+token);
     $("#step-btn").hide();
     $("#step-load").show();
     $("#step-text").html("Downloading data from moves...");
-    moves_box.get_obj("movesdata-status").then(function(status_obj){
-        if (status_obj.get("last_date") == undefined){
+    movesBox.getObj("movesdata-status").then(function(statusObj){
+        if (statusObj.get("lastDate") == undefined){
             // no last date in INDX, so we need to start from the beginning
-            moves_api_lookup(token, "/user/profile?").then(function(profile){
-                first_date = profile['profile']['firstDate'];
-                moves_get_from(token, movesdate_to_date(first_date));
+            movesApiLookup(token, "/user/profile?").then(function(profile){
+                firstDate = profile['profile']['firstDate'];
+                movesGetFrom(token, movesdateToDate(firstDate));
             });
         } else {
-            last_date = status_obj.get("last_date")[0];
-            from_date = movesdate_to_date(last_date);
-            from_date.setDate(from_date.getDate() + 1); // start from the next day
-            moves_get_from(token, from_date);
+            lastDate = statusObj.get("lastDate")[0];
+            fromDate = movesdateToDate(lastDate);
+            fromDate.setDate(fromDate.getDate() + 1); // start from the next day
+            movesGetFrom(token, fromDate);
         }
     });
 }
 
-function moves_get_from(token, nextdate){
+function movesGetFrom(token, nextdate){
     // get data from this date (js date object) inclusive, onwards up to yesterday
-    u.debug("moves_get_from, nextdate: " + nextdate);
+    u.debug("movesGetFrom, nextdate: " + nextdate);
     var today = new Date();
     today.setHours(0); today.setMinutes(0); today.setSeconds(0); // midnight
 
-    u.debug("moves_get_from, " + nextdate.getTime() + " < " +today.getTime());
+    u.debug("movesGetFrom, " + nextdate.getTime() + " < " +today.getTime());
     while (nextdate.getTime() < today.getTime()){
-        var thisdate = date_to_movesdate(nextdate);
-        moves_api_lookup(token, "/user/storyline/daily/"+thisdate+"?trackPoints=true&").then(function(storyline){
+        var thisdate = dateToMovesdate(nextdate);
+        movesApiLookup(token, "/user/storyline/daily/"+thisdate+"?trackPoints=true&").then(function(storyline){
             $("#step-text").html("Downloading data from moves for "+thisdate+"...");
             // add to box
             $.each(storyline, function(){
                 var story = this;
                 // TODO step through the story and add to the box.
                 console.debug("story ", story);
-                objs_to_objs("moves-story-"+thisdate,"moves-story-"+thisdate,story,moves_box);
+                objsToObjs("moves-story-"+thisdate,"moves-story-"+thisdate,story,movesBox);
             });
 
             // add lastdate to box
-            moves_box.get_obj("movesdata-status").then(function(status_obj){
-                status_obj.set("last_date", thisdate);
-                status_obj.save();
+            movesBox.getObj("movesdata-status").then(function(statusObj){
+                statusObj.set("lastDate", thisdate);
+                statusObj.save();
             });
         });
         nextdate.setDate(nextdate.getDate() + 1); // set the next day to check
@@ -120,11 +120,11 @@ function moves_get_from(token, nextdate){
     $("#step-load").hide();
 }
 
-function moves_api_lookup(token, suburl) {
+function movesApiLookup(token, suburl) {
     // ask for a suburl for a token, it will remade as follows, and proxied through the INDX server:
-    // "https://api.moves-app.com/api/v1" + suburl + "access_token=" + token
+    // "https://api.moves-app.com/api/v1" + suburl + "accessToken=" + token
     // this function returns a promise
-    u.debug("moves_api_lookup suburl: " + suburl);
+    u.debug("movesApiLookup suburl: " + suburl);
     var d = u.deferred();
     $.ajax({
         url: "api",
@@ -138,8 +138,8 @@ function moves_api_lookup(token, suburl) {
     return d.promise();
 }
 
-function moves_get_token(code){
-    u.debug("moves_get_token, code: " + code);
+function movesGetToken(code){
+    u.debug("movesGetToken, code: " + code);
 
     $("#step-load").show();
     $.ajax({
@@ -148,32 +148,32 @@ function moves_get_token(code){
         type: "GET",
         dataType: "json",
         success: function(data, status, xhr){
-            var token = data.response.access_token;
-            var user_id = data.response.user_id;
-            var refresh_token = data.response.refresh_token;
+            var token = data.response.accessToken;
+            var userId = data.response.userId;
+            var refreshToken = data.response.refreshToken;
             $("#step-load").hide();
-            moves_box.get_obj("movesdata-status").then(function(status_obj){
-                status_obj.set("token", token);
-                status_obj.set("refresh_token", refresh_token);
-                status_obj.set("user_id", user_id);
-                status_obj.save();
-                moves_access(token);
+            movesBox.getObj("movesdata-status").then(function(statusObj){
+                statusObj.set("token", token);
+                statusObj.set("refreshToken", refreshToken);
+                statusObj.set("userId", userId);
+                statusObj.save();
+                movesAccess(token);
             });
         }
     });
 }
 
-function moves_init(){
-    u.debug("moves_init");
+function movesInit(){
+    u.debug("movesInit");
     // called when a box is selected by a user
     // start the process of getting the data
     
     // get the 'movesdata-status' object
-    if ("moves_box" in window){
-        u.debug("moves_init, moves_box present:",moves_box);
-        moves_box.get_obj("movesdata-status").then(function(status_obj){
-            u.debug("got movesdata-status object",status_obj);
-            if (status_obj.get("token") == undefined){
+    if ("movesBox" in window){
+        u.debug("movesInit, movesBox present:",movesBox);
+        movesBox.getObj("movesdata-status").then(function(statusObj){
+            u.debug("got movesdata-status object",statusObj);
+            if (statusObj.get("token") == undefined){
                 u.debug("moves access token not present");
                 var vars = $.deparam.fragment(); // get the data from the server
                 window.location.replace("#"); // remove the data so that we dont accidentally re-trigger this code
@@ -183,7 +183,7 @@ function moves_init(){
                     $("#step-btn").hide();
                     $("#step-text").html("Authorisation successful, now requesting access, wait a moment.");
 
-                    moves_get_token(vars['code']);
+                    movesGetToken(vars['code']);
                 } else {
                     $("#step-div").show(); // make sure the initial step div is shown
 
@@ -198,12 +198,12 @@ function moves_init(){
                 u.debug("moved status code present.");
                 // we have an access code already, so no need to re-auth
                 // now we get the token
-                moves_access(status_obj.get("token")[0]);
+                movesAccess(statusObj.get("token")[0]);
             }
         });
     } else {
         // the user will login in a bit.
-        // ng-show handles showing the right pane, and then moves_init will be called again
+        // ng-show handles showing the right pane, and then movesInit will be called again
     }
 }
 
@@ -220,18 +220,18 @@ angular
                 u.debug("ready to get box", b);
                 u.debug("login done, looking up box");
                 u.debug("getting box", b);
-                client.store.get_box(b).then(function(box) {
+                client.store.getBox(b).then(function(box) {
                     u.debug("loaded box", b);
-                    window.moves_box = box;
-                    moves_init();
+                    window.movesBox = box;
+                    movesInit();
                 });
             }
         }
 
 
         window.theclient = client;
-        if ($scope.selected_box) { init($scope.selected_box); }
-        $scope.$watch('selected_box', init);
+        if ($scope.selectedBox) { init($scope.selectedBox); }
+        $scope.$watch('selectedBox', init);
     });
 
 

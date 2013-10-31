@@ -1,30 +1,30 @@
-<div class="undo" ng-show="todo.just_completed">
+<div class="undo" ng-show="todo.justCompleted">
 	<a href="#" ng-click="todo.undo()"><i class="icon-undo"></i> Undo</a>
 </div>
 <div class="todo-body">
 	<div class="todo-hover-top"></div>
-	<div class="todo-urgency" ng-class="'urgency-' + ((todo.is_editing || todo.is_dragging) && todo.get_staged_attribute('urgency') || todo.get_attribute('urgency'))">
-		<div class="todo-urgency-arrows" ng-show="todo.is_editing">
-			<div class="todo-urgency-up" ng-click="todo.set_urgency(+1)"><div class="arrow-head"></div></div>
-			<div class="todo-urgency-down" ng-click="todo.set_urgency(-1)"><div class="arrow-head"></div></div>
+	<div class="todo-urgency" ng-class="'urgency-' + ((todo.isEditing || todo.isDragging) && todo.getStagedAttribute('urgency') || todo.getAttribute('urgency'))">
+		<div class="todo-urgency-arrows" ng-show="todo.isEditing">
+			<div class="todo-urgency-up" ng-click="todo.setUrgency(+1)"><div class="arrow-head"></div></div>
+			<div class="todo-urgency-down" ng-click="todo.setUrgency(-1)"><div class="arrow-head"></div></div>
 		</div>
 	</div>
 	<div class="todo-handle" draggable-handle><div class="drag-dots"><i class="dot"></i><i class="dot"></i><i class="dot"></i></div></div>
-	<div class="todo-checkbox" ng-show="!todo.is_editing" ng-click="todo.toggle()">
+	<div class="todo-checkbox" ng-show="!todo.isEditing" ng-click="todo.toggle()">
 		<span class="icon icon-ok tick"></span>
 	</div>
 	<div class="todo-title">
-		<span ng-show="todo.is_editing">{{ todo.get_staged_attribute('title') }}</span>
-		<span ng-show="!todo.is_editing">{{ todo.get_attribute('title') }}</span>
+		<span ng-show="todo.isEditing">{{ todo.getStagedAttribute('title') }}</span>
+		<span ng-show="!todo.isEditing">{{ todo.getAttribute('title') }}</span>
 		&nbsp;
 		<textarea
 			placeholder="todo..."
-			focus-me="todo.is_editing"
+			focus-me="todo.isEditing"
 			selectionStart="{{todo.cursorPos}}"
 			selectionEnd="{{todo.cursorPos}}"
-			ng-model="todo.staged_attributes.title"
+			ng-model="todo.stagedAttributes.title"
 			ng-focus="todo.edit()"
-			ng-change="todo.check_newline()"
+			ng-change="todo.checkNewline()"
 			ng-trim="false">
 		</textarea>
 	</div>
