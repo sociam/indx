@@ -4,6 +4,7 @@ from Crypto import Random
 from Crypto.Cipher import AES
 from Crypto.Hash import SHA256
 import base64
+import logging
 
 BS = 16
 pad = lambda s: s + (BS - len(s) % BS) * chr(BS - len(s) % BS) 
@@ -51,6 +52,8 @@ import Crypto.PublicKey.RSA
 # Use a key size of 3072, recommended from http://en.wikipedia.org/wiki/Key_size / http://www.emc.com/emc-plus/rsa-labs/standards-initiatives/key-size.htm
 def generate_rsa_keypair(size):
     """ Generate a new public and private key pair (strings) of specified size. """
+    logging.debug("Generating a new {0}-bit RSA key, this might take a second...".format(size))
+
     PRNG = Crypto.Random.OSRNG.posix.new().read
     key = Crypto.PublicKey.RSA.generate(size, PRNG)
 

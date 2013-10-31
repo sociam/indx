@@ -323,6 +323,35 @@ class IndxDatabase:
         return return_d
 
 
+    def missing_key_check(self):
+        """ Check for missing private/public key pairs for any users. """
+        logging.debug("indx_pg2 missing_key_check")
+        return_d = Deferred()
+
+        def connected(conn):
+
+            def check_cb(rows):
+
+                def do_next_row(empty):
+                    
+                    if len(rows) < 1:
+                        return_d.callback(True)
+                        return
+
+                    new_username = rows.pop(0)[0]
+                    user = IndxUser(self, new_username)
+                    user.generate_encryption_keys().addCallbacks(do_next_row, return_d.errback)
+
+                do_next_row(None)
+
+            d = conn.runQuery("SELECT username FROM tbl_users WHERE public_key_rsa IS NULL or private_key_rsa_env IS NULL", [])
+            d.addCallbacks(check_cb, return_d.errback)
+            return
+
+        self.connect_indx_db().addCallbacks(connected, return_d.errback)
+        return return_d
+
+
     def create_box(self, box_name, db_owner, db_owner_pass):
         """ Create a new database. """
         logging.debug("indx_pg2 create_box")

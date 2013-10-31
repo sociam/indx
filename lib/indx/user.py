@@ -20,7 +20,7 @@ import json
 from twisted.internet.defer import Deferred
 from hashing_passwords import make_hash, check_hash
 from twisted.python.failure import Failure
-from indx.crypto import generate_rsa_keypair
+from indx.crypto import generate_rsa_keypair, load_key
 
 class IndxUser:
     """ INDX User handler. """
@@ -31,6 +31,37 @@ class IndxUser:
         logging.debug("IndxUser, username: {0}".format(username))
         self.db = db
         self.username = username
+
+    def get_keys(self):
+        """ Get the user's key pair from the database. """
+        logging.debug("IndxUser, get_keys for user {0}".format(self.username))
+        return_d = Deferred()
+
+        # XXX TODO FIXME decrypt the private key
+
+        def connected_cb(conn):
+            logging.debug("IndxUser, get_keys, connected_cb")
+
+            check_q = "SELECT public_key_rsa, private_key_rsa_env FROM tbl_users WHERE username = %s"
+            check_p = [self.username]
+
+            def check_cb(rows):
+                logging.debug("IndxUser, get_keys, connected_cb, check_cb")
+                if len(rows) < 1:
+                    return_d.callback(None)
+                    return
+                
+                try:
+                    return_d.callback({"public": load_key(rows[0][0]), "private": load_key(rows[0][1])})
+                except Exception as e:
+                    logging.error("IndxUser, get_keys, Exception loading keys from database: {0}".format(e))
+                    return_d.errback(Failure(e))
+
+            conn.runQuery(check_q, check_p).addCallbacks(check_cb, return_d.errback)
+
+        self.db.connect_indx_db().addCallbacks(connected_cb, return_d.errback)
+        return return_d
+
 
     def generate_encryption_keys(self, overwrite = False):
         """ Generate and save encryption keys for this user.
