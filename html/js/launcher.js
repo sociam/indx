@@ -1,5 +1,8 @@
 
+
+
 (function() {
+
 	angular.module('launcher', ['indx'])
 		.config(['$routeProvider', function($routeProvider) {
 			$routeProvider
@@ -38,28 +41,94 @@
 			replace:true
 		};
 	}).controller('Login',function($scope, $location, client, backbone, utils) {
+		$scope.isLocalUser = function(u) { return u && (u.type == 'local_owner' || u.type == 'local_user'); };
+		$scope.isOpenIDUser = function(u) { return u.type == 'openid'; };
 		console.log('route::login');
 		var u = utils, store = client.store, sa = function(f) { return utils.safeApply($scope,f);};
-		$scope.user = {username:undefined, password:undefined};
-		$scope.selectUser = function(user) { $scope.user.username = user; };
-		$scope.backToLogin = function() {	delete $scope.user.username; delete $scope.user.password;};
+		$scope.selected = {};
+		$scope.selectUser = function(user) { 
+			console.log('selected user ', user);
+			$scope.selected.user = user; 
+			if ($scope.isOpenIDUser(user)) { $scope.doSubmit(); }
+		};
+		$scope.setOpenidError= function(err) { $scope.openidError = err; };
+		$scope.openidValidate = function(id) {
+			if (u.isValidURL(id)) { $scope.setOpenidError(''); return true; }
+			$scope.setOpenidError(id && id.length > 0 ? 'Please provide an OpenID URL' : '');
+			return false;
+		};
+		$scope.openidSelectUser = function(openidUrl) {
+			$scope.selectUser({type:'openid', '@id':openidUrl})
+		};
+		$scope.backToLogin = function() {	delete $scope.selected.user; delete $scope.selected.password;};
 		// this gets called when the form is submitted
 		$scope.doSubmit = function() {
-			console.log('logging in ', $scope.user.username, $scope.user.password);
-			store.login($scope.user.username, $scope.user.password).then(function() {
-				u.debug('login okay!');
-				// sa($scope.backToLogin);
-				sa(function() { $location.path('/apps'); });
-			}).fail(function() {
-				sa(function() {
-					delete $scope.user.password;
-					u.shake($($scope.el).find('input:password').parents('.password-dialog'));
+			console.log('logging in ', $scope.selected.user, $scope.selected.password);
+			var user = $scope.selected.user, p = $scope.selected.password;
+			if ($scope.isLocalUser(user)) {
+				return store.login($scope.selected.user["@id"], $scope.selected.password).then(function() {
+					sa(function() { $location.path('/apps'); });
+				}).fail(function() {
+					sa(function() {
+						delete $scope.selected.password;
+						u.shake($($scope.el).find('input:password').parents('.password-dialog'));
+					});
 				});
-			});
+			}
+			if ($scope.isOpenIDUser(user)) {
+				console.log('openid user');
+				return store.loginOpenid(user["@id"]).then(function() {
+					console.log('launcherjs >> openid_login success continuation ---------------- ');
+					sa(function() { 
+						delete $scope.openidError; 
+						$location.path('/apps'); 
+					});
+				}).fail(function(error) {
+					console.log('launcherjs >> openid_login failure continuation ---------------- ', error);
+					sa(function() {
+						$scope.openidError = error.message;
+						delete $scope.selected.password;
+						delete $scope.selected.user;
+						u.shake($($scope.el).find('input:password').parents('.special'));
+					});
+				});
+			}
+			throw new Error("No support for openid login yet -- hold your horsies");
 		};
 		store.getUserList()
-			.then(function(result) {  sa(function() { $scope.users = result; }); })
-			.fail(function(err) { u.error(err); });
+			.then(function(users) {
+				sa(function() {
+					$scope.users = users.map(function(x) {
+						if (_.isObject(x) && x["@id"]) { // latest server
+							if (x.userMetadata) {
+								if (typeof(x.userMetadata) === 'string') {
+									try {
+										x.userMetadata = JSON.parse(x.userMetadata); 
+									} catch(e) { console.error('error unpacking user metadata for ', x, ' skipping '); }
+								}
+								if (_.isObject(x.userMetadata)) {
+									_(x).extend(x.userMetadata);
+								}
+							}
+							console.log(" user is >> ", x);
+							if (!x.name) { 
+								var id = x["@id"];
+								if (id.indexOf('http') == 0) {
+									id = id.split('/');
+									id = id[id.length-1];
+								}
+								x.name = id;
+							}
+							return x;
+						}
+						if (_.isString(x)) { // old server
+							return {"@id": x, "name": x, "type":'local'};
+						}
+						console.error('unknown user type', x);
+						throw new Error("Unknown user type ", x);
+					});
+				});
+			}).fail(function(err) { u.error(err); });
 	}).controller('AppsList', function($scope, $location, client, utils) {
 		console.log('hello apps list');
 		var u = utils, store = client.store, sa = function(f) { return utils.safeApply($scope,f); };

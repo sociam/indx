@@ -6,11 +6,11 @@
 					<div ng-repeat="i in u.range(12)" class="bar{{ i + 1 }}"></div>
 				</div>
 			</div>
-			<button data-toggle="modal" href="#login-dialog" ui-if-"!isLoggedIn()" class="btn btn-primary login-btn">	log in </button>
-			<button data-toggle="modal" href="#logout-dialog" ui-if="isLoggedIn()" class="btn btn-primary login-btn"> 
-				{{ username }} <span ng-bind-html-unsafe="usericon"></span>
+			<button data-toggle="modal" href="#login-dialog" ng-show="!isLoggedIn()" class="btn btn-primary login-btn">	<label>log in</label> </button>
+			<button data-toggle="modal" href="#logout-dialog" ng-show="isLoggedIn()" class="btn btn-primary login-btn">
+				<label>{{ user.name }}</label><div class='usericon' ng-bind-html-unsafe="usericon"></div>
 			</button>
-			<div ui-if="isLoggedIn()"  class="btn-group box-selector">
+			<div ng-show="isLoggedIn()"  class="btn-group box-selector">
 				<button type="button" class="btn btn-default dropdown-toggle selected-box" ng-bind-html-unsafe="(box || 'select a box') + ' &nbsp; ' + caret" data-toggle="dropdown"></button>  
 				<ul class="dropdown-menu boxlist" role='menu'>
 					<li ng-repeat="boxid in boxlist" ng-click="cbBoxSelected(boxid)" >{{ boxid }}</li>
@@ -62,7 +62,7 @@
 					LOG OUT
 				</div>
 				<div class="modal-body">
-					<div class="logout-msg">Log out {{ username }}?</div>
+					<div class="logout-msg">Log out {{ user.name }}?</div>
 					<div class='buttons'>
 						<a class="btn" data-dismiss="modal" aria-hidden="true">Cancel</a>
 						<input type='submit' id="logout-ok" class="btn btn-primary" data-dismiss="modal" ng-click="doLogout()" autofocus value="Yes, log out"></button>

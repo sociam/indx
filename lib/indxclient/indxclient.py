@@ -276,6 +276,14 @@ class IndxClient:
         url = "{0}admin/list_boxes".format(self.address)
         return self._get(url)
 
+    def create_user(self, username, password):
+        """ Create a new user. """
+        self._debug("Called API: create_user with username: {0}".format(username))
+
+        url = "{0}admin/create_user".format(self.address)
+        values = {"username": username, "password": password}
+        return self._post(url, values)
+
     @require_token
     def get_object_ids(self):
         """ Get the IDs of every object in this box. """
@@ -355,6 +363,26 @@ class IndxClient:
 
         url = "{0}/query".format(self.base)
         return self._get(url, {'q': query})
+
+    @require_token
+    def set_acl(self, acl, target_username):
+        """ Set an ACL on a database for a target username.
+
+            acl -- The ACL to set, must have "read", "write" and "control" fields, all boolean, e.g. {"read": true, "write": true, "control": false}
+            target_username -- username of the user whose access will be set/change
+        """
+        self._debug("Called API: set_acl with acl: {0}, target_username: {1}".format(acl, target_username))
+
+        url = "{0}/set_acl".format(self.base)
+        return self._get(url, {'acl': acl, 'target_username': target_username})
+
+    @require_token
+    def get_acls(self):
+        """ Get ACLs for a database (requires "control" permissions)"""
+        self._debug("Called API: get_acls")
+
+        url = "{0}/get_acls".format(self.base)
+        return self._get(url)
 
     @require_token
     def diff(self, return_objs, from_version, to_version = None):

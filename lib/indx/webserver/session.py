@@ -21,6 +21,8 @@ class ISession(Interface):
     is_authenticated = Attribute("A bool which registers if a user has successfully authenticated.")
     username = Attribute("Username of the authenticated user.")
     password = Attribute("Password of the authenticated user.")    
+    openid_session = Attribute("OpenID Session")
+    openid_redirect = Attribute("OpenID Redirect URL")
 
 class INDXSession(object):
     """ Stored per user session to record if the user is authenticated etc. """
@@ -32,6 +34,7 @@ class INDXSession(object):
         self.password = None
         self.usertype = None
         self.openid_session = {}
+        self.openid_redirect = None
 
     def setAuthenticated(self, val):
         self.is_authenticated = val
@@ -47,4 +50,10 @@ class INDXSession(object):
 
     def get_openid_session(self):
         return self.openid_session
+
+    # redirects for openid authentication
+    def set_openid_redirect(self, redirect):
+        self.openid_redirect = redirect
+    def get_openid_redirect(self):
+        return self.openid_redirect
 

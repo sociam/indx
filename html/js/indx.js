@@ -54,6 +54,11 @@ angular
 			auth: function(token) { return JSON.stringify({action:'auth', token:token}); },
 			diff: function(token) { return JSON.stringify({action:'diff', operation:"start"}); }
 		};
+
+		var _makeLocalUser = function(name) {
+			return {"@id":name,user_type:'local',username:name,name:name};
+		};
+
 		var serializeObj = function(obj) {
 			var uri = obj.id;
 			var outObj = {};
@@ -313,8 +318,38 @@ angular
 				return files.get(fid);
 			},
 			_setUpWebsocket:function() {
-				var this_ = this, serverHost = this.store.get('serverHost');
+				var this_ = this, serverHost = this.store.get('server_host'), store = this.store;
 				if (! this.getUseWebsockets() ) { return; }
+
+				var reconnect = function() {
+					this_.getToken().then(function() {
+						// new token will trigger a refreshing/reconnection
+						return;
+					}).fail(function(errorCode) {
+						// connection failure, server's still down.
+						if (errorCode.status === 0) {
+							console.error('connection failure, server still down');
+							return setTimeout(reconnect, 1000);
+						}
+						if (errorCode.status === 404) {
+							console.info('server back up! tokens are expired.');
+							// tokens aren't valid any more, let's try to reconnect.
+							if (store.get('user_type') === 'openid') {
+								console.info('Reconnecting using OpenID >> ');
+								store.reconnect().then(function() {
+									this_.getToken()
+										.then(function() {	return;	})
+										.fail(function() { u.error('failed to get a token this time, give up.');});
+								}).fail(function() { 
+									u.error('failed to failed to re-authenticate, give up.');
+								});
+							} else {
+								console.error('Local user, cannot reauthenitcate');
+								store.trigger('ask-user-to-log-in');
+							}
+						}
+					});
+				};
 				this.on('new-token', function(token) {
 					var ws = this_._ws;
 					if (ws) {
@@ -324,10 +359,10 @@ angular
 						} catch(e) { u.error(); }
 					}
 					var protocol = (document.location.protocol === 'https:') ? 'wss:/' : 'ws:/';
+
 					var wsUrl = [protocol,serverHost,'ws'].join('/');
 					ws = new WebSocket(wsUrl);
-/// @ignore
-/// dhjo
+					/// @ignore
 					ws.onmessage = function(evt) {
 						u.debug('websocket :: incoming a message ', evt.data.toString().substring(0,190));
 						var pdata = JSON.parse(evt.data);
@@ -340,9 +375,8 @@ angular
 								});
 						}
 					};
-					/// @arg {blah} - sfd
-					/// fdsafds
 					ws.onopen = function() {
+						u.debug("!!!!!!!!!!!!!!!! websocket open >>>>>>>>> ");
 						var data = WS_MESSAGES_SEND.auth(this_.get('token'));
 						ws.send(data);
 						data = WS_MESSAGES_SEND.diff();
@@ -353,16 +387,8 @@ angular
 					/// @ignore
 					ws.onclose = function(evt) {
 						// what do we do now?!
-						u.error('websocket closed -- ');
-						// TODO
-						var interval;
-						interval = setInterval(function() {
-							this_.store.reconnect().then(function() {
-								this_.getToken().then(function() {
-									clearInterval(interval);
-								});
-							});
-						},1000);
+						u.error("!!!!!!!!!!!!!!!! websocket closed -- lost connection to server");
+						reconnect();
 					};
 				});
 			},
@@ -493,6 +519,37 @@ angular
 							return model;
 						}));
 					}).fail(function(err) { error(err); d.reject(err); });
+				return d.promise();
+			},
+			///@arg {string} user : ID of user to give access to
+			///@arg {{read:{boolean}, write:{boolean}, owner:{boolean}, control: false} : Access control list for letting the specified user read, write, own and change ta box
+			///Sets the ACL for this whole box. The acl object takes keys 'read', 'write', 'owner', and 'control'
+			///each which take a boolean value
+			///TODO: object-level access control
+			///@then() : Success continuation when this has been set
+			///@fail({error object}) : Failure continuation
+			setACL:function(user,acl) {
+				var validKeys = ['read','write','owner','control'];
+				u.assert(acl && _.isObject(acl), "acl must be an object with the following keys " + validKeys.join(', '));
+				_(acl).map(function(v,k) { u.assert(validKeys.indexOf(k) >= 0, "type " + k + " is not a valid acl type"); });
+				var perms = {read:false,write:false,owner:false,control:false};
+				_(perms).extend(acl);
+				var params = {acl:JSON.stringify(perms),target_username:user};
+				return this._ajax("GET", [this.getId(), 'set_acl'].join('/'), params);
+			},
+			///@arg {string} user : ID of user to get access control list for
+			///Gets the access control list of user, if specified, for this box or the box's entire ACL listings
+			///@then({userid: { read:{boolean},write:{boolean},owner:{boolean},control:{boolean}}) : Access control listings for this box organised by user
+			///@fail({error object}) : Failure 
+			getACL:function() {
+				var d = u.deferred();
+				this._ajax("GET", [this.getId(), 'get_acls'].join('/')).then(function(response) {
+					if (response.code == 200) {
+						return d.resolve(u.dict(response.data.map(function(x) { return [x.username, x.acl]; })));
+						// return d.resolve(response.data); 
+					}
+					d.reject(d.message);
+				}).fail(d.reject);
 				return d.promise();
 			},
 			// handles updates from websockets the server
@@ -895,10 +952,9 @@ angular
 				}
 				return u.dresolve(b);
 			},
-
-
-			/// @arg {string|number} boxid - the id for the box
-			///
+			/// @arg <string|number> boxid: the id for the box
+			/// Creates a box with id boxid.  The user should have appropriate permissions
+			/// to create a box first.
 			/// @then({Box} the box)
 			/// @fail({{ code: 409 }} response) - box already exists
 			/// @fail({{ code: -1, error: errorObj }} response) - other error
@@ -913,26 +969,116 @@ angular
 				u.debug('creating ', boxid);
 				return c.save().pipe(function() { return this_.getBox(boxid); });
 			},
+			/// Called by apps to see if we are currently authenticated; this is the preferred
+			/// method to do so over login()/loginOpenid(), which potentially destroys/resets cookies.
+			/// Instead, this method interrogates the server, which implicitly passes cookies if we have them
+			/// and is verified against the server's set.  If we do have cookies, the server essentially tells
+			/// us we're still logged in, so we can proceed from there....
+			/// @then({is_authenticated:true/false}) - Returns true/false depending on auth status
+			/// @fail(<String>) Error raised during process
 			checkLogin:function() {
-				// checks whether you can connect to the server and who is logged in.
-				// returns a deferred that gets passed an argument
-				// { code:200 (server is okay),  isAuthenticated:true/false,  user:<username>  }
-				return this._ajax('GET', 'auth/whoami');
+				// TODO: fix this to set the credentials if we don't know who we are
+				var d = u.deferred(), this_ = this;
+				this._ajax('GET', 'auth/whoami').then(function(response) {
+					if (response.is_authenticated) {
+						// make user
+						console.log('whoami response ', response);
+						var user = {'@id': response.username, type:response.type, name:response.username };
+						if (response.user_metadata) { _(user).extend(JSON.parse(response.user_metadata)); }
+						u.assert(response.username, "No username returned from whoami, server problem");
+						u.assert(response.type, "No user_type returned from whoami, server problem");
+						this_.set({username:response.username, user_type:response.type});
+						this_.trigger('login', user);
+						var toReturn = _({}).chain().extend(response).extend(user).value();
+						return d.resolve(toReturn);
+					}
+					d.resolve(response);
+				}).fail(function() { d.reject.apply(d,arguments); });
+				return d.promise();
 			},
-			// todo: change to _
+			/// returns info of current logged in user
+			/// @then(<Obj>) - All currently known info about the user
+			/// @fail(<String>) Error raised during process
 			getInfo:function() { return this._ajax('GET', 'admin/info'); },
+			/// @arg <string> openid: The OpenID to log in as
+			/// This method initiates a redirect of the current page
+			/// @then(<Obj>) - Continuation with openid success/fail
+			/// @fail(<String>) Error raised during process
+			loginOpenid : function(openid) {
+				var this_ = this, d = u.deferred(), popup, intPopupChecker;
+				window.__indxOpenidContinuation = function(response) {
+					console.info("openid continuation >> ", response);
+					var getparam = function(pname) { return u.getParameterByName(pname, '?'+response); };
+					var username = getparam('username');
+					if (username) {
+						var userType = getparam('username_type'),
+							user = {'@id':username, type:userType, name:username},
+							userMetadata = getparam('user_metadata');
+						if (userMetadata) {
+							u.log('userMetadata', userMetadata, typeof userMetadata);
+							try {
+								userMetadata = JSON.parse(userMetadata);
+								_(user).extend(userMetadata);
+							} catch(e) { console.error('error parsing json, no biggie', userMetadata);	}
+						}
+						u.log('logging in user >>', user);
+						this_.trigger('login', user);
+						this_.set({user_type:'openid',username:openid});
+						console.log('successful login! setting user type OPENID, id', this_.get('user_type'), " - ", this_.get('username'));
+						return d.resolve(user);
+					}
+					d.reject({message:'OpenID authentication failed', status:0});
+				};
+				var url = ['/', this.get('serverHost'), 'auth', 'login_openid'].join('/');
+				var redirUrl = '/openid_return_to.html';
+				var params = { identity: encodeURIComponent(openid), redirect:encodeURIComponent(redirUrl) };
+				url = url + "?" + _(params).map(function(v, k) { return k+'='+v; }).join('&');
+				u.log('opening url >>', url);
+				popup = window.open(url, 'indx_openid_popup', 'width=790,height=500');
+				intPopupChecker = setInterval(function() {
+					if (!popup.closed) { return; }
+					if (d.state() !== 'pending') {
+						// success/failure has been achieved, just continue
+						// console.info('popup closed naturally, continuing');
+						clearInterval(intPopupChecker);
+						return;
+					}
+					// console.error('popup force closed, continuing reject');
+					// popup force closed
+					clearInterval(intPopupChecker);
+					d.reject({status:0, message:"Cancelled"});
+				});
+				return d.promise();
+			},
+			/// @arg <string> username: username to log in as
+			/// @arg <string> password: password to use for auth
+			/// Local Login - logs in using the traditional (local user) method
+			/// @then(<Obj>) - Continuation with logged in username
+			/// @fail(<String>) Error raised during process
 			login : function(username,password) {
+				// local user method
 				var d = u.deferred();
-				this.set({username:username,password:password});
 				var this_ = this;
 				this._ajax('POST', 'auth/login', { username: username, password: password })
-					.then(function(l) { this_.trigger('login', username); d.resolve(l); })
-					.fail(function(l) { d.reject(l); });
+					.then(function(l) { 
+						var localUser =  _makeLocalUser(username);
+						this_.set({user_type:'local',username:username,password:password});
+						this_.trigger('login', localUser); 
+						d.resolve(localUser); 
+					}).fail(function(l) { d.reject(l); });
 				return d.promise();
 			},
 			reconnect:function() {
-				return this.login(this.get('username'),this.get('password'));
+				if (this.get('user_type') === 'openid') {
+					u.log('reconnecting as openid ', this.get('username'));
+					return this.loginOpenid(this.get('username'));
+				}
+				u.log('reconnecting as local ', this.get('username'), this.get('password'));
+			 	return this.login(this.get('username'),this.get('password'));
 			},
+			/// Logs out local and remote users
+			/// @then(): Logout complete
+			/// @fail(): Logout failed
 			logout : function() {
 				console.log('store --- logout');
 				var d = u.deferred();
@@ -958,7 +1104,7 @@ angular
 			getUserList:function() {
 				var d = u.deferred();
 				this._ajax('GET','admin/list_users')
-					.success(function(data) {d.resolve(data.users);})
+					.success(function(data) { d.resolve(data.users);})
 					.fail(function(err) { d.reject(err); });
 				return d.promise();
 			},

@@ -1,23 +1,40 @@
 <div>
-	<div class="login-window" ng-show="!user.username" ng-animate="{show: 'animate-show',hide: 'animate-hide'}" ng-cloak>
+	<div class="login-window" ng-show="!selected.user" ng-animate="{show: 'animate-show',hide: 'animate-hide'}" ng-cloak>
 		<div class="logo">
 			<h4>welcome to</h4>
 			<p><img class="logo" src="img/indx.png"></img></p>
-		</div> 
-		<ul ng-show="!user.username" class='userlist'>
+        </div>
+		<ul ng-show="!selected.user" class='userlist'>
 			<li ng-repeat='u in users'>
 				<a ng-click="selectUser(u)"><user model='u' ></user></a>
 			</li>
+			<li>
+				<a>
+					<div class="special">
+						<form ng-submit="openidValidate(selected.newOpenidUrl) && openidSelectUser(selected.newOpenidUrl)">
+							<input class="openid-input" type="text" placeholder="Login with another OpenID" ng-model="selected.newOpenidUrl" ng-keyup="openidValidate(selected.newOpenidUrl)">
+							<img ng-click="openidValidate(selected.newOpenidUrl) && openidSelectUser(selected.newOpenidUrl)" src="img/openid.png" ng-class="{'openid-icon':true, 'openid-disabled':!openidValidate(selected.newOpenidUrl)}">
+						</form>	
+						<div class="openid-error" ng-bind="openidError"></div>
+					</div>
+				</a>
+			</li>
+			<!--<li><a><div class="special">Create a new user</div></a></li>-->
 		</ul>
+        <!--
+        <div class="openid" style="text-align: center; border: 1px solid #ccc; width: 320px; margin: 0 auto; border-radius: 3px; cursor: pointer;">
+            <p><img style="width: 150px;" src="img/openid-logo-wordmark.png" alt="OpenID" /></p>
+        </div>
+        -->
 	</div>
-	<div class="password-dialog" ng-show="user.username" ng-animate="{show: 'animate-show',hide: 'animate-hide'}" ng-cloak>
+	<div class="password-dialog" ng-show="isLocalUser(selected.user)" ng-animate="{show: 'animate-show',hide: 'animate-hide'}" ng-cloak>
 		<form ng-submit="doSubmit()">
 			<div class="username" ng-click="backToLogin()">
 				<div class="glyphicon glyphicon-remove goback"></div>
-				{{ user.username }} :
+				{{ selected.user.name }} :
 			</div>
 			<div class="controls">
-				<input type="password" id="loginPassword" class="loginPassword passwordField" focus-on-show="user.username" ng-model="user.password"></input>
+				<input type="password" id="loginPassword" class="loginPassword passwordField" focus-on-show="selected.user" ng-model="selected.password"></input>
 				<div class="glyphicon glyphicon-chevron-right submit" ng-click="doSubmit()"></div>
 			</div>
 		</form>

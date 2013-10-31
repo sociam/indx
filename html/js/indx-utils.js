@@ -77,11 +77,11 @@
 				NotImplementedYet:function() {
 					throw new Error('Not Implemented Yet');
 				},
-				getParameterByName: function(name) {
+				getParameterByName: function(name,str) {
 					name = name.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
 					var regexS = "[\\?&]" + name + "=([^&#]*)";
 					var regex = new RegExp(regexS);
-					var results = regex.exec(window.location.search);
+					var results = regex.exec(str || window.location.search);
 					if (results === null)
 						return "";
 					else
@@ -92,6 +92,16 @@
 					if (_.isUndefined(h)) { h = l; l = 0; }
 					for (var i = l; i < h; i++) { a.push(i); }
 					return a;
+				},
+				isValidURL:function(str) {
+					// from http://stackoverflow.com/questions/5717093/check-if-a-javascript-string-is-an-url
+					var pattern = new RegExp('^(https?:\\/\\/)?'+ // protocol
+					  '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|'+ // domain name
+					  '((\\d{1,3}\\.){3}\\d{1,3}))'+ // OR ip (v4) address
+					  '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*'+ // port and path
+					  '(\\?[;&a-z\\d%_.~+=-]*)?'+ // query string
+					  '(\\#[-a-z\\d_]*)?$','i');
+					return pattern.test(str);
 				},
 				toNumeric:function(v) {
 					if (_(v).isNumber()) { return v ; }

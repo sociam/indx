@@ -75,6 +75,13 @@ class WebServer:
                 print "Authentication failed, check username and password are correct."
                 reactor.stop()
 
+        def auth_err(failure):
+            logging.debug("WebServer err_cb, failure: {0}".format(failure))
+            failure.trap(Exception)
+
+            print "Authentication failed, check username and password are correct."
+            reactor.stop()
+
         def err_cb(failure):
             logging.debug("WebServer err_cb, failure: {0}".format(failure))
             failure.trap(Exception)
@@ -82,7 +89,7 @@ class WebServer:
         user,password = self.get_indx_user_password()
         self.database = database.IndxDatabase(config['indx_db'], user, password)
         self.tokens = token.TokenKeeper(self.database)
-        self.database.auth_indx(database = "postgres").addCallbacks(auth_cb, err_cb)
+        self.database.auth_indx(database = "postgres").addCallbacks(auth_cb, auth_err)
 
 
     def check_users(self):
@@ -102,7 +109,7 @@ class WebServer:
                 while len(new_password) == 0:
                     new_password = getpass.getpass("Password: ")
 
-                self.database.create_user(new_username, new_password).addCallbacks(result_d.callback, result_d.errback)
+                self.database.create_user(new_username, new_password, 'local_owner').addCallbacks(result_d.callback, result_d.errback)
                     
             else:
                 result_d.callback(True) # users exist - continue

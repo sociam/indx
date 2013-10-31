@@ -26,6 +26,7 @@ class CLIClient:
                       'delete_box': {'f': self.delete_box, 'args': ['box']},
                       'list_boxes': {'f': self.list_boxes, 'args': []},
                       'get_object_ids': {'f': self.get_object_ids, 'args': ['box']},
+                      'create_user': {'f': self.create_user, 'args': ['target_username','target_password']},
                       'update': {'f': self.update, 'args': ['box','data','version']},
                       'delete': {'f': self.delete, 'args': ['box','id','version']},
                       'get_latest': {'f': self.get_latest, 'args': ['box']},
@@ -37,6 +38,8 @@ class CLIClient:
                       'delete_file': {'f': self.delete_file, 'args': ['box','id','version']},
                       'get_file': {'f': self.get_file, 'args': ['box','id']},
                       'list_files': {'f': self.list_files, 'args': ['box']},
+                      'set_acl': {'f': self.set_acl, 'args': ['box','acl','target_username']},
+                      'get_acls': {'f': self.get_acls, 'args': ['box']},
                      }
 
         self.appid = appid
@@ -216,6 +219,21 @@ class CLIClient:
         logging.debug("Calling list_files on server '{0}' in box '{1}'".format(self.args['server'], self.args['box']))
         return self.indx.list_files()
 
+    def set_acl(self):
+        """ Set an ACL for a target user for a database. """
+        logging.debug("Calling set_acl on server '{0}' in box '{1}'".format(self.args['server'], self.args['box']))
+        return self.indx.set_acl(self.args['acl'], self.args['target_username'])
+
+    def get_acls(self):
+        """ Get ACLs for a database. """
+        logging.debug("Calling get_acls on server '{0}' in box '{1}'".format(self.args['server'], self.args['box']))
+        return self.indx.get_acls()
+
+    def create_user(self):
+        """ Create a new user. """
+        logging.debug("Calling create_user on server '{0}' with target username '{1}'".format(self.args['server'], self.args['target_username']))
+        return self.indx.create_user(self.args['target_username'], self.args['target_password'])
+
 
 if __name__ == "__main__":
     client = CLIClient()
@@ -237,6 +255,9 @@ if __name__ == "__main__":
     parser.add_argument('--contenttype', action="store", help="Specify content-type (e.g., for add_file)")
     parser.add_argument('--jsondata', action="store_true", default=False, help="Return the 'data' element of the response as JSON.")
     parser.add_argument('--allowempty', action="store_true", default=False, help="Allow empty values e.g. for the 'query' value (for testing the server).")
+    parser.add_argument('--acl', action="store", type=str, help='Access Control List (ACL) in JSON format, must have "read", "write" and "control" keys, all with boolean values, e.g. {"read": true, "write": true", "control": false}')
+    parser.add_argument('--target_username', action="store", type=str, help='Target username, e.g. when creating a new user, or for setting ACLs for')
+    parser.add_argument('--target_password', action="store", type=str, help='Target password, e.g. when creating a new user')
 
     args = vars(parser.parse_args())
 

@@ -22,6 +22,8 @@ from indx.webserver.session import INDXSession, ISession
 from indx.exception import ResponseOverride
 from mimeparse import quality
 from urlparse import parse_qs
+from indx.user import IndxUser
+from twisted.internet.defer import Deferred
 try:
     import cjson
     logging.debug("Using CJSON.")
@@ -107,6 +109,48 @@ class BaseHandler(Resource):
 
         return default
 
+    def _matches_acl_requirements(self, request, subhandler):
+        """ Check the ACL permissions for this user matches the requirements for this access. """
+        logging.debug("BaseHandler _matches_acl_requirements")
+        return_d = Deferred()
+
+        if 'require_acl' not in subhandler:
+            return_d.callback(True)
+            return return_d
+        else:
+
+            req_acl = subhandler['require_acl']
+            logging.debug("BaseHandler _matches_acl_requirements got req_acl: {0}".format(req_acl))
+
+            wbSession = self.get_session(request)
+            user = IndxUser(self.database, wbSession.username)
+
+            force_get = False
+            if force_get in subhandler:
+                force_get = subhandler['force_get']
+
+            def acl_cb(acl):
+                logging.debug("BaseHandler _matches_acl_requirements got acl: {0}".format(acl))
+                permissions = acl['acl']
+
+                for key in req_acl:
+                    if key not in permissions: # key (e.g. "read", "write", "admin") must be in the user's acl, otherwise Fail
+                        return_d.callback(False)
+                        return return_d
+
+                    if not permissions[key]: # if the key isn't True, then fail
+                        return_d.callback(False)
+                        return return_d
+                
+                # no failures, pass.
+                return_d.callback(True)
+                return return_d
+
+            user.get_acl(self.get_request_box(request, force_get = force_get)).addCallbacks(acl_cb, return_d.errback)
+
+        return return_d
+
+
     def get_token(self, request, force_get=False):
         tid = self.get_arg(request,'token', force_get = force_get)
         return self.webserver.tokens.get(tid) if tid else None
@@ -166,15 +210,33 @@ class BaseHandler(Resource):
             matching_token_hs = filter(lambda h: self._matches_token_requirements(request,h), matching_auth_hs)
             logging.debug('Post-token matching handlers %d' % len(matching_token_hs))
 
-            if matching_token_hs:
-                subhandler = matching_token_hs[0]
-                logging.debug('Using handler %s' % self.__class__.__name__ + " " + matching_token_hs[0]["prefix"])
-                if subhandler['content-type']:
-                    request.setHeader('Content-Type', subhandler['content-type'])
-                subhandler['handler'](self,request)
-                return NOT_DONE_YET
-            logging.debug('Returning not found ')
-            self.return_not_found(request)
+            matching_acl_hs = []
+            def acl_cb(acl, h):
+
+                if acl is not None:
+                    # process acl
+                    if acl:
+                        matching_acl_hs.append(h)
+
+                if len(matching_token_hs) > 0:
+                    h2 = matching_token_hs.pop(0)
+                    self._matches_acl_requirements(request, h2).addCallbacks(lambda acl2: acl_cb(acl2, h2), lambda failure: self.return_internal_error(request))
+                else:
+                    # processed them all, run post-filter
+                    logging.debug('Post-acl matching handlers %d' % len(matching_acl_hs))
+                    if len(matching_acl_hs) > 0:
+                        subhandler = matching_acl_hs[0]
+                        logging.debug('Using handler %s' % self.__class__.__name__ + " " + matching_acl_hs[0]["prefix"])
+                        if subhandler['content-type']:
+                            request.setHeader('Content-Type', subhandler['content-type'])
+                        subhandler['handler'](self,request)
+                        return
+                    else:
+                        logging.debug('Returning not found ')
+                        return self.return_not_found(request)
+                    
+            acl_cb(None, None)
+#            matching_acl_hs = filter(lambda h: self._matches_acl_requirements(request,h), matching_token_hs)
             return NOT_DONE_YET
         except ResponseOverride as roe:
             self._respond(request,roe.status,roe.reason)

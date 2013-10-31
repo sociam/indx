@@ -15,7 +15,7 @@ angular
 			run: function () {
 				var that = this;
 				this.isRunning = true;
-				$.post('api/tests/run_test?name=' + this.get('name')).always(function () {
+				$.post('api/tests/runTest?name=' + this.get('name')).always(function () {
 					that.isRunning = false;
 					u.safeApply($scope);
 				}).then(function (r) {
@@ -78,7 +78,7 @@ angular
 			build: function () {
 				var that = this;
 				this.isBuilding = true;
-				$.post('api/docs/generate_doc?name=' + this.get('name'))
+				$.post('api/docs/generateDoc?name=' + this.get('name'))
 					.then(function (r) {
 						that.set(r.response);
 						that.err = false;
@@ -106,11 +106,11 @@ angular
 		var tests = new Tests(),
 			docs = new Docs();
 
-		$.get('api/tests/list_tests', function (r) {
+		$.get('api/tests/listTests', function (r) {
 			tests.reset(r.response);
 		});
 
-		$.get('api/docs/list_docs', function (r) {
+		$.get('api/docs/listDocs', function (r) {
 			docs.reset(r.response);
 		});
 
@@ -123,13 +123,19 @@ angular
 		// this pollution created by emax for supprting debugging
 		// declares box in devtools
 		var loadBox = function(bid) {
-			client.store.getBox(bid).then(function(box) {window.box = box; });
+			client.store.getBox(bid).then(function(box) { 
+				console.log('got box >> ', box.id);
+				window.box = box; 
+			});
+		};		
+		var init = function() {
+			console.log('change on box and user --- init >> ', $scope.selectedBox, $scope.selectedUser);
+			if ($scope.selectedUser && $scope.selectedBox) { 
+				loadBox($scope.selectedBox); 
+			}
 		};
-
-		$scope.$watch('selectedBox + selectedUser', function() {
-			if ($scope.selectedBox) { loadBox($scope.selectedBox); }
-		});
-
+		$scope.$watch('selectedBox + selectedUser', init);
+		init();
 		window.store = client.store;
 		window.$scope = $scope;
 	});

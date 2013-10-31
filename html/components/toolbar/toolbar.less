@@ -3,11 +3,25 @@
 body.modal-open { margin: 0px !important; }
 .indx-toolbar {
 	color:#aaa;
-	.login-btn, label, .modal-header {
+	label, .modal-header {
 		font-variant:small-caps;
-		font-size:120%;
+		// font-size:120%;
 		line-height:90%;
 		font-weight:100;
+	}
+    .login-btn {
+    	color:#666;
+    	position:absolute;
+		right:8px; top:9px;
+		background-color:rgba(247,247,247,1.0);
+		border:1px solid rgba(0,0,0,0.1);
+		padding:7px 30px 3px 10px;
+		.usericon { 
+			position:absolute;
+			right:10px;
+			top:50%;
+			margin-top:-9px;
+		}
 	}
 	position:relative;
 	margin:0px 0px 0px 0px !important;
@@ -53,14 +67,6 @@ body.modal-open { margin: 0px !important; }
 		}
 	}
     .modal-footer { vertical-align:middle;  }
-    .login-btn {
-    	color:#666;
-    	position:absolute;
-		right:8px; top:9px;
-		background-color:rgba(247,247,247,1.0);
-		border:1px solid rgba(0,0,0,0.1);
-		padding-top:3px; padding-bottom:8px;
-	}	
 	.box-selector {
 		margin:9px 0px 0px 9px;
 		* { font-size:88%; color:#aaa !important; }
