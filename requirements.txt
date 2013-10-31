@@ -10,4 +10,3 @@ tweepy
 requests
 pycrypto
 oauth2
-python-gnupg
