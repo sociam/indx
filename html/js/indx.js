@@ -521,6 +521,37 @@ angular
 					}).fail(function(err) { error(err); d.reject(err); });
 				return d.promise();
 			},
+			///@arg {string} user : ID of user to give access to
+			///@arg {{read:{boolean}, write:{boolean}, owner:{boolean}, control: false} : Access control list for letting the specified user read, write, own and change ta box
+			///Sets the ACL for this whole box. The acl object takes keys 'read', 'write', 'owner', and 'control'
+			///each which take a boolean value
+			///TODO: object-level access control
+			///@then() : Success continuation when this has been set
+			///@fail({error object}) : Failure continuation
+			setACL:function(user,acl) {
+				var valid_keys = ['read','write','owner','control'];
+				u.assert(acl && _.isObject(acl), "acl must be an object with the following keys " + valid_keys.join(', '));
+				_(acl).map(function(v,k) { u.assert(valid_keys.indexOf(k) >= 0, "type " + k + " is not a valid acl type"); });
+				var perms = {read:false,write:false,owner:false,control:false};
+				_(perms).extend(acl);
+				var params = {acl:JSON.stringify(perms),target_username:user};
+				return this._ajax("GET", [this.get_id(), 'set_acl'].join('/'), params);
+			},
+			///@arg {string} user : ID of user to get access control list for
+			///Gets the access control list of user, if specified, for this box or the box's entire ACL listings
+			///@then({userid: { read:{boolean},write:{boolean},owner:{boolean},control:{boolean}}) : Access control listings for this box organised by user
+			///@fail({error object}) : Failure 
+			getACL:function() {
+				var d = u.deferred();
+				this._ajax("GET", [this.get_id(), 'get_acls'].join('/')).then(function(response) {
+					if (response.code == 200) {
+						return d.resolve(u.dict(response.data.map(function(x) { return [x.username, x.acl]; })));
+						// return d.resolve(response.data); 
+					}
+					d.reject(d.message);
+				}).fail(d.reject);
+				return d.promise();
+			},
 			// handles updates from websockets the server
 			_diff_update:function(response) {
 				var d = u.deferred(), this_ = this, latest_version = response['@to_version'],
