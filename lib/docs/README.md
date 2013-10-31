@@ -146,7 +146,7 @@ in the generated docs.
 | `@see url` | Url to additional documentation. Not yet implemented | Yes, for each relevant source | - |
 | `@deprecated description` | Describes outdated functionality. Not yet implemented | No | - |
 | `@alias name` | This attribute is available under a different name. Not yet implemented. | Yes | - |
-| `@default value` | The default value for the attribute. Not yet implemented. | Yes | - |
+| `@default value` | The default value for the attribute. Not yet implemented. | No | - |
 
 ## Methods
 
