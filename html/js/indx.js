@@ -149,7 +149,7 @@ angular
 					app:this.box.store.get('app'),
 					token:this.box.get('token'),
 					box:this.box.get_id()
-				}, url = ['/', this.box.store.get('server_host'), this.box.id, 'files'].join('/') + '?' + $.param(params);
+				}, url = [this.box.store._get_base_url(), this.box.id, 'files'].join('/') + '?' + $.param(params);
 				// u.debug("IMAGE URL IS ", url, params);
 				return url;
 			}
@@ -388,7 +388,7 @@ angular
 					ws.onclose = function(evt) {
 						// what do we do now?!
 						u.error("!!!!!!!!!!!!!!!! websocket closed -- lost connection to server");
-						reconnect();
+						// reconnect();
 					};
 				});
 			},
@@ -472,7 +472,7 @@ angular
 			// 'http://' + this.store.get('server_host') + "/" +  boxid + "/" + 'files',
 			_do_put_file:function(id,file,contenttype) {
 				var boxid = this.id || this.cid,
-				base_url = ['/', this.store.get('server_host'), boxid, 'files'].join('/'),
+				base_url = [this.store._get_base_url(), boxid, 'files'].join('/'),
 				options = { app: this.store.get('app'), id: id, token:this.get('token'),  box: boxid, version: this.get_version() },
 				option_params = $.param(options),
 				url = base_url+"?"+option_params,
@@ -1028,7 +1028,7 @@ angular
 					}
 					d.reject({message:'OpenID authentication failed', status:0});
 				};
-				var url = ['/', this.get('server_host'), 'auth', 'login_openid'].join('/');
+				var url = [this._get_base_url(), 'auth', 'login_openid'].join('/');
 				var redir_url = '/openid_return_to.html';
 				var params = { identity: encodeURIComponent(openid), redirect:encodeURIComponent(redir_url) };
 				url = url + "?" + _(params).map(function(v, k) { return k+'='+v; }).join('&');
@@ -1131,9 +1131,15 @@ angular
 				return d.promise();
 				*/
 			},
+			_get_base_url: function() {
+				var server_host = this.get('server_host');
+				var url = server_host.indexOf('://') >= 0 ? server_host : ['/', this.get('server_host')].join('/');
+				return url;
+			},
 			_ajax:function(method, path, data) {
 				// now uses relative url scheme '//blah:port/path';
-				var url = ['/', this.get('server_host'), path].join('/');
+				var url = [this._get_base_url(), path].join('/');
+				console.info('by the way -- ajax >> ', url);			
 				var default_data = { app: this.get('app') };
 				var options = _(_(this.ajax_defaults).clone()).extend(
 					{ url: url, method : method, crossDomain: !this.is_same_domain(), data: _(default_data).extend(data) }

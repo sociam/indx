@@ -11,8 +11,14 @@
     "persistent":true,
     "page":"background.html"
   },
+  "options_page": "options.html",
   "permissions": [
     "tabs",
-    "https://indx.local:8211"
+    "browsingData",
+    "clipboardRead",
+    "clipboardWrite",
+    "cookies",
+    "history",
+    "https://indx.local:8211/"
   ]
 }
