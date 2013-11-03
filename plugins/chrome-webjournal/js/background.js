@@ -1,8 +1,10 @@
 
 (function() {
     var server;
+    var DEFAULT_URL = 'https://indx.local:8211';
+    localStorage.indx_url = localStorage.indx_url || DEFAULT_URL;
     var connect = function(client,utils) {
-        var server_url = localStorage.indx_url || 'https://indx.local:8211';
+        var server_url = localStorage.indx_url;
         if (server === undefined || server.get('server_host') !== server_url) {
             server = new client.Store({server_host:server_url});
         }
@@ -19,40 +21,72 @@
     angular.module('webjournal', ['indx'])
     .controller('options', function($scope, watcher, client, utils) {
         // options screen only  -------------------------------------------
+        window.$s = $scope;
         var helper = function() {
             var me = arguments.callee;
             connect(client,utils).then(function(server, result) {
                 utils.safe_apply($scope, function() {
                     if (!result.is_authenticated) {
-                        $scope.user_logged_in = 'not logged in';
+                        $scope.status = 'connected but not logged in';
+                        $scope.status_error = true;
                         return setTimeout(function() { console.info('not logged in, trying again '); me(); }, 1000);
                     }
-                    $scope.user_logged_in = result.name || result.username;
+                    $scope.status = 'connected as ' + result.name || result.username;
+                    $scope.user = result;
+                    $scope.status_error = false;
+                    server.get_box_list().then(function(boxes) { 
+                        console.log('boxes', boxes);
+                        utils.safe_apply($scope, function() { $scope.boxes = boxes; });
+                    });
                     server.on('disconnect', function() { 
-                        console.info('received ws:disconnect, waiting 10 and reconnecting ');
+                        utils.safe_apply($scope, function() { 
+                            console.info('received ws:disconnect, waiting 10 and reconnecting ');
+                            $scope.status = 'disconnected ';
+                            delete $scope.user;
+                        });
                         setTimeout(me, 10000); 
+                    });
+                    server.on('logout', function() {
+                        console.log('logout ');
+                        utils.safe_apply($scope, function() { 
+                            console.info('received logout, waiting 10 and reconnecting ');
+                            $scope.status = 'logged out ';
+                            delete $scope.user;
+                        });
                     });
                 });
             }).fail(function(err) { 
+                delete $scope.user;
                 utils.safe_apply($scope, function() { $scope.user_logged_in = 'error connecting'; });
                 setTimeout(function() { console.log('error connecting ', err, 'going again >>'); me(); }, 1000);
             });
         };
         helper();
+        $scope.server_url = localStorage.indx_url;
+        $scope.set_server = function(url) { 
+            console.log('setting server ... ', url);
+            localStorage.indx_url = $scope.server_url;
+            helper();
+        };
+        $scope.selected_box = localStorage.indx_box;
+        $scope.set_box = function(boxid) { 
+            console.log('setting box ', boxid);
+            localStorage.indx_box = $scope.selected_box;
+            watcher.set_box(boxid);
+        };
     }).controller('main', function($scope, watcher, client,utils) {
         // main 
         window.utils = utils;
-        var init = function(store) { 
+        var init = function(store) {
             window.s = store;
-            console.log('connect success >>', store);
             var winstance = watcher.init(store);
-            store.on('disconnect', function() { 
+            store.on('disconnect', function() {
                 winstance.set_box(); // disconnect box
                 console.error('diconnect >> waiting 1 second before reconnection');
-                setTimeout(function() {  runner(); }, 1000); 
+                setTimeout(function() {  runner(); }, 1000);
             });
         };
-        var runner = function() { 
+        var runner = function() {
             var me = arguments.callee;
             connect(client,utils)
                 .then(init)
@@ -188,6 +222,11 @@
             }
             this.watcher.load_appropriate_box();
             return this.watcher;
+        },
+        set_box:function(b) { 
+            if (this.watcher) {
+                this.watcher.set_box(b);
+            }
         },
         set_store:function(store) { 
             if (this.watcher) { 
