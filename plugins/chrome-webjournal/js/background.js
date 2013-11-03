@@ -61,44 +61,42 @@
         runner();
     }).factory('watcher', function(utils, client) {
         var WindowWatcher = Backbone.Model.extend({
+            defaults: { enabled:true },
             initialize:function(attributes) {
                 console.log('initialise .. ');
                 var this_ = this;
                 this.data = [];
-                this.bind("change", function() {  this_.change.apply(this_, arguments);   });
-                // created
+                this.bind("change", function() {  if (this_.get('enabled')) { this_.change.apply(this_, arguments); } });
+
+                // window created
+                // created new window, which has grabbed focus
                 chrome.windows.onCreated.addListener(function(window) {
-                    chrome.tabs.getSelected(window, function(tab) {
-                        this_.trigger("change", tab.url);
-                    });
+                    chrome.tabs.getSelected(window, function(tab) { this_.trigger("change", tab.url);  });
                 });
-                // focus changed
+                // removed window, meaning focus lost
+                chrome.windows.onRemoved.addListener(function(window) { this_.trigger("change", undefined); });
+
+                // window focus changed
                 chrome.windows.onFocusChanged.addListener(function(w) {
-                    console.log('getting selected of ', w);
                     if (w >= 0) {
                         chrome.tabs.getSelected(w, function(tab) {
-                            console.log("focus-change ", w, ", tab ", tab);
+                            // console.info("window focus-change W:", w, ", tab:", tab, 'tab url', tab.url);
                             this_.trigger("change", tab !== undefined ? tab.url : undefined);
                         });
                     }
                 });
-                // removed
-                chrome.windows.onRemoved.addListener(function(window) {
-                    console.log("window::onRemoved", window);
-                    this_.trigger("changed", undefined);
-                });
-                // updated
-                chrome.tabs.onUpdated.addListener(function(tabid, changeinfo, t) {
-                    if (changeinfo.status == 'loading') { return; }
-                    console.log("window::tab_updated", t.url, changeinfo.status);
-                    this_.trigger("change", t.url);
-                });
-                // selection changed
+                // tab selection changed
                 chrome.tabs.onSelectionChanged.addListener(function(tabid, info, t) {
                     chrome.tabs.getSelected(info.windowId, function(tab) {
-                        console.log("tabs-selectionchange ", window, ", tab ", tab);
+                        // console.info("tabs-selectionchange ", info.windowId, ", tab ", tab && tab.url);
                         this_.trigger("change", tab !== undefined ? tab.url : undefined);
                     });
+                });
+                // updated a tab 
+                chrome.tabs.onUpdated.addListener(function(tabid, changeinfo, t) {
+                    // console.info("tab_updated", t.url, changeinfo.status);
+                    if (changeinfo.status == 'loading') { return; }
+                    this_.trigger("change", t.url);
                 });
             },
             start_polling:function(interval) {
@@ -126,11 +124,11 @@
                     delete this.box;
                     return;                    
                 }
-                console.log('attempting to set box >> ', bid);
+                // console.log('attempting to set box >> ', bid);
                 var this_=  this, store = this.get('store');
                 store.get_box(bid).then(function(b) {  
                     window.b = b;
-                    console.info('successfully got box ', bid);
+                    // console.info('successfully got box ', bid);
                     this_.box = b;  
                 }).fail(function(err) {
                     console.error('!!!!!! error getting box ', bid);
@@ -146,10 +144,11 @@
                         this_._record_updated(this_.current_record);
                         if (url === this_.current_record.location) { 
                             // we're done
+                            // console.info('just updated, returning');
                             return;
                         } else {
                             // different now
-                            console.log('new record!');
+                            // console.log('new record!');
                             delete this_.current_record;
                             this_.trigger("new_record", this_.current_record);
                         }
@@ -167,7 +166,7 @@
                 return _({}).chain().extend(options).extend({id:utils.guid()}).value();
             },
             _record_updated:function() {
-                console.log('record updated ... box ', this.box, this.current_record);
+                // console.log('record updated ... box ', this.box, this.current_record);
                 var this_ = this;
                 if (this.box !== undefined && this.current_record !== undefined) {
                     var id = "webjournal-log-"+this.current_record.id, box = this_.box;
@@ -192,6 +191,14 @@
                 this.watcher.set('store', store); 
                 this.watcher.load_appropriate_box();
             }
+        },
+        set_enabled:function(enabled) {
+            if (this.watcher) { this.watcher.set('enabled', enabled); }
+            return false;
+        },
+        get_enabled:function() {
+            if (this.watcher) { return this.watcher.get('enabled'); }
+            return false;
         },
         set_polling:function(polling) {
             polling ? this.watcher.start_polling() : this.watcher.end_polling();

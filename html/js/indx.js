@@ -841,7 +841,6 @@ angular
 			},
 			_do_update:function(ids) {
 				// this actua
-				debug('box update >> ');
 				var d = u.deferred(), version = this.get('version') || 0, this_ = this, oc = this._objcache(),
 				objs = (ids === undefined ? oc.values() : ids.map(function(id) { return oc.get(id); })), // this._objcache().filter(function(x) { return ids === undefined || ids.indexOf(x.id) >= 0; }),
 				obj_ids = (ids === undefined ? oc.keys() : ids.slice()), // objs.map(function(x) { return x.id; }),
@@ -1118,37 +1117,22 @@ angular
 					.fail(function(err) { d.reject(err); });
 				return d.promise();
 			},
-			_fetch:function() {
-				throw new Error('dont fetch a store - any more!');
-				//
-				// fetches list of boxes
-				/* - do not do this
-				var this_ = this, d = u.deferred();
-				this._ajax('GET','admin/list_boxes')
-					.success(function(data) {
-						u.when(data.list.map(function(boxid) { return this_.get_box(boxid); })).then(function(boxes) {
-							// console.log("boxes !! ", boxes);
-							this_.boxes().reset(boxes);
-							d.resolve(boxes);
-						});
-					}).error(function(e) { d.reject(e); });
-				return d.promise();
-				*/
-			},
-			_get_base_url: function() {
-				var server_host = this.get('server_host');
-				console.log('get server host >> ', server_host, location.protocol, typeof location.protocol);
-				var url = server_host.indexOf('://') >= 0 ? server_host : [location.protocol, '', this.get('server_host')].join('/');
-				console.info('base url returning ', url);
+			_fetch:function() {	throw new Error('dont fetch a store - any more!');	},
+			_get_base_url_helper:utils.memoise_fast1(function(server_host) {
+				var url = server_host.indexOf('://') >= 0 ? server_host : [location.protocol, '', server_host].join('/');
+				console.log('executing getbaseurlhelper >> ', url);
 				return url;
+			}),
+			_get_base_url: function() {
+				return this._get_base_url_helper(this.get('server_host'));
 			},
 			_ajax:function(method, path, data) {
 				// now uses relative url scheme '//blah:port/path';
 				var url = [this._get_base_url(), path].join('/');
-				console.info('by the way -- ajax >> ', url);			
 				var default_data = { app: this.get('app') };
-				var options = _(_(this.ajax_defaults).clone()).extend(
-					{ url: url, method : method, crossDomain: !this.is_same_domain(), data: _(default_data).extend(data) }
+				var options = _({}).extend(
+					this.ajax_defaults,
+					{ url: url, method : method, crossDomain: !this.is_same_domain(), data: _({}).extend(default_data,data) }
 				);
 				return $.ajax( options ); // returns a deferred
 			},
