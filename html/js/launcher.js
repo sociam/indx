@@ -110,7 +110,7 @@
 									_(x).extend(x.user_metadata);
 								}
 							}
-							console.log(" user is >> ", x);
+							// console.log(" user is >> ", x);
 							if (!x.name) { 
 								var id = x["@id"];
 								if (id.indexOf('http') == 0) {

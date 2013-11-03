@@ -387,6 +387,8 @@ angular
 					/// @ignore
 					ws.onclose = function(evt) {
 						// what do we do now?!
+						this_.trigger('ws-disconnect');
+						this_.store.trigger('disconnect', evt);
 						u.error("!!!!!!!!!!!!!!!! websocket closed -- lost connection to server");
 						// reconnect();
 					};
@@ -1028,11 +1030,13 @@ angular
 					}
 					d.reject({message:'OpenID authentication failed', status:0});
 				};
+				console.log('login openid >>> ', this._get_base_url());
 				var url = [this._get_base_url(), 'auth', 'login_openid'].join('/');
-				var redir_url = '/openid_return_to.html';
+				var redir_url = [this._get_base_url(), 'openid_return_to.html'].join('/');
+				console.log('redir url ', redir_url);
 				var params = { identity: encodeURIComponent(openid), redirect:encodeURIComponent(redir_url) };
 				url = url + "?" + _(params).map(function(v, k) { return k+'='+v; }).join('&');
-				u.log('opening url >>', url);
+				console.log('opening url >>', url);
 				popup = window.open(url, 'indx_openid_popup', 'width=790,height=500');
 				int_popup_checker = setInterval(function() {
 					if (!popup.closed) { return; }
@@ -1133,7 +1137,9 @@ angular
 			},
 			_get_base_url: function() {
 				var server_host = this.get('server_host');
-				var url = server_host.indexOf('://') >= 0 ? server_host : ['/', this.get('server_host')].join('/');
+				console.log('get server host >> ', server_host, location.protocol, typeof location.protocol);
+				var url = server_host.indexOf('://') >= 0 ? server_host : [location.protocol, '', this.get('server_host')].join('/');
+				console.info('base url returning ', url);
 				return url;
 			},
 			_ajax:function(method, path, data) {
