@@ -117,7 +117,13 @@ class DevToolsApp(BaseHandler):
         if not config:
             return
         logging.debug('generating doc %s' % config['name'])
-        out = check_output('node lib/docs/build.js %s --output-directory=%s' % (config['config_path'], config['path']), shell=True)
+        try:
+            out = check_output('node lib/docs/build.js %s --output-directory=%s' % (config['config_path'], config['path']), shell=True)
+        except subprocess.CalledProcessError, e:
+            logging.debug('Failed to run builder', e.output)
+            self.return_internal_error('Failed to run builder')
+            raise
+
         logging.debug(out);
         config['build_output'] = out;
         config['built'] = os.path.exists(config['path']);
@@ -133,9 +139,13 @@ class DevToolsApp(BaseHandler):
         cmd_str += ' --reporters junit'
         cmd_str += ' --output-directory=%s' % (config['path'])
         logging.debug(cmd_str)
-        cmd = subprocess.Popen([cmd_str], stdout=subprocess.PIPE, shell=True)
-        out = cmd.communicate()[0]
+        cmd = subprocess.Popen([cmd_str], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        out, err = cmd.communicate()
         logging.debug(out);
+        if cmd.returncode != 0:
+            logging.debug('Non-zero exit status')
+            self.return_internal_error(request)
+            return
         results_file = os.path.dirname(config['config_path']) + os.path.sep + 'test-results.xml'
         logging.debug(results_file)
         if os.path.exists(results_file):

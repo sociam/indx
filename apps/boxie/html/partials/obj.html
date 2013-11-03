@@ -1,7 +1,11 @@
-<td class="obj-id" ng-class="{ active: obj.is_selected }">
-	<div class="truncate">
-		<span class="text-muted">Obj#</span>{{ pop(obj.id) }}
-		<span class="text-muted">- {{ pop(obj.val_string).substr(0, 100) }}</span>
-	</div>
-</td>
-<td hidden>timestamp (user)</td>
+
+<div class="obj" ng-click="obj.select()">
+	<span class="i-icon">
+		<div class="i-col" ng-repeat="col in obj._icon">
+			<div class="i-cell" ng-repeat="cell in col" style="background:{{cell.colour}}" title="{{cell.key}}"></div>
+		</div>
+	</span>
+	<span class="name">{{ pop(obj.id) }}</span>
+	<span class="text-muted">- {{ pop(obj.val_string).substr(0, 100) }}</span>
+</div>
+<div class="children" ng-include="'partials/objs.html'"></div>
