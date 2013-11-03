@@ -707,7 +707,7 @@ angular
 						return u.when(lids.map(function(id) { return dmissing_by_id[id]; }));
 					});
 				} else {
-					console.log('already have all the models, returning directly ');
+					// console.log('already have all the models, returning directly ');
 				}
 				return multi ? u.when(ds) : ds[0];
 			},

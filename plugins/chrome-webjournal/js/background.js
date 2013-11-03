@@ -70,8 +70,11 @@
 
                 // window created
                 // created new window, which has grabbed focus
-                chrome.windows.onCreated.addListener(function(window) {
-                    chrome.tabs.getSelected(window, function(tab) { this_.trigger("change", tab.url);  });
+                chrome.windows.onCreated.addListener(function(w) {
+                    if (w && w.id) {
+                        console.log('on created >> ', w);
+                        chrome.tabs.getSelected(w.id, function(tab) { this_.trigger("change", tab.url);  });
+                    }
                 });
                 // removed window, meaning focus lost
                 chrome.windows.onRemoved.addListener(function(window) { this_.trigger("change", undefined); });
