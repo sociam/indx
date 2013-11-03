@@ -4,10 +4,7 @@
   "version": "1.0",
   "description": "indx webjournal 0.1 by electronic Max et al",
   "browser_action": {
-    "default_icon": {
-      "19": "img/icon-pulse.gif",
-      "38": "img/icon-pulse-128.gif"
-    },
+    "default_icon":"img/indx-icon.png",
     "default_popup":"popup-indx.html",
     "default_title":"INDX"
   },

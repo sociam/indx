@@ -139,26 +139,28 @@
             },
             change:function(url) {
                 var this_ = this;
-                var now = new Date();
-                if (this.current_record !== undefined) {
-                    this.current_record.end = now;
-                    this._record_updated(this.current_record);
-                    if (url === this.current_record.location) { 
-                        // we're done
-                        return;
-                    } else {
-                        // different now
-                        console.log('new record!');
-                        delete this.current_record;
-                        this.trigger("new_record", this.current_record);
+                setTimeout(function() { 
+                    var now = new Date();
+                    if (this_.current_record !== undefined) {
+                        this_.current_record.end = now;
+                        this_._record_updated(this_.current_record);
+                        if (url === this_.current_record.location) { 
+                            // we're done
+                            return;
+                        } else {
+                            // different now
+                            console.log('new record!');
+                            delete this_.current_record;
+                            this_.trigger("new_record", this_.current_record);
+                        }
                     }
-                }
-                // go on to create a new record
-                if (url !== undefined) {
-                    this.current_record = this.make_record({start: now, end:now, to: url, location: url});
-                    this.data.push(this.current_record);
-                    this._record_updated(this.current_record);
-                }
+                    // go on to create a new record
+                    if (url !== undefined) {
+                        this_.current_record = this_.make_record({start: now, end:now, to: url, location: url});
+                        this_.data.push(this_.current_record);
+                        this_._record_updated(this_.current_record);
+                    }
+                });
             },
             make_record:function(options) {
                 // console.log("make record >> ", options);
