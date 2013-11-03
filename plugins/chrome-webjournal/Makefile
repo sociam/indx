@@ -11,4 +11,4 @@ build:
 
 clean:
 	rm -rf js-platform components css-platform fonts
-	rm build
+	rm -rf build
