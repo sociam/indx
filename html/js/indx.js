@@ -398,11 +398,12 @@ angular
 					this_._ws = ws;
 				});
 			},
-			disconnect:function() { 
-				if (this._ws) { 
-					this._ws.close(); 
-					delete this._ws;
-				}
+			is_connected:function() {
+				return this._ws && this._ws.readyState === 1;
+			},
+			disconnect:function() {
+				if (this._ws) { this._ws.close(); delete this._ws; return true; }
+				return false;
 			},
 			reconnect:function() {
 				this._reset();
@@ -1091,6 +1092,14 @@ angular
 				}
 				u.log('reconnecting as local ', this.get('username'), this.get('password'));
 			 	return this.login(this.get('username'),this.get('password'));
+			},
+			disconnect:function() {
+				return this.attributes.boxes.map(function(b) { b.disconnect(); });
+			},
+			is_connected:function() {
+				return this.attributes.boxes.map(function(b) { 
+					return { box: b.id, connected: b.is_connected() };
+				});
 			},
 			/// Logs out local and remote users
 			/// @then(): Logout complete
