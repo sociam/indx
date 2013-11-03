@@ -113,3 +113,45 @@ table.obj-list {
     overflow: auto;
   }
 }
+
+ul {
+  list-style: none;
+  margin-top: 10px;
+  padding-left: 15px;
+  overflow: hidden;
+  li {
+    .obj {
+      white-space: nowrap;
+      overflow:hidden;
+      padding: 8px 10px;
+      border-bottom: 1px solid #eee;
+      margin-left: -100px;
+      padding-left: 100px;
+      &:hover {
+        background: #eee;
+        outline: 1px solid #ddd;
+      }
+    }
+  }
+}
+
+.name {
+  font-weight: bold;
+}
+
+.i-icon {
+  position: relative;
+  display: inline-block;
+  width: 25px;
+  height: 25px;
+  text-align: center;
+  .i-col {
+    display: inline-block;
+    vertical-align: middle;
+    .i-cell {
+      display: block;
+      width: 5px;
+      height: 5px;
+    }
+  }
+}

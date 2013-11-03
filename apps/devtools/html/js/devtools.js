@@ -15,12 +15,18 @@ angular
 			run: function () {
 				var that = this;
 				this.is_running = true;
-				$.post('api/tests/run_test?name=' + this.get('name'), function (r) {
+				$.post('api/tests/run_test?name=' + this.get('name')).always(function () {
 					that.is_running = false;
+					u.safe_apply($scope);
+				}).then(function (r) {
 					that.set(r.response);
+					that.err = false;
 					that.get_results().then(function () {
 						u.safe_apply($scope);
 					});
+				}).fail(function () {
+					that.err = true;
+					u.safe_apply($scope);
 				});
 			},
 			get_results: function () {
@@ -76,6 +82,7 @@ angular
 					.then(function (r) {
 						that.set(r.response);
 						that.err = false;
+						u.safe_apply($scope);
 					})
 					.fail(function (r, s, err) {
 						that.err = r.status + ' - ' + err;
