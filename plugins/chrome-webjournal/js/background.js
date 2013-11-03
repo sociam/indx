@@ -22,6 +22,13 @@
     .controller('options', function($scope, watcher, client, utils) {
         // options screen only  -------------------------------------------
         window.$s = $scope;
+        var logout = function() {
+            utils.safe_apply($scope, function() { 
+                console.info('received logout, waiting 10 and reconnecting ');
+                $scope.status = 'logged out ';
+                delete $scope.user;
+            });
+        });
         var helper = function() {
             var me = arguments.callee;
             connect(client,utils).then(function(server, result) {
@@ -46,14 +53,7 @@
                         });
                         setTimeout(me, 10000); 
                     });
-                    server.on('logout', function() {
-                        console.log('logout ');
-                        utils.safe_apply($scope, function() { 
-                            console.info('received logout, waiting 10 and reconnecting ');
-                            $scope.status = 'logged out ';
-                            delete $scope.user;
-                        });
-                    });
+                    server.on('logout', logout);
                 });
             }).fail(function(err) { 
                 delete $scope.user;
@@ -68,7 +68,7 @@
             localStorage.indx_url = $scope.server_url;
             helper();
         };
-        $scope.selected_box = localStorage.indx_box;
+        $scope.box_selection = localStorage.indx_box;
         $scope.set_box = function(boxid) { 
             console.log('setting box ', boxid);
             localStorage.indx_box = $scope.selected_box;
@@ -210,7 +210,11 @@
                     var rec = _(this.current_record).chain().clone().omit('id').value();
                     box.get_obj(id).then(function(obj) {
                         obj.set(rec); 
-                        obj.save().then(function() { u.log('webjournal saved ', obj.id); }).fail(function(err) { u.error('webjournal save fail '); });
+                        obj.save().then(function() { u.log('webjournal saved ', obj.id); })
+                        .fail(function(err) { 
+                            u.error('webjournal save fail '); 
+                            this_.trigger('error', err);
+                        });
                     });
                 }
             }

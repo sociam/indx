@@ -16,7 +16,14 @@
     <tr>
       <td rowspan="10"><iframe src="https://indx.local:8211" width=600 height=600></iframe></td>
     </tr>
-    <tr><td></td><td><b>indx web journal</b> - This records your web activity to your indx so you have an unlimited history of your web - you never need to bookmark anything again!</td>
+    <tr><td></td><td><b>indx web journal</b>
+    <p> This plugin keeps records your web activity to your indx so you have an unlimited history of your web - you never need to bookmark anything again!</p>
+
+    <p><b>won't capture incognito mode pages</b> - If you go into Incognito ("private browsing") mode of Chrome, this plugin will be disabled and nothing will be captured.
+    
+    </p>
+    </td>
+
     <tr><td></td><td>INDX server: 
       <input type="text" ng-model="server_url"></input>
       <div class="btn btn-default" ng-click="set_server(server_url)">Set INDX server to be {{ server_url }}</div>
@@ -31,10 +38,8 @@
           Box: {{ selected_box }}
         </div>
         <div>
-          <select ng-model="box_selection">
-            <option ng-repeat="b in boxes" ng-value="b" ng-selected="selected_box==b">{{ b }}</option>
-          </select>
-          <div class="btn btn-default" ng-click="set_box(box_selection.id)">Select {{ box_selection.id }}</div>
+          <select ng-model="box_selection" ng-options="b for b in boxes"></select>
+          <div class="btn btn-default" ng-click="set_box(box_selection)">Select {{ box_selection.id }}</div>
         </div>
       </div>
       <div ng-show="!user">

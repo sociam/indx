@@ -294,18 +294,21 @@ angular
 			initialize:function(attributes, options) {
 				var this_ = this;
 				u.assert(options.store, "no store provided");
+				this.options = _({}).extend(this.default_options, options);
 				this.store = options.store;
-				this.set({objcache: new ObjCollection(), objlist: [], files : new FileCollection() });
-				this.options = _(this.default_options).chain().clone().extend(options || {}).value();
-				this._set_up_websocket();
-				this._update_queue = {};
-				this._delete_queue = {};
-				this._fetching_queue = {};
 				this.on('update-from-master', function() {
 					// u.log("UPDATE FROM MASTER >> flushing ");
 					this_._flush_update_queue();
 					this_._flush_delete_queue();
 				});
+				this._reset();
+				this._set_up_websocket();				
+			},
+			_reset:function() {
+				this.set({objcache: new ObjCollection(), objlist: [], files : new FileCollection() });
+				this._update_queue = {};
+				this._delete_queue = {};
+				this._fetching_queue = {};
 			},
 			/// @arg {string} fid - file id
 			/// Tries to get a file with given id. If it doesn't exist, a file with that name is created.
@@ -392,7 +395,18 @@ angular
 						u.error("!!!!!!!!!!!!!!!! websocket closed -- lost connection to server");
 						// reconnect();
 					};
+					this_._ws = ws;
 				});
+			},
+			disconnect:function() { 
+				if (this._ws) { 
+					this._ws.close(); 
+					delete this._ws;
+				}
+			},
+			reconnect:function() {
+				this._reset();
+				this._set_up_websocket();
 			},
 			/// Gets whether the option to use websockets has been set; set this option using the store's options.use_websockets;
 			/// @return {boolean} - Whether will try to use websockets.
