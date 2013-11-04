@@ -15,7 +15,7 @@ angular
 			run: function () {
 				var that = this;
 				this.isRunning = true;
-				$.post('api/tests/runTest?name=' + this.get('name')).always(function () {
+				$.post('api/tests/run_test?name=' + this.get('name')).always(function () {
 					that.isRunning = false;
 					u.safeApply($scope);
 				}).then(function (r) {
@@ -78,7 +78,7 @@ angular
 			build: function () {
 				var that = this;
 				this.isBuilding = true;
-				$.post('api/docs/generateDoc?name=' + this.get('name'))
+				$.post('api/docs/generate_doc?name=' + this.get('name'))
 					.then(function (r) {
 						that.set(r.response);
 						that.err = false;
@@ -106,11 +106,11 @@ angular
 		var tests = new Tests(),
 			docs = new Docs();
 
-		$.get('api/tests/listTests', function (r) {
+		$.get('api/tests/list_tests', function (r) {
 			tests.reset(r.response);
 		});
 
-		$.get('api/docs/listDocs', function (r) {
+		$.get('api/docs/list_docs', function (r) {
 			docs.reset(r.response);
 		});
 
