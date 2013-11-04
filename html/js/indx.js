@@ -306,15 +306,6 @@ angular
 				u.assert(options.store, "no store provided");
 				this.options = _({}).extend(this.default_options, options);
 				this.store = options.store;
-<<<<<<< HEAD
-				this.set({objcache: new ObjCollection(), objlist: [], files : new FileCollection() });
-				this.options = _(this.defaultOptions).chain().clone().extend(options || {}).value();
-				this._setUpWebsocket();
-				this._updateQueue = {};
-				this._deleteQueue = {};
-				this._fetchingQueue = {};
-=======
->>>>>>> openid
 				this.on('update-from-master', function() {
 					// u.log("UPDATE FROM MASTER >> flushing ");
 					this_._flushUpdateQueue();
@@ -380,16 +371,9 @@ angular
 							delete this_._ws;
 						} catch(e) { u.error(); }
 					}
-<<<<<<< HEAD
-					var protocol = (document.location.protocol === 'https:') ? 'wss:/' : 'ws:/';
-
-					var wsUrl = [protocol,serverHost,'ws'].join('/');
+					var protocol = (document.location.protocol === 'https:' || protocol_of(serverHost) === 'https:') ? 'wss:/' : 'ws:/';
+					var wsUrl = [protocol,without_protocol(serverHost),'ws'].join('/');
 					ws = new WebSocket(wsUrl);
-=======
-					var protocol = (document.location.protocol === 'https:' || protocol_of(server_host) === 'https:') ? 'wss:/' : 'ws:/';
-					var ws_url = [protocol,without_protocol(server_host),'ws'].join('/');
-					ws = new WebSocket(ws_url);
->>>>>>> openid
 					/// @ignore
 					ws.onmessage = function(evt) {
 						// u.debug('websocket :: incoming a message ', evt.data.toString().substring(0,190));
@@ -423,10 +407,7 @@ angular
 					this_._ws = ws;
 				});
 			},
-<<<<<<< HEAD
-			/// Gets whether the option to use websockets has been set; set this option using the store's options.useWebsockets;
-=======
-			is_connected:function() {
+			isConnected:function() {
 				return this._ws && this._ws.readyState === 1;
 			},
 			disconnect:function() {
@@ -435,10 +416,9 @@ angular
 			},
 			reconnect:function() {
 				this._reset();
-				this._set_up_websocket();
+				this._setUpWebsocket();
 			},
 			/// Gets whether the option to use websockets has been set; set this option using the store's options.use_websockets;
->>>>>>> openid
 			/// @return {boolean} - Whether will try to use websockets.
 			getUseWebsockets:function() { return this.options.useWebsockets; },
 			/// Returns C, the number of objects that have been loaded from the server. Necessararily C < getObjIds.length()
@@ -468,13 +448,8 @@ angular
 				var this_ = this, d = u.deferred();
 				this._ajax('POST', 'auth/get_token', { app: this.store.get('app') })
 					.then(function(data) {
-<<<<<<< HEAD
-						debug('setting token ', data.token);
-						this_._setToken( data.token );
-=======
 						// debug('setting token ', data.token);
-						this_._set_token( data.token );
->>>>>>> openid
+						this_._setToken( data.token );
 						this_.trigger('new-token', data.token);
 						d.resolve(this_);
 					}).fail(d.reject);
