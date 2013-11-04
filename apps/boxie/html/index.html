@@ -12,38 +12,7 @@
   <body>
   <div ng-app="boxie" ng-cloak>
   		<div class="alert alert-danger" ng-show="false">Failed to load</div>
-  		<div ng-show="!selectedUser || !selectedBox"> <!-- we'll get rid of this one day -->
 			<toolbar box-var='selectedBox' username-var='selectedUser'></toolbar>
-
-			<div class="container">
-				<div ng-show="!selectedUser" class="need-log-in">
-					<div class="white-cover"></div>
-					<div class="center-title"><h2 class="alert alert-info">Please log in</h2></div>
-					<div class="instruct-arrow">
-						<div class="arrow-horiz">
-							<div class="arrow-horiz-line"></div>
-						</div>
-						<div class="arrow-vert">
-							<div class="arrow-vert-line"></div>
-							<div class="arrow-head-up"></div>
-						</div>
-					</div>
-				</div>
-				<div ng-show="selectedUser && !selectedBox" class="need-select-box">
-					<div class="white-cover"></div>
-					<div class="center-title"><h2 class="alert alert-info">Please select a box</h2></div>
-					<div class="instruct-arrow">
-						<div class="arrow-horiz">
-							<div class="arrow-horiz-line"></div>
-						</div>
-						<div class="arrow-vert">
-							<div class="arrow-vert-line"></div>
-							<div class="arrow-head-up"></div>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
 
 		<div ng-show="selectedUser && selectedBox">
 			<div class="indx-navbars">
