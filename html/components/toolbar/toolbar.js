@@ -87,7 +87,6 @@ angular
 					var this_ = this, d = u.deferred();
 					$scope.incrLoading();
 					getStore().getBoxList().then(function(boxlist) {
-						console.log('boxlist >> ', boxlist);
 						apply(function() {
 							$scope.boxlist = boxlist.concat("create new box");
 							if ($scope.box === undefined && $scope.boxlist.length > 1 && getLastUsedBox()) {
@@ -106,11 +105,9 @@ angular
 				
 				$scope.setError = function(err) {$scope.error = err;  };
 				$scope.loginboxTryLogin = function(username,password) {
-					console.log('loginbox try login ' ,username, password);
 
 					$scope.incrLoading();
 					getStore().login(username,password).then(function(user) {
-						console.log('log in complete!',username, password);
 						apply(function() {
 							$scope.decrLoading();
 							loginDialog().modal('hide');
@@ -129,7 +126,7 @@ angular
 				};		
 				$scope.cbBoxSelected = function(bid) {
 					if (bid === $scope.boxlist[$scope.boxlist.length-1]) {
-						console.log("create new box selected ");
+						//console.log("create new box selected ");
 						$scope.cbNewBoxClicked(); // TODO get newBid from user
 					} else {
 						$scope.box = bid;
@@ -171,13 +168,13 @@ angular
 				var bindStoreListeners = function() {
 					var store = getStore();
 					store.on('login', function(user) {
-						u.debug('store -> toolbar :: login ');
+						// u.debug('store -> toolbar :: login ');
 						apply(function() { $scope.cbLogin(user); });
 					}).on('logout', function(username) {
-						u.debug('store -> toolbar :: logout ');				
+						// u.debug('store -> toolbar :: logout ');				
 						apply(function() { $scope.cbLogout(); });
 					}).on('change:boxes', function() {
-						u.debug('store -> toolbar :: change boxes ');
+						// u.debug('store -> toolbar :: change boxes ');
 						apply(function() { updateBoxlist(); });
 					});
 					checkLogin();

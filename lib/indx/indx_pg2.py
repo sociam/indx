@@ -23,7 +23,7 @@ import json
 from indx.connectionpool import IndxConnectionPool
 from txpostgres import txpostgres
 from hashing_passwords import make_hash, check_hash
-from indx.crypto import encrypt, decrypt
+from indx.crypto import encrypt, decrypt, rsa_encrypt, rsa_decrypt
 from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
 from indx.user import IndxUser
@@ -323,6 +323,100 @@ class IndxDatabase:
         return return_d
 
 
+    def missing_key_check(self):
+        """ Check for missing private/public key pairs for any users. """
+        logging.debug("indx_pg2 missing_key_check")
+        return_d = Deferred()
+
+        def connected_cb(conn):
+            logging.debug("indx_pg2 missing_key_check, connected_cb")
+
+            def check_cb(rows):
+                logging.debug("indx_pg2 missing_key_check, check_cb")
+
+                def do_next_row(empty):
+                    logging.debug("indx_pg2 missing_key_check, do_next_row")
+                    
+                    if len(rows) < 1:
+                        return_d.callback(True)
+                        return
+
+                    new_username = rows.pop(0)[0]
+                    user = IndxUser(self, new_username)
+                    user.generate_encryption_keys().addCallbacks(do_next_row, return_d.errback)
+
+                do_next_row(None)
+
+            d = conn.runQuery("SELECT username FROM tbl_users WHERE public_key_rsa IS NULL or private_key_rsa_env IS NULL", [])
+            d.addCallbacks(check_cb, return_d.errback)
+            return
+
+        self.connect_indx_db().addCallbacks(connected_cb, return_d.errback)
+        return return_d
+
+
+    def transfer_keychain_users(self, box_name, from_user, to_user, user_types):
+        """ Transfer keychain users from one user to another.
+        
+            Decrypt the password from one user, and re-encrypt with another user's credentials.
+        """
+        logging.debug("indx_pg2 transfer_keychain_users")
+        return_d = Deferred()
+        db_name = INDX_PREFIX + box_name
+
+        def connected_cb(conn):
+            logging.debug("indx_pg2 transfer_keychain_users, connected_cb")
+
+            def keys_cb(keys):
+                logging.debug("indx_pg2, transfer_keychain_users, connected_cb, keys_cb")
+                
+                # FIXME we will need to decrypt private key somehow
+                private_key = keys['private']
+
+                def keys2_cb(keys2):
+                    logging.debug("indx_pg2, transfer_keychain_users, connected_cb, keys2_cb")
+                    public2_key = keys2['public']
+
+                    def existing_cb(rows):
+                        logging.debug("indx_pg2, transfer_keychain_users, connected_cb, existing_cb")
+                        
+                        def process_row(empty):
+
+                            if len(rows) < 1:
+                                return_d.callback(True)
+                                return
+
+                            row = rows.pop(0)
+                            db_user, db_user_type, db_password_encrypted = row
+
+                            if db_user_type not in user_types:
+                                process_row(None)
+                                return # next loop
+
+                            db_password_clear = rsa_decrypt(private_key, db_password_encrypted)
+
+                            db_password_new_encrypted = rsa_encrypt(public2_key, db_password_clear)
+
+                            ins_q = "INSERT INTO tbl_keychain (user_id, db_name, db_user, db_user_type, db_password_encrypted) VALUES ((SELECT id_user FROM tbl_users WHERE username = %s), %s, %s, %s, %s)"
+                            ins_p = [to_user, db_name, db_user, db_user_type, db_password_new_encrypted]
+
+                            conn.runOperation(ins_q, ins_p).addCallbacks(process_row, return_d.errback)
+
+                        process_row(None)
+
+
+                    conn.runQuery("SELECT db_user, db_user_type, db_password_encrypted FROM tbl_keychain JOIN tbl_users ON (tbl_users.id_user = tbl_keychain.user_id) WHERE tbl_users.username = %s AND db_name = %s", [from_user, db_name]).addCallbacks(existing_cb, return_d.errback)
+
+                to_user_obj = IndxUser(self, to_user)
+                to_user_obj.get_keys().addCallbacks(keys2_cb, return_d.errback)
+
+            from_user_obj = IndxUser(self, from_user)
+            from_user_obj.get_keys().addCallbacks(keys_cb, return_d.errback)
+
+        self.connect_indx_db().addCallbacks(connected_cb, return_d.errback)
+        return return_d
+
+
     def create_box(self, box_name, db_owner, db_owner_pass):
         """ Create a new database. """
         logging.debug("indx_pg2 create_box")
@@ -353,29 +447,35 @@ class IndxDatabase:
                             logging.debug("indx_pg2 create_box, created_cb")
                             rw_user, rw_user_pass, ro_user, ro_user_pass = user_details
 
-                            # assign ownership now to db_owner
-                            rw_pw_encrypted = encrypt(rw_user_pass, db_owner_pass)
-                            ro_pw_encrypted = encrypt(ro_user_pass, db_owner_pass)
+                            def got_keys_cb(keys):
+                                logging.debug("indx_pg2 create_box, got_keys_cb")
 
-                            def indx_db(conn_indx):
-                                logging.debug("indx_pg2 create_box, indx_db")
-                                d_q = conn_indx.runOperation("INSERT INTO tbl_keychain (user_id, db_name, db_user, db_user_type, db_password_encrypted) VALUES ((SELECT id_user FROM tbl_users WHERE username = %s), %s, %s, %s, %s), ((SELECT id_user FROM tbl_users WHERE username = %s), %s, %s, %s, %s)", [db_owner, db_name, rw_user, 'rw', rw_pw_encrypted, db_owner, db_name, ro_user, 'ro', ro_pw_encrypted])
+                                # assign ownership now to db_owner
+                                rw_pw_encrypted = rsa_encrypt(keys['public'], rw_user_pass)
+                                ro_pw_encrypted = rsa_encrypt(keys['public'], ro_user_pass)
 
-                                def inserted(empty):
-                                    logging.debug("indx_pg2 create_box, inserted, next ACL")
+                                def indx_db(conn_indx):
+                                    logging.debug("indx_pg2 create_box, indx_db")
+                                    d_q = conn_indx.runOperation("INSERT INTO tbl_keychain (user_id, db_name, db_user, db_user_type, db_password_encrypted) VALUES ((SELECT id_user FROM tbl_users WHERE username = %s), %s, %s, %s, %s), ((SELECT id_user FROM tbl_users WHERE username = %s), %s, %s, %s, %s)", [db_owner, db_name, rw_user, 'rw', rw_pw_encrypted, db_owner, db_name, ro_user, 'ro', ro_pw_encrypted])
 
-                                    acl_q = conn_indx.runOperation("INSERT INTO tbl_acl (database_name, user_id, acl_read, acl_write, acl_owner, acl_control) VALUES (%s, (SELECT id_user FROM tbl_users WHERE username = %s), %s, %s, %s, %s)", [box_name, db_owner, True, True, True, True])
+                                    def inserted(empty):
+                                        logging.debug("indx_pg2 create_box, inserted, next ACL")
 
-                                    def inserted_acl(empty):
-                                        logging.debug("indx_pg2 create_box, inserted_acl - create_box finished")
-                                        return_d.callback(True)
+                                        acl_q = conn_indx.runOperation("INSERT INTO tbl_acl (database_name, user_id, acl_read, acl_write, acl_owner, acl_control) VALUES (%s, (SELECT id_user FROM tbl_users WHERE username = %s), %s, %s, %s, %s)", [box_name, db_owner, True, True, True, True])
 
-                                    acl_q.addCallbacks(inserted_acl, return_d.errback)
+                                        def inserted_acl(empty):
+                                            logging.debug("indx_pg2 create_box, inserted_acl - create_box finished")
+                                            return_d.callback(True)
 
-                                d_q.addCallbacks(inserted, return_d.errback)
+                                        acl_q.addCallbacks(inserted_acl, return_d.errback)
 
-                            # connect to INDX db to add new DB accounts to keychain
-                            self.connect_indx_db().addCallbacks(indx_db, return_d.errback)
+                                    d_q.addCallbacks(inserted, return_d.errback)
+
+                                # connect to INDX db to add new DB accounts to keychain
+                                self.connect_indx_db().addCallbacks(indx_db, return_d.errback)
+
+                            user = IndxUser(self, db_owner)
+                            user.get_keys().addCallbacks(got_keys_cb, return_d.errback)
                             
                         d = self.create_database_users(db_name)
                         d.addCallbacks(created_cb, return_d.errback)
@@ -495,11 +595,17 @@ class IndxDatabase:
                 else:
                     row = rows[0]
 
-                # now row is the best account
-                db_user, db_user_type, db_password_encrypted = row
-                db_pass = decrypt(db_password_encrypted, box_pass)
-                result_d.callback((db_user, db_pass))
-                return
+                def got_keys_cb(keys):
+                    logging.debug("indx_pg2 lookup_best_acct got_keys_cb")
+
+                    # now row is the best account
+                    db_user, db_user_type, db_password_encrypted = row
+                    db_pass = rsa_decrypt(keys['private'], db_password_encrypted)
+                    result_d.callback((db_user, db_pass))
+                    return
+
+                user = IndxUser(self, box_user)
+                user.get_keys().addCallbacks(got_keys_cb, result_d.errback)
 
             conn.runQuery("SELECT tbl_keychain.db_user, tbl_keychain.db_user_type, tbl_keychain.db_password_encrypted FROM tbl_keychain JOIN tbl_users ON (tbl_users.id_user = tbl_keychain.user_id) WHERE tbl_users.username = %s AND tbl_keychain.db_name = %s", [box_user, db_name]).addCallbacks(queried, result_d.errback)
 

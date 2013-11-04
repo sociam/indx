@@ -1,0 +1,43 @@
+
+:::::::::::
+wais pulse
+by electronic Max <emax@alum.mit.edu> 
+http://hip.cat/emax
+
+(c) 2011 MIT License. Do what you want with it, and don't blame me.
+
+This extension is designed for Google Chrome. Tested with 12.0.742.122.
+Will probably work with newer ones for a while.
+
+No data is actually captured to disk - captured pages are lost when Chrome 
+is terminated. But this should be useful
+
+To install this extension into Chrome, open Chrome.
+Go to Extensions. Click "Load unpacked extension". Point it to the parent directory.
+
+If you are new to extension dev you may find this useful:
+
+ >> http://code.google.com/chrome/extensions/getstarted.html
+
+Send me an email if you find this useful. I enjoy receiving code-love.
+
+      _n____n__
+     /         \---||--<                        
+    /___________\
+    _|____|____|_
+    _|____|____|_
+     |    |    |
+    --------------
+    | || || || ||\
+    | || || || || \++++++++------<
+    ===============
+    |   |  |  |   |
+   (| O | O| O| O |)
+   |   |   |   |   |
+  (| O | O | O | O |)
+   |   |   |   |    |
+ (| O |  O | O  | O |)
+  |   |    |    |    |
+ (| O |  O |  O |  O |)
+ ======================
+

@@ -58,6 +58,16 @@ angular
 		var _makeLocalUser = function(name) {
 			return {"@id":name,user_type:'local',username:name,name:name};
 		};
+		var without_protocol=function(url) {
+			if (url.indexOf('//') >= 0) {
+				return url.slice(url.indexOf('//')+2);
+			}
+		};
+		var protocol_of = function(url) {
+			if (url.indexOf('//') >= 0) {
+				return url.slice(0,url.indexOf('//'));
+			}
+		};
 
 		var serializeObj = function(obj) {
 			var uri = obj.id;
@@ -149,7 +159,7 @@ angular
 					app:this.box.store.get('app'),
 					token:this.box.get('token'),
 					box:this.box.getId()
-				}, url = ['/', this.box.store.get('serverHost'), this.box.id, 'files'].join('/') + '?' + $.param(params);
+				}, url = [this.box.store._getBaseUrl(), this.box.id, 'files'].join('/') + '?' + $.param(params);
 				// u.debug("IMAGE URL IS ", url, params);
 				return url;
 			}
@@ -294,18 +304,30 @@ angular
 			initialize:function(attributes, options) {
 				var this_ = this;
 				u.assert(options.store, "no store provided");
+				this.options = _({}).extend(this.default_options, options);
 				this.store = options.store;
+<<<<<<< HEAD
 				this.set({objcache: new ObjCollection(), objlist: [], files : new FileCollection() });
 				this.options = _(this.defaultOptions).chain().clone().extend(options || {}).value();
 				this._setUpWebsocket();
 				this._updateQueue = {};
 				this._deleteQueue = {};
 				this._fetchingQueue = {};
+=======
+>>>>>>> openid
 				this.on('update-from-master', function() {
 					// u.log("UPDATE FROM MASTER >> flushing ");
 					this_._flushUpdateQueue();
 					this_._flushDeleteQueue();
 				});
+				this._reset();
+				this._set_up_websocket();				
+			},
+			_reset:function() {
+				this.set({objcache: new ObjCollection(), objlist: [], files : new FileCollection() });
+				this._update_queue = {};
+				this._delete_queue = {};
+				this._fetching_queue = {};
 			},
 			/// @arg {string} fid - file id
 			/// Tries to get a file with given id. If it doesn't exist, a file with that name is created.
@@ -358,13 +380,19 @@ angular
 							delete this_._ws;
 						} catch(e) { u.error(); }
 					}
+<<<<<<< HEAD
 					var protocol = (document.location.protocol === 'https:') ? 'wss:/' : 'ws:/';
 
 					var wsUrl = [protocol,serverHost,'ws'].join('/');
 					ws = new WebSocket(wsUrl);
+=======
+					var protocol = (document.location.protocol === 'https:' || protocol_of(server_host) === 'https:') ? 'wss:/' : 'ws:/';
+					var ws_url = [protocol,without_protocol(server_host),'ws'].join('/');
+					ws = new WebSocket(ws_url);
+>>>>>>> openid
 					/// @ignore
 					ws.onmessage = function(evt) {
-						u.debug('websocket :: incoming a message ', evt.data.toString().substring(0,190));
+						// u.debug('websocket :: incoming a message ', evt.data.toString().substring(0,190));
 						var pdata = JSON.parse(evt.data);
 						if (pdata.action === 'diff') {
 							this_._diffUpdate(pdata.data)
@@ -387,12 +415,30 @@ angular
 					/// @ignore
 					ws.onclose = function(evt) {
 						// what do we do now?!
+						this_.trigger('ws-disconnect');
+						this_.store.trigger('disconnect', evt);
 						u.error("!!!!!!!!!!!!!!!! websocket closed -- lost connection to server");
-						reconnect();
+						// reconnect();
 					};
+					this_._ws = ws;
 				});
 			},
+<<<<<<< HEAD
 			/// Gets whether the option to use websockets has been set; set this option using the store's options.useWebsockets;
+=======
+			is_connected:function() {
+				return this._ws && this._ws.readyState === 1;
+			},
+			disconnect:function() {
+				if (this._ws) { this._ws.close(); delete this._ws; return true; }
+				return false;
+			},
+			reconnect:function() {
+				this._reset();
+				this._set_up_websocket();
+			},
+			/// Gets whether the option to use websockets has been set; set this option using the store's options.use_websockets;
+>>>>>>> openid
 			/// @return {boolean} - Whether will try to use websockets.
 			getUseWebsockets:function() { return this.options.useWebsockets; },
 			/// Returns C, the number of objects that have been loaded from the server. Necessararily C < getObjIds.length()
@@ -422,8 +468,13 @@ angular
 				var this_ = this, d = u.deferred();
 				this._ajax('POST', 'auth/get_token', { app: this.store.get('app') })
 					.then(function(data) {
+<<<<<<< HEAD
 						debug('setting token ', data.token);
 						this_._setToken( data.token );
+=======
+						// debug('setting token ', data.token);
+						this_._set_token( data.token );
+>>>>>>> openid
 						this_.trigger('new-token', data.token);
 						d.resolve(this_);
 					}).fail(d.reject);
@@ -472,10 +523,10 @@ angular
 			// 'http://' + this.store.get('serverHost') + "/" +  boxid + "/" + 'files',
 			_doPutFile:function(id,file,contenttype) {
 				var boxid = this.id || this.cid,
-				baseUrl = ['/', this.store.get('serverHost'), boxid, 'files'].join('/'),
+				base_url = [this.store._getBaseUrl(), boxid, 'files'].join('/'),
 				options = { app: this.store.get('app'), id: id, token:this.get('token'),  box: boxid, version: this.getVersion() },
 				optionParams = $.param(options),
-				url = baseUrl+"?"+optionParams,
+				url = base_url+"?"+optionParams,
 				d = u.deferred();
 				debug("PUTTING FILE ", url);
 				var ajaxArgs  = _(_(this.store.ajaxDefaults).clone()).extend(
@@ -569,12 +620,13 @@ angular
 					u.debug('asked to diff update, but already up to date, so just relax!', latestVersion, this_.getVersion());
 					return d.resolve();
 				}
-				u.debug('setting latest version >> ', latestVersion, addedIds, changedIds, deletedIds);
-				this_._setVersion(latestVersion);
+
+				// u.debug('setting latest version >> ', latest_version, added_ids, changed_ids, deleted_ids);
+				this_._setVersion(latest_version);
 				this_._updateObjectList(undefined, addedIds, deletedIds);
 				var changeDfds = _(changedObjs).map(function(obj, uri) {
-					u.debug(' checking to see if in --- ', uri, this_._objcache().get(uri));
-					u.debug('obj >> ', obj);
+					// u.debug(' checking to see if in --- ', uri, this_._objcache().get(uri));
+					// u.debug('obj >> ', obj);
 					var cachedObj = this_._objcache().get(uri), cdfd = u.deferred();
 					if (cachedObj) {
 						// { prop : [ {sval1 - @type:""}, {sval2 - @type} ... ]
@@ -705,7 +757,7 @@ angular
 						return u.when(lids.map(function(id) { return dmissingById[id]; }));
 					});
 				} else {
-					console.log('already have all the models, returning directly ');
+					// console.log('already have all the models, returning directly ');
 				}
 				return multi ? u.when(ds) : ds[0];
 			},
@@ -839,7 +891,6 @@ angular
 			},
 			_doUpdate:function(ids) {
 				// this actua
-				debug('box update >> ');
 				var d = u.deferred(), version = this.get('version') || 0, this_ = this, oc = this._objcache(),
 				objs = (ids === undefined ? oc.values() : ids.map(function(id) { return oc.get(id); })), // this._objcache().filter(function(x) { return ids === undefined || ids.indexOf(x.id) >= 0; }),
 				objIds = (ids === undefined ? oc.keys() : ids.slice()), // objs.map(function(x) { return x.id; }),
@@ -982,7 +1033,6 @@ angular
 				this._ajax('GET', 'auth/whoami').then(function(response) {
 					if (response.is_authenticated) {
 						// make user
-						console.log('whoami response ', response);
 						var user = {'@id': response.username, type:response.type, name:response.username };
 						if (response.user_metadata) { _(user).extend(JSON.parse(response.user_metadata)); }
 						u.assert(response.username, "No username returned from whoami, server problem");
@@ -1030,11 +1080,13 @@ angular
 					}
 					d.reject({message:'OpenID authentication failed', status:0});
 				};
-				var url = ['/', this.get('serverHost'), 'auth', 'login_openid'].join('/');
-				var redirUrl = '/openid_return_to.html';
+				console.log('login openid >>> ', this._getBaseUrl());
+				var url = [this._getBaseUrl(), 'auth', 'login_openid'].join('/');
+				var redirUrl = [this._getBaseUrl(), 'openid_return_to.html'].join('/');
+				console.log('redir url ', redirUrl);
 				var params = { identity: encodeURIComponent(openid), redirect:encodeURIComponent(redirUrl) };
 				url = url + "?" + _(params).map(function(v, k) { return k+'='+v; }).join('&');
-				u.log('opening url >>', url);
+				console.log('opening url >>', url);
 				popup = window.open(url, 'indx_openid_popup', 'width=790,height=500');
 				intPopupChecker = setInterval(function() {
 					if (!popup.closed) { return; }
@@ -1077,6 +1129,14 @@ angular
 				u.log('reconnecting as local ', this.get('username'), this.get('password'));
 			 	return this.login(this.get('username'),this.get('password'));
 			},
+			disconnect:function() {
+				return this.attributes.boxes.map(function(b) { b.disconnect(); });
+			},
+			is_connected:function() {
+				return this.attributes.boxes.map(function(b) { 
+					return { box: b.id, connected: b.is_connected() };
+				});
+			},
 			/// Logs out local and remote users
 			/// @then(): Logout complete
 			/// @fail(): Logout failed
@@ -1116,29 +1176,22 @@ angular
 					.fail(function(err) { d.reject(err); });
 				return d.promise();
 			},
-			_fetch:function() {
-				throw new Error('dont fetch a store - any more!');
-				//
-				// fetches list of boxes
-				/* - do not do this
-				var this_ = this, d = u.deferred();
-				this._ajax('GET','admin/list_boxes')
-					.success(function(data) {
-						u.when(data.list.map(function(boxid) { return this_.getBox(boxid); })).then(function(boxes) {
-							// console.log("boxes !! ", boxes);
-							this_.boxes().reset(boxes);
-							d.resolve(boxes);
-						});
-					}).error(function(e) { d.reject(e); });
-				return d.promise();
-				*/
+			_fetch:function() {	throw new Error('dont fetch a store - any more!');	},
+			_getBaseUrlHelper:utils.memoise_fast1(function(server_host) {
+				var url = server_host.indexOf('://') >= 0 ? server_host : [location.protocol, '', server_host].join('/');
+				console.log('executing getbaseurlhelper >> ', url);
+				return url;
+			}),
+			_getBaseUrl: function() {
+				return this._getBaseUrlHelper(this.get('server_host'));
 			},
 			_ajax:function(method, path, data) {
 				// now uses relative url scheme '//blah:port/path';
-				var url = ['/', this.get('serverHost'), path].join('/');
+				var url = [this._getBaseUrl(), path].join('/');
 				var defaultData = { app: this.get('app') };
-				var options = _(_(this.ajaxDefaults).clone()).extend(
-					{ url: url, method : method, crossDomain: !this.isSameDomain(), data: _(defaultData).extend(data) }
+				var options = _({}).extend(
+					this.ajaxDefaults,
+					{ url: url, method : method, crossDomain: !this.isSameDomain(), data: _({}).extend(defaultData,data) }
 				);
 				return $.ajax( options ); // returns a deferred
 			},

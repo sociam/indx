@@ -1,0 +1,33 @@
+<!DOCTYPE html> 
+<html>
+	<head>
+                <link rel="stylesheet" type="text/css" href="css/popup.css"/>                
+		<script type="text/javascript" src="lib/jquery.min.js"></script>
+		<script type="text/javascript" src="lib/raphael-min.js"></script>                
+                <script type="text/javascript" src="lib/underscore-min.js"></script>
+                <script type="text/javascript" src="lib/backbone-min.js"></script>
+                <script type="text/javascript" src="js/timeline.js"></script>
+                <script type="text/javascript" src="js/util.js"></script>
+                <script type="text/javascript">
+                    jQuery(document).ready(function() {
+                        window.backpage = chrome.extension.getBackgroundPage();
+                        window.log = function() { backpage.console.log.apply(window.backpage.console,arguments); };
+                        backpage.console.log(chrome.extension.getBackgroundPage().Person);
+                        backpage.background.watcher.bind("new_record", function(x) {
+                            console.log("new_record", x);
+                        });
+                        _(window).extend(_timegraph());
+                        window.tgs = backpage.background.get_streams().map(function(st_x) {
+                              var v = new TimeGraph({stream:st_x});
+                              jQuery("#main").append(v.render().el);
+                              console.log("foo ", this.el);
+                              return v;                     
+                        });
+                    });
+                </script>
+	</head>
+	<body>
+          <div id="main">
+          </div>
+	</body>
+</html>

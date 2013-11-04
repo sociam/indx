@@ -20,7 +20,7 @@ import json
 from twisted.internet.defer import Deferred
 from hashing_passwords import make_hash, check_hash
 from twisted.python.failure import Failure
-from indx.crypto import generate_rsa_keypair
+from indx.crypto import generate_rsa_keypair, load_key
 
 class IndxUser:
     """ INDX User handler. """
@@ -31,6 +31,37 @@ class IndxUser:
         logging.debug("IndxUser, username: {0}".format(username))
         self.db = db
         self.username = username
+
+    def get_keys(self):
+        """ Get the user's key pair from the database. """
+        logging.debug("IndxUser, get_keys for user {0}".format(self.username))
+        return_d = Deferred()
+
+        # XXX TODO FIXME decrypt the private key
+
+        def connected_cb(conn):
+            logging.debug("IndxUser, get_keys, connected_cb")
+
+            check_q = "SELECT public_key_rsa, private_key_rsa_env FROM tbl_users WHERE username = %s"
+            check_p = [self.username]
+
+            def check_cb(rows):
+                logging.debug("IndxUser, get_keys, connected_cb, check_cb")
+                if len(rows) < 1:
+                    return_d.callback(None)
+                    return
+                
+                try:
+                    return_d.callback({"public": load_key(rows[0][0]), "private": load_key(rows[0][1])})
+                except Exception as e:
+                    logging.error("IndxUser, get_keys, Exception loading keys from database: {0}".format(e))
+                    return_d.errback(Failure(e))
+
+            conn.runQuery(check_q, check_p).addCallbacks(check_cb, return_d.errback)
+
+        self.db.connect_indx_db().addCallbacks(connected_cb, return_d.errback)
+        return return_d
+
 
     def generate_encryption_keys(self, overwrite = False):
         """ Generate and save encryption keys for this user.
@@ -276,8 +307,24 @@ class IndxUser:
                         def del_query_cb(empty):
                             logging.debug("IndxUser, set_acl, connected_cb, del_query_cb")
 
+                            def acl_done_cb(empty):
+                                logging.debug("IndxUser, set_acl, connected_cb, acl_done_cb")
+
+                                # only transfer the 'rw' user if the user has been given the 'write' permission
+                                # FIXME remove the 'rw' user row if their permission is revoked ?
+                                user_types = ['ro']
+                                if acl['write']:
+                                    user_types.append('rw')
+
+                                def transfer_cb(empty):
+                                    logging.debug("IndxUser, set_acl, connected_cb, transfer_cb")
+                                    return_d.callback(True)
+
+                                self.db.transfer_keychain_users(database_name, self.username, target_username, user_types).addCallbacks(transfer_cb, return_d.errback)
+
+
                             # create a new ACL
-                            conn.runOperation("INSERT INTO tbl_acl (database_name, user_id, acl_read, acl_write, acl_owner, acl_control) VALUES (%s, (SELECT id_user FROM tbl_users WHERE username = %s), %s, %s, %s, %s)", [database_name, target_username, acl['read'], acl['write'], current_owner_value, acl['control']]).addCallbacks(return_d.callback, return_d.errback)
+                            conn.runOperation("INSERT INTO tbl_acl (database_name, user_id, acl_read, acl_write, acl_owner, acl_control) VALUES (%s, (SELECT id_user FROM tbl_users WHERE username = %s), %s, %s, %s, %s)", [database_name, target_username, acl['read'], acl['write'], current_owner_value, acl['control']]).addCallbacks(acl_done_cb, return_d.errback)
 
                         conn.runOperation(del_query, del_params).addCallbacks(del_query_cb, return_d.errback)
                        

@@ -14,6 +14,30 @@
 						return alpha[Math.floor(Math.random()*alpha.length)];
 					}).join('');
 				},
+				memoise:function(f) { 
+					var cached_args, cached_result, this_ = this;
+					return function() {
+						var args = _(arguments).toArray();
+						if (cached_result && 
+							((!cached_args && args.length == 0) || (_(args).isEqual(cached_args)))) {
+							return cached_result; 
+						}
+						cached_args = args.concat();
+						cached_result = f.apply(this_,args);
+						return cached_result;
+					};
+				},
+				memoise_fast1:function(f) {
+					// only 1 argument function
+					var cached_arg, cached_result, this_ = this;
+					return function() {
+						var arg = arguments[0];
+						if (cached_result && (arg == cached_arg)) { return cached_result; }
+						cached_arg = arg;
+						cached_result = f(arg);
+						return cached_result;
+					};
+				},
 				uniqstr:function(L) {
 					var o = {}, i, l = L.length, r = [];
 					for(i=0; i<l;i+=1) { o[L[i]] = L[i]; }
