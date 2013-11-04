@@ -58,12 +58,12 @@ angular
 		var _makeLocalUser = function(name) {
 			return {"@id":name,user_type:'local',username:name,name:name};
 		};
-		var without_protocol=function(url) {
+		var withoutProtocol=function(url) {
 			if (url.indexOf('//') >= 0) {
 				return url.slice(url.indexOf('//')+2);
 			}
 		};
-		var protocol_of = function(url) {
+		var protocolOf = function(url) {
 			if (url.indexOf('//') >= 0) {
 				return url.slice(0,url.indexOf('//'));
 			}
@@ -304,7 +304,7 @@ angular
 			initialize:function(attributes, options) {
 				var this_ = this;
 				u.assert(options.store, "no store provided");
-				this.options = _({}).extend(this.default_options, options);
+				this.options = _({}).extend(this.defaultOptions, options);
 				this.store = options.store;
 				this.on('update-from-master', function() {
 					// u.log("UPDATE FROM MASTER >> flushing ");
@@ -312,13 +312,13 @@ angular
 					this_._flushDeleteQueue();
 				});
 				this._reset();
-				this._set_up_websocket();				
+				this._setUpWebsocket();				
 			},
 			_reset:function() {
 				this.set({objcache: new ObjCollection(), objlist: [], files : new FileCollection() });
-				this._update_queue = {};
-				this._delete_queue = {};
-				this._fetching_queue = {};
+				this._updateQueue = {};
+				this._deleteQueue = {};
+				this._fetchingQueue = {};
 			},
 			/// @arg {string} fid - file id
 			/// Tries to get a file with given id. If it doesn't exist, a file with that name is created.
@@ -331,7 +331,7 @@ angular
 				return files.get(fid);
 			},
 			_setUpWebsocket:function() {
-				var this_ = this, serverHost = this.store.get('server_host'), store = this.store;
+				var this_ = this, serverHost = this.store.get('serverHost'), store = this.store;
 				if (! this.getUseWebsockets() ) { return; }
 
 				var reconnect = function() {
@@ -371,8 +371,8 @@ angular
 							delete this_._ws;
 						} catch(e) { u.error(); }
 					}
-					var protocol = (document.location.protocol === 'https:' || protocol_of(serverHost) === 'https:') ? 'wss:/' : 'ws:/';
-					var wsUrl = [protocol,without_protocol(serverHost),'ws'].join('/');
+					var protocol = (document.location.protocol === 'https:' || protocolOf(serverHost) === 'https:') ? 'wss:/' : 'ws:/';
+					var wsUrl = [protocol,withoutProtocol(serverHost),'ws'].join('/');
 					ws = new WebSocket(wsUrl);
 					/// @ignore
 					ws.onmessage = function(evt) {
@@ -498,10 +498,10 @@ angular
 			// 'http://' + this.store.get('serverHost') + "/" +  boxid + "/" + 'files',
 			_doPutFile:function(id,file,contenttype) {
 				var boxid = this.id || this.cid,
-				base_url = [this.store._getBaseUrl(), boxid, 'files'].join('/'),
+				baseUrl = [this.store._getBaseUrl(), boxid, 'files'].join('/'),
 				options = { app: this.store.get('app'), id: id, token:this.get('token'),  box: boxid, version: this.getVersion() },
 				optionParams = $.param(options),
-				url = base_url+"?"+optionParams,
+				url = baseUrl+"?"+optionParams,
 				d = u.deferred();
 				debug("PUTTING FILE ", url);
 				var ajaxArgs  = _(_(this.store.ajaxDefaults).clone()).extend(
@@ -597,7 +597,7 @@ angular
 				}
 
 				// u.debug('setting latest version >> ', latest_version, added_ids, changed_ids, deleted_ids);
-				this_._setVersion(latest_version);
+				this_._setVersion(latestVersion);
 				this_._updateObjectList(undefined, addedIds, deletedIds);
 				var changeDfds = _(changedObjs).map(function(obj, uri) {
 					// u.debug(' checking to see if in --- ', uri, this_._objcache().get(uri));
@@ -1107,9 +1107,9 @@ angular
 			disconnect:function() {
 				return this.attributes.boxes.map(function(b) { b.disconnect(); });
 			},
-			is_connected:function() {
+			isConnected:function() {
 				return this.attributes.boxes.map(function(b) { 
-					return { box: b.id, connected: b.is_connected() };
+					return { box: b.id, connected: b.isConnected() };
 				});
 			},
 			/// Logs out local and remote users
@@ -1152,13 +1152,13 @@ angular
 				return d.promise();
 			},
 			_fetch:function() {	throw new Error('dont fetch a store - any more!');	},
-			_getBaseUrlHelper:utils.memoise_fast1(function(server_host) {
-				var url = server_host.indexOf('://') >= 0 ? server_host : [location.protocol, '', server_host].join('/');
+			_getBaseUrlHelper:utils.memoise_fast1(function(serverHost) {
+				var url = serverHost.indexOf('://') >= 0 ? serverHost : [location.protocol, '', serverHost].join('/');
 				console.log('executing getbaseurlhelper >> ', url);
 				return url;
 			}),
 			_getBaseUrl: function() {
-				return this._getBaseUrlHelper(this.get('server_host'));
+				return this._getBaseUrlHelper(this.get('serverHost'));
 			},
 			_ajax:function(method, path, data) {
 				// now uses relative url scheme '//blah:port/path';
