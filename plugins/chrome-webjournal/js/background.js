@@ -33,9 +33,9 @@
         $scope.date = function(d) { return new Date().toLocaleTimeString(); };
         $scope.duration = function(d) { return (d.end.valueOf() - d.start.valueOf()) / 60000; };
         $scope.shorten = function(url) { 
-            var noprot = url.slice(url.indexOf('//')+1);
+            var noprot = url.slice(url.indexOf('//')+2);
             var host = noprot.slice(0,noprot.indexOf('/'));
-            var path = noprot.slice(noprot.lastIndexOf('/'));
+            var path = noprot.slice(noprot.lastIndexOf('/')+1);
             if (path.indexOf('?') >= 0) { 
                 path = path.slice(0,path.indexOf('?'));
             }
