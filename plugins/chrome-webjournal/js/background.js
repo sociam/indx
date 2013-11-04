@@ -30,10 +30,18 @@
             var bp = chrome.extension.getBackgroundPage();
             return bp.watcher_instance;
         };
-        $scope.data = get_watcher().data.concat();
-        $scope.format = function(d) { 
-            return (new Date(d.start)) + d.location + " " + d.end - d.start;
+        $scope.date = function(d) { return new Date().toLocaleTimeString(); };
+        $scope.duration = function(d) { return (d.end.valueOf() - d.start.valueOf()) / 60000; };
+        $scope.shorten = function(url) { 
+            var noprot = url.slice(url.indexOf('//')+1);
+            var host = noprot.slice(0,noprot.indexOf('/'));
+            var path = noprot.slice(noprot.lastIndexOf('/'));
+            if (path.indexOf('?') >= 0) { 
+                path = path.slice(0,path.indexOf('?'));
+            }
+            return host + "/" + path;
         };
+        $scope.data = get_watcher().data;
     }).controller('options', function($scope, watcher, client, utils) {
         // options screen only  -------------------------------------------
         window.$s = $scope;
