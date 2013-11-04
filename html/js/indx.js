@@ -62,11 +62,13 @@ angular
 			if (url.indexOf('//') >= 0) {
 				return url.slice(url.indexOf('//')+2);
 			}
+			return url;
 		};
 		var protocolOf = function(url) {
 			if (url.indexOf('//') >= 0) {
 				return url.slice(0,url.indexOf('//'));
 			}
+			// fall through
 		};
 
 		var serializeObj = function(obj) {
@@ -371,9 +373,13 @@ angular
 							delete this_._ws;
 						} catch(e) { u.error(); }
 					}
+
 					var protocol = (document.location.protocol === 'https:' || protocolOf(serverHost) === 'https:') ? 'wss:/' : 'ws:/';
+					var wprot = withoutProtocol(serverHost);
 					var wsUrl = [protocol,withoutProtocol(serverHost),'ws'].join('/');
+					//	console.log('trying ws url >>>>>>>>>>>>>> ', ws_url);
 					ws = new WebSocket(wsUrl);
+					
 					/// @ignore
 					ws.onmessage = function(evt) {
 						// u.debug('websocket :: incoming a message ', evt.data.toString().substring(0,190));
