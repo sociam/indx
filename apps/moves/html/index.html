@@ -37,18 +37,18 @@
 
         <!-- INDX with toolbar -->
         <div class="container" ng-app="indx" ng-controller='coreDebug'>
-          <toolbar box-var='selected_box' username-var='selected_user'></toolbar>
+          <toolbar box-var='selectedBox' username-var='selectedUser'></toolbar>
           <!-- <div class="container"> -->
 
 
-            <div class="row" id="nobox-div" ng-show="!(selected_user && selected_box)">
+            <div class="row" id="nobox-div" ng-show="!(selectedUser && selectedBox)">
                 <div class="span12">
                     <h2>Download Moves Data</h2>
                     <p>Login to INDX and select a box to start the download process.</p>
                 </div>
             </div>
 
-            <div ng-show="selected_user && selected_box">
+            <div ng-show="selectedUser && selectedBox">
                 <div class="row" id="step-div">
                     <div class="span12">
                         <h2>Download Moves Data</h2>

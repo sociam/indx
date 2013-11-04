@@ -10,26 +10,26 @@ angular
 			idAttribute: 'name',
 			initialize: function () {
 				Backbone.Model.prototype.initialize.apply(this, arguments);
-				this.get_results();
+				this.getResults();
 			},
 			run: function () {
 				var that = this;
-				this.is_running = true;
+				this.isRunning = true;
 				$.post('api/tests/run_test?name=' + this.get('name')).always(function () {
-					that.is_running = false;
-					u.safe_apply($scope);
+					that.isRunning = false;
+					u.safeApply($scope);
 				}).then(function (r) {
 					that.set(r.response);
 					that.err = false;
-					that.get_results().then(function () {
-						u.safe_apply($scope);
+					that.getResults().then(function () {
+						u.safeApply($scope);
 					});
 				}).fail(function () {
 					that.err = true;
-					u.safe_apply($scope);
+					u.safeApply($scope);
 				});
 			},
-			get_results: function () {
+			getResults: function () {
 				console.log('GET RESULTS', this);
 				var that = this,
 					promise = $.Deferred();
@@ -65,7 +65,7 @@ angular
 						};
 					}).get());
 
-					u.safe_apply($scope);
+					u.safeApply($scope);
 
 					promise.resolve();
 				});
@@ -77,20 +77,20 @@ angular
 			idAttribute: 'name',
 			build: function () {
 				var that = this;
-				this.is_building = true;
+				this.isBuilding = true;
 				$.post('api/docs/generate_doc?name=' + this.get('name'))
 					.then(function (r) {
 						that.set(r.response);
 						that.err = false;
-						u.safe_apply($scope);
+						u.safeApply($scope);
 					})
 					.fail(function (r, s, err) {
 						that.err = r.status + ' - ' + err;
-						u.safe_apply($scope);
+						u.safeApply($scope);
 					})
 					.always(function () {
-						that.is_building = false;
-						u.safe_apply($scope);
+						that.isBuilding = false;
+						u.safeApply($scope);
 					});
 			}
 		});
@@ -122,14 +122,20 @@ angular
 
 		// this pollution created by emax for supprting debugging
 		// declares box in devtools
-		var load_box = function(bid) {
-			client.store.get_box(bid).then(function(box) {window.box = box; });
+		var loadBox = function(bid) {
+			client.store.getBox(bid).then(function(box) { 
+				console.log('got box >> ', box.id);
+				window.box = box; 
+			});
+		};		
+		var init = function() {
+			console.log('change on box and user --- init >> ', $scope.selectedBox, $scope.selectedUser);
+			if ($scope.selectedUser && $scope.selectedBox) { 
+				loadBox($scope.selectedBox); 
+			}
 		};
-
-		$scope.$watch('selected_box + selected_user', function() {
-			if ($scope.selected_box) { load_box($scope.selected_box); }
-		});
-
+		$scope.$watch('selectedBox + selectedUser', init);
+		init();
 		window.store = client.store;
 		window.$scope = $scope;
 	});

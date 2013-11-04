@@ -1,4 +1,4 @@
-<h1>Obj#{{ curr_obj.id }}</h1>
+<h1>Obj#{{ currObj.id }}</h1>
 
 <div>timestamp (user)</div>
 
@@ -6,11 +6,11 @@
 <table class="table">
 	<thead><th>Name</th><th>Type</th><th>Value</th><th>Language</th></thead>
 	<tbody class="monospace">
-		<tr ng-repeat="attribute in curr_obj.attribute_array">
+		<tr ng-repeat="attribute in currObj.attributeArray">
 			<td>{{ attribute.key }}</td>
 			<td>{{ attribute.type }}</td>
-			<td ng-show="!attribute.is_array">{{ attribute.value }}</td>
-			<td ng-show="attribute.is_array">
+			<td ng-show="!attribute.isArray">{{ attribute.value }}</td>
+			<td ng-show="attribute.isArray">
 				<ul class="list-unstyled">
 					<li ng-repeat="item in attribute.value">
 						[{{$index}}] =>
@@ -26,9 +26,9 @@
 <h4>JSON</h4>
 <div class="obj-preview">
 	<ul class="icons">
-		<li><a title="Edit" ng-click="curr_obj.edit()"><i class="glyphicon glyphicon-pencil"></i></a></li>
-		<li><a title="Delete" ng-click="curr_obj.delete()"><i class="glyphicon glyphicon-remove"></i></a></li>
+		<li><a title="Edit" ng-click="currObj.edit()"><i class="glyphicon glyphicon-pencil"></i></a></li>
+		<li><a title="Delete" ng-click="currObj.delete()"><i class="glyphicon glyphicon-remove"></i></a></li>
 	</ul>
-	<pre>{{ pop(curr_obj.val_string) }}</pre>
+	<pre>{{ pop(currObj.valString) }}</pre>
 </div>
 

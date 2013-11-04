@@ -6,14 +6,14 @@
 					<div ng-repeat="i in u.range(12)" class="bar{{ i + 1 }}"></div>
 				</div>
 			</div>
-			<button data-toggle="modal" href="#login-dialog" ui-if-"!is_logged_in()" class="btn btn-primary login-btn">	log in </button>
-			<button data-toggle="modal" href="#logout-dialog" ui-if="is_logged_in()" class="btn btn-primary login-btn"> 
-				{{ username }} <span ng-bind-html-unsafe="usericon"></span>
+			<button data-toggle="modal" href="#login-dialog" ng-show="!isLoggedIn()" class="btn btn-primary login-btn">	<label>log in</label> </button>
+			<button data-toggle="modal" href="#logout-dialog" ng-show="isLoggedIn()" class="btn btn-primary login-btn">
+				<label>{{ user.name }}</label><div class='usericon' ng-bind-html-unsafe="usericon"></div>
 			</button>
-			<div ui-if="is_logged_in()"  class="btn-group box-selector">
+			<div ng-show="isLoggedIn()"  class="btn-group box-selector">
 				<button type="button" class="btn btn-default dropdown-toggle selected-box" ng-bind-html-unsafe="(box || 'select a box') + ' &nbsp; ' + caret" data-toggle="dropdown"></button>  
 				<ul class="dropdown-menu boxlist" role='menu'>
-					<li ng-repeat="boxid in boxlist" ng-click="cb_box_selected(boxid)" >{{ boxid }}</li>
+					<li ng-repeat="boxid in boxlist" ng-click="cbBoxSelected(boxid)" >{{ boxid }}</li>
 				</ul>
 			</div>
 		</div> <!-- navbar-inner -->
@@ -34,11 +34,11 @@
 						-->
 						<div class="form-group">
 							<label for="login-username">username:</label>
-							<input type="text" id="login-username" class="form-control" ng-model="_login_username" autofocus autocomplete='off'></input>		
+							<input type="text" id="login-username" class="form-control" ng-model="_loginUsername" autofocus autocomplete='off'></input>		
 					  	</div>
 						<div class="form-group">
 							<label for="login-password">password:</label>
-							<input type="password" id="login-password" class="form-control" ng-model="_login_password" autocomplete='off'></input>
+							<input type="password" id="login-password" class="form-control" ng-model="_loginPassword" autocomplete='off'></input>
 						</div>
 					</div>
 				  <div class="modal-footer">
@@ -47,7 +47,7 @@
 					  <div ng-repeat="i in u.range(12)" class="bar{{ i + 1 }}"></div>
 					</div>		  
 					<a class="btn" data-dismiss="modal" aria-hidden="true">Cancel</a>
-					<input type="submit" data-dismiss="modal" class="btn btn-primary" value="Log in" ng-click="loginbox_try_login(	_login_username,_login_password)"></input>
+					<input type="submit" data-dismiss="modal" class="btn btn-primary" value="Log in" ng-click="loginboxTryLogin(	_loginUsername,_loginPassword)"></input>
 				  </div>
 				</form>
 			</div> <!-- modal-content -->
@@ -62,10 +62,10 @@
 					LOG OUT
 				</div>
 				<div class="modal-body">
-					<div class="logout-msg">Log out {{ username }}?</div>
+					<div class="logout-msg">Log out {{ user.name }}?</div>
 					<div class='buttons'>
 						<a class="btn" data-dismiss="modal" aria-hidden="true">Cancel</a>
-						<input type='submit' id="logout-ok" class="btn btn-primary" data-dismiss="modal" ng-click="do_logout()" autofocus value="Yes, log out"></button>
+						<input type='submit' id="logout-ok" class="btn btn-primary" data-dismiss="modal" ng-click="doLogout()" autofocus value="Yes, log out"></button>
 					</div>
 				</div>
 			</div>
@@ -86,7 +86,7 @@
 						-->
 						<div class="form-group">
 							<label for="new-bid">box name:</label>
-							<input type="text" id="new-bid" class="form-control" ng-model="_new_bid" autofocus autocomplete='off'></input>		
+							<input type="text" id="new-bid" class="form-control" ng-model="_newBid" autofocus autocomplete='off'></input>		
 					  	</div>
 					</div>
 				  <div class="modal-footer">
@@ -95,7 +95,7 @@
 					  <div ng-repeat="i in u.range(12)" class="bar{{ i + 1 }}"></div>
 					</div>		  
 					<a class="btn" data-dismiss="modal" aria-hidden="true">Cancel</a>
-					<input type="submit" data-dismiss="modal" class="btn btn-primary" value="Create box" ng-click="create_new_box(_new_bid)"></input>
+					<input type="submit" data-dismiss="modal" class="btn btn-primary" value="Create box" ng-click="createNewBox(_newBid)"></input>
 				  </div>
 				</form>
 			</div> <!-- modal-content -->

@@ -16,11 +16,13 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
+import json
 from indx.webserver.handlers.base import BaseHandler
 import indx.indx_pg2 as database
 from twisted.internet.defer import Deferred
 
 import urlparse
+import urllib
 from openid.store import memstore
 #from openid.store import filestore
 from openid.consumer import consumer
@@ -30,6 +32,7 @@ from openid.oidutil import appendArgs
 from openid.extensions import pape, sreg, ax
 
 from indx.openid import IndxOpenID
+from indx.user import IndxUser
 from hashing_passwords import make_hash, check_hash
 
 OPENID_PROVIDER_NAME = "INDX OpenID Handler"
@@ -97,7 +100,23 @@ class AuthHandler(BaseHandler):
     def auth_whoami(self, request):
         wbSession = self.get_session(request)
         logging.debug('auth whoami ' + repr(wbSession))
-        self.return_ok(request, { "user" : wbSession and wbSession.username or 'nobody', "is_authenticated" : wbSession and wbSession.is_authenticated })
+
+        user = IndxUser(self.database, wbSession.username)
+
+        def info_cb(user_info):
+            if user_info is None:
+                user_info = {}
+
+            # add our username and is_authenticated information
+            if 'username' not in user_info: 
+                user_info['username'] = wbSession and wbSession.username or 'nobody'
+
+            user_info['is_authenticated'] = wbSession and wbSession.is_authenticated
+            self.return_ok(request, user_info)
+
+        # don't decode the user_metadata string, leave as a json string
+        user.get_user_info(decode_json = False).addCallbacks(info_cb, lambda failure: self.return_internal_error(request))
+
         
     def get_token(self,request):
         ## 1. request contains appid & box being requested (?!)
@@ -135,79 +154,51 @@ class AuthHandler(BaseHandler):
 
     ### OpenID functions
 
-    def check_openid_pass(self, uri, password):
-        """ Check an OpenID user's password. """
-        return_d = Deferred()
-
-        logging.debug("check_openid_pass for user {0}, where password is none? {1}".format(uri, password is None))
-
-        def connected_cb(conn):
-            """ Get the password hash of a user and check it against the supplied password. """
-            d = conn.runQuery("SELECT username_type, password_hash FROM tbl_users WHERE username = %s AND username_type = %s", [uri, "openid"])
-
-            def hash_cb(rows):
-                if len(rows) == 0:
-                    return_d.callback(False) # return False if user not in DB
-                    return
-
-                username_type, password_hash = rows[0]
-
-                if password_hash == "":
-                    return_d.callback(True) # user's password is not yet set - return True always.
-                    return
-
-                return_d.callback(check_hash(password, password_hash)) # check hash and return result
-                return
-
-            d.addCallbacks(hash_cb, return_d.errback)
-
-        # get a connection to the INDX db from the pool
-        self.database.connect_indx_db().addCallbacks(connected_cb, return_d.errback)
-        return return_d
-
-
     def login_openid(self, request):
         """ Verify an OpenID identity. """
+        wbSession = self.get_session(request)
 
         identity = self.get_arg(request, "identity")
 
         if identity is None:
             logging.error("login_openid error, identity is None, returning bad request.")
-            return self.return_bad_request(request, "You must specify an 'identity' in the POST query parameters.")
+            return self.return_bad_request(request, "You must specify an 'identity' in the GET/POST query parameters.")
 
-        password = self.get_arg(request, "password")
+        redirect = self.get_arg(request, "redirect")
+        wbSession.set_openid_redirect(redirect)
 
-        def post_pw():
-            logging.debug("login_openid post_pw")
+        if redirect is None:
+            logging.error("login_openid error, redirect is None, returning bad request.")
+            return self.return_bad_request(request, "You must specify a 'redirect' in the GET/POST query parameters.")
+
+
+        def post_user_info(request_user_metadata):
+            logging.debug("login_openid post_user_info, request_user_metadata: {0}".format(request_user_metadata))
 
             oid_consumer = consumer.Consumer(self.get_openid_session(request), self.store)
             try:
                 oid_req = oid_consumer.begin(identity)
-                
-                # SReg speaks this protocol: http://openid.net/specs/openid-simple-registration-extension-1_1-01.html
-                # and tries to request additional metadata about this OpenID identity
-                sreg_req = sreg.SRegRequest(required=['fullname','nickname','email'], optional=[])
-                oid_req.addExtension(sreg_req)
+                if request_user_metadata:                    
+                    # SReg speaks this protocol: http://openid.net/specs/openid-simple-registration-extension-1_1-01.html
+                    # and tries to request additional metadata about this OpenID identity
+                    sreg_req = sreg.SRegRequest(required=['fullname','nickname','email'], optional=[])
+                    oid_req.addExtension(sreg_req)
 
-                # AX speaks this protocol: http://openid.net/specs/openid-attribute-exchange-1_0.html
-                # and tries to get more attributes (by URI), we request some of the more common ones
-                ax_req = ax.FetchRequest()
-                for uri in self.AX_URIS:
-                    ax_req.add(ax.AttrInfo(uri, required = True))
-                oid_req.addExtension(ax_req)
+                    # AX speaks this protocol: http://openid.net/specs/openid-attribute-exchange-1_0.html
+                    # and tries to get more attributes (by URI), we request some of the more common ones
+                    ax_req = ax.FetchRequest()
+                    for uri in self.AX_URIS:
+                        ax_req.add(ax.AttrInfo(uri, required = True))
+                    oid_req.addExtension(ax_req)
             except consumer.DiscoveryFailure as exc:
-                #request.setResponseCode(200, message = "OK")
-                #request.write("Error: {0}".format(exc))
-                #request.finish()
                 logging.error("Error in login_openid: {0}".format(exc))
-                return self.return_unauthorized(request)
+                self._send_openid_redirect(request, {"status": 401, "message": "Unauthorized"})
+                return
             else:
                 if oid_req is None:
-                    #request.setResponseCode(200, message = "OK")
-                    #request.write("Error, no OpenID services found for: {0}".format(identity))
                     logging.error("Error in login_openid: no OpenID services found for: {0}".format(identity))
-                    #request.finish()
-                    return self.return_unauthorized(request)
+                    self._send_openid_redirect(request, {"status": 401, "message": "Unauthorized"})
+                    return
                 else:
                     trust_root = self.webserver.server_url
                     return_to = appendArgs(trust_root + "/" + self.base_path + "/openid_process", {})
@@ -215,23 +206,25 @@ class AuthHandler(BaseHandler):
                     logging.debug("OpenID, had oid_req, trust_root: {0}, return_to: {1}, oid_req: {2}".format(trust_root, return_to, oid_req))
 
                     redirect_url = oid_req.redirectURL(trust_root, return_to)
-                    # FIXME check this is the best way to redirect here
                     request.setHeader("Location", redirect_url)
                     request.setResponseCode(302, "Found")
                     request.finish()
                     return
 
-
-        def pass_cb(pass_correct):
-            logging.error("login_openid pass_cb, password correct? {0}".format(pass_correct))
-            if pass_correct:
-                return post_pw()
-            else:
-                return self.return_unauthorized(request)
-
-        self.check_openid_pass(identity, password).addCallbacks(pass_cb, lambda failure: self.return_internal_error(request))
+        user = IndxUser(self.database, identity)
+        user.get_user_info().addCallbacks(lambda user_info: post_user_info(user_info is None), lambda failure: self.return_internal_error(request))
+        # if user_info is None, then request_user_metadata = True
         return
 
+    def _url_add_params(self, url, params):
+
+        url_parts = list(urlparse.urlparse(url))
+        query = dict(urlparse.parse_qsl(url_parts[4]))
+        query.update(params)
+
+        url_parts[4] = urllib.urlencode(query)
+
+        return urlparse.urlunparse(url_parts)
 
     def openid_process(self, request):
         """ Process a callback from an identity provider. """
@@ -246,10 +239,9 @@ class AuthHandler(BaseHandler):
         display_identifier = info.getDisplayIdentifier()
 
         if info.status == consumer.FAILURE and display_identifier:
-            #request.setResponseCode(200, "OK")
             logging.error("Verification of {0} failed: {1}".format(display_identifier, info.message))
-            #request.finish()
-            return self.return_unauthorized(request)
+            self._send_openid_redirect(request, {"status": 401, "message": "Unauthorized"})
+            return
         elif info.status == consumer.SUCCESS:
             sreg_resp = sreg.SRegResponse.fromSuccessResponse(info)
             sreg_data = {}
@@ -263,6 +255,21 @@ class AuthHandler(BaseHandler):
                     ax_data[uri] = ax_resp.get(uri)
 
             logging.debug("openid_process: Success of {0}, sreg_resp: {1} (sreg_data: {2}), pape_resp: {3}, ax_resp: {4}, ax_data: {5}".format(display_identifier, sreg_resp, sreg_data, pape_resp, ax_resp, ax_data))
+
+            if len(ax_data.keys()) > 0:
+                user_metadata = {
+                    "name": ax_data['http://schema.openid.net/namePerson/first'][0] + " " + ax_data['http://schema.openid.net/namePerson/last'][0],
+                    "email": ax_data['http://schema.openid.net/contact/email'][0],
+                }
+            elif len(sreg_data.keys()) > 0:
+                user_metadata = {
+                    "name": sreg_data['fullname'],
+                    "nickname": sreg_data['nickname'],
+                    "email": sreg_data['email'],
+                }
+            else:
+                user_metadata = {}
+
             if info.endpoint.canonicalID:
                 logging.debug("openid_process, additional: ...This is an i-name and its persistent ID is: {0}".format(info.endpoint.canonicalID))
 
@@ -274,40 +281,47 @@ class AuthHandler(BaseHandler):
             wbSession.setPassword("") # XXX
 
             # Initialise the OpenID user now:
-
             ix_openid = IndxOpenID(self.database, display_identifier)
 
             def err_cb(err):
                 logging.error("Error in IndxOpenID: {0}".format(err))
-                return self.return_unauthorized(request)
+                self._send_openid_redirect(request, {"status": 401, "message": "Unauthorized"})
+                return
 
             def cb(user_info):
-                password_hash = user_info['password_hash']
-                if password_hash == "":
-                    # user should be prompted for a password by the UI now, because they never have set one (new OpenID user)
-                    # TODO do this...
-                    return self.return_ok(request)
-                else:
-                    return self.return_ok(request)
+                user_info['status'] = 200
+                user_info['message'] = "OK"
+                self._send_openid_redirect(request, user_info)
+                return
     
-            ix_openid.init_user().addCallbacks(cb, err_cb)
+            ix_openid.init_user(user_metadata).addCallbacks(cb, err_cb)
             return
-            #return self.return_ok(request)
         elif info.status == consumer.CANCEL:
-            #request.setResponseCode(200, "OK")
             logging.error("Error in openid_process: Verification cancelled.")
-            #request.finish()
-            return self.return_unauthorized(request)
+            self._send_openid_redirect(request, {"status": 401, "message": "Unauthorized"})
+            return
         elif info.status == consumer.SETUP_NEEDED:
-            #request.setResponseCode(200, "OK")
             logging.error("Error in openid_process: Setup needed at URL: {0}".format(info.setup_url))
-            #request.finish()
-            return self.return_unauthorized(request)
+            self._send_openid_redirect(request, {"status": 401, "message": "Unauthorized"})
+            return
         else:
-            #request.setResponseCode(200, "OK")
             logging.error("Error in openid_process: Verification Failed.")
-            #request.finish()
-            return self.return_unauthorized(request)
+            self._send_openid_redirect(request, {"status": 401, "message": "Unauthorized"})
+            return
+
+
+    def _send_openid_redirect(self, request, continuation_params):
+        """ OpenID has finished, send a redirect with the specified parameters. """
+        logging.debug("Auth: sending openid redirect with continuation params: {0}".format(continuation_params))
+
+        wbSession = self.get_session(request)
+        redirect_url = wbSession.get_openid_redirect()
+
+        continuation_params['username_type'] = "openid"
+
+        request.setHeader("Location", self._url_add_params(redirect_url, continuation_params))
+        request.setResponseCode(302, "Found")
+        request.finish()
 
 
     def get_openid_session(self, request):
@@ -339,7 +353,7 @@ AuthHandler.subhandlers = [
         # for an INDX ID account
         # http://localhost:8211/auth/login_openid?identity=http://id.indx.ecs.soton.ac.uk/identity/ds
         'prefix':'login_openid', # login with openid
-        'methods': ['POST'],
+        'methods': ['POST','GET'],
         'require_auth': False,
         'require_token': False,
         'handler': AuthHandler.login_openid,

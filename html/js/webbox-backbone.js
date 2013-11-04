@@ -54,48 +54,48 @@
 		diff: function(token) { return JSON.stringify({action:'diff', operation:"start"}); }
 	};
 
-	var serialize_obj = function(obj) {
+	var serializeObj = function(obj) {
 		var uri = obj.id;
-		var out_obj = {};
+		var outObj = {};
 		$.each(obj.attributes, function(pred, vals){
 			if (pred[0] === "_" || pred[0] === "@"){
 				// don't expand @id etc.
 				return;
 			}
-			var obj_vals = [];
+			var objVals = [];
 			if (!(vals instanceof Array)){
 				vals = [vals];
 			}
 			$.each(vals, function(){
 				var val = this;
 				if (val instanceof WebBox.File) {
-					obj_vals.push({"@value": val.id, "@type":"webbox-file", "@language":val.get('content-type')});
+					objVals.push({"@value": val.id, "@type":"webbox-file", "@language":val.get('content-type')});
 				} else if (val instanceof WebBox.Obj) {
-					obj_vals.push({"@id": val.id });
+					objVals.push({"@id": val.id });
 				} else if (typeof val === "object" && (val["@value"] || val["@id"])) {
-					obj_vals.push(val); // fully expanded string, e.g. {"@value": "foo", "@language": "en" ... }
+					objVals.push(val); // fully expanded string, e.g. {"@value": "foo", "@language": "en" ... }
 				} else if (typeof val === "string" || val instanceof String ){
-					obj_vals.push({"@value": val});
+					objVals.push({"@value": val});
 				} else if (_.isDate(val)) {
-					obj_vals.push({"@value": val.toISOString(), "@type":"http://www.w3.org/2001/XMLSchema#dateTime"});
+					objVals.push({"@value": val.toISOString(), "@type":"http://www.w3.org/2001/XMLSchema#dateTime"});
 				} else if (_.isNumber(val) && u.isInteger(val)) {
-					obj_vals.push({"@value": val.toString(), "@type":"http://www.w3.org/2001/XMLSchema#integer"});
+					objVals.push({"@value": val.toString(), "@type":"http://www.w3.org/2001/XMLSchema#integer"});
 				} else if (_.isNumber(val)) {
-					obj_vals.push({"@value": val.toString(), "@type":"http://www.w3.org/2001/XMLSchema#float"});
+					objVals.push({"@value": val.toString(), "@type":"http://www.w3.org/2001/XMLSchema#float"});
 				} else if (_.isBoolean(val)) {
-					obj_vals.push({"@value": val.toString(), "@type":"http://www.w3.org/2001/XMLSchema#boolean"});
+					objVals.push({"@value": val.toString(), "@type":"http://www.w3.org/2001/XMLSchema#boolean"});
 				} else {
 					u.warn("Could not determine type of val ", pred, val);
-					obj_vals.push({"@value": val.toString()});
+					objVals.push({"@value": val.toString()});
 				}
 			});
-			out_obj[pred] = obj_vals;
+			outObj[pred] = objVals;
 		});
-		out_obj['@id'] = uri;
-		return out_obj;
+		outObj['@id'] = uri;
+		return outObj;
 	};
 
-	var literal_deserializers = {
+	var literalDeserializers = {
 		'': function(o) { return o['@value']; },
 		"http://www.w3.org/2001/XMLSchema#integer": function(o) { return parseInt(o['@value'], 10); },
 		"http://www.w3.org/2001/XMLSchema#float": function(o) { return parseFloat(o['@value'], 10); },
@@ -103,29 +103,29 @@
 		"http://www.w3.org/2001/XMLSchema#boolean": function(o) { return o['@value'].toLowerCase() === 'true'; },
 		"http://www.w3.org/2001/XMLSchema#dateTime": function(o) { return new Date(Date.parse(o['@value'])); },
 		"webbox-file": function(o,box) {
-			var f = box.get_or_create_file(o['@value']);
+			var f = box.getOrCreateFile(o['@value']);
 			f.set("content-type", o['@language']);
 			return f;
 		}
 	};
-	var deserialize_literal = function(obj, box) {
-		return obj['@value'] !== undefined ? literal_deserializers[ obj['@type'] || '' ](obj, box) : obj;
+	var deserializeLiteral = function(obj, box) {
+		return obj['@value'] !== undefined ? literalDeserializers[ obj['@type'] || '' ](obj, box) : obj;
 	};
 
-	var deserialize_value = function(s_val, box) {
+	var deserializeValue = function(sVal, box) {
 		var vd = u.deferred();
 		// it's an object, so return that
-		if (s_val.hasOwnProperty("@id")) {
+		if (sVal.hasOwnProperty("@id")) {
 			// object
-			box.get_obj(s_val["@id"]).then(vd.resolve).fail(vd.reject);
+			box.getObj(sVal["@id"]).then(vd.resolve).fail(vd.reject);
 		}
-		else if (s_val.hasOwnProperty("@value")) {
+		else if (sVal.hasOwnProperty("@value")) {
 			// literal
-			vd.resolve(deserialize_literal(s_val, box));
+			vd.resolve(deserializeLiteral(sVal, box));
 		}
 		else {
 			// don't know what it is!
-			vd.reject('cannot unpack value ', s_val);
+			vd.reject('cannot unpack value ', sVal);
 		}
 		return vd.promise();
 	};
@@ -136,14 +136,14 @@
 			u.debug('options >> ', attrs, options );
 			this.box = options.box;
 		},
-		get_id:function() { return this.id;	},
-		get_url:function() {
+		getId:function() { return this.id;	},
+		getUrl:function() {
 			var params = {
-				id:this.get_id(),
+				id:this.getId(),
 				app:this.box.store.get('app'),
 				token:this.box.get('token'),
-				box:this.box.get_id()
-			}, url = ['/', this.box.store.get('server_host'), this.box.id, 'files'].join('/') + '?' + $.param(params);
+				box:this.box.getId()
+			}, url = ['/', this.box.store.get('serverHost'), this.box.id, 'files'].join('/') + '?' + $.param(params);
 			// u.debug("IMAGE URL IS ", url, params);
 			return url;
 		}
@@ -165,22 +165,22 @@
 		initialize:function(attrs, options) {
 			this.box = options.box;
 		},
-		_is_fetched: function() { return this._fetched || false; },
-		_set_fetched : function() { this._fetched = true; },
-		get_id:function() { return this.id;	},
-		_value_to_array:function(k,v) {
+		_isFetched: function() { return this._fetched || false; },
+		_setFetched : function() { this._fetched = true; },
+		getId:function() { return this.id;	},
+		_valueToArray:function(k,v) {
 			if (k === '@id') { return v; }
 			if (!_(v).isUndefined() && !_(v).isArray()) {
 				return [v];
 			}
 			return v;
 		},
-		_all_values_to_arrays:function(o) {
+		_allValuesToArrays:function(o) {
 			if (!_(o).isObject()) {	console.error(' not an object', o); return o; }
 			var this_ = this;
 			// ?!?! this isn't doing anything (!!)
 			return u.dict(_(o).map(function(v,k) {
-						       var val = this_._value_to_array(k,v);
+						       var val = this_._valueToArray(k,v);
 						       if (u.defined(val)) { return [k,val]; }
 						       return undefined;
 					       }).filter(u.defined));
@@ -188,30 +188,30 @@
 		set:function(k,v,options) {
 			// set is tricky because it can be called like
 			// set('foo',123) or set({foo:123})
-			if (typeof k === 'string') { v = this._value_to_array(k,v);	}
-			else {	k = this._all_values_to_arrays(k);	}
+			if (typeof k === 'string') { v = this._valueToArray(k,v);	}
+			else {	k = this._allValuesToArrays(k);	}
 			return Backbone.Model.prototype.set.apply(this,[k,v,options]);
 		},
-		delete_properties:function(props, silent)  {
+		deleteProperties:function(props, silent)  {
 			var this_ = this;
 			props.map(function(p) { this_.unset(p, silent ? {silent:true} : {}); });
 		},
-		_deserialise_and_set:function(s_obj, silent) {
+		_deserialiseAndSet:function(sObj, silent) {
 			// returns a promise
 			var this_ = this;
-			var dfds = _(s_obj).map(function(vals, key) {
+			var dfds = _(sObj).map(function(vals, key) {
 				var kd = u.deferred();
 				if (key.indexOf('@') === 0) { return; }
-				var val_dfds = vals.map(function(val) {
+				var valDfds = vals.map(function(val) {
 					var vd = u.deferred();
 					// it's an object, so return that
 					if (val.hasOwnProperty("@id")) {
 						// object
-						this_.box.get_obj(val["@id"]).then(vd.resolve).fail(vd.reject);
+						this_.box.getObj(val["@id"]).then(vd.resolve).fail(vd.reject);
 					}
 					else if (val.hasOwnProperty("@value")) {
 						// literal
-						vd.resolve(deserialize_literal(val, this_.box));
+						vd.resolve(deserializeLiteral(val, this_.box));
 					}
 					else {
 						// don't know what it is!
@@ -219,13 +219,13 @@
 					}
 					return vd.promise();
 				});
-				u.when(val_dfds).then(function(obj_vals) {
+				u.when(valDfds).then(function(objVals) {
 					// only update keys that have changed
-					var prev_vals = this_.get(key);
-					if ( prev_vals === undefined || obj_vals.length !== prev_vals.length ||
-						 _(obj_vals).difference(prev_vals).length > 0 ||
-						 _(prev_vals).difference(obj_vals).length > 0) {
-						this_.set(key, obj_vals, { silent : silent });
+					var prevVals = this_.get(key);
+					if ( prevVals === undefined || objVals.length !== prevVals.length ||
+						 _(objVals).difference(prevVals).length > 0 ||
+						 _(prevVals).difference(objVals).length > 0) {
+						this_.set(key, objVals, { silent : silent });
 					}
 					kd.resolve();
 				}).fail(kd.reject);
@@ -234,9 +234,9 @@
 			return u.when(dfds);
 		},
 		_fetch:function() {
-			var this_ = this, fd = u.deferred(), box = this.box.get_id();
+			var this_ = this, fd = u.deferred(), box = this.box.getId();
 			this.box._ajax('GET', box, {'id':this.id}).then(function(response) {
-				this_._set_fetched(true);
+				this_._setFetched(true);
 				var objdata = response.data;
 				if (objdata['@version'] === undefined) {
 					// according to the server, we're dead.
@@ -248,15 +248,15 @@
 					return;
 				}
 				// we are at current known version as far as we know
-				var obj_save_dfds = _(objdata).map(function(obj,uri) {
+				var objSaveDfds = _(objdata).map(function(obj,uri) {
 						// top level keys - corresponding to box level properties
 						if (uri[0] === "@") { return; } // ignore "@id", "@version" etc
 						// not one of those, so must be a
 						// < uri > : { prop1 .. prop2 ... }
 						u.assert(uri === this_.id, 'can only deserialise this object');
-						return this_._deserialise_and_set(obj);
+						return this_._deserialiseAndSet(obj);
 					});
-				u.when(obj_save_dfds).then(function(){ fd.resolve(this_); }).fail(fd.reject);
+				u.when(objSaveDfds).then(function(){ fd.resolve(this_); }).fail(fd.reject);
 			});
 			return fd.promise();
 		},
@@ -267,7 +267,7 @@
 			case "update":
 				return  model.box.update([model.id])[0];
 			case "delete":
-				return this.box._delete_models([this.id])[0];
+				return this.box._deleteModels([this.id])[0];
 			}
 		}
 	});
@@ -282,33 +282,33 @@
 	// lazily get objects as you go
 	var Box = WebBox.Box = Backbone.Model.extend({
 		idAttribute:"@id",
-		default_options: { use_websockets:true, ws_auto_reconnect:false	},
+		defaultOptions: { useWebsockets:true, wsAutoReconnect:false	},
 		initialize:function(attributes, options) {
 			var this_ = this;
 			u.assert(options.store, "no store provided");
 			this.store = options.store;
 			this.set({objcache: new ObjCollection(), objlist: [], files : new FileCollection() });
-			this.options = _(this.default_options).chain().clone().extend(options || {}).value();
-			this.set_up_websocket();
-			this._update_queue = {};
-			this._delete_queue = {};
-			this._fetching_queue = {};
+			this.options = _(this.defaultOptions).chain().clone().extend(options || {}).value();
+			this.setUpWebsocket();
+			this._updateQueue = {};
+			this._deleteQueue = {};
+			this._fetchingQueue = {};
 			this.on('update-from-master', function() {
 				// u.log("UPDATE FROM MASTER >> flushing ");
-				this_._flush_update_queue();
-				this_._flush_delete_queue();
+				this_._flushUpdateQueue();
+				this_._flushDeleteQueue();
 			});
 		},
-		get_or_create_file:function(fid) {
+		getOrCreateFile:function(fid) {
 			var files = this.get('files');
 			if (files.get(fid) === undefined) {
 				files.add(new File({"@id": fid}, { box: this }));
 			}
 			return files.get(fid);
 		},
-		set_up_websocket:function() {
-			var this_ = this, server_host = this.store.get('server_host');
-			if (! this.get_use_websockets() ) { return; }
+		setUpWebsocket:function() {
+			var this_ = this, serverHost = this.store.get('serverHost');
+			if (! this.getUseWebsockets() ) { return; }
 			this.on('new-token', function(token) {
 				var ws = this_._ws;
 				if (ws) {
@@ -318,15 +318,15 @@
 					} catch(e) { u.error(); }
 				}
 				var protocol = (document.location.protocol === 'https:') ? 'wss:/' : 'ws:/';
-				var ws_url = [protocol,server_host,'ws'].join('/');
-				ws = new WebSocket(ws_url);
+				var wsUrl = [protocol,serverHost,'ws'].join('/');
+				ws = new WebSocket(wsUrl);
 				ws.onmessage = function(evt) {
 					u.debug('websocket :: incoming a message ', evt.data.toString().substring(0,190));
 					var pdata = JSON.parse(evt.data);
 					if (pdata.action === 'diff') {
-						this_._diff_update(pdata.data)
+						this_._diffUpdate(pdata.data)
 							.then(function() {
-								this_.trigger('update-from-master', this_._get_version());
+								this_.trigger('update-from-master', this_._getVersion());
 							}).fail(function(err) {
 								u.error(err); /*  u.log('done diffing '); */
 							});
@@ -347,7 +347,7 @@
 					var interval;
 					interval = setInterval(function() {
 						this_.store.reconnect().then(function() {
-							this_.get_token().then(function() {
+							this_.getToken().then(function() {
 								clearInterval(interval);
 							});
 						});
@@ -355,44 +355,44 @@
 				};
 			});
 		},
-		get_use_websockets:function() { return this.options.use_websockets; },
-		get_cache_size:function(i) { return this._objcache().length; },
-		get_obj_ids:function() { return this._objlist().slice(); },
+		getUseWebsockets:function() { return this.options.useWebsockets; },
+		getCacheSize:function(i) { return this._objcache().length; },
+		getObjIds:function() { return this._objlist().slice(); },
 		_objcache:function() { return this.attributes.objcache; },
 		_objlist:function() { return this.attributes.objlist !== undefined ? this.attributes.objlist : []; },
-		_set_objlist:function(ol) { return this.set({objlist:ol.slice()}); },
-		_set_token:function(token) { this.set("token", token);	},
-		_set_version:function(v) { this.set("version", v);	},
-		_get_version:function(v) { return this.get("version"); },
-		get_token:function() {
-			console.log('>> get_token ', ' id: ',this.id, ' cid: ',this.cid);
+		_setObjlist:function(ol) { return this.set({objlist:ol.slice()}); },
+		_setToken:function(token) { this.set("token", token);	},
+		_setVersion:function(v) { this.set("version", v);	},
+		_getVersion:function(v) { return this.get("version"); },
+		getToken:function() {
+			console.log('>> getToken ', ' id: ',this.id, ' cid: ',this.cid);
 			var this_ = this, d = u.deferred();
-			this._ajax('POST', 'auth/get_token', { app: this.store.get('app') })
+			this._ajax('POST', 'auth/getToken', { app: this.store.get('app') })
 				.then(function(data) {
-					this_._set_token( data.token );
+					this_._setToken( data.token );
 					this_.trigger('new-token', data.token);
 					d.resolve(this_);
 				}).fail(d.reject);
 			return d.promise();
 		},
-		get_id:function() { return this.id || this.cid;	},
+		getId:function() { return this.id || this.cid;	},
 		_ajax:function(method, path, data) {
 			data = _(_(data||{}).clone()).extend({box: this.id || this.cid, token:this.get('token')});
 			return this.store._ajax(method, path, data);
 		},
-		put_file:function(id,filedata,contenttype) {
+		putFile:function(id,filedata,contenttype) {
 			// creates a File object and hands it back in the resolve
 			contenttype = contenttype || filedata.type;
-			var d = u.deferred(), this_ = this, newFile = this.get_or_create_file(id);
+			var d = u.deferred(), this_ = this, newFile = this.getOrCreateFile(id);
 			newFile.set({"content-type": contenttype});
-			this._do_put_file(id,filedata,contenttype).then(function(){
+			this._doPutFile(id,filedata,contenttype).then(function(){
 				u.debug('image put success ');
 				d.resolve(newFile);
 			}).fail(function(err) {
 				if (err.status === 409) {
 					var cb = function() {
 						this_.off('update-from-master', cb, newFile);
-						this_._put_file(id, filedata, contenttype).then(d.resolve).fail(d.reject);
+						this_._putFile(id, filedata, contenttype).then(d.resolve).fail(d.reject);
 					};
 					this_.on('update-from-master', cb, newFile);
 				} else {
@@ -402,22 +402,22 @@
 			});
 			return d.promise();
 		},
-		_do_put_file:function(id,file,contenttype) {
+		_doPutFile:function(id,file,contenttype) {
 			// now uses relative url scheme '//blah:port/path';
 			// all files must be PUT into boxname/files
 			// here the parameters are get encoded
-			// // 'http://' + this.store.get('server_host') + "/" +  boxid + "/" + 'files',
+			// // 'http://' + this.store.get('serverHost') + "/" +  boxid + "/" + 'files',
 			var boxid = this.id || this.cid,
-				base_url = ['/', this.store.get('server_host'), boxid, 'files'].join('/'),
-				options = { app: this.store.get('app'), id: id, token:this.get('token'),  box: boxid, version: this._get_version() },
-			    option_params = $.param(options),
-				url = base_url+"?"+option_params,
+				baseUrl = ['/', this.store.get('serverHost'), boxid, 'files'].join('/'),
+				options = { app: this.store.get('app'), id: id, token:this.get('token'),  box: boxid, version: this._getVersion() },
+			    optionParams = $.param(options),
+				url = baseUrl+"?"+optionParams,
 				d = u.deferred();
 			console.log("PUTTING FILE ", url);
-			var ajax_args  = _(_(this.store.ajax_defaults).clone()).extend(
+			var ajaxArgs  = _(_(this.store.ajaxDefaults).clone()).extend(
 				{ url: url, method : 'PUT', crossDomain:false, data:file, contentType: contenttype, processData:false }
 			);
-			return $.ajax( ajax_args );
+			return $.ajax( ajaxArgs );
 		},
 		query: function(q){
 			// @TODO ::::::::::::::::::::::::::
@@ -431,94 +431,94 @@
 			// 	});
 			// return d.promise();
 		},
-		_diff_update:function(response) {
-			var d = u.deferred(), this_ = this, latest_version = response['@to_version'],
-			added_ids  = _(response.data.added).keys(),
-			changed_ids = _(response.data.changed).keys(),
-			deleted_ids = _(response.data.deleted).keys(),
-			changed_objs = response.data.changed;
+		_diffUpdate:function(response) {
+			var d = u.deferred(), this_ = this, latestVersion = response['@toVersion'],
+			addedIds  = _(response.data.added).keys(),
+			changedIds = _(response.data.changed).keys(),
+			deletedIds = _(response.data.deleted).keys(),
+			changedObjs = response.data.changed;
 
-			u.assert(latest_version !== undefined, 'latest version not provided');
-			u.assert(added_ids !== undefined, 'added_ids not provided');
-			u.assert(changed_ids !== undefined, 'changed not provided');
-			u.assert(deleted_ids !== undefined, 'deleted _ids not provided');
+			u.assert(latestVersion !== undefined, 'latest version not provided');
+			u.assert(addedIds !== undefined, 'addedIds not provided');
+			u.assert(changedIds !== undefined, 'changed not provided');
+			u.assert(deletedIds !== undefined, 'deleted _ids not provided');
 
-			if (latest_version <= this_._get_version()) {
-				u.debug('asked to diff update, but already up to date, so just relax!', latest_version, this_._get_version());
+			if (latestVersion <= this_._getVersion()) {
+				u.debug('asked to diff update, but already up to date, so just relax!', latestVersion, this_._getVersion());
 				return d.resolve();
 			}
-			u.debug('setting latest version >> ', latest_version, added_ids, changed_ids, deleted_ids);
-			this_._set_version(latest_version);
-			this_._update_object_list(undefined, added_ids, deleted_ids);
-			var change_dfds = _(changed_objs).map(function(obj, uri) {
+			u.debug('setting latest version >> ', latestVersion, addedIds, changedIds, deletedIds);
+			this_._setVersion(latestVersion);
+			this_._updateObjectList(undefined, addedIds, deletedIds);
+			var changeDfds = _(changedObjs).map(function(obj, uri) {
 				u.debug(' checking to see if in --- ', uri, this_._objcache().get(uri));
 				u.debug('obj >> ', obj);
-				var cached_obj = this_._objcache().get(uri), cdfd = u.deferred();
-				if (cached_obj) {
+				var cachedObj = this_._objcache().get(uri), cdfd = u.deferred();
+				if (cachedObj) {
 					// { prop : [ {sval1 - @type:""}, {sval2 - @type} ... ]
-					var changed_properties = [];
+					var changedProperties = [];
 					console.log("obj deleted ", obj.deleted);
-					var deleted_propval_dfds = _(obj.deleted).map(function(vs, k) {
-						changed_properties = _(changed_properties).union([k]);
+					var deletedPropvalDfds = _(obj.deleted).map(function(vs, k) {
+						changedProperties = _(changedProperties).union([k]);
 						var dd = u.deferred();
-						u.when(vs.map(function(v) {	return deserialize_value(v, this_);	})).then(function(values) {
-							var new_vals = _(cached_obj.get(k) || []).difference(values);
-							// console.log("DESERIALISED deleted values ", values, " - ", " new_vals ", new_vals);
-							// window._values = values; window._newvals = new_vals;
-							cached_obj.set(k,new_vals);
+						u.when(vs.map(function(v) {	return deserializeValue(v, this_);	})).then(function(values) {
+							var newVals = _(cachedObj.get(k) || []).difference(values);
+							// console.log("DESERIALISED deleted values ", values, " - ", " newVals ", newVals);
+							// window._values = values; window._newvals = newVals;
+							cachedObj.set(k,newVals);
 							// semantics - if a property has no value then we delete it
-							if (new_vals.length === 0) { cached_obj.unset(k); }
+							if (newVals.length === 0) { cachedObj.unset(k); }
 							dd.resolve();
 						}).fail(dd.reject);
 						return dd.promise();
 					});
-					var added_propval_dfds = _(obj.added).map(function(vs, k) {
-						changed_properties = _(changed_properties).union([k]);
+					var addedPropvalDfds = _(obj.added).map(function(vs, k) {
+						changedProperties = _(changedProperties).union([k]);
 						var dd = u.deferred();
-						u.when(vs.map(function(v) {	return deserialize_value(v, this_);	})).then(function(values) {
-							var new_vals = (cached_obj.get(k) || []).concat(values);
-							cached_obj.set(k,new_vals);
+						u.when(vs.map(function(v) {	return deserializeValue(v, this_);	})).then(function(values) {
+							var newVals = (cachedObj.get(k) || []).concat(values);
+							cachedObj.set(k,newVals);
 							dd.resolve();
 						}).fail(dd.reject);
 						return dd.promise();
 					});
-					u.when(added_propval_dfds.concat(deleted_propval_dfds)).then(function() {
-						// u.debug("triggering changed properties ", changed_properties);
-						changed_properties.map(function(k) {
-							cached_obj.trigger('change:'+k, ycached_obj, (ycached_obj.get(k) || []).slice());
+					u.when(addedPropvalDfds.concat(deletedPropvalDfds)).then(function() {
+						// u.debug("triggering changed properties ", changedProperties);
+						changedProperties.map(function(k) {
+							cachedObj.trigger('change:'+k, ycachedObj, (ycachedObj.get(k) || []).slice());
 							u.debug("trigger! change:"+k);
 						});
-						cdfd.resolve(cached_obj);
+						cdfd.resolve(cachedObj);
 					}).fail(cdfd.reject);
 					return cdfd.promise();
 				}
 			});
-			u.when(change_dfds).then(d.resolve).fail(d.reject);
+			u.when(changeDfds).then(d.resolve).fail(d.reject);
 			return d.promise();
 		},
-		_create_model_for_id: function(obj_id){
-			var model = new Obj({"@id":obj_id}, {box:this});
+		_createModelForId: function(objId){
+			var model = new Obj({"@id":objId}, {box:this});
 			this._objcache().add(model);
 			return model;
 		},
-		get_obj:function(objid) {
-			// get_obj always returns a promise
+		getObj:function(objid) {
+			// getObj always returns a promise
 			u.assert(typeof objid === 'string' || typeof objid === 'number', "objid has to be a number or string");
 			var d = u.deferred(),
 				cachemodel = this._objcache().get(objid),
-				fetching_dfd = this._fetching_queue[objid],
-				hasmodel = cachemodel && fetching_dfd === undefined,
+				fetchingDfd = this._fetchingQueue[objid],
+				hasmodel = cachemodel && fetchingDfd === undefined,
 				this_ = this;
 
 			if (hasmodel) {	d.resolve(cachemodel); return d.promise(); }
 
 			// check to see if already fetching, then we can tag along
-			if (fetching_dfd) {
+			if (fetchingDfd) {
 				// to fix a deadlock condition -
 				// if we fetch someone who loops back to us
 				// then we will never resolve with this code:
 				//
-				// fetching_dfd.then(d.resolve).fail(d.reject);
+				// fetchingDfd.then(d.resolve).fail(d.reject);
 				// return d.promise();
 				// --
 				// therefore a fix:
@@ -527,36 +527,36 @@
 			}
 
 			// if not already fetching then we have to fetch
-			this._fetching_queue[objid] = d;
-			var model = this_._create_model_for_id(objid);
+			this._fetchingQueue[objid] = d;
+			var model = this_._createModelForId(objid);
 			// if the serve knows about it, then we fetch its definition
 			if (this._objlist().indexOf(objid) >= 0) {
 				model.fetch().then(function() {
 					d.resolve(model);
-					delete this_._fetching_queue[objid];
+					delete this_._fetchingQueue[objid];
 				}).fail(d.reject);
 			} else {
 				// otherwise it must be new!
-				model.is_new = true;
+				model.isNew = true;
 				d.resolve(model);
 			}
 			return d.promise();
 		},
 		// ----------------------------------------------------
-		_update_object_list:function(updated_obj_ids, added, deleted) {
+		_updateObjectList:function(updatedObjIds, added, deleted) {
 			var current, olds = this._objlist().slice(), this_ = this, news, died;
-			// u.debug('_update_object_list +', added ? added.length : ' ', '-', deleted ? deleted.length : ' ');
-			// u.debug('_update_object_list +', added || ' ', deleted || ' ');
-			if (updated_obj_ids === undefined ) {
+			// u.debug('_updateObjectList +', added ? added.length : ' ', '-', deleted ? deleted.length : ' ');
+			// u.debug('_updateObjectList +', added || ' ', deleted || ' ');
+			if (updatedObjIds === undefined ) {
 				current = _(olds).chain().union(added).difference(deleted).value();
 				news = (added || []).slice(); died = (deleted || []).slice();
 			} else {
-				current = updated_obj_ids.slice();
+				current = updatedObjIds.slice();
 				news = _(current).difference(olds);
 				died = _(olds).difference(current);
 			}
 			u.debug('old objlist had ', olds.length, ' new has ', current.length, 'news > ', news);
-			this._set_objlist(current);
+			this._setObjlist(current);
 			news.map(function(aid) {
 				this_.trigger('obj-add', aid);
 			});
@@ -566,7 +566,7 @@
 				this_._objcache().remove(rid);
 			});
 		},
-		_is_fetched: function() {
+		_isFetched: function() {
 			return this.id !== undefined;
 		},
 		_fetch:function() {
@@ -574,43 +574,43 @@
 			// new client :: this now _only_ fetches object ids
 			// return a list of models (each of type WebBox.Object) to populate a GraphCollection
 			var d = u.deferred(), fd = u.deferred(), this_ = this;
-			if (this._is_fetched()) {
+			if (this._isFetched()) {
 				// Nope - don't do anything -- we just wait for websockets to update us.
 				fd.resolve();
 			} else {
 				// otherwise we aren't fetched, so we just do it
-				var box = this.get_id();
-				this._ajax("GET",[box,'get_object_ids'].join('/')).then(
+				var box = this.getId();
+				this._ajax("GET",[box,'getObjectIds'].join('/')).then(
 					function(response){
 						u.assert(response['@version'] !== undefined, 'no version provided');
-						this_.id = this_.get_id(); // sets so that _is_fetched later returns true
-						this_._set_version(response['@version']);
-						this_._update_object_list(response.ids);
+						this_.id = this_.getId(); // sets so that _isFetched later returns true
+						this_._setVersion(response['@version']);
+						this_._updateObjectList(response.ids);
 						fd.resolve(this_);
 					}).fail(fd.reject);
 			}
 			fd.then(function() {
-				this_.trigger('update-from-master', this_._get_version());
+				this_.trigger('update-from-master', this_._getVersion());
 				d.resolve(this_);
 			}).fail(d.reject);
 			return d.promise();
 		},
 		// -----------------------------------------------
-		_check_token_and_fetch : function() {
+		_checkTokenAndFetch : function() {
 			var this_ = this;
 			if (this.get('token') === undefined) {
 				var d = u.deferred();
-				this.get_token()
+				this.getToken()
 					.then(function() { this_._fetch().then(d.resolve).fail(d.reject);	})
 					.fail(d.reject);
 				return d.promise();
 			}
 			return this_._fetch();
 		},
-		_create_box:function() {
+		_createBox:function() {
 			var d = u.deferred();
 			var this_ = this;
-			this.store._ajax('POST', 'admin/create_box', { name: this.get_id() } )
+			this.store._ajax('POST', 'admin/createBox', { name: this.getId() } )
 				.then(function() {
 					this_.fetch().then(function() { d.resolve(); }).fail(function(err) { d.reject(err); });
 				}).fail(function(err) { d.reject(err); });
@@ -619,124 +619,124 @@
 
 		// =============== :: UPDATE ::  ======================
 		WHOLE_BOX: "__UPDATE__WHOLE__BOX__",
-		_add_to_update_queue:function(ids_to_update) {
-			var this_ = this, uq = this._update_queue;
+		_addToUpdateQueue:function(idsToUpdate) {
+			var this_ = this, uq = this._updateQueue;
 			// returns the deferreds
-			ids_to_update = ids_to_update === undefined ? [ this.WHOLE_BOX ] : ids_to_update;
-			return ids_to_update.map(function(id) {
+			idsToUpdate = idsToUpdate === undefined ? [ this.WHOLE_BOX ] : idsToUpdate;
+			return idsToUpdate.map(function(id) {
 				uq[id] = uq[id] || u.deferred();
 				return uq[id];
 			});
 		},
-		_requeue_update:function() {
+		_requeueUpdate:function() {
 			var this_ = this;
-			if (!this._update_timeout) {
-				this._update_timeout = setTimeout(function() {
-					delete this_._update_timeout;
-					this_._flush_update_queue();
+			if (!this._updateTimeout) {
+				this._updateTimeout = setTimeout(function() {
+					delete this_._updateTimeout;
+					this_._flushUpdateQueue();
 				}, 300);
 			}
 		},
-		_flush_update_queue:function() {
-			var this_ = this, uq = this._update_queue, ids_to_update = _(uq).keys();
-			if (ids_to_update.length === 0) { return ; }
+		_flushUpdateQueue:function() {
+			var this_ = this, uq = this._updateQueue, idsToUpdate = _(uq).keys();
+			if (idsToUpdate.length === 0) { return ; }
 			if (this._updating || this._deleting) {
-				return this._requeue_update();
+				return this._requeueUpdate();
 			}
 
-			this._update_queue = {};
-			var update_arguments = ids_to_update.indexOf(this.WHOLE_BOX) >= 0 ? undefined : ids_to_update;
+			this._updateQueue = {};
+			var updateArguments = idsToUpdate.indexOf(this.WHOLE_BOX) >= 0 ? undefined : idsToUpdate;
 			this_._updating = true;
 
-			this_._do_update(update_arguments).then(function() {
+			this_._doUpdate(updateArguments).then(function() {
 				delete this_._updating;
 				// TODO: resolve all of our deferreds now and delete them
-				ids_to_update.map(function(id) { uq[id].resolve();		});
+				idsToUpdate.map(function(id) { uq[id].resolve();		});
 			}).fail(function(err) {
 				delete this_._updating;
 				if (err.status === 409) {
 					// add the defferds back in
 					_(uq).map(function(d,id) {
-						if (this_._update_queue[id]) {
+						if (this_._updateQueue[id]) {
 							// someone's already added one back in! let's chain them
 							u.debug('HEYYYYYYYYYYYYYYYYYYYYYY already added in - lets go');
-							this_._update_queue[id].then(uq[id].resolve).fail(uq[id].reject);
+							this_._updateQueue[id].then(uq[id].resolve).fail(uq[id].reject);
 						} else {
 							u.debug('sneaking him back in - lets go');
-							this_._update_queue[id] = uq[id];
+							this_._updateQueue[id] = uq[id];
 						}
 					});
-					return this_._requeue_update();
+					return this_._requeueUpdate();
 				}
 				// something bad happened, we'd better reject on those deferreds
 				u.error('UPDATE error ', err);
-				ids_to_update.map(function(id) { uq[id].reject(err);});
+				idsToUpdate.map(function(id) { uq[id].reject(err);});
 			});
 		},
-		_do_update:function(ids) {
+		_doUpdate:function(ids) {
 			// this actua
 			var d = u.deferred(), version = this.get('version') || 0, this_ = this,
 			    objs = this._objcache().filter(function(x) { return ids === undefined || ids.indexOf(x.id) >= 0; }),
-			    obj_ids = objs.map(function(x) { return x.id; }),
-				sobjs = objs.map(function(obj){ return serialize_obj(obj); });
+			    objIds = objs.map(function(x) { return x.id; }),
+				sobjs = objs.map(function(obj){ return serializeObj(obj); });
 			this._ajax("PUT",  this.id + "/update", { version: escape(version), data : JSON.stringify(sobjs)  })
 				.then(function(response) {
-					this_._set_version(response.data["@version"]);
-					this_._update_object_list(undefined, obj_ids, []); // update object list
+					this_._setVersion(response.data["@version"]);
+					this_._updateObjectList(undefined, objIds, []); // update object list
 					d.resolve(this_);
 				}).fail(d.reject);
 			return d.promise();
 		},
-		update:function(original_ids) {
+		update:function(originalIds) {
 			// this is called by Backbone.save(),
-			var dfds = this._add_to_update_queue(original_ids);
-			this._flush_update_queue();
+			var dfds = this._addToUpdateQueue(originalIds);
+			this._flushUpdateQueue();
 			return dfds;
 		},
 		// =============== :: DELETE ::  ======================
-		_add_to_delete_queue:function(ids) {
-			var this_ = this, dq = this._delete_queue;
+		_addToDeleteQueue:function(ids) {
+			var this_ = this, dq = this._deleteQueue;
 			return ids.map(function(id) {
 				dq[id] = dq[id] || u.deferred();
 				return dq[id];
 			});
 		},
-		_delete_models:function(ids) {
-			var dfds =  this._add_to_delete_queue(ids);
-			this._flush_delete_queue();
+		_deleteModels:function(ids) {
+			var dfds =  this._addToDeleteQueue(ids);
+			this._flushDeleteQueue();
 			return dfds;
 		},
-		_requeue_delete:function() {
+		_requeueDelete:function() {
 			var this_ = this;
-			if (!this._delete_timeout) {
-				this._delete_timeout = setTimeout(function() {
-					delete this_._delete_timeout;
-					this_._flush_delete_queue();
+			if (!this._deleteTimeout) {
+				this._deleteTimeout = setTimeout(function() {
+					delete this_._deleteTimeout;
+					this_._flushDeleteQueue();
 				}, 300);
 			}
 		},
-		_flush_delete_queue:function() {
-			var this_ = this, dq = this._delete_queue, delete_ids = _(dq).keys();
-			if (delete_ids.length === 0) { return ; }
-			if (this._deleting || this._updating) { return this._requeue_delete();  }
+		_flushDeleteQueue:function() {
+			var this_ = this, dq = this._deleteQueue, deleteIds = _(dq).keys();
+			if (deleteIds.length === 0) { return ; }
+			if (this._deleting || this._updating) { return this._requeueDelete();  }
 			this_._deleting = true;
-			this_._do_delete(delete_ids).then(function() {
+			this_._doDelete(deleteIds).then(function() {
 				delete this_._deleting;
-				delete_ids.map(function(id) {
+				deleteIds.map(function(id) {
 					dq[id].resolve(); delete dq[id];
 				});
 			}).fail(function(err) {
 				delete this_._deleting;
-				if (err.status === 409) { this_._requeue_delete();	}
+				if (err.status === 409) { this_._requeueDelete();	}
 			});
 		},
-		_do_delete:function(m_ids) {
+		_doDelete:function(mIds) {
 			var version = this.get('version') || 0, d = u.deferred(), this_ = this;
-			this._ajax('DELETE', this.id+'/', { version:version, data: JSON.stringify(m_ids) })
+			this._ajax('DELETE', this.id+'/', { version:version, data: JSON.stringify(mIds) })
 				.then(function(response) {
 					u.debug('DELETE response NEW version > ', response.data["@version"]);
-					this_._set_version(response.data["@version"]);
-					this_._update_object_list(undefined, [], m_ids); // update object list
+					this_._setVersion(response.data["@version"]);
+					this_._updateObjectList(undefined, [], mIds); // update object list
 					d.resolve(this_);
 				}).fail(d.reject);
 			return d.promise();
@@ -745,44 +745,44 @@
 		sync: function(method, box, options){
 			switch(method)
 			{
-			case "create": return box._create_box();
-			case "read": return box._check_token_and_fetch();
+			case "create": return box._createBox();
+			case "read": return box._checkTokenAndFetch();
 			case "update": return box.update()[0];  // save whole box?
 			case "delete": return u.warn('box.delete() : not implemented yet');
 			}
 		},
-		toString: function() { return 'box:' + this.get_id(); }
+		toString: function() { return 'box:' + this.getId(); }
 	});
 
 	var BoxCollection = Backbone.Collection.extend({ model: Box });
 
 	var Store = WebBox.Store = Backbone.Model.extend({
 		defaults: {
-			server_host:DEFAULT_HOST,
+			serverHost:DEFAULT_HOST,
 			app:"--default-app-id--",
 			toolbar:true
 		},
-		ajax_defaults : {
+		ajaxDefaults : {
 			jsonp: false, contentType: "application/json",
 			xhrFields: { withCredentials: true }
 		},
 		initialize: function(attributes, options){
 			this.set({boxes : new BoxCollection([], {store: this})});
 			// load and launch the toolbar
-			if (this.get('toolbar')) { this._load_toolbar(); }
+			if (this.get('toolbar')) { this._loadToolbar(); }
 		},
-		is_same_domain:function() {
+		isSameDomain:function() {
 			// FIXME: indexOf is insecure? http://evilwebsite.com/localhost/blah would pass
-			return this.get('server_host').indexOf(document.location.host) >= 0 && (document.location.port === (this.get('server_port') || ''));
+			return this.get('serverHost').indexOf(document.location.host) >= 0 && (document.location.port === (this.get('serverPort') || ''));
 		},
-		_load_toolbar:function() {
+		_loadToolbar:function() {
 			this.toolbar = WebBox.Toolbar;
 			this.toolbar.setStore(this);
 			// this.toolbar.load(el[0], this).then(function() {u.debug('done loading toolbar, apparently');});
 		},
 		boxes:function() {	return this.attributes.boxes;	},
-		get_box: function(boxid) {	return this.boxes().get(boxid);	},
-		get_or_create_box:function(boxid) { return this.boxes().get(boxid) || this._create(boxid);	},
+		getBox: function(boxid) {	return this.boxes().get(boxid);	},
+		getOrCreateBox:function(boxid) { return this.boxes().get(boxid) || this._create(boxid);	},
 		checkLogin:function() { return this._ajax('GET', 'auth/whoami'); },
 		getInfo:function() { return this._ajax('GET', 'admin/info'); },
 		login : function(username,password) {
@@ -814,9 +814,9 @@
 		_fetch:function() {
 			// fetches list of boxes
 			var this_ = this, d = u.deferred();
-			this._ajax('GET','admin/list_boxes')
+			this._ajax('GET','admin/listBoxes')
 				.success(function(data) {
-					var boxes =	data.list.map(function(boxid) { return this_.get_or_create_box(boxid); });
+					var boxes =	data.list.map(function(boxid) { return this_.getOrCreateBox(boxid); });
 					this_.boxes().reset(boxes);
 					d.resolve(boxes);
 				}).error(function(e) { d.reject(e); });
@@ -824,10 +824,10 @@
 		},
 		_ajax:function(method, path, data) {
 			// now uses relative url scheme '//blah:port/path';
-			var url = ['/', this.get('server_host'), path].join('/');
-			var default_data = { app: this.get('app') };
-			var options = _(_(this.ajax_defaults).clone()).extend(
-				{ url: url, method : method, crossDomain: !this.is_same_domain(), data: _(default_data).extend(data) }
+			var url = ['/', this.get('serverHost'), path].join('/');
+			var defaultData = { app: this.get('app') };
+			var options = _(_(this.ajaxDefaults).clone()).extend(
+				{ url: url, method : method, crossDomain: !this.isSameDomain(), data: _(defaultData).extend(data) }
 			);
 			return $.ajax( options ); // returns a deferred
 		},
@@ -841,34 +841,34 @@
 		}
 	});
 
-	WebBox.loader_dependencies = {
+	WebBox.loaderDependencies = {
 		utils : { path: '/js/utils.js', dfd : new $.Deferred()  },
 		toolbar : { path: '/components/toolbar/toolbar.js', dfd : new $.Deferred()  }
 	};
 
 	WebBox.load = function(options) {
-		var base_url = options && options.base_url;
-		if (!base_url) { base_url = ['/', document.location.host].join('/'); }
-		var loadfns = _(WebBox.loader_dependencies).map(function(dependency,name) {
+		var baseUrl = options && options.baseUrl;
+		if (!baseUrl) { baseUrl = ['/', document.location.host].join('/'); }
+		var loadfns = _(WebBox.loaderDependencies).map(function(dependency,name) {
 			return function() {
-				$.getScript(base_url + dependency.path);
+				$.getScript(baseUrl + dependency.path);
 				return dependency.dfd;
 			};
 		});
-		var recursive_loader = function(rest) {
+		var recursiveLoader = function(rest) {
 			if (rest.length === 0) { return (new $.Deferred()).resolve().promise(); }
 			var now = rest[0], dp = new $.Deferred();
 			now().then(function() {
-				recursive_loader(rest.slice(1)).then(dp.resolve).fail(dp.reject);
+				recursiveLoader(rest.slice(1)).then(dp.resolve).fail(dp.reject);
 			}).fail(dp.reject);
 			return dp.promise();
 		};
-		var _load_d = new $.Deferred();
-		recursive_loader(loadfns).then(function() {
+		var _loadD = new $.Deferred();
+		recursiveLoader(loadfns).then(function() {
 			u = WebBox.utils;
-			_load_d.resolve(root);
-		}).fail(function(err) { console.error(err); _load_d.reject(root); });
-		return _load_d.promise();
+			_loadD.resolve(root);
+		}).fail(function(err) { console.error(err); _loadD.reject(root); });
+		return _loadD.promise();
 	};
 }).call(this);
 

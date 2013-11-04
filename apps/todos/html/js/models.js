@@ -19,14 +19,14 @@ angular
 				this.todos = new TodoListItems(undefined, {
 					box: this.box,
 					obj: this,
-					array_key: 'todos'
+					arrayKey: 'todos'
 				});
 				this.todos
 					.on('update change', function () {
 						that.trigger('update');
 					})
-					.on('edit_change', function (todo) {
-						that.trigger('edit_change', todo);
+					.on('editChange', function (todo) {
+						that.trigger('editChange', todo);
 					});
 			},
 			remove: function () {
@@ -39,10 +39,10 @@ angular
 
 		var TodoLists = col.Collection.extend({
 			model: TodoList,
-			model_id: function () {
+			modelId: function () {
 				return 'todo-list-' + u.uuid();
 			},
-			model_options: {
+			modelOptions: {
 				select: true
 			}
 		});
@@ -59,38 +59,38 @@ angular
 					console.log("cursorPos", options.cursorPos)
 				}
 			},
-			toggle: function (new_state) {
+			toggle: function (newState) {
 				var that = this,
-					old_state = this.get_attribute('completed');
-				new_state = _.isUndefined(new_state) ? !old_state : new_state;
-				if (new_state === old_state) {
+					oldState = this.getAttribute('completed');
+				newState = _.isUndefined(newState) ? !oldState : newState;
+				if (newState === oldState) {
 					return;
 				}
-				clearTimeout(this.removal_timeout);
-				if (new_state) {
-					this.just_completed = true;
+				clearTimeout(this.removalTimeout);
+				if (newState) {
+					this.justCompleted = true;
 					this.undo = function () {
-						this.save('completed', old_state);
+						this.save('completed', oldState);
 						that.undo = undefined;
-						that.just_completed = false;
-						clearTimeout(this.removal_timeout);
+						that.justCompleted = false;
+						clearTimeout(this.removalTimeout);
 					};
-					this.removal_timeout = setTimeout(function () {
+					this.removalTimeout = setTimeout(function () {
 						that.undo = undefined;
-						that.just_completed = false;
+						that.justCompleted = false;
 						that.trigger('change');
 					}, 3300);
 				} else {
-					this.just_completed = false;
+					this.justCompleted = false;
 				}
-				this.save('completed', new_state);
+				this.save('completed', newState);
 			},
-			set_urgency: function (n) {
-				var urgency = this.get_staged_attribute('urgency'),
+			setUrgency: function (n) {
+				var urgency = this.getStagedAttribute('urgency'),
 					i = urgencies.indexOf(urgency);
-					console.log('set_urgency', urgency);
+					console.log('setUrgency', urgency);
 				if (urgencies[i + n]) {
-					this.staged_attributes.urgency = urgencies[i + n];
+					this.stagedAttributes.urgency = urgencies[i + n];
 					//this.trigger('change');
 				}
 			},
@@ -104,17 +104,17 @@ angular
 				}
 				return this;
 			},
-			check_newline: function () {
+			checkNewline: function () {
 				console.log('VALIDATE');
 				var that = this,
-					title = this.staged_attributes.title,
+					title = this.stagedAttributes.title,
 					foundNL = title.indexOf('\n');
 				if (foundNL > -1) {
 					var newTitle = title.substring(0, foundNL).trim(),
 						restofTitle = title.substring(foundNL).trim();
-					this.staged_attributes.title = newTitle;
-					this.save_staged().then(function () {
-						that.trigger('request_new', { title: restofTitle }, { cursorPos: restofTitle.length });
+					this.stagedAttributes.title = newTitle;
+					this.saveStaged().then(function () {
+						that.trigger('requestNew', { title: restofTitle }, { cursorPos: restofTitle.length });
 					});
 				}
 			}
@@ -124,28 +124,28 @@ angular
 			model: TodoListItem,
 			initialize: function () {
 				var that = this;
-				this.on('add_any', function (model) {
+				this.on('addAny', function (model) {
 					model
 						.on('edit', function () {
-							that.trigger('edit_change', model);
+							that.trigger('editChange', model);
 						})
 						.on('restore', function () {
-							that.trigger('edit_change');
+							that.trigger('editChange');
 						})
-						.on('request_new', function (attributes) {
+						.on('requestNew', function (attributes) {
 							console.log('creating new');
-							that.new_model(attributes);
+							that.newModel(attributes);
 						});
 				});
 				col.Collection.prototype.initialize.apply(this, arguments);
 			},
-			model_id: function () {
+			modelId: function () {
 				return 'todo-item-' + u.uuid();
 			},
 			comparator: function (m) {
-				var urgency = m.is_editing ? m.get_staged_attribute('urgency') :
-					m.get_attribute('urgency'),
-					completed = m.get_attribute('completed') && !m.just_completed;
+				var urgency = m.isEditing ? m.getStagedAttribute('urgency') :
+					m.getAttribute('urgency'),
+					completed = m.getAttribute('completed') && !m.justCompleted;
 				return completed ? 100 : -urgencies.indexOf(urgency);
 			}
 		});

@@ -11,17 +11,17 @@
 	<title>INDX Social</title>
   </head>
   <body ng-app="fb" ng-controller="main" ng-cloak>
-    <toolbar box-var='selected_box' username-var='selected_user'></toolbar>
+    <toolbar box-var='selectedBox' username-var='selectedUser'></toolbar>
     <div id="fb-root"></div>
     <div>
     	<div class="waitoverlay" ng-show="wait">
     		<div class="pleasewait">please wait ..</div>
     		<img src="../csv/imgs/39.gif"></img>
     	</div>	
-    	<div ng-show="!selected_user">
+    	<div ng-show="!selectedUser">
     		<h2> please log in </h2>
     	</div>
-    	<div ng-show="selected_user && !selected_box">
+    	<div ng-show="selectedUser && !selectedBox">
     		<h2> please select a box </h2>
     	</div>
     </div><!-- main -->

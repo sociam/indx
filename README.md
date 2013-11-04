@@ -111,6 +111,23 @@ More installation and API documentation can be found on the INDX wiki:
 
 https://github.com/sociam/indx/wiki
 
+## setting up INDX for SSL (recommended)
+
+It is recommended that you run INDX on SSL (https) instead of http for many
+many reasons. To do this you need a separate certificate for every indx instance
+you set up.  If you have a proper certificate you want to use, skip this first
+step and proceed to the next.
+
+You can create a self-signed certificate using the handy provided script
+
+indx/bin/generate_cert.sh
+
+This will create the files server.crt and server.key in your indx directory.
+
+Then, run indx as follows:
+
+python server.py <usernmae> <hostname> --ssl-cert <path to crt file> --ssl
+
 ## contact us
 
 If you have any further questions or comments, contact the INDX team

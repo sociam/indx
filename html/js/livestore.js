@@ -1,7 +1,7 @@
 
 function LiveStore(jdiv, freq, path){
     this.jdiv = jdiv;
-    this.update_freq = freq;
+    this.updateFreq = freq;
     this.path = path;
     this.running = false; // are we in the middle of an update?
 
@@ -13,7 +13,7 @@ LiveStore.prototype = {
     update: function(){
         var this_ = this;
 
-        /* update every this.update_freq */
+        /* update every this.updateFreq */
         timeoutFunc = function(){
         
             if (!this_.running){
@@ -26,17 +26,17 @@ LiveStore.prototype = {
                     success: function(data, textStatus, jqXHR){
                         var xml = $(data);
 
-                        var graphs_div = this_.jdiv.find(".live_graphs");
+                        var graphsDiv = this_.jdiv.find(".liveGraphs");
 
                         var html = "";
 
                         xml.find("result").each(function(){
-                            var graph_uri = $(this).find("uri").text();
-                            html += "<div><tt>"+graph_uri+"</tt></div>";
+                            var graphUri = $(this).find("uri").text();
+                            html += "<div><tt>"+graphUri+"</tt></div>";
                         });
 
-                        if (graphs_div.html() != html){
-                            graphs_div.html(html);
+                        if (graphsDiv.html() != html){
+                            graphsDiv.html(html);
                             console.debug("updating graphs");
                         }
 
@@ -55,9 +55,9 @@ LiveStore.prototype = {
 
                                 var html = "<div>"+count+" unique triples in store.</div>";
 
-                                if (html != this_.jdiv.find(".live_triples").html()){
+                                if (html != this_.jdiv.find(".liveTriples").html()){
                                     console.debug("updating triple count");
-                                    this_.jdiv.find(".live_triples").html(html);
+                                    this_.jdiv.find(".liveTriples").html(html);
                                 }
 
 
@@ -79,7 +79,7 @@ LiveStore.prototype = {
                 });
             }
 
-            setTimeout(timeoutFunc, this_.update_freq);
+            setTimeout(timeoutFunc, this_.updateFreq);
         };
         
         timeoutFunc();

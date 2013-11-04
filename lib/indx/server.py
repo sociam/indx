@@ -75,6 +75,13 @@ class WebServer:
                 print "Authentication failed, check username and password are correct."
                 reactor.stop()
 
+        def auth_err(failure):
+            logging.debug("WebServer err_cb, failure: {0}".format(failure))
+            failure.trap(Exception)
+
+            print "Authentication failed, check username and password are correct."
+            reactor.stop()
+
         def err_cb(failure):
             logging.debug("WebServer err_cb, failure: {0}".format(failure))
             failure.trap(Exception)
@@ -82,7 +89,7 @@ class WebServer:
         user,password = self.get_indx_user_password()
         self.database = database.IndxDatabase(config['indx_db'], user, password)
         self.tokens = token.TokenKeeper(self.database)
-        self.database.auth_indx(database = "postgres").addCallbacks(auth_cb, err_cb)
+        self.database.auth_indx(database = "postgres").addCallbacks(auth_cb, auth_err)
 
 
     def check_users(self):
@@ -91,7 +98,12 @@ class WebServer:
         result_d = Deferred()
 
         def got_users(users):
-            logging.debug("users: {0}".format(users))
+            logging.debug("check_users, got: {0}".format(users))
+
+            def check_encryption_keys(empty):
+                """ Now check that each user has a key pair, and create ones for those that do not. """
+                self.database.missing_key_check().addCallbacks(result_d.callback, result_d.errback)
+
             if len(users) < 1:
                 logging.debug("No users - prompting user on the command-line now.")
                 print "There are no users in the system, please create an owner user now."
@@ -102,10 +114,10 @@ class WebServer:
                 while len(new_password) == 0:
                     new_password = getpass.getpass("Password: ")
 
-                self.database.create_user(new_username, new_password).addCallbacks(result_d.callback, result_d.errback)
+                self.database.create_user(new_username, new_password, 'local_owner').addCallbacks(check_encryption_keys, result_d.errback)
                     
             else:
-                result_d.callback(True) # users exist - continue
+                check_encryption_keys(None)
             
         self.database.list_users().addCallbacks(got_users, result_d.errback)
         return result_d

@@ -69,12 +69,12 @@ Annotation.prototype.inputKeydown = function()
 
 Annotation.prototype.inputFocus = function()
 {
-	this.inputField.attr("class", "selectable hiddenField annotationLabel");
+	this.inputField.attr("class", "selectable hidden-field annotation-label");
 }
 
 Annotation.prototype.inputBlur = function()
 {
-	this.inputField.attr("class", "selectable hiddenField annotationLabel");
+	this.inputField.attr("class", "selectable hidden-field annotation-label");
 	var input = this.inputField.property("value");
 	if(this.inputField.property("value") != "Name")
 	{
@@ -174,8 +174,8 @@ Annotation.prototype.refresh = function()
 
 	var graphDiv = d3.select("#"+this.sourceGraph.element.id);
 
-	var pickerBegin = graphDiv.select("#pickerBegin");
-	var pickerEnd = graphDiv.select("#pickerEnd"); 
+	var pickerBegin = graphDiv.select("#picker-begin");
+	var pickerEnd = graphDiv.select("#picker-end"); 
 
 	pickerBegin.style("left", this.interval.begin+1+"px");
 	pickerEnd.style("left", this.interval.end+1+"px");
@@ -262,7 +262,7 @@ Annotation.prototype.init = function()
 						.attr("id", "selection")
 						.style("left", xBegin+"px")
 						.style("visibility", "hidden")
-						.attr("class", "annotation pickerTools")
+						.attr("class", "annotation picker-tools")
 						.style("z-index", tEngine.lastZIndex++)
 						// .attr("contenteditable", "true")
 						.on("dblclick", function() 
@@ -277,13 +277,13 @@ Annotation.prototype.init = function()
 
 		this.removeButton = this.selection.append("div")
 			.attr("id", "remove")
-			.attr("class", "removeButton pickerTools")
+			.attr("class", "removeButton picker-tools")
 			.on("click", function(event){ thisAnnotation.closeSelection.call(thisAnnotation, event) });
 
 		this.inputField = this.selection.append("input")
 			.attr("type", "text")
 			.property("value", "Name")
-			.attr("class", "selectable hiddenField annotationLabel")
+			.attr("class", "selectable hiddenField annotation-label")
 			.style("top", (this.sourceGraph.getHeight()-this.sourceGraph.footerHeight)/2-20+"px")
 			.style("left", this.getWidth()/2+"px")
 			.on("mousedown",  function() { thisAnnotation.inputFieldMouseEvent.call(thisAnnotation)})

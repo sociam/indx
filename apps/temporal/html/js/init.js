@@ -2,7 +2,7 @@ tEngine.graphListElement = $("#left")[0];
 
 tEngine.setTimeline($("#timeline"))
 
-tEngine.bindDebugButton(document.getElementById('debugButton'));
+tEngine.bindDebugButton(document.getElementById('debug-button'));
 
 document.ontouchmove   = function(event) 
 {
@@ -52,23 +52,23 @@ var store = indx.store;
 store.login('indx', 'indx').then(function(status)
 {
     // load a box
-    // store.get_box('fitbit').then(function(box) 
+    // store.getBox('fitbit').then(function(box) 
     // {
     //     window.setTimeout(function ()
     //     {
     //         console.log("Get obj ids...");
-    //         var objs = box.get_obj_ids();
+    //         var objs = box.getObjIds();
 
     //         // console.log(objs)
     //         var done = 0;
     //         var objs = [objs[0], objs[1], objs[2], objs[3], objs[4], objs[5], objs[6]];
-    //         var pb = new ProgressBar(objs.length, 200, "#debugMenu");
+    //         var pb = new ProgressBar(objs.length, 200, "#debug-menu");
     //         tEngine.totalSources++;
     //         console.log("Building promises list...");
     //         var promises = objs.map(function(oid) 
     //         {
     //             // console.log(oid);
-    //             res = box.get_obj(oid);
+    //             res = box.getObj(oid);
     //             res.then(function() {pb.addProgress(1);});
                 
     //             return res;
@@ -108,20 +108,20 @@ store.login('indx', 'indx').then(function(status)
 
     // tEngine.loadedSource(); 
 
-    // store.get_box('nike').then(function(box) 
+    // store.getBox('nike').then(function(box) 
     // {
     //     box.query({"@id" : {"ne": 0}}).then(function (objs){
     //         console.debug(objs)
     //     });
     // });
 
-    // store.get_box('nike').then(function(box) 
+    // store.getBox('nike').then(function(box) 
     // {
     //     window.setTimeout(function ()
     //     {
     //         console.log("Get obj ids...")
-    //         // var objs = box.get_obj_ids();
-    //         box.get_obj(box.get_obj_ids()).then(function(objs) {
+    //         // var objs = box.getObjIds();
+    //         box.getObj(box.getObjIds()).then(function(objs) {
     //             // console.log(objs);
     //             FuelbandParser.parseData(objs);
     //             tEngine.loadedSource();
@@ -129,13 +129,13 @@ store.login('indx', 'indx').then(function(status)
     //         // console.log(objs)
     //         // var done = 0;
     //         // var objs = objs.slice(10);
-    //         // var pb = new ProgressBar(objs.length, 200, "#debugMenu");
+    //         // var pb = new ProgressBar(objs.length, 200, "#debug-menu");
 
     //         // console.log("Building promises list...");
     //         // var promises = [];
     //         // for(var x in objs)
     //         // {
-    //         //     var res = box.get_obj(objs[x]);
+    //         //     var res = box.getObj(objs[x]);
     //         //     res.then(function() {pb.addProgress(1);});
     //         //     promises.push(res);
     //         // }
@@ -151,15 +151,15 @@ store.login('indx', 'indx').then(function(status)
     // });
 
     ////////////////// FUEL BAND
-    // store.get_box('duckies').then(function(box) 
+    // store.getBox('duckies').then(function(box) 
     // {
     // 	var patt=/^(nikeplus-)/i;
-    // 	var objs = box.get_obj_ids();
+    // 	var objs = box.getObjIds();
     // 	for(var i=0;i<objs.length;i++)
     // 	{
     // 		if(patt.test(objs[i]) == true)
     // 		{
-    // 			box.get_obj(objs[i]).then(
+    // 			box.getObj(objs[i]).then(
     // 				function (log)
     // 				{
     // 					for(var j=0;j<log.attributes.metrics.length;j++)
@@ -171,33 +171,33 @@ store.login('indx', 'indx').then(function(status)
     // 	}
     // });
 
-    // store.get_box('nike').then(function(box) 
+    // store.getBox('nike').then(function(box) 
     // {
-    //     var objs = box.get_obj_ids();
+    //     var objs = box.getObjIds();
     //     var promises = objs.map(function(oid) 
     //     {
-    //         res = box.get_obj(oid).then(function (ds) 
+    //         res = box.getObj(oid).then(function (ds) 
     //             {
     //                 ds.destroy();
     //             });
     //     });
     // });
 
-    store.get_box('nike').then(function(boxn) {
-        boxn.get_obj(boxn.get_obj_ids()).then(function(objs) {
+    store.getBox('nike').then(function(boxn) {
+        boxn.getObj(boxn.getObjIds()).then(function(objs) {
             FuelbandParser.parseData(objs);
             tEngine.loadedSource();
         });
     }).then(function() {
-        store.get_box('fitbit').then(function(boxf) {
-            boxf.get_obj(boxf.get_obj_ids()).then(function(objs) {
+        store.getBox('fitbit').then(function(boxf) {
+            boxf.getObj(boxf.getObjIds()).then(function(objs) {
                 FitbitParser.parseData(objs);
                 tEngine.loadedSource();
             });
         }).then(function() {
-            store.get_box('temporal').then(function(box) 
+            store.getBox('temporal').then(function(box) 
             {
-                box.get_obj(box.get_obj_ids()).then(function (ds)
+                box.getObj(box.getObjIds()).then(function (ds)
                 {
                     for(var i in ds)
                     {
@@ -224,7 +224,7 @@ store.login('indx', 'indx').then(function(status)
                                 activity = tEngine.activityMap[activityLabel];
                             }
 
-                            this.annotationID = activity.addInstanceFromINDX(ds[i].attributes.begin[0], ds[i].attributes.end[0], ds[i].attributes.annot_id[0]);
+                            this.annotationID = activity.addInstanceFromINDX(ds[i].attributes.begin[0], ds[i].attributes.end[0], ds[i].attributes.annotId[0]);
                         }
                         else if(dataSegmentPattern.test(ds[i].id))
                         {
@@ -258,36 +258,36 @@ store.login('indx', 'indx').then(function(status)
         // u.when(promises).then(function() {
         // ////////////////////////////////////////
         //     var dataValues = [];
-        //     for(var i in fuelband_cal.readings)
+        //     for(var i in fuelbandCal.readings)
         //     {
-        //         dataValues.push(fuelband_cal.readings[i].data);
+        //         dataValues.push(fuelbandCal.readings[i].data);
         //     }
         //     var dataSegment = 
         //     {
         //         // id: "id",
-        //         start_timestamp: fuelband_cal.readings[0].instant,
+        //         startTimestamp: fuelbandCal.readings[0].instant,
         //         values: dataValues
         //     };
 
         //     // RANDOM DATA
 
-        //     var fuelband_cal = new DataSource();
-        //     fuelband_cal.generateRandomData();
+        //     var fuelbandCal = new DataSource();
+        //     fuelbandCal.generateRandomData();
 
         //     var randomID = Math.abs((Math.random() * 1e10) | 0);
         //     console.log(randomID);
-        //     var identifier = "dataSegment-"+randomID+"-"+(dataSegment["start_timestamp"].valueOf());
+        //     var identifier = "dataSegment-"+randomID+"-"+(dataSegment["startTimestamp"].valueOf());
 
         //     var dataSegmentList = [];
-        //     box.get_obj(identifier).then(function (ds) 
+        //     box.getObj(identifier).then(function (ds) 
         //     {
         //         dataSegmentList.push(ds);
         //         ds.set(dataSegment);
         //         ds.save().done(function() {
-        //             box.get_obj('fuelband-calories').then(function (ds) 
+        //             box.getObj('fuelband-calories').then(function (ds) 
         //                 {        
         //                 ds.set({
-        //                     type: "g_dude",
+        //                     type: "gDude",
         //                     name: 'Calories',
         //                     owner: undefined,
         //                     device: 'FuelBand',
@@ -305,7 +305,7 @@ store.login('indx', 'indx').then(function(status)
         // var promises = objs.map(function(oid) 
         // {
         //     var activity;
-        //     res = box.get_obj(oid).then(function (ds) 
+        //     res = box.getObj(oid).then(function (ds) 
         //         {
         //             var activityLabel = ds.attributes.activity[0];
 
@@ -322,7 +322,7 @@ store.login('indx', 'indx').then(function(status)
         //                 activity = tEngine.activityMap[activityLabel];
         //             }
 
-        //             this.annotationID = activity.addInstanceFromINDX(ds.attributes.begin[0], ds.attributes.end[0], ds.attributes.annot_id[0]);
+        //             this.annotationID = activity.addInstanceFromINDX(ds.attributes.begin[0], ds.attributes.end[0], ds.attributes.annotId[0]);
         //         });
         // });
     // });

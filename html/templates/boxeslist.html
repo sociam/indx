@@ -6,20 +6,20 @@
 				<a ng-href='#' target="_new">{{ box }}</a>
 			</li>
 		</ul>
-		<button class="btn btn-default" ng-click="create_new_box = true">New box</button>
+		<button class="btn btn-default" ng-click="createNewBox = true">New box</button>
 	</div>
-	<div ng-show="create_new_box">
+	<div ng-show="createNewBox">
 		<div class="modal" style="display: block">
 			<div class="modal-dialog">
 				<div class="modal-content">
 					<div class="modal-header">
-						<button type="button" class="close" ng-click="create_new_box = false" aria-hidden="true">&times;</button>
+						<button type="button" class="close" ng-click="createNewBox = false" aria-hidden="true">&times;</button>
 						<h4 class="modal-title">Create a new box</h4>
 					</div>
 					<div class="modal-body">
 					</div>
 					<div class="modal-footer">
-						<button type="button" class="btn btn-default" ng-click="create_new_box = false"><span class="glyphicon glyphicon-remove"></span> Close</button>
+						<button type="button" class="btn btn-default" ng-click="createNewBox = false"><span class="glyphicon glyphicon-remove"></span> Close</button>
 						<button type="button" class="btn btn-primary" ng-click=""><span class="glyphicon glyphicon-ok"></span> Save</button>
 					</div>
 				</div>
@@ -31,14 +31,14 @@
 			<div class="modal-dialog">
 				<div class="modal-content">
 					<div class="modal-header">
-						<button type="button" class="close" ng-click="create_new_box = false" aria-hidden="true">&times;</button>
+						<button type="button" class="close" ng-click="createNewBox = false" aria-hidden="true">&times;</button>
 						<h4 class="modal-title">Create a new box</h4>
 					</div>
 					<div class="modal-body">
 						<h2 class="title"><input type="text" placeholder="Name" ng-model=""></h2>
 					</div>
 					<div class="modal-footer">
-						<button type="button" class="btn btn-default" ng-click="create_new_box = false"><span class="glyphicon glyphicon-remove"></span> Close</button>
+						<button type="button" class="btn btn-default" ng-click="createNewBox = false"><span class="glyphicon glyphicon-remove"></span> Close</button>
 						<button type="button" class="btn btn-primary" ng-click=""><span class="glyphicon glyphicon-ok"></span> Save</button>
 					</div>
 				</div>

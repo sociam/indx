@@ -8,32 +8,32 @@ angular
 			u = utils;
 
 		var initialize = function () {
-			$scope.todo_lists = new models.TodoLists(undefined, {
+			$scope.todoLists = new models.TodoLists(undefined, {
 				box: box,
-				obj: box._create_model_for_id('todo_app'),
-				array_key: 'todo_lists',
-				save_selected: true
+				obj: box._createModelForId('todoApp'),
+				arrayKey: 'todoLists',
+				saveSelected: true
 			});
-			$scope.todo_lists
+			$scope.todoLists
 				.on('update change', function () {
-					u.safe_apply($scope);
+					u.safeApply($scope);
 				})
-				.on('edit_change', function (item) {
-					console.log('edit change', item, $scope.editing_todo);
-					if (item && $scope.editing_todo && $scope.editing_todo !== item) {
-						$scope.editing_todo.restore();
+				.on('editChange', function (item) {
+					console.log('edit change', item, $scope.editingTodo);
+					if (item && $scope.editingTodo && $scope.editingTodo !== item) {
+						$scope.editingTodo.restore();
 					}
-					$scope.editing_todo = item;
+					$scope.editingTodo = item;
 				})
 				.fetch();
 		};
 
 
 		// watches the login stts for changes
-		$scope.$watch('selected_box + selected_user', function () {
-			if ($scope.selected_user && $scope.selected_box) {
-				console.log('selected ', $scope.selected_user, $scope.selected_box);
-				client.store.get_box($scope.selected_box)
+		$scope.$watch('selectedBox + selectedUser', function () {
+			if ($scope.selectedUser && $scope.selectedBox) {
+				console.log('selected ', $scope.selectedUser, $scope.selectedBox);
+				client.store.getBox($scope.selectedBox)
 					.then(function (b) {
 						box = b;
 						initialize();
@@ -46,10 +46,10 @@ angular
 
 		$(document)
 			.keydown(function (e) {
-				if ($scope.editing_todo) {
+				if ($scope.editingTodo) {
 					switch (e.keyCode) {
 					case 27: //esc
-						$scope.editing_todo.restore();
+						$scope.editingTodo.restore();
 						$('textarea')
 							.blur();
 						break;
@@ -89,15 +89,15 @@ angular
 		_.extend($scope, {
 			todosFilter: function (todo) {
 				var pass = true,
-					completed = todo.get_attribute('completed'),
-					just_completed = todo.just_completed,
-					title = todo.get_attribute('title'),
-					search_text = $scope.search_text || '';
+					completed = todo.getAttribute('completed'),
+					justCompleted = todo.justCompleted,
+					title = todo.getAttribute('title'),
+					searchText = $scope.searchText || '';
 
-				pass = pass && $scope.show_completed ? true : !(completed && !
-					just_completed);
+				pass = pass && $scope.showCompleted ? true : !(completed && !
+					justCompleted);
 				pass = pass && (!$scope.search || title.toLowerCase()
-					.indexOf(search_text.toLowerCase()) > -1);
+					.indexOf(searchText.toLowerCase()) > -1);
 				return pass;
 			}
 		});
@@ -136,7 +136,7 @@ angular
 			var createObj = function (attrs) {
 				var promise = $.Deferred(),
 					id = attrs['@id'];
-				box.get_obj(id).then(function (obj) {
+				box.getObj(id).then(function (obj) {
 					var promises = [];
 					Object.keys(attrs).forEach(function (k) {
 						var v = attrs[k],
@@ -172,10 +172,10 @@ angular
 			};
 
 			window.exportJSON = function () {
-				box.get_obj('todo_app').then(function (obj) {
+				box.getObj('todoApp').then(function (obj) {
 					var json = obj.toJSON();
-					json.todo_lists = _.map(json.todo_lists, function (todo_list) {
-						var json = todo_list.toJSON();
+					json.todoLists = _.map(json.todoLists, function (todoList) {
+						var json = todoList.toJSON();
 						json.todos = _.map(json.todos, function (todos) {
 							return todos.toJSON();
 						});
@@ -235,7 +235,7 @@ angular
 								.scope();
 						ui.placeholder.height(height);
 						lastLiAbove = ui.placeholder.prev();
-						tscope.todo.is_dragging = true;
+						tscope.todo.isDragging = true;
 					},
 					change: function (ev, ui) {
 						var liAbove = ui.placeholder.prev('li.todo-item'),
@@ -262,9 +262,9 @@ angular
 									tscope = angular.element(ui.item)
 										.scope(),
 									draggingTodo = tscope.todo;
-								draggingTodo.staged_attributes.urgency = nextTodo.get_attribute(
+								draggingTodo.stagedAttributes.urgency = nextTodo.getAttribute(
 									'urgency');
-								utils.safe_apply(tscope);
+								utils.safeApply(tscope);
 							}
 						}
 					},
@@ -272,8 +272,8 @@ angular
 						var tscope = angular.element(ui.item)
 							.scope(),
 							todo = tscope.todo,
-							todos = scope.todo_lists.selected.todos,
-							new_todos = element.find('li.todo-item')
+							todos = scope.todoLists.selected.todos,
+							newTodos = element.find('li.todo-item')
 								.map(function () {
 									return angular.element(this)
 										.scope()
@@ -281,11 +281,11 @@ angular
 								})
 								.get();
 						lastLiAbove = undefined;
-						todo.is_dragging = false;
-						todo.save_staged();
-						todos.reset(new_todos)
+						todo.isDragging = false;
+						todo.saveStaged();
+						todos.reset(newTodos)
 							.save();
-						utils.safe_apply(tscope);
+						utils.safeApply(tscope);
 						console.log(todos);
 					}
 				})
@@ -304,12 +304,12 @@ angular
 					drop: function (ev, ui) {
 						console.log('drop', ui);
 						var el = ui.draggable,
-							draggable_scope = angular.element(el)
+							draggableScope = angular.element(el)
 								.scope(),
-							old_todo_list = scope.todo_lists.selected.todos,
-							new_todo_list = scope.todo_list.todos,
-							todo = draggable_scope.todo;
-						old_todo_list.move(todo, new_todo_list);
+							oldTodoList = scope.todoLists.selected.todos,
+							newTodoList = scope.todoList.todos,
+							todo = draggableScope.todo;
+						oldTodoList.move(todo, newTodoList);
 					}
 				});
 			}

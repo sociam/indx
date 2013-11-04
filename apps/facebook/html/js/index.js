@@ -30,7 +30,7 @@ window.fbAsyncInit = function() {
 				if (bid !== undefined) {
 					var box = store.boxes().get(bid);
 					box.fetch().then(function() {
-						var g = box.get_or_create('facebook');
+						var g = box.getOrCreate('facebook');
 						g.fetch().then(function() {
 							router = saveface.init(g);
 						}).fail(function(err, b) {

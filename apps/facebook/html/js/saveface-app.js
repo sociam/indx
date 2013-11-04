@@ -26,7 +26,7 @@ define(['js/saveface-grab'],function(fb) {
 		initialize:function(options) {
 			console.log('router initialize >> ', options.graph && options.graph.id);
 			this.graph = options.graph;
-			var graph = this.graph || models.get_graph('facebook');
+			var graph = this.graph || models.getGraph('facebook');
 			_(fb.actions).map(function(action, mode) {
 				$('#'+mode)
 					.attr("disabled",false)
@@ -34,7 +34,7 @@ define(['js/saveface-grab'],function(fb) {
 						var this_ = this;
 						u.log('click on ', mode, ' using graph ', graph.id);
 						$(this_).attr('disabled',true);
-						fb.exec_action(graph,action).then(function() {
+						fb.execAction(graph,action).then(function() {
 							console.log('done with action > saving graph ', mode);
 							graph.save().then(function() {
 								u.log('graph save successful.');

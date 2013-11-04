@@ -3,11 +3,11 @@
 /* Some test code from devtools js
 
 		window.s = client.store;
-		window.create_random_objs = function(n, fn) {
+		window.createRandomObjs = function(n, fn) {
 			var ids = u.range(n || 100).map(function() {
 				return 'random-generated-'+u.guid();
 			});
-			window.box.get_obj(ids).then(function(models) {
+			window.box.getObj(ids).then(function(models) {
 				console.log('models >> ', models);
 				models.map(function(m) {
 					if (fn) { m.set(fn()); }
@@ -38,8 +38,8 @@
 		var injector = angular.injector(['ng', 'indx']),
 			indx = injector.get('client'),
 			u = injector.get('utils'),
-			store1 = new indx.Store({ server_host: 'localhost:8211' }),
-			store2 = new indx.Store({ server_host: 'localhost:8211' });
+			store1 = new indx.Store({ serverHost: 'localhost:8211' }),
+			store2 = new indx.Store({ serverHost: 'localhost:8211' });
 
 		it('is a Backbone Model', function () {
 			expect(store1 instanceof Backbone.Model).toBe(true);
@@ -101,8 +101,8 @@
 
 		var boxes1, boxes2;
 		it('should be able to fetch a list of box ids', function () {
-			store1.get_box_list().then(function (bs) { boxes1 = bs; });
-			store2.get_box_list().then(function (bs) { boxes2 = bs; });
+			store1.getBoxList().then(function (bs) { boxes1 = bs; });
+			store2.getBoxList().then(function (bs) { boxes2 = bs; });
 			waitsFor(function () { return boxes1 && boxes2; });
 			runs(function () {
 				expect(_.isArray(boxes1)).toBe(true);
@@ -143,8 +143,8 @@
 		// create box
 		it('should allow a box to be created', function () {
 			var box;
-			store1.create_box(testboxname).then(function () {
-				box = store1.get_box(testboxname);
+			store1.createBox(testboxname).then(function () {
+				box = store1.getBox(testboxname);
 			});
 			waitsFor(function () { return box; }, 'the box to be created', 1500);
 			runs(function () { expect(box).toBeDefined(); });
@@ -171,9 +171,9 @@
 
 				tmpBoxesDfds = $dfd;
 
-				store1.create_box(boxname).then(function () {
+				store1.createBox(boxname).then(function () {
 					$dfd.resolve();
-					tmpBoxes[boxname] = store1.get_box(testboxname);
+					tmpBoxes[boxname] = store1.getBox(testboxname);
 				});
 			});
 
@@ -197,7 +197,7 @@
 
 		it('should fail to create a box if it already exists', function () {
 			var failed;
-			store1.create_box(testboxname).fail(function () {
+			store1.createBox(testboxname).fail(function () {
 				failed = true;
 			});
 			waitsFor(function () { return failed; }, 'the box to not have been created', 500);
@@ -221,14 +221,14 @@
 		describe('box', function () {
 			var s1box, s2box;
 			it('should be defined', function () {
-				var b = store1.get_box(testboxname);
+				var b = store1.getBox(testboxname);
 				expect(b).toBeDefined();
 			});
 
 			// making it sure it exists
 			it('should be retreivable', function () {
-				store1.get_box(testboxname).then(function (b) { s1box = b; });
-				store2.get_box(testboxname).then(function (b) { s2box = b; });
+				store1.getBox(testboxname).then(function (b) { s1box = b; });
+				store2.getBox(testboxname).then(function (b) { s2box = b; });
 				waitsFor(function () { return s1box && s2box; }, 'the box to be fetched', 500);
 				runs(function () {
 					expect(s1box).toBeDefined();
@@ -272,14 +272,14 @@
 
 			it('should allow an object to be created', function () {
 				var obj;
-				s1box.get_obj('test1').then(function(o) { obj = o; });
+				s1box.getObj('test1').then(function(o) { obj = o; });
 				waitsFor(function () { return obj; }, 'the object to be created', 500);
 				runs(function () { expect(obj).toBeDefined(); });
 			});
 
 			/*it('should not allow an object to be created if it already exists', function () {
 				var obj;
-				s1box.get_obj('test1').then(function(o) { obj = o; });
+				s1box.getObj('test1').then(function(o) { obj = o; });
 				waitsFor(function () { return obj; });
 				runs(function () { expect(obj).toBeDefined(); });
 			});*/
@@ -288,7 +288,7 @@
 			describe('object', function () {
 				var s1obj, s2obj;
 				it('should allow the object to be fetched', function () {
-					s1box.get_obj('test1').then(function (o) { s1obj = o; });
+					s1box.getObj('test1').then(function (o) { s1obj = o; });
 					waitsFor(function () { return s1obj; }, 'the object to be fetched', 500);
 					runs(function () {
 						expect(s1obj).toBeDefined();
@@ -302,7 +302,7 @@
 					runs(function () { expect(s1obj.get('value')[0]).toBe(99); });
 				});
 				it('should allow another store (store 2) to load the object', function () {
-					s2box.get_obj('test1').then(function (o) { s2obj = o; });
+					s2box.getObj('test1').then(function (o) { s2obj = o; });
 					waitsFor(function () { return s2obj; }, 'the object to be fetched', 500);
 					runs(function () { expect(s2obj).toBeDefined(); });
 				});
@@ -330,8 +330,8 @@
 					var s1obj, s2obj,
 						passes = 0,
 						fails = 0;
-					s1box.get_obj('test2').then(function (o) { s1obj = o; });
-					s2box.get_obj('test2').then(function (o) { s2obj = o; });
+					s1box.getObj('test2').then(function (o) { s1obj = o; });
+					s2box.getObj('test2').then(function (o) { s2obj = o; });
 					s1box.save().then(function () { passes++; }).fail(function () { fails++; });
 					s2box.save().then(function () { passes++; }).fail(function () { fails++; });
 					waitsFor(function () { return passes + fails === 2; }, 'the boxes to have changed', 500);
@@ -388,7 +388,7 @@
 		// 	});
 		// 	waitsFor(function() { return boxes; });
 		// 	runs(function() {
-		// 		dump('boxes >> ', boxes.map(function(x) { return x.get_id(); }));
+		// 		dump('boxes >> ', boxes.map(function(x) { return x.getId(); }));
 		// 	});
 		// });
 

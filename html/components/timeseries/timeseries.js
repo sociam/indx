@@ -16,12 +16,12 @@
 					//   $attr.propert[ies] <- properties to plot
 					console.log("TIMESERIES INIT >>>>>> ");
    
-                    var update_chart = function($element, data){
+                    var updateChart = function($element, data){
                         try {
-                            var new_node = $($element).find(".timeseries-chart"); // find the chart within this scope's element
-                            new_node.html(""); // remove existing chart
-                            new_node = new_node[0]; // get DOM node
-                            console.debug("new_node", new_node);
+                            var newNode = $($element).find(".timeseries-chart"); // find the chart within this scope's element
+                            newNode.html(""); // remove existing chart
+                            newNode = newNode[0]; // get DOM node
+                            console.debug("newNode", newNode);
 
                             var width = 750;
                             var height = 150;
@@ -50,7 +50,7 @@
                                 .x(function(d) { return x(d.timestamp); })
                                 .y(function(d) { return y(d.value); });
 
-                            var svg = d3.select(new_node).append("svg")
+                            var svg = d3.select(newNode).append("svg")
                                 .attr("width", width + margin.left + margin.right)
                                 .attr("height", height + margin.top + margin.bottom)
                               .append("g")
@@ -110,26 +110,26 @@
                     };
 					var update = function() {
 						var vals = $scope.model.get($scope.property) ? JSON.parse($scope.model.get($scope.property)[0]) : [];
-						update_chart($element, vals);
+						updateChart($element, vals);
 					};
 					var context = { id : Math.random() };
-					var old_model, old_box;
-					var listen_and_update = function() {
+					var oldModel, oldBox;
+					var listenAndUpdate = function() {
 						var model = $scope.model;
-						if (old_model) { old_model.off(null, null, context); }
+						if (oldModel) { oldModel.off(null, null, context); }
 						if (model) {
 							model.on('change', function() {
-								webbox.safe_apply($scope, update);
+								webbox.safeApply($scope, update);
 							}, context);
 							update();
 						}
-						old_model = model;
+						oldModel = model;
 					};					
 					webbox.loaded.then(function() {
-						$scope.$watch('model', listen_and_update);
-						$scope.$watch('box', listen_and_update);
+						$scope.$watch('model', listenAndUpdate);
+						$scope.$watch('box', listenAndUpdate);
 					});
-					webbox.safe_apply($scope, listen_and_update);
+					webbox.safeApply($scope, listenAndUpdate);
 				}
 			};
 		});

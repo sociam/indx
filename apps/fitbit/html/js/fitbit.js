@@ -39,25 +39,25 @@ angular
             $("#step-load").hide();
         }
 
-        var check_config = function() {
+        var checkConfig = function() {
             if (!box) { u.debug('no box, skipping '); return ;}
             console.log("check if previously authorised, and downloads");
             $("#step-load").show();
-            box.get_obj('fitbit_config').then(function (conf) {
+            box.getObj('fitbitConfig').then(function (conf) {
                 config = conf;
                 console.log('found config >> ', config);
-                if (!config.get("auth_token")) {
-                    authorise_app();
+                if (!config.get("authToken")) {
+                    authoriseApp();
                 } else {
-                    console.log(config.get("auth_token")[0]);
-                    set_token(config.get("auth_token")[0]);
+                    console.log(config.get("authToken")[0]);
+                    setToken(config.get("authToken")[0]);
                 }
             }).fail(function(e) {
                 u.error('error ', e);
             });
         };
 
-        var authorise_app = function() {
+        var authoriseApp = function() {
             $("#step-text").text("The first step is to authorise INDX to access your Fitbit data.");
             $("#step-text").show();
             $.ajax({
@@ -76,19 +76,19 @@ angular
             });
         };
 
-        var set_token = function(token) {
+        var setToken = function(token) {
             $.ajax({
                 url: "api",
                 data: {"token": token},
                 type: "POST",
                 dataType: "json",
                 success: function(data, status, xhr){
-                    show_download_option();
+                    showDownloadOption();
                 }
             });
         };
 
-        $scope.authorise_app_pin = function() {
+        $scope.authoriseAppPin = function() {
             u.debug("pin is :" + $("#step-pin").find("input").val());
             $.ajax({
                 url: "api",
@@ -97,39 +97,39 @@ angular
                 dataType: "json",
                 success: function(data, status, xhr){
                     u.debug("token is: " + data.token);
-                    config.set("auth_token", data.token);
-                    config.save().then(function(h) { u.debug('saved config token' + config.auth_token); })
+                    config.set("authToken", data.token);
+                    config.save().then(function(h) { u.debug('saved config token' + config.authToken); })
                                 .fail(function(e) { u.error('could not save config token'); });
-                    show_download_option();
+                    showDownloadOption();
                 }
             });
         };
 
-        var show_download_option = function() {
+        var showDownloadOption = function() {
             console.log("show download button");
             $("#step-load").hide();
             $("#step-authurl").hide();
             $("#step-pin").hide();
             $("#step-btn-pin").hide();
-            if (config && config.get("auth_token")) {
-                if (!config.get("up_to_date")) {
+            if (config && config.get("authToken")) {
+                if (!config.get("upToDate")) {
                     $("#step-text").text("INDX was never synced with Fitbit. Click the button below if you would like to start the download now.");
                 }
                 else {
-                    last_sync = new Date(parseInt(config.get("up_to_date")));
-                    $("#step-text").text("The last sync was on "+last_sync.toISOString()+". Click the button below if you would like to start the download now.");
+                    lastSync = new Date(parseInt(config.get("upToDate")));
+                    $("#step-text").text("The last sync was on "+lastSync.toISOString()+". Click the button below if you would like to start the download now.");
                 }
                 $("#step-text").show();
                 $("#step-btn-download").show();
             }
         };
 
-        $scope.start_download = function() {
+        $scope.startDownload = function() {
             console.log("starting download");
             $("#step-load").show();
-            var up_to_date, from_date, observations;
-            if (config.get("from_date")) {
-                start = new Date(parseInt(config.get("up_to_date")));
+            var upToDate, fromDate, observations;
+            if (config.get("fromDate")) {
+                start = new Date(parseInt(config.get("upToDate")));
                 console.log(start.toISOString());
                 $.ajax({
                     url: "api",
@@ -137,9 +137,9 @@ angular
                     type: "POST",
                     dataType: "json",
                     success: function(data, status, xhr){
-                        up_to_date = Date.parse(data.up_to_date);
+                        upToDate = Date.parse(data.upToDate);
                         observations = JSON.parse(data.observations);
-                        save_observations(observations, up_to_date);
+                        saveObservations(observations, upToDate);
                     }
                 });
             } else {
@@ -149,18 +149,18 @@ angular
                     type: "POST",
                     dataType: "json",
                     success: function(data, status, xhr){
-                        up_to_date = Date.parse(data.up_to_date);
-                        from_date = Date.parse(data.from_date);
+                        upToDate = Date.parse(data.upToDate);
+                        fromDate = Date.parse(data.fromDate);
                         observations = JSON.parse(data.observations);
-                        save_observations(observations, up_to_date, from_date);
+                        saveObservations(observations, upToDate, fromDate);
                     }
                 });
             }
         };
 
-        var save_observations = function(observations, up_to, from) {
+        var saveObservations = function(observations, upTo, from) {
             // config.set(each of the observation in the list);
-            box.get_obj('fitbit_dataset').then(function (ds) {
+            box.getObj('fitbitDataset').then(function (ds) {
                 ds.set({
                     // @type: 'http://purl.org/linked-data/cube#Dataset',
                     device: 'Fitbit Connector',
@@ -171,24 +171,24 @@ angular
                 dps = [];
                 observations.map(function(obs) {
                     st = Date.parse(obs['start']).valueOf();
-                    box.get_obj('fitbit_obs_' + st).then(function (o) {
+                    box.getObj('fitbitObs_' + st).then(function (o) {
                         o.set({
                             // @type: 'http://purl.org/linked-data/cube#Observation',
                             start: Date.parse(obs['start']).valueOf(), 
                             end: Date.parse(obs['end']).valueOf(),
                             dataset: ds.get('@id'),
                         });
-                        if ('step_count' in obs) {
-                            o.set({step_count: obs['step_count']});
+                        if ('stepCount' in obs) {
+                            o.set({stepCount: obs['stepCount']});
                         }
-                        if ('calories_burned' in obs) {
-                            o.set({calories_burned: obs['calories_burned']});
+                        if ('caloriesBurned' in obs) {
+                            o.set({caloriesBurned: obs['caloriesBurned']});
                         }
                         if ('distance' in obs) {
                             o.set({distance: obs['distance']});
                         }
-                        if ('floors_climbed' in obs) {
-                            o.set({floors_climbed: obs['floors_climbed']});
+                        if ('floorsClimbed' in obs) {
+                            o.set({floorsClimbed: obs['floorsClimbed']});
                         }
                         if ('elevation' in obs) {
                             o.set({elevation: obs['elevation']});
@@ -196,7 +196,7 @@ angular
                         o.save()
                             .then(function(e) { 
                                 dps.push(o); // should this be o.get('@id') ? 
-                                ds.set({data_points: dps});
+                                ds.set({dataPoints: dps});
                                 ds.save()
                                     .then(function(e) { 
                                         // u.debug('created and saved new dataset ' + ds.get('@id')); 
@@ -213,23 +213,23 @@ angular
                 u.error('could not create new dataset ', e);
             });
             
-            if (up_to) {
-                config.set("up_to_date", up_to);
+            if (upTo) {
+                config.set("upToDate", upTo);
             }
             if (from) {            
-                config.set("from_date", from);
+                config.set("fromDate", from);
             }
             config.save().then(function(h) { u.debug('saved config dates'); })
                         .fail(function(e) { u.error('could not save config dates'); });
             $("#step-load").hide();
         };
 
-        $scope.$watch('selected_box + selected_user', function() {
-            if ($scope.selected_user && $scope.selected_box) {
-                console.log('selected ', $scope.selected_user, $scope.selected_box);
-                s.get_box($scope.selected_box).then(function(b) {
+        $scope.$watch('selectedBox + selectedUser', function() {
+            if ($scope.selectedUser && $scope.selectedBox) {
+                console.log('selected ', $scope.selectedUser, $scope.selectedBox);
+                s.getBox($scope.selectedBox).then(function(b) {
                     box = b; 
-                    check_config();
+                    checkConfig();
                 }).fail(function(e) { u.error('error ', e); });
             }
         });

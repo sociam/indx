@@ -9,20 +9,20 @@
 	<title>INDX Developer Tools</title>
   </head>
   <body ng-app="importer" ng-controller="main" ng-cloak>
-    <toolbar box-var='selected_box' username-var='selected_user'></toolbar>
+    <toolbar box-var='selectedBox' username-var='selectedUser'></toolbar>
 	<div class='main dropzone'> 
 	  <div class='alert alert-danger' ng-show='error'>
 	  	{{ error }}
 	  </div>
-	  <div ng-show="selected_user && selected_box && !error">
+	  <div ng-show="selectedUser && selectedBox && !error">
 	  	<div class="output" ng-show='rows && !wait' >
-		  	<div class="btn btn-primary savebtn" ng-disabled="wait" ng-click='do_save()'><span class="glyphicon glyphicon-floppy-open"></span> - Save to INDX</div>
+		  	<div class="btn btn-primary savebtn" ng-disabled="wait" ng-click='doSave()'><span class="glyphicon glyphicon-floppy-open"></span> - Save to INDX</div>
 		  	<div class="btn-group">
-		  		<label class="btn btn-warning"><input ng-model='output.format' type="radio" value="output_raw" name="output-type" checked>Raw</label>
-		  		<label class="btn btn-warning"><input ng-model='output.format' type="radio" value="output_gtime" name="output-type">Temporal Data (gData)</label>
-		  		<label class="btn btn-warning"><input class="btn btn-warning" ng-model='output.format' type="radio" value="output_gannotation" name="output-type">Temporal Annotations (gAnnotation)</label>
+		  		<label class="btn btn-warning"><input ng-model='output.format' type="radio" value="outputRaw" name="output-type" checked>Raw</label>
+		  		<label class="btn btn-warning"><input ng-model='output.format' type="radio" value="outputGtime" name="output-type">Temporal Data (gData)</label>
+		  		<label class="btn btn-warning"><input class="btn btn-warning" ng-model='output.format' type="radio" value="outputGannotation" name="output-type">Temporal Annotations (gAnnotation)</label>
 		  	</div>	
-		  	<div ng-show='output.format=="output_gtime"' class="output_options">
+		  	<div ng-show='output.format=="outputGtime"' class="outputOptions">
 		  		<table>
 		  			<tr><td>Timestamp Column: </td><td><select ng-model='output.gtime.timecol'ng-options='c.newname for c in cols'></select></td></tr>
 		  			<tr><td>Value Column:</td><td><select ng-model='output.gtime.valcol' ng-options='c.newname for c in cols'></select></td></tr>
@@ -31,7 +31,7 @@
 		  			<tr><td>Units:</td><td><input type='units' ng-model='output.gtime.units' placeholder='e.g., kg'></input></td></tr>
 		  		</table>	
 		  	</div>	
-		  	<div ng-show='output.format=="output_gannotation"' class="output_options">
+		  	<div ng-show='output.format=="outputGannotation"' class="outputOptions">
 		  		<table>
 		  			<tr><td>Start Time Column: </td><td><select ng-model='output.gannotate.startcol' ng-options='c.newname for c in cols'></select></td></tr>
 		  			<tr><td>End Time Column:</td><td><select ng-model='output.gannotate.endcol' ng-options='c.newname for c in cols'></select></td></tr>
@@ -84,10 +84,10 @@
 		  	</table>
 	  	</div>
 	  </div>
-	  <div ng-show="!selected_user">
+	  <div ng-show="!selectedUser">
 		<h2> please log in </h2>
 	  </div>
-	  <div ng-show="selected_user && !selected_box">
+	  <div ng-show="selectedUser && !selectedBox">
 		<h2> please select a box </h2>
 	  </div>
 	</div><!-- main -->
