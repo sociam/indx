@@ -2,7 +2,9 @@
 (function() {
     var server;
     var DEFAULT_URL = 'https://indx.local:8211';
+    var OBJ_TYPE = 'web-page-view';
     localStorage.indx_url = localStorage.indx_url || DEFAULT_URL;
+    var get_box_name = function() {   return localStorage.indx_box || 'lifelog'  };
     var connect = function(client,utils) {
         var server_url = localStorage.indx_url;
         if (server === undefined || server.get('server_host') !== server_url) {
@@ -18,17 +20,29 @@
         }).fail(d.reject);
         return d.promise();
     };
-    angular.module('webjournal', ['indx'])
-    .controller('options', function($scope, watcher, client, utils) {
+    angular.module('webjournal', ['indx']).controller('popup', function($scope, watcher, client, utils) {
+        window.$s = $scope;
+        var get_store = function() {
+            var bp = chrome.extension.getBackgroundPage();
+            return bp.store;
+        };
+        var get_watcher = function() {
+            var bp = chrome.extension.getBackgroundPage();
+            return bp.watcher_instance;
+        };
+        $scope.data = get_watcher().data.concat();
+        $scope.format = function(d) { 
+            return (new Date(d.start)) + d.location + " " + d.end - d.start;
+        };
+    }).controller('options', function($scope, watcher, client, utils) {
         // options screen only  -------------------------------------------
         window.$s = $scope;
         var logout = function() {
             utils.safe_apply($scope, function() { 
-                console.info('received logout, waiting 10 and reconnecting ');
                 $scope.status = 'logged out ';
                 delete $scope.user;
             });
-        });
+        };
         var helper = function() {
             var me = arguments.callee;
             connect(client,utils).then(function(server, result) {
@@ -44,6 +58,16 @@
                     server.get_box_list().then(function(boxes) { 
                         console.log('boxes', boxes);
                         utils.safe_apply($scope, function() { $scope.boxes = boxes; });
+                    });
+                    // for feedback
+                    server.get_box(get_box_name()).then(function(box) {
+                        console.log('got box by name ', box);
+                        box.on('obj-add', function(objid) {
+                            console.log('new obj - -', objid);
+                            // if (obj.get('type') && obj.get('type')[0] == OBJ_TYPE) {
+                            //     box.get_obj(obj)
+                            // }
+                        });
                     });
                     server.on('disconnect', function() { 
                         utils.safe_apply($scope, function() { 
@@ -71,7 +95,7 @@
         $scope.box_selection = localStorage.indx_box;
         $scope.set_box = function(boxid) { 
             console.log('setting box ', boxid);
-            localStorage.indx_box = $scope.selected_box;
+            localStorage.indx_box = boxid;
             watcher.set_box(boxid);
         };
     }).controller('main', function($scope, watcher, client,utils) {
@@ -85,11 +109,19 @@
                 console.error('diconnect >> waiting 1 second before reconnection');
                 setTimeout(function() {  runner(); }, 1000);
             });
+            winstance.on('error', function() {
+                console.error('ERROR. Trying again in 5 seconds...');
+                setTimeout(function() { runner(); }, 5000);
+            });
+            window.watcher_instance = winstance;
+            winstance.on('new-record', function() { 
+                chrome.browserAction.setBadgeText({text:''+winstance.data.length});
+                chrome.browserAction.setBadgeBackgroundColor({color:"#00ff00"});
+            });
         };
         var runner = function() {
             var me = arguments.callee;
-            connect(client,utils)
-                .then(init)
+            connect(client,utils).then(init)
                 .fail(function(err) { console.error('cannot connect -- ', err); setTimeout(me, 10000); });
         };
         runner();
@@ -100,7 +132,9 @@
                 console.log('initialise .. ');
                 var this_ = this;
                 this.data = [];
-                this.bind("change", function() {  if (this_.get('enabled')) { this_.change.apply(this_, arguments); } });
+                this.bind("change", function() {  
+                    if (this_.get('enabled')) { this_.change.apply(this_, arguments); } 
+                });
 
                 // window created
                 // created new window, which has grabbed focus
@@ -152,8 +186,8 @@
                 }
             },
             load_appropriate_box:function(client) {
-                console.log('load appropriate box >>>>>>>>>> ', localStorage.indx_box || 'lifelog'); 
-                this.set_box(localStorage.indx_box || 'lifelog');
+                console.log('load appropriate box >>>>>>>>>> ', get_box_name());
+                this.set_box(get_box_name());
             },
             set_box:function(bid) {
                 if (!bid) { 
@@ -163,7 +197,8 @@
                 }
                 // console.log('attempting to set box >> ', bid);
                 var this_=  this, store = this.get('store');
-                store.get_box(bid).then(function(b) {  
+                store.get_box(bid).then(function(b) { 
+                    console.log('got box --- ', b);
                     window.b = b;
                     // console.info('successfully got box ', bid);
                     this_.box = b;  
@@ -187,7 +222,7 @@
                             // different now
                             // console.log('new record!');
                             delete this_.current_record;
-                            this_.trigger("new_record", this_.current_record);
+                            this_.trigger("new-record", this_.current_record);
                         }
                     }
                     // go on to create a new record
@@ -200,7 +235,7 @@
             },
             make_record:function(options) {
                 // console.log("make record >> ", options);
-                return _({}).chain().extend(options).extend({id:utils.guid()}).value();
+                return _({}).chain().extend(options).extend({id:utils.guid(), type:OBJ_TYPE}).value();
             },
             _record_updated:function() {
                 // console.log('record updated ... box ', this.box, this.current_record);

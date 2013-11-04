@@ -7,6 +7,11 @@
 </head>
 <body ng-app="webjournal" ng-controller='popup' ng-cloak ng-csp>
   <a href="options.html" class="btn btn-default" target="_indx_options">Log in</a>
+  <table style="width:200px">
+    <tr ng-repeat="d in data">
+      <td> {{ format(d) }} </td>
+    </tr>
+  </table>
   <script src="js-platform/vendor/jquery.min.js" type="text/javascript"></script>
   <script src="js-platform/vendor/lesscss.min.js" type="text/javascript"></script>
   <script src="js-platform/vendor/underscore.min.js" type="text/javascript"></script>

@@ -58,6 +58,16 @@ angular
 		var _make_local_user = function(name) {
 			return {"@id":name,user_type:'local',username:name,name:name};
 		};
+		var without_protocol=function(url) {
+			if (url.indexOf('//') >= 0) {
+				return url.slice(url.indexOf('//')+2);
+			}
+		};
+		var protocol_of = function(url) {
+			if (url.indexOf('//') >= 0) {
+				return url.slice(0,url.indexOf('//'));
+			}
+		};
 
 		var serialize_obj = function(obj) {
 			var uri = obj.id;
@@ -361,13 +371,13 @@ angular
 							delete this_._ws;
 						} catch(e) { u.error(); }
 					}
-					var protocol = (document.location.protocol === 'https:') ? 'wss:/' : 'ws:/';
-					var ws_url = [protocol,server_host,'ws'].join('/');
+					var protocol = (document.location.protocol === 'https:' || protocol_of(server_host) === 'https:') ? 'wss:/' : 'ws:/';
+					var ws_url = [protocol,without_protocol(server_host),'ws'].join('/');
 					ws = new WebSocket(ws_url);
 					/// @ignore
 					/// dhjo
 					ws.onmessage = function(evt) {
-						u.debug('websocket :: incoming a message ', evt.data.toString().substring(0,190));
+						// u.debug('websocket :: incoming a message ', evt.data.toString().substring(0,190));
 						var pdata = JSON.parse(evt.data);
 						if (pdata.action === 'diff') {
 							this_._diff_update(pdata.data)
@@ -439,7 +449,7 @@ angular
 				var this_ = this, d = u.deferred();
 				this._ajax('POST', 'auth/get_token', { app: this.store.get('app') })
 					.then(function(data) {
-						debug('setting token ', data.token);
+						// debug('setting token ', data.token);
 						this_._set_token( data.token );
 						this_.trigger('new-token', data.token);
 						d.resolve(this_);
@@ -586,12 +596,12 @@ angular
 					u.debug('asked to diff update, but already up to date, so just relax!', latest_version, this_.get_version());
 					return d.resolve();
 				}
-				u.debug('setting latest version >> ', latest_version, added_ids, changed_ids, deleted_ids);
+				// u.debug('setting latest version >> ', latest_version, added_ids, changed_ids, deleted_ids);
 				this_._set_version(latest_version);
 				this_._update_object_list(undefined, added_ids, deleted_ids);
 				var change_dfds = _(changed_objs).map(function(obj, uri) {
-					u.debug(' checking to see if in --- ', uri, this_._objcache().get(uri));
-					u.debug('obj >> ', obj);
+					// u.debug(' checking to see if in --- ', uri, this_._objcache().get(uri));
+					// u.debug('obj >> ', obj);
 					var cached_obj = this_._objcache().get(uri), cdfd = u.deferred();
 					if (cached_obj) {
 						// { prop : [ {sval1 - @type:""}, {sval2 - @type} ... ]
@@ -997,7 +1007,6 @@ angular
 				this._ajax('GET', 'auth/whoami').then(function(response) {
 					if (response.is_authenticated) {
 						// make user
-						console.log('whoami response ', response);
 						var user = {'@id': response.username, type:response.type, name:response.username };
 						if (response.user_metadata) { _(user).extend(JSON.parse(response.user_metadata)); }
 						u.assert(response.username, "No username returned from whoami, server problem");
