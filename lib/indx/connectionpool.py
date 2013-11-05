@@ -61,7 +61,7 @@ class IndxConnectionPool:
             pool_deferred.addCallback(deferred.callback)
 
             def err_cb(failure):
-                logging.debug("IndxConnectionPool runQuery err_cb")
+                logging.debug("IndxConnectionPool runQuery err_cb {0} {1}".format(failure, failure.value))
                 # failure!
                 # reconnect and try the query again
                 # TODO check exception is a psycopg2.InterfaceError and a "connection already closed" error first, otherwise send on to the deferred errback instead
@@ -97,7 +97,7 @@ class IndxConnectionPool:
             pool_deferred.addCallback(deferred.callback)
 
             def err_cb(failure):
-                logging.debug("IndxConnectionPool runOperation err_cb")
+                logging.debug("IndxConnectionPool runOperation err_cb {0} {1}".format(failure, failure.value))
                 # failure!
                 # reconnect and try the query again
                 # TODO check exception is a psycopg2.InterfaceError and a "connection already closed" error first, otherwise send on to the deferred errback instead
@@ -133,7 +133,7 @@ class IndxConnectionPool:
             pool_deferred.addCallback(deferred.callback)
 
             def err_cb(failure):
-                logging.debug("IndxConnectionPool runInteraction err_cb")
+                logging.debug("IndxConnectionPool runInteration err_cb {0} {1}".format(failure, failure.value))
                 # failure!
                 # reconnect and try the query again
                 # TODO check exception is a psycopg2.InterfaceError and a "connection already closed" error first, otherwise send on to the deferred errback instead
