@@ -154,14 +154,14 @@ angular
 				u.debug('options >> ', attrs, options );
 				this.box = options.box;
 			},
-			getId:function() { return this.id;	},
-			getUrl:function() {
+			getID:function() { return this.id;	},
+			getURL:function() {
 				var params = {
-					id:this.getId(),
+					id:this.getID(),
 					app:this.box.store.get('app'),
 					token:this.box.get('token'),
-					box:this.box.getId()
-				}, url = [this.box.store._getBaseUrl(), this.box.id, 'files'].join('/') + '?' + $.param(params);
+					box:this.box.getID()
+				}, url = [this.box.store._getBaseURL(), this.box.id, 'files'].join('/') + '?' + $.param(params);
 				// u.debug("IMAGE URL IS ", url, params);
 				return url;
 			}
@@ -185,7 +185,7 @@ angular
 			},
 			_isFetched: function() { return this._fetched || false; },
 			_setFetched : function() { this._fetched = true; },
-			getId:function() { return this.id;	},
+			getID:function() { return this.id;	},
 			_valueToArray:function(k,v) {
 				if (k === '@id') { return v; }
 				if (!_(v).isUndefined() && !_(v).isArray()) {
@@ -221,7 +221,7 @@ angular
 					var kd = u.deferred();
 					// skip "@id" etc etc
 					if (key.indexOf('@') === 0) { return; }
-					var valDfds = vals.map(function(val) {
+					var valDFDs = vals.map(function(val) {
 						var vd = u.deferred();
 						// it's an object, so return that
 						if (val.hasOwnProperty("@id")) {
@@ -238,7 +238,7 @@ angular
 						}
 						return vd.promise();
 					});
-					u.when(valDfds).then(function(objVals) {
+					u.when(valDFDs).then(function(objVals) {
 						// only update keys that have changed
 						var prevVals = this_.get(key);
 						if ( prevVals === undefined || objVals.length !== prevVals.length ||
@@ -252,14 +252,14 @@ angular
 				}).filter(u.defined);
 				return u.when(dfds);
 			},
-			_loadFromJson: function(json) {
+			_loadFromJSON: function(json) {
 				var objdata = json, this_ = this;
 				if (objdata['@version'] === undefined) {
 					// then the server thinks we've been deleted, so let's just die.
 					return u.dreject(this.id);
 				}
 				// we are at current known version as far as we know
-				var objSaveDfds = _(objdata).map(function(obj,uri) {
+				var objSaveDFDs = _(objdata).map(function(obj,uri) {
 					// top level keys - corresponding to box level properties
 					if (uri[0] === "@") { return; } // ignore "@id", "@version" etc
 					// not one of those, so must be a
@@ -267,14 +267,14 @@ angular
 					u.assert(uri === this_.id, 'can only deserialise this object ');
 					return this_._deserialiseAndSet(obj);
 				});
-				return u.when(objSaveDfds);
+				return u.when(objSaveDFDs);
 			},
 			// this code path taken if someone just fetches one model directly using m.fetch()
 			_fetch:function() {
-				var this_ = this, fd = u.deferred(), box = this.box.getId();
+				var this_ = this, fd = u.deferred(), box = this.box.getID();
 				this.box._ajax('GET', box, {'id':this.id}).then(function(response) {
 					this_._setFetched(true);
-					this_._loadFromJson(response.data)
+					this_._loadFromJSON(response.data)
 						.then(function(){ fd.resolve(this_); }).fail(fd.reject);
 				});
 				return fd.promise();
@@ -301,7 +301,7 @@ angular
 		// lazily get objects as you go
 		var Box = Backbone.Model.extend({
 			idAttribute:"@id",
-			defaultOptions: { useWebsockets:true, wsAutoReconnect:false	},
+			defaultOptions: { useWebSockets:true, wsAutoReconnect:false	},
 			/// @construct
 			initialize:function(attributes, options) {
 				var this_ = this;
@@ -314,7 +314,7 @@ angular
 					this_._flushDeleteQueue();
 				});
 				this._reset();
-				this._setUpWebsocket();				
+				this._setUpWebSocket();				
 			},
 			_reset:function() {
 				this.set({objcache: new ObjCollection(), objlist: [], files : new FileCollection() });
@@ -332,9 +332,9 @@ angular
 				}
 				return files.get(fid);
 			},
-			_setUpWebsocket:function() {
+			_setUpWebSocket:function() {
 				var this_ = this, serverHost = this.store.get('serverHost'), store = this.store;
-				if (! this.getUseWebsockets() ) { return; }
+				if (! this.getUseWebSockets() ) { return; }
 
 				var reconnect = function() {
 					this_.getToken().then(function() {
@@ -376,9 +376,9 @@ angular
 
 					var protocol = (document.location.protocol === 'https:' || protocolOf(serverHost) === 'https:') ? 'wss:/' : 'ws:/';
 					var wprot = withoutProtocol(serverHost);
-					var wsUrl = [protocol,withoutProtocol(serverHost),'ws'].join('/');
+					var wsURL = [protocol,withoutProtocol(serverHost),'ws'].join('/');
 					//	console.log('trying ws url >>>>>>>>>>>>>> ', ws_url);
-					ws = new WebSocket(wsUrl);
+					ws = new WebSocket(wsURL);
 					
 					/// @ignore
 					ws.onmessage = function(evt) {
@@ -422,20 +422,20 @@ angular
 			},
 			reconnect:function() {
 				this._reset();
-				this._setUpWebsocket();
+				this._setUpWebSocket();
 			},
 			/// Gets whether the option to use websockets has been set; set this option using the store's options.use_websockets;
 			/// @return {boolean} - Whether will try to use websockets.
-			getUseWebsockets:function() { return this.options.useWebsockets; },
-			/// Returns C, the number of objects that have been loaded from the server. Necessararily C < getObjIds.length()
+			getUseWebSockets:function() { return this.options.useWebSockets; },
+			/// Returns C, the number of objects that have been loaded from the server. Necessararily C < getObjIDs.length()
 			/// @return {integer} - Number of objects in the cache
 			getCacheSize:function() { return this._objcache().length; },
 			/// Gets all of the ids contained in the box
 			/// @return {string[]} - Set of IDs
-			getObjIds:function() { return this._objlist().slice(); },
+			getObjIDs:function() { return this._objlist().slice(); },
 			_objcache:function() { return this.attributes.objcache; },
 			_objlist:function() { return this.attributes.objlist !== undefined ? this.attributes.objlist : []; },
-			_setObjlist:function(ol) { return this.set({objlist:ol.slice()}); },
+			_setObjList:function(ol) { return this.set({objlist:ol.slice()}); },
 			_getCachedToken:function() { return this.get("token"); },
 			_setToken:function(token) { this.set("token", token);	},
 			_setVersion:function(v) { this.set("version", v);	},
@@ -463,7 +463,7 @@ angular
 			},
 			/// Gets this box's id
 			/// @return {integer} - this box's id
-			getId:function() { return this.id || this.cid;	},
+			getID:function() { return this.id || this.cid;	},
 			_ajax:function(method, path, data) {
 				data = _(_(data||{}).clone()).extend({box: this.id || this.cid, token:this.get('token')});
 				return this.store._ajax(method, path, data);
@@ -504,10 +504,10 @@ angular
 			// 'http://' + this.store.get('serverHost') + "/" +  boxid + "/" + 'files',
 			_doPutFile:function(id,file,contenttype) {
 				var boxid = this.id || this.cid,
-				baseUrl = [this.store._getBaseUrl(), boxid, 'files'].join('/'),
+				baseURL = [this.store._getBaseURL(), boxid, 'files'].join('/'),
 				options = { app: this.store.get('app'), id: id, token:this.get('token'),  box: boxid, version: this.getVersion() },
 				optionParams = $.param(options),
-				url = baseUrl+"?"+optionParams,
+				url = baseURL+"?"+optionParams,
 				d = u.deferred();
 				debug("PUTTING FILE ", url);
 				var ajaxArgs  = _(_(this.store.ajaxDefaults).clone()).extend(
@@ -546,7 +546,7 @@ angular
 							console.log('getting id ', id);
 							if (cache.get(id)) { console.log('cached! ', id); return cache.get(id); }
 							console.log('not cached! ', id);
-							var model = this_._createModelForId(id);
+							var model = this_._createModelForID(id);
 							model._deserialiseAndSet(dobj, true);
 							return model;
 						}));
@@ -567,7 +567,7 @@ angular
 				var perms = {read:false,write:false,owner:false,control:false};
 				_(perms).extend(acl);
 				var params = {acl:JSON.stringify(perms),target_username:user};
-				return this._ajax("GET", [this.getId(), 'set_acl'].join('/'), params);
+				return this._ajax("GET", [this.getID(), 'set_acl'].join('/'), params);
 			},
 			///@arg {string} user : ID of user to get access control list for
 			///Gets the access control list of user, if specified, for this box or the box's entire ACL listings
@@ -575,7 +575,7 @@ angular
 			///@fail({error object}) : Failure 
 			getACL:function() {
 				var d = u.deferred();
-				this._ajax("GET", [this.getId(), 'get_acls'].join('/')).then(function(response) {
+				this._ajax("GET", [this.getID(), 'get_acls'].join('/')).then(function(response) {
 					if (response.code == 200) {
 						return d.resolve(u.dict(response.data.map(function(x) { return [x.username, x.acl]; })));
 						// return d.resolve(response.data); 
@@ -587,15 +587,15 @@ angular
 			// handles updates from websockets the server
 			_diffUpdate:function(response) {
 				var d = u.deferred(), this_ = this, latestVersion = response['@to_version'],
-				addedIds  = _(response.data.added).keys(),
-				changedIds = _(response.data.changed).keys(),
-				deletedIds = _(response.data.deleted).keys(),
+				addedIDs  = _(response.data.added).keys(),
+				changedIDs = _(response.data.changed).keys(),
+				deletedIDs = _(response.data.deleted).keys(),
 				changedObjs = response.data.changed;
 
 				u.assert(latestVersion !== undefined, 'latest version not provided');
-				u.assert(addedIds !== undefined, 'addedIds not provided');
-				u.assert(changedIds !== undefined, 'changed not provided');
-				u.assert(deletedIds !== undefined, 'deleted _ids not provided');
+				u.assert(addedIDs !== undefined, 'addedIDs not provided');
+				u.assert(changedIDs !== undefined, 'changed not provided');
+				u.assert(deletedIDs !== undefined, 'deleted _ids not provided');
 
 				if (latestVersion <= this_.getVersion()) {
 					u.debug('asked to diff update, but already up to date, so just relax!', latestVersion, this_.getVersion());
@@ -604,16 +604,16 @@ angular
 
 				// u.debug('setting latest version >> ', latest_version, added_ids, changed_ids, deleted_ids);
 				this_._setVersion(latestVersion);
-				this_._updateObjectList(undefined, addedIds, deletedIds);
-				var changeDfds = _(changedObjs).map(function(obj, uri) {
+				this_._updateObjectList(undefined, addedIDs, deletedIDs);
+				var changeDFDs = _(changedObjs).map(function(obj, uri) {
 					// u.debug(' checking to see if in --- ', uri, this_._objcache().get(uri));
 					// u.debug('obj >> ', obj);
 					var cachedObj = this_._objcache().get(uri), cdfd = u.deferred();
 					if (cachedObj) {
 						// { prop : [ {sval1 - @type:""}, {sval2 - @type} ... ]
-						var changedProperties = [];
-						var deletedPropvalDfds = _(obj.deleted).map(function(vs, k) {
-							changedProperties = _(changedProperties).union([k]);
+						var changedProps = [];
+						var deletedDFDs = _(obj.deleted).map(function(vs, k) {
+							changedProps = _(changedProps).union([k]);
 							var dd = u.deferred();
 							u.when(vs.map(function(v) {	return deserializeValue(v, this_);	})).then(function(values) {
 								var newVals = _(cachedObj.get(k) || []).difference(values);
@@ -624,8 +624,8 @@ angular
 							}).fail(dd.reject);
 							return dd.promise();
 						});
-						var addedPropvalDfds = _(obj.added).map(function(vs, k) {
-							changedProperties = _(changedProperties).union([k]);
+						var addedDFDs = _(obj.added).map(function(vs, k) {
+							changedProps = _(changedProps).union([k]);
 							var dd = u.deferred();
 							u.when(vs.map(function(v) {	return deserializeValue(v, this_);	})).then(function(values) {
 								var newVals = (cachedObj.get(k) || []).concat(values);
@@ -634,9 +634,9 @@ angular
 							}).fail(dd.reject);
 							return dd.promise();
 						});
-                        var replacedPropvalDfs = _(obj.replaced).map(function(vs, k) {
+                        var replacedDFDs = _(obj.replaced).map(function(vs, k) {
                             debug("Processing replaced property");
-                            changedProperties = _(changedProperties).union([k]);
+                            changedProps = _(changedProps).union([k]);
                             var dd = u.deferred();
                             u.when(vs.map(function(v) { return deserializeValue(v, this_); })).then(function(values) {
                                 var newVals = values; // this is the difference from added - just replace (by DS)
@@ -645,9 +645,9 @@ angular
                             }).fail(dd.reject);
                             return dd.promise();
                         });
-                        u.when(addedPropvalDfds.concat(deletedPropvalDfds).concat(replacedPropvalDfs)).then(function() {
-							// u.debug("triggering changed properties ", changedProperties);
-							changedProperties.map(function(k) {
+                        u.when(addedDFDs.concat(deletedDFDs).concat(replacedDFDs)).then(function() {
+							// u.debug("triggering changed properties ", changedProps);
+							changedProps.map(function(k) {
 								cachedObj.trigger('change:'+k, cachedObj, (cachedObj.get(k) || []).slice());
 								u.debug("trigger! change:"+k);
 							});
@@ -656,11 +656,11 @@ angular
 						return cdfd.promise();
 					}
 				});
-				u.when(changeDfds).then(d.resolve).fail(d.reject);
+				u.when(changeDFDs).then(d.resolve).fail(d.reject);
 				return d.promise();
 			},
-			_createModelForId: function(objId){
-				var model = new Obj({"@id":objId}, {box:this});
+			_createModelForID: function(objid){
+				var model = new Obj({"@id":objid}, {box:this});
 				this._objcache().add(model);
 				return model;
 			},
@@ -688,25 +688,25 @@ angular
 				// --
 				// therefore a fix:
 
-				var missingModels = {}, dmissingById = {};
+				var missingModels = {}, dmissingByID = {};
 				var ds = ids.map(function(oid) {
 					var cachemodel = this_._objcache().get(oid);
 					if (cachemodel) { return u.dresolve(cachemodel);	}
 					// otherwise we make a placeholder and loda it
-					var model = this_._createModelForId(oid);
+					var model = this_._createModelForID(oid);
 
 					missingModels[oid] = model;
-					dmissingById[oid] = u.deferred();
+					dmissingByID[oid] = u.deferred();
 					this_._fetchingQueue[oid] = d;
-					return dmissingById[oid];
+					return dmissingByID[oid];
 				});
 				var lacks = _(missingModels).keys();
 				if (lacks.length > 0) {
 					// console.log('calling with lacks ', lacks.length);
 					u.dmap(u.chunked(lacks, 150), function(lids) {
 						// console.log('lids length ', lids.length);
-						this_._ajax('GET', this_.getId(), {'id':lids}).then(function(response) {
-							var resolvedIds = _(response.data).map(function(mraw,id) {
+						this_._ajax('GET', this_.getID(), {'id':lids}).then(function(response) {
+							var resolvedIDs = _(response.data).map(function(mraw,id) {
 								if (id[0] === '@') { return; }
 								var model = missingModels[id];
 								u.assert(id, "Got an id undefined");
@@ -714,10 +714,10 @@ angular
 								model._setFetched(true);
 								// console.log('calling deserialise and set on ', mraw);
 								model._deserialiseAndSet(mraw).then(function() {
-									dmissingById[id].resolve(model);
+									dmissingByID[id].resolve(model);
 									delete this_._fetchingQueue[id];
 								}).fail(function(e){
-									dmissingById[id].reject('Error loading ' + id + ' ' + e);
+									dmissingByID[id].reject('Error loading ' + id + ' ' + e);
 									delete this_._fetchingQueue[id];
 								});
 								return id;
@@ -725,17 +725,17 @@ angular
 
 							// NOT ACCOUNTED FOR check >>
 							// models not accounted for were blank.
-							_(lids).difference(resolvedIds).map(function(id) {
-								dmissingById[id].resolve(missingModels[id]);
+							_(lids).difference(resolvedIDs).map(function(id) {
+								dmissingByID[id].resolve(missingModels[id]);
 								delete this_._fetchingQueue[id];
 							});
 						}).fail(function(error) {
 							lids.map(function(id) {
-								dmissingById[id].reject(error);
+								dmissingByID[id].reject(error);
 								delete this_._fetchingQueue[id];
 							});
 						});
-						return u.when(lids.map(function(id) { return dmissingById[id]; }));
+						return u.when(lids.map(function(id) { return dmissingByID[id]; }));
 					});
 				} else {
 					// console.log('already have all the models, returning directly ');
@@ -743,20 +743,20 @@ angular
 				return multi ? u.when(ds) : ds[0];
 			},
 			// ----------------------------------------------------
-			_updateObjectList:function(updatedObjIds, added, deleted) {
+			_updateObjectList:function(updatedObjIDs, added, deleted) {
 				var current, olds = this._objlist().slice(), this_ = this, news, died;
 				// u.debug('_updateObjectList +', added ? added.length : ' ', '-', deleted ? deleted.length : ' ');
 				// u.debug('_updateObjectList +', added || ' ', deleted || ' ');
-				if (updatedObjIds === undefined ) {
+				if (updatedObjIDs === undefined ) {
 					current = _(u.uniqstr(olds.concat(added))).difference(deleted); //_(olds).chain().union(added).difference(deleted).value();
 					news = (added || []).slice(); died = (deleted || []).slice();
 				} else {
-					current = updatedObjIds.slice();
+					current = updatedObjIDs.slice();
 					news = _(current).difference(olds);
 					died = _(olds).difference(current);
 				}
 				// u.debug('old objlist had ', olds.length, ' new has ', current.length, 'news > ', news);
-				this._setObjlist(current);
+				this._setObjList(current);
 				news.map(function(aid) { this_.trigger('obj-add', aid);	});
 				died.map(function(rid) {
 					this_.trigger('obj-remove', rid);
@@ -774,11 +774,11 @@ angular
 					fd.resolve();
 				} else {
 					// otherwise we aren't fetched, so we just do it
-					var box = this.getId();
+					var box = this.getID();
 					this._ajax("GET",[box,'get_object_ids'].join('/')).then(
 						function(response){
 							u.assert(response['@version'] !== undefined, 'no version provided');
-							this_.id = this_.getId(); // sets so that _isFetched later returns true
+							this_.id = this_.getID(); // sets so that _isFetched later returns true
 							this_._setVersion(response['@version']);
 							this_._updateObjectList(response.ids);
 							fd.resolve(this_);
@@ -805,7 +805,7 @@ angular
 			_createBox:function() {
 				var d = u.deferred();
 				var this_ = this;
-				this.store._ajax('POST', 'admin/create_box', { name: this.getId() } )
+				this.store._ajax('POST', 'admin/create_box', { name: this.getID() } )
 					.then(function() {
 						this_.fetch().then(function() { d.resolve(); }).fail(function(err) { d.reject(err); });
 					}).fail(function(err) { d.reject(err); });
@@ -874,19 +874,19 @@ angular
 				// this actua
 				var d = u.deferred(), version = this.get('version') || 0, this_ = this, oc = this._objcache(),
 				objs = (ids === undefined ? oc.values() : ids.map(function(id) { return oc.get(id); })), // this._objcache().filter(function(x) { return ids === undefined || ids.indexOf(x.id) >= 0; }),
-				objIds = (ids === undefined ? oc.keys() : ids.slice()), // objs.map(function(x) { return x.id; }),
+				objIDs = (ids === undefined ? oc.keys() : ids.slice()), // objs.map(function(x) { return x.id; }),
 				sobjs = objs.map(function(obj){ return serializeObj(obj); });
-				this._ajax("PUT",  this.getId() + "/update", { version: escape(version), data : JSON.stringify(sobjs)  })
+				this._ajax("PUT",  this.getID() + "/update", { version: escape(version), data : JSON.stringify(sobjs)  })
 					.then(function(response) {
 						this_._setVersion(response.data["@version"]);
-						this_._updateObjectList(undefined, objIds, []); // update object list
+						this_._updateObjectList(undefined, objIDs, []); // update object list
 						d.resolve(this_);
 					}).fail(d.reject);
 				return d.promise();
 			},
-			_update:function(originalIds) {
+			_update:function(originalIDs) {
 				// this is called by Backbone.save(),
-				var dfds = this._addToUpdateQueue(originalIds);
+				var dfds = this._addToUpdateQueue(originalIDs);
 				this._flushUpdateQueue();
 				return dfds;
 			},
@@ -913,13 +913,13 @@ angular
 				}
 			},
 			_flushDeleteQueue:function() {
-				var this_ = this, dq = this._deleteQueue, deleteIds = _(dq).keys();
-				if (deleteIds.length === 0) { return ; }
+				var this_ = this, dq = this._deleteQueue, deleteIDs = _(dq).keys();
+				if (deleteIDs.length === 0) { return ; }
 				if (this._deleting || this._updating) { return this._requeueDelete();  }
 				this_._deleting = true;
-				this_._doDelete(deleteIds).then(function() {
+				this_._doDelete(deleteIDs).then(function() {
 					delete this_._deleting;
-					deleteIds.map(function(id) {
+					deleteIDs.map(function(id) {
 						dq[id].resolve(); delete dq[id];
 					});
 				}).fail(function(err) {
@@ -927,13 +927,13 @@ angular
 					if (err.status === 409) { this_._requeueDelete();	}
 				});
 			},
-			_doDelete:function(mIds) {
+			_doDelete:function(mIDs) {
 				var version = this.get('version') || 0, d = u.deferred(), this_ = this;
-				this._ajax('DELETE', this.id+'/', { version:version, data: JSON.stringify(mIds) })
+				this._ajax('DELETE', this.id+'/', { version:version, data: JSON.stringify(mIDs) })
 					.then(function(response) {
 						u.debug('DELETE response NEW version > ', response.data["@version"]);
 						this_._setVersion(response.data["@version"]);
-						this_._updateObjectList(undefined, [], mIds); // update object list
+						this_._updateObjectList(undefined, [], mIDs); // update object list
 						d.resolve(this_);
 					}).fail(d.reject);
 				return d.promise();
@@ -945,10 +945,10 @@ angular
 				case "create": return box._createBox();
 				case "read": return box._checkTokenAndFetch();
 				case "update": return box._update()[0];  // save whole box?
-				case "delete": return this.deleteBox(this.getId()); // hook up to destroy
+				case "delete": return this.deleteBox(this.getID()); // hook up to destroy
 				}
 			},
-			toString: function() { return 'box:' + this.getId(); }
+			toString: function() { return 'box:' + this.getID(); }
 		});
 
 		var BoxCollection = Backbone.Collection.extend({ model: Box });
@@ -1061,11 +1061,11 @@ angular
 					}
 					d.reject({message:'OpenID authentication failed', status:0});
 				};
-				console.log('login openid >>> ', this._getBaseUrl());
-				var url = [this._getBaseUrl(), 'auth', 'login_openid'].join('/');
-				var redirUrl = [this._getBaseUrl(), 'openid_return_to.html'].join('/');
-				console.log('redir url ', redirUrl);
-				var params = { identity: encodeURIComponent(openid), redirect:encodeURIComponent(redirUrl) };
+				console.log('login openid >>> ', this._getBaseURL());
+				var url = [this._getBaseURL(), 'auth', 'login_openid'].join('/');
+				var redirURL = [this._getBaseURL(), 'openid_return_to.html'].join('/');
+				console.log('redir url ', redirURL);
+				var params = { identity: encodeURIComponent(openid), redirect:encodeURIComponent(redirURL) };
 				url = url + "?" + _(params).map(function(v, k) { return k+'='+v; }).join('&');
 				console.log('opening url >>', url);
 				popup = window.open(url, 'indx_openid_popup', 'width=790,height=500');
@@ -1158,17 +1158,17 @@ angular
 				return d.promise();
 			},
 			_fetch:function() {	throw new Error('dont fetch a store - any more!');	},
-			_getBaseUrlHelper:utils.memoise_fast1(function(serverHost) {
+			_getBaseURLHelper:utils.memoise_fast1(function(serverHost) {
 				var url = serverHost.indexOf('://') >= 0 ? serverHost : [location.protocol, '', serverHost].join('/');
 				console.log('executing getbaseurlhelper >> ', url);
 				return url;
 			}),
-			_getBaseUrl: function() {
-				return this._getBaseUrlHelper(this.get('serverHost'));
+			_getBaseURL: function() {
+				return this._getBaseURLHelper(this.get('serverHost'));
 			},
 			_ajax:function(method, path, data) {
 				// now uses relative url scheme '//blah:port/path';
-				var url = [this._getBaseUrl(), path].join('/');
+				var url = [this._getBaseURL(), path].join('/');
 				var defaultData = { app: this.get('app') };
 				var options = _({}).extend(
 					this.ajaxDefaults,

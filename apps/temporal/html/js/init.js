@@ -57,7 +57,7 @@ store.login('indx', 'indx').then(function(status)
     //     window.setTimeout(function ()
     //     {
     //         console.log("Get obj ids...");
-    //         var objs = box.getObjIds();
+    //         var objs = box.getObjIDs();
 
     //         // console.log(objs)
     //         var done = 0;
@@ -120,8 +120,8 @@ store.login('indx', 'indx').then(function(status)
     //     window.setTimeout(function ()
     //     {
     //         console.log("Get obj ids...")
-    //         // var objs = box.getObjIds();
-    //         box.getObj(box.getObjIds()).then(function(objs) {
+    //         // var objs = box.getObjIDs();
+    //         box.getObj(box.getObjIDs()).then(function(objs) {
     //             // console.log(objs);
     //             FuelbandParser.parseData(objs);
     //             tEngine.loadedSource();
@@ -154,7 +154,7 @@ store.login('indx', 'indx').then(function(status)
     // store.getBox('duckies').then(function(box) 
     // {
     // 	var patt=/^(nikeplus-)/i;
-    // 	var objs = box.getObjIds();
+    // 	var objs = box.getObjIDs();
     // 	for(var i=0;i<objs.length;i++)
     // 	{
     // 		if(patt.test(objs[i]) == true)
@@ -173,7 +173,7 @@ store.login('indx', 'indx').then(function(status)
 
     // store.getBox('nike').then(function(box) 
     // {
-    //     var objs = box.getObjIds();
+    //     var objs = box.getObjIDs();
     //     var promises = objs.map(function(oid) 
     //     {
     //         res = box.getObj(oid).then(function (ds) 
@@ -184,20 +184,20 @@ store.login('indx', 'indx').then(function(status)
     // });
 
     store.getBox('nike').then(function(boxn) {
-        boxn.getObj(boxn.getObjIds()).then(function(objs) {
+        boxn.getObj(boxn.getObjIDs()).then(function(objs) {
             FuelbandParser.parseData(objs);
             tEngine.loadedSource();
         });
     }).then(function() {
         store.getBox('fitbit').then(function(boxf) {
-            boxf.getObj(boxf.getObjIds()).then(function(objs) {
+            boxf.getObj(boxf.getObjIDs()).then(function(objs) {
                 FitbitParser.parseData(objs);
                 tEngine.loadedSource();
             });
         }).then(function() {
             store.getBox('temporal').then(function(box) 
             {
-                box.getObj(box.getObjIds()).then(function (ds)
+                box.getObj(box.getObjIDs()).then(function (ds)
                 {
                     for(var i in ds)
                     {

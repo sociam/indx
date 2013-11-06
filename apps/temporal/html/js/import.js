@@ -10,7 +10,7 @@ store.login('indx', 'indx').then(function(status)
 {
     // store.getBox('temporal').then(function(box) 
     // {
-    //     var objs = box.getObjIds();
+    //     var objs = box.getObjIDs();
     //     var promises = objs.map(function(oid) 
     //     {
     //         res = box.getObj(oid).then(function (ds) 
@@ -23,7 +23,7 @@ store.login('indx', 'indx').then(function(status)
 	// store.getBox('nike').then(function(box) 
 	// {
 	// 	temporalBox = box;
-	// 	box.getObj(box.getObjIds()).then(function(objs) {
+	// 	box.getObj(box.getObjIDs()).then(function(objs) {
 	// 		FuelbandImporter.parseData(objs);
 	// 	});
 	// });

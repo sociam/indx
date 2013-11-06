@@ -357,7 +357,7 @@
 		},
 		getUseWebsockets:function() { return this.options.useWebsockets; },
 		getCacheSize:function(i) { return this._objcache().length; },
-		getObjIds:function() { return this._objlist().slice(); },
+		getObjIDs:function() { return this._objlist().slice(); },
 		_objcache:function() { return this.attributes.objcache; },
 		_objlist:function() { return this.attributes.objlist !== undefined ? this.attributes.objlist : []; },
 		_setObjlist:function(ol) { return this.set({objlist:ol.slice()}); },
