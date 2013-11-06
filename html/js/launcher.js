@@ -77,7 +77,7 @@
 			}
 			if ($scope.isOpenIDUser(user)) {
 				console.log('openid user');
-				return store.loginOpenid(user["@id"]).then(function() {
+				return store.loginOpenID(user["@id"]).then(function() {
 					console.log('launcherjs >> openid_login success continuation ---------------- ');
 					sa(function() { 
 						delete $scope.openidError; 
