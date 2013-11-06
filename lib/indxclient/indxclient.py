@@ -198,6 +198,7 @@ class IndxClient:
 
     def _prepare_objects(self, objects):
         """ Take raw JSON object and expand them into the INDX internal format. """
+        logging.debug("IndxClient _prepare_objects: {0}".format(objects))
 
         objects_new = []
 
