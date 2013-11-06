@@ -10,7 +10,7 @@ angular
 		var initialize = function () {
 			$scope.todoLists = new models.TodoLists(undefined, {
 				box: box,
-				obj: box._createModelForId('todoApp'),
+				obj: box._createModelForID('todoApp'), // this should not be using a private interface :(
 				arrayKey: 'todoLists',
 				saveSelected: true
 			});

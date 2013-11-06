@@ -71,7 +71,7 @@ angular
 			// fall through
 		};
 
-		var serializeObj = function(obj) {
+		var serialiseObj = function(obj) {
 			var uri = obj.id;
 			var outObj = {};
 			$.each(obj.attributes, function(pred, vals){
@@ -112,7 +112,7 @@ angular
 			return outObj;
 		};
 
-		var literalDeserializers = {
+		var literalDeserialisers = {
 			'': function(o) { return o['@value']; },
 			"http://www.w3.org/2001/XMLSchema#integer": function(o) { return parseInt(o['@value'], 10); },
 			"http://www.w3.org/2001/XMLSchema#float": function(o) { return parseFloat(o['@value'], 10); },
@@ -125,11 +125,11 @@ angular
 				return f;
 			}
 		};
-		var deserializeLiteral = function(obj, box) {
-			return obj['@value'] !== undefined ? literalDeserializers[ obj['@type'] || '' ](obj, box) : obj;
+		var deserialiseLiteral = function(obj, box) {
+			return obj['@value'] !== undefined ? literalDeserialisers[ obj['@type'] || '' ](obj, box) : obj;
 		};
 
-		var deserializeValue = function(sVal, box) {
+		var deserialiseValue = function(sVal, box) {
 			var vd = u.deferred();
 			// it's an object, so return that
 			if (sVal.hasOwnProperty("@id")) {
@@ -138,7 +138,7 @@ angular
 			}
 			else if (sVal.hasOwnProperty("@value")) {
 				// literal
-				vd.resolve(deserializeLiteral(sVal, box));
+				vd.resolve(deserialiseLiteral(sVal, box));
 			}
 			else {
 				// don't know what it is!
@@ -214,14 +214,14 @@ angular
 				var this_ = this;
 				props.map(function(p) { this_.unset(p, silent ? {silent:true} : {}); });
 			},
-			_deserialiseAndSet:function(sObj, silent) {
+			_deserialiseAndSet:function(s_obj, silent) {
 				// returns a promise
 				var this_ = this;
-				var dfds = _(sObj).map(function(vals, key) {
+				var dfds = _(s_obj).map(function(vals, key) {
 					var kd = u.deferred();
 					// skip "@id" etc etc
 					if (key.indexOf('@') === 0) { return; }
-					var valDFDs = vals.map(function(val) {
+					var val_dfds = vals.map(function(val) {
 						var vd = u.deferred();
 						// it's an object, so return that
 						if (val.hasOwnProperty("@id")) {
@@ -230,7 +230,7 @@ angular
 						}
 						else if (val.hasOwnProperty("@value")) {
 							// literal
-							vd.resolve(deserializeLiteral(val, this_.box));
+							vd.resolve(deserialiseLiteral(val, this_.box));
 						}
 						else {
 							// don't know what it is!
@@ -238,7 +238,7 @@ angular
 						}
 						return vd.promise();
 					});
-					u.when(valDFDs).then(function(objVals) {
+					u.when(val_dfds).then(function(objVals) {
 						// only update keys that have changed
 						var prevVals = this_.get(key);
 						if ( prevVals === undefined || objVals.length !== prevVals.length ||
@@ -259,7 +259,7 @@ angular
 					return u.dreject(this.id);
 				}
 				// we are at current known version as far as we know
-				var objSaveDFDs = _(objdata).map(function(obj,uri) {
+				var safe_dfds = _(objdata).map(function(obj,uri) {
 					// top level keys - corresponding to box level properties
 					if (uri[0] === "@") { return; } // ignore "@id", "@version" etc
 					// not one of those, so must be a
@@ -267,7 +267,7 @@ angular
 					u.assert(uri === this_.id, 'can only deserialise this object ');
 					return this_._deserialiseAndSet(obj);
 				});
-				return u.when(objSaveDFDs);
+				return u.when(safe_dfds);
 			},
 			// this code path taken if someone just fetches one model directly using m.fetch()
 			_fetch:function() {
@@ -605,58 +605,58 @@ angular
 				// u.debug('setting latest version >> ', latest_version, added_ids, changed_ids, deleted_ids);
 				this_._setVersion(latestVersion);
 				this_._updateObjectList(undefined, addedIDs, deletedIDs);
-				var changeDFDs = _(changedObjs).map(function(obj, uri) {
+				var changed = _(changedObjs).map(function(obj, uri) {
 					// u.debug(' checking to see if in --- ', uri, this_._objcache().get(uri));
 					// u.debug('obj >> ', obj);
-					var cachedObj = this_._objcache().get(uri), cdfd = u.deferred();
-					if (cachedObj) {
+					var cached_obj = this_._objcache().get(uri), cdfd = u.deferred();
+					if (cached_obj) {
 						// { prop : [ {sval1 - @type:""}, {sval2 - @type} ... ]
-						var changedProps = [];
-						var deletedDFDs = _(obj.deleted).map(function(vs, k) {
-							changedProps = _(changedProps).union([k]);
+						var changedprops = [];
+						var deleted = _(obj.deleted).map(function(vs, k) {
+							changedprops.push(k); 
 							var dd = u.deferred();
-							u.when(vs.map(function(v) {	return deserializeValue(v, this_);	})).then(function(values) {
-								var newVals = _(cachedObj.get(k) || []).difference(values);
-								cachedObj.set(k,newVals);
+							u.when(vs.map(function(v) {	return deserialiseValue(v, this_);	})).then(function(values) {
+								var newVals = _(cached_obj.get(k) || []).difference(values);
+								cached_obj.set(k,newVals);
 								// semantics - if a property has no value then we delete it
-								if (newVals.length === 0) { cachedObj.unset(k); }
+								if (newVals.length === 0) { cached_obj.unset(k); }
 								dd.resolve();
 							}).fail(dd.reject);
 							return dd.promise();
 						});
-						var addedDFDs = _(obj.added).map(function(vs, k) {
-							changedProps = _(changedProps).union([k]);
+						var added = _(obj.added).map(function(vs, k) {
+							changedprops.push(k);
+							changedprops = _(changedprops).union([k]);
 							var dd = u.deferred();
-							u.when(vs.map(function(v) {	return deserializeValue(v, this_);	})).then(function(values) {
-								var newVals = (cachedObj.get(k) || []).concat(values);
-								cachedObj.set(k,newVals);
+							u.when(vs.map(function(v) {	return deserialiseValue(v, this_);	})).then(function(values) {
+								var newVals = (cached_obj.get(k) || []).concat(values);
+								cached_obj.set(k,newVals);
 								dd.resolve();
 							}).fail(dd.reject);
 							return dd.promise();
 						});
-                        var replacedDFDs = _(obj.replaced).map(function(vs, k) {
-                            debug("Processing replaced property");
-                            changedProps = _(changedProps).union([k]);
+                        var replaced = _(obj.replaced).map(function(vs, k) {
+                            changedprops.push(k);
                             var dd = u.deferred();
-                            u.when(vs.map(function(v) { return deserializeValue(v, this_); })).then(function(values) {
+                            u.when(vs.map(function(v) { return deserialiseValue(v, this_); })).then(function(values) {
                                 var newVals = values; // this is the difference from added - just replace (by DS)
-                                cachedObj.set(k,newVals);
+                                cached_obj.set(k,newVals);
                                 dd.resolve();
                             }).fail(dd.reject);
                             return dd.promise();
                         });
-                        u.when(addedDFDs.concat(deletedDFDs).concat(replacedDFDs)).then(function() {
-							// u.debug("triggering changed properties ", changedProps);
-							changedProps.map(function(k) {
-								cachedObj.trigger('change:'+k, cachedObj, (cachedObj.get(k) || []).slice());
-								u.debug("trigger! change:"+k);
+                        u.when(added.concat(deleted).concat(replaced)).then(function() {
+							// u.debug("triggering changed properties ", changedprops);
+							u.uniqstr(changedprops).map(function(k) {
+								cached_obj.trigger('change:'+k, cached_obj, (cached_obj.get(k) || []).slice());
+								// u.debug("trigger! change:"+k);
 							});
-							cdfd.resolve(cachedObj);
+							cdfd.resolve(cached_obj);
 						}).fail(cdfd.reject);
 						return cdfd.promise();
 					}
 				});
-				u.when(changeDFDs).then(d.resolve).fail(d.reject);
+				u.when(changed).then(d.resolve).fail(d.reject);
 				return d.promise();
 			},
 			_createModelForID: function(objid){
@@ -875,7 +875,7 @@ angular
 				var d = u.deferred(), version = this.get('version') || 0, this_ = this, oc = this._objcache(),
 				objs = (ids === undefined ? oc.values() : ids.map(function(id) { return oc.get(id); })), // this._objcache().filter(function(x) { return ids === undefined || ids.indexOf(x.id) >= 0; }),
 				objIDs = (ids === undefined ? oc.keys() : ids.slice()), // objs.map(function(x) { return x.id; }),
-				sobjs = objs.map(function(obj){ return serializeObj(obj); });
+				sobjs = objs.map(function(obj){ return serialiseObj(obj); });
 				this._ajax("PUT",  this.getID() + "/update", { version: escape(version), data : JSON.stringify(sobjs)  })
 					.then(function(response) {
 						this_._setVersion(response.data["@version"]);
