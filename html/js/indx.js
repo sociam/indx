@@ -313,6 +313,8 @@ angular
 					this_._flushUpdateQueue();
 					this_._flushDeleteQueue();
 				});
+				this.store.on('login', function() { this_.reconnect(); });
+				this.on('new-token', function() { this_._setUpWebSocket(); });
 				this._reset();
 				this._setUpWebSocket();				
 			},
@@ -333,96 +335,61 @@ angular
 				return files.get(fid);
 			},
 			_setUpWebSocket:function() {
-				var this_ = this, serverHost = this.store.get('serverHost'), store = this.store;
 				if (! this.getUseWebSockets() ) { return; }
-
-				var reconnect = function() {
-					this_.getToken().then(function() {
-						// new token will trigger a refreshing/reconnection
-						return;
-					}).fail(function(errorCode) {
-						// connection failure, server's still down.
-						if (errorCode.status === 0) {
-							console.error('connection failure, server still down');
-							return setTimeout(reconnect, 1000);
-						}
-						if (errorCode.status === 404) {
-							console.info('server back up! tokens are expired.');
-							// tokens aren't valid any more, let's try to reconnect.
-							if (store.get('user_type') === 'openid') {
-								console.info('Reconnecting using OpenID >> ');
-								store.reconnect().then(function() {
-									this_.getToken()
-										.then(function() {	return;	})
-										.fail(function() { u.error('failed to get a token this time, give up.');});
-								}).fail(function() { 
-									u.error('failed to failed to re-authenticate, give up.');
-								});
-							} else {
-								console.error('Local user, cannot reauthenitcate');
-								store.trigger('ask-user-to-log-in');
-							}
-						}
-					});
-				};
-				this.on('new-token', function(token) {
-					var ws = this_._ws;
-					if (ws) {
-						try {
-							ws.close();
-							delete this_._ws;
-						} catch(e) { u.error(); }
-					}
-
-					var protocol = (document.location.protocol === 'https:' || protocolOf(serverHost) === 'https:') ? 'wss:/' : 'ws:/';
-					var wprot = withoutProtocol(serverHost);
-					var wsURL = [protocol,withoutProtocol(serverHost),'ws'].join('/');
-					//	console.log('trying ws url >>>>>>>>>>>>>> ', ws_url);
+				if (this._ws) { this.disconnect(); }
+				var this_ = this, server_host = this.store.get('server_host'), store = this.store;
+				var protocol = (document.location.protocol === 'https:' || protocolOf(server_host) === 'https:') ? 'wss:/' : 'ws:/',
+					wprot = withoutProtocol(server_host),
+					wsURL = [protocol,withoutProtocol(server_host),'ws'].join('/'),
 					ws = new WebSocket(wsURL);
-					
-					/// @ignore
-					ws.onmessage = function(evt) {
-						// u.debug('websocket :: incoming a message ', evt.data.toString().substring(0,190));
-						var pdata = JSON.parse(evt.data);
-						if (pdata.action === 'diff') {
-							this_._diffUpdate(pdata.data)
-								.then(function() {
-									this_.trigger('update-from-master', this_.getVersion());
-								}).fail(function(err) {
-									u.error(err); /*  u.log('done diffing '); */
-								});
-						}
-					};
-					ws.onopen = function() {
-						u.debug("!!!!!!!!!!!!!!!! websocket open >>>>>>>>> ");
-						var data = WS_MESSAGES_SEND.auth(this_.get('token'));
-						ws.send(data);
-						data = WS_MESSAGES_SEND.diff();
-						ws.send(data);
-						this_._ws = ws;
-						this_.trigger('ws-connect');
-					};
-					/// @ignore
-					ws.onclose = function(evt) {
-						// what do we do now?!
-						this_.trigger('ws-disconnect');
-						this_.store.trigger('disconnect', evt);
-						u.error("!!!!!!!!!!!!!!!! websocket closed -- lost connection to server");
-						// reconnect();
-					};
+
+				/// @ignore
+				ws.onmessage = function(evt) {
+					// u.debug('websocket :: incoming a message ', evt.data.toString().substring(0,190));
+					var pdata = JSON.parse(evt.data);
+					if (pdata.action === 'diff') {
+						this_._diffUpdate(pdata.data)
+							.then(function() {
+								this_.trigger('update-from-master', this_.getVersion());
+							}).fail(function(err) {
+								u.error(err); /*  u.log('done diffing '); */
+							});
+					}
+				};
+				/// @ignore
+				ws.onopen = function() {
+					// u.debug("!!!!!!!!!!!!!!!! websocket open >>>>>>>>> ");
+					var data = WS_MESSAGES_SEND.auth(this_.get('token'));
+					ws.send(data);
+					data = WS_MESSAGES_SEND.diff();
+					ws.send(data);
 					this_._ws = ws;
-				});
+					this_.trigger('ws-connect');
+				};
+				/// @ignore
+				ws.onclose = function(evt) {
+					// what do we do now?!
+					this_.trigger('ws-disconnect');
+					this_.store.trigger('disconnect', evt);
+					u.error("!!!!!!!!!!!!!!!! websocket closed -- lost connection to server");
+					delete this_._ws;
+					// reconnect();
+				};
+				this_._ws = ws;
 			},
 			isConnected:function() {
 				return this._ws && this._ws.readyState === 1;
 			},
 			disconnect:function() {
-				if (this._ws) { this._ws.close(); delete this._ws; return true; }
+				if (this._ws) { 
+					if (this.isConnected()) { this._ws.close(); }
+					delete this._ws; return true; 
+				}
 				return false;
 			},
 			reconnect:function() {
 				this._reset();
-				this._setUpWebSocket();
+				return this_.getToken();
 			},
 			/// Gets whether the option to use websockets has been set; set this option using the store's options.use_websockets;
 			/// @return {boolean} - Whether will try to use websockets.
@@ -501,7 +468,7 @@ angular
 			// now uses relative url scheme '//blah:port/path';
 			// all files must be PUT into boxname/files
 			// here the parameters are get encoded
-			// 'http://' + this.store.get('serverHost') + "/" +  boxid + "/" + 'files',
+			// 'http://' + this.store.get('server_host') + "/" +  boxid + "/" + 'files',
 			_doPutFile:function(id,file,contenttype) {
 				var boxid = this.id || this.cid,
 				baseURL = [this.store._getBaseURL(), boxid, 'files'].join('/'),
@@ -955,7 +922,7 @@ angular
 
 		var Store =  Backbone.Model.extend({
 			defaults: {
-				serverHost:DEFAULT_HOST,
+				server_host:DEFAULT_HOST,
 				app:"--default-app-id--"
 			},
 			ajaxDefaults : {
@@ -972,7 +939,7 @@ angular
 
 			/// Check that the
 			isSameDomain:function() {
-				return this.get('serverHost').indexOf(document.location.host) >= 0 && (document.location.port === (this.get('serverPort') || ''));
+				return this.get('server_host').indexOf(document.location.host) >= 0 && (document.location.port === (this.get('serverPort') || ''));
 			},
 			boxes:function() { return this.attributes.boxes;	},
 			getBox: function(boxid) {
@@ -1002,7 +969,7 @@ angular
 				return c.save().pipe(function() { return this_.getBox(boxid); });
 			},
 			/// Called by apps to see if we are currently authenticated; this is the preferred
-			/// method to do so over login()/loginOpenid(), which potentially destroys/resets cookies.
+			/// method to do so over login()/loginOpenID(), which potentially destroys/resets cookies.
 			/// Instead, this method interrogates the server, which implicitly passes cookies if we have them
 			/// and is verified against the server's set.  If we do have cookies, the server essentially tells
 			/// us we're still logged in, so we can proceed from there....
@@ -1035,7 +1002,7 @@ angular
 			/// This method initiates a redirect of the current page
 			/// @then(<Obj>) - Continuation with openid success/fail
 			/// @fail(<String>) Error raised during process
-			loginOpenid : function(openid) {
+			loginOpenID : function(openid) {
 				var this_ = this, d = u.deferred(), popup, intPopupChecker;
 				window.__indxOpenidContinuation = function(response) {
 					console.info("openid continuation >> ", response);
@@ -1105,7 +1072,7 @@ angular
 			reconnect:function() {
 				if (this.get('user_type') === 'openid') {
 					u.log('reconnecting as openid ', this.get('username'));
-					return this.loginOpenid(this.get('username'));
+					return this.loginOpenID(this.get('username'))
 				}
 				u.log('reconnecting as local ', this.get('username'), this.get('password'));
 			 	return this.login(this.get('username'),this.get('password'));
@@ -1158,13 +1125,13 @@ angular
 				return d.promise();
 			},
 			_fetch:function() {	throw new Error('dont fetch a store - any more!');	},
-			_getBaseURLHelper:utils.memoise_fast1(function(serverHost) {
-				var url = serverHost.indexOf('://') >= 0 ? serverHost : [location.protocol, '', serverHost].join('/');
+			_getBaseURLHelper:utils.memoise_fast1(function(server_host) {
+				var url = server_host.indexOf('://') >= 0 ? server_host : [location.protocol, '', server_host].join('/');
 				console.log('executing getbaseurlhelper >> ', url);
 				return url;
 			}),
 			_getBaseURL: function() {
-				return this._getBaseURLHelper(this.get('serverHost'));
+				return this._getBaseURLHelper(this.get('server_host'));
 			},
 			_ajax:function(method, path, data) {
 				// now uses relative url scheme '//blah:port/path';
