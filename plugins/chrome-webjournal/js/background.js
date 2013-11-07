@@ -27,7 +27,6 @@
         }
         var d = utils.deferred();
         server.checkLogin().then(function(response) {
-            console.log('check login response >>>>>> ', response);
             if (response.is_authenticated) {  
                 return d.resolve(server, response);  
             };
@@ -62,7 +61,7 @@
             }
             return host + "/" + path;
         };
-        $scope.data = get_watcher().data;
+        $scope.data = get_watcher() && get_watcher().get('journal') && get_watcher().get('journal').get('entries');
         get_watcher().on('error-update', function(e) { utils.safeApply($scope, function() { $scope.error = e; });  });
     })
     // options page
@@ -142,7 +141,7 @@
         };
         window.watcher_instance = winstance;
         winstance.on('error', function() {  displayFail('server error');  });
-        winstance.on('new-entries', function(entries) { setOKBadge(entries.length);  });
+        winstance.on('new-entries', function(n) { setOKBadge(''+n);  });
         var initStore = function(store) {
             window.s = store;
             winstance.set_store(store);
@@ -317,7 +316,7 @@
                         });
                         var entries = _(journal.get('entries') || []).union(dsts);
                         journal.set({entries:entries});
-                        journal.trigger('new-entries', entries.concat());
+                        this_.trigger('new-entries', entries.length);
                         journal.save().fail(signalerror);
                         this_.data = this_.data.slice(data.length);
                         // console.log(' this data is now ', this_.data.length)

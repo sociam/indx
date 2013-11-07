@@ -12,7 +12,7 @@
   <div class="overflow-protector">
     <table style="width:200px">
       <tr ng-repeat="d in data track by $index">
-        <td class="time">{{ date(d.start) }}:</td><td class="location"><a target="_new" href="{{ d.location }}" >{{ shorten(d.location) }}</a></td><td class="duration">({{ duration(d) }} m)</td>
+        <td class="time">{{ date(d.get('start')[0]) }}:</td><td class="location"><a target="_new" href="{{ d.get('location')[0] }}" >{{ shorten(d.get('location')[0]) }}</a></td><td class="duration">({{ duration(d) }} m)</td>
       </tr>
     </table>
   </div>
