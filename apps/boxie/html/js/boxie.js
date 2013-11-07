@@ -122,7 +122,7 @@ angular
 				fetch: function () {
 					var that = this,
 						promise = $.Deferred(),
-						ids = this.box.getObjIds();
+						ids = this.box.getObjIDs();
 					that.box.getObj(ids).then(function (objs) {
 						console.log(objs);
 						that.reset(objs);

@@ -38,8 +38,8 @@
 		var injector = angular.injector(['ng', 'indx']),
 			indx = injector.get('client'),
 			u = injector.get('utils'),
-			store1 = new indx.Store({ serverHost: 'localhost:8211' }),
-			store2 = new indx.Store({ serverHost: 'localhost:8211' });
+			store1 = new indx.Store({ server_host: 'localhost:8211' }),
+			store2 = new indx.Store({ server_host: 'localhost:8211' });
 
 		it('is a Backbone Model', function () {
 			expect(store1 instanceof Backbone.Model).toBe(true);

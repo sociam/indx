@@ -1,15 +1,37 @@
 * {
 	border-sizing:border-box;
+	font-size:10pt;
 }
-body {
-	padding:8px;
+html, body {
 	max-height:400px;
 	min-height:400px;
-	min-width:200px;
-	max-width:200px;
+	min-width:320px;
+	max-width:320px;
 }
-table {
-	font-size:8pt;
-	min-height:400px;
-	min-width:200px;
+.options { 
+  position:absolute;
+  left:4px;
+  top:4px;
+}
+body { padding:3px; }
+.overflow-protector {
+	border-top:1px solid #eee;
+	position:absolute;
+	left:0px; top:36px; bottom:0px; right:0px;
+	overflow:scroll;
+	table {
+		font-size:8pt;
+		min-height:400px;
+		min-width:200px;
+		.when { font-size:6pt; color:#bbb; }
+		.location { font-size:8pt; }
+		.duration { font-size: 7pt; color:#eff; }
+	}	
+}
+.error {
+	background:rgba(255,0,0,0.2);
+	color:red;
+	font-weight:bold;
+	position:absolute;
+	top:2px; left:30px; height:24px; right:2px;
 }

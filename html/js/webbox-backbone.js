@@ -143,7 +143,7 @@
 				app:this.box.store.get('app'),
 				token:this.box.get('token'),
 				box:this.box.getId()
-			}, url = ['/', this.box.store.get('serverHost'), this.box.id, 'files'].join('/') + '?' + $.param(params);
+			}, url = ['/', this.box.store.get('server_host'), this.box.id, 'files'].join('/') + '?' + $.param(params);
 			// u.debug("IMAGE URL IS ", url, params);
 			return url;
 		}
@@ -307,7 +307,7 @@
 			return files.get(fid);
 		},
 		setUpWebsocket:function() {
-			var this_ = this, serverHost = this.store.get('serverHost');
+			var this_ = this, server_host = this.store.get('server_host');
 			if (! this.getUseWebsockets() ) { return; }
 			this.on('new-token', function(token) {
 				var ws = this_._ws;
@@ -318,7 +318,7 @@
 					} catch(e) { u.error(); }
 				}
 				var protocol = (document.location.protocol === 'https:') ? 'wss:/' : 'ws:/';
-				var wsUrl = [protocol,serverHost,'ws'].join('/');
+				var wsUrl = [protocol,server_host,'ws'].join('/');
 				ws = new WebSocket(wsUrl);
 				ws.onmessage = function(evt) {
 					u.debug('websocket :: incoming a message ', evt.data.toString().substring(0,190));
@@ -357,7 +357,7 @@
 		},
 		getUseWebsockets:function() { return this.options.useWebsockets; },
 		getCacheSize:function(i) { return this._objcache().length; },
-		getObjIds:function() { return this._objlist().slice(); },
+		getObjIDs:function() { return this._objlist().slice(); },
 		_objcache:function() { return this.attributes.objcache; },
 		_objlist:function() { return this.attributes.objlist !== undefined ? this.attributes.objlist : []; },
 		_setObjlist:function(ol) { return this.set({objlist:ol.slice()}); },
@@ -406,9 +406,9 @@
 			// now uses relative url scheme '//blah:port/path';
 			// all files must be PUT into boxname/files
 			// here the parameters are get encoded
-			// // 'http://' + this.store.get('serverHost') + "/" +  boxid + "/" + 'files',
+			// // 'http://' + this.store.get('server_host') + "/" +  boxid + "/" + 'files',
 			var boxid = this.id || this.cid,
-				baseUrl = ['/', this.store.get('serverHost'), boxid, 'files'].join('/'),
+				baseUrl = ['/', this.store.get('server_host'), boxid, 'files'].join('/'),
 				options = { app: this.store.get('app'), id: id, token:this.get('token'),  box: boxid, version: this._getVersion() },
 			    optionParams = $.param(options),
 				url = baseUrl+"?"+optionParams,
@@ -758,7 +758,7 @@
 
 	var Store = WebBox.Store = Backbone.Model.extend({
 		defaults: {
-			serverHost:DEFAULT_HOST,
+			server_host:DEFAULT_HOST,
 			app:"--default-app-id--",
 			toolbar:true
 		},
@@ -773,7 +773,7 @@
 		},
 		isSameDomain:function() {
 			// FIXME: indexOf is insecure? http://evilwebsite.com/localhost/blah would pass
-			return this.get('serverHost').indexOf(document.location.host) >= 0 && (document.location.port === (this.get('serverPort') || ''));
+			return this.get('server_host').indexOf(document.location.host) >= 0 && (document.location.port === (this.get('serverPort') || ''));
 		},
 		_loadToolbar:function() {
 			this.toolbar = WebBox.Toolbar;
@@ -824,7 +824,7 @@
 		},
 		_ajax:function(method, path, data) {
 			// now uses relative url scheme '//blah:port/path';
-			var url = ['/', this.get('serverHost'), path].join('/');
+			var url = ['/', this.get('server_host'), path].join('/');
 			var defaultData = { app: this.get('app') };
 			var options = _(_(this.ajaxDefaults).clone()).extend(
 				{ url: url, method : method, crossDomain: !this.isSameDomain(), data: _(defaultData).extend(data) }
