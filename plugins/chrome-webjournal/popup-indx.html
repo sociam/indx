@@ -7,12 +7,15 @@
 	<link rel="stylesheet/less" type="text/css" href="css/popup.less"/>
 </head>
 <body ng-controller='popup'>
-  <a href="options.html" class="btn btn-default" target="_indx_options">Log in</a>
-  <table style="width:200px">
-    <tr ng-repeat="d in data track by $index">
-      <td>{{ date(d.start) }}: <a target="_new" href="{{ d.location }}" >{{shorten(d.location)}}</a> ({{ duration(d) }} m)</td>
-    </tr>
-  </table>
+  <div class='error' ng-show="error">{{ error }}</div>  
+  <a href="options.html" class="btn btn-default options glyphicon glyphicon-cog" target="_indx_options"></a>
+  <div class="overflow-protector">
+    <table style="width:200px">
+      <tr ng-repeat="d in data track by $index">
+        <td class="time">{{ date(d.start) }}:</td><td class="location"><a target="_new" href="{{ d.location }}" >{{ shorten(d.location) }}</a></td><td class="duration">({{ duration(d) }} m)</td>
+      </tr>
+    </table>
+  </div>
   <script src="js-platform/vendor/jquery.min.js" type="text/javascript"></script>
   <script src="js-platform/vendor/lesscss.min.js" type="text/javascript"></script>
   <script src="js-platform/vendor/underscore.min.js" type="text/javascript"></script>
