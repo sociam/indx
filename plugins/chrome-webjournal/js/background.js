@@ -49,7 +49,9 @@
             return bp.watcher_instance;
         };
         $scope.date = function(d) { return new Date().toLocaleTimeString(); };
-        $scope.duration = function(d) { return (d.end.valueOf() - d.start.valueOf()) / 60000; };
+        $scope.duration = function(d) { 
+            return (d.get('end')[0].valueOf() - d.get('start')[0].valueOf()) / 60000; 
+        };
         $scope.shorten = function(url) { 
             if (url === undefined) { return ''; }
             if (!_.isString(url)) { console.log("wat >> ", url); }
@@ -292,7 +294,7 @@
                 });
             },
             make_record:function(options) {
-                // console.log("make record >> ", options);
+                console.log("make record >> ", options, options.location);
                 return _({}).extend(options, {id:utils.guid(), type:OBJ_TYPE});
             },
             _record_updated:function(current_record) {
@@ -300,7 +302,7 @@
                 var this_ = this, box = this.box, store = this.get('store'), journal = this.get('journal'), data = this.data.concat([current_record]);
                 var signalerror = function(e) { this_.setError(e); };
 
-                if (store && box && data.length > 0) {
+                if (store && box && journal && data.length > 0) {
                     var dfds = data.map(function(rec) { 
                         var id = "webjournal-log-"+rec.id, d = u.deferred();
                         box.getObj(id).then(function(rec_obj) { d.resolve([rec,rec_obj]); }).fail(d.reject);
