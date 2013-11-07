@@ -474,16 +474,16 @@ class ObjectStoreAsync:
                         existing_diff['changed'][uri]['added'] = {}
                     existing_diff['changed'][uri]['added'].update( next_ver_diff['changed'][uri]['added'] )
                 else:
-                    existing_diff['added'][uri] = next_ver_diff['changed'][uri]
+                    existing_diff['changed'][uri] = next_ver_diff['changed'][uri]
 
             if "replaced" in next_ver_diff['changed'][uri]:
                 # replaced in the new diff
 
                 if uri in existing_diff['changed']:
 
-                    if "added" in existing_diff['changed'][uri]:
-                        # if they are added, then add to that, instead of creating a new "changed" entry
-                        existing_diff['changed'][uri]["added"].update( next_ver_diff['changed'][uri]['replaced'] )
+                    #if "added" in existing_diff['changed'][uri]:
+                    #    # if they are added, then add to that, instead of creating a new "changed" entry
+                    #    existing_diff['changed'][uri]["added"].update( next_ver_diff['changed'][uri]['replaced'] )
 
                     if "replaced" in existing_diff['changed'][uri]:
                         existing_diff['changed'][uri]["replaced"].update( next_ver_diff['changed'][uri]['replaced'] )
