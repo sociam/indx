@@ -118,7 +118,7 @@ class DevToolsApp(BaseHandler):
             return
         logging.debug('generating doc %s' % config['name'])
         try:
-            out = check_output('node lib/docs/build.js %s --output-directory=%s' % (config['config_path'], config['path']), shell=True)
+            out = check_output('node lib/docs/build.js %s --output-directory=%s --log-stdout' % (config['config_path'], config['path']), shell=True)
         except subprocess.CalledProcessError, e:
             logging.debug('Failed to run builder', e.output)
             self.return_internal_error('Failed to run builder')
