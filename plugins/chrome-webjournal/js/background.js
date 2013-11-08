@@ -36,7 +36,10 @@
     };
 
     // declare modules -----------------|
-    angular.module('webjournal', ['indx'])
+    var app = angular.module('webjournal', ['indx'])
+    .config(function($compileProvider){ 
+        $compileProvider.aHrefSanitizationWhitelist(/^\s*(https?|ftp|mailto|file|chrome-extension):/); 
+    })
     // popup controller
     .controller('popup', function($scope, watcher, client, utils) {
         window.$s = $scope;
@@ -48,34 +51,35 @@
             var bp = chrome.extension.getBackgroundPage();
             return bp.watcher_instance;
         };
-        $scope.full_url = function(d) { 
-            if (!d || !d.get('location')) { return; }
-            var loc = d.get('location');
-            console.log('location is ', loc);
-            return loc[0];
+        $scope.date = function(d) { 
+            // return new Date().toLocaleTimeString(undefined, {hour12:false}); 
+            return new Date().toLocaleTimeString().slice(0,-3); 
         };
-        $scope.date = function(d) { return new Date().toLocaleTimeString(); };
-        $scope.duration = function(d) { 
-            return (d.get('end')[0].valueOf() - d.get('start')[0].valueOf()) / 60000; 
+        var duration_secs = function(d) { 
+            return (d.get('end')[0].valueOf() - d.get('start')[0].valueOf()) / 1000.0;
         };
-        $scope.short_location = function(d) { 
+        $scope.duration = function(d) {
+            var secs = duration_secs(d);
+            if (secs < 60) {  return secs.toFixed(2) + "s"; }  
+            return (secs/60.0).toFixed(2) + "m";
+        };
+        $scope.label = function(d) { 
             if (d === undefined || !d.get('location')) { return ''; }
             var url = d.get('location')[0];
-            window.loci = url;
             if (!url) { return ''; }
-            if (!_.isString(url)) { 
-                console.log("wat >> ", url); 
-                return ''; 
-            }
             var noprot = url.slice(url.indexOf('//')+2);
             var host = noprot.slice(0,noprot.indexOf('/'));
+            if (host.indexOf('www.') === 0) { host = host.slice(4); }
             var path = noprot.slice(noprot.lastIndexOf('/')+1);
-            if (path.indexOf('?') >= 0) { 
-                path = path.slice(0,path.indexOf('?'));
-            }
+            // if (path.indexOf('?') >= 0) { path = path.slice(0,path.indexOf('?'));       }
             return host + "/" + path;
         };
-        $scope.data = get_watcher() && get_watcher().get('journal') && get_watcher().get('journal').get('entries');
+        $scope.data = get_watcher() && get_watcher().get('journal') && get_watcher().get('journal').get('entries').concat();
+        if (_.isArray($scope.data)) { 
+            $scope.data.reverse(); 
+            $scope.data = $scope.data.filter(function(d) { return duration_secs(d) > 1.0; });
+            $scope.data = $scope.data.slice(0,250);
+        }
         get_watcher().on('error-update', function(e) { utils.safeApply($scope, function() { $scope.error = e; });  });
     })
     // options page
@@ -186,8 +190,8 @@
                 console.log('initialise .. ');
                 var this_ = this;
                 this.data = [];
-                this.bind("change", function() {  
-                    if (this_.get('enabled')) { this_.change.apply(this_, arguments); } 
+                this.bind("user-action", function() {  
+                    if (this_.get('enabled')) { this_.handle_action.apply(this_, arguments); } 
                 });
 
                 // window created
@@ -195,18 +199,18 @@
                 chrome.windows.onCreated.addListener(function(w) {
                     if (w && w.id) {
                         console.log('on created >> ', w);
-                        chrome.tabs.getSelected(w.id, function(tab) { this_.trigger("change", tab.url);  });
+                        chrome.tabs.getSelected(w.id, function(tab) { this_.trigger("user-action", tab.url);  });
                     }
                 });
                 // removed window, meaning focus lost
-                chrome.windows.onRemoved.addListener(function(window) { this_.trigger("change", undefined); });
+                chrome.windows.onRemoved.addListener(function(window) { this_.trigger("user-action", undefined); });
 
                 // window focus changed
                 chrome.windows.onFocusChanged.addListener(function(w) {
                     if (w >= 0) {
                         chrome.tabs.getSelected(w, function(tab) {
                             // console.info("window focus-change W:", w, ", tab:", tab, 'tab url', tab.url);
-                            this_.trigger("change", tab !== undefined ? tab.url : undefined);
+                            this_.trigger("user-action", tab !== undefined ? tab.url : undefined);
                         });
                     }
                 });
@@ -214,14 +218,14 @@
                 chrome.tabs.onSelectionChanged.addListener(function(tabid, info, t) {
                     chrome.tabs.getSelected(info.windowId, function(tab) {
                         // console.info("tabs-selectionchange ", info.windowId, ", tab ", tab && tab.url);
-                        this_.trigger("change", tab !== undefined ? tab.url : undefined);
+                        this_.trigger("user-action", tab !== undefined ? tab.url : undefined);
                     });
                 });
                 // updated a tab 
                 chrome.tabs.onUpdated.addListener(function(tabid, changeinfo, t) {
                     // console.info("tab_updated", t.url, changeinfo.status);
                     if (changeinfo.status == 'loading') { return; }
-                    this_.trigger("change", t.url);
+                    this_.trigger("user-action", t.url);
                 });
             },
             start_polling:function(interval) {
@@ -277,8 +281,7 @@
                 this.set({store:store});
                 if (store && this.bid) { this._load_box();  }
             },
-            change:function(url) {
-                console.log('change! ');
+            handle_action:function(url) {
                 var this_ = this;
                 setTimeout(function() { 
                     var now = new Date();
@@ -293,8 +296,7 @@
                             // different now
                             // console.log('new record!');
                             delete this_.current_record;
-                            this_.trigger("new-record", this_.current_record);
-
+                            // this_.trigger("new-record", this_.current_record);
                         }
                     }
                     // go on to create a new record
@@ -306,11 +308,11 @@
                 });
             },
             make_record:function(options) {
-                console.log("make record >> ", options, options.location);
+                // console.log("make record >> ", options, options.location);
                 return _({}).extend(options, {id:utils.guid(), type:OBJ_TYPE});
             },
             _record_updated:function(current_record) {
-                console.log('record updated ... box ', this.box, current_record);
+                // console.log('record updated ... box ', this.box, current_record);
                 var this_ = this, box = this.box, store = this.get('store'), journal = this.get('journal'), data = this.data.concat([current_record]);
                 var signalerror = function(e) { this_.setError(e); };
 
@@ -370,4 +372,5 @@
         }
     };
     });
+
 }());
