@@ -1,0 +1,14 @@
+{
+	"name": "INDX Collection",
+	"version": 0.3,
+	"description": "Library for working with collections of objs",
+	"icons": {
+		"128": "indx-collection.png"
+	},
+	"author": [
+		{
+			"name": "Peter West",
+			"email": "peter.g.west@gmail.com"
+		}
+	]
+}

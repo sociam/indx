@@ -1,0 +1,14 @@
+{
+	"name": "Boxie",
+	"version": 0.3,
+	"description": "Box browser",
+	"icons": {
+		"128": "icon.png"
+	},
+	"author": [
+		{
+			"name": "Peter West",
+			"email": "peter.g.west@gmail.com"
+		}
+	]
+}
