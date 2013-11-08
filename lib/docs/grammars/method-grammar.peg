@@ -1,6 +1,5 @@
 @import "utils-grammar.peg"
 
-
 property
 	= a:argument
 			{ return ['arg', a]; }
