@@ -34,24 +34,7 @@ class DevToolsApp(BaseHandler):
         logging.debug(' hello')
         self.isLeaf = True
 
-    def config_data(self, filename, config_type):
-        name = filename.split('/')[-1].split('.')[0]
-
-        app_name_r = re.compile('apps/([^/]+)/%s-config.js' % config_type)
-        app_name = app_name_r.findall(filename)
-        logging.debug("hmm... %s" % app_name)
-        if app_name:
-            name = app_name[0]
-
-        path = os.path.sep.join(['apps', 'devtools', 'html', config_type, name])
-
-        return {
-            'name': name,
-            'config_path': filename,
-            'path': path,
-            'url': 'apps/devtools/{0}/{1}'.format(config_type, name),
-            'built': os.path.exists(path)
-            }
+    
 
     def lookup_config(self, name, config_type):
         configs = self.get_config_list(config_type)
@@ -135,8 +118,39 @@ class DevToolsApp(BaseHandler):
                             manifest['icons'][icon_type] = url + '/' + icon
                     manifests.append(manifest)
 
+        for manifest in manifests:
+            if 'documentation' in manifest:
+                config_file = manifest['documentation']
+                manifest['documentation'] = self.doc_info(manifest, config_file)
+
         return manifests
 
+    def doc_info(self, manifest, config_file):
+        path = os.path.sep.join(['apps', 'devtools', 'html', manifest['type'], manifest['id']])
+        return {
+            'url': '/apps/devtools/{0}/{1}'.format(manifest['type'], manifest['id']),
+            'built': os.path.exists(path),
+            'config_path': config_file
+        }
+
+    def config_data(self, filename, config_type):
+        name = filename.split('/')[-1].split('.')[0]
+
+        app_name_r = re.compile('apps/([^/]+)/%s-config.js' % config_type)
+        app_name = app_name_r.findall(filename)
+        logging.debug("hmm... %s" % app_name)
+        if app_name:
+            name = app_name[0]
+
+        path = os.path.sep.join(['apps', 'devtools', 'html', config_type, name])
+
+        return {
+            'name': name,
+            'config_path': filename,
+            'path': path,
+            'url': 'apps/devtools/{0}/{1}'.format(config_type, name),
+            'built': os.path.exists(path)
+            }
 
     def list_manifests(self, request):
         """ Get a list of core components and apps
@@ -169,14 +183,18 @@ class DevToolsApp(BaseHandler):
         return config
 
 
-    def generate_doc(self, request):
+    def build_doc(self, request):
         """ Generate documentation from config file.
         """
-        logging.debug('trying to generate docs')
-        config = self.get_requested_config(request, 'docs')
-        if not config:
+        manifests = self.list_all_manifests()
+        manifest_id = request.args
+        manifest = manifests.where({ 'id': manifest_id })
+        if not manifest:
+            self.return_internal_error('Manifest not found')
             return
-        logging.debug('generating doc %s' % config['name'])
+#### HERES WHERE TO CONTINUE
+        logging.debug('generating doc %s' % manifest['name'])
+        config = manifest['documentation']
         try:
             out = check_output('node lib/docs/build.js %s --output-directory=%s --log-stdout' % (config['config_path'], config['path']), shell=True)
         except subprocess.CalledProcessError, e:
@@ -234,38 +252,20 @@ DevToolsApp.subhandlers = [
         'content-type':'application/json'
         },
     {
-        "prefix": "devtools/api/tests/list_tests",
-        'methods': ['GET'],
+        "prefix": "devtools/api/build_doc",
+        'methods': ['POST'],
         'require_auth': False,
         'require_token': False,
-        'handler': DevToolsApp.list_tests,
+        'handler': DevToolsApp.build_doc,
         'accept':['application/json'],
         'content-type':'application/json'
         },
     {
-        "prefix": "devtools/api/tests/run_test",
+        "prefix": "devtools/api/run_test",
         'methods': ['POST'],
         'require_auth': False,
         'require_token': False,
         'handler': DevToolsApp.run_test,
-        'accept':['application/json'],
-        'content-type':'application/json'
-        },
-    {
-        "prefix": "devtools/api/docs/list_docs",
-        'methods': ['GET'],
-        'require_auth': False,
-        'require_token': False,
-        'handler': DevToolsApp.list_docs,
-        'accept':['application/json'],
-        'content-type':'application/json'
-        },
-    {
-        "prefix": "devtools/api/docs/generate_doc",
-        'methods': ['POST'],
-        'require_auth': False,
-        'require_token': False,
-        'handler': DevToolsApp.generate_doc,
         'accept':['application/json'],
         'content-type':'application/json'
         }

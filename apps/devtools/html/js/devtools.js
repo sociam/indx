@@ -13,10 +13,111 @@ angular
 
 		var u = utils;
 
+
+		var TestsModel = Backbone.Model.extend({
+			initialize: function () {
+				Backbone.Model.prototype.initialize.apply(this, arguments);
+				this.getResults();
+			},
+			run: function () {
+				var that = this;
+				this.isRunning = true;
+				$.post('api/manifests/' + this.manifest.id + '/run_tests')
+					.always(function () {
+						that.isRunning = false;
+						u.safeApply($rootScope);
+					}).then(function (r) {
+						that.set(r.response);
+						that.err = false;
+						that.getResults().then(function () {
+							u.safeApply($rootScope);
+						});
+					}).fail(function () {
+						that.err = true;
+						u.safeApply($rootScope);
+					});
+			},
+			getResults: function () {
+				console.log('GET RESULTS', this);
+				var that = this,
+					promise = $.Deferred();
+				$.get('/' + this.get('url') + '/test-results.xml', function (data) {
+					var $tests = $(data).find('testsuite');
+
+					that.set('results', $tests.map(function () {
+						var $test = $(this),
+							failures = Number($test.attr('failures')),
+							errors = Number($test.attr('errors'));
+
+						return {
+							name: $test.attr('name'),
+							//fullname: $test.attr('name'),
+							failures: failures,
+							errors: errors,
+							tests: Number($test.attr('tests')),
+							pass: failures + errors === 0,
+							timestamp: $test.attr('timestamp'),
+							time: $test.attr('time'),
+							testcases: $test.find('testcase').map(function () {
+								var $testcase = $(this),
+									$failure = $testcase.find('failure');
+								return {
+									name: $testcase.attr('name'),
+									classname: $testcase.attr('classname'),
+									time: Number($testcase.attr('time')),
+									passed: !$failure.length,
+									failed: !!$failure.length,
+									failure: $failure.text()
+								};
+							}).get()
+						};
+					}).get());
+
+					u.safeApply($rootScope);
+
+					promise.resolve();
+				});
+				return promise;
+			}
+		});
+
+		var DocumentationModel = Backbone.Model.extend({
+			initialize: function (attrs, options) {
+				this.manifest = options.manifest;
+			},
+			build: function () {
+				console.log('blah')
+				var that = this;
+				this.isBuilding = true;
+				$.post('api/manifests/' + this.manifest.id + '/build_doc')
+					.then(function (r) {
+						that.set(r.response);
+						that.err = false;
+						u.safeApply($rootScope);
+					})
+					.fail(function (r, s, err) {
+						that.err = r.status + ' - ' + err;
+						u.safeApply($rootScope);
+					})
+					.always(function () {
+						that.isBuilding = false;
+						u.safeApply($rootScope);
+					});
+			}
+		});
+
 		var Manifest = Backbone.Model.extend({
 			defaults: {
 				icons: {
 					128: '/apps/devtools/icons/default.png'
+				}
+			},
+			initialize: function () {
+				if (this.get('documentation')) {
+					this.documentation = new DocumentationModel(undefined, { manifest: this });
+				}
+				if (this.get('tests')) {
+					this.tests = new TestsModel(undefined, { manifest: this });
 				}
 			}
 		});

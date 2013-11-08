@@ -24,7 +24,63 @@
 </div>
 
 <div class="tab-pane" ng-if="pane === 'documentation'">
+	<div ng-if="!manifest.documentation">
+		No documentation has been provided
+	</div>
+	<div ng-if="manifest.documentation">
+		<div class="docs-toolbar">
+			<button type="button" ng-click="manifest.documentation.build()">Build</button>
+		</div>
+		<div ng-if="!manifest.documentation.get('built')">
+			Documentation needs to be built.
+		</div>
+		<div ng-if="manifest.documentation.get('built')">
+			<iframe src="manifest.documentation.url"></iframe>
+		</div>
+	</div>
 </div>
 
 <div class="tab-pane" ng-if="pane === 'tests'">
+	<div ng-if="!manifest.tests">
+		No tests has been provided
+	</div>
+	<div ng-if="manifest.tests">
+		<div class="docs-toolbar">
+			<button type="button" ng-click="manifest.tests.run()">Build</button>
+		</div>
+		<div ng-if="!manifest.tests.results">
+			Tests needs to be run.
+		</div>
+		<div ng-if="manifest.tests.results">
+			<table class="table">
+				<tbody>
+					<tr><th>Browser</th><td>{{manifest.tests.result.name}} ({{manifest.tests.result.name}})</td></tr>
+					<tr><th>Tests</th><td>{{manifest.tests.result.tests}}</td></tr>
+					<tr><th>Errors</th><td>{{manifest.tests.result.errors}}</td></tr>
+					<tr><th>Failures</th><td>{{manifest.tests.result.failures}}</td></tr>
+					<tr><th>Timestamp</th><td>{{manifest.tests.result.timestamp}}</td></tr>
+					<tr><th>Time</th><td>{{manifest.tests.result.time}}</td></tr>
+				</tbody>
+			</table>
+			<h3>Results</h3>
+			<label><input type="checkbox" selected="selected" ng-model="onlyfailures">Only show failures</label>
+			<table class="table">
+				<thead>
+					<tr><th>Name</th><th>Passed</th><th>Time</th></tr>
+				</thead>
+					<tbody ng-repeat="testcase in manifest.tests.result.testcases | filter: { failed: onlyfailures ? true : undefined }">
+						<tr ng-class="{testfail:testcase.failure}">
+							<td><b>{{testcase.name}}</b> - {{testcase.classname}}</td>
+							<td>{{testcase.passed}}</td>
+							<td>{{testcase.time}}</td>
+						</tr>
+						<tr ng-if="testcase.failure">
+							<td colspan="3" class="testfail">
+								{{testcase.failure}}
+							</td>
+						</tr>
+					</tbody>
+			</table>
+		</div>
+	</div>
 </div>
