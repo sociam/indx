@@ -93,6 +93,8 @@ class ObjectStoreAsync:
         """
         result_d = Deferred()
 
+        # TODO make this a single listener here (this is already shared in indx.webserver.token, but if we move the sharing here, it will be shared e.g. when indx.sync listens too)
+
         def err_cb(failure):
             self.error("Objectstore listen, err_cb, failure: {0}".format(failure))
             result_d.errback(failure)
