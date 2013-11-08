@@ -289,7 +289,7 @@
                 if (store && this.bid) { this._load_box();  }
             },
             handle_action:function(tabinfo) {
-                var url = tabinfo.url, title = tabinfo.title;
+                var url = tabinfo && tabinfo.url, title = tabinfo && tabinfo.title;
                 var this_ = this;
                 setTimeout(function() { 
                     var now = new Date();
