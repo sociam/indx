@@ -345,15 +345,17 @@ angular
 
 				/// @ignore
 				ws.onmessage = function(evt) {
-					// u.debug('websocket :: incoming a message ', evt.data.toString().substring(0,190));
+					u.debug('websocket :: incoming a message ', evt.data.toString()); // .substring(0,190));
 					var pdata = JSON.parse(evt.data);
 					if (pdata.action === 'diff') {
-						this_._diffUpdate(pdata.data)
-							.then(function() {
-								this_.trigger('update-from-master', this_.getVersion());
-							}).fail(function(err) {
-								u.error(err); /*  u.log('done diffing '); */
-							});
+						try {
+							this_._diffUpdate(pdata.data).then(function() {
+									// console.log('diffupdate success continuation >>>>>>>>> '); 
+									this_.trigger('update-from-master', this_.getVersion());
+								}).fail(function(err) {
+									u.error(err); /*  u.log('done diffing '); */
+								});
+						} catch(e) { console.error(e); }
 					}
 				};
 				/// @ignore
@@ -553,6 +555,7 @@ angular
 			},
 			// handles updates from websockets the server
 			_diffUpdate:function(response) {
+				console.log("diffUpdate > ", response);
 				var d = u.deferred(), this_ = this, latestVersion = response['@to_version'],
 				addedIDs  = _(response.data.added).keys(),
 				changedIDs = _(response.data.changed).keys(),
@@ -593,7 +596,6 @@ angular
 						});
 						var added = _(obj.added).map(function(vs, k) {
 							changedprops.push(k);
-							changedprops = _(changedprops).union([k]);
 							var dd = u.deferred();
 							u.when(vs.map(function(v) {	return deserialiseValue(v, this_);	})).then(function(values) {
 								var newVals = (cached_obj.get(k) || []).concat(values);
@@ -612,8 +614,10 @@ angular
                             }).fail(dd.reject);
                             return dd.promise();
                         });
+                        console.log('dfdlengths >> ', added.length, ' - ', deleted.length, ' ', replaced.length);
                         u.when(added.concat(deleted).concat(replaced)).then(function() {
 							// u.debug("triggering changed properties ", changedprops);
+							console.log('changedprops ', changedprops, ' ', u.uniqstr(changedprops));
 							u.uniqstr(changedprops).map(function(k) {
 								cached_obj.trigger('change:'+k, cached_obj, (cached_obj.get(k) || []).slice());
 								// u.debug("trigger! change:"+k);

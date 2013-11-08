@@ -48,13 +48,25 @@
             var bp = chrome.extension.getBackgroundPage();
             return bp.watcher_instance;
         };
+        $scope.full_url = function(d) { 
+            if (!d || !d.get('location')) { return; }
+            var loc = d.get('location');
+            console.log('location is ', loc);
+            return loc[0];
+        };
         $scope.date = function(d) { return new Date().toLocaleTimeString(); };
         $scope.duration = function(d) { 
             return (d.get('end')[0].valueOf() - d.get('start')[0].valueOf()) / 60000; 
         };
-        $scope.shorten = function(url) { 
-            if (url === undefined) { return ''; }
-            if (!_.isString(url)) { console.log("wat >> ", url); }
+        $scope.short_location = function(d) { 
+            if (d === undefined || !d.get('location')) { return ''; }
+            var url = d.get('location')[0];
+            window.loci = url;
+            if (!url) { return ''; }
+            if (!_.isString(url)) { 
+                console.log("wat >> ", url); 
+                return ''; 
+            }
             var noprot = url.slice(url.indexOf('//')+2);
             var host = noprot.slice(0,noprot.indexOf('/'));
             var path = noprot.slice(noprot.lastIndexOf('/')+1);
