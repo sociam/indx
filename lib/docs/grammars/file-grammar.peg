@@ -1,7 +1,5 @@
 @import "utils-grammar.peg"
 
-
-
 property
 	= "@author" _ n:[^<\n\r]+ _ e:("<" [^>\n\r]+ ">")?
 			{ 	if (e) { e = e[1].join(''); }

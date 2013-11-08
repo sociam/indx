@@ -3,6 +3,12 @@
 
 
 ///  @title indx.js
+///  @author Daniel Alexander Smith
+///  @author Max Van Kleek
+///  @author Peter West
+///  @since 2013
+///  @see http://github.com/sociam/indx
+///  @see http://indx.es
 ///
 ///  Javascript ORM client for INDX that makes it easy to
 ///  read and write objects from one or more INDX data store(s).
@@ -12,6 +18,7 @@
 ///  Copyright (C) 2011-2013 Daniel Alexander Smith
 ///  Copyright (C) 2011-2013 Max Van Kleek
 ///  Copyright (C) 2011-2013 Nigel R. Shadbolt
+///  Copyright (C) 2011-2013 Peter West
 ///
 ///  This program is free software: you can redistribute it and/or modify
 ///  it under the terms of the GNU Affero General Public License, version 3,
