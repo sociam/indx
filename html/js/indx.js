@@ -345,7 +345,7 @@ angular
 
 				/// @ignore
 				ws.onmessage = function(evt) {
-					u.debug('websocket :: incoming a message ', evt.data.toString()); // .substring(0,190));
+					// u.debug('websocket :: incoming a message ', evt.data.toString()); // .substring(0,190));
 					var pdata = JSON.parse(evt.data);
 					if (pdata.action === 'diff') {
 						try {

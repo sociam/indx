@@ -154,14 +154,15 @@
     .controller('main', function($scope, watcher, client,utils) {
         // main 
         window.utils = utils;
-        var winstance = watcher.init();
+        var winstance = watcher.init(), n_logged = 0;
+        // var 
         var displayFail = function(reason) { 
             setErrorBadge('x' , reason);
             winstance.setError(reason);
         };
         window.watcher_instance = winstance;
         winstance.on('error', function() {  displayFail('server error');  });
-        winstance.on('new-entries', function(n) { setOKBadge(''+n);  });
+        winstance.on('new-entries', function(n) { n_logged +=n; setOKBadge(''+n_logged); });
         var initStore = function(store) {
             window.s = store;
             winstance.set_store(store);
@@ -326,20 +327,16 @@
                     });
                     u.when(dfds).then(function(pairs) {
                         var dsts = pairs.map(function(pair) { 
-                           var src = _({}).extend(pair[0]), dstobj = pair[1];
+                           var src = _({}).extend(pair[0], {collection:journal}), dstobj = pair[1];
                            delete src.id;
                            dstobj.set(src);
                            dstobj.save().fail(signalerror);
                            return dstobj;
                         });
-                        var entries = _(journal.get('entries') || []).union(dsts);
-                        journal.set({entries:entries});
-                        this_.trigger('new-entries', entries.length);
+                        this_.trigger('new-entries', pairs.length);
                         journal.save().fail(signalerror);
-                        this_.data = this_.data.slice(data.length);
-                        // console.log(' this data is now ', this_.data.length)
-                        // window.j = journal;
                     }).fail(signalerror);
+                    this.data = this.data.slice(data.length);
                 }
             }
         });
