@@ -8,9 +8,15 @@
 	<link rel="stylesheet/less" type="text/css" href="css/devtools.less">
 	<title>INDX Developer Tools</title>
   </head>
-  <body ng-app="devtools" ng-controller="main"  ng-cloak>
+  <body ng-app="devtools" ng-cloak>
     <toolbar box-var='selectedBox' username-var='selectedUser'></toolbar>
-	<div>
+	<nav class="navbar navbar-default" role="navigation">
+		<div class="navbar-header">
+			<a class="navbar-brand" href="#">Developer Console</a>
+		</div>
+	</nav>
+	<div ng-view></div>
+	<div ng-if="false">
 
 	  <div ng-show="selectedUser && selectedBox" class="foo row-fluid tabbable">
 		<div class="foo span12">
@@ -22,42 +28,6 @@
 		  </ul>
 		  <div class="tab-content">
 			<div class="tab-pane active" id="status">
-				<h2>Core</h2>
-				<table class="table">
-					<thead><tr><th width="250">Name</th><th width="80">Version</th><th>Description</th><th width="100">Docs</th><th width="100">Errors</th></tr></thead>
-					<tbody>
-						<tr ng-repeat="manifest in manifests.core">
-							<td>
-								<a href="#manifest/{{ manifest.id }}">
-									<img src="{{ manifest.get('icons')['128'] }}" class="icon">
-									{{ manifest.get('name') }}
-								</a>
-							</td>
-							<td>{{ manifest.get('version') }}</td>
-							<td>{{ manifest.get('description') }}</td>
-							<td>-</td>
-							<td>-</td>
-						</tr>
-					</tbody>
-				</table>
-				<h2>Applications</h2>
-				<table class="table">
-					<thead><tr><th width="250">Name</th><th width="80">Version</th><th>Description</th><th width="100">Docs</th><th width="100">Errors</th></tr></thead>
-					<tbody>
-						<tr ng-repeat="manifest in manifests.apps">
-							<td>
-								<a href="#manifest/{{ manifest.id }}">
-									<img src="{{ manifest.get('icons')['128'] }}" class="icon">
-									{{ manifest.get('name') }}
-								</a>
-							</td>
-							<td>{{ manifest.get('version') }}</td>
-							<td>{{ manifest.get('description') }}</td>
-							<td>-</td>
-							<td>-</td>
-						</tr>
-					</tbody>
-				</table>
 			</div>
 			<div class="tab-pane" id="apidocs">
 				<!-- <p>See <a href="/docs/docsgen.html">docsgen documentation</a> for instruction on how to build api docs.</p> -->

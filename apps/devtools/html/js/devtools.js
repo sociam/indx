@@ -1,7 +1,14 @@
 /* global $, console, angular, Backbone, _ */
 angular
 	.module('devtools', ['ui','indx'])
-	.controller('main', function($scope, client, utils) {
+	.config(['$routeProvider', function ($routeProvider) {
+		$routeProvider
+			.when('/', { templateUrl: 'partials/root.html', controller: 'RootCtrl' })
+			.when('/manifest/:id', { templateUrl: 'partials/manifest.html', controller: 'ManifestCtrl' })
+			.when('/manifest/:id/:section', { templateUrl: 'partials/manifest.html', controller: 'ManifestCtrl' })
+			.otherwise({ redirectTo: '/' });
+	}])
+	.service('manifestsService', function ($rootScope, utils) {
 		'use strict';
 
 		var u = utils;
@@ -28,6 +35,26 @@ angular
 				return r.response;
 			}
 		});
+
+
+		var manifests = new Manifests();
+		manifests.fetch().then(function () {
+			u.safeApply($rootScope);
+		});
+
+		window.$scope = $rootScope;
+
+		return {
+			manifests: manifests
+		};
+	})
+	.controller('RootCtrl', function ($scope, manifestsService) {
+		'use strict';
+
+		_.extend($scope, {
+			manifests: manifestsService.manifests
+		});
+		/*var u = utils;
 
 		var Test = Backbone.Model.extend({
 			idAttribute: 'name',
@@ -137,10 +164,6 @@ angular
 			docs.reset(r.response);
 		});
 
-		var manifests = new Manifests();
-		manifests.fetch().then(function () {
-			u.safeApply($scope);
-		});
 
 		_.extend($scope, {
 			tests: tests,
@@ -165,6 +188,20 @@ angular
 		};
 		$scope.$watch('selectedBox + selectedUser', init);
 		init();
-		window.store = client.store;
-		window.$scope = $scope;
+		window.store = client.store;*/
+	}).controller('ManifestCtrl', function ($scope, $location, manifestsService, $routeParams) {
+		'use strict';
+
+		var manifest = manifestsService.manifests.get($routeParams.id);
+		if (!manifest) {
+			$location.path('/');
+		}
+		var panes = ['overview', 'documentation', 'tests'],
+			pane = 'overview';
+		if (panes.indexOf($routeParams.section) > -1) {
+			pane = $routeParams.section;
+		}
+		
+		$scope.manifest = manifest;
+		$scope.pane = pane;
 	});
