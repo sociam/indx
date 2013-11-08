@@ -58,7 +58,7 @@
         $scope.label = function(d) { 
             var maxlen = 150;
             if (d === undefined || !d.get('location')) { return ''; }
-            if (d.get('title')) { return d.get('title')[0].slice(0,maxlen); }
+            if (d.get('title') && d.get('title').length && d.get('title')[0].trim().length > 0) { return d.get('title')[0].slice(0,maxlen); }
             var url = d.get('location')[0];
             if (!url) { return ''; }
             var noprot = url.slice(url.indexOf('//')+2);
