@@ -13,12 +13,14 @@
         chrome.browserAction.setBadgeText({text:s.toString()});
         chrome.browserAction.setBadgeBackgroundColor({color:"#00ffff"});
     };
+    var duration_secs = function(d) { return (d.get('end')[0].valueOf() - d.get('start')[0].valueOf()) / 1000.0;  };
+
 
     var OBJ_TYPE = localStorage.indx_webjournal_type || 'web-page-view';
     var OBJ_ID = localStorage.indx_webjournal_id || 'my-web-journal';
 
     localStorage.indx_url = localStorage.indx_url || DEFAULT_URL;
-    var getBoxName = function() {   return localStorage.indx_box || 'lifelog'  };
+    var getBoxName = function() { return localStorage.indx_box || 'lifelog'; };
 
     var connect = function(client,utils) {
         var server_url = localStorage.indx_url;
@@ -27,9 +29,7 @@
         }
         var d = utils.deferred();
         server.checkLogin().then(function(response) {
-            if (response.is_authenticated) {  
-                return d.resolve(server, response);  
-            };
+            if (response.is_authenticated) { return d.resolve(server, response);  }
             d.reject('not logged in');
         }).fail(d.reject);
         return d.promise();
@@ -41,48 +41,35 @@
         $compileProvider.aHrefSanitizationWhitelist(/^\s*(https?|ftp|mailto|file|chrome-extension):/); 
     })
     // popup controller
-    .controller('popup', function($scope, watcher, client, utils) {
+    .controller('popup', function($scope, watcher, utils) {
         window.$s = $scope;
-        var get_store = function() {
-            var bp = chrome.extension.getBackgroundPage();
-            return bp.store;
-        };
-        var get_watcher = function() {
-            var bp = chrome.extension.getBackgroundPage();
-            return bp.watcher_instance;
-        };
-        $scope.date = function(d) { 
-            // return new Date().toLocaleTimeString(undefined, {hour12:false}); 
-            return new Date().toLocaleTimeString().slice(0,-3); 
-        };
-        var duration_secs = function(d) { 
-            return (d.get('end')[0].valueOf() - d.get('start')[0].valueOf()) / 1000.0;
-        };
+        var records = [];
+        var guid = utils.guid();
+        var get_store = function() {  return chrome.extension.getBackgroundPage().store; };
+        var get_watcher = function() { return chrome.extension.getBackgroundPage().watcher_instance; };
+
+        // scope methods for rendering things nicely.
+        $scope.date = function(d) { return new Date().toLocaleTimeString().slice(0,-3);  };
         $scope.duration = function(d) {
             var secs = duration_secs(d);
             if (secs < 60) {  return secs.toFixed(2) + "s"; }  
             return (secs/60.0).toFixed(2) + "m";
-        };
+        };        
         $scope.label = function(d) { 
             if (d === undefined || !d.get('location')) { return ''; }
             var url = d.get('location')[0];
             if (!url) { return ''; }
             var noprot = url.slice(url.indexOf('//')+2);
-            // var host = noprot.slice(0,noprot.indexOf('/'));
-            // if (host.indexOf('www.') === 0) { host = host.slice(4); }
             if (noprot.indexOf('www.') === 0) { noprot = noprot.slice(4); }
-            return noprot;
-            // var path = noprot.slice(noprot.lastIndexOf('/')+1);
-            // if (path.indexOf('?') >= 0) { path = path.slice(0,path.indexOf('?'));       }
-            // return host + "/" + path;
+            return noprot.slice(0,150);
         };
-        $scope.data = get_watcher() && get_watcher().get('journal') && get_watcher().get('journal').get('entries').concat();
-        if (_.isArray($scope.data)) { 
-            $scope.data.reverse(); 
-            $scope.data = $scope.data.filter(function(d) { return duration_secs(d) > 1.0; });
-            $scope.data = $scope.data.slice(0,250);
-        }
-        get_watcher().on('error-update', function(e) { utils.safeApply($scope, function() { $scope.error = e; });  });
+        var update_history = function(history) {  
+            console.log('update history >> ', update_history.length );
+            utils.safeApply($scope, function() { $scope.data = history.concat().reverse(); });     
+        };
+        get_watcher().on('updated-history', function(history) {  update_history(history); }, guid);
+        update_history(get_watcher()._get_history());
+        window.onunload=function() { get_watcher().off(undefined, undefined, guid);  };
     })
     // options page
     .controller('options', function($scope, watcher, client, utils) {
@@ -162,7 +149,9 @@
         };
         window.watcher_instance = winstance;
         winstance.on('error', function() {  displayFail('server error');  });
-        winstance.on('new-entries', function(n) { n_logged +=n; setOKBadge(''+n_logged); });
+        winstance.on('new-entries', function(entries) { 
+            n_logged += entries.length; setOKBadge(''+n_logged); 
+        });
         var initStore = function(store) {
             window.s = store;
             winstance.set_store(store);
@@ -173,7 +162,6 @@
             });
             store.on('logout', function() {  displayFail('logged out of indx'); });
         };
-
         var runner = function() {
             var me = arguments.callee;
             connect(client,utils).then(initStore)
@@ -230,7 +218,22 @@
                     if (changeinfo.status == 'loading') { return; }
                     this_.trigger("user-action", t.url);
                 });
+
+                this._init_history();
             },
+            _init_history:function() { 
+                // keep history around for plugins etc 
+                var this_ = this;
+                if (!this._history) { this._history = []; }
+                var N = 250, records = this._history, threshold_secs = 0; //.80;
+                this.on('new-entries', function(entries) {
+                    records = _(records).union(entries).filter(function(d) { return duration_secs(d) > threshold_secs; });
+                    records = records.slice(0,N);
+                    this.trigger('updated-history', records);
+                    this_._history = records;
+                });
+            },
+            _get_history:function() { return this._history || [];  },
             start_polling:function(interval) {
                 var this_ = this;
                 this.stop_polling();
@@ -333,7 +336,7 @@
                            dstobj.save().fail(signalerror);
                            return dstobj;
                         });
-                        this_.trigger('new-entries', pairs.length);
+                        this_.trigger('new-entries', dsts);
                         journal.save().fail(signalerror);
                     }).fail(signalerror);
                     this.data = this.data.slice(data.length);
