@@ -68,11 +68,13 @@
             var url = d.get('location')[0];
             if (!url) { return ''; }
             var noprot = url.slice(url.indexOf('//')+2);
-            var host = noprot.slice(0,noprot.indexOf('/'));
-            if (host.indexOf('www.') === 0) { host = host.slice(4); }
-            var path = noprot.slice(noprot.lastIndexOf('/')+1);
+            // var host = noprot.slice(0,noprot.indexOf('/'));
+            // if (host.indexOf('www.') === 0) { host = host.slice(4); }
+            if (noprot.indexOf('www.') === 0) { noprot = noprot.slice(4); }
+            return noprot;
+            // var path = noprot.slice(noprot.lastIndexOf('/')+1);
             // if (path.indexOf('?') >= 0) { path = path.slice(0,path.indexOf('?'));       }
-            return host + "/" + path;
+            // return host + "/" + path;
         };
         $scope.data = get_watcher() && get_watcher().get('journal') && get_watcher().get('journal').get('entries').concat();
         if (_.isArray($scope.data)) { 
