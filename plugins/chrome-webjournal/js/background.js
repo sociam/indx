@@ -56,12 +56,14 @@
             return (secs/60.0).toFixed(2) + "m";
         };        
         $scope.label = function(d) { 
+            var maxlen = 150;
             if (d === undefined || !d.get('location')) { return ''; }
+            if (d.get('title')) { return d.get('title')[0].slice(0,maxlen); }
             var url = d.get('location')[0];
             if (!url) { return ''; }
             var noprot = url.slice(url.indexOf('//')+2);
             if (noprot.indexOf('www.') === 0) { noprot = noprot.slice(4); }
-            return noprot.slice(0,150);
+            return noprot.slice(0,maxlen);
         };
         var update_history = function(history) {  
             console.log('update history >> ', update_history.length );
@@ -190,7 +192,7 @@
                 chrome.windows.onCreated.addListener(function(w) {
                     if (w && w.id) {
                         console.log('on created >> ', w);
-                        chrome.tabs.getSelected(w.id, function(tab) { this_.trigger("user-action", tab.url);  });
+                        chrome.tabs.getSelected(w.id, function(tab) { this_.trigger("user-action", { url: tab.url, title: tab.title });  });
                     }
                 });
                 // removed window, meaning focus lost
@@ -201,22 +203,21 @@
                     if (w >= 0) {
                         chrome.tabs.getSelected(w, function(tab) {
                             // console.info("window focus-change W:", w, ", tab:", tab, 'tab url', tab.url);
-                            this_.trigger("user-action", tab !== undefined ? tab.url : undefined);
+                            this_.trigger("user-action", tab !== undefined ? { url: tab.url, title: tab.title } : undefined);
                         });
                     }
                 });
                 // tab selection changed
                 chrome.tabs.onSelectionChanged.addListener(function(tabid, info, t) {
                     chrome.tabs.getSelected(info.windowId, function(tab) {
-                        // console.info("tabs-selectionchange ", info.windowId, ", tab ", tab && tab.url);
-                        this_.trigger("user-action", tab !== undefined ? tab.url : undefined);
+                        this_.trigger("user-action", tab !== undefined ? { url: tab.url, title: tab.title } : undefined);
                     });
                 });
                 // updated a tab 
-                chrome.tabs.onUpdated.addListener(function(tabid, changeinfo, t) {
+                chrome.tabs.onUpdated.addListener(function(tabid, changeinfo, tab) {
                     // console.info("tab_updated", t.url, changeinfo.status);
                     if (changeinfo.status == 'loading') { return; }
-                    this_.trigger("user-action", t.url);
+                    this_.trigger("user-action", { url: tab.url, title: tab.title });
                 });
 
                 this._init_history();
@@ -287,7 +288,8 @@
                 this.set({store:store});
                 if (store && this.bid) { this._load_box();  }
             },
-            handle_action:function(url) {
+            handle_action:function(tabinfo) {
+                var url = tabinfo.url, title = tabinfo.title;
                 var this_ = this;
                 setTimeout(function() { 
                     var now = new Date();
@@ -307,7 +309,7 @@
                     }
                     // go on to create a new record
                     if (url !== undefined) {
-                        this_.current_record = this_.make_record({start: now, end:now, to: url, location: url});
+                        this_.current_record = this_.make_record({start: now, end:now, to: url, location: url, title:title});
                         this_.data.push(this_.current_record);
                         this_._record_updated(this_.current_record);
                     }
