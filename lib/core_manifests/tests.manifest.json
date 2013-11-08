@@ -3,7 +3,7 @@
 	"version": 0.3,
 	"description": "Testing framework using Karma with Jasmine",
 	"icons": {
-		"128": "tests.png"
+		"128": "/apps/devtools/icons/tests.png"
 	},
 	"author": [
 		{

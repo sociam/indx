@@ -3,7 +3,7 @@
 	"version": 0.1,
 	"description": "Core indx client library",
 	"icons": {
-		"128": "indx.png"
+		"128": "/apps/devtools/icons/indx.png"
 	},
 	"author": [
 		{
@@ -15,6 +15,6 @@
 		{
 			"name": "Peter West",
 			"email": "peter.g.west@gmail.com"
-		},
+		}
 	]
 }

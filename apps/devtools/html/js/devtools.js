@@ -6,6 +6,29 @@ angular
 
 		var u = utils;
 
+		var Manifest = Backbone.Model.extend({
+			defaults: {
+				icons: {
+					128: '/apps/devtools/icons/default.png'
+				}
+			}
+		});
+
+		var Manifests = Backbone.Collection.extend({
+			model: Manifest,
+			url: 'api/manifests',
+			initialize: function () {
+				var that = this;
+				this.on('add remove reset', function () {
+					that.apps = that.where({ type: 'app' });
+					that.core = that.where({ type: 'core' });
+				});
+			},
+			parse: function (r) {
+				return r.response;
+			}
+		});
+
 		var Test = Backbone.Model.extend({
 			idAttribute: 'name',
 			initialize: function () {
@@ -114,9 +137,15 @@ angular
 			docs.reset(r.response);
 		});
 
+		var manifests = new Manifests();
+		manifests.fetch().then(function () {
+			u.safeApply($scope);
+		});
+
 		_.extend($scope, {
 			tests: tests,
 			docs: docs,
+			manifests: manifests,
 			activeTest: {}
 		});
 

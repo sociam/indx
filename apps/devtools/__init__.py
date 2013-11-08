@@ -22,6 +22,7 @@ import requests
 from subprocess import check_output
 import subprocess
 import shutil
+import glob
 
 
 
@@ -82,6 +83,65 @@ class DevToolsApp(BaseHandler):
         configs = [self.config_data(f, config_type) for f in config_files]
         logging.debug("configs: {0}".format(configs))
         return configs;
+
+    def list_manifests_in(self, appdir):
+        logging.debug('looking for manifests in %s', appdir)
+        manifests = []
+        manifest_files = glob.glob(appdir + os.path.sep + '*manifest.json')
+        for manifest_file in manifest_files:
+            if os.path.isfile(manifest_file):
+                logging.debug('reading manifest file %s', manifest_file)
+                manifest_json = open(manifest_file)
+                try:
+                    manifest = json.load(manifest_json)
+                    manifest['manifest_name'] = manifest_file[len(appdir) + 1:]
+                    manifests.append(manifest)
+                except ValueError:
+                    logging.warn('Failed to load JSON file (might be invalid?): %s', manifest_file)
+                manifest_json.close()
+
+        return manifests
+
+
+    def list_all_manifests (self):
+        manifests = []
+
+        currdir = os.path.dirname(os.path.abspath(__file__))
+
+        logging.debug('getting list of core manifests')
+        core_dir = os.path.normpath(os.path.sep.join([currdir, '..', '..', 'lib', 'core_manifests']))
+        core_manifests = self.list_manifests_in(core_dir)
+        for manifest in core_manifests:
+            manifest['type'] = 'core'
+            manifest['id'] = 'core-' + '.'.join(manifest['manifest_name'].split('.')[:-2])
+            manifests.append(manifest)
+
+        logging.debug('getting list of app manifests')
+        apps_dir = os.path.sep.join([currdir, '..', '..', 'apps'])
+        for d in os.listdir(apps_dir):
+            app_dir = os.path.normpath(apps_dir + os.path.sep + d)
+            if os.path.isdir(app_dir):
+                app_manifests = self.list_manifests_in(app_dir)
+                if len(app_manifests) == 0:
+                    app_manifests.append({ 'name': d })
+
+                for manifest in app_manifests:
+                    url = '/apps/' + d
+                    manifest['url'] = url
+                    manifest['type'] = 'app'
+                    manifest['id'] = 'app-' + d
+                    if 'icons' in manifest:
+                        for icon_type, icon in manifest['icons'].items():
+                            manifest['icons'][icon_type] = url + '/' + icon
+                    manifests.append(manifest)
+
+        return manifests
+
+
+    def list_manifests(self, request):
+        """ Get a list of core components and apps
+        """
+        self.return_ok(request, data = { 'response': self.list_all_manifests() })
 
     def list_docs(self, request):
         """ Get a list of doc configs.
@@ -164,6 +224,15 @@ class DevToolsApp(BaseHandler):
 DevToolsApp.base_path = "devtools/api"
 
 DevToolsApp.subhandlers = [
+    {
+        "prefix": "devtools/api/manifests",
+        'methods': ['GET'],
+        'require_auth': False,
+        'require_token': False,
+        'handler': DevToolsApp.list_manifests,
+        'accept':['application/json'],
+        'content-type':'application/json'
+        },
     {
         "prefix": "devtools/api/tests/list_tests",
         'methods': ['GET'],

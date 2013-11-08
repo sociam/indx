@@ -3,7 +3,7 @@
 	"version": 0.1,
 	"description": "Generate documentation from JavaScript source code",
 	"icons": {
-		"128": "docsgen.png"
+		"128": "/apps/devtools/icons/docs.png"
 	},
 	"author": [
 		{
