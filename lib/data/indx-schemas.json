@@ -57,10 +57,16 @@
                 ]
             },
             "20131031-ADD_PKI_KEY_STORAGE": {
-                "next-version": "",
+                "next-version": "20131107-ADD_ROOT_BOX",
                 "sql": [
                     "ALTER TABLE tbl_users ADD COLUMN public_key_rsa text NULL;",
                     "ALTER TABLE tbl_users ADD COLUMN private_key_rsa_env text NULL;"
+                ]
+            },
+            "20131107-ADD_ROOT_BOX": {
+                "next-version": "",
+                "sql": [
+                    "ALTER TABLE tbl_users ADD COLUMN root_box text NULL;"
                 ]
             }
         }
