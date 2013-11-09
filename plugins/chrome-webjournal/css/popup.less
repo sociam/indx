@@ -18,8 +18,11 @@ body { padding:3px; }
 	border-top:1px solid #eee;
 	position:absolute;
 	left:0px; top:36px; bottom:0px; right:0px;
-	overflow:scroll;
+	overflow-y:scroll;
+	oveflow-x:none;
 	table {
+
+		tr { height:16px; }
 		font-size:8pt;
 		.time { 
 			font-size:6pt; color:#bbb; 
@@ -27,8 +30,9 @@ body { padding:3px; }
 		}
 		.location { 
 			font-size:8pt; 
-			width:228px;
-			min-width:228px;
+			width:230px;
+			min-width:230px;
+			max-width:230px;
 			overflow:hidden;
 		}
 		.duration { 
@@ -41,7 +45,6 @@ body { padding:3px; }
 			vertical-align:middle;
 			border-bottom:1px solid #eee;
 		}
-		tr { height:16px; }
 	}	
 }
 .error {
