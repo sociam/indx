@@ -258,6 +258,7 @@
                         this_.trigger('box-loaded', bid); 
                         this_.box = box;
                         box.getObj(OBJ_ID).then(function(obj) {
+                            obj.save(); // make sure journal exists.
                             this_.set('journal', obj);
                             d.resolve(box); 
                         }).fail(d.reject); 
@@ -322,25 +323,34 @@
             _record_updated:function(current_record) {
                 // console.log('record updated ... box ', this.box, current_record);
                 var this_ = this, box = this.box, store = this.get('store'), journal = this.get('journal'), data = this.data.concat([current_record]);
-                var signalerror = function(e) { this_.setError(e); };
 
+                var signalerror = function(e) { this_.trigger('connection-error', e); };
                 if (store && box && journal && data.length > 0) {
-                    var dfds = data.map(function(rec) { 
-                        var id = "webjournal-log-"+rec.id, d = u.deferred();
-                        box.getObj(id).then(function(rec_obj) { d.resolve([rec,rec_obj]); }).fail(d.reject);
-                        return d.promise();
+                    var _rec_map = {};
+                    var ids = data.map(function(rec) { 
+                        var id = "webjournal-log-"+rec.id;
+                        _rec_map[id] = rec;
+                        return id;
                     });
-                    u.when(dfds).then(function(pairs) {
-                        var dsts = pairs.map(function(pair) { 
-                           var src = _({}).extend(pair[0], {collection:journal}), dstobj = pair[1];
-                           delete src.id;
-                           dstobj.set(src);
-                           dstobj.save().fail(signalerror);
-                           return dstobj;
+                    box.getObj(ids).then(function(rec_objs) {
+                        rec_objs.map(function(rec_obj) {
+                            var src = _({}).extend(_rec_map[rec_obj.id], {collection:journal});
+                            delete src.id;
+                            rec_obj.set(src);
+                            rec_obj.save().fail(function(error) { 
+                                // might be obsolete
+                                // todo: do something more sensible
+                                if (error.status === 409) { 
+                                    console.error('got obsolete call .. '); 
+                                    return setTimeout(function() { rec_obj.save().fail(signalerror); }, 1000); 
+                                }
+                                console.error('saving error :: some other error ', error);
+                                signalerror(error);
+                            });
                         });
-                        this_.trigger('new-entries', dsts);
-                        journal.save().fail(signalerror);
-                    }).fail(signalerror);
+                        this_.trigger('new-entries', rec_objs);
+                    }).fail(signalerror); 
+                    //  journal.save().fail(signalerror);
                     this.data = this.data.slice(data.length);
                 }
             }
