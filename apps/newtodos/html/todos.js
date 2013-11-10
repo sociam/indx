@@ -5,12 +5,11 @@ angular
 		'use strict';
 
 
-		var icons = ['facetime-video', 'gear', 'flag-checkered', 'phone', 'music', 'road',
+		var urgencies = ['low', 'med', 'high', 'urgent'],
+			icons = ['facetime-video', 'gear', 'flag-checkered', 'phone', 'music', 'road',
 			'magic', 'food', 'shield', 'rocket', 'suitcase', 'globe', 'gamepad', 'inbox',
 			'glass', 'umbrella', 'magnet', 'picture', 'book', 'bookmark', 'group', 'bullhorn',
 			'laptop', 'money', 'gift', 'bug', 'truck', 'calendar'];
-		var urgencies = ['low', 'med', 'high', 'urgent'];
-
 
 		var u = utils,
 
@@ -21,7 +20,6 @@ angular
 		// Wait until user is logged in and a box has been selected
 		var render = function (box) {
 			console.log('init');
-			destroy();
 
 			todoLists = new TodoLists(undefined, {
 				box: box,
@@ -52,16 +50,26 @@ angular
 			if (todoLists) { todoLists.close(); }
 			if (todoListsView) { todoListsView.close(); }
 			if (todosView) { todosView.close(); }
+			$('.todos-messages').hide().html('');
 		};
 
-
+		var showMessage = function (msg) {
+			$('.todos-messages').show().html(msg);
+		}
 		// watches for login or box changes
 		$scope.$watch('selectedBox + selectedUser', function () {
+			destroy();
 			if ($scope.selectedUser && $scope.selectedBox) {
 				client.store.getBox($scope.selectedBox)
 					.then(function (box) { render(box); })
-					.fail(function (e) { u.error('error ', e); });
+					.fail(function (e) { u.error('error ', e); showMessage('An error occured.') });
 			} else {
+				if (!$scope.selectedBox) {
+					showMessage('Please select a box.');
+				}
+				if (!$scope.selectedUser) {
+					showMessage('Please log in.');
+				}
 				// TODO
 			}
 		});
@@ -70,6 +78,7 @@ angular
 		window.$scope = $scope;
 
 		/** Define the views **/
+
 		var TodoListsView = Backbone.View.extend({
 			tagName: 'ul',
 			initialize: function (options) {
@@ -78,17 +87,12 @@ angular
 				this.todoLists.on('reset', function () {
 					that.render();
 				});
-				this.specialTodoLists = [
-					//new AllTodoList({ title: ['All todos'] }, { todoLists: this.todoLists }),
-					//new CompletedTodoList({ title: ['Completed'] }, { todoLists: this.todoLists })
-				]
 			},
 			render: function () {
 				console.log('render lists')
 				var that = this;
 				that.$el.html('');
-				var todoLists = this.todoLists.models.concat(this.specialTodoLists);
-				_(todoLists).each(function (todoList) {
+				this.todoLists.each(function (todoList) {
 					var todoListView = new TodoListView({ todoList: todoList });
 					that.$el.append(todoListView.render().$el);
 				});
@@ -102,12 +106,18 @@ angular
 			tagName: 'li',
 			template: _.template($('#template-todo-list').text()),
 			initialize: function (options) {
-				console.log('dh')
+				var that = this;
 				this.todoList = options.todoList;
 				this.todoList.on('change', this.render, this);
+				this.todoList.on('select', function () {
+					that.$el.addClass('selected');
+				}).on('deselect', function () {
+					that.$el.removeClass('selected');
+				});
 			},
 			render: function () {
-				var incompleteTodos = this.todoList.todos.filter(function (todo) {
+				var that = this,
+					incompleteTodos = this.todoList.todos.filter(function (todo) {
 						return !todo.get('completed') || todo.get('completed')[0] !== true;
 					}),
 					count = incompleteTodos.length,
@@ -115,8 +125,14 @@ angular
 					html = this.template(_.extend({
 						count: count
 					}, listJSON));
-				this.$el.html(html);
-				console.log(this.template)
+				if (this.todoList.selected) {
+					this.$el.addClass('selected');
+				}
+				this.$el
+					.html(html)
+					.click(function () {
+						that.todoList.select();
+					});
 				return this;
 			},
 			close: function () {
@@ -150,53 +166,48 @@ angular
 
 		/** Define the models **/
 		var TodoList = listcollection.Model.extend({
+			defaults: {
+				'selected': [false],
+				'title': [''],
+				'icon': [''],
+				'special': []
+			},
 			initialize: function () {
 				var that = this;
-				this.todos = new Todos(undefined, {
-					box: this.box,
-					obj: this,
-					arrayKey: 'todos'
-				});
+				this.initTodos();
 				console.log('TODOS', this.todos.toJSON())
+				if (this.has('special')) {
+					this.collection.on('reset', function () {
+						that.initTodos();
+					});
+				}
 			},
 			remove: function () {
 				if (confirm('Are you sure you want to delete this todo list?')) {
 					return col.Model.prototype.remove.apply(this, arguments);
 				}
 				return this;
-			}
-		});
-
-		var SpecialTodoList = Backbone.Model.extend({
-			defaults: {
-				icon: ''
 			},
-			initialize: function (attrs, options) {
-				var that = this;
-				this.todoLists = options.todoLists;
-				this.todos = new Todos();
-				this.reset();
-				this.todoLists.on('reset', function () {
-					that.reset();
-				});
-			}
-		})
-
-		var AllTodoList = SpecialTodoList.extend({
-			reset: function () {
-				var models = _(this.todoLists.models).reduce(function (memo, todoList) {
-					return memo.concat(todoList.todos);
-				}, []);
-				this.todos.reset(models);
+			select: function () {
+				this.collection.setSelected(this);
+				this.setSelected(true);
+			},
+			setSelected: function (selected) {
+				this.selected = selected;
+				this.trigger(selected ? 'select' : 'deselect');
+			},
+			initTodos: function () {
+				if (this.has('special')) {
+					this.todos = new Todos();
+				} else {
+					this.todos = new Todos(undefined, {
+						box: this.box,
+						obj: this,
+						arrayKey: 'todos'
+					});
+				}
 			}
 		});
-		var CompletedTodoList = SpecialTodoList.extend({
-			reset: function () {
-				/*this.todos.reset(this.todoLists.reduce(function (memo, todoList) {
-					return memo.concat(todoList.todos);
-				}, []));*/
-			}
-		})
 
 		var Todo = listcollection.Model.extend({});
 
@@ -204,21 +215,60 @@ angular
 
 		var TodoLists = listcollection.Collection.extend({
 			model: TodoList,
-			// Make sure each todo list has a unique id
-			modelId: function () { return 'todo-list-' + u.uuid(); },
-			// Make todo lists selectable
-			modelOptions: { select: true }
+			initialize: function () {
+				listcollection.Collection.prototype.initialize.apply(this, arguments); // FIXME
+				var that = this;
+				this.on('reset', function () {
+					that.updateSelected();
+					that.initSpecialLists();
+				});
+				this._obj.on('change:selected', function () {
+					that.updateSelected();
+				});
+			},
+			updateSelected: function () {
+				var that = this,
+					selected;
+				if (this._obj.has('selected')) {
+					var id = this._obj.get('selected')[0].id;
+					selected = this.get(id);
+				}
+				if (!selected) { selected = this.at(0); }
+				console.log('selected', this.at(0))
+				if (!selected) { return; }
+				this.selected = selected;
+				this.chain().filter(function (todoList) {
+					return todoList.selected && todoList !== that.selected;
+				}).each(function (todoList) {
+					todoList.setSelected(false);
+				});
+				this.selected.setSelected(true);
+			},
+			setSelected: function (todoList) {
+				this._obj.save('selected', [todoList]);
+			},
+			initSpecialLists: function () {
+				var that = this;
+				var specialLists = [
+					{ id: 'todo-list-all', title: ['All todos'], special: ['all'] },
+					{ id: 'todo-list-completed', title: ['Completed'], special: ['completed'] }
+				];
+
+				_.each(specialLists, function (o) {
+					var specialList = that.find(function (todoList) {
+						return todoList.get('special')[0] === o.special[0];
+					});
+					if (!specialList) {
+						console.log('create', o)
+						that.create(o);
+					}
+				});
+
+			}
 		});
 
 		var Todos = listcollection.Collection.extend({
-			model: Todo,
-			modelId: function () { return 'todo-item-' + u.uuid(); },
-			/*comparator: function (m) {
-				var urgency = m.isEditing ? m.getStagedAttribute('urgency') :
-					m.getAttribute('urgency'),
-					completed = m.getAttribute('completed') && !m.justCompleted;
-				return completed ? 100 : -urgencies.indexOf(urgency);
-			}*/
+			model: Todo
 		});
 
 	});

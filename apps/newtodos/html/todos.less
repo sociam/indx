@@ -2,6 +2,13 @@
 
 @app-top: 52px;
 
+.todos-messages {
+	font-size: 20px;
+	text-align: center;
+	margin: 10px 20px;
+	display: none;
+}
+
 .todos-main-body {
 	cursor: default;
 	.todos-sidebar {
@@ -20,6 +27,7 @@
 				height: 50px;
 				font-size: 25px;
 				padding: 10px 0;
+				line-height: 50px;
 				&.selected {
 					background: #26517C;
 					color: white;
@@ -29,25 +37,25 @@
 				}
 				.icon {
 					left: 10px;
-					top: 10px;
+					top: 15px;
+					text-align: center;
+					width: 28px;
+					font-size: 20px;
 				}
 				.title {
 					left: 50px;
-					top: 5px;
+					top: 0;
 				}
 				.count {
 					right: 15px;
-					top: 5px;
+					top: 0;
 				}
 			}
 
 		}
 	}
 	.todos-body {
-		background: #f5f5f5;
 		margin-left: 300px;
-		border-left: 1px solid black;
-		min-height: 100%;
 		ul {
 			padding: 0;
 			margin: 0;
