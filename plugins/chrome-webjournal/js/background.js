@@ -143,14 +143,32 @@
     .controller('main', function($scope, watcher, client,utils) {
         // main 
         window.utils = utils;
-        var winstance = watcher.init(), n_logged = 0;
+        var winstance = watcher.init(), n_logged = 0, _timeout;
         // var 
         var displayFail = function(reason) { 
             setErrorBadge('x' , reason);
             winstance.setError(reason);
         };
         window.watcher_instance = winstance;
-        winstance.on('error', function() {  displayFail('server error');  });
+        winstance.on('connection-error', function(e) {  
+            displayFail('server error');
+            console.error('connection-error', e);
+            // disconnect server
+            var s = winstance.get('store');
+            if (s) { 
+                s.disconnect();
+                winstance.set_store();
+            }
+
+            if (!_timeout) { 
+                console.error('scheduling a reconnect ... ');
+                _timeout = setTimeout(function() { 
+                    console.error('attempting reconnect... ');
+                    _timeout = undefined;
+                    runner();
+                }, 1000);
+            }
+        });
         winstance.on('new-entries', function(entries) { 
             n_logged += entries.length; setOKBadge(''+n_logged); 
         });
@@ -279,7 +297,6 @@
                     this_.unset('journal');
                     return;                    
                 }
-                console.log(' set box ', bid);
                 this.bid = bid;
                 var this_=  this, store = this.get('store');
                 if (store && bid) { this._load_box(); }
@@ -287,6 +304,7 @@
             set_store:function(store) {
                 console.log('set store > ', store, this.bid);
                 this.set({store:store});
+                if (!store) { delete this.bid; delete this.box; };
                 if (store && this.bid) { this._load_box();  }
             },
             handle_action:function(tabinfo) {
