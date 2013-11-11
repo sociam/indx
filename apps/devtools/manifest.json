@@ -1,0 +1,17 @@
+{
+	"name": "Developer console",
+	"version": 0.1,
+	"description": "Console for viewing docs and running tests",
+	"icons": {
+		"128": "icon.png"
+	},
+	"author": [
+		{
+			"name": "Peter West",
+			"email": "peter.g.west@gmail.com"
+		},
+		{
+			"name": "Max Van Kleek"
+		}
+	]
+}

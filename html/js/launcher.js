@@ -40,6 +40,13 @@
 			scope:{user:"=model"},
 			replace:true
 		};
+	}).directive('userselect',function() {
+		return {
+			restrict:'E',
+			templateUrl:'templates/userselect.html',
+			scope:{users:"=model"},
+			replace:true
+		};
 	}).controller('Login',function($scope, $location, client, backbone, utils) {
 		$scope.isLocalUser = function(u) { return u && (u.type == 'local_owner' || u.type == 'local_user'); };
 		$scope.isOpenIDUser = function(u) { return u.type == 'openid'; };

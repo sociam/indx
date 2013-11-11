@@ -1,0 +1,33 @@
+<td>
+	<a href="#manifest/{{ manifest.id }}/">
+		<img ng-src="{{ manifest.get('icons')['128'] }}" class="icon">
+		{{ manifest.get('name') }}
+	</a>
+</td>
+<td>{{ manifest.get('version') }}</td>
+<td>{{ manifest.get('description') }}</td>
+<td>
+	<div ng-if="manifest.documentation.isAvailable">
+		<div ng-if="manifest.documentation.isBuilt"><a href="#manifest/{{ manifest.id }}/documentation">Link</a></div>
+		<div ng-if="!manifest.documentation.isBuilt">
+			<div ng-if="!manifest.documentation.isBuilding">
+				Not built (<a ng-click="manifest.documentation.build()" href="#">build</a>)
+			</div>
+			<div ng-if="manifest.documentation.isBuilding">Building...</div>
+		</div>
+	</div>
+	<div ng-if="!manifest.documentation.isAvailable" class="text-muted">N/A</div>
+</td>
+<td>
+	<div ng-if="manifest.tests.isAvailable">
+		<span ng-if="manifest.tests.haveBeenRun">
+			{{ manifest.tests.results.tests }} tests, 
+			<span ng-if="manifest.tests.results.failures === 0" class="text-success">All passed</span>
+			<span ng-if="manifest.tests.results.failures > 0"><a href="#manifest/{{ manifest.id }}/tests" class="text-danger">{{ manifest.tests.results.failures }} failed</a></span>
+		</span>
+		<span ng-if="!manifest.tests.haveBeenRun">Not yet run</span>
+		(<a ng-click="manifest.tests.run()" href="#">run</a>)
+	</div>
+	<div ng-if="!manifest.tests.isAvailable" class="text-muted">N/A</div>
+
+</td>

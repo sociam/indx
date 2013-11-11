@@ -1,0 +1,15 @@
+{
+	"name": "INDX Collection",
+	"version": 0.3,
+	"description": "Library for working with collections of objs",
+	"icons": {
+		"128": "/apps/devtools/icons/indx-collection.png"
+	},
+	"author": [
+		{
+			"name": "Peter West",
+			"email": "peter.g.west@gmail.com"
+		}
+	],
+	"documentation": "indx-collection.docs-config.js"
+}

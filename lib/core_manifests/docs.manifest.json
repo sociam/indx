@@ -1,0 +1,16 @@
+{
+	"name": "Documentation generator",
+	"version": 0.1,
+	"description": "Generate documentation from JavaScript source code",
+	"icons": {
+		"128": "/apps/devtools/icons/docs.png"
+	},
+	"author": [
+		{
+			"name": "Peter West",
+			"email": "peter.g.west@gmail.com"
+		}
+	],
+	"documentation": "docs.docs-config.js",
+	"tests": "docs.tests-config.js"
+}
