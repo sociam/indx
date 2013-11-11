@@ -14,8 +14,6 @@
         chrome.browserAction.setBadgeBackgroundColor({color:"#00ffff"});
     };
     var duration_secs = function(d) { return (d.get('end')[0].valueOf() - d.get('start')[0].valueOf()) / 1000.0;  };
-
-
     var OBJ_TYPE = localStorage.indx_webjournal_type || 'web-page-view';
     var OBJ_ID = localStorage.indx_webjournal_id || 'my-web-journal';
 
@@ -140,10 +138,10 @@
         };
     })
     // main controller
-    .controller('main', function($scope, watcher, client,utils) {
+    .controller('main', function($scope, watcher, geowatcher, client,utils) {
         // main 
         window.utils = utils;
-        var winstance = watcher.init(), n_logged = 0, _timeout;
+        var winstance = watcher.init(), n_logged = 0, _timeout, geoinstance = geowatcher.init();
         // var 
         var displayFail = function(reason) { 
             setErrorBadge('x' , reason);
@@ -193,6 +191,90 @@
         };
         runner();
     })
+    .factory('geowatcher', function(utils, client) { 
+        // plugin that watches for geo changes
+        var GeoWatcher = Backbone.Model.extend({
+            defaults: { enabled:true },
+            initialize:function(attributes) {
+                var this_ = this;
+                var err = function(e) { this_.trigger('error', e); };
+                navigator.geolocation.watchPosition(function(pos) { this_.trigger('geoevent', pos); }, err);
+                navigator.geolocation.getCurrentPosition(function(pos) { this_.trigger('geoevent', pos); },err);
+                this.on('geoevent', function() { this_.handle_geo.apply(this_, arguments); });
+                this.on('change:current_position', function(pos) { console.info('current position changed', pos); });
+                this.on('change:store', function(s) { this_._load_box();  });
+                this.on('change:journal', function() { 
+                    // we may have been waiting on things, let's try again
+                    this_._commit(); 
+                });
+            },
+            _load_box:function() {
+                var store = this.get('store');
+                if (!getBoxName()) { console.error(' no box specified '); return; }
+                if (store && getBoxName()) { 
+                    store.get_box(getBoxName()).then(function(b) { 
+                        this_.set('box', b);
+                        this_.set('journal', b.getObj(OBJ_ID));
+                    });
+                }
+            },
+            set_store:function(s) { 
+                this.set("store", s); 
+                if (!s) { 
+                    this.unset('box');
+                }
+            },
+            _handle_geo:function(raw_pos) {
+                // debug >> 
+                console.log('_geochange', raw_pos);
+                var cur_pos = this.get('current_position'), pos = this._make_record(raw_pos), now = new Date();
+                if (cur_pos){
+                    cur_pos.set({end: now});
+                    this._commit(cur_pos);
+                }
+                this.set('current_position', pos);
+                cur_pos = pos;
+                this._commit(cur_pos);
+            },
+            _make_record:function(pos) {
+                var now = (new Date());
+                return _({}).extend(pos, {start: now, end: now, 
+                    latitude: pos.coords.latitude, longitude: pos.coords.longitude,
+                    id:utils.guid(), type:OBJ_TYPE});
+            },
+            _commit:function(pos) {
+                var this_ = this, journal = this.get('journal'), box = this.get('box'), data = pos ? this.data.concat([pos]) : this.data;
+                if (journal && box) { 
+                    return data.map(function(pos) {
+                        pos.save().then(function() { 
+                            this_.data = this_.data.slice(data.length);
+                        }).fail(function(e) { this_.trigger('connection-error', e); });
+                    });
+                } 
+                // couldn't write it, so let's queue it
+                this.data.push(pos);
+            }
+        });
+      return {
+            init:function(store) {
+                if (!this.watcher) { 
+                    this.watcher = new GeoWatcher({store:store});
+                }
+                return this.watcher;
+            },
+            set_store:function(store) { 
+                if (this.watcher) { this.watcher.set_store(store);   }
+            },
+            set_enabled:function(enabled) {
+                if (this.watcher) { this.watcher.set('enabled', enabled); }
+                return false;
+            },
+            get_enabled:function() {
+                if (this.watcher) { return this.watcher.get('enabled'); }
+                return false;
+            }
+        };
+    });
     // logger
     .factory('watcher', function(utils, client) {
         var WindowWatcher = Backbone.Model.extend({
@@ -239,6 +321,8 @@
                 });
 
                 this._init_history();
+                // todo: start it up on current focused window.
+                //  ---------------------------------------
             },
             _init_history:function() { 
                 // keep history around for plugins etc 
