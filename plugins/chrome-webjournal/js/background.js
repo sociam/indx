@@ -27,7 +27,10 @@
         }
         var d = utils.deferred();
         server.checkLogin().then(function(response) {
-            if (response.is_authenticated) { return d.resolve(server, response);  }
+            if (response.is_authenticated) { 
+                setOKBadge(":)");
+                return d.resolve(server, response);  
+            }
             d.reject('not logged in');
         }).fail(d.reject);
         return d.promise();
