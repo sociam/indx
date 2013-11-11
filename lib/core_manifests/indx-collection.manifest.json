@@ -11,6 +11,5 @@
 			"email": "peter.g.west@gmail.com"
 		}
 	],
-	"documentation": "indx-collection.docs-config.js",
-	"tests": "indx-collection.tests-config.js"
+	"documentation": "indx-collection.docs-config.js"
 }

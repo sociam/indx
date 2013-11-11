@@ -10,5 +10,7 @@
 			"name": "Peter West",
 			"email": "peter.g.west@gmail.com"
 		}
-	]
+	],
+	"documentation": "docs.docs-config.js",
+	"tests": "docs.tests-config.js"
 }

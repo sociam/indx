@@ -16,5 +16,7 @@
 			"name": "Peter West",
 			"email": "peter.g.west@gmail.com"
 		}
-	]
+	],
+	"documentation": "indx.docs-config.js",
+	"tests": "indx.tests-config.js"
 }
