@@ -4,12 +4,12 @@
 			<h4>welcome to</h4>
 			<p><img class="logo" src="img/indx.png"></img></p>
         </div>
+        <!-- markus is playing with this 
         <select ng-show="!selected.user">
             <option ng-repeat='u in users' ng-click="selectUser(u)" value="{{u['@id']}}" title="{{u['@id']}}">{{u.name}} ({{u["@id"].substr(0,31)}})</option>
         </select>
-
-        <!--<userselect ng-show="!selected.user" model='users'></userselect>-->
-		<!--<ul ng-show="!selected.user" class='userlist'>
+        -->
+		<ul ng-show="!selected.user" class='userlist'>
 			<li ng-repeat='u in users'>
 				<a ng-click="selectUser(u)"><user model='u' ></user></a>
 			</li>
@@ -25,12 +25,7 @@
 				</a>
 			</li>
 			<li><a><div class="special">Create a new user</div></a></li>
-		</ul>-->
-        <!--
-        <div class="openid" style="text-align: center; border: 1px solid #ccc; width: 320px; margin: 0 auto; border-radius: 3px; cursor: pointer;">
-            <p><img style="width: 150px;" src="img/openid-logo-wordmark.png" alt="OpenID" /></p>
-        </div>
-        -->
+		</ul>
 	</div>
 	<div class="password-dialog" ng-show="isLocalUser(selected.user)" ng-animate="{show: 'animate-show',hide: 'animate-hide'}" ng-cloak>
 		<form ng-submit="doSubmit()">
