@@ -15,14 +15,23 @@ angular
 
 
 		var TestsModel = Backbone.Model.extend({
-			initialize: function () {
-				Backbone.Model.prototype.initialize.apply(this, arguments);
+			initialize: function (attributes, options) {
+				var that = this;
+				this.manifest = options.manifest;
+				this.on('change', function () {
+					that.haveBeenRun = that.get('have_been_run');
+					that.getResults();
+				});
+				var raw = this.manifest.get('tests');
+				this.set(raw);
+				this.isAvailable = !!raw;
 				this.getResults();
 			},
 			run: function () {
 				var that = this;
+				this.results = null;
 				this.isRunning = true;
-				$.post('api/manifests/' + this.manifest.id + '/run_tests')
+				$.post('api/run_tests?id=' + this.manifest.id)
 					.always(function () {
 						that.isRunning = false;
 						u.safeApply($rootScope);
@@ -41,10 +50,11 @@ angular
 				console.log('GET RESULTS', this);
 				var that = this,
 					promise = $.Deferred();
-				$.get('/' + this.get('url') + '/test-results.xml', function (data) {
+				this.isLoading = true;
+				$.get(this.get('url'), function (data) {
 					var $tests = $(data).find('testsuite');
 
-					that.set('results', $tests.map(function () {
+					that.results = $tests.map(function () {
 						var $test = $(this),
 							failures = Number($test.attr('failures')),
 							errors = Number($test.attr('errors'));
@@ -71,22 +81,35 @@ angular
 								};
 							}).get()
 						};
-					}).get());
+					}).get()[0];
 
-					u.safeApply($rootScope);
+					console.log('results', that.results)
 
 					promise.resolve();
+				}).always(function () {
+					that.isLoading = false;
 				});
 				return promise;
+			},
+			refresh: function () {
+				this.results = null;
+				this.getResults().then(function () {
+					u.safeApply($rootScope);
+				});
 			}
 		});
 
 		var DocumentationModel = Backbone.Model.extend({
 			initialize: function (attrs, options) {
+				var that = this;
 				this.manifest = options.manifest;
-				this.set(this.manifest.get('documentation'));
+				this.on('change', function () {
+					that.isBuilt = that.get('built');
+				});
+				var raw = this.manifest.get('documentation');
+				this.set(raw);
+				this.isAvailable = !!raw;
 				this.docUrl = this.get('url');
-				console.log(this.manifest.get('documentation'))
 			},
 			build: function () {
 				var that = this;
@@ -119,12 +142,8 @@ angular
 				}
 			},
 			initialize: function () {
-				if (this.get('documentation')) {
-					this.documentation = new DocumentationModel(undefined, { manifest: this });
-				}
-				if (this.get('tests')) {
-					this.tests = new TestsModel(undefined, { manifest: this });
-				}
+				this.documentation = new DocumentationModel(undefined, { manifest: this });
+				this.tests = new TestsModel(undefined, { manifest: this });
 			}
 		});
 

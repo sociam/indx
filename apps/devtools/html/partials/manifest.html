@@ -1,5 +1,5 @@
 <div class="header">
-	<img src="{{ manifest.get('icons')['128'] }}" class="icon">
+	<img ng-src="{{ manifest.get('icons')['128'] }}" class="icon">
 	<h1>{{ manifest.get('name') }}</h1>
 	<ul class="nav nav-tabs">
 		<li ng-class="{ active: pane === 'overview' }"><a href="#manifest/{{ manifest.id }}">Overview</a></li>
@@ -25,12 +25,12 @@
 
 <div class="tab-pane" ng-if="pane === 'documentation'">
 	<nav class="navbar navbar-default navbar-static-top nav-mini" role="navigation">
-		<form class="navbar-form navbar-left" ng-if="manifest.documentation">
+		<form class="navbar-form navbar-left" ng-if="manifest.documentation.isAvailable">
 			<button type="button" class="btn btn-default btn-sm" ng-click="manifest.documentation.build()">Build</button>
-			<button type="button" class="btn btn-default btn-sm" ng-click="manifest.documentation.refresh()" ng-if="manifest.documentation.get('built')">Refresh</button>
-			<a href="{{ manifest.documentation.get('url') }}" target="_blank" class="btn btn-default btn-sm" ng-if="manifest.documentation.get('built')">View standalone</a>
+			<button type="button" class="btn btn-default btn-sm" ng-click="manifest.documentation.refresh()" ng-if="manifest.documentation.isBuilt">Refresh</button>
+			<a href="{{ manifest.documentation.get('url') }}" target="_blank" class="btn btn-default btn-sm" ng-if="manifest.documentation.isBuilt">View standalone</a>
 		</form>
-		<p class="navbar-text navbar-right" ng-if="manifest.documentation.get('built')">Last built on</p>
+		<p class="navbar-text navbar-right" ng-if="manifest.documentation.isBuilt">Last built on</p>
 	</nav>
 	<div ng-if="manifest.documentation.isBuilding">
 		<p class="description">Please wait, documentation is being built.</p>
@@ -39,14 +39,14 @@
 		</div>
 	</div>
 	<div ng-if="!manifest.documentation.isBuilding">
-		<div ng-if="!manifest.documentation">
+		<div ng-if="!manifest.documentation.isAvailable">
 			<p class="description">No documentation has been provided.</p>
 		</div>
-		<div ng-if="manifest.documentation">
-			<div ng-if="!manifest.documentation.get('built')">
+		<div ng-if="manifest.documentation.isAvailable">
+			<div ng-if="!manifest.documentation.isBuilt">
 				<p class="description">Documentation needs to be built.</p>
 			</div>
-			<div ng-if="manifest.documentation.get('built')">
+			<div ng-if="manifest.documentation.isBuilt">
 				<iframe ng-src="{{ manifest.documentation.get('url') }}" onload="resizeIFrame(this)"></iframe>
 			</div>
 		</div>
@@ -54,25 +54,36 @@
 </div>
 
 <div class="tab-pane" ng-if="pane === 'tests'">
-	<div ng-if="!manifest.tests">
-		No tests has been provided
+	<nav class="navbar navbar-default navbar-static-top nav-mini" role="navigation">
+		<form class="navbar-form navbar-left" ng-if="manifest.tests.isAvailable">
+			<button type="button" class="btn btn-default btn-sm" ng-click="manifest.tests.run()">Run</button>
+			<button type="button" class="btn btn-default btn-sm" ng-click="manifest.tests.refresh()" ng-if="manifest.tests.haveBeenRun">Refresh</button>
+			<a href="{{ manifest.tests.get('url') }}" target="_blank" class="btn btn-default btn-sm" ng-if="manifest.tests.haveBeenRun">Download results</a>
+		</form>
+		<p class="navbar-text navbar-right" ng-if="manifest.tests.haveBeenRun">Last tested on</p>
+	</nav>
+	<div ng-if="!manifest.tests.isAvailable">
+		<p class="description">No tests has been provided</p>
 	</div>
-	<div ng-if="manifest.tests">
-		<div class="docs-toolbar">
-			<button type="button" ng-click="manifest.tests.run()">Build</button>
+	<div ng-if="manifest.tests.isAvailable">
+		<div ng-if="manifest.tests.isRunning">
+			<p class="description">Please wait, tests are running.</p>
+			<div class="progress progress-striped active">
+				<div class="progress-bar"  role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="width: 100%"></div>
+			</div>
 		</div>
-		<div ng-if="!manifest.tests.results">
-			Tests needs to be run.
+		<div ng-if="!manifest.tests.isRunning && !manifest.tests.isLoading && !manifest.tests.results">
+			<p class="description">Tests needs to be run.</p>
 		</div>
 		<div ng-if="manifest.tests.results">
 			<table class="table">
 				<tbody>
-					<tr><th>Browser</th><td>{{manifest.tests.result.name}} ({{manifest.tests.result.name}})</td></tr>
-					<tr><th>Tests</th><td>{{manifest.tests.result.tests}}</td></tr>
-					<tr><th>Errors</th><td>{{manifest.tests.result.errors}}</td></tr>
-					<tr><th>Failures</th><td>{{manifest.tests.result.failures}}</td></tr>
-					<tr><th>Timestamp</th><td>{{manifest.tests.result.timestamp}}</td></tr>
-					<tr><th>Time</th><td>{{manifest.tests.result.time}}</td></tr>
+					<tr><th>Browser</th><td>{{manifest.tests.results.name}} ({{manifest.tests.results.name}})</td></tr>
+					<tr><th>Tests</th><td>{{manifest.tests.results.tests}}</td></tr>
+					<tr><th>Errors</th><td>{{manifest.tests.results.errors}}</td></tr>
+					<tr><th>Failures</th><td>{{manifest.tests.results.failures}}</td></tr>
+					<tr><th>Timestamp</th><td>{{manifest.tests.results.timestamp}}</td></tr>
+					<tr><th>Time</th><td>{{manifest.tests.results.time}}</td></tr>
 				</tbody>
 			</table>
 			<h3>Results</h3>
@@ -81,7 +92,7 @@
 				<thead>
 					<tr><th>Name</th><th>Passed</th><th>Time</th></tr>
 				</thead>
-					<tbody ng-repeat="testcase in manifest.tests.result.testcases | filter: { failed: onlyfailures ? true : undefined }">
+					<tbody ng-repeat="testcase in manifest.tests.results.testcases | filter: { failed: onlyfailures ? true : undefined }">
 						<tr ng-class="{testfail:testcase.failure}">
 							<td><b>{{testcase.name}}</b> - {{testcase.classname}}</td>
 							<td>{{testcase.passed}}</td>

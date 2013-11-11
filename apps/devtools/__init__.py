@@ -36,36 +36,36 @@ class DevToolsApp(BaseHandler):
 
     
 
-    def lookup_config(self, name, config_type):
-        configs = self.get_config_list(config_type)
-        matches = [config for config in configs if config['name'] == name]
-        if not matches:
-            self.return_forbidden(request) # todo: more useful return
-        return matches[0];
+    # def lookup_config(self, name, config_type):
+    #     configs = self.get_config_list(config_type)
+    #     matches = [config for config in configs if config['name'] == name]
+    #     if not matches:
+    #         self.return_forbidden(request) # todo: more useful return
+    #     return matches[0];
 
 
-    def get_config_list(self, config_type):
-        logging.debug('getting list of configs')
-        currdir = os.path.dirname(os.path.abspath(__file__))
-        # look in apps
-        appdir = os.path.sep.join([currdir, '..', '..', 'apps'])
-        dirs = [os.path.normpath(appdir + os.path.sep + d) for d in os.listdir(appdir)]
-        dirs.append(os.path.normpath(os.path.sep.join([currdir, '..', '..', 'lib', config_type, 'config'])))
-        config_files = []
-        for d in dirs:
-            if os.path.isdir(d):
-                logging.debug('checking directory %s' % d)
-                files = os.listdir(d)
-                for f in files:
-                    f = d + os.path.sep + f;
-                    logging.debug('checking file %s' % f)
-                    config_end = config_type + '-config.js'
-                    if os.path.isfile(f) and f.endswith(config_end):
-                        logging.debug('found file %s' % f)
-                        config_files.append(f);
-        configs = [self.config_data(f, config_type) for f in config_files]
-        logging.debug("configs: {0}".format(configs))
-        return configs;
+    # def get_config_list(self, config_type):
+    #     logging.debug('getting list of configs')
+    #     currdir = os.path.dirname(os.path.abspath(__file__))
+    #     # look in apps
+    #     appdir = os.path.sep.join([currdir, '..', '..', 'apps'])
+    #     dirs = [os.path.normpath(appdir + os.path.sep + d) for d in os.listdir(appdir)]
+    #     dirs.append(os.path.normpath(os.path.sep.join([currdir, '..', '..', 'lib', config_type, 'config'])))
+    #     config_files = []
+    #     for d in dirs:
+    #         if os.path.isdir(d):
+    #             logging.debug('checking directory %s' % d)
+    #             files = os.listdir(d)
+    #             for f in files:
+    #                 f = d + os.path.sep + f;
+    #                 logging.debug('checking file %s' % f)
+    #                 config_end = config_type + '-config.js'
+    #                 if os.path.isfile(f) and f.endswith(config_end):
+    #                     logging.debug('found file %s' % f)
+    #                     config_files.append(f);
+    #     configs = [self.config_data(f, config_type) for f in config_files]
+    #     logging.debug("configs: {0}".format(configs))
+    #     return configs;
 
     def list_manifests_in(self, appdir):
         logging.debug('looking for manifests in %s', appdir)
@@ -123,6 +123,9 @@ class DevToolsApp(BaseHandler):
             if 'documentation' in manifest:
                 config_file = manifest['documentation']
                 manifest['documentation'] = self.doc_info(manifest, config_file)
+            if 'tests' in manifest:
+                config_file = manifest['tests']
+                manifest['tests'] = self.test_info(manifest, config_file)
 
         return manifests
 
@@ -135,24 +138,14 @@ class DevToolsApp(BaseHandler):
             'config_path': manifest['manifest_dir'] + os.path.sep + config_file
         }
 
-    def config_data(self, filename, config_type):
-        name = filename.split('/')[-1].split('.')[0]
-
-        app_name_r = re.compile('apps/([^/]+)/%s-config.js' % config_type)
-        app_name = app_name_r.findall(filename)
-        logging.debug("hmm... %s" % app_name)
-        if app_name:
-            name = app_name[0]
-
-        path = os.path.sep.join(['apps', 'devtools', 'html', config_type, name])
-
+    def test_info(self, manifest, config_file):
+        path = os.path.sep.join(['apps', 'devtools', 'html', 'tests', manifest['type'], manifest['id']])
         return {
-            'name': name,
-            'config_path': filename,
+            'url': '/apps/devtools/tests/{0}/{1}/test-results.xml'.format(manifest['type'], manifest['id']),
+            'have_been_run': os.path.exists(path),
             'path': path,
-            'url': 'apps/devtools/{0}/{1}'.format(config_type, name),
-            'built': os.path.exists(path)
-            }
+            'config_path': manifest['manifest_dir'] + os.path.sep + config_file
+        }
 
     def list_manifests(self, request):
         """ Get a list of core components and apps
@@ -161,38 +154,14 @@ class DevToolsApp(BaseHandler):
         for manifest in manifests:
             manifest['manifest_dir'] = None
             if 'documentation' in manifest:
-                manifest['documentation']['config_path'] = None
+                del manifest['documentation']['config_path']
+                del manifest['documentation']['path']
+            if 'tests' in manifest:
+                del manifest['tests']['config_path']
+                del manifest['tests']['path']
         self.return_ok(request, data = { 'response': manifests })
-
-    def list_docs(self, request):
-        """ Get a list of doc configs.
-        """
-        configs = self.get_config_list('docs')
-        self.return_ok(request, data = { "response": configs })
-
-    def list_tests(self, request):
-        """ Get a list of doc configs.
-        """
-        configs = self.get_config_list('tests')
-        self.return_ok(request, data = { "response": configs })
-
-    def get_requested_config(self, request, config_type):
-        args = request.args
-        logging.debug('args %s', args['name'])
-        if not args['name']:
-            self.return_forbidden(request)
-            return
-        config_name = args['name'][0]
-        config = self.lookup_config(config_name, config_type)
-        if not config:
-            self.return_forbidden(request)
-            return
-        return config
-
-
-    def build_doc(self, request):
-        """ Generate documentation from config file.
-        """
+        
+    def get_requested_manifest(self, request): 
         manifests = self.list_all_manifests()
         if not request.args['id']:
             self.return_forbidden(request)
@@ -209,6 +178,59 @@ class DevToolsApp(BaseHandler):
             self.return_internal_error(request) # 'Manifest not found'
             return
 
+        return manifest
+
+    # def config_data(self, filename, config_type):
+    #     name = filename.split('/')[-1].split('.')[0]
+
+    #     app_name_r = re.compile('apps/([^/]+)/%s-config.js' % config_type)
+    #     app_name = app_name_r.findall(filename)
+    #     logging.debug("hmm... %s" % app_name)
+    #     if app_name:
+    #         name = app_name[0]
+
+    #     path = os.path.sep.join(['apps', 'devtools', 'html', config_type, name])
+
+    #     return {
+    #         'name': name,
+    #         'config_path': filename,
+    #         'path': path,
+    #         'url': 'apps/devtools/{0}/{1}'.format(config_type, name),
+    #         'built': os.path.exists(path)
+    #         }
+
+
+    # def list_docs(self, request):
+    #     """ Get a list of doc configs.
+    #     """
+    #     configs = self.get_config_list('docs')
+    #     self.return_ok(request, data = { "response": configs })
+
+    # def list_tests(self, request):
+    #     """ Get a list of doc configs.
+    #     """
+    #     configs = self.get_config_list('tests')
+    #     self.return_ok(request, data = { "response": configs })
+
+    # def get_requested_config(self, request, config_type):
+    #     args = request.args
+    #     logging.debug('args %s', args['name'])
+    #     if not args['name']:
+    #         self.return_forbidden(request)
+    #         return
+    #     config_name = args['name'][0]
+    #     config = self.lookup_config(config_name, config_type)
+    #     if not config:
+    #         self.return_forbidden(request)
+    #         return
+    #     return config
+
+
+    def build_doc(self, request):
+        """ Generate documentation from config file.
+        """
+        manifest = self.get_requested_manifest(request)
+
         logging.debug('generating doc %s' % manifest['name'])
         config = manifest['documentation']
 
@@ -224,37 +246,43 @@ class DevToolsApp(BaseHandler):
             raise
 
         logging.debug(out);
-        self.return_ok(request, data = { "response": 'ok' })
+
+        config['built'] = os.path.exists(config['path']);
+
+        self.return_ok(request, data = { "response": config })
+
 
     def run_test(self, request):
-        logging.debug('trying to run tests')
-        config = self.get_requested_config(request, 'tests')
-        if not config:
-            return
-        logging.debug('running tests %s' % config['name'])
-        cmd_str = 'node lib/tests/run.js %s' % (config['config_path'])
-        cmd_str += ' --reporters junit'
-        cmd_str += ' --output-directory=%s' % (config['path'])
-        logging.debug(cmd_str)
+        manifest = self.get_requested_manifest(request)
+
+        logging.debug('running tests %s' % manifest['name'])
+        config = manifest['tests']
+
+        cmd_str = 'node lib/tests/run.js %s ' % (config['config_path'])
+        cmd_str += '--reporters junit '
+        cmd_str += '--output-directory=%s ' % (config['path'])
+        cmd_str += '--log-stdout'
+        logging.debug('Exec %s' % cmd_str)
         cmd = subprocess.Popen([cmd_str], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         out, err = cmd.communicate()
         logging.debug(out);
-        if cmd.returncode != 0:
-            logging.debug('Non-zero exit status')
-            self.return_internal_error(request)
-            return
-        results_file = os.path.dirname(config['config_path']) + os.path.sep + 'test-results.xml'
-        logging.debug(results_file)
-        if os.path.exists(results_file):
-            if not os.path.isdir(config['path']):
-                os.makedirs(config['path'])
-            newpath = config['path'] + os.path.sep + 'test-results.xml'
-            if os.path.exists(newpath):
-                os.remove(newpath)
-            # move test-results.xml to where we want
-            shutil.move(results_file, config['path'] + os.path.sep)
+        # if cmd.returncode != 0:
+        #     logging.debug('Non-zero exit status %s' % err)
+        #     self.return_internal_error(request)
+        #     return
+
+        # results_file = os.path.dirname(config['config_path']) + os.path.sep + 'test-results.xml'
+        # logging.debug('put at %s' % results_file)
+        # if os.path.exists(results_file):
+        #     if not os.path.isdir(config['path']):
+        #         os.makedirs(config['path'])
+        #     newpath = config['path'] + os.path.sep + 'test-results.xml'
+        #     if os.path.exists(newpath):
+        #         os.remove(newpath)
+        #     # move test-results.xml to where we want
+        #     logging.debug('move %s to %s' % (results_file, config['path']))
+        #     shutil.move(results_file, config['path'] + os.path.sep)
         config['build_output'] = out;
-        config['built'] = os.path.exists(config['path']);
         self.return_ok(request, data = { "response": config })
 
 
@@ -280,7 +308,7 @@ DevToolsApp.subhandlers = [
         'content-type':'application/json'
         },
     {
-        "prefix": "devtools/api/run_test",
+        "prefix": "devtools/api/run_tests",
         'methods': ['POST'],
         'require_auth': False,
         'require_token': False,
