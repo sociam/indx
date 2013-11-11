@@ -323,7 +323,7 @@ angular
 				this.store.on('login', function() { console.log('on login >> '); this_.reconnect(); });
 				this.on('new-token', function() { this_._setUpWebSocket(); });
 				this._reset();
-				this._setUpWebSocket();				
+				this._setUpWebSocket();
 			},
 			_reset:function() {
 				this.set({objcache: new ObjCollection(), objlist: [], files : new FileCollection() });
@@ -357,7 +357,7 @@ angular
 					if (pdata.action === 'diff') {
 						try {
 							this_._diffUpdate(pdata.data).then(function() {
-									// console.log('diffupdate success continuation >>>>>>>>> '); 
+									// console.log('diffupdate success continuation >>>>>>>>> ');
 									this_.trigger('update-from-master', this_.getVersion());
 								}).fail(function(err) {
 									u.error(err); /*  u.log('done diffing '); */
@@ -390,9 +390,9 @@ angular
 				return this._ws && this._ws.readyState === 1;
 			},
 			disconnect:function() {
-				if (this._ws) { 
+				if (this._ws) {
 					if (this.isConnected()) { this._ws.close(); }
-					delete this._ws; return true; 
+					delete this._ws; return true;
 				}
 				return false;
 			},
@@ -548,13 +548,13 @@ angular
 			///@arg {string} user : ID of user to get access control list for
 			///Gets the access control list of user, if specified, for this box or the box's entire ACL listings
 			///@then({userid: { read:{boolean},write:{boolean},owner:{boolean},control:{boolean}}) : Access control listings for this box organised by user
-			///@fail({error object}) : Failure 
+			///@fail({error object}) : Failure
 			getACL:function() {
 				var d = u.deferred();
 				this._ajax("GET", [this.getID(), 'get_acls'].join('/')).then(function(response) {
 					if (response.code == 200) {
 						return d.resolve(u.dict(response.data.map(function(x) { return [x.username, x.acl]; })));
-						// return d.resolve(response.data); 
+						// return d.resolve(response.data);
 					}
 					d.reject(d.message);
 				}).fail(d.reject);
@@ -590,7 +590,7 @@ angular
 						// { prop : [ {sval1 - @type:""}, {sval2 - @type} ... ]
 						var changedprops = [];
 						var deleted = _(obj.deleted).map(function(vs, k) {
-							changedprops.push(k); 
+							changedprops.push(k);
 							var dd = u.deferred();
 							u.when(vs.map(function(v) {	return deserialiseValue(v, this_);	})).then(function(values) {
 								var newVals = _(cached_obj.get(k) || []).difference(values);
@@ -931,7 +931,7 @@ angular
 
 		var BoxCollection = Backbone.Collection.extend({ model: Box });
 
-		// debug ---------| 
+		// debug ---------|
 		window._stores = [];
 
 		var Store =  Backbone.Model.extend({
@@ -1079,11 +1079,11 @@ angular
 				var d = u.deferred();
 				var this_ = this;
 				this._ajax('POST', 'auth/login', { username: username, password: password })
-					.then(function(l) { 
+					.then(function(l) {
 						var localUser =  _makeLocalUser(username);
 						this_.set({user_type:'local',username:username,password:password});
-						this_.trigger('login', localUser); 
-						d.resolve(localUser); 
+						this_.trigger('login', localUser);
+						d.resolve(localUser);
 					}).fail(function(l) { d.reject(l); });
 				return d.promise();
 			},
@@ -1099,7 +1099,7 @@ angular
 				return this.attributes.boxes.map(function(b) { b.disconnect(); });
 			},
 			isConnected:function() {
-				return this.attributes.boxes.map(function(b) { 
+				return this.attributes.boxes.map(function(b) {
 					return { box: b.id, connected: b.isConnected() };
 				});
 			},
