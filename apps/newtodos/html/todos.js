@@ -96,6 +96,7 @@ angular
 					var todoListView = new TodoListView({ todoList: todoList }); // FIXME: delete old views
 					that.$el.append(todoListView.render().el);
 				});
+				that.$el.append('<li><div class="title">New todo list</div></li>');
 				return this;
 			},
 			close: function () {
