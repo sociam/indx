@@ -38,11 +38,11 @@ angular
 
 			// Initialise and render the list of todo lists to be shown in the sidebar
 			todoListsView = new TodoListsView({ todoLists: todoLists });
-			$('.todos-sidebar').html('').append(todoListsView.render().el);
+			$('.todos-sidebar').html('').append(todoListsView.el);
 
 			// Initialise and render the list of todos
 			todosView = new TodosView({ todoLists: todoLists });
-			$('.todos-body').html('').append(todosView.render().el);
+			$('.todos-body').html('').append(todosView.el);
 		};
 
 		// Destroy the current views (if there are any)
@@ -84,7 +84,7 @@ angular
 			initialize: function (options) {
 				var that = this;
 				this.todoLists = options.todoLists;
-				this.todoLists.on('reset', function () {
+				this.todoLists.on('reset add remove', function () { // FIXME
 					that.render();
 				});
 			},
@@ -93,8 +93,8 @@ angular
 				var that = this;
 				that.$el.html('');
 				this.todoLists.each(function (todoList) {
-					var todoListView = new TodoListView({ todoList: todoList });
-					that.$el.append(todoListView.render().$el);
+					var todoListView = new TodoListView({ todoList: todoList }); // FIXME: delete old views
+					that.$el.append(todoListView.render().el);
 				});
 				return this;
 			},
@@ -111,6 +111,7 @@ angular
 				this.todoList.on('change', this.render, this);
 				this.todoList.on('select', function () {
 					that.$el.addClass('selected');
+					renderTodos(that.todoList.todos);
 				}).on('deselect', function () {
 					that.$el.removeClass('selected');
 				});
@@ -124,9 +125,13 @@ angular
 					listJSON = this.todoList.toJSON(),
 					html = this.template(_.extend({
 						count: count
-					}, listJSON));
+					}, listJSON)),
+					special = this.todoList.get('special');
 				if (this.todoList.selected) {
 					this.$el.addClass('selected');
+				}
+				if (special && special[0]) {
+					this.$el.addClass('special special-' + special[0]);
 				}
 				this.$el
 					.html(html)
@@ -139,24 +144,52 @@ angular
 				// TODO
 			}
 		});
+
+		var renderTodos = function (todos) {
+			var currentTodosView = new TodosView({ todos: todos });
+			currentTodosView.close();
+			$('.todos-body').html('').append(currentTodosView.render().el);
+		}
 		var TodosView = Backbone.View.extend({
 			tagName: 'ul',
 			initialize: function (options) {
-				this.todoLists = options.todoLists;
+				var that = this;
+				this.todos = options.todos;
+				this.todos.on('reset add remove', function () { // FIXME
+					that.render();
+				});
 			},
 			render: function () {
+				var that = this;
+				console.log('render todos');
+				that.$el.html('');
+				this.todos.each(function (todo) {
+					var todoView = new TodoView({ todo: todo }); // FIXME: delete old views
+					that.$el.append(todoView.render().el);
+				});
 				return this;
 			},
 			close: function () {
+				this.$el.remove();
+				this.off();
 				// TODO
 			}
 		});
 		var TodoView = Backbone.View.extend({
 			tagName: 'li',
+			template: _.template($('#template-todo').text()),
 			initialize: function (options) {
 				this.todo = options.todo;
+				this.todo.on('change', this.render, this);
 			},
 			render: function () {
+				var todoJSON = this.todo.toJSON(),
+					html = this.template(_.extend({
+
+					}, todoJSON));
+
+				this.$el
+					.html(html)
 				return this;
 			},
 			close: function () {
@@ -190,11 +223,12 @@ angular
 			},
 			select: function () {
 				this.collection.setSelected(this);
-				this.setSelected(true);
 			},
 			setSelected: function (selected) {
-				this.selected = selected;
-				this.trigger(selected ? 'select' : 'deselect');
+				if (this.selected !== selected) {
+					this.selected = selected;
+					this.trigger(selected ? 'select' : 'deselect');
+				}
 			},
 			initTodos: function () {
 				if (this.has('special')) {
@@ -218,34 +252,38 @@ angular
 			initialize: function () {
 				listcollection.Collection.prototype.initialize.apply(this, arguments); // FIXME
 				var that = this;
-				this.on('reset', function () {
-					that.updateSelected();
+				this.on('change', function () {
 					that.initSpecialLists();
-				});
-				this._obj.on('change:selected', function () {
-					that.updateSelected();
+					that.initSelected();
 				});
 			},
-			updateSelected: function () {
-				var that = this,
-					selected;
-				if (this._obj.has('selected')) {
-					var id = this._obj.get('selected')[0].id;
-					selected = this.get(id);
+			initSelected: function () {
+				if (!this.selected) {
+					var selected;
+					if (this.obj.has('selected')) {
+						var id = this.obj.get('selected')[0].id;
+						selected = this.get(id);
+					}
+					if (!selected) { selected = this.at(0); }
+					console.log('selected', this.at(0))
+					if (!selected) { return; }
+					this.setSelected(selected, { save: false });
 				}
-				if (!selected) { selected = this.at(0); }
-				console.log('selected', this.at(0))
-				if (!selected) { return; }
-				this.selected = selected;
-				this.chain().filter(function (todoList) {
-					return todoList.selected && todoList !== that.selected;
-				}).each(function (todoList) {
-					todoList.setSelected(false);
-				});
-				this.selected.setSelected(true);
 			},
-			setSelected: function (todoList) {
-				this._obj.save('selected', [todoList]);
+			setSelected: function (todoList, options) {
+				var that = this;
+				options = _.extend({ save: true }, options);
+				if (this.selected !== todoList) {
+					this.selected = todoList;
+					// Deselect others
+					this.chain().filter(function (todoList) {
+						return todoList.selected && todoList !== that.selected;
+					}).each(function (todoList) {
+						todoList.setSelected(false);
+					});
+					this.selected.setSelected(true);
+					if (options.save) { this.obj.save('selected', [todoList]); }
+				}
 			},
 			initSpecialLists: function () {
 				var that = this;
