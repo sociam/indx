@@ -27,19 +27,28 @@
 	<nav class="navbar navbar-default navbar-static-top" role="navigation">
 		<form class="navbar-form navbar-left" ng-if="manifest.documentation">
 			<button type="button" class="btn btn-default" ng-click="manifest.documentation.build()">Build</button>
-			<button type="button" class="btn btn-default" ng-if="manifest.documentation.get('built')" ng-click="">View standalone</button>
+			<button type="button" class="btn btn-default" ng-click="manifest.documentation.refresh()" ng-if="manifest.documentation.get('built')">Refresh</button>
+			<a href="{{ manifest.documentation.get('url') }}" target="_blank" class="btn btn-default" ng-if="manifest.documentation.get('built')">View standalone</a>
 		</form>
 		<p class="navbar-text navbar-right" ng-if="manifest.documentation.get('built')">Last built on</p>
 	</nav>
-	<div ng-if="!manifest.documentation">
-		<p class="description">No documentation has been provided.</div>
-	</div>
-	<div ng-if="manifest.documentation">
-		<div ng-if="!manifest.documentation.get('built')">
-			<p class="description">Documentation needs to be built.</div>
+	<div ng-if="manifest.documentation.isBuilding">
+		<p class="description">Please wait, documentation is being built.</p>
+		<div class="progress progress-striped active">
+			<div class="progress-bar"  role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="width: 100%"></div>
 		</div>
-		<div ng-if="manifest.documentation.get('built')">
-			<iframe src="manifest.documentation.url"></iframe>
+	</div>
+	<div ng-if="!manifest.documentation.isBuilding">
+		<div ng-if="!manifest.documentation">
+			<p class="description">No documentation has been provided.</p>
+		</div>
+		<div ng-if="manifest.documentation">
+			<div ng-if="!manifest.documentation.get('built')">
+				<p class="description">Documentation needs to be built.</p>
+			</div>
+			<div ng-if="manifest.documentation.get('built')">
+				<iframe ng-src="{{ manifest.documentation.get('url') }}" onload="resizeIFrame(this)"></iframe>
+			</div>
 		</div>
 	</div>
 </div>

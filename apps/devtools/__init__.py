@@ -77,6 +77,7 @@ class DevToolsApp(BaseHandler):
                 manifest_json = open(manifest_file)
                 try:
                     manifest = json.load(manifest_json)
+                    manifest['manifest_dir'] = appdir
                     manifest['manifest_name'] = manifest_file[len(appdir) + 1:]
                     manifests.append(manifest)
                 except ValueError:
@@ -126,11 +127,12 @@ class DevToolsApp(BaseHandler):
         return manifests
 
     def doc_info(self, manifest, config_file):
-        path = os.path.sep.join(['apps', 'devtools', 'html', manifest['type'], manifest['id']])
+        path = os.path.sep.join(['apps', 'devtools', 'html', 'docs', manifest['type'], manifest['id']])
         return {
-            'url': '/apps/devtools/{0}/{1}'.format(manifest['type'], manifest['id']),
+            'url': '/apps/devtools/docs/{0}/{1}'.format(manifest['type'], manifest['id']),
             'built': os.path.exists(path),
-            'config_path': config_file
+            'path': path,
+            'config_path': manifest['manifest_dir'] + os.path.sep + config_file
         }
 
     def config_data(self, filename, config_type):
@@ -155,7 +157,12 @@ class DevToolsApp(BaseHandler):
     def list_manifests(self, request):
         """ Get a list of core components and apps
         """
-        self.return_ok(request, data = { 'response': self.list_all_manifests() })
+        manifests = self.list_all_manifests()
+        for manifest in manifests:
+            manifest['manifest_dir'] = None
+            if 'documentation' in manifest:
+                manifest['documentation']['config_path'] = None
+        self.return_ok(request, data = { 'response': manifests })
 
     def list_docs(self, request):
         """ Get a list of doc configs.
@@ -187,25 +194,37 @@ class DevToolsApp(BaseHandler):
         """ Generate documentation from config file.
         """
         manifests = self.list_all_manifests()
-        manifest_id = request.args
-        manifest = manifests.where({ 'id': manifest_id })
-        if not manifest:
-            self.return_internal_error('Manifest not found')
+        if not request.args['id']:
+            self.return_forbidden(request)
             return
-#### HERES WHERE TO CONTINUE
+        manifest_id = request.args['id'][0]
+
+        manifest = None
+        for _manifest in manifests:
+            if (_manifest['id'] == manifest_id):
+                manifest = _manifest
+                break
+
+        if not manifest:
+            self.return_internal_error(request) # 'Manifest not found'
+            return
+
         logging.debug('generating doc %s' % manifest['name'])
         config = manifest['documentation']
+
         try:
-            out = check_output('node lib/docs/build.js %s --output-directory=%s --log-stdout' % (config['config_path'], config['path']), shell=True)
+            cmd_str = 'node lib/docs/build.js %s ' % config['config_path']
+            cmd_str += '--output-directory=%s ' % config['path']
+            cmd_str += '--log-stdout'
+            logging.debug('Exec %s' % cmd_str)
+            out = check_output(cmd_str, shell=True)
         except subprocess.CalledProcessError, e:
             logging.debug('Failed to run builder', e.output)
-            self.return_internal_error('Failed to run builder')
+            self.return_internal_error(request)
             raise
 
         logging.debug(out);
-        config['build_output'] = out;
-        config['built'] = os.path.exists(config['path']);
-        self.return_ok(request, data = { "response": config })
+        self.return_ok(request, data = { "response": 'ok' })
 
     def run_test(self, request):
         logging.debug('trying to run tests')

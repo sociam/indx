@@ -84,14 +84,17 @@ angular
 		var DocumentationModel = Backbone.Model.extend({
 			initialize: function (attrs, options) {
 				this.manifest = options.manifest;
+				this.set(this.manifest.get('documentation'));
+				this.docUrl = this.get('url');
+				console.log(this.manifest.get('documentation'))
 			},
 			build: function () {
-				console.log('blah')
 				var that = this;
 				this.isBuilding = true;
-				$.post('api/manifests/' + this.manifest.id + '/build_doc')
+				$.post('api/build_doc?id=' + this.manifest.id)
 					.then(function (r) {
 						that.set(r.response);
+						that.refresh();
 						that.err = false;
 						u.safeApply($rootScope);
 					})
@@ -103,6 +106,9 @@ angular
 						that.isBuilding = false;
 						u.safeApply($rootScope);
 					});
+			},
+			refresh: function () {
+				this.set('url', this.docUrl + '?_r' + Math.round(Math.random() * 1e6));
 			}
 		});
 
@@ -140,10 +146,23 @@ angular
 
 		var manifests = new Manifests();
 		manifests.fetch().then(function () {
+			manifests.fetched = true;
 			u.safeApply($rootScope);
 		});
 
 		window.$scope = $rootScope;
+
+		window.resizeIFrame = function (iframe, noEvents) {
+			var top = $('.tab-pane nav').offset().top + $('.tab-pane nav').height(),
+				wHeight = $(window).innerHeight();
+			console.log('t', iframe, top, wHeight)
+			$(iframe).css({ 'height': wHeight - top - 6 });
+			if (!noEvents) {
+				$(window).resize(function () {
+					window.resizeIFrame(iframe, true);
+				});
+			}
+		};
 
 		return {
 			manifests: manifests
