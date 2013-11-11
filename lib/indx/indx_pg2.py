@@ -507,7 +507,7 @@ class IndxDatabase:
         connect(POSTGRES_DB, self.db_user, self.db_pass).addCallbacks(connected, return_d.errback)
         return return_d
 
-
+    #this lists all boxes of all users
     def list_boxes(self):
         return_d = Deferred()
         def db_list(dbs):
@@ -520,6 +520,24 @@ class IndxDatabase:
         d = self.list_databases()
         d.addCallbacks(db_list, return_d.errback)
 
+        return return_d
+    
+    #this lists all boxes of a particular user
+    def list_user_boxes(self, username):
+        return_d = Deferred()
+        
+        def connected(conn, username):
+            logging.debug(conn)
+            def db_list(rows):
+                boxes = []
+                for row in rows:
+                    box = row[0][len(INDX_PREFIX):]
+                    boxes.append(box)
+                return_d.callback(boxes)
+
+            conn.runQuery("SELECT DISTINCT tbl_keychain.db_name FROM tbl_keychain JOIN tbl_users ON (tbl_users.id_user = tbl_keychain.user_id) WHERE tbl_users.username = %s", [username]).addCallbacks(db_list, return_d.errback)
+
+        self.connect_indx_db().addCallbacks(lambda conn: connected(conn,username), return_d.errback)
         return return_d
 
 

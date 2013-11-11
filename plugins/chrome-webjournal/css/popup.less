@@ -1,6 +1,6 @@
 * {
 	border-sizing:border-box;
-	font-size:10pt;
+	font-size:8pt;
 }
 html, body {
 	max-height:400px;
@@ -18,18 +18,21 @@ body { padding:3px; }
 	border-top:1px solid #eee;
 	position:absolute;
 	left:0px; top:36px; bottom:0px; right:0px;
-	overflow:scroll;
+	overflow-y:scroll;
+	oveflow-x:none;
 	table {
+
+		tr { height:16px; }
 		font-size:8pt;
-		min-height:400px;
-		min-width:200px;
 		.time { 
 			font-size:6pt; color:#bbb; 
 			padding-right:2px;
 		}
 		.location { 
 			font-size:8pt; 
-			max-width:249px;
+			width:230px;
+			min-width:230px;
+			max-width:230px;
 			overflow:hidden;
 		}
 		.duration { 
