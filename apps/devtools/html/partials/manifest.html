@@ -24,11 +24,11 @@
 </div>
 
 <div class="tab-pane" ng-if="pane === 'documentation'">
-	<nav class="navbar navbar-default navbar-static-top" role="navigation">
+	<nav class="navbar navbar-default navbar-static-top nav-mini" role="navigation">
 		<form class="navbar-form navbar-left" ng-if="manifest.documentation">
-			<button type="button" class="btn btn-default" ng-click="manifest.documentation.build()">Build</button>
-			<button type="button" class="btn btn-default" ng-click="manifest.documentation.refresh()" ng-if="manifest.documentation.get('built')">Refresh</button>
-			<a href="{{ manifest.documentation.get('url') }}" target="_blank" class="btn btn-default" ng-if="manifest.documentation.get('built')">View standalone</a>
+			<button type="button" class="btn btn-default btn-sm" ng-click="manifest.documentation.build()">Build</button>
+			<button type="button" class="btn btn-default btn-sm" ng-click="manifest.documentation.refresh()" ng-if="manifest.documentation.get('built')">Refresh</button>
+			<a href="{{ manifest.documentation.get('url') }}" target="_blank" class="btn btn-default btn-sm" ng-if="manifest.documentation.get('built')">View standalone</a>
 		</form>
 		<p class="navbar-text navbar-right" ng-if="manifest.documentation.get('built')">Last built on</p>
 	</nav>
