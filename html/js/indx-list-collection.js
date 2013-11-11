@@ -10,7 +10,6 @@ angular
 	.factory('listcollection', function (client) {
 		'use strict';
 
-
 		var Model = Backbone.Model.extend({
 			set: function (attributes, options) {
 				var that = this,
@@ -23,6 +22,7 @@ angular
 				attributes = _(attributes).clone();
 				_(attributes).each(function (value, key) {
 					if (key === '@id') { return; }
+					if (key === 'id') { return; }
 					if (!_.isArray(value)) {
 						throw 'Value must be an array (' + (typeof value) + ' given)';
 					}
@@ -35,32 +35,73 @@ angular
 			}
 		});
 
+		var colors = ['orange', 'magenta', 'cyan', 'green'],
+			colorHash = {};
+		var logColor = function (args) {
+			var color = colorHash[args[0]];
+			if (!color) {
+				color = colors[_(colorHash).keys().length];
+				colorHash[args[0]] = color;
+			}
+			if (color) {
+				args[0] = '%c' + args[0];
+				args.splice(1, 0, 'color:' + color + ';');
+			}
+			return args;
+		}
+
 		var Collection = Backbone.Collection.extend({
 			model: Model,
+
+			log: function () {
+				var stack = function () {
+					try { throw new Error(''); }
+					catch (e) { return e.stack; }
+				}
+				var location = stack().split('\n')[3].split(/:|\//).slice(-3, -1).join(':'),
+					args = Array.prototype.slice.call(arguments, 0),
+					len = _(args).reduce(function (memo, arg) {
+						return memo + String(arg).length + 1;
+					}, 0),
+					pad = _(50 - len).times(function () { return ' '; }).join('');
+
+				args.unshift('collection:' + this._key);
+
+				args.push(pad + '[' + location + ']');
+				console.info.apply(console, logColor(args));
+			},
+
+			/// EVENT: trigger change when array has changed
 
 			initialize: function (models, options) {
 				var that = this;
 				options = options || {};
-				this._box = options.box;
-				this._obj = options.obj;
+				this.box = options.box;
+				this.obj = options.obj;
 				this._key = options.arrayKey;
 
-				this.on('add remove', function () {
-					console.log('something in the collection has changed');
-					that.save();
+				this.on('all', function (e) {
+					that.log('fired:' + e);
 				});
 
-				if (this._obj) {
-					this.populate();
-					this._obj.on('change:' + this._key, function (obj, arr) {
-						that.softReset(arr);
+				if (this.obj) {
+					var models = this.obj.get(this._key) || [];
+					this.reset(models);
+					this.obj.on('change:' + this._key, function (obj, models) {
+						that.reset(models);
+						that.trigger('change');
 					});
 				}
+
+				this.on('fetch', function () {
+					that.trigger('change');
+				});
+
 			},
 
 			// If models already exist update them
-			softReset: function (models) {
-				console.log('soft reset');
+			reset: function (models) {
+				this.log('reset', models.length, 'models');
 
 				var that = this,
 					currentIDs = _.pluck(this.models, 'id'),
@@ -75,62 +116,61 @@ angular
 						return newIDs.indexOf(model.id) < 0;
 					});
 
-				console.log('add: ' + toAdd.length + ', update: ' + toUpdate.length + ', remove: ' + toRemove.length)
+				this.log('add: ' + toAdd.length + ', update: ' + toUpdate.length + ', remove: ' + toRemove.length)
 
 				_.each(toUpdate, function (model) {
-					console.log('update', model)
-					console.log('id', model.id, that, that.models.length, that.get)
-					console.log('update', that.get(model.id))
 					that.get(model.id).set(model.toJSON());
 				});
 
-				this
-					.add(toAdd, { silent: true })
-					.remove(toRemove, { silent: true })
+				this.add(toAdd)
+					.remove(toRemove)
 					.trigger('reset');
 
 				return this;
 			},
 
-			populate: function () {
-				var arr = this._obj.get(this._key) || [];
-				console.log('populate', arr, this._key);
-				return this.reset(arr);
-			},
-
 			fetch: function () {
-				console.log('fetch')
 				var that = this;
-				return this._obj.fetch().then(function () {
-					that.populate();
+				this.log('fetch')
+				return this.obj.fetch().then(function () {
+					that.trigger('fetch', that, that.models);
 				});
 			},
 
 			save: function () {
-				console.log('save', this.models)
-				return this._obj.save(this._key, this.models);
+				this.log('save', this.models.length, 'models', 'box version', this.box.getVersion());
+				return this.obj.save(this._key, this.models);
 			},
 
-			add: function (model, options) {
+			add: function (models, options) {
 				var that = this;
-				if (_.isArray(model)) {
-					_.each(model, function (model) {
-						that.add(model, options);
-					});
-					return this;
-				} else {
-					if (!_.isObject(model)) {
+				options = _.extend({ }, options);
+
+				if (!_(models).isArray()) {
+					models = [models];
+				}
+				_.each(models, function (model) {
+					if (!_(model).isObject()) {
 						console.warn('Found non-object in array -->', model);
 						return;
 					}
-					//console.log('adding', model)
-					this._extendModel(model);
-					return Backbone.Collection.prototype.add.apply(this, arguments);
-				}
+					that._extendModel(model);
+					that.log('adding', model.id)
+					Backbone.Collection.prototype.add.call(that, model, options);
+				});
+				if (options.save) { that.save(); }
+				return this;
+			},
+
+			remove: function (model, options) {
+				options = _.extend({ }, options);
+				Backbone.Collection.prototype.remove.apply(this, arguments);
+				if (options.save) { that.save(); }
+				return this;
 			},
 
 			_extendModel: function (model, options) {
-				//console.log('extend', model)
+				this.log('extend', model.id)
 				var prototype = this.model ? this.model.prototype : {};
 
 				_.extend(model, prototype);
@@ -155,15 +195,18 @@ angular
 			create: function (attributes, options) {
 				var promise = $.Deferred(),
 					that = this;
-				//console.log('creating item');
-				this._box.getObj(attributes.id)
+				//that.log('creating item');
+				this.box.getObj(attributes.id)
 					.then(function (newObj) {
-						console.log('new item');
-						newObj.save(attributes)
+						that.log('new item', attributes.id);
+						var nattributes = _.clone(attributes);
+						delete nattributes.id;
+						newObj.save(nattributes)
 							.then(function () {
-								console.log('saved');
+								var noptions = _.extend({ save: true }, options);
+								that.log('saved');
 								promise.resolve();
-								that.add(newObj, options)
+								that.add(newObj, noptions)
 								that.trigger('created', newObj);
 							});
 					});
