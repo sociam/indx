@@ -138,7 +138,7 @@
         };
     })
     // main controller
-    .controller('main', function($scope, watcher, geowatcher, client,utils) {
+    .controller('main', function($scope, watcher, geowatcher, client, utils) {
         // main 
         window.utils = utils;
         var winstance = watcher.init(), n_logged = 0, _timeout, geoinstance = geowatcher.init();
@@ -173,6 +173,7 @@
         var initStore = function(store) {
             window.s = store;
             winstance.set_store(store);
+            geoinstance.set_store(store);
             winstance.setError();
             store.on('disconnect', function() {
                 displayFail('disconnected from indx');
@@ -183,21 +184,19 @@
         var runner = function() {
             var me = arguments.callee;
             connect(client,utils).then(initStore)
-                .fail(function(err) { 
+                .fail(function(err) {
                     displayFail(err.toString());
-                    console.error('cannot connect -- ', err); 
+                    console.error('cannot connect -- ', err);
                     setTimeout(me, 10000); 
                 });
         };
         runner();
-    })
-    .factory('geowatcher', function(utils, client) { 
+    }).factory('geowatcher', function(utils, client) {
         // plugin that watches for geo changes
         var GeoWatcher = Backbone.Model.extend({
             defaults: { enabled:true },
             initialize:function(attributes) {
-                var this_ = this;
-                var err = function(e) { this_.trigger('error', e); };
+                var this_ = this, err = function(e) { this_.trigger('error', e); };
                 navigator.geolocation.watchPosition(function(pos) { this_.trigger('geoevent', pos); }, err);
                 navigator.geolocation.getCurrentPosition(function(pos) { this_.trigger('geoevent', pos); },err);
                 this.on('geoevent', function() { this_.handle_geo.apply(this_, arguments); });
@@ -207,12 +206,14 @@
                     // we may have been waiting on things, let's try again
                     this_._commit(); 
                 });
+                this.data = [];
             },
             _load_box:function() {
-                var store = this.get('store');
-                if (!getBoxName()) { console.error(' no box specified '); return; }
+                var store = this.get('store'), this_ = this;
+                if (!getBoxName()) { console.error('geowatcher ~~~ no box specified '); return; }
                 if (store && getBoxName()) { 
-                    store.get_box(getBoxName()).then(function(b) { 
+                    console.info('geowatcher getting box ');
+                    store.getBox(getBoxName()).then(function(b) { 
                         this_.set('box', b);
                         this_.set('journal', b.getObj(OBJ_ID));
                     });
@@ -243,6 +244,7 @@
                     id:utils.guid(), type:OBJ_TYPE});
             },
             _commit:function(pos) {
+                console.info('geowatcher ~~~~ commit!! ', pos);
                 var this_ = this, journal = this.get('journal'), box = this.get('box'), data = pos ? this.data.concat([pos]) : this.data;
                 if (journal && box) { 
                     return data.map(function(pos) {
@@ -274,9 +276,7 @@
                 return false;
             }
         };
-    });
-    // logger
-    .factory('watcher', function(utils, client) {
+    }).factory('watcher', function(utils, client) {
         var WindowWatcher = Backbone.Model.extend({
             defaults: { enabled:true },
             initialize:function(attributes) {
