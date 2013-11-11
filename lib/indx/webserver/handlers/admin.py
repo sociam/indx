@@ -106,6 +106,7 @@ class AdminHandler(BaseHandler):
         #self.database.list_boxes()\
         #this gets only the boxes of a particular user
         username = self.get_session(request).username
+        assert username is not None, " User missing on method requiring auth "
         self.database.list_user_boxes(username)\
             .addCallback(boxes)\
             .addErrback(lambda *x: self.return_internal_error(request))
