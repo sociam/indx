@@ -20,6 +20,6 @@
     "clipboardWrite",
     "cookies",
     "history",
-    "https://indx.local:8211/"
+    "https://*/*"
   ]
 }

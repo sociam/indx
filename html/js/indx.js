@@ -3,6 +3,12 @@
 
 
 ///  @title indx.js
+///  @author Daniel Alexander Smith
+///  @author Max Van Kleek
+///  @author Peter West
+///  @since 2013
+///  @see http://github.com/sociam/indx
+///  @see http://indx.es
 ///
 ///  Javascript ORM client for INDX that makes it easy to
 ///  read and write objects from one or more INDX data store(s).
@@ -12,6 +18,7 @@
 ///  Copyright (C) 2011-2013 Daniel Alexander Smith
 ///  Copyright (C) 2011-2013 Max Van Kleek
 ///  Copyright (C) 2011-2013 Nigel R. Shadbolt
+///  Copyright (C) 2011-2013 Peter West
 ///
 ///  This program is free software: you can redistribute it and/or modify
 ///  it under the terms of the GNU Affero General Public License, version 3,
@@ -313,7 +320,7 @@ angular
 					this_._flushUpdateQueue();
 					this_._flushDeleteQueue();
 				});
-				this.store.on('login', function() { this_.reconnect(); });
+				this.store.on('login', function() { console.log('on login >> '); this_.reconnect(); });
 				this.on('new-token', function() { this_._setUpWebSocket(); });
 				this._reset();
 				this._setUpWebSocket();				
@@ -345,7 +352,7 @@ angular
 
 				/// @ignore
 				ws.onmessage = function(evt) {
-					u.debug('websocket :: incoming a message ', evt.data.toString()); // .substring(0,190));
+					// u.debug('websocket :: incoming a message ', evt.data.toString()); // .substring(0,190));
 					var pdata = JSON.parse(evt.data);
 					if (pdata.action === 'diff') {
 						try {
@@ -391,7 +398,7 @@ angular
 			},
 			reconnect:function() {
 				this._reset();
-				return this_.getToken();
+				return this.getToken();
 			},
 			/// Gets whether the option to use websockets has been set; set this option using the store's options.use_websockets;
 			/// @return {boolean} - Whether will try to use websockets.
@@ -924,6 +931,9 @@ angular
 
 		var BoxCollection = Backbone.Collection.extend({ model: Box });
 
+		// debug ---------| 
+		window._stores = [];
+
 		var Store =  Backbone.Model.extend({
 			defaults: {
 				server_host:DEFAULT_HOST,
@@ -939,6 +949,10 @@ angular
 			/// @construct
 			initialize: function(attributes, options){
 				this.set({boxes : new BoxCollection([], {store: this})});
+
+				// debug ---------------
+				_stores.push(this);
+				_(_stores).map(function(s, j) { console.log(":: Store ", j, s.isConnected()); });
 			},
 
 			/// Check that the

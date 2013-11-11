@@ -94,7 +94,7 @@ something.awesome.Animal = SomeSuperClass.extend({
 |-------------------|-----------------------------------------------|------------|----------|
 | `@class`          | Force the docsgen comment to be describing a class | No | Only if class is detected |
 | `@ignore` 		| Ignore this class (do not document it).		| No         | Only if class name begins with `_` in source		|
-| `@extend Some.SuperClass url` | Indicate that this class extends another. If a url to documentation is not provided, docsgen will try to find the class within the sourcecode. | Yes, for multiple inheritence | Superclass if .extend is used within source code |
+| `@extend Some.SuperClass url` | Indicate that this class extends another. If a url to documentation is not provided, docsgen will try to find the class within the sourcecode. Also `@extends` and `@augments`. | Yes, for multiple inheritence | Superclass if .extend is used within source code |
 | `@name ClassName` | Name of class. | No | Name within source code |
 | `@fullName theFull.ClassName` | Full name of class (including object in which it resides). By default, this will be the value of @name. | No | Full name within source code |
 | `@instanceName className` | An example instance name. E.g., instanceName of Cow might be "cow" or "daisy". | No | Classname with first letter lowercase |
@@ -102,6 +102,7 @@ something.awesome.Animal = SomeSuperClass.extend({
 | `@since date` 	| Describes when the functionality first existed. Not yet implemented | No | - |
 | `@see url` 		| Url to additional documentation. Not yet implemented | Yes, for each relevant source | - |
 | `@deprecated description` | Describes outdated functionality. Not yet implemented | No | - |
+| `@alias name` | This class is available under a different name. Not yet implemented. | Yes | - |
 
 **Example**
 
@@ -138,15 +139,14 @@ in the generated docs.
 | `@attribute`          | Force the docsgen comment to be describing an attribute | No | Only if class is detected |
 | `@name attrName` | Name of the attribute. Not yet implemented | No | Detected within code |
 | `@optional` | If specified, indicates that the attribute is optional | No | - |
-| `@types <types>` | Types that the attribute may be | No | - |
+| `@types {types}` | Types that the attribute may be | No | - |
 | `@ignore` | Ignore this method (do not document it) (auto-detected if name begins with _). Not yet implemented | No | Only if method name begins with `_` in source		 |
 | `@order n` | Force a particular order for the method (auto-detected by order within code). | No | Order in source code |
 | `@since date` | Describes when the functionality first existed. Not yet implemented | No | - |
 | `@see url` | Url to additional documentation. Not yet implemented | Yes, for each relevant source | - |
 | `@deprecated description` | Describes outdated functionality. Not yet implemented | No | - |
-
-Note on `<types>`: Types are pipe (|) separated; types and comment are optional
-
+| `@alias name` | This attribute is available under a different name. Not yet implemented. | Yes | - |
+| `@default value` | The default value for the attribute. Not yet implemented. | No | - |
 
 ## Methods
 
@@ -171,35 +171,51 @@ the generated docs.
 | Tag / parameters	| Description 									| Repeatable | Default 	|
 |-------------------|-----------------------------------------------|------------|----------|
 | `@method`          | Force the docsgen comment to be describing a method | No | Only if class is detected |
-| `@arg <types> name - comment` | Describe an argument. Use @opt if optional. | Yes, for multiple arguments | Arguments in function definition within source code |
-| `@return <types> - comment` | Synchronous return | Yes, for multiple return conditions | - |
-| `@then <types> name, ... - comment` or `@fail <types> name, ... - comment` | Asynchronous return | Yes, for multiple result conditions | - |
+| `@arg {types} name - comment` | Describe an argument. Use @opt if optional. | Yes, for multiple arguments | Arguments in function definition within source code |
+| `@return {types} - comment` | Synchronous return | Yes, for multiple return conditions | - |
+| `@then {types} name, ... - comment` or `@fail {types} name, ... - comment` | Asynchronous return | Yes, for multiple result conditions | - |
 | `@chain` | Chaining return (i.e., returns `this`) | No | - |
 | `@name methodName` | Name of the method. Not yet implemented | No | Detected within code |
 | `@ignore` | Ignore this method (do not document it) (auto-detected if name begins with _). Not yet implemented | No | Only if method name begins with `_` in source		 |
 | `@order n` | Force a particular order for the method (auto-detected by order within code). | No | Order in source code |
-| `@throws <types> - comment` | Describe when an exception is thrown (may also use `@exception`). Not yet implemented | Yes, for each exception | - |
+| `@throws {types} - comment` | Describe when an exception is thrown (may also use `@exception`). Not yet implemented | Yes, for each exception | - |
 | `@since date` | Describes when the functionality first existed. Not yet implemented | No | - |
 | `@see url` | Url to additional documentation. Not yet implemented | Yes, for each relevant source | - |
 | `@deprecated description` | Describes outdated functionality. Not yet implemented | No | - |
-
-Note on `<types>`: Types are pipe (|) separated; types and comment are optional
+| `@private` or `@protected` or `@public` | Also `@access public` etc. Not yet implemented | No | - |
+| `@alias name` | This method is available under a different name. Not yet implemented. | Yes | - |
 
 **Example** (asynchronous method)
 
-	/// @arg <string|number> boxid - the id for the box
+	/// @arg {string|number} boxid - the id for the box
 	///
-	/// @then (<Box> the box)
-	/// @fail (<{ code: 409 }> response) box already exists
-	/// @fail (<{ code: -1, error: error obj }> response) other error
+	/// @then ({Box} the box)
+	/// @fail ({{ code: 409 }} response) box already exists
+	/// @fail ({{ code: -1, error: error obj }} response) other error
 	///
 	/// Attempts to create a box with the given ID
 
 **Example** (synchronous method)
 
-	/// @arg <
+	/// @arg something
+	/// Make some things happen
+	/// @return {string} - A string
 
-	/// @return <string> - A string
+
+## Types
+
+Types are in curly braces and are separated by pipes. The following are valid types:
+
+* `{number}` - a number
+* `{number[]}` - array of ints
+* `{number[]|string}` - array of ints or a string
+* `{Object|string}` - an object or a string
+* `{Cow}` - a cow (where Cow is a class that has been defined)
+* `{Cow[]}` - array of cows
+* `{Object.<string, number>}` - an object with string keys and number values
+* `{{ name: string, age: number }}` - an object with name (which must be a string) and age (which must be a number)
+* `{?number}` - a number or undefined
+* `{?(number|string)}` - a number or string or undefined
 
 ## Building the docs
 
