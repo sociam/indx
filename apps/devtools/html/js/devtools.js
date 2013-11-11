@@ -293,16 +293,33 @@ angular
 	}).controller('ManifestCtrl', function ($scope, $location, manifestsService, $routeParams) {
 		'use strict';
 
-		var manifest = manifestsService.manifests.get($routeParams.id);
-		if (!manifest) {
-			$location.path('/');
+		var ready = $.Deferred();
+
+		if (manifestsService.manifests.fetched) {
+			ready.resolve();
+		} else {
+			console.log('Q?')
+			manifestsService.manifests.on('all', function (a) {
+				console.log('b', a)
+			})
+			manifestsService.manifests.once('sync', function () {
+				ready.resolve();
+			});
 		}
-		var panes = ['overview', 'documentation', 'tests'],
-			pane = 'overview';
-		if (panes.indexOf($routeParams.section) > -1) {
-			pane = $routeParams.section;
-		}
-		
-		$scope.manifest = manifest;
-		$scope.pane = pane;
+
+		ready.then(function () {
+			console.log('READY')
+			var manifest = manifestsService.manifests.get($routeParams.id);
+			if (!manifest) {
+				$location.path('/');
+			}
+			var panes = ['overview', 'documentation', 'tests'],
+				pane = 'overview';
+			if (panes.indexOf($routeParams.section) > -1) {
+				pane = $routeParams.section;
+			}
+			
+			$scope.manifest = manifest;
+			$scope.pane = pane;
+		});
 	});

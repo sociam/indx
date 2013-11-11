@@ -5,7 +5,7 @@
 		<tr ng-repeat="manifest in manifests.core">
 			<td>
 				<a href="#manifest/{{ manifest.id }}/">
-					<img src="{{ manifest.get('icons')['128'] }}" class="icon">
+					<img ng-src="{{ manifest.get('icons')['128'] }}" class="icon">
 					{{ manifest.get('name') }}
 				</a>
 			</td>
@@ -23,7 +23,7 @@
 		<tr ng-repeat="manifest in manifests.apps">
 			<td>
 				<a href="#manifest/{{ manifest.id }}/">
-					<img src="{{ manifest.get('icons')['128'] }}" class="icon">
+					<img ng-src="{{ manifest.get('icons')['128'] }}" class="icon">
 					{{ manifest.get('name') }}
 				</a>
 			</td>

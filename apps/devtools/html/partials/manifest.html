@@ -24,15 +24,19 @@
 </div>
 
 <div class="tab-pane" ng-if="pane === 'documentation'">
+	<nav class="navbar navbar-default navbar-static-top" role="navigation">
+		<form class="navbar-form navbar-left" ng-if="manifest.documentation">
+			<button type="button" class="btn btn-default" ng-click="manifest.documentation.build()">Build</button>
+			<button type="button" class="btn btn-default" ng-if="manifest.documentation.get('built')" ng-click="">View standalone</button>
+		</form>
+		<p class="navbar-text navbar-right" ng-if="manifest.documentation.get('built')">Last built on</p>
+	</nav>
 	<div ng-if="!manifest.documentation">
-		No documentation has been provided
+		<p class="description">No documentation has been provided.</div>
 	</div>
 	<div ng-if="manifest.documentation">
-		<div class="docs-toolbar">
-			<button type="button" ng-click="manifest.documentation.build()">Build</button>
-		</div>
 		<div ng-if="!manifest.documentation.get('built')">
-			Documentation needs to be built.
+			<p class="description">Documentation needs to be built.</div>
 		</div>
 		<div ng-if="manifest.documentation.get('built')">
 			<iframe src="manifest.documentation.url"></iframe>
