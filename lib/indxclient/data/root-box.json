@@ -16,7 +16,7 @@
     ],
     "server": [
         {
-            "iype": [ "http://indx.ecs.soton.ac.uk/ontology/root-box/#server" ],
+            "type": [ "http://indx.ecs.soton.ac.uk/ontology/root-box/#server" ],
             "url": [ "https://i.ld.is:8211/" ],
             "box": [
                 {
