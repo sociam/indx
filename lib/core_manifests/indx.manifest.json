@@ -1,0 +1,22 @@
+{
+	"name": "indx.js",
+	"version": 0.1,
+	"description": "Core indx client library",
+	"icons": {
+		"128": "/apps/devtools/icons/indx.png"
+	},
+	"author": [
+		{
+			"name": "Daniel Alexander Smith"
+		},
+		{
+			"name": "Max Van Kleek"
+		},
+		{
+			"name": "Peter West",
+			"email": "peter.g.west@gmail.com"
+		}
+	],
+	"documentation": "indx.docs-config.js",
+	"tests": "indx.tests-config.js"
+}
