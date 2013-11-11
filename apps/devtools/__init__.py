@@ -34,39 +34,6 @@ class DevToolsApp(BaseHandler):
         logging.debug(' hello')
         self.isLeaf = True
 
-    
-
-    # def lookup_config(self, name, config_type):
-    #     configs = self.get_config_list(config_type)
-    #     matches = [config for config in configs if config['name'] == name]
-    #     if not matches:
-    #         self.return_forbidden(request) # todo: more useful return
-    #     return matches[0];
-
-
-    # def get_config_list(self, config_type):
-    #     logging.debug('getting list of configs')
-    #     currdir = os.path.dirname(os.path.abspath(__file__))
-    #     # look in apps
-    #     appdir = os.path.sep.join([currdir, '..', '..', 'apps'])
-    #     dirs = [os.path.normpath(appdir + os.path.sep + d) for d in os.listdir(appdir)]
-    #     dirs.append(os.path.normpath(os.path.sep.join([currdir, '..', '..', 'lib', config_type, 'config'])))
-    #     config_files = []
-    #     for d in dirs:
-    #         if os.path.isdir(d):
-    #             logging.debug('checking directory %s' % d)
-    #             files = os.listdir(d)
-    #             for f in files:
-    #                 f = d + os.path.sep + f;
-    #                 logging.debug('checking file %s' % f)
-    #                 config_end = config_type + '-config.js'
-    #                 if os.path.isfile(f) and f.endswith(config_end):
-    #                     logging.debug('found file %s' % f)
-    #                     config_files.append(f);
-    #     configs = [self.config_data(f, config_type) for f in config_files]
-    #     logging.debug("configs: {0}".format(configs))
-    #     return configs;
-
     def list_manifests_in(self, appdir):
         logging.debug('looking for manifests in %s', appdir)
         manifests = []
@@ -179,52 +146,6 @@ class DevToolsApp(BaseHandler):
             return
 
         return manifest
-
-    # def config_data(self, filename, config_type):
-    #     name = filename.split('/')[-1].split('.')[0]
-
-    #     app_name_r = re.compile('apps/([^/]+)/%s-config.js' % config_type)
-    #     app_name = app_name_r.findall(filename)
-    #     logging.debug("hmm... %s" % app_name)
-    #     if app_name:
-    #         name = app_name[0]
-
-    #     path = os.path.sep.join(['apps', 'devtools', 'html', config_type, name])
-
-    #     return {
-    #         'name': name,
-    #         'config_path': filename,
-    #         'path': path,
-    #         'url': 'apps/devtools/{0}/{1}'.format(config_type, name),
-    #         'built': os.path.exists(path)
-    #         }
-
-
-    # def list_docs(self, request):
-    #     """ Get a list of doc configs.
-    #     """
-    #     configs = self.get_config_list('docs')
-    #     self.return_ok(request, data = { "response": configs })
-
-    # def list_tests(self, request):
-    #     """ Get a list of doc configs.
-    #     """
-    #     configs = self.get_config_list('tests')
-    #     self.return_ok(request, data = { "response": configs })
-
-    # def get_requested_config(self, request, config_type):
-    #     args = request.args
-    #     logging.debug('args %s', args['name'])
-    #     if not args['name']:
-    #         self.return_forbidden(request)
-    #         return
-    #     config_name = args['name'][0]
-    #     config = self.lookup_config(config_name, config_type)
-    #     if not config:
-    #         self.return_forbidden(request)
-    #         return
-    #     return config
-
 
     def build_doc(self, request):
         """ Generate documentation from config file.
