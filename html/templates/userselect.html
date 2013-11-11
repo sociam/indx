@@ -1,0 +1,3 @@
+<select>
+    <option ng-repeat='u in users' ng-click="selectUser(u)" value="{{u['@id']}}" title="{{u['@id']}}">{{u.name}} ({{u["@id"].substr(0,30)}})</option>
+</select>
