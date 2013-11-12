@@ -19,7 +19,7 @@ if args['config']:
     keyring.set_password("INDX", "INDX_Blank_App", json.dumps(config))
 elif args['get_config']:
 	# TODO output the stored config (for passing ti back to the server)
-	print keyring.get_password("INDX", "INDX_Blank_App")
+	print json.loads(keyring.get_password("INDX", "INDX_Blank_App"))
 	pass
 else:
     print(keyring.util.platform_.data_root())
