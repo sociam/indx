@@ -18,6 +18,7 @@ angular
 								console.log('user metadata ', u.user_metadata, "---", typeof u.user_metadata);
 								_(u).extend(JSON.parse(u.user_metadata));
 							}
+							if (!u.name) { u.name = u["@id"]; } 
 						});
 						$scope.users = users.filter(function(f) { return f.type.indexOf('local') >= 0; });
 					});
@@ -35,6 +36,10 @@ angular
 					console.error(e);
 				});
 			});
+		};
+		$scope.grantACL = function(user,box) {
+			// 
+			console.log('grantacl -- ', user, box);
 		};
 		$scope.setConfig = function(config) { 
 			console.info('i got a config ', config);

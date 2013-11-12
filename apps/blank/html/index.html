@@ -11,7 +11,7 @@
 	<div ng-show="selectedUser && selectedBox">
 		<div>
 			<table>
-				<tr><td>Select a User for the App :</td><td><select ng-model="appuser" ng-options='u["@id"] for u in users'></select></td></tr>
+				<tr><td>Select a User for the App :</td><td><select ng-model="appuser" ng-options='u.name for u in users'></select></td></tr>
 				<tr><td>Enter the App User's Password :</td><td><input type="password" ng-model='appuserpassword'></td></tr>
 				<tr><td>App Should Store Data in This Box :</td><td><select ng-model="appbox" ng-options='b for b in boxes'></select></td></tr>
 			</table>
@@ -22,6 +22,9 @@
 		    <p>Frequency : <input type="text" name="freq" ng-model="frequency"></input></p>
 		</div>
 	    <div class="btn btn-default" ng-click="setConfig({start:start,step:step,frequency:frequency,box:appbox,user:appuser['@id'],password:appuserpassword})">Set config</div>
+	    <div class="btn btn-danger" 
+	    	ng-show="appuser && appbox && (appuser['@id'] !== selectedUser.id)"
+	    	ng-click="grantACL(appuser, appbox)">Authorise {{ appuser.name }} to have access to {{ appbox }}</div>
 	    <div class="status">{{ status }}</div>
 	</div>	
 	<div ng-show="!(selectedUser && selectedBox)">
