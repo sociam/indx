@@ -2,6 +2,7 @@ import logging,json,argparse,sys
 import logging.config
 import keyring
 import keyring.util.platform_
+from keyring.backends.pyfs import PlaintextKeyring
 
 if __name__ == '__main__':
     # parse out the parameters
@@ -13,14 +14,16 @@ if __name__ == '__main__':
 
 logging.basicConfig(filename="blank.log", level=logging.DEBUG)
 args = vars(parser.parse_args())
+keyring.set_keyring(PlaintextKeyring())
 if args['config']:
+    print(keyring.util.platform_.data_root())
     config = json.loads(args['config'])
     logging.debug("received config: {0}".format(config))
     keyring.set_password("INDX", "INDX_Blank_App", json.dumps(config))
 elif args['get_config']:
-	# TODO output the stored config (for passing ti back to the server)
-	print json.loads(keyring.get_password("INDX", "INDX_Blank_App"))
-	pass
+    # TODO output the stored config (for passing ti back to the server)
+    print json.loads(keyring.get_password("INDX", "INDX_Blank_App"))
+    pass
 else:
     print(keyring.util.platform_.data_root())
     config = keyring.get_password("INDX", "INDX_Blank_App")
