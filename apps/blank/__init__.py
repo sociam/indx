@@ -26,6 +26,7 @@ class BlankApp(BaseHandler):
         # config = json.loads(self.get_arg(request, "config"))
         config = self.get_arg(request, "config")
         logging.debug("blank config {0}".format(config))
+        print request
         # get theconfiguraiton we want to set out of request
         # do that thang here
         manifest = self._load_manifest()
