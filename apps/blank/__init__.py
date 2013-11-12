@@ -23,7 +23,8 @@ class BlankApp(BaseHandler):
         # when we want to change something in the config
         # invoke external process to set their configs
         logging.debug("set_config -- getting config from request")        
-        config = json.loads(self.get_arg(request, "config"))
+        # config = json.loads(self.get_arg(request, "config"))
+        config = self.get_arg(request, "config")
         logging.debug("blank config {0}".format(config))
         # get theconfiguraiton we want to set out of request
         # do that thang here
@@ -31,10 +32,10 @@ class BlankApp(BaseHandler):
         jsonconfig = json.dumps(config)
         # somewhere inside this we have put {0} wildcard so we wanna substitute that
         # with the actual config obj
-        expanded = [x.format(jsonconfig) for x in self.manfiest['config']]
+        expanded = [x.format(jsonconfig) for x in manifest['config']]
         result = subprocess.call(expanded)
         logging.debug("result of subprocess call {0}".format(result))
-        return self.return_ok(json.dumps(result))
+        return self.return_ok(request, data={'result': result})
 
     def _check_auth(self):
         # check if the app can do stuff 
