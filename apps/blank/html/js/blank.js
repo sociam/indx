@@ -83,4 +83,14 @@ angular
 				load_box($scope.selectedBox);	
 			}
 		});
+
+		setInterval(function() { 
+			s._ajax('GET','apps/blank/api/is_running').then(function(r) { 
+				sa(function() { 
+					$scope.runstate = r.running ? 'Running' : 'Stopped';  
+				});
+			}).fail(function(r) {
+				sa(function() { $scope.runstate = 'Unknown'; });
+			});
+		}, 1000);
 	});
