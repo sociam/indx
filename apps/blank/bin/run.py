@@ -16,6 +16,7 @@ if args['config']:
     logging.debug("received config: {0}".format(config))
 elif args['get_config']:
 	# TODO output the stored config (for passing ti back to the server)
+	print "stored config"
 	pass
 else:
 	logging.debug("running the app");
