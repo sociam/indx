@@ -592,7 +592,30 @@ class IndxDatabase:
 
         self.connect_indx_db().addCallbacks(connected, return_d.errback)
         return return_d
-    
+   
+
+    def set_root_box(self, username, box_name):
+        """ Set a root box for the user name specified. """
+        result_d = Deferred()
+
+        try:
+            if username is None or username == "":
+                raise Exception("Username cannot be blank, value was {0}".format(username))
+            if box_name is None or box_name == "":
+                raise Exception("Box Name cannot be blank, value was {0}".format(box_name))
+
+            def connected(conn):
+                conn.runOperation("UPDATE tbl_users SET root_box = %s WHERE username = %s", [box_name, username]).addCallbacks(result_d.callback, result_d.errback)
+
+            self.connect_indx_db().addCallbacks(connected, result_d.errback)
+
+        except Exception as e:
+            failure = Failure(e)
+            logging.error("indx_pg2 set_root_box error, calling errback. Error is: {0}".format(e))
+            result_d.errback(failure)
+
+        return result_d
+
 
     def lookup_best_acct(self, box_name, box_user, box_pass):
         """ Lookup the best account (i.e. RW if exists, otherwise RO) for this user to this database. """

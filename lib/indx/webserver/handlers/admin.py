@@ -99,6 +99,24 @@ class AdminHandler(BaseHandler):
             .addCallback(check)\
             .addErrback(lambda *er: logging.debug('{0}'.format(er)) and self.return_forbidden(request))
 
+    def set_root_box(self, request):
+        """ Specify a box as the root box for the logged in user. """
+
+        box = self.get_arg(request, "box")
+        if box is None or box is "":
+            logging.error("set_root_box: box is empty ({0})".format(box))
+            return self.return_bad_request(request)
+
+        username = self.get_session(request).username
+
+        def err_cb(failure):
+            failure.trap(Exception)
+            e = failure.value
+            logging.error("AdminHandler set_root_box err_cb: {0} {1}".format(e, failure))
+            self.return_internal_error(request)
+
+        self.database.set_root_box(username, box).addCallbacks(lambda *x: self.return_ok(request), err_cb)
+
     def list_boxes_handler(self,request):
         def boxes(db_list):
             return self.return_ok(request, data={"list": db_list})
@@ -138,6 +156,15 @@ class AdminHandler(BaseHandler):
         self.return_ok(request, data={"apps":self.webserver.appshandler.get_apps().keys()})
         
 AdminHandler.subhandlers = [
+    {
+        'prefix': 'set_root_box',
+        'methods': ['GET'],
+        'require_auth': True,
+        'require_token': False,
+        'handler': AdminHandler.set_root_box,
+        'content-type':'text/plain', # optional
+        'accept':['application/json']
+    },    
     {
         'prefix': 'list_boxes',
         'methods': ['GET'],

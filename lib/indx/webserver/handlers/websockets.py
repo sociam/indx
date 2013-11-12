@@ -55,25 +55,13 @@ class WebSocketsHandler(WebSocketHandler):
         def store_cb(store):
             logging.debug("WebSocketsHandler startListen, store_cb: {0}".format(store))
 
-            def observer(notify):
+            def observer(diff):
                 """ Receive an update from the server. """
-                logging.debug("WebSocketsHandler startListen observer notified: {0}".format(notify))
+                logging.debug("WebSocketsHandler startListen observer notified: {0}".format(diff))
 
-                def err_cb(failure):
-                    # send something to client?
-                    failure.trap(Exception)
-                    logging.error("WebSocketsHandler startListen observer error from diff: {0}".format(failure))
+                self.sendJSON({"action": "diff", "data": diff})
 
-                def diff_cb(data):
-                    logging.debug("WebSocketsHandler startListen observer diff: {0}".format(data))
-                    self.sendJSON({"action": "diff", "data": data})
-
-                version = int(notify.payload)
-                old_version = version - 1 # TODO do this a better way?
-
-                store.diff(old_version, version, "diff").addCallbacks(diff_cb, err_cb)
-
-            self.token.subscribe(observer)
+            store.listen(observer)
 
         self.token.get_store().addCallbacks(store_cb, err_cb)
 

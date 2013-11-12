@@ -1,0 +1,5 @@
+[{
+ "firstname":[{"@value":"steve"}],
+ "lastname":[{"@value":"jobs"}],
+ "@id":"jobs"
+}]
