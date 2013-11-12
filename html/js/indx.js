@@ -353,7 +353,7 @@ angular
 			},
 			_setUpWebSocket:function() {
 				if (! this.getUseWebSockets() ) { return; }
-				if (this._ws) { this.disconnect(); }
+				this.disconnect();
 				var this_ = this, server_host = this.store.get('server_host'), store = this.store;
 				var protocol = (document.location.protocol === 'https:' || protocolOf(server_host) === 'https:') ? 'wss:/' : 'ws:/',
 					wprot = withoutProtocol(server_host),
@@ -396,14 +396,17 @@ angular
 			},
 			disconnect:function() {
 				if (this._ws) { 
-					if (this.isConnected()) { this._ws.close(); }
+					// if (this.isConnected()) { this._ws.close(); }
+					this._ws.close();
 					delete this._ws; return true; 
 				}
 				return false;
 			},
 			reconnect:function() {
+				var this_ = this;
+				this.disconnect();
 				this._reset();
-				return this.getToken();
+				return this.getToken().pipe(function() { return this_._fetch(); });
 			},
 			/// Gets whether the option to use websockets has been set; set this option using the store's options.use_websockets;
 			/// @return {boolean} - Whether will try to use websockets.

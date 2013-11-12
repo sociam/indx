@@ -25,9 +25,10 @@
 
     var connect = function(client,utils) {
         var server_url = localStorage.indx_url;
-        if (server === undefined || server.get('server_host') !== server_url) {
+        if (server === undefined) {
             server = new client.Store({server_host:server_url});
         }
+        if (server.get('server_host') !== server_url) { server.set('server_host', server_url); }
         var d = utils.deferred();
         server.checkLogin().then(function(response) {
             if (response.is_authenticated) { 
@@ -196,20 +197,40 @@
             displayFail('server error');
             console.error('connection-error', e);
             // disconnect server
-            var s = winstance.get('store');
-            if (s) { 
-                s.disconnect();
-                winstance.set_store();
+            var b = winstance.box;
+            if (b) { 
+                console.info('Attempting to refresh tokens ... ');
+                var do_refresh = function() { 
+                    b.reconnect().then(function() { 
+                        console.info('box refresh ok!'); 
+                    }).fail(function(e) { 
+                        console.error('box refresh fail :( '); 
+                        if (!_timeout) { 
+                            console.error('scheduling a refresh ... ');
+                            _timeout = setTimeout(function() { 
+                                console.error('attempting refresh ... ');
+                                _timeout = undefined;
+                                do_refresh();
+                            }, 1000);
+                        }                        
+                    });
+                };
+                do_refresh();
             }
+            // var s = winstance.get('store');
+            // if (s) { 
+            //     s.disconnect();
+            //     winstance.set_store();
+            // }
 
-            if (!_timeout) { 
-                console.error('scheduling a reconnect ... ');
-                _timeout = setTimeout(function() { 
-                    console.error('attempting reconnect... ');
-                    _timeout = undefined;
-                    runner();
-                }, 1000);
-            }
+            // if (!_timeout) { 
+            //     console.error('scheduling a reconnect ... ');
+            //     _timeout = setTimeout(function() { 
+            //         console.error('attempting reconnect... ');
+            //         _timeout = undefined;
+            //         runner();
+            //     }, 1000);
+            // }
         });
         winstance.on('new-entries', function(entries) { 
             n_logged += entries.length; setOKBadge(''+n_logged); 
@@ -473,7 +494,9 @@
             _record_updated:function(current_record) {
                 // console.log('record updated ... box ', this.box, current_record);
                 var this_ = this, box = this.box, store = this.get('store'), journal = this.get('journal'), data = this.data.concat([current_record]);
-                var signalerror = function(e) {  this_.trigger('connection-error', e);       };
+                var signalerror = function(e) {  
+                    this_.trigger('connection-error', e);   
+                };
                 if (store && box && journal && data.length > 0) {
                     var _rec_map = {};
                     var ids = data.map(function(rec) { 
