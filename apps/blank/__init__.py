@@ -63,7 +63,7 @@ BlankApp.subhandlers = [
         "prefix": "blank/api/set_config",
         'methods': ['GET'],
         'require_auth': True,
-        'require_token': True,
+        'require_token': False,
         'handler': BlankApp.set_config,
         'accept':['application/json'],
         'content-type':'application/json'
