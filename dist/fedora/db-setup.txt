@@ -1,3 +1,4 @@
+# --------------------- SET UP -----------------------
 # steps to set up the database for INDX on Fedora, should work on most Linux distros
 
 # 1. create the folder where the data will be stored, change ownership to the postgres user
@@ -19,3 +20,23 @@ create user indx with createdb createrole login password 'indx';
 # or 
 # create user indx with createdb login password 'indx';
 # alter user indx with createrole;
+
+
+# ----------------------- CLEAN UP ------------------
+
+# to delete the databases
+# list the databases with
+psql -U indx -l 
+
+# delete the databases (except postgres, template.. ) one by one with 
+dropdb indx
+dropdb ... 
+
+# list all users / roles created by indx
+psql -U postgres
+# and then 
+\du
+# and then for each role (except indx, postgres)
+drop user ... ;
+
+
