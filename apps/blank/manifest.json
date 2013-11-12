@@ -1,0 +1,19 @@
+{
+	"name": "External app",
+	"version": 0.1,
+	"description": "Example external app",
+	"configpanel":"html/config.html",
+	"run":["python", "apps/installed/bin/run.py"],
+	"config":["python", "apps/installed/bin/run.py", "--config", "{0}"],
+	"icons": { "128": "icon.png" },
+	"author": [
+		{
+			"name": "Laura",
+			"email": "aprilush@gmail.com"
+		},
+		{
+			"name": "eMax",
+			"email":"max@hip.cat"
+		}
+	]
+}
