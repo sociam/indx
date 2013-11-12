@@ -12,7 +12,7 @@ angular
 		};
 		$scope.setConfig = function(config) { 
 			console.info('i got a config ', config);
-			s._ajax('GET', 'blank/api/set_config', { config: config }).then(function(x) { 
+			s._ajax('GET', 'apps/blank/api/set_config', { config: config }).then(function(x) { 
 				console.log('success ', x);
 				sa(function() { $scope.status = 'configuration change committed'; });
 				window.retval = x;
