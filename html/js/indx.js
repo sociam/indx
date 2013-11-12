@@ -313,6 +313,7 @@ angular
 			initialize:function(attributes, options) {
 				var this_ = this;
 				u.assert(options.store, "no store provided");
+                this.set({objcache: new ObjCollection(), objlist: [], files : new FileCollection() });
 				this.options = _({}).extend(this.defaultOptions, options);
 				this.store = options.store;
 				this.on('update-from-master', function() {
@@ -322,14 +323,24 @@ angular
 				});
 				this.store.on('login', function() { console.log('on login >> '); this_.reconnect(); });
 				this.on('new-token', function() { this_._setUpWebSocket(); });
+				this._setUpWebSocket();
 				this._reset();
-				this._setUpWebSocket();				
 			},
 			_reset:function() {
+				// this._updateQueue = {};
+				// this._deleteQueue = {};
+				// this._fetchingQueue = {};
+				var rejectAll = function (dL) {
+					if (dL) { 
+						_(dL).values().map(function(d) { d.reject('reset'); });
+					}
+				};
+				rejectAll(this._updateQueue);
 				this._updateQueue = {};
+				rejectAll(this._deleteQueue);
 				this._deleteQueue = {};
+				rejectAll(this._fetchingQueue);
 				this._fetchingQueue = {};
-				this.set({objcache: new ObjCollection(), objlist: [], files : new FileCollection() });
 				this.unset('token');
 			},
 			/// @arg {string} fid - file id
@@ -737,7 +748,7 @@ angular
 					this_._objcache().remove(rid);
 				});
 			},
-			_isFetched: function() {	return this.id !== undefined;	},
+			_isFetched: function() { return this.get('token') && this.id !== undefined;	},
 			_fetch:function() {
 				// all fetch really does is retrieve ids!
 				// new client :: this now _only_ fetches object ids
@@ -959,12 +970,10 @@ angular
 			getBox: function(boxid) {
 				var b = this.boxes().get(boxid) || this._create(boxid);
 				if (!b._getCachedToken()) {
-					console.log('indxjs getToken(): getting token for box ', boxid);
-					return b.getToken().pipe(function() {
-						return b.fetch();
-					});
+					console.info('indxjs getToken(): getting token for box ', boxid);
+					return b.getToken().pipe(function() { return b.fetch();	});
 				}
-				console.log('indxjs getToken(): already have token for box --- ', boxid);
+				console.info('indxjs getToken(): already have token for box --- ', boxid);
 				return u.dresolve(b);
 			},
 			/// @arg <string|number> boxid: the id for the box
@@ -1044,13 +1053,13 @@ angular
 					}
 					d.reject({message:'OpenID authentication failed', status:0});
 				};
-				console.log('login openid >>> ', this._getBaseURL());
+				// console.log('login openid >>> ', this._getBaseURL());
 				var url = [this._getBaseURL(), 'auth', 'login_openid'].join('/');
 				var redirURL = [this._getBaseURL(), 'openid_return_to.html'].join('/');
-				console.log('redir url ', redirURL);
+				// console.log('redir url ', redirURL);
 				var params = { identity: encodeURIComponent(openid), redirect:encodeURIComponent(redirURL) };
 				url = url + "?" + _(params).map(function(v, k) { return k+'='+v; }).join('&');
-				console.log('opening url >>', url);
+				// console.info('OpenID :: opening url >>', url);
 				popup = window.open(url, 'indx_openid_popup', 'width=790,height=500');
 				intPopupChecker = setInterval(function() {
 					if (!popup.closed) { return; }

@@ -473,7 +473,6 @@
             _record_updated:function(current_record) {
                 // console.log('record updated ... box ', this.box, current_record);
                 var this_ = this, box = this.box, store = this.get('store'), journal = this.get('journal'), data = this.data.concat([current_record]);
-
                 var signalerror = function(e) {  this_.trigger('connection-error', e);       };
                 if (store && box && journal && data.length > 0) {
                     var _rec_map = {};
