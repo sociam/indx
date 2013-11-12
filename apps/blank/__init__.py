@@ -2,7 +2,6 @@ import logging, json, subprocess
 from indx.webserver.handlers.base import BaseHandler
 import requests
 from indxclient import IndxClient
-from blank import Blank
 
 class BlankApp(BaseHandler):
 
@@ -14,7 +13,7 @@ class BlankApp(BaseHandler):
         manifest_data.close()
 
     def _get_indx_creds(self):
-        
+
         
     def set_config(self, request): # what params?
         # when we want to change something in the config
