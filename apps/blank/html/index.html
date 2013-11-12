@@ -21,7 +21,7 @@
 		    <p>Step : <input type="text" name="step" ng-model="step"></input></p>
 		    <p>Frequency : <input type="text" name="freq" ng-model="frequency"></input></p>
 		</div>
-	    <div class="btn btn-default" ng-click="setConfig({start:start,step:step,frequency:frequency})">Set config</div>
+	    <div class="btn btn-default" ng-click="setConfig({start:start,step:step,frequency:frequency,box:appbox,user:appuser['@id'],password:appuserpassword})">Set config</div>
 	    <div class="status">{{ status }}</div>
 	</div>	
 	<div ng-show="!(selectedUser && selectedBox)">
