@@ -20,7 +20,7 @@ angular
 				console.error(e);
 				sa(function() { $scope.status = 'error committing change'; });				
 			});
-		};s
+		};
 
 		$scope.$watch('selectedUser + selectedBox', function() { 
 			if ($scope.selectedBox) {
