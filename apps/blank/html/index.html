@@ -9,6 +9,10 @@
   <body ng-app="BlankApp" ng-controller="ConfigPage" ng-cloak>
 	<toolbar box-var='selectedBox' username-var='selectedUser'></toolbar>
 	<div ng-show="selectedUser && selectedBox">
+    <p>Start : <input type="text" name="start" ng-model="start"></input></p>
+    <p>Step : <input type="text" name="step" ng-model="step"></input></p>
+    <p>Frequency : <input type="text" name="freq" ng-model="frequency"></input></p>
+    <div class="btn btn-default" ng-click="setConfig({start:start,step:step,frequency:frequency})">Set config</div>
 	</div>	
 	<div ng-show="!(selectedUser && selectedBox)">
 		<h1>Please log in and select a box </h1>
