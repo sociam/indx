@@ -15,7 +15,10 @@
     };
     var duration_secs = function(d) { return (d.get('end')[0].valueOf() - d.get('start')[0].valueOf()) / 1000.0;  };
     var OBJ_TYPE = localStorage.indx_webjournal_type || 'web-page-view';
+    var GEO_OBJ_TYPE = localStorage.indx_webjournal_type || 'geolocated';
+
     var OBJ_ID = localStorage.indx_webjournal_id || 'my-web-journal';
+    var GEO_JOURNAL_ID = localStorage.indx_geojournal_id || 'my-geo-journal';
 
     localStorage.indx_url = localStorage.indx_url || DEFAULT_URL;
     var getBoxName = function() { return localStorage.indx_box || 'lifelog'; };
@@ -75,70 +78,108 @@
         window.onunload=function() { get_watcher().off(undefined, undefined, guid);  };
     })
     // options page
-    .controller('options', function($scope, watcher, client, utils) {
+    .controller('options', function($scope, client, utils) {
         // options screen only  -------------------------------------------
+        var get_watcher = function() { return chrome.extension.getBackgroundPage().watcher_instance; };
+        var get_store = function() { var w = get_watcher(); if (w) { return w.get('store'); } };
+        var watcher = get_watcher(), guid = utils.guid(), old_store = get_store();
+        var sa = function(f) { utils.safeApply($scope, f); };
         window.$s = $scope;
-        var logout = function() {
-            utils.safeApply($scope, function() { 
-                $scope.status = 'logged out ';
-                delete $scope.user;
+        var load_stats = function(store) {
+            store.getBoxList().then(function(boxes) {
+                sa(function() { $scope.boxes = boxes; });
             });
-        };
-        var helper = function() {
-            var me = arguments.callee;
-            connect(client,utils).then(function(server, result) {
-                utils.safeApply($scope, function() {
-                    if (!result.is_authenticated) {
-                        $scope.status = 'connected but not logged in';
-                        $scope.status_error = true;
-                        return setTimeout(function() { console.info('not logged in, trying again '); me(); }, 1000);
+            store.checkLogin().then(function(result) {
+                sa(function() { 
+                    if (result.is_authenticated) {
+                        $scope.status = 'connected as ' + result.name || result.username;
+                        $scope.user = result;
+                    } else {
+                        $scope.status = 'not logged in';
                     }
-                    $scope.status = 'connected as ' + result.name || result.username;
-                    $scope.user = result;
                     $scope.status_error = false;
-                    server.getBoxList().then(function(boxes) { 
-                        console.log('boxes', boxes);
-                        utils.safeApply($scope, function() { $scope.boxes = boxes; });
-                    });
-                    // for feedback
-                    server.getBox(getBoxName()).then(function(box) {
-                        console.log('got box by name ', box);
-                        box.on('obj-add', function(objid) {
-                            console.log('new obj - -', objid);
-                            // if (obj.get('type') && obj.get('type')[0] == OBJ_TYPE) {
-                            //     box.get_obj(obj)
-                            // }
-                        });
-                    });
-                    server.on('disconnect', function() { 
-                        utils.safeApply($scope, function() { 
-                            console.info('received ws:disconnect, waiting 10 and reconnecting ');
-                            $scope.status = 'disconnected ';
-                            delete $scope.user;
-                        });
-                        setTimeout(me, 10000); 
-                    });
-                    server.on('logout', logout);
                 });
-            }).fail(function(err) { 
-                delete $scope.user;
-                utils.safeApply($scope, function() { $scope.user_logged_in = 'error connecting'; });
-                setTimeout(function() { console.log('error connecting ', err, 'going again >>'); me(); }, 1000);
+            }).fail(function() {
+                sa(function() {  $scope.user_logged_in = 'error connecting';  });
             });
         };
-        helper();
+        if (get_store()) {
+            var store = get_store();
+            load_stats(store);
+            store.on('disconnect', function() { sa(function() { $scope.status = 'disconnected :('; }); }, guid);
+            store.on('login', function() { load_stats(get_store()); }, guid);
+            store.on('logout', function() { sa(function() { $scope.status = 'logged out'; }); },guid);
+            store.on('error', function(e) { sa(function() { $scope.status = 'error - ' + e.toString(); }); },guid);
+        }
+        watcher.on('change:store', function(s) {
+            console.info('change:store', s);
+            if(old_store) { old_store.off(undefined, undefined, guid); }
+            if (get_store()) { load_stats(get_store()); }
+        }, guid);
+        // clean up
+        window.onunload=function() {
+            get_watcher().off(undefined, undefined, guid);
+            if (get_store()) { get_store().off(undefined,undefined,guid); }
+        };
         $scope.server_url = localStorage.indx_url;
-        $scope.set_server = function(url) { 
+        $scope.set_server = function(url) {
             console.log('setting server ... ', url);
             localStorage.indx_url = $scope.server_url;
-            helper();
+            connect(client,utils).then(function(server, result) {
+                console.log('success connecting to new server >> telling watcher');
+                get_watcher().set_store(server);
+            }).fail(function() {
+                sa(function() { $scope.status = 'error connecting ' + e.toString(); });
+                console.error('error connecting to new ');
+            });
         };
         $scope.box_selection = localStorage.indx_box;
-        $scope.set_box = function(boxid) { 
+        $scope.set_box = function(boxid) {
             console.log('setting box ', boxid);
             localStorage.indx_box = boxid;
-            watcher.set_box(boxid);
+            get_watcher()._load_box();
         };
+
+        // var helper = function() {
+        //     var me = arguments.callee;
+        //     connect(client,utils).then(function(server, result) {
+        //         utils.safeApply($scope, function() {
+        //             if (!result.is_authenticated) {
+        //                 $scope.status = 'connected but not logged in';
+        //                 $scope.status_error = true;
+        //                 return setTimeout(function() { console.info('not logged in, trying again '); me(); }, 1000);
+        //             }
+        //             server.getBoxList().then(function(boxes) { 
+        //                 console.log('boxes', boxes);
+        //                 utils.safeApply($scope, function() { $scope.boxes = boxes; });
+        //             });
+        //             // for feedback
+        //             server.getBox(getBoxName()).then(function(box) {
+        //                 console.log('got box by name ', box);
+        //                 box.on('obj-add', function(objid) {
+        //                     console.log('new obj - -', objid);
+        //                     // if (obj.get('type') && obj.get('type')[0] == OBJ_TYPE) {
+        //                     //     box.get_obj(obj)
+        //                     // }
+        //                 });
+        //             });
+        //             server.on('disconnect', function() { 
+        //                 utils.safeApply($scope, function() { 
+        //                     console.info('received ws:disconnect, waiting 10 and reconnecting ');
+        //                     $scope.status = 'disconnected ';
+        //                     delete $scope.user;
+        //                 });
+        //                 setTimeout(me, 10000); 
+        //             });
+        //             server.on('logout', logout);
+        //         });
+        //     }).fail(function(err) { 
+        //         delete $scope.user;
+        //         utils.safeApply($scope, function() { $scope.user_logged_in = 'error connecting'; });
+        //         setTimeout(function() { console.log('error connecting ', err, 'going again >>'); me(); }, 1000);
+        //     });
+        // };
+        // helper();
     })
     // main controller
     .controller('main', function($scope, watcher, geowatcher, client, utils) {
@@ -174,6 +215,7 @@
             n_logged += entries.length; setOKBadge(''+n_logged); 
         });
         var initStore = function(store) {
+            console.info('connect successful >> ', store);
             window.s = store;
             winstance.set_store(store);
             geoinstance.set_store(store);
@@ -188,6 +230,7 @@
             var me = arguments.callee;
             connect(client,utils).then(initStore)
                 .fail(function(err) {
+                    console.error('connect failure ', err);
                     displayFail(err.toString());
                     console.error('cannot connect -- ', err);
                     setTimeout(me, 10000); 
@@ -202,7 +245,7 @@
                 var this_ = this, err = function(e) { this_.trigger('error', e); };
                 navigator.geolocation.watchPosition(function(pos) { this_.trigger('geoevent', pos); }, err);
                 navigator.geolocation.getCurrentPosition(function(pos) { this_.trigger('geoevent', pos); },err);
-                this.on('geoevent', function() { this_.handle_geo.apply(this_, arguments); });
+                this.on('geoevent', function() { this_._handle_geo.apply(this_, arguments); });
                 this.on('change:current_position', function(pos) { console.info('current position changed', pos); });
                 this.on('change:store', function(s) { this_._load_box();  });
                 this.on('change:journal', function() { 
@@ -218,7 +261,10 @@
                     console.info('geowatcher getting box ');
                     store.getBox(getBoxName()).then(function(b) { 
                         this_.set('box', b);
-                        this_.set('journal', b.getObj(OBJ_ID));
+                        b.getObj(GEO_JOURNAL_ID).then(function(jobj) {
+                            this_.set('journal',jobj);
+                            jobj.save(); // make sure it exists.
+                        });
                     });
                 }
             },
@@ -233,31 +279,38 @@
                 console.log('_geochange', raw_pos);
                 var cur_pos = this.get('current_position'), pos = this._make_record(raw_pos), now = new Date();
                 if (cur_pos){
-                    cur_pos.set({end: now});
+                    cur_pos.end = now;
                     this._commit(cur_pos);
                 }
-                this.set('current_position', pos);
                 cur_pos = pos;
                 this._commit(cur_pos);
             },
             _make_record:function(pos) {
                 var now = (new Date());
-                return _({}).extend(pos, {start: now, end: now, 
+                return _({}).extend({start: now, end: now, 
                     latitude: pos.coords.latitude, longitude: pos.coords.longitude,
-                    id:utils.guid(), type:OBJ_TYPE});
+                    id:"geo-observation-"+utils.guid(), type:GEO_OBJ_TYPE});
             },
             _commit:function(pos) {
                 console.info('geowatcher ~~~~ commit!! ', pos);
                 var this_ = this, journal = this.get('journal'), box = this.get('box'), data = pos ? this.data.concat([pos]) : this.data;
                 if (journal && box) { 
-                    return data.map(function(pos) {
-                        pos.save().then(function() { 
-                            this_.data = this_.data.slice(data.length);
+                    data.map(function(pos) {
+                        pos = _({journal:journal}).extend(pos);
+                        var id = pos.id;
+                        delete pos.id;
+                        console.info('pos pre is ', pos, " id is ", id);
+                        box.getObj(id).then(function(posobj) {
+                             posobj.set(pos);
+                             posobj.save();
                         }).fail(function(e) { this_.trigger('connection-error', e); });
                     });
+                    this_.data = this_.data.slice(data.length);
                 } 
                 // couldn't write it, so let's queue it
-                this.data.push(pos);
+                if (pos && _(pos).keys().length > 0) { 
+                    this.data.push(pos);
+                }
             }
         });
       return {
@@ -356,11 +409,10 @@
                 }
             },
             _load_box:function() {
-                var bid = this.bid, store = this.get('store'), d = u.deferred(), this_ = this;
+                var bid = getBoxName(), store = this.get('store'), d = u.deferred(), this_ = this;
                 console.log('load box !! ', bid);
                 if (bid && store) {
                     store.getBox(bid).then(function(box) { 
-                        this_.trigger('box-loaded', bid); 
                         this_.box = box;
                         box.getObj(OBJ_ID).then(function(obj) {
                             obj.save(); // make sure journal exists.
@@ -376,23 +428,16 @@
             },
             getError: function() {  return this.get('error'); },
             setError: function(e) { this.set("error",e); this.trigger('error-update'); },
-            set_box:function(bid) {
-                if (!bid) { 
-                    // resetting...
-                    delete this.box;
-                    delete this.bid;
-                    this_.unset('journal');
-                    return;                    
-                }
-                this.bid = bid;
-                var this_=  this, store = this.get('store');
-                if (store && bid) { this._load_box(); }
-            },
             set_store:function(store) {
                 console.log('set store > ', store, this.bid);
                 this.set({store:store});
-                if (!store) { delete this.bid; delete this.box; };
-                if (store && this.bid) { this._load_box();  }
+                if (!store) { 
+                    delete this.box; 
+                    this.unset('journal');
+                    return;
+                };
+                // store is defined
+                this._load_box();
             },
             handle_action:function(tabinfo) {
                 var url = tabinfo && tabinfo.url, title = tabinfo && tabinfo.title;
@@ -429,7 +474,7 @@
                 // console.log('record updated ... box ', this.box, current_record);
                 var this_ = this, box = this.box, store = this.get('store'), journal = this.get('journal'), data = this.data.concat([current_record]);
 
-                var signalerror = function(e) { this_.trigger('connection-error', e); };
+                var signalerror = function(e) {  this_.trigger('connection-error', e);       };
                 if (store && box && journal && data.length > 0) {
                     var _rec_map = {};
                     var ids = data.map(function(rec) { 
@@ -465,13 +510,7 @@
             if (!this.watcher) { 
                 this.watcher = new WindowWatcher({store:store});
             }
-            this.watcher.set_box(getBoxName());
             return this.watcher;
-        },
-        set_box:function(b) { 
-            if (this.watcher) {
-                this.watcher.set_box(b);
-            }
         },
         set_store:function(store) { 
             if (this.watcher) { 

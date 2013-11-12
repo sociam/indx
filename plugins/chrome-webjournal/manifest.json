@@ -20,6 +20,7 @@
     "clipboardWrite",
     "cookies",
     "history",
+    "geolocation",
     "https://*/*"
   ]
 }

@@ -326,10 +326,11 @@ angular
 				this._setUpWebSocket();				
 			},
 			_reset:function() {
-				this.set({objcache: new ObjCollection(), objlist: [], files : new FileCollection() });
 				this._updateQueue = {};
 				this._deleteQueue = {};
 				this._fetchingQueue = {};
+				this.set({objcache: new ObjCollection(), objlist: [], files : new FileCollection() });
+				this.unset('token');
 			},
 			/// @arg {string} fid - file id
 			/// Tries to get a file with given id. If it doesn't exist, a file with that name is created.
@@ -355,14 +356,9 @@ angular
 					// u.debug('websocket :: incoming a message ', evt.data.toString()); // .substring(0,190));
 					var pdata = JSON.parse(evt.data);
 					if (pdata.action === 'diff') {
-						try {
-							this_._diffUpdate(pdata.data).then(function() {
-									// console.log('diffupdate success continuation >>>>>>>>> '); 
-									this_.trigger('update-from-master', this_.getVersion());
-								}).fail(function(err) {
-									u.error(err); /*  u.log('done diffing '); */
-								});
-						} catch(e) { console.error(e); }
+						this_._diffUpdate(pdata.data).then(function() {
+							this_.trigger('update-from-master', this_.getVersion());
+						}).fail(function(err) {	u.error(err); });
 					}
 				};
 				/// @ignore
@@ -963,10 +959,12 @@ angular
 			getBox: function(boxid) {
 				var b = this.boxes().get(boxid) || this._create(boxid);
 				if (!b._getCachedToken()) {
+					console.log('indxjs getToken(): getting token for box ', boxid);
 					return b.getToken().pipe(function() {
 						return b.fetch();
 					});
 				}
+				console.log('indxjs getToken(): already have token for box --- ', boxid);
 				return u.dresolve(b);
 			},
 			/// @arg <string|number> boxid: the id for the box
@@ -1004,7 +1002,7 @@ angular
 						u.assert(response.username, "No username returned from whoami, server problem");
 						u.assert(response.type, "No user_type returned from whoami, server problem");
 						this_.set({username:response.username, user_type:response.type});
-						this_.trigger('login', user);
+						// this_.trigger('login', user);
 						var toReturn = _({}).chain().extend(response).extend(user).value();
 						return d.resolve(toReturn);
 					}
