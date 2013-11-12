@@ -11,9 +11,9 @@
 	<div ng-show="selectedUser && selectedBox">
 		<div>
 			<table>
-				<tr><td>Select a user :</td><td><select ng-option='u.name for u in users'></select></td></tr>
-				<tr><td>Select a box :</td><td><select ng-option='b.id for b in boxes'></select></td></tr>
-				<tr><td>Enter their password :</td><td><input ng-model='user_password'></td></tr>
+				<tr><td>Select a User for the App :</td><td><select ng-model="appuser" ng-options='u["@id"] for u in users'></select></td></tr>
+				<tr><td>Enter the App User's Password :</td><td><input ng-model='appuserpassword'></td></tr>
+				<tr><td>App Should Store Data in This Box :</td><td><select ng-model="appbox" ng-options='b for b in boxes'></select></td></tr>
 			</table>
 		</div>
 		<div>

@@ -11,6 +11,7 @@ angular
 
 				// get the users
 				s.getUserList().then(function(u) { 
+					console.info(' users ', u);
 					sa(function() { $scope.users = u; });
 				}).fail(function(e) {
 					sa(function() { $scope.status = 'error getting user list'; });
@@ -19,6 +20,7 @@ angular
 
 				// get the users
 				s.getBoxList().then(function(boxes) { 
+					console.info(' boxes ', boxes);
 					sa(function() { $scope.boxes = boxes; });
 				}).fail(function(e) {
 					sa(function() { $scope.status = 'error getting box list'; });
