@@ -10,9 +10,18 @@ angular
 				window.box = box;
 
 				// get the users
-				s.getUserList().then(function(u) { 
-					console.info(' users ', u);
-					sa(function() { $scope.users = u; });
+				s.getUserList().then(function(users) { 
+					console.log('users >> ', users);
+					sa(function() { 
+						users.map(function(u) { 
+							if (u.user_metadata && typeof u.user_metadata === 'string') {
+								console.log('user metadata ', u.user_metadata, "---", typeof u.user_metadata);
+								_(u).extend(JSON.parse(u.user_metadata));
+							}
+						});
+						$scope.users = users.filter(function(f) { return f.type.indexOf('local') >= 0; });
+					});
+
 				}).fail(function(e) {
 					sa(function() { $scope.status = 'error getting user list'; });
 					console.error(e);
@@ -20,7 +29,6 @@ angular
 
 				// get the users
 				s.getBoxList().then(function(boxes) { 
-					console.info(' boxes ', boxes);
 					sa(function() { $scope.boxes = boxes; });
 				}).fail(function(e) {
 					sa(function() { $scope.status = 'error getting box list'; });
