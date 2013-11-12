@@ -7,6 +7,7 @@ if __name__ == '__main__':
 	parsed = parser.parse_args()
 	print parsed
 
+args = vars(parser.parse_args())
 if args['config']:
     logging.debug("received config: {0}".format(args['config']))
     config = json.loads(args['config'])
