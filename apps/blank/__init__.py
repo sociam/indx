@@ -1,6 +1,7 @@
+
 import logging, json, subprocess
+
 from indx.webserver.handlers.base import BaseHandler
-import requests
 from indxclient import IndxClient
 
 class BlankApp(BaseHandler):
@@ -13,7 +14,7 @@ class BlankApp(BaseHandler):
         manifest_data.close()
 
     def _get_indx_creds(self):
-
+        pass
         
     def set_config(self, request): # what params?
         # when we want to change something in the config
@@ -36,16 +37,20 @@ class BlankApp(BaseHandler):
     def start(self):
         if check_auth():
             # do the stuff
-
+            pass
         else:
             # error because the app is not authorised
+            pass
+        pass
 
     def stop(self):
         if check_auth():
             # stop me!
+            pass
         else:
             # can't stop me!
-
+            pass
+        pass
 
 
 APP = BlankApp
