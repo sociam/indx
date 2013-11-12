@@ -4,7 +4,8 @@ import logging.config
 if __name__ == '__main__':
 	# parse out the parameters
 	parser = argparse.ArgumentParser(prog="run")
-	parser.add_argument('--config')
+	parser.add_argument('--config', help="Set config (input requires JSON) and exit.")
+	parser.add_argument('--get-config', action="store_true", help="Output current config as JSON and exit.")
 	parsed = parser.parse_args()
 	print parsed
 
