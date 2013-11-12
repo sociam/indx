@@ -4,6 +4,10 @@ angular
 		var s = client.store, sa = function(f) { utils.safeApply($scope, f); };
 		window.store = client.store;
 
+		var status = function(s) {
+			sa(function() { $scope.status = s; });
+		};
+
 		var load_box = function(bid) { 
 			s.getBox(bid).then(function(box) {
 				console.log('box ', box);
@@ -38,18 +42,25 @@ angular
 			});
 		};
 		$scope.grantACL = function(user,box) {
-			// 
 			console.log('grantacl -- ', user, box);
+			s.getBox(box).then(function(b) { 
+				console.log('got box ', b.id);
+				b.setACL(user["@id"],{read:true,write:true}).then(function() {
+					sa(function() { $scope.granted = true; $scope.granted_status = 'Success granting ' + user.name + " access to " + box; });
+				}).fail(function(e) {
+					sa(function() { $scope.granted = true; $scope.granted_status = 'Error setting ACL ' + e.toString(); });
+				});
+			});
 		};
 		$scope.setConfig = function(config) { 
 			console.info('i got a config ', config);
 			s._ajax('GET', 'apps/blank/api/set_config', { config: JSON.stringify(config) }).then(function(x) { 
 				console.log('success ', x);
-				sa(function() { $scope.status = 'configuration change committed'; });
+				status('configuration chage committed');
 				window.retval = x;
 			}).fail(function(e) {
 				console.error(e);
-				sa(function() { $scope.status = 'error committing change'; });				
+				status('error committing change ' + e.toString());
 			});
 		};
 
