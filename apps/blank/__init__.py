@@ -9,6 +9,7 @@ class BlankApp(BaseHandler):
     def __init__(self, server):
         BaseHandler.__init__(self, server)
         self.isLeaf = True
+        self.pipe = None
 
     def _get_indx_creds(self):
         pass
@@ -37,27 +38,35 @@ class BlankApp(BaseHandler):
         logging.debug("result of subprocess call {0}".format(result))
         return self.return_ok(request, data={'result': result})
 
-    def _check_auth(self):
-        # check if the app can do stuff 
-        return False
+    def isRunning(self):
+        if self.pipe is not None:
+            logging.debug(" pipe poll {0}".format(self.pipe.poll()))
+        return self.pipe is not None and self.pipe.poll() is None
 
     def start(self):
-        if check_auth():
-            # do the stuff
-            pass
-        else:
-            # error because the app is not authorised
-            pass
-        pass
+        if self.isRunning():
+           self.stop()
+        # do the stuff
+        manifest = self._load_manifest()
+        command = manifest['run']
+        self.pipe = subprocess.Popen(command)
+        return self.isRunning()
+
+    def start_handler(self,request):
+        result = self.start()
+        return self.return_ok(request, data={'result': result})
 
     def stop(self):
-        if check_auth():
-            # stop me!
-            pass
-        else:
-            # can't stop me!
-            pass
-        pass
+        if self.isRunning():
+            self.pipe.kill()
+        self.pipe = None
+
+    def stop_handler(self,request):
+        self.stop()
+        return self.return_ok(request)
+
+    def is_running_handler(self,request):
+        return self.return_ok(request, data={'running': self.isRunning()})
 
 BlankApp.subhandlers = [
     {
@@ -68,7 +77,35 @@ BlankApp.subhandlers = [
         'handler': BlankApp.set_config,
         'accept':['application/json'],
         'content-type':'application/json'
-    }   
+    },
+    {
+        "prefix": "blank/api/start",
+        'methods': ['GET'],
+        'require_auth': True,
+        'require_token': False,
+        'handler': BlankApp.start_handler,
+        'accept':['application/json'],
+        'content-type':'application/json'
+    },
+    {
+        "prefix": "blank/api/stop",
+        'methods': ['GET'],
+        'require_auth': True,
+        'require_token': False,
+        'handler': BlankApp.stop_handler,
+        'accept':['application/json'],
+        'content-type':'application/json'
+    },
+    {
+        "prefix": "blank/api/is_running",
+        'methods': ['GET'],
+        'require_auth': True,
+        'require_token': False,
+        'handler': BlankApp.is_running_handler,
+        'accept':['application/json'],
+        'content-type':'application/json'
+    }
+
 ]
 
 
