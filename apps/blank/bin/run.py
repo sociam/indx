@@ -16,7 +16,7 @@ args = vars(parser.parse_args())
 if args['config']:
     config = json.loads(args['config'])
     logging.debug("received config: {0}".format(config))
-    keyring.set_password("INDX", "INDX_Blank_App", config)
+    keyring.set_password("INDX", "INDX_Blank_App", json.dumps(config))
 elif args['get_config']:
 	# TODO output the stored config (for passing ti back to the server)
 	print "stored config"
@@ -24,6 +24,7 @@ elif args['get_config']:
 else:
     print(keyring.util.platform_.data_root())
     config = keyring.get_password("INDX", "INDX_Blank_App")
+    print json.loads(config)
     logging.debug("running the app with: {0}".format(config));
 
 # keyring.set_password("INDX", "INDX_Blank_App", "{'password':'asdf', 'user':'laura', 'box':'blankie'}")
