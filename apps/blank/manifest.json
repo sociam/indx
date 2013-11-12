@@ -2,12 +2,12 @@
 	"name": "External app",
 	"version": 0.1,
 	"description": "Example external app",
-	"configpanel":"html/config.html",
+	"configpanel":"html/index.html",
 	"run":["python", "apps/installed/bin/run.py"],
 	"config":["python", "apps/installed/bin/run.py", "--config", "{0}"],
 	"icons": { 
-		"128": "html/img/icon-128.png",
-		"512": "html/img/icon-512.png" 
+		"128": "img/icon-128.png",
+		"512": "img/icon-512.png" 
 	},
 	"author": [
 		{
