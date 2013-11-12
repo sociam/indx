@@ -14,6 +14,9 @@ args = vars(parser.parse_args())
 if args['config']:
     config = json.loads(args['config'])
     logging.debug("received config: {0}".format(config))
+elif args['get_config']:
+	# TODO output the stored config (for passing ti back to the server)
+	pass
 else:
 	logging.debug("running the app");
 	# tadaaa
