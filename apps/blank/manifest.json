@@ -5,7 +5,10 @@
 	"configpanel":"html/config.html",
 	"run":["python", "apps/installed/bin/run.py"],
 	"config":["python", "apps/installed/bin/run.py", "--config", "{0}"],
-	"icons": { "128": "icon.png" },
+	"icons": { 
+		"128": "html/img/icon-128.png",
+		"512": "html/img/icon-512.png" 
+	},
 	"author": [
 		{
 			"name": "Laura",
