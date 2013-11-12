@@ -9,19 +9,27 @@
   <body ng-app="BlankApp" ng-controller="ConfigPage" ng-cloak>
 	<toolbar box-var='selectedBox' username-var='selectedUser'></toolbar>
 	<div ng-show="selectedUser && selectedBox">
-		<div>
+		<div class='security'>
 			<table>
-				<tr><td>Select a User for the App :</td><td><select ng-model="appuser" ng-options='u["@id"] for u in users'></select></td></tr>
-				<tr><td>Enter the App User's Password :</td><td><input ng-model='appuserpassword'></td></tr>
+				<tr><td>Select a User for the App :</td><td><select ng-model="appuser" ng-options='u.name for u in users'></select></td></tr>
+				<tr><td>Enter the App User's Password :</td><td><input type="password" ng-model='appuserpassword'></td></tr>
 				<tr><td>App Should Store Data in This Box :</td><td><select ng-model="appbox" ng-options='b for b in boxes'></select></td></tr>
+				<tr><td><td>
+				<div class="btn btn-danger" 
+				ng-show="appuser && appbox && (appuser['@id'] !== selectedUser.id) && !granted"
+				ng-click="grantACL(appuser, appbox)">Authorise {{ appuser.name }} to have access to {{ appbox }}</div>
+				<div ng-show="granted" class="granted"> {{ granted_status }} </div>
+			</td></tr>
 			</table>
 		</div>
-		<div>
-		    <p>Start : <input type="text" name="start" ng-model="start"></input></p>
-		    <p>Step : <input type="text" name="step" ng-model="step"></input></p>
-		    <p>Frequency : <input type="text" name="freq" ng-model="frequency"></input></p>
+		<div class='params'>
+			<table>
+			    <tr><td>Start :</td><td><input type="text" name="start" ng-model="start"></input></td></tr>
+			    <tr><td>Step : </td><td><input type="text" name="step" ng-model="step"></input></td></tr>
+			    <tr><td>Frequency : </td><td><input type="text" name="freq" ng-model="frequency"></input></td></tr>
+		    </table>
 		</div>
-	    <div class="btn btn-default" ng-click="setConfig({start:start,step:step,frequency:frequency})">Set config</div>
+	    <div class="btn btn-default" ng-click="setConfig({start:start,step:step,frequency:frequency,box:appbox,user:appuser['@id'],password:appuserpassword})">Set config</div>
 	    <div class="status">{{ status }}</div>
 	</div>	
 	<div ng-show="!(selectedUser && selectedBox)">
