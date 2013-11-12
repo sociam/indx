@@ -9,6 +9,15 @@
   <body ng-app="BlankApp" ng-controller="ConfigPage" ng-cloak>
 	<toolbar box-var='selectedBox' username-var='selectedUser'></toolbar>
 	<div ng-show="selectedUser && selectedBox">
+		<div class="status">
+			<table>
+				<tr>
+					<td> {{ runstate }} </td>
+					<td><div class="btn btn-success" ng-click="doStart()">Start</div></td>
+					<td><div class="btn btn-danger" ng-click="doStop()">Stop</div></td> 
+				</tr>
+			</table>
+		</div>
 		<div class='security'>
 			<table>
 				<tr><td>Select a User for the App :</td><td><select ng-model="appuser" ng-options='u.name for u in users'></select></td></tr>

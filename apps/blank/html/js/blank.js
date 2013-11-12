@@ -52,6 +52,20 @@ angular
 				});
 			});
 		};
+
+		$scope.doStart = function() {
+			console.log('App doStart');
+			s._ajax('GET', 'apps/blank/api/start').then(function(x) { 
+				console.info('App doStart result: ', x); 
+				status('Start command successful'); 
+			}).fail(function(x) { status(' Error ' + x.toString()); });
+		};
+		$scope.doStop = function() {
+			console.log('App doStop');
+			s._ajax('GET', 'apps/blank/api/stop')
+			.then(function(x) { console.info('App Stop result (): ', x); status('Stop command successful'); })
+			.fail(function(x) { status(' Error ' + x.toString()); });
+		};
 		$scope.setConfig = function(config) { 
 			console.info('i got a config ', config);
 			s._ajax('GET', 'apps/blank/api/set_config', { config: JSON.stringify(config) }).then(function(x) { 
@@ -69,4 +83,14 @@ angular
 				load_box($scope.selectedBox);	
 			}
 		});
+
+		setInterval(function() { 
+			s._ajax('GET','apps/blank/api/is_running').then(function(r) { 
+				sa(function() { 
+					$scope.runstate = r.running ? 'Running' : 'Stopped';  
+				});
+			}).fail(function(r) {
+				sa(function() { $scope.runstate = 'Unknown'; });
+			});
+		}, 1000);
 	});

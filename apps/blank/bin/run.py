@@ -1,4 +1,4 @@
-import logging,json,argparse,sys
+import logging,json,argparse,sys,time
 import logging.config
 import keyring
 import keyring.util.platform_
@@ -29,6 +29,7 @@ else:
     config = keyring.get_password("INDX", "INDX_Blank_App")
     print json.loads(config)
     logging.debug("running the app with: {0}".format(config));
+    time.sleep(2)
 
 # keyring.set_password("INDX", "INDX_Blank_App", "{'password':'asdf', 'user':'laura', 'box':'blankie'}")
 # print keyring.get_password("INDX", "INDX_Blank_App")
