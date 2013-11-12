@@ -9,12 +9,15 @@ class BlankApp(BaseHandler):
     def __init__(self, server):
         BaseHandler.__init__(self, server)
         self.isLeaf = True
-        manifest_data = open('manifest.json')
-        self.manifest = json.load(manifest_data)
-        manifest_data.close()
 
     def _get_indx_creds(self):
         pass
+
+    def _load_manifest(self):
+        manifest_data = open('apps/blank/manifest.json')
+        manifest = json.load(manifest_data)
+        manifest_data.close()
+        return manifest
         
     def set_config(self, request): # what params?
         # when we want to change something in the config
@@ -22,6 +25,7 @@ class BlankApp(BaseHandler):
         
         # get theconfiguraiton we want to set out of request
         # do that thang here
+        manifest = self._load_manifest()
         config = {}
         jsonconfig = json.dumps(config)
         # somewhere inside this we have put {0} wildcard so we wanna substitute that
