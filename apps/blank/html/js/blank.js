@@ -83,7 +83,6 @@ angular
 		};
 
 		$scope.doStart = function() {
-			console.log('App doStart');
 			s._ajax('GET', 'apps/blank/api/start').then(function(x) { 
 				console.info('App doStart result: ', x); 
 				status('Start command successful'); 
@@ -115,15 +114,13 @@ angular
 			}
 		});
 
-
-
-		// setInterval(function() { 
-		// 	s._ajax('GET','apps/blank/api/is_running').then(function(r) { 
-		// 		sa(function() { 
-		// 			$scope.runstate = r.running ? 'Running' : 'Stopped';  
-		// 		});
-		// 	}).fail(function(r) {
-		// 		sa(function() { $scope.runstate = 'Unknown'; });
-		// 	});
-		// }, 1000);
+		setInterval(function() { 
+			s._ajax('GET','apps/blank/api/is_running').then(function(r) { 
+				sa(function() { 
+					$scope.runstate = r.running ? 'Running' : 'Stopped';  
+				});
+			}).fail(function(r) {
+				sa(function() { $scope.runstate = 'Unknown'; });
+			});
+		}, 1000);
 	});

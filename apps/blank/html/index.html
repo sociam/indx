@@ -8,7 +8,11 @@
   </head>
   <body ng-app="BlankApp" ng-controller="ConfigPage" ng-cloak>
 	<toolbar box-var='selectedBox' username-var='selectedUser'></toolbar>
-	<div ng-show="selectedUser && selectedBox">
+	<div class="main" ng-show="selectedUser && selectedBox">
+		<h2>Blank Service</h2>
+		<h4>This example service shows how INDX services can be started, stopped and configured.
+			All services are run as separate processes from INDX.</h4>
+
 		<div class="status">
 			<table>
 				<tr>
@@ -18,28 +22,26 @@
 				</tr>
 			</table>
 		</div>
-		<div class='security'>
-			<table>
-				<tr><td>Select a User for the App :</td><td><select ng-model="app.user" ng-options='u.name for u in users'></select></td></tr>
-				<tr><td>Enter the App User's Password :</td><td><input type="password" ng-model='app.password'></td></tr>
-				<tr><td>App Should Store Data in This Box :</td><td><select ng-model="app.box" ng-options='b for b in boxes'></select></td></tr>
-				<tr><td><td>
-				<div class="btn btn-danger" 
-				ng-show="app.user && app.box && (app.user['@id'] !== selectedUser.id) && !granted"
-				ng-click="grantACL(appuser, appbox)">Authorise {{ app.user.name }} to have access to {{ app.box }}</div>
-				<div ng-show="granted" class="granted"> {{ granted_status }} </div>
-			</td></tr>
-			</table>
+		<table class='security'>
+			<tr><td>Service User</td><td><select ng-model="app.user" ng-options='u.name for u in users'></select></td></tr>
+			<tr><td>Service User's Password</td><td><input type="password" ng-model='app.password'></td></tr>
+			<tr><td>Service's Box</td><td><select ng-model="app.box" ng-options='b for b in boxes'></select></td></tr>
+			<tr><td><td>
+			<div class="btn btn-warning" 
+			ng-show="app.user && app.box && (app.user['@id'] !== selectedUser.id) && !granted"
+			ng-click="grantACL(app.user, app.box)">Authorise {{ app.user.name }} to have access to {{ app.box }}</div>
+			<div ng-show="granted" class="granted"> {{ granted_status }} </div>
+		</td></tr>
+		</table>
+		<table class='params'>
+		    <tr><td>Start :</td><td><input type="text" name="start" ng-model="start"></input></td></tr>
+		    <tr><td>Step : </td><td><input type="text" name="step" ng-model="step"></input></td></tr>
+		    <tr><td>Frequency : </td><td><input type="text" name="freq" ng-model="frequency"></input></td></tr>
+	    </table>
+	    <div class='submits'>
+		    <div class="btn btn-default" ng-click="setConfig({start:start,step:step,frequency:frequency,box:app.box,user:app.user['@id'],password:app.password})">Set config</div>
+		    <div class="status">{{ status }}</div>
 		</div>
-		<div class='params'>
-			<table>
-			    <tr><td>Start :</td><td><input type="text" name="start" ng-model="start"></input></td></tr>
-			    <tr><td>Step : </td><td><input type="text" name="step" ng-model="step"></input></td></tr>
-			    <tr><td>Frequency : </td><td><input type="text" name="freq" ng-model="frequency"></input></td></tr>
-		    </table>
-		</div>
-	    <div class="btn btn-default" ng-click="setConfig({start:start,step:step,frequency:frequency,box:app.box,user:app.user['@id'],password:app.password})">Set config</div>
-	    <div class="status">{{ status }}</div>
 	</div>	
 	<div ng-show="!(selectedUser && selectedBox)">
 		<h1>Please log in and select a box </h1>
