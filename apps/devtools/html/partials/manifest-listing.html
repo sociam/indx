@@ -19,7 +19,7 @@
 	<div ng-if="!manifest.documentation.isAvailable" class="text-muted">N/A</div>
 </td>
 <td>
-	<div ng-if="manifest.tests.isAvailable">
+	<div ng-if="!manifest.tests.isRunning && manifest.tests.isAvailable">
 		<span ng-if="manifest.tests.haveBeenRun">
 			{{ manifest.tests.results.tests }} tests, 
 			<span ng-if="manifest.tests.results.failures === 0" class="text-success">All passed</span>
@@ -28,6 +28,7 @@
 		<span ng-if="!manifest.tests.haveBeenRun">Not yet run</span>
 		(<a ng-click="manifest.tests.run()" href="#">run</a>)
 	</div>
+	<div ng-if="manifest.tests.isRunning">Running...</div>
 	<div ng-if="!manifest.tests.isAvailable" class="text-muted">N/A</div>
 
 </td>
