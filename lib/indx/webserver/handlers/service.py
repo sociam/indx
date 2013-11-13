@@ -7,16 +7,18 @@ class ServiceHandler(BaseHandler):
 
     service_path = None # set this in all services!
 
-    def __init__(self, server):
+    def __init__(self, server, service_path=None):
         BaseHandler.__init__(self, server)
         self.pipe = None
+        if service_path is not None:
+            self.service_path = service_path
 
     def _load_manifest(self):
-        if service_path == None:
             # throw error!
+        if self.service_path is None:
             logging.error("Error in _load_manifest: Cannot find manifest - no service path set!") 
             return self.return_internal_error("No service path set. Cannot find manifest")
-        manifest_path = "apps/{0}/manifest.json".format(service_path)
+        manifest_path = "apps/{0}/manifest.json".format(self.service_path)
         manifest_data = open(manifest_path)
         manifest = json.load(manifest_data)
         manifest_data.close()
@@ -82,52 +84,52 @@ class ServiceHandler(BaseHandler):
     def is_running_handler(self,request):
         return self.return_ok(request, data={'running': self.is_running()})
 
-BlankApp.subhandlers = [
-    {
-        "prefix": "{0}/api/set_config".format(service_path),
-        'methods': ['GET'],
-        'require_auth': True,
-        'require_token': False,
-        'handler': ServiceHandler.set_config,
-        'accept':['application/json'],
-        'content-type':'application/json'
-    },
-    {
-        "prefix": "{0}/api/get_config".format(service_path),
-        'methods': ['GET'],
-        'require_auth': True,
-        'require_token': False,
-        'handler': ServiceHandler.get_config,
-        'accept':['application/json'],
-        'content-type':'application/json'
-    },    
-    {
-        "prefix": "{0}/api/start".format(service_path),
-        'methods': ['GET'],
-        'require_auth': True,
-        'require_token': False,
-        'handler': ServiceHandler.start_handler,
-        'accept':['application/json'],
-        'content-type':'application/json'
-    },
-    {
-        "prefix": "{0}/api/stop".format(service_path),
-        'methods': ['GET'],
-        'require_auth': True,
-        'require_token': False,
-        'handler': ServiceHandler.stop_handler,
-        'accept':['application/json'],
-        'content-type':'application/json'
-    },
-    {
-        "prefix": "{0}/api/is_running".format(service_path),
-        'methods': ['GET'],
-        'require_auth': True,
-        'require_token': False,
-        'handler': ServiceHandler.is_running_handler,
-        'accept':['application/json'],
-        'content-type':'application/json'
-    }
+# ServiceHandler.subhandlers = [
+#     {
+#         "prefix": "{0}/api/set_config".format(self.service_path),
+#         'methods': ['GET'],
+#         'require_auth': True,
+#         'require_token': False,
+#         'handler': ServiceHandler.set_config,
+#         'accept':['application/json'],
+#         'content-type':'application/json'
+#     },
+#     {
+#         "prefix": "{0}/api/get_config".format(self.service_path),
+#         'methods': ['GET'],
+#         'require_auth': True,
+#         'require_token': False,
+#         'handler': ServiceHandler.get_config,
+#         'accept':['application/json'],
+#         'content-type':'application/json'
+#     },    
+#     {
+#         "prefix": "{0}/api/start".format(self.service_path),
+#         'methods': ['GET'],
+#         'require_auth': True,
+#         'require_token': False,
+#         'handler': ServiceHandler.start_handler,
+#         'accept':['application/json'],
+#         'content-type':'application/json'
+#     },
+#     {
+#         "prefix": "{0}/api/stop".format(self.service_path),
+#         'methods': ['GET'],
+#         'require_auth': True,
+#         'require_token': False,
+#         'handler': ServiceHandler.stop_handler,
+#         'accept':['application/json'],
+#         'content-type':'application/json'
+#     },
+#     {
+#         "prefix": "{0}/api/is_running".format(self.service_path),
+#         'methods': ['GET'],
+#         'require_auth': True,
+#         'require_token': False,
+#         'handler': ServiceHandler.is_running_handler,
+#         'accept':['application/json'],
+#         'content-type':'application/json'
+#     }
 
-]
+# ]
 

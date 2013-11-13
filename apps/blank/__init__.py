@@ -8,9 +8,9 @@ class BlankApp(ServiceHandler):
 
     service_path="blank"
 
-    def __init__(self, server):
-        BaseHandler.__init__(self, server)
-        self.isLeaf = True
+    # def __init__(self, "blank", server):
+    #     ServiceHandler.__init__(self, server)
+    #     self.isLeaf = True
 
 #     def _load_manifest(self):
 #         manifest_data = open('apps/blank/manifest.json')
@@ -82,54 +82,54 @@ class BlankApp(ServiceHandler):
 #     def is_running_handler(self,request):
 #         return self.return_ok(request, data={'running': self.is_running()})
 
-# BlankApp.subhandlers = [
-#     {
-#         "prefix": "blank/api/set_config",
-#         'methods': ['GET'],
-#         'require_auth': True,
-#         'require_token': False,
-#         'handler': BlankApp.set_config,
-#         'accept':['application/json'],
-#         'content-type':'application/json'
-#     },
-#     {
-#         "prefix": "blank/api/get_config",
-#         'methods': ['GET'],
-#         'require_auth': True,
-#         'require_token': False,
-#         'handler': BlankApp.get_config,
-#         'accept':['application/json'],
-#         'content-type':'application/json'
-#     },    
-#     {
-#         "prefix": "blank/api/start",
-#         'methods': ['GET'],
-#         'require_auth': True,
-#         'require_token': False,
-#         'handler': BlankApp.start_handler,
-#         'accept':['application/json'],
-#         'content-type':'application/json'
-#     },
-#     {
-#         "prefix": "blank/api/stop",
-#         'methods': ['GET'],
-#         'require_auth': True,
-#         'require_token': False,
-#         'handler': BlankApp.stop_handler,
-#         'accept':['application/json'],
-#         'content-type':'application/json'
-#     },
-#     {
-#         "prefix": "blank/api/is_running",
-#         'methods': ['GET'],
-#         'require_auth': True,
-#         'require_token': False,
-#         'handler': BlankApp.is_running_handler,
-#         'accept':['application/json'],
-#         'content-type':'application/json'
-#     }
+BlankApp.subhandlers = [
+    {
+        "prefix": "blank/api/set_config",
+        'methods': ['GET'],
+        'require_auth': True,
+        'require_token': False,
+        'handler': BlankApp.set_config,
+        'accept':['application/json'],
+        'content-type':'application/json'
+    },
+    {
+        "prefix": "blank/api/get_config",
+        'methods': ['GET'],
+        'require_auth': True,
+        'require_token': False,
+        'handler': BlankApp.get_config,
+        'accept':['application/json'],
+        'content-type':'application/json'
+    },    
+    {
+        "prefix": "blank/api/start",
+        'methods': ['GET'],
+        'require_auth': True,
+        'require_token': False,
+        'handler': BlankApp.start_handler,
+        'accept':['application/json'],
+        'content-type':'application/json'
+    },
+    {
+        "prefix": "blank/api/stop",
+        'methods': ['GET'],
+        'require_auth': True,
+        'require_token': False,
+        'handler': BlankApp.stop_handler,
+        'accept':['application/json'],
+        'content-type':'application/json'
+    },
+    {
+        "prefix": "blank/api/is_running",
+        'methods': ['GET'],
+        'require_auth': True,
+        'require_token': False,
+        'handler': BlankApp.is_running_handler,
+        'accept':['application/json'],
+        'content-type':'application/json'
+    }
 
-# ]
+]
 
 
 APP = BlankApp
