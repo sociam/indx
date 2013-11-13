@@ -71,7 +71,7 @@ class ServiceHandler(BaseHandler):
         return self.return_ok(request, data={'result': result})
 
     def stop(self):
-        if self.is_running()
+        if self.is_running():
             self.pipe.kill()
         self.pipe = None
 
