@@ -1,0 +1,15 @@
+{
+	"name": "Longitude",
+	"version": 0.1,
+	"type":["app"],
+	"description": "Keep track of where youve gone",
+	"icons": { 
+		"128": "imgs/pin.png"
+	},
+	"author": [
+		{
+			"name": "eMax",
+			"email":"max@hip.cat"
+		}
+	]
+}

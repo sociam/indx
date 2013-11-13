@@ -1,0 +1,12 @@
+{
+	"name": "JSON Import",
+	"version": 0.1,
+	"type":["app"],
+	"description": "JSON file loader",
+	"author": [
+		{
+			"name": "Pete",
+			"email":"peter.g.west@gmail.com"
+		}
+	]
+}
