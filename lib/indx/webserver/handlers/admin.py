@@ -99,23 +99,38 @@ class AdminHandler(BaseHandler):
             .addCallback(check)\
             .addErrback(lambda *er: logging.debug('{0}'.format(er)) and self.return_forbidden(request))
 
-    def set_root_box(self, request):
-        """ Specify a box as the root box for the logged in user. """
+    def create_root_box(self, request):
+        """ Specify a new box as the root box for the logged in user. """
 
-        box = self.get_arg(request, "box")
-        if box is None or box is "":
-            logging.error("set_root_box: box is empty ({0})".format(box))
+        box_name = self.get_arg(request, "box")
+        if box_name is None or box_name is "":
+            logging.error("create_root_box: box is empty ({0})".format(box_name))
             return self.return_bad_request(request)
 
-        username = self.get_session(request).username
+        username,password = self.get_session(request).username, self.get_session(request).password
 
         def err_cb(failure):
             failure.trap(Exception)
             e = failure.value
-            logging.error("AdminHandler set_root_box err_cb: {0} {1}".format(e, failure))
+            logging.error("AdminHandler create_root_box err_cb: {0} {1}".format(e, failure))
             self.return_internal_error(request)
 
-        self.database.set_root_box(username, box).addCallbacks(lambda *x: self.return_ok(request), err_cb)
+        def check(result):
+            try :
+                logging.debug(' result > {0} '.format(result))
+
+                def created_cb(empty):
+                    self.webserver.sync_box(box_name, username)
+                    self.return_ok(request)
+
+                self.database.create_root_box(box_name, username, password).addCallbacks(created_cb, err_cb)
+            except Exception as e :
+                logging.debug('{0}'.format(e))
+
+        self._is_box_name_okay(box_name)\
+            .addCallback(check)\
+            .addErrback(lambda *er: logging.debug('{0}'.format(er)) and self.return_forbidden(request))
+
 
     def list_boxes_handler(self,request):
         def boxes(db_list):
@@ -137,6 +152,10 @@ class AdminHandler(BaseHandler):
             logging.error("Username or Password is empty - returning 400.")
             return self.return_bad_request(request)
 
+        if new_username[0] == "@":
+            logging.error("Username cannot begin with '@' - returning 400.")
+            return self.return_bad_request(request)
+
         def err_cb(failure):
             failure.trap(Exception)
             e = failure.value
@@ -146,10 +165,19 @@ class AdminHandler(BaseHandler):
         self.database.create_user(new_username, new_password, 'local').addCallbacks(lambda *x: self.return_ok(request), err_cb)
     
     def list_user_handler(self, request):
-        logging.debug("Getting user list")
-        self.database.list_users()\
-            .addCallback(lambda rows: self.return_ok(request, data={"users":rows}))\
-            .addErrback(lambda *x: self.return_internal_error(request))
+        logging.debug("AdminHandler, list_user_handler: Getting user list")
+
+        def filter_user_list(users):
+            logging.debug("AdminHandler, list_user_handler, filter_user_list: {0}".format(users))
+
+            new_users = []
+            for user in users:
+                if user["@id"][0] != "@": # don't return users whose names starts with '@' e.g. @indx user
+                    new_users.append(user)
+
+            self.return_ok(request, data = {"users": new_users})
+
+        self.database.list_users().addCallbacks(filter_user_list, lambda *x: self.return_internal_error(request))
         
     def list_apps_handler(self, request):
         logging.debug("Getting apps list")
@@ -157,11 +185,11 @@ class AdminHandler(BaseHandler):
         
 AdminHandler.subhandlers = [
     {
-        'prefix': 'set_root_box',
+        'prefix': 'create_root_box',
         'methods': ['GET'],
         'require_auth': True,
         'require_token': False,
-        'handler': AdminHandler.set_root_box,
+        'handler': AdminHandler.create_root_box,
         'content-type':'text/plain', # optional
         'accept':['application/json']
     },    

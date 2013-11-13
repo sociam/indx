@@ -35,28 +35,46 @@ class IndxSync:
         NS_ROOT_BOX + u"message",
     ]
 
-    def __init__(self, root_store, indx_db, url):
+    def __init__(self, root_store, database, url):
         """ Initialise with the root box and connection to the INDX db.
         
             root_store -- Connected objectstore to the root box.
-            indx_db -- Connection to the INDX database.
+            database -- Connection to the database (indx_pg2).
         """
         logging.debug("IndxSync __init__ root_store {0}".format(root_store))
 
         self.root_store = root_store
-        self.indx_db = indx_db
+        self.database = database
         self.url = url
 
         # ids of objects we are watching - these are id of objects with types in the TYPES list
         # if their ids appear in the diffs that hit our observer, then we re-run the sync queries against this box
         self.watched_objs = []
 
-        root_store.listen(lambda *x: self.observer(*x))
+
+        def observer(diff):
+            """ Root box callback function returning an update. """
+            logging.debug("IndxSync observer, notify: {0}".format(diff))
+
+            def err_cb(failure):
+                failure.trap(Exception)
+                logging.error("IndxSync observer error from diff: {0}".format(failure))
+
+            logging.debug("IndxSync observer diff: {0}".format(diff))
+            # FIXME do something
+
+        root_store.listen(observer)
+        self.observer = observer
+
+
+    def destroy(self):
+        """ Destroy this sync instance. Stops listening on the database, for example. """
+        self.root_store.unlisten(self.observer)
 
 
     def box_query(self):
         """ Query the root box for root box objects. """
-        logging.debug("IndxSync box_query")
+        logging.debug("IndxSync box_query on box {0}".format(self.root_store.boxid))
         result_d = Deferred()
 
         # query for all objects of the types in our list of interesting types
@@ -69,6 +87,8 @@ class IndxSync:
         def objs_cb(results):
             logging.debug("IndxSync box_query, objs_cb, results: {0}".format(results))
 
+            
+
 #            for server in results:
 #                url = server['url'][0]['@value']
 
@@ -77,15 +97,5 @@ class IndxSync:
         return result_d
 
 
-    def observer(self, diff):
-        """ Root box callback function returning an update. """
-        logging.debug("IndxSync observer, notify: {0}".format(diff))
-
-        def err_cb(failure):
-            failure.trap(Exception)
-            logging.error("IndxSync observer error from diff: {0}".format(failure))
-
-        logging.debug("IndxSync observer diff: {0}".format(diff))
-        # FIXME do something
 
 
