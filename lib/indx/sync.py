@@ -62,6 +62,7 @@ class IndxSync:
             logging.debug("IndxSync observer diff: {0}".format(diff))
 
             try:
+                diff = diff['data']
                 for obj in self.watched_objs:
                     if obj in diff['added'] or obj in diff['deleted'] or obj in diff['changed']:
                         logging.debug("IndxSync observer, ID '{0}' in watched objs found in the diff".format(obj))
@@ -127,7 +128,7 @@ class IndxSync:
             if initial_query:
                 # populate the watched_objs list
                 for id, obj in results.items():
-                    self.watched_objs.append(obj['@id'])
+                    self.watched_objs.append(id)
 
 #            for server in results:
 #                url = server['url'][0]['@value']
