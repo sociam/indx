@@ -94,6 +94,8 @@ class AppsMetaHandler(Resource):
             if handler.is_service() :
                 file_handler.putChild('api', handler)                
             file_handler.putChild('manifest', File(os.path.join('apps', appbase, 'manifest.json')))
+            self.putChild(appname,file_handler) ## this puts things at the base -- rather than putting the app handler
+
 
     def get_apps(self):
         return dict([(k,v['module']) for k,v in apps.MODULES.iteritems()])            
