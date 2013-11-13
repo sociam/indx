@@ -180,8 +180,7 @@ class AdminHandler(BaseHandler):
         self.database.list_users().addCallbacks(filter_user_list, lambda *x: self.return_internal_error(request))
         
     def list_apps_handler(self, request):
-        logging.debug("Getting apps list")
-        self.return_ok(request, data={"apps":self.webserver.appshandler.get_apps().keys()})
+        self.return_ok(request, data={"apps":self.webserver.appshandler.get_modules()})
         
 AdminHandler.subhandlers = [
     {

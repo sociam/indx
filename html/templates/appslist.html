@@ -1,8 +1,11 @@
 <div class="apps-toplevel">
-	<h2>Installed apps:</h2>
+	<h2>INDX Apps:</h2>
 	<ul class="applist">
 		<li ng-repeat='a in apps' class="app">
-			<a ng-href='apps/{{ a }}' target="_blank">{{ a }}</a>
+			<a ng-href='apps/{{ a.url || a["@id"] }}' target="_blank" title="{{ a.about }}">
+				<img class="appicon" ng-show="a.icons[128]" ng-src="apps/{{ a['@id'] }}/{{ a.icons[128] }}">
+				<div class="appname">{{ a.name || a["@id"] }}</div>
+			</a>
 		</li>
 	</ul>
 </div>

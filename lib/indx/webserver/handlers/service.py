@@ -6,7 +6,7 @@ from indxclient import IndxClient
 class ServiceHandler(BaseHandler):
 
     def __init__(self, server, service_path):
-        BaseHandler.__init__(self, server) ## os.path.join('apps', service_path, 'api'), register=True)
+        BaseHandler.__init__(self, server, register=False)
         self.pipe = None
         self.service_path = service_path
         self.subhandlers = self._make_subhandlers()

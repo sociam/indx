@@ -138,11 +138,11 @@
 				});
 			}).fail(function(err) { u.error(err); });
 	}).controller('AppsList', function($scope, $location, client, utils) {
-		console.log('hello apps list');
 		var u = utils, store = client.store, sa = function(f) { return utils.safeApply($scope,f); };
 		var getAppsList = function() {
 			client.store.getAppsList().then(function(apps) {
 				console.log('got apps list', apps);
+				window.apps = apps;
 				sa(function() { $scope.apps = apps; });
 			}).fail(function() {
 				sa(function() { delete $scope.apps; });

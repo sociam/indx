@@ -15,7 +15,7 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging, os
+import logging, os, json
 
 from twisted.web.resource import Resource
 from twisted.web.static import File
@@ -36,19 +36,19 @@ class AppsMetaHandler(Resource):
     def __init__(self,webserver):
         Resource.__init__(self)
         self.isLeaf = False
-        self.apps = {}
         self.index = File('html/index.html')
-        self._register_apps_debug(webserver)
+        self._register_apps(webserver)
 
-    def getChild(self, path, request):
-        logging.debug('get child ' + path ) # type(path) + " " + repr(request))
-        return self.apps.get(path) or NoResource()
+    # def getChild(self, path, request):
+    #     # i don't think this actually happens.
+    #     logging.debug('get child ' + path ) # type(path) + " " + repr(request))
+    #     return self.apps.get(path) or NoResource()
 
-    def getAppsandServices(self):
-        ## returns any subdirectoires of /apps that have a manifest.json
+    def getNewModuleNames(self):
+        ## returns any subdirs of /apps that have a manifest.json
         return [d for d in os.listdir('apps') if os.path.exists(os.path.join('apps', d,'manifest.json'))]
 
-    def _register_apps_debug(self, server):
+    def _register_apps(self, server):
         ## legacy apps (that have __init__.py) 
         for appname, vals in apps.MODULES.iteritems():
             module,html = vals['module'],vals['html']
@@ -60,7 +60,6 @@ class AppsMetaHandler(Resource):
                 file_handler = File(html)                        
             if getattr(module, 'APP', None):
                 app = module.APP(server)
-                self.apps[appname] = app
                 logging.debug('registering api child {0}'.format(repr(app)))
                 file_handler.putChild('api', app)
             else:
@@ -73,11 +72,10 @@ class AppsMetaHandler(Resource):
 
         ## now for new apps!
         legacy_apps = apps.MODULES.keys()
-        new_apps = set(self.getAppsandServices()) - set(legacy_apps)
+        new_apps = set(self.getNewModuleNames()) - set(legacy_apps)
         basedir = apps.BASEDIR
 
         for appbase in new_apps:
-            ## do cooooooooooool stuff.
             logging.debug("Instantiating handler for New Style App : {0}".format(appbase))
             # first add html directory
             if os.path.exists(os.path.join(basedir, appbase, 'html')):
@@ -86,21 +84,34 @@ class AppsMetaHandler(Resource):
             else:
                 file_handler = NoHTMLHandler()
             # # try to see if it's a service
-            handler = ServiceHandler(server, appbase)                
+            handler = ServiceHandler(server, appbase)
             if handler.is_service() :
-                logging.debug(" PUTTING API CHILD >>>>>>>>>>>>>>>>>>>>>>>> ");
+                logging.debug(" This is a service, so registering an api child >>>>>>>>>>>>>>>>>>>>>>>> ");
                 ## putting child under api
-                self.apps[appbase] = handler
                 file_handler.putChild('api', handler)                
             else:
-                logging.debug("NOT PUTTING API CHILD >>>>>>>>>>>> ");
-            logging.debug("putting manifest child {0} :: {1} ".format(appbase, os.path.join(basedir, appbase, 'manifest.json')))
-            file_handler.putChild('manifest', File(os.path.join(basedir, appbase, 'manifest.json')))
+                logging.debug("{0} Not a service, so not registering an app".format(appbase))
+                pass
+            file_handler.putChild('.manifest', File(os.path.join(basedir, appbase, 'manifest.json')))
             self.putChild(appbase,file_handler) ## this puts things at the base -- rather than putting the app handler
+        pass
 
 
-    def get_apps(self):
-        return dict([(k,v['module']) for k,v in apps.MODULES.iteritems()])            
+    def get_manifest(self, modulename):
+        manifest_path = os.path.join(apps.BASEDIR, modulename, 'manifest.json')
+        manifest_data = open(manifest_path,'r')
+        manifest = json.load(manifest_data)
+        manifest_data.close()
+        return manifest
+
+    def get_modules(self):
+        ## apps and services are modules
+        all = set(apps.MODULES.keys()).union(self.getNewModuleNames())
+        def kv(k):
+            kv = self.get_manifest(k)
+            kv["@id"] = k
+            return kv
+        return [kv(k) for k in all]
     
     def options(self, request):
         self.return_ok(request)
