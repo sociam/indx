@@ -15,13 +15,14 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging
+import logging, os
 
 from twisted.web.resource import Resource
 from twisted.web.static import File
 from twisted.web.resource import NoResource
 
 import apps
+from indx.webserver.handlers.service import ServiceHandler
 
 # map apps/modulename/api/x -> handler
 # map apps/modulename/x  -> static
@@ -44,22 +45,13 @@ class AppsMetaHandler(Resource):
         logging.debug('get child ' + path ) # type(path) + " " + repr(request))
         return self.apps.get(path) or NoResource()
 
-    def _register_apps(self, server):
-        logging.debug(' apps dir {0}'.format(repr(dir(apps))))
-        for appname, vals in apps.MODULES.iteritems():
-            logging.debug("registering app {0}".format(appname))
-            module,html = vals['module'],vals['html']
-            # logging.debug(' module dir {0}'.format(repr(dir(module))))
-            if getattr(module, 'APP', None):
-                ## instantiate the app
-                self.apps[appname] = module.APP(server)
-                if html:
-                    logging.debug('putting html static {0} '.format(html))
-                    self.apps[appname].putChild('html', File(html))
-                    pass
-                pass
-            
+    def getAppsandServices(self):
+        ## returns any subdirectoires of /apps that have a manifest.json
+        return [d for d in os.listdir('apps') if os.path.exists(os.path.join('apps', d,'manifest.json'))]
+
     def _register_apps_debug(self, server):
+
+        ## legacy apps (that have __init__.py) 
         for appname, vals in apps.MODULES.iteritems():
             logging.debug("registering app {0}".format(appname))
             module,html = vals['module'],vals['html']
@@ -68,6 +60,12 @@ class AppsMetaHandler(Resource):
                 file_handler = NoHTMLHandler()
             else:
                 file_handler = File(html)                        
+
+            # step 0: read the manifest file in the directory
+            # if this is a service, then... we should instantiate a ServiceHandler 
+            # for it passing it its base path (that is appname)
+            # 
+
             if getattr(module, 'APP', None):
                 app = module.APP(server)
                 self.apps[appname] = app
@@ -78,7 +76,24 @@ class AppsMetaHandler(Resource):
                 pass
                 # file_handler.putChild(appname,File(html))
             self.putChild(appname,file_handler) ## this puts things at the base -- rather than putting the app handler
-                
+        ## end of support for legacy apps
+
+        ## now for new apps!
+        legacy_apps = apps.MODULES.keys()
+        new_apps = set(self.getAppsandServices()) - set(legacy_apps)
+        for appbase in new_apps:
+            ## do cooooooooooool stuff.
+            logging.debug("Instantiating handler for New Style App : {0}".format(appbase))
+            # first add html directory
+            if os.path.exists(os.path.join('apps', appbase, 'html')):
+                file_handler = File(os.path.join('apps', appbase, 'html'))
+            else:
+                file_handler = NoHTMLHandler()
+            # try to see if it's a service
+            handler = ServiceHandler(server, appbase)                
+            if handler.is_service() :
+                file_handler.putChild('api', handler)                
+            file_handler.putChild('manifest', File(os.path.join('apps', appbase, 'manifest.json')))
 
     def get_apps(self):
         return dict([(k,v['module']) for k,v in apps.MODULES.iteritems()])            

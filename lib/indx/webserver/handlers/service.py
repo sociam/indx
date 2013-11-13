@@ -5,13 +5,64 @@ from indxclient import IndxClient
 
 class ServiceHandler(BaseHandler):
 
-    service_path = None # set this in all services!
-
-    def __init__(self, server, service_path=None):
+    def __init__(self, server, service_path):
         BaseHandler.__init__(self, server)
         self.pipe = None
-        if service_path is not None:
-            self.service_path = service_path
+        self.service_path = service_path
+        self.subhandlers = self._make_subhandlers()
+
+    def is_service(self):
+        manifest = self._load_manifest()
+        return 'type' in manifest and 'service' in manifest['type']
+
+    def _make_subhandlers(self):
+        return [
+            {
+                "prefix": "{0}/api/set_config".format(self.service_path),
+                'methods': ['GET'],
+                'require_auth': True,
+                'require_token': False,
+                'handler': self.set_config,
+                'accept':['application/json'],
+                'content-type':'application/json'
+            },
+            {
+                "prefix": "{0}/api/get_config".format(self.service_path),
+                'methods': ['GET'],
+                'require_auth': True,
+                'require_token': False,
+                'handler': self.get_config,
+                'accept':['application/json'],
+                'content-type':'application/json'
+            },    
+            {
+                "prefix": "{0}/api/start".format(self.service_path),
+                'methods': ['GET'],
+                'require_auth': True,
+                'require_token': False,
+                'handler': self.start_handler,
+                'accept':['application/json'],
+                'content-type':'application/json'
+            },
+            {
+                "prefix": "{0}/api/stop".format(self.service_path),
+                'methods': ['GET'],
+                'require_auth': True,
+                'require_token': False,
+                'handler': self.stop_handler,
+                'accept':['application/json'],
+                'content-type':'application/json'
+            },
+            {
+                "prefix": "{0}/api/is_running".format(self.service_path),
+                'methods': ['GET'],
+                'require_auth': True,
+                'require_token': False,
+                'handler': self.is_running_handler,
+                'accept':['application/json'],
+                'content-type':'application/json'
+            }
+        ]
 
     def _load_manifest(self):
             # throw error!
@@ -83,53 +134,4 @@ class ServiceHandler(BaseHandler):
 
     def is_running_handler(self,request):
         return self.return_ok(request, data={'running': self.is_running()})
-
-# ServiceHandler.subhandlers = [
-#     {
-#         "prefix": "{0}/api/set_config".format(self.service_path),
-#         'methods': ['GET'],
-#         'require_auth': True,
-#         'require_token': False,
-#         'handler': ServiceHandler.set_config,
-#         'accept':['application/json'],
-#         'content-type':'application/json'
-#     },
-#     {
-#         "prefix": "{0}/api/get_config".format(self.service_path),
-#         'methods': ['GET'],
-#         'require_auth': True,
-#         'require_token': False,
-#         'handler': ServiceHandler.get_config,
-#         'accept':['application/json'],
-#         'content-type':'application/json'
-#     },    
-#     {
-#         "prefix": "{0}/api/start".format(self.service_path),
-#         'methods': ['GET'],
-#         'require_auth': True,
-#         'require_token': False,
-#         'handler': ServiceHandler.start_handler,
-#         'accept':['application/json'],
-#         'content-type':'application/json'
-#     },
-#     {
-#         "prefix": "{0}/api/stop".format(self.service_path),
-#         'methods': ['GET'],
-#         'require_auth': True,
-#         'require_token': False,
-#         'handler': ServiceHandler.stop_handler,
-#         'accept':['application/json'],
-#         'content-type':'application/json'
-#     },
-#     {
-#         "prefix": "{0}/api/is_running".format(self.service_path),
-#         'methods': ['GET'],
-#         'require_auth': True,
-#         'require_token': False,
-#         'handler': ServiceHandler.is_running_handler,
-#         'accept':['application/json'],
-#         'content-type':'application/json'
-#     }
-
-# ]
 
