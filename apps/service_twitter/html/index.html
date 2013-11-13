@@ -1,0 +1,64 @@
+<html>
+  <head>
+	<link href="/css/bootstrap.css" rel="stylesheet">
+	<link href="/css/angular-ui.css" rel="stylesheet">
+	<link rel="stylesheet/less" type="text/css" href="/components/toolbar/toolbar.less">
+	<link rel="stylesheet/less" type="text/css" href="css/service_twitter.less">	
+	<title>Configure External App</title>
+  </head>
+  <body ng-app="service_twitter" ng-controller="ConfigPage" ng-cloak>
+	<toolbar box-var='selectedBox' username-var='selectedUser'></toolbar>
+	<div class="main" ng-show="selectedUser && selectedBox">
+		<h2>Twitter Service</h2>
+		<h4>Please enter the required credentials in order to configure your Twitter Service.</h4>
+
+		<div class="status">
+			<table>
+				<tr>
+					<td> {{ runstate }} </td>
+					<td><div class="btn btn-success" ng-click="doStart()">Start</div></td>
+					<td><div class="btn btn-danger" ng-click="doStop()">Stop</div></td> 
+				</tr>
+			</table>
+		</div>
+		<table class='security'>
+			<tr><td>Service User</td><td><select ng-model="app.user" ng-options='u.name for u in users'></select></td></tr>
+			<tr><td>Service User's Password</td><td><input type="password" ng-model='app.password'></td></tr>
+			<tr><td>Service's Box</td><td><select ng-model="app.box" ng-options='b for b in boxes'></select></td></tr>
+			<tr><td><td>
+			<div class="btn btn-warning" 
+			ng-show="app.user && app.box && (app.user['@id'] !== selectedUser.id) && !granted"
+			ng-click="grantACL(app.user, app.box)">Authorise {{ app.user.name }} to have access to {{ app.box }}</div>
+			<div ng-show="granted" class="granted"> {{ granted_status }} </div>
+		</td></tr>
+		</table>
+		<h4>In order to get these credentials, please visit <a href="https://dev.twitter.com/user/login?"> here</a> and create a Twitter Application</h4>
+		<table class='params'>
+		    <tr><td>Consumer Key :</td><td><input type="text" name="start" ng-model="consumer_key"></input></td></tr>
+		    <tr><td>Consumer Secret : </td><td><input type="text" name="step" ng-model="consumer_secret"></input></td></tr>
+		    <tr><td>Access Token : </td><td><input type="text" name="freq" ng-model="access_token"></input></td></tr>
+		    <tr><td>Access Token Secret : </td><td><input type="text" name="freq" ng-model="access_token_secret"></input></td></tr>
+	    </table>
+	    <div class='submits'>
+		    <div class="btn btn-default" ng-click="setConfig({consumer_key:consumer_key, consumer_secret:consumer_secret, access_token:access_token, access_token_secret:access_token_secret.box, user:app.user['@id'], password:app.password})">Set config</div>
+		    <div class="status">{{ status }}</div>
+		</div>
+	</div>	
+	<div ng-show="!(selectedUser && selectedBox)">
+		<h1>Please log in and select a box </h1>
+	</div>
+  </body>
+  <script src="/js/vendor/lesscss.min.js" type="text/javascript"></script>  
+  <script src="/js/vendor/jquery.min.js" type="text/javascript"></script>
+  <script src="/js/vendor/underscore.min.js" type="text/javascript"></script>
+  <script src="/js/vendor/backbone.min.js" type="text/javascript"></script>
+  <script src="/js/vendor/bootstrap.min.js" type="text/javascript"></script>
+  <!-- angular --> 
+  <script src="/js/vendor/angular.min.js" type="text/javascript"></script>
+  <script src="/js/vendor/angular-ui.js" type="text/javascript"></script>
+  <!-- indx --> 
+  <script src="/js/indx.js" type="text/javascript"></script>
+  <script src="/js/indx-utils.js" type="text/javascript"></script>
+  <script src="/components/toolbar/toolbar.js" type="text/javascript"></script>
+  <script src="js/service_twitter.js" type="text/javascript"></script>  
+</html>
