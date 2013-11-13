@@ -1,7 +1,7 @@
 {
 	"name": "External app",
 	"version": 0.1,
-	"typer":["service"],
+	"type":["service"],
 	"description": "Example external app",
 	"configpanel":"html/index.html",
 	"run":["python", "apps/blank/bin/run.py"],

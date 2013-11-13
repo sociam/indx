@@ -88,9 +88,12 @@ class AppsMetaHandler(Resource):
             # # try to see if it's a service
             handler = ServiceHandler(server, appbase)                
             if handler.is_service() :
+                logging.debug(" PUTTING API CHILD >>>>>>>>>>>>>>>>>>>>>>>> ");
                 ## putting child under api
                 self.apps[appbase] = handler
                 file_handler.putChild('api', handler)                
+            else:
+                logging.debug("NOT PUTTING API CHILD >>>>>>>>>>>> ");
             logging.debug("putting manifest child {0} :: {1} ".format(appbase, os.path.join(basedir, appbase, 'manifest.json')))
             file_handler.putChild('manifest', File(os.path.join(basedir, appbase, 'manifest.json')))
             self.putChild(appbase,file_handler) ## this puts things at the base -- rather than putting the app handler

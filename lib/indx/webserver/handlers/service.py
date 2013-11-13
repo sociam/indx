@@ -22,7 +22,7 @@ class ServiceHandler(BaseHandler):
                 'methods': ['GET'],
                 'require_auth': True,
                 'require_token': False,
-                'handler': self.set_config,
+                'handler': ServiceHandler.set_config,
                 'accept':['application/json'],
                 'content-type':'application/json'
             },
@@ -31,7 +31,7 @@ class ServiceHandler(BaseHandler):
                 'methods': ['GET'],
                 'require_auth': True,
                 'require_token': False,
-                'handler': self.get_config,
+                'handler': ServiceHandler.get_config,
                 'accept':['application/json'],
                 'content-type':'application/json'
             },    
@@ -40,7 +40,7 @@ class ServiceHandler(BaseHandler):
                 'methods': ['GET'],
                 'require_auth': True,
                 'require_token': False,
-                'handler': self.start_handler,
+                'handler': ServiceHandler.start_handler,
                 'accept':['application/json'],
                 'content-type':'application/json'
             },
@@ -49,7 +49,7 @@ class ServiceHandler(BaseHandler):
                 'methods': ['GET'],
                 'require_auth': True,
                 'require_token': False,
-                'handler': self.stop_handler,
+                'handler': ServiceHandler.stop_handler,
                 'accept':['application/json'],
                 'content-type':'application/json'
             },
@@ -58,7 +58,7 @@ class ServiceHandler(BaseHandler):
                 'methods': ['GET'],
                 'require_auth': True,
                 'require_token': False,
-                'handler': self.is_running_handler,
+                'handler': ServiceHandler.is_running_handler,
                 'accept':['application/json'],
                 'content-type':'application/json'
             }
@@ -134,4 +134,8 @@ class ServiceHandler(BaseHandler):
 
     def is_running_handler(self,request):
         return self.return_ok(request, data={'running': self.is_running()})
+
+    def render(self, request):
+        logging.debug("SERVICE HANDLER RENDER :::::::::::::::::::::::::: ")
+        return BaseHandler.render(self,request)
 
