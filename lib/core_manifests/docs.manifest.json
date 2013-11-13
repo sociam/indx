@@ -3,7 +3,8 @@
 	"version": 0.1,
 	"description": "Generate documentation from JavaScript source code",
 	"icons": {
-		"128": "/apps/devtools/icons/docs.png"
+		"128": "/apps/devtools/icons/docs.png",
+		"font-awesome": { "class": "fa fa-book", "background": "#9702A7" }
 	},
 	"author": [
 		{
