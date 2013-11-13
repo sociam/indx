@@ -55,6 +55,11 @@ class Token:
 
         def got_acct(new_acct):
 
+            if new_acct is False:
+                failure = Failure(Exception("No access to box {0} for user {1}".format(self.boxid, self.username)))
+                result_d.errback(failure)
+                return
+
             if self.best_acct is None:
                 self.best_acct = new_acct
 
