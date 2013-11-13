@@ -1,16 +1,20 @@
 {
-	"name": "Fitbit",
+	"name": "Fitbit Harvester service",
+	"type": ["service"],
 	"version": 0.1,
-	"type":["service"],
-	"description": "Fitbit file loader",
+	"description": "Harvester of your Fitbit data",
 	"configpanel":"html/index.html",
+	"run":["python", "apps/fitbit/bin/fitbit_harvester.py"],
+	"set_config":["python", "apps/fitbit/bin/fitbit_harvester.py", "--config", "{0}"],
+	"get_config":["python", "apps/fitbit/bin/fitbit_harvester.py", "--get-config"],
 	"icons": { 
-		"128": "img/upload.png"
+		"128": "img/fitbit-128.png",
+		"512": "img/fitbit-512.png" 
 	},
 	"author": [
 		{
-			"name": "Laura!",
-			"email":"aprilush@gmail.com"
+			"name": "Laura",
+			"email": "aprilush@gmail.com"
 		}
 	]
 }
