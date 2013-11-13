@@ -21,7 +21,7 @@ class TwitterApp(BaseHandler):
         manifest_data = open('apps/service_twitter/manifest.json')
         manifest = json.load(manifest_data)
         manifest_data.close()
-        return manifest
+        return manifest     
 
     def get_config(self,request):
         try:

@@ -24,6 +24,9 @@ from tweepy import Stream
 
 logging.basicConfig(level=logging.DEBUG)
 
+
+appid = "twitter_service"
+
 class TwitterService:
 
     def __init__(self, config):
@@ -35,7 +38,7 @@ class TwitterService:
 
         if len(self.credentials)==4 and len(self.configs)==4:
             print "loading Service Instance"
-            #self.indx_con = IndxClient(self.credentials['address'], self.credentials['box'], self.credentials['username'], self.credentials['password'], self.appid)
+            self.indx_con = IndxClient(self.credentials['address'], self.credentials['box'], self.credentials['username'], self.credentials['password'], appid)
             self.consumer_key= self.configs['consumer_key']
             self.consumer_secret= self.configs['consumer_secret']
             self.access_token = self.configs['access_token']
@@ -67,7 +70,7 @@ class TwitterService:
 
 
     def get_tweets(self, words_to_track):
-        l = INDXListener()
+        l = INDXListener(self)
         auth = OAuthHandler(self.consumer_key, self.consumer_secret)
         auth.set_access_token(self.access_token, self.access_token_secret)
         stream = Stream(auth, l)
@@ -82,14 +85,20 @@ class INDXListener(StreamListener):
     This is a basic listener that just prints received tweets to stdout.
 
     """
+
+    def __init__(self, twitter_serv):
+        self.service = twitter_serv        
+
+
     def on_data(self, tweet_data):
         """ Assert the tweet into INDX.
         If the version is incorrect, the correct version will be grabbed and the update re-sent.
         
         tweet -- The tweet to assert into the box.
         """
-        global version
-        global batch
+
+        global appid
+
         try:
             tweet = json.loads(tweet_data)
             logging.debug("{0}, {1}".format(type(tweet), tweet))
@@ -99,20 +108,20 @@ class INDXListener(StreamListener):
                 return
             logging.info("Adding tweet: '{0}'".format(tweet['text'].encode("utf-8")))            
             tweet["@id"] = unicode(tweet['id'])
-            tweet["app_object"] = "twitter_service"
+            tweet["app_object"] = appid
             text = unicode(tweet['text'])
             print text
-            self.batch.append(tweet)
-            if len(self.batch) > 25:
-                response = self.indx_con.update(self.version, self.batch)
-                self.version = response['data']['@version'] # update the version
-                self.batch = []
+            self.service.batch.append(tweet)
+            if len(self.service.batch) > 25:
+                response = self.service.indx_con.update(self.service.version, self.service.batch)
+                self.service.version = response['data']['@version'] # update the version
+                self.service.batch = []
         except Exception as e:
             if isinstance(e, urllib2.HTTPError): # handle a version incorrect error, and update the version
                 if e.code == 409: # 409 Obsolete
                     response = e.read()
                     json_response = json.loads(response)
-                    self.version = json_response['@version']
+                    self.service.version = json_response['@version']
                     self.on_data(tweet_data) # try updating again now the version is correct
                 else:
                     print '-------ERROR: ',e.read()
