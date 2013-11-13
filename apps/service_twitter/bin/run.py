@@ -3,6 +3,7 @@ import logging.config
 import keyring
 import keyring.util.platform_
 from keyring.backends.pyfs import PlaintextKeyring
+from service_tweets import TwitterService
 
 
 logging.basicConfig(filename="blank.log", level=logging.DEBUG)
@@ -38,6 +39,9 @@ def run(args):
         # print(keyring.util.platform_.data_root())
         config = keyring.get_password("INDX", "INDX_Twitter_App")
         logging.debug("running the app with: {0}".format(config));
+        config = json.loads(config)
+        #test run with configs
+        twitter_service = TwitterService(config)
         time.sleep(2)
 
     # keyring.set_password("INDX", "INDX_Blank_App", "{'password':'asdf', 'user':'laura', 'box':'blankie'}")

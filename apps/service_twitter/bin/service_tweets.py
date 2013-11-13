@@ -16,34 +16,50 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import argparse, logging, getpass, sys, urllib2, json, sys
+import argparse, ast, logging, getpass, sys, urllib2, json, sys
 from indxclient import IndxClient
 from tweepy.streaming import StreamListener
 from tweepy import OAuthHandler
 from tweepy import Stream
 
-
-try:
-    if args['debug']:
-        logging.basicConfig(level=logging.DEBUG)
-    else:
-        logging.basicConfig(level=logging.INFO)
-except:
-    pass
+logging.basicConfig(level=logging.DEBUG)
 
 class TwitterService:
 
-    def __init__(self, credentials, configs):
-        print "loading Service Instance"
-        self.appid = "twitter_service"
-        self.indx_con = IndxClient(credentials['address'], credentials['box'], credentials['username'], credentials['password'], self.appid)
-        self.consumer_key= configs['consumer_key']
-        self.consumer_secret= configs['consumer_secret']
-        self.access_token = configs['access_token']
-        self.access_token_secret = configs['access_token_secret']
-        self.version = 0
-        self.batch = []
-        print "got here"
+    def __init__(self, config):
+        config = config.replace("\"","'")
+        self.config = ast.literal_eval(config)
+        logging.debug("Got config items {0}".format(self.config))
+        
+        self.credentials, self.configs = self.load_parameters(self.config)
+
+        if len(self.credentials)==4 and len(self.configs)==4:
+            print "loading Service Instance"
+            #self.indx_con = IndxClient(self.credentials['address'], self.credentials['box'], self.credentials['username'], self.credentials['password'], self.appid)
+            self.consumer_key= self.configs['consumer_key']
+            self.consumer_secret= self.configs['consumer_secret']
+            self.access_token = self.configs['access_token']
+            self.access_token_secret = self.configs['access_token_secret']
+            self.version = 0
+            self.batch = []
+            
+            #now get the tweets
+            words_to_search = self.get_search_criteria()
+            self.get_tweets(words_to_search)
+
+
+    #load and managed parameters
+    def load_parameters(self, config):
+        try:
+            print "loading Credentials...."
+            for k,v in config.iteritems():
+                print k
+            self.credentials = {"address": config['address'], "box": config['box'], "username": config['user'], "password": config['password']} 
+            self.configs = {"consumer_key": config['consumer_key'], "consumer_secret": config['consumer_secret'], "access_token": config['access_token'], "access_token_secret": config['access_token_secret']}
+            return (self.credentials, self.configs)
+        except:
+            logging.error("COULD NOT START TWITTER APP - NO/INCORRECT CREDENTIALS "+str(sys.exc_info()))
+            return False       
 
     #this needs to call the database to get the search criteria...    
     def get_search_criteria(self):
@@ -83,20 +99,20 @@ class INDXListener(StreamListener):
                 return
             logging.info("Adding tweet: '{0}'".format(tweet['text'].encode("utf-8")))            
             tweet["@id"] = unicode(tweet['id'])
-            tweet["app_object"] = service.appid
+            tweet["app_object"] = "twitter_service"
             text = unicode(tweet['text'])
             print text
-            service.batch.append(tweet)
-            if len(service.batch) > 25:
-                response = service.indx_con.update(service.version, service.batch)
-                service.version = response['data']['@version'] # update the version
-                service.batch = []
+            self.batch.append(tweet)
+            if len(self.batch) > 25:
+                response = self.indx_con.update(self.version, self.batch)
+                self.version = response['data']['@version'] # update the version
+                self.batch = []
         except Exception as e:
             if isinstance(e, urllib2.HTTPError): # handle a version incorrect error, and update the version
                 if e.code == 409: # 409 Obsolete
                     response = e.read()
                     json_response = json.loads(response)
-                    service.version = json_response['@version']
+                    self.version = json_response['@version']
                     self.on_data(tweet_data) # try updating again now the version is correct
                 else:
                     print '-------ERROR: ',e.read()
@@ -109,26 +125,17 @@ class INDXListener(StreamListener):
     def on_error(self, status):
         print "Status Error ",status
 
-if __name__ == '__main__':
+# if __name__ == '__main__':
 
-    #load and managed parameters
-    def load_parameters():
-        try:
-            print "loading Credentials"
-            credentials = {"address": sys.argv[1], "box": sys.argv[2], "username": sys.argv[3], "password": sys.argv[4]} 
-            configs = {"consumer_key": sys.argv[5], "consumer_secret": sys.argv[6], "access_token": sys.argv[7], "access_token_secret": sys.argv[8]}
-            return (credentials, configs)
-        except:
-            logging.error("COULD NOT START TWITTER APP - NO/INCORRECT CREDENTIALS")
-            return False
 
-    credentials, configs = load_parameters()
-    if len(credentials)==4 and len(configs)==4:
-        try:
-            print "Giving Params"
-            service = TwitterService(credentials, configs)
-            words_to_search = service.get_search_criteria()
-            service.get_tweets(words_to_search)
-        except:
-            print "FAILING HERE "+str(sys.exc_info())
+
+#     credentials, configs = load_parameters()
+#     if len(credentials)==4 and len(configs)==4:
+#         try:
+#             print "Giving Params"
+#             service = TwitterService(credentials, configs)
+#             words_to_search = service.get_search_criteria()
+#             service.get_tweets(words_to_search)
+#         except:
+#             print "FAILING HERE "+str(sys.exc_info())
 

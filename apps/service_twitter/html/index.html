@@ -25,6 +25,7 @@
 			<tr><td>Service User</td><td><select ng-model="app.user" ng-options='u.name for u in users'></select></td></tr>
 			<tr><td>Service User's Password</td><td><input type="password" ng-model='app.password'></td></tr>
 			<tr><td>Service's Box</td><td><select ng-model="app.box" ng-options='b for b in boxes'></select></td></tr>
+		    <tr><td>INDX Address:</td><td><input type="text" name="address" ng-model="app.address"></input></td></tr>
 			<tr><td><td>
 			<div class="btn btn-warning" 
 			ng-show="app.user && app.box && (app.user['@id'] !== selectedUser.id) && !granted"
@@ -34,13 +35,13 @@
 		</table>
 		<h4>In order to get these credentials, please visit <a href="https://dev.twitter.com/user/login?"> here</a> and create a Twitter Application</h4>
 		<table class='params'>
-		    <tr><td>Consumer Key :</td><td><input type="text" name="start" ng-model="consumer_key"></input></td></tr>
-		    <tr><td>Consumer Secret : </td><td><input type="text" name="step" ng-model="consumer_secret"></input></td></tr>
-		    <tr><td>Access Token : </td><td><input type="text" name="freq" ng-model="access_token"></input></td></tr>
-		    <tr><td>Access Token Secret : </td><td><input type="text" name="freq" ng-model="access_token_secret"></input></td></tr>
+		    <tr><td>Consumer Key :</td><td><input type="text" name="consumer_key" ng-model="consumer_key"></input></td></tr>
+		    <tr><td>Consumer Secret : </td><td><input type="text" name="consumer_secret" ng-model="consumer_secret"></input></td></tr>
+		    <tr><td>Access Token : </td><td><input type="text" name="access_token" ng-model="access_token"></input></td></tr>
+		    <tr><td>Access Token Secret : </td><td><input type="text" name="access_token_secret" ng-model="access_token_secret"></input></td></tr>
 	    </table>
 	    <div class='submits'>
-		    <div class="btn btn-default" ng-click="setConfig({consumer_key:consumer_key, consumer_secret:consumer_secret, access_token:access_token, access_token_secret:access_token_secret.box, user:app.user['@id'], password:app.password})">Set config</div>
+		    <div class="btn btn-default" ng-click="setConfig({consumer_key:consumer_key, consumer_secret:consumer_secret, access_token:access_token, access_token_secret:access_token_secret, box:app.box, user:app.user['@id'], address:app.address, password:app.password})">Set config</div>
 		    <div class="status">{{ status }}</div>
 		</div>
 	</div>	
