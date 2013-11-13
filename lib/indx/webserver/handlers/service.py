@@ -1,4 +1,4 @@
-import logging, json, subprocess,sys
+import logging, json, subprocess,sys, os
 
 from indx.webserver.handlers.base import BaseHandler
 from indxclient import IndxClient
@@ -6,7 +6,7 @@ from indxclient import IndxClient
 class ServiceHandler(BaseHandler):
 
     def __init__(self, server, service_path):
-        BaseHandler.__init__(self, server)
+        BaseHandler.__init__(self, server) ## os.path.join('apps', service_path, 'api'), register=True)
         self.pipe = None
         self.service_path = service_path
         self.subhandlers = self._make_subhandlers()

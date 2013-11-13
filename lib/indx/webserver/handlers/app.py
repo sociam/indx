@@ -28,7 +28,6 @@ from indx.webserver.handlers.service import ServiceHandler
 # map apps/modulename/x  -> static
 
 class NoHTMLHandler(Resource):
-
     def render(self, request):
         return "Nothing to see here."
 
@@ -50,22 +49,15 @@ class AppsMetaHandler(Resource):
         return [d for d in os.listdir('apps') if os.path.exists(os.path.join('apps', d,'manifest.json'))]
 
     def _register_apps_debug(self, server):
-
         ## legacy apps (that have __init__.py) 
         for appname, vals in apps.MODULES.iteritems():
-            logging.debug("registering app {0}".format(appname))
             module,html = vals['module'],vals['html']
-            logging.debug(' module dir vals {0}'.format(vals))
+            logging.debug("Legacy App Registering {0} --- module: {1};  html: {2}".format(appname, module, html))
             if not html: 
                 file_handler = NoHTMLHandler()
             else:
+                logging.debug('HTML handler {0}'.format(html))
                 file_handler = File(html)                        
-
-            # step 0: read the manifest file in the directory
-            # if this is a service, then... we should instantiate a ServiceHandler 
-            # for it passing it its base path (that is appname)
-            # 
-
             if getattr(module, 'APP', None):
                 app = module.APP(server)
                 self.apps[appname] = app
@@ -75,26 +67,33 @@ class AppsMetaHandler(Resource):
                 logging.debug('static content only {0}'.format(html))
                 pass
                 # file_handler.putChild(appname,File(html))
+            logging.debug("legacy putchild {0}, handler: {1} ".format(appname,file_handler))
             self.putChild(appname,file_handler) ## this puts things at the base -- rather than putting the app handler
         ## end of support for legacy apps
 
         ## now for new apps!
         legacy_apps = apps.MODULES.keys()
         new_apps = set(self.getAppsandServices()) - set(legacy_apps)
+        basedir = apps.BASEDIR
+
         for appbase in new_apps:
             ## do cooooooooooool stuff.
             logging.debug("Instantiating handler for New Style App : {0}".format(appbase))
             # first add html directory
-            if os.path.exists(os.path.join('apps', appbase, 'html')):
-                file_handler = File(os.path.join('apps', appbase, 'html'))
+            if os.path.exists(os.path.join(basedir, appbase, 'html')):
+                logging.debug("Adding html static dir {0}".format(os.path.join(basedir, appbase, 'html')))
+                file_handler = File(os.path.join(basedir,  appbase, 'html'))
             else:
                 file_handler = NoHTMLHandler()
-            # try to see if it's a service
+            # # try to see if it's a service
             handler = ServiceHandler(server, appbase)                
             if handler.is_service() :
+                ## putting child under api
+                self.apps[appbase] = handler
                 file_handler.putChild('api', handler)                
-            file_handler.putChild('manifest', File(os.path.join('apps', appbase, 'manifest.json')))
-            self.putChild(appname,file_handler) ## this puts things at the base -- rather than putting the app handler
+            logging.debug("putting manifest child {0} :: {1} ".format(appbase, os.path.join(basedir, appbase, 'manifest.json')))
+            file_handler.putChild('manifest', File(os.path.join(basedir, appbase, 'manifest.json')))
+            self.putChild(appbase,file_handler) ## this puts things at the base -- rather than putting the app handler
 
 
     def get_apps(self):
