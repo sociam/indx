@@ -3,7 +3,9 @@ angular
 	.controller('ConfigPage', function($scope, client, utils) {
 		var s = client.store, sa = function(f) { utils.safeApply($scope, f); };
 		window.store = client.store;
+		window.$s = $scope;
 
+		$scope.app = {};
 
 		var status = function(s) {
 			sa(function() { $scope.status = s; });
@@ -16,8 +18,10 @@ angular
 				// simple stuff
 				sa(function() { 
 					_($scope).extend({ 
-						appbox : config.box,
-						appuserpassword: config.password,
+						app: { 
+							box : config.box,
+							password: config.password,
+						},
 						start:config.start,
 						step:config.step,
 						frequency:config.frequency
@@ -25,17 +29,13 @@ angular
 				});
 
 				// restore the user
-				if (config.user) { 
-					console.log("USER >> ", config.user);
-					s.getUserList().then(function(users) { 
-						var match = users.filter(function(x) { return x['@id'] === config.user; });
-						console.log('match >> ', match && match[0]);
-						if (match.length) {
-							sa(function() { $scope.appuser = match[0]; });
-						}
-					}).fail(function() {
-						console.error('error getting user list ');
-					});
+				if (config.user && $scope.users) { 
+					var match = $scope.users.filter(function(u) { return u['@id'] === config.user; });
+					if (match.length) {
+						console.log('match ', match[0]);
+						window.match = match[0];
+						sa(function() { $scope.app.user = match[0]; });
+					}
 				}
 
 			}).fail(function(err) { 
@@ -44,34 +44,31 @@ angular
 		};
 
 		var load_box = function(bid) { 
+			var dul = u.deferred(), dbl = u.deferred();
 			s.getBox(bid).then(function(box) {
 				// get the users
-				s.getUserList().then(function(users) { 
-					sa(function() { 
-						users.map(function(u) { 
-							if (u.user_metadata && typeof u.user_metadata === 'string') {
-								console.log('user metadata ', u.user_metadata, "---", typeof u.user_metadata);
-								_(u).extend(JSON.parse(u.user_metadata));
-							}
-							if (!u.name) { u.name = u["@id"]; } 
-						});
-						$scope.users = users.filter(function(f) { return f.type.indexOf('local') >= 0; });
-					});
-
+				s.getUserList().then(function(users) {
+					console.log('users >> ', users);
+					window.users = users;
+					sa(function() { $scope.users = users.filter(function(f) { return f.type.indexOf('local') >= 0; });	});
+					dul.resolve();
 				}).fail(function(e) {
 					sa(function() { $scope.status = 'error getting user list'; });
 					console.error(e);
+					dul.reject();
 				});
 
 				// get the users
 				s.getBoxList().then(function(boxes) { 
 					sa(function() { $scope.boxes = boxes; });
+					dbl.resolve();
 				}).fail(function(e) {
 					sa(function() { $scope.status = 'error getting box list'; });
 					console.error(e);
+					dbl.reject();
 				});
-				_get_config_from_service();
 			});
+			return u.when([dul, dbl]);
 		};
 		$scope.grantACL = function(user,box) {
 			console.log('grantacl -- ', user, box);
@@ -112,7 +109,9 @@ angular
 
 		$scope.$watch('selectedUser + selectedBox', function() { 
 			if ($scope.selectedBox) {
-				load_box($scope.selectedBox);	
+				load_box($scope.selectedBox).then(function() {  
+					_get_config_from_service();
+				});
 			}
 		});
 

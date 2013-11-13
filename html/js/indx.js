@@ -1139,8 +1139,27 @@ angular
 			getUserList:function() {
 				var d = u.deferred();
 				this._ajax('GET','admin/list_users')
-					.success(function(data) { d.resolve(data.users);})
-					.fail(function(err) { d.reject(err); });
+					.success(function(data) { 
+						var users = data.users;
+						users.map(function(u) {
+							if (u.user_metadata && typeof u.user_metadata === 'string') {
+								_(u).extend(JSON.parse(u.user_metadata));
+								delete u.user_metadata;
+							} else if (u.user_metadata && typeof u.user_metadata === 'object') {
+								_(u).extend(u.user_metadata);
+								delete u.user_metadata;
+							}							
+							if (!u.name) {
+								var id = u["@id"];
+								if (id.indexOf('http') == 0) {
+									id = id.split('/');
+									id = id[id.length-1];
+								}
+								u.name = id;
+							}
+						});
+						d.resolve(users);
+					}).fail(function(err) { d.reject(err); });
 				return d.promise();
 			},
 			getAppsList:function() {

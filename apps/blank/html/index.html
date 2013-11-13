@@ -20,13 +20,13 @@
 		</div>
 		<div class='security'>
 			<table>
-				<tr><td>Select a User for the App :</td><td><select ng-model="appuser" ng-options='u.name for u in users'></select></td></tr>
-				<tr><td>Enter the App User's Password :</td><td><input type="password" ng-model='appuserpassword'></td></tr>
-				<tr><td>App Should Store Data in This Box :</td><td><select ng-model="appbox" ng-options='b for b in boxes'></select></td></tr>
+				<tr><td>Select a User for the App :</td><td><select ng-model="app.user" ng-options='u.name for u in users'></select></td></tr>
+				<tr><td>Enter the App User's Password :</td><td><input type="password" ng-model='app.password'></td></tr>
+				<tr><td>App Should Store Data in This Box :</td><td><select ng-model="app.box" ng-options='b for b in boxes'></select></td></tr>
 				<tr><td><td>
 				<div class="btn btn-danger" 
-				ng-show="appuser && appbox && (appuser['@id'] !== selectedUser.id) && !granted"
-				ng-click="grantACL(appuser, appbox)">Authorise {{ appuser.name }} to have access to {{ appbox }}</div>
+				ng-show="app.user && app.box && (app.user['@id'] !== selectedUser.id) && !granted"
+				ng-click="grantACL(appuser, appbox)">Authorise {{ app.user.name }} to have access to {{ app.box }}</div>
 				<div ng-show="granted" class="granted"> {{ granted_status }} </div>
 			</td></tr>
 			</table>
@@ -38,7 +38,7 @@
 			    <tr><td>Frequency : </td><td><input type="text" name="freq" ng-model="frequency"></input></td></tr>
 		    </table>
 		</div>
-	    <div class="btn btn-default" ng-click="setConfig({start:start,step:step,frequency:frequency,box:appbox,user:appuser['@id'],password:appuserpassword})">Set config</div>
+	    <div class="btn btn-default" ng-click="setConfig({start:start,step:step,frequency:frequency,box:app.box,user:app.user['@id'],password:app.password})">Set config</div>
 	    <div class="status">{{ status }}</div>
 	</div>	
 	<div ng-show="!(selectedUser && selectedBox)">
