@@ -48,7 +48,7 @@ class Fitbit:
         resp, body = client.request(access_url, method="POST")
         if resp['status'] != '200':
             raise Exception("Invalid response getting the access token {0}.".format(resp['status']))
-            sys.exit(1)
+            return None
         auth = dict(urlparse.parse_qsl(body))
         self.token = oauth.Token(auth['oauth_token'], auth['oauth_token_secret'])
 

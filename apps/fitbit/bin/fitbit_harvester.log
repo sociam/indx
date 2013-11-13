@@ -1,0 +1,31 @@
+DEBUG:root:running the app with: "{\"start\":\"15\",\"step\":\"5\",\"frequency\":\"10000000000\",\"box\":\"blankie\",\"user\":\"laura\",\"password\":\"asdf\"}"
+DEBUG:root:running the app with: "{\"start\":\"15\",\"step\":\"5\",\"frequency\":\"10000000000\",\"box\":\"blankie\",\"user\":\"laura\",\"password\":\"asdf\"}"
+DEBUG:root:running the app with: None
+INFO:fitbit:Successfully got request oauth_token: ffec3cf036fc119c739b322cf8c55f38, oauth_token_secret: 0ca1ef5b577fc602cdcc28e98bbbae57
+INFO:fitbit:Successfully got request oauth_token: ddb9d48fbc69f634ca20f59375708187, oauth_token_secret: 8da34a17b994064ce0e2b1dc47c2dc39
+INFO:fitbit:Successfully got request oauth_token: f2ab20ecf1b69bbef983a508af604a1c, oauth_token_secret: ee6d5af1210a80d38bfc91fe5fd44eb8
+INFO:fitbit:Successfully got request oauth_token: f2a236da9acffdc114e8d6e266d086b3, oauth_token_secret: 9b789bbb0ec3782bc5ad41044b236dc4
+DEBUG:root:Loaded config from keyring: "{\"start\":\"2012\",\"frequency\":\"3\",\"box\":\"blankie\",\"user\":\"laura\",\"password\":\"asdf\"}"
+DEBUG:root:Loaded config from keyring: "{\"start\":\"2012\",\"frequency\":\"3\",\"box\":\"blankie\",\"user\":\"laura\",\"password\":\"asdf\"}"
+DEBUG:root:Loaded config from keyring: "{\"start\":\"2012\",\"frequency\":\"3\",\"box\":\"blankie\",\"user\":\"laura\",\"password\":\"asdf\"}"
+INFO:fitbit:Successfully got request oauth_token: ea1b88e55b77db8ec3e032de6236dabe, oauth_token_secret: bb632af5411bb8a2cb5796cf39843637
+DEBUG:root:Loaded config from keyring: "{\"start\":\"2012\",\"frequency\":\"3\",\"box\":\"blankie\",\"user\":\"laura\",\"password\":\"asdf\"}"
+INFO:fitbit:Successfully got request oauth_token: 9304def50d102ab39ef26f58c4ff12f8, oauth_token_secret: 9bcf04ae4a0e945b36ba97d2989c413e
+DEBUG:root:Loaded config from keyring: "{\"start\":\"2012\",\"frequency\":\"3\",\"box\":\"blankie\",\"user\":\"laura\",\"password\":\"asdf\"}"
+INFO:fitbit:Successfully got request oauth_token: ff41a9c5088e2a275222efe3f1b5a008, oauth_token_secret: 5b2608bde0b05d9c66be1a2fba7faec4
+DEBUG:root:Loaded config from keyring: "{\"start\":\"2012\",\"frequency\":\"3\",\"box\":\"blankie\",\"user\":\"laura\",\"password\":\"asdf\"}"
+INFO:fitbit:Successfully got request oauth_token: 0590a51a58017e50d682e30ffeccfc7c, oauth_token_secret: 3a75b6a0bf2b8cd2658008b31efaf6a7
+DEBUG:root:Loaded config from keyring: "{\"start\":\"2012\",\"frequency\":\"3\",\"box\":\"blankie\",\"user\":\"laura\",\"password\":\"asdf\"}"
+INFO:fitbit:Successfully got request oauth_token: 7a61e7ecb3dd3c81e951134ede81bafc, oauth_token_secret: e20ef0dda88d4cd0894511ec8a482b52
+DEBUG:root:Loaded config from keyring: {"start":"2012","frequency":"3","box":"blankie","user":"laura","password":"asdf"}
+INFO:fitbit:Successfully got request oauth_token: 28439dad2402414884bb31027f8f520f, oauth_token_secret: 90e8d59f51311decdedf6953ff4e4167
+DEBUG:root:Loaded config from keyring: {"start":"2012","frequency":"3","box":"blankie","user":"laura","password":"asdf"}
+INFO:fitbit:Successfully got request oauth_token: 9a653ab77b589b427de34549541250a1, oauth_token_secret: 7dd5088aab5c6908b5338b09bcdbf22d
+DEBUG:root:received config: {u'box': u'blankie', u'pin': u'vcud8l2nqqn9ncantmo3c5cfni', u'start': u'2012', u'frequency': u'3', u'user': u'laura', u'password': u'asdf'}
+DEBUG:root:received pin: vcud8l2nqqn9ncantmo3c5cfni
+DEBUG:root:received config: {u'box': u'blankie', u'pin': u'vcud8l2nqqn9ncantmo3c5cfni', u'start': u'2012', u'frequency': u'3', u'user': u'laura', u'password': u'asdf'}
+DEBUG:root:received pin: vcud8l2nqqn9ncantmo3c5cfni
+ERROR:root:could not authorise to fitbit, with pin vcud8l2nqqn9ncantmo3c5cfni, error: Fitbit instance has no attribute 'req_token'
+DEBUG:root:received config: {u'box': u'blankie', u'pin': u'vcud8l2nqqn9ncantmo3c5cfni', u'start': u'2012', u'frequency': u'3', u'user': u'laura', u'password': u'asdf'}
+DEBUG:root:received pin: vcud8l2nqqn9ncantmo3c5cfni
+ERROR:root:could not authorise to fitbit, with pin vcud8l2nqqn9ncantmo3c5cfni, error: Fitbit instance has no attribute 'req_token'

@@ -1,7 +1,7 @@
 angular
 	.module('BlankApp', ['ui','indx'])
 	.controller('ConfigPage', function($scope, client, utils) {
-		var s = client.store, sa = function(f) { utils.safeApply($scope, f); };
+		var u = utils, s = client.store, sa = function(f) { utils.safeApply($scope, f); };
 		window.store = client.store;
 		window.$s = $scope;
 
