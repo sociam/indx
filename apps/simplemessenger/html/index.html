@@ -9,19 +9,19 @@
 	<meta name="apple-mobile-web-app-capable" content="yes">
   </head>
   <body ng-app='example' ng-controller='App'>
-	<toolbar box-var='toolbar.selected_box' username-var='toolbar.selected_user'></toolbar>	
+	<toolbar box-var='selectedBox' username-var='selectedUser'></toolbar>
 	<div class="example">
    	  <h1>demo: real time collaboration with indx and angular!</h1>	
 	  <div ng-show="error">
 		{{ error }}
 	  </div>
-	  <div ng-show="!toolbar.selected_user">
+	  <div ng-show="!selectedUser">
 		Please log in and select a box.
 	  </div>
-  	  <div ng-show="toolbar.selected_user && !toolbar.selected_box">
+  	  <div ng-show="selectedUser && !selectedBox">
 		Please select a <b>box</b>.
 	  </div>
-	  <div class='main' ng-show="toolbar.selected_box">
+	  <div class='main' ng-show="selectedBox">
 		<p> Type here: </p>
 		<input type="text" ng-model="inputmodel.value" ng-change='v2m()'></input>
 	  </div>
