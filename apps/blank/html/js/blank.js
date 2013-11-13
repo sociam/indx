@@ -4,18 +4,49 @@ angular
 		var s = client.store, sa = function(f) { utils.safeApply($scope, f); };
 		window.store = client.store;
 
+
 		var status = function(s) {
 			sa(function() { $scope.status = s; });
 		};
 
+		var _get_config_from_service = function() {
+			s._ajax('GET', 'apps/blank/api/get_config').then(function(x) { 
+				var config = JSON.parse(x.config);
+
+				// simple stuff
+				sa(function() { 
+					_($scope).extend({ 
+						appbox : config.box,
+						appuserpassword: config.password,
+						start:config.start,
+						step:config.step,
+						frequency:config.frequency
+					});
+				});
+
+				// restore the user
+				if (config.user) { 
+					console.log("USER >> ", config.user);
+					s.getUserList().then(function(users) { 
+						var match = users.filter(function(x) { return x['@id'] === config.user; });
+						console.log('match >> ', match && match[0]);
+						if (match.length) {
+							sa(function() { $scope.appuser = match[0]; });
+						}
+					}).fail(function() {
+						console.error('error getting user list ');
+					});
+				}
+
+			}).fail(function(err) { 
+				console.error('could not get config ', err); 	
+			});
+		};
+
 		var load_box = function(bid) { 
 			s.getBox(bid).then(function(box) {
-				console.log('box ', box);
-				window.box = box;
-
 				// get the users
 				s.getUserList().then(function(users) { 
-					console.log('users >> ', users);
 					sa(function() { 
 						users.map(function(u) { 
 							if (u.user_metadata && typeof u.user_metadata === 'string') {
@@ -39,6 +70,7 @@ angular
 					sa(function() { $scope.status = 'error getting box list'; });
 					console.error(e);
 				});
+				_get_config_from_service();
 			});
 		};
 		$scope.grantACL = function(user,box) {
@@ -84,13 +116,15 @@ angular
 			}
 		});
 
-		setInterval(function() { 
-			s._ajax('GET','apps/blank/api/is_running').then(function(r) { 
-				sa(function() { 
-					$scope.runstate = r.running ? 'Running' : 'Stopped';  
-				});
-			}).fail(function(r) {
-				sa(function() { $scope.runstate = 'Unknown'; });
-			});
-		}, 1000);
+
+
+		// setInterval(function() { 
+		// 	s._ajax('GET','apps/blank/api/is_running').then(function(r) { 
+		// 		sa(function() { 
+		// 			$scope.runstate = r.running ? 'Running' : 'Stopped';  
+		// 		});
+		// 	}).fail(function(r) {
+		// 		sa(function() { $scope.runstate = 'Unknown'; });
+		// 	});
+		// }, 1000);
 	});

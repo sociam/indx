@@ -1,5 +1,5 @@
 
-import logging, json, subprocess
+import logging, json, subprocess,sys
 
 from indx.webserver.handlers.base import BaseHandler
 from indxclient import IndxClient
@@ -11,6 +11,7 @@ class BlankApp(BaseHandler):
         self.isLeaf = True
         self.pipe = None
 
+
     def _get_indx_creds(self):
         pass
 
@@ -19,24 +20,40 @@ class BlankApp(BaseHandler):
         manifest = json.load(manifest_data)
         manifest_data.close()
         return manifest
+
+    def get_config(self,request):
+        try:
+            manifest = self._load_manifest()
+            result = subprocess.check_output(manifest['get_config'])
+            logging.debug(' get config result {0} '.format(result))
+            result = json.loads(result)
+            logging.debug(' take 2 >> get config result {0} '.format(result))
+            return self.return_ok(request,data={'config':result})
+        except :
+            logging.error("Error in set_config {0}".format(sys.exc_info()[0]))
+            return self.return_internal_error(request)
         
     def set_config(self, request): # what params?
-        # when we want to change something in the config
-        # invoke external process to set their configs
-        logging.debug("set_config -- getting config from request")        
-        # config = json.loads(self.get_arg(request, "config"))
-        config = self.get_arg(request, "config")
-        logging.debug("blank config {0}".format(config))
-        # get the config we want to set out of request
-        ## load the manifest 
-        manifest = self._load_manifest()
-        jsonconfig = json.dumps(config)
-        # somewhere inside this we have put {0} wildcard so we wanna substitute that
-        # with the actual config obj
-        expanded = [x.format(jsonconfig) for x in manifest['config']]
-        result = subprocess.call(expanded)
-        logging.debug("result of subprocess call {0}".format(result))
-        return self.return_ok(request, data={'result': result})
+        try:
+            # when we want to change something in the config
+            # invoke external process to set their configs
+            logging.debug("set_config -- getting config from request")        
+            # config = json.loads(self.get_arg(request, "config"))
+            config = self.get_arg(request, "config")
+            logging.debug("blank config {0}".format(config))
+            # get the config we want to set out of request
+            ## load the manifest 
+            manifest = self._load_manifest()
+            jsonconfig = json.dumps(config)
+            # somewhere inside this we have put {0} wildcard so we wanna substitute that
+            # with the actual config obj
+            expanded = [x.format(jsonconfig) for x in manifest['set_config']]
+            result = subprocess.call(expanded)
+            logging.debug("result of subprocess call {0}".format(result))
+            return self.return_ok(request, data={'result': result})
+        except :
+            logging.error("Error in set_config {0}".format(sys.exc_info()[0]))
+            return self.return_internal_error(request)
 
     def isRunning(self):
         if self.pipe is not None:
@@ -78,6 +95,15 @@ BlankApp.subhandlers = [
         'accept':['application/json'],
         'content-type':'application/json'
     },
+    {
+        "prefix": "blank/api/get_config",
+        'methods': ['GET'],
+        'require_auth': True,
+        'require_token': False,
+        'handler': BlankApp.get_config,
+        'accept':['application/json'],
+        'content-type':'application/json'
+    },    
     {
         "prefix": "blank/api/start",
         'methods': ['GET'],
