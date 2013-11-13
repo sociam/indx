@@ -4,7 +4,7 @@
 	<link href="/css/angular-ui.css" rel="stylesheet">
 	<link rel="stylesheet/less" type="text/css" href="/components/toolbar/toolbar.less">
 	<link rel="stylesheet/less" type="text/css" href="css/service_twitter.less">	
-	<title>Configure External App</title>
+	<title>Twitter Service</title>
   </head>
   <body ng-app="service_twitter" ng-controller="ConfigPage" ng-cloak>
 	<toolbar box-var='selectedBox' username-var='selectedUser'></toolbar>
@@ -40,8 +40,13 @@
 		    <tr><td>Access Token : </td><td><input type="text" name="access_token" ng-model="access_token"></input></td></tr>
 		    <tr><td>Access Token Secret : </td><td><input type="text" name="access_token_secret" ng-model="access_token_secret"></input></td></tr>
 	    </table>
+	    <h4>In order to search, please enter your Twitter handle and some search terms (seperated by commas)!</h4>
+		<table class='search_params'>
+		    <tr><td>Twitter username :</td><td><input type="text" name="twitter_username" ng-model="twitter_username"></input></td></tr>
+		    <tr><td>Twitter Search Words : </td><td><input type="text" name="twitter_search_words" ng-model="twitter_search_words"></input></td></tr>
+	    </table>
 	    <div class='submits'>
-		    <div class="btn btn-default" ng-click="setConfig({consumer_key:consumer_key, consumer_secret:consumer_secret, access_token:access_token, access_token_secret:access_token_secret, box:app.box, user:app.user['@id'], address:app.address, password:app.password})">Set config</div>
+		    <div class="btn btn-default" ng-click="setConfig({consumer_key:consumer_key, consumer_secret:consumer_secret, access_token:access_token, access_token_secret:access_token_secret, box:app.box, user:app.user['@id'], address:app.address, password:app.password, twitter_username:twitter_username, twitter_search_words:twitter_search_words})">Set config</div>
 		    <div class="status">{{ status }}</div>
 		</div>
 	</div>	

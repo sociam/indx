@@ -22,7 +22,7 @@ from tweepy.streaming import StreamListener
 from tweepy import OAuthHandler
 from tweepy import Stream
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 
 appid = "twitter_service"
@@ -36,7 +36,7 @@ class TwitterService:
         
         self.credentials, self.configs = self.load_parameters(self.config)
 
-        if len(self.credentials)==4 and len(self.configs)==4:
+        if len(self.credentials)==4 and len(self.configs)>=4:
             print "loading Service Instance"
             self.indx_con = IndxClient(self.credentials['address'], self.credentials['box'], self.credentials['username'], self.credentials['password'], appid)
             self.consumer_key= self.configs['consumer_key']
@@ -58,7 +58,7 @@ class TwitterService:
             for k,v in config.iteritems():
                 print k
             self.credentials = {"address": config['address'], "box": config['box'], "username": config['user'], "password": config['password']} 
-            self.configs = {"consumer_key": config['consumer_key'], "consumer_secret": config['consumer_secret'], "access_token": config['access_token'], "access_token_secret": config['access_token_secret']}
+            self.configs = {"consumer_key": config['consumer_key'], "consumer_secret": config['consumer_secret'], "access_token": config['access_token'], "access_token_secret": config['access_token_secret'], "twitter_username": config['twitter_username'], "twitter_search_words": config['twitter_search_words']}
             return (self.credentials, self.configs)
         except:
             logging.error("COULD NOT START TWITTER APP - NO/INCORRECT CREDENTIALS "+str(sys.exc_info()))
@@ -66,7 +66,13 @@ class TwitterService:
 
     #this needs to call the database to get the search criteria...    
     def get_search_criteria(self):
-        return ["happy", "sad"]
+        search_terms = []
+        username = self.configs['twitter_username']
+        words = self.configs['twitter_search_words'].split(",")
+        search_terms.append(username)
+        for word in words:
+            search_terms.append(word)
+        return words
 
 
     def get_tweets(self, words_to_track):
@@ -101,12 +107,12 @@ class INDXListener(StreamListener):
 
         try:
             tweet = json.loads(tweet_data)
-            logging.debug("{0}, {1}".format(type(tweet), tweet))
+            #logging.debug("{0}, {1}".format(type(tweet), tweet))
             if not tweet.get('text'):
                 # TODO: log these for provenance?                
-                logging.info("Skipping informational message: '{0}'".format(tweet_data.encode("utf-8")))
+                #logging.info("Skipping informational message: '{0}'".format(tweet_data.encode("utf-8")))
                 return
-            logging.info("Adding tweet: '{0}'".format(tweet['text'].encode("utf-8")))            
+            #logging.info("Adding tweet: '{0}'".format(tweet['text'].encode("utf-8")))            
             tweet["@id"] = unicode(tweet['id'])
             tweet["app_object"] = appid
             text = unicode(tweet['text'])
