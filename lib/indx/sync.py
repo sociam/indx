@@ -51,7 +51,6 @@ class IndxSync:
         # if their ids appear in the diffs that hit our observer, then we re-run the sync queries against this box
         self.watched_objs = []
 
-
         def observer(diff):
             """ Root box callback function returning an update. """
             logging.debug("IndxSync observer, notify: {0}".format(diff))
@@ -61,10 +60,48 @@ class IndxSync:
                 logging.error("IndxSync observer error from diff: {0}".format(failure))
 
             logging.debug("IndxSync observer diff: {0}".format(diff))
-            # FIXME do something
 
-        root_store.listen(observer)
+            try:
+                for obj in self.watched_objs:
+                    if obj in diff['added'] or obj in diff['deleted'] or obj in diff['changed']:
+                        logging.debug("IndxSync observer, ID '{0}' in watched objs found in the diff".format(obj))
+                        raise Exception("break")
+
+                for id, obj in diff['added'].items():
+                    if "type" in obj:
+                        for val in obj['type']:
+                            if val["@value"] in self.TYPES:
+                                logging.debug("IndxSync observer, type '{0}' in TYPES found in the diff".format(val["@value"]))
+                                raise Exception("break")
+                            
+
+                for verb in diff['changed']:
+                    for id, obj in diff['changed'][id]:
+                        if "type" in obj:
+                            for val in obj['type']:
+                                if val["@value"] in self.TYPES:
+                                    logging.debug("IndxSync observer, type '{0}' in TYPES found in the diff".format(val["@value"]))
+                                    raise Exception("break")
+
+            # breaking out of the loops, and then calling the query at the same time
+            except Exception as e:
+                # id was in watched items, or a diff object was added/changed with a type in the TYPES object
+                self.box_query() # TODO use the callbacks here? (doesn't return anything)
+
         self.observer = observer
+
+        def query_cb(results):
+            logging.debug("IndxSync __init__ query_cb, results: {0}".format(results))
+            # initial query finished, start listening to changes to the root box
+            root_store.listen(observer)
+
+        def err_cb(failure):
+            failure.trap()
+            e = failure.value
+            logging.error("IndxSync __init__ error querying box, raising: {0}".format(e))
+            raise e
+
+        self.box_query(initial_query = True).addCallbacks(query_cb, err_cb)
 
 
     def destroy(self):
@@ -72,7 +109,7 @@ class IndxSync:
         self.root_store.unlisten(self.observer)
 
 
-    def box_query(self):
+    def box_query(self, initial_query = False):
         """ Query the root box for root box objects. """
         logging.debug("IndxSync box_query on box {0}".format(self.root_store.boxid))
         result_d = Deferred()
@@ -86,16 +123,18 @@ class IndxSync:
 
         def objs_cb(results):
             logging.debug("IndxSync box_query, objs_cb, results: {0}".format(results))
-
             
+            if initial_query:
+                # populate the watched_objs list
+                for id, obj in results.items():
+                    self.watched_objs.append(obj['@id'])
 
 #            for server in results:
 #                url = server['url'][0]['@value']
 
+            result_d.callback(True) # for the initial call to succeed
+
         self.root_store.query(q_objs).addCallbacks(objs_cb, result_d.errback)
 
         return result_d
-
-
-
 
