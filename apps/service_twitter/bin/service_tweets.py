@@ -16,14 +16,16 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import argparse, ast, logging, getpass, sys, urllib2, json, sys, tweepy, datetime
+import argparse, ast, logging, getpass, sys, urllib2, json, sys, tweepy, datetime, time, threading
 from datetime import datetime
+from threading import Timer
 from indxclient import IndxClient
 from tweepy.streaming import StreamListener
 from tweepy import OAuthHandler
 from tweepy import Stream
 from tweepy import API
-
+from tweepy import Status
+    
 logging.basicConfig(level=logging.INFO)
 
 
@@ -46,6 +48,7 @@ class TwitterService:
                 self.access_token = self.configs['access_token']
                 self.access_token_secret = self.configs['access_token_secret']
                 self.twitter_username = self.configs['twitter_username']
+                self.since_id = 0
                 self.version = 0
                 self.batch = []
                 
@@ -54,7 +57,7 @@ class TwitterService:
                 self.auth.set_access_token(self.access_token, self.access_token_secret)
 
                 #see if other harvesters needed (indx con needed to sumbit data)
-                self.load_additional_harvesters(self.twitter_add_info, self.indx_con)
+                self.load_additional_harvesters(self.twitter_add_info, self)
 
                 #now get the tweets
                 words_to_search = self.get_search_criteria()
@@ -85,22 +88,25 @@ class TwitterService:
             logging.error("COULD NOT START TWITTER APP - NO/INCORRECT CREDENTIALS "+str(sys.exc_info()))
             return False       
 
-    def load_additional_harvesters(self, additional_params, indx_con):
+    def load_additional_harvesters(self, additional_params, service):
         try:
             #if the user want's to
             is_get_status = additional_params['twitter_status']
             #establish a search connection as welll...
             if "True" in str(is_get_status):
-                logging.debug("Adding Twitter Status Harvester")
-                self.harvest_private_timeline(indx_con)
+                logging.debug("Adding Twitter Status Harvester/Timer")
+                #threading.Timer(15, self.run_timeline_harvest, args=(service,)).start()
+                self.run_timeline_harvest(service)
+                print "GETTING STATUS"
         except:
             logging.error("couldnt get status "+str(sys.exc_info()) )
 
         try:
             is_get_network = additional_params['twitter_network']
             if "True" in str(is_get_network):
+                print "GETTING NETWORK"
                 logging.debug("Adding Twitter Network Harvester")
-                self.harvest_network(indx_con)
+                self.harvest_network(service)
         except:
             logging.error("couldnt get Twitter friends network")
 
@@ -129,40 +135,79 @@ class TwitterService:
 
 
     #datamodel is {timestamp: {friends:[friend_id]}
-    def harvest_network(self, indx_con):
-        self.api = tweepy.API(self.auth)
-        friends_list = self.api.followers_ids(self.twitter_username)
-        current_timestamp = str(datetime.now())
-        uniq_id = "friends_at_"+current_timestamp
-        friends_objs = {"@id":uniq_id, "timestamp":current_timestamp, "friends_list": friends_list}
-        version = 0
-        #now append the results
+    def harvest_network(self, service):
         try:
-            if len(friends_objs)>0:
-                response = indx_con.update(version, friends_objs)
-                logging.debug("Inserted Twitter Friendship data".format(response))
+            self.api = tweepy.API(service.auth)
+            friends_list = self.api.followers_ids(service.twitter_username)
+            current_timestamp = str(datetime.now())
+            uniq_id = "friends_at_"+current_timestamp
+            friends_objs = {"@id":uniq_id, "app_object": appid, "timestamp":current_timestamp, "friends_list": friends_list}
+            
+            #now append the results
+            self.insert_object_to_indx(service, friends_objs)
+        except:
+            print "harvest network failed"
+
+    def run_timeline_harvest(self, service):
+
+        #first check if INDX has already got the latest version...
+        #to-do
+        try:
+            print "SINCE_ID "+str(service.since_id)
+            self.api = tweepy.API(service.auth)
+            try:
+                if service.since_id > 0:
+                    status_timeline = self.api.user_timeline(service.twitter_username, service.since_id)
+                else:
+                    status_timeline = self.api.user_timeline(service.twitter_username)
+            except:
+                print "COULDNT GET STATUS, PROBABLY NO UPDATES AS OF YET..."
+                status_timeline = {}
+
+            print "GOT STATUS TIMELINE: "+str(len(status_timeline))
+            #have we got any statuses?
+            if len(status_timeline)>0:
+                #guess so - lets commit these to INDX
+                #update since_id
+                service.since_id = status_timeline[len(status_timeline)-1].id
+                print "NEW SINCE_ID :"+str(service.since_id)
+                current_timestamp = str(datetime.now())
+                uniq_id = "timeline_at_"+current_timestamp
+                status_list = []
+                for x in status_timeline:
+                    #convert date
+                    timestamp =  x.created_at.strftime("%Y-%m-%d %H:%M:%S")
+                    status = {"user": x.author.name, "created_at": timestamp, "id": x.id, "text": x.text,  "coordinates": x.coordinates, "retweet_count": x.retweet_count}
+                    status_list.append(status)
+                status_objs = {"@id":uniq_id, "app_object": appid, "timestamp":current_timestamp, "since_id": service.since_id, "status_list": status_list}
+
+            #now append the results
+                self.insert_object_to_indx(service, status_objs)
+        except:
+            "harvest status failed "+str(sys.exc_info())
+    
+    def insert_object_to_indx(self, service, obj):
+     
+        try:
+            if len(obj)>0:
+                response = service.indx_con.update(service.version, obj)
+                logging.debug("Inserted Object into INDX: ".format(response))
         except Exception as e:
             if isinstance(e, urllib2.HTTPError): # handle a version incorrect error, and update the version
                 if e.code == 409: # 409 Obsolete
                     response = e.read()
                     json_response = json.loads(response)
-                    version = json_response['@version']
-                    logging.error('INDX insert error in Twitter Service: '+str(response))
+                    service.version = json_response['@version']
+                    logging.error('INDX insert error in Twitter Service Object: '+str(response))
                     try:
-                        indx_con.update(version, friends_objs)
-                        print "INSERT SUCCESS A SECOND TIME"
+                        response = service.indx_con.update(service.version, obj)
+                        print "INSERT SUCCESS A SECOND TIME OBJECT"
                     except:
-                        print '-------ERROR: '+str(response)
+                        print '-------ERROR on second insert: '+str(response)
                 else:
                     print '-------ERROR: ',e.read()
             else:
                 logging.error("Error updating INDX: {0}".format(e))
-
-
-    def harvest_private_timeline(self, indx_con):
-        return ""
-
-
 
 
 class INDXListener(StreamListener):
@@ -195,7 +240,7 @@ class INDXListener(StreamListener):
             tweet["@id"] = unicode(tweet['id'])
             tweet["app_object"] = appid
             text = unicode(tweet['text'])
-            print text
+            #print text
             self.service.batch.append(tweet)
             if len(self.service.batch) > 25:
                 response = self.service.indx_con.update(self.service.version, self.service.batch)
@@ -219,17 +264,28 @@ class INDXListener(StreamListener):
     def on_error(self, status):
         print "Status Error ",status
 
-# if __name__ == '__main__':
 
+class RepeatedTimer(object):
+    def __init__(self, interval, function, *args, **kwargs):
+        self._timer     = None
+        self.function   = function
+        self.interval   = interval
+        self.args       = args
+        self.kwargs     = kwargs
+        self.is_running = False
+        self.start()
 
+    def _run(self):
+        self.is_running = False
+        self.start()
+        self.function(*self.args, **self.kwargs)
 
-#     credentials, configs = load_parameters()
-#     if len(credentials)==4 and len(configs)==4:
-#         try:
-#             print "Giving Params"
-#             service = TwitterService(credentials, configs)
-#             words_to_search = service.get_search_criteria()
-#             service.get_tweets(words_to_search)
-#         except:
-#             print "FAILING HERE "+str(sys.exc_info())
+    def start(self):
+        if not self.is_running:
+            self._timer = Timer(self.interval, self._run)
+            self._timer.start()
+            self.is_running = True
 
+    def stop(self):
+        self._timer.cancel()
+        self.is_running = False

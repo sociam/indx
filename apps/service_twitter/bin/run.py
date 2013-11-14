@@ -1,4 +1,4 @@
-import logging,json,argparse,sys,time,os,subprocess
+import logging,json,argparse,sys,time,os
 import logging.config
 import keyring
 import keyring.util.platform_
