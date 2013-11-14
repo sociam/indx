@@ -69,3 +69,11 @@ class Fitbit:
         resp = urllib2.urlopen(req)
         data = resp.read()
         return data
+
+    def set_token(self, token):
+        if token is not None:
+            self.token = oauth.Token(token['oauth_token'], token['oauth_token_secret'])
+
+    def get_token(self):
+        return self.token
+

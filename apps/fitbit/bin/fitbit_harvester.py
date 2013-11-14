@@ -82,6 +82,58 @@ class FitbitHarvester:
             return json.dumps({"fitbit":config_fitbit}) # don't send the req_token
         return json.dumps({"fitbit":config_fitbit, "harvester":json.loads(stored_config_harvester)}) # don't send the req_token
 
+
+    def check_configuration(self):
+        stored_config_harvester = keyring.get_password("INDX", "INDX_Fitbit_Harvester")
+        logging.debug("stored_config_harvester type: {0}".format(type(stored_config_harvester)))
+        logging.debug("Loaded harvester config from keyring: {0}".format(stored_config_harvester))
+        if stored_config_harvester is None :
+            logging.error("Harvester not configured. Please configure before use.")
+            exit(1)
+
+        if self.fitbit.get_token() is None:
+            stored_config_fitbit = keyring.get_password("Fitbit.com", "Fitbit")
+            logging.debug("stored_config_fitbit type: {0}".format(type(stored_config_fitbit)))
+            logging.debug("Loaded fitbit config from keyring: {0}".format(stored_config_fitbit))
+
+            token = None
+            if stored_config_fitbit is None :
+                logging.error("Not authenticated to Fitbit.com. Please configure before use.")
+                exit(1)
+            else :
+                if (type(stored_config_fitbit) != dict):
+                    stored_config_fitbit = json.loads(stored_config_fitbit)
+                    logging.debug("stored_config_fitbit type (after 1 loads): {0}".format(type(stored_config_fitbit)))
+                if 'token' not in stored_config_fitbit :
+                    logging.debug("Could not find Fitbit auth token in keyring");
+                    if ('pin' in stored_config_fitbit) and ('req_token' in stored_config_fitbit):
+                        logging.debug("Found pin {0} and req_token in keyring, attempting authorization to Fitbit.com".format(stored_config_fitbit['pin']))
+                        try:
+                            fitbit_token_config = {}
+                            token = self.fitbit.get_token_with_pin(stored_fitbit_config['pin'], stored_fitbit_config['req_token'])
+                            if token:
+                                logging.debug("Got auth token {0}".format(token))
+                                # logging.debug("Got auth token of type {0}".format(type(token)))
+                                fitbit_token_config['token']=token
+                            keyring.set_password("Fitbit.com", "Fitbit", json.dumps(fitbit_token_config))
+                        except Exception as exc:
+                            logging.error("Could not authorise to fitbit, error: {1}".format(exc))
+                            exit(1)
+                    else :
+                        logging.debug("Could not find pin or req_token in keyring. Cannot attempt authorization to Fitbit.com."))
+                        exit(1)
+                else: 
+                    token = stored_config_fitbit['token']
+            if token is not None :
+                self.fitbit.set_token(token)
+        return stored_config_harvester['start'], stored_config_harvester['frequency'], stored_config_harvester['box'], stored_config_harvester['user']
+
+
+    def harvest(self):
+        start, freq, box, user = check_configuration()
+        download_data(start)
+
+
     def run(self):
         args = vars(self.parser.parse_args())
         if args['config']:
@@ -89,8 +141,8 @@ class FitbitHarvester:
         elif args['get_config']:
             print self.get_config(args)
         else:
-            config = keyring.get_password("INDX", "INDX_Fitbit_Service")
-            logging.debug("running the app with: {0}".format(config))
+            logging.debug("Starting the harvester. ")
+            harvest()
 
     # keyring.set_password("INDX", "INDX_Blank_App", "{'password':'asdf', 'user':'laura', 'box':'blankie'}")
     # print keyring.get_password("INDX", "INDX_Blank_App")
@@ -132,8 +184,9 @@ if __name__ == '__main__':
 #             self.return_not_found(request)
 #         return NOT_DONE_YET
 
-#     def download_data(self, start):
-#         # end time is end of yesterday 
+    def download_data(self, start):
+        
+
 #         end = datetime.combine((datetime.now()+timedelta(days=-1)).date(), time(23,59,59))
 #         response = {}
 #         if (start == None):
