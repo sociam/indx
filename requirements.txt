@@ -10,3 +10,6 @@ tweepy
 requests
 pycrypto
 oauth2
+keyring
+fs
+w

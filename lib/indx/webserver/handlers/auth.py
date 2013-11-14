@@ -237,7 +237,7 @@ class AuthHandler(BaseHandler):
         query = urlparse.parse_qsl(urlparse.urlparse(request.uri).query)
         queries = {}
         for key, val in query:
-            queries[key] = val
+            queries[key] = val.decode('UTF-8')
         logging.debug("Queries: {0}".format(queries))
         info = oid_consumer.complete(queries, self.webserver.server_url + "/" + self.base_path + "/openid_process")
 

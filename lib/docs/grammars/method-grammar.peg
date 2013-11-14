@@ -1,15 +1,14 @@
 @import "utils-grammar.peg"
 
-
 property
 	= a:argument
-			{ return ['args', a]; }
+			{ return ['arg', a]; }
 	/ r:result
-			{ return ['result_' + r[0], r[1]]; }
+			{ return [r[0], r[1]]; }
 	/ t:throws
 			{ return ['throw', t]}
 	/ "@" k:name _ v:comment?
-			{ return [k, v || true]; }
+			{ return [k, v || undefined]; }
 
 argument
 	= m:argument_mode _ t:type_statement? _ n:name _ "-"? _ c:comment?
@@ -25,9 +24,9 @@ result
 	= r:return_result
 			{ return ["return", r]; }
     / r:async_result
-			{ return ["async", r]; }
+			{ return [r.type, r]; }
     / "@chain"
-			{ return ["chain", true]; }
+			{ return ["chain"]; }
 
 throws
     = throws_tags _ t:type_statement? _ "-"? _ c:comment

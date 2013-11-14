@@ -1,7 +1,12 @@
 @import "utils-grammar.peg"
 
 property
-	= "@extend" _ n:name _ u:comment?
+	= extend_tags _ n:name _ u:comment?
 			{ return ['extend', { name: n, fullName: n, url: u }]; }
 	/ "@" k:name _ v:comment?
 			{ return [k, v]; }
+
+extend_tags
+	= "@extend"
+	/ "@extends"
+	/ "@augments"

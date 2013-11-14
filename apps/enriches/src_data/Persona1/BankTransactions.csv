@@ -1,8 +1,0 @@
-Account number,Transaction date,Description,Value,Type
-field_ba_account_number,field_ba_transaction_date,field_ba_transaction_description,field_ba_transaction_value,
-12345678,11/5/2012,MORTGAGE TRANSFER,684.19,
-12345678,10/10/2012,REPAYMENT MTG,-683.4,
-12345678,10/5/2012,MORTGAGE TRANSFER,684.19,
-12345678,9/10/2012,REPAYMENT MTG,-683.4,
-12345678,9/5/2012,MORTGAGE TRANSFER,684.19,
-12345678,8/10/2012,REPAYMENT MTG,-683.4,

@@ -20,6 +20,7 @@
     "clipboardWrite",
     "cookies",
     "history",
-    "https://indx.local:8211/"
+    "geolocation",
+    "https://*/*"
   ]
 }

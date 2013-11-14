@@ -3,117 +3,29 @@
   <head>
 	<link href="/css/bootstrap.css" rel="stylesheet">
 	<link href="/css/angular-ui.css" rel="stylesheet">
+	<link href="/css/font-awesome.min.css" rel="stylesheet">
 	<link href="/css/select2.css" rel="stylesheet"/>
 	<link rel="stylesheet/less" type="text/css" href="/components/toolbar/toolbar.less">
 	<link rel="stylesheet/less" type="text/css" href="css/devtools.less">
 	<title>INDX Developer Tools</title>
   </head>
-  <body ng-app="devtools" ng-controller="main"  ng-cloak>
+  <body ng-app="devtools" ng-cloak>
     <toolbar box-var='selectedBox' username-var='selectedUser'></toolbar>
-	<div>
-
-	  <div ng-show="selectedUser && selectedBox" class="foo row-fluid tabbable">
-		<div class="foo span12">
-		  <ul class="nav nav-pills">
-			<li class="active"><a href="#status" data-toggle="tab">Status</a></li>
-			<li><a href="#apidocs" data-toggle="tab">Docs</a>
-			<li><a href="#testing" data-toggle="tab">Tests</a>
-			<li><a href="#other" data-toggle="tab">Other</a>
-		  </ul>
-		  <div class="tab-content">
-			<div class="tab-pane active" id="status">
-			  <p>INDX Status</p>
-			  <statuspane></statuspane>
-			</div>
-			<div class="tab-pane" id="apidocs">
-				<!-- <p>See <a href="/docs/docsgen.html">docsgen documentation</a> for instruction on how to build api docs.</p> -->
-			  <table class="table">
-			  	<thead><th width="200">Name</th><th>Status</th><th width="200">Actions</th></thead>
-			  	<tbody>
-					<tr ng-repeat="doc in docs.models">
-						<td ng-if="doc.get('built')"><a href="/{{doc.get('url')}}">{{doc.get('name')}}</a></td>
-						<td ng-if="!doc.get('built')">{{doc.get('name')}}</td>
-						<td>
-							<div ng-if="!doc.err && doc.get('built')">Built</div>
-							<div ng-if="!doc.err && !doc.get('built')">Documentation has not been built.</div>
-							<div ng-if="doc.err">An error occurred: {{doc.err}}</div>
-						</td>
-						<td>
-							<button class="btn btn-primary btn-build" ng-disabled="doc.isBuilding" ng-click="doc.build()">
-								<span ng-if="doc.get('built')">Rebuild</span>
-								<span ng-if="!doc.get('built')">Build</span>
-							</button>
-						</td>
-					</tr>
-				</tbody>
-			  </table>
-			</div>
-			<div class="tab-pane" id="testing">
-			  <table class="table">
-			  	<thead><th width="200">Name</th><th>Status</th><th width="200">Actions</th></thead>
-			  	<tbody>
-					<tr ng-repeat="test in tests.models">
-						<td ng-if="test.get('built')"><a href="/{{test.get('url')}}">{{test.get('name')}}</a></td>
-						<td ng-if="!test.get('built')">{{test.get('name')}}</td>
-						<td>
-							<div ng-if="!doc.err && test.get('built')">
-								<div ng-repeat="result in test.get('results')" ng-class="{testpass:result.pass, testfail:!result.pass}">
-									<a href="#" ng-click="activeTest.result = result">{{result.name}} (Failed {{result.failures}} / {{result.tests}})</a>
-								</div>
-							</div>
-							<div ng-if="!test.err && !test.get('built')">Tests have not been run.</div>
-							<div ng-if="test.err">Could not run tests</div>
-						</td>
-						<td><button class="btn btn-primary btn-run" ng-disabled="test.isRunning" ng-click="test.run()">Run</button></td>
-					</tr>
-				</tbody>
-			  </table>
-			</div>
-			<div ng-if="activeTest.result" class="dialog" ng-init="onlyfailures = true">
-				<a href="#" ng-click="activeTest.result = undefined">X</a>
-				<table class="table">
-					<tbody>
-						<tr><th>Browser</th><td>{{activeTest.result.name}} ({{activeTest.result.name}})</td></tr>
-						<tr><th>Tests</th><td>{{activeTest.result.tests}}</td></tr>
-						<tr><th>Errors</th><td>{{activeTest.result.errors}}</td></tr>
-						<tr><th>Failures</th><td>{{activeTest.result.failures}}</td></tr>
-						<tr><th>Timestamp</th><td>{{activeTest.result.timestamp}}</td></tr>
-						<tr><th>Time</th><td>{{activeTest.result.time}}</td></tr>
-					</tbody>
-				</table>
-				<h3>Results</h3>
-				<label><input type="checkbox" selected="selected" ng-model="onlyfailures">Only show failures</label>
-				<table class="table">
-					<thead>
-						<tr><th>Name</th><th>Passed</th><th>Time</th></tr>
-					</thead>
-						<tbody ng-repeat="testcase in activeTest.result.testcases | filter: { failed: onlyfailures ? true : undefined }">
-							<tr ng-class="{testfail:testcase.failure}">
-								<td><b>{{testcase.name}}</b> - {{testcase.classname}}</td>
-								<td>{{testcase.passed}}</td>
-								<td>{{testcase.time}}</td>
-							</tr>
-							<tr ng-if="testcase.failure">
-								<td colspan="3" class="testfail">
-									{{testcase.failure}}
-								</td>
-							</tr>
-						</tbody>
-				</table>
-			</div>
-			<div class="tab-pane" id="other">
-			  <p>other</p>
-			</div>
-		  </div>
+	<nav class="navbar navbar-default navbar-static-top nav-mini" role="navigation">
+		<div class="navbar-header">
+			<a class="navbar-brand" href="#">Developer Tools</a>
 		</div>
-	  </div>
-	  <div ng-show="!selectedUser">
+		<ul class="nav navbar-nav">
+			<li class="active"><a href="#">Applications</a></li>
+		</ul>
+	</nav>
+	<div ng-view></div>
+	<!-- <div ng-show="!selectedUser">
 		<h2> please log in  </h2>
-	  </div>
-	  <div ng-show="selectedUser && !selectedBox">
+	</div>
+	<div ng-show="selectedUser && !selectedBox">
 		<h2> please select a box  </h2>
-	  </div>
-	</div><!-- main -->
+	</div> -->
   </body>
   <script src="/js/vendor/lesscss.min.js" type="text/javascript"></script>
   <script src="/js/vendor/jquery.min.js" type="text/javascript"></script>

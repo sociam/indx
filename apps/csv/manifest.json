@@ -1,0 +1,16 @@
+{
+	"name": "CSV File Loader",
+	"version": 0.1,
+	"type":["app"],
+	"description": "CSV file loader",
+	"configpanel":"html/index.html",
+	"icons": { 
+		"128": "imgs/upload.png"
+	},
+	"author": [
+		{
+			"name": "eMax",
+			"email":"max@hip.cat"
+		}
+	]
+}

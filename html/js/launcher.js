@@ -40,6 +40,13 @@
 			scope:{user:"=model"},
 			replace:true
 		};
+	}).directive('userselect',function() {
+		return {
+			restrict:'E',
+			templateUrl:'templates/userselect.html',
+			scope:{users:"=model"},
+			replace:true
+		};
 	}).controller('Login',function($scope, $location, client, backbone, utils) {
 		$scope.isLocalUser = function(u) { return u && (u.type == 'local_owner' || u.type == 'local_user'); };
 		$scope.isOpenIDUser = function(u) { return u.type == 'openid'; };
@@ -100,25 +107,26 @@
 				sa(function() {
 					$scope.users = users.map(function(x) {
 						if (_.isObject(x) && x["@id"]) { // latest server
-							if (x.user_metadata) {
-								if (typeof(x.user_metadata) === 'string') {
-									try {
-										x.user_metadata = JSON.parse(x.user_metadata); 
-									} catch(e) { console.error('error unpacking user metadata for ', x, ' skipping '); }
-								}
-								if (_.isObject(x.user_metadata)) {
-									_(x).extend(x.user_metadata);
-								}
-							}
-							// console.log(" user is >> ", x);
-							if (!x.name) { 
-								var id = x["@id"];
-								if (id.indexOf('http') == 0) {
-									id = id.split('/');
-									id = id[id.length-1];
-								}
-								x.name = id;
-							}
+							// code moved into indx.js
+							// if (x.user_metadata) {
+							// 	if (typeof(x.user_metadata) === 'string') {
+							// 		try {
+							// 			x.user_metadata = JSON.parse(x.user_metadata); 
+							// 		} catch(e) { console.error('error unpacking user metadata for ', x, ' skipping '); }
+							// 	}
+							// 	if (_.isObject(x.user_metadata)) {
+							// 		_(x).extend(x.user_metadata);
+							// 	}
+							// }
+							// // console.log(" user is >> ", x);
+							// if (!x.name) { 
+							// 	var id = x["@id"];
+							// 	if (id.indexOf('http') == 0) {
+							// 		id = id.split('/');
+							// 		id = id[id.length-1];
+							// 	}
+							// 	x.name = id;
+							// }
 							return x;
 						}
 						if (_.isString(x)) { // old server
@@ -130,11 +138,11 @@
 				});
 			}).fail(function(err) { u.error(err); });
 	}).controller('AppsList', function($scope, $location, client, utils) {
-		console.log('hello apps list');
 		var u = utils, store = client.store, sa = function(f) { return utils.safeApply($scope,f); };
 		var getAppsList = function() {
 			client.store.getAppsList().then(function(apps) {
 				console.log('got apps list', apps);
+				window.apps = apps;
 				sa(function() { $scope.apps = apps; });
 			}).fail(function() {
 				sa(function() { delete $scope.apps; });
