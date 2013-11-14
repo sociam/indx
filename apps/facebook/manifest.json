@@ -1,0 +1,16 @@
+{
+	"name": "facebook service",
+	"version": 0.1,
+	"type":["service"],
+	"description": "facebook connector service",
+	"configpanel":"html/index.html",
+	"icons": { 
+		"128": "imgs/fb.gif"
+	},
+	"author": [
+		{
+			"name": "eMax",
+			"email":"max@hip.cat"
+		}
+	]
+}

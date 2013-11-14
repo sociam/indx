@@ -277,11 +277,11 @@ class IndxClient:
         url = "{0}admin/list_boxes".format(self.address)
         return self._get(url)
 
-    def set_root_box(self, box):
-        """ List the boxes on the INDX server. """
-        self._debug("Called API: set_root_box with box {0}".format(box))
+    def create_root_box(self, box):
+        """ Create a new root box for a user on the INDX server. """
+        self._debug("Called API: create_root_box with box {0}".format(box))
 
-        url = "{0}admin/set_root_box".format(self.address)
+        url = "{0}admin/create_root_box".format(self.address)
         values = {"box": box}
         return self._get(url, values)
 

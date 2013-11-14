@@ -89,6 +89,12 @@ class ObjectStoreAsync:
 
         self.conn.autocommit = value
 
+    def unlisten(self, observer):
+        """ Stop listening to updates to the box by this observer. """
+        logging.debug("Objectstore unlisten.")
+        RAW_LISTENERS[self.boxid].unsubscribe(observer)
+
+
     def listen(self, observer):
         """ Listen for updates to the box, and send callbacks when they occur.
         
@@ -1449,10 +1455,14 @@ class ConnectionSharer:
         self.conn = conn
         self.listen()
 
+    def unsubscribe(self, observer):
+        """ Unsubscribe this observer to this box's updates. """
+        self.subscribers.remove(observer)
+
     def subscribe(self, observer):
         """ Subscribe to this box's updates.
 
-        observer - A function to call when an update occurs. Parameter sent is re-dispatched from the database.
+        observer -- A function to call when an update occurs. Parameter sent is re-dispatched from the database.
         """
         self.subscribers.append(observer)
 
@@ -1480,8 +1490,11 @@ class ConnectionSharer:
             self.store.diff(old_version, version, "diff").addCallbacks(diff_cb, err_cb)
 
         def err_cb(failure):
-            self.error("ConnectionSharer listen, err_cb, failure: {0}".format(failure))
+            logging.error("ConnectionSharer listen, err_cb, failure: {0}".format(failure))
+
+        def done_cb(val):
+            logging.debug("ConnectionSharer listen, done_cb, val: {0}".format(val))
 
         self.conn.addNotifyObserver(observer)
-        self.conn.runOperation("LISTEN wb_new_version").addCallbacks(observer, err_cb)
+        self.conn.runOperation("LISTEN wb_new_version").addCallbacks(done_cb, err_cb)
 

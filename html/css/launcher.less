@@ -173,6 +173,12 @@ body{
 }
 
 .apps-toplevel {
+    width:608px; // todo make reactive
+
+    * { 
+    	font-family:"Lato" !important; 
+    	font-weight:0.9;
+    } 
 	h2 {
 		font-size:14pt;
 		font-style: italics;
@@ -180,28 +186,55 @@ body{
 		margin:0px 0px 1em 0px; padding:0px;
 		line-height:1.0em;
 	}
-	a { color:orange; }
+	a { color:#222; }
 	padding:20px;
 	.applist {
 		list-style-type:none;
 		padding:0px; margin:0px 0px 0px -10px;
+		background:#fbfbfb;
 		.app {
-			text-align:left;
+			background:white;
+			cursor:pointer;
+			a{ text-decoration: none; }
+			text-align:center;
 			display:inline-block;		
-			width:120px;
-			height:30px;		
+			width:90px;
+			min-height:90px;
 			font-size:13pt;
-			border:1px solid #fff;
-			padding:2px 10px 3px 10px;
-			margin:0px 0px 0px 0px;
-			* { vertical-align: baseline; }
+			border:1px solid #eee;
+			// padding:2px 10px 3px 10px;
+			padding:9px 6px;
+			margin:12px;
+			// margin:0px 0px 0px 0px;
+			vertical-align: middle !important;
 			&:hover {
-				border:1px solid #eef;			
+				border:1px solid #888;			
 				box-shadow:2px 2px #ee;
+				.appname { 
+					font-weight:300;
+					color:black;
+				}
 			}
+			.appicon {
+				width:48px;
+				height:48px;
+				padding:8px;
+			}
+			.appname {
+				vertical-align:middle !important;
+				line-height:0.9em;
+				font-weight:200;
+				font-size:11pt;
+				height:100%;
+				color:#888;
+			}
+			border-radius:4px 4px;
 		}
+
 	}
+
 }
+
 
 
 

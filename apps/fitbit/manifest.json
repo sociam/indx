@@ -1,0 +1,16 @@
+{
+	"name": "Fitbit",
+	"version": 0.1,
+	"type":["service"],
+	"description": "Fitbit file loader",
+	"configpanel":"html/index.html",
+	"icons": { 
+		"128": "img/upload.png"
+	},
+	"author": [
+		{
+			"name": "Laura!",
+			"email":"aprilush@gmail.com"
+		}
+	]
+}
