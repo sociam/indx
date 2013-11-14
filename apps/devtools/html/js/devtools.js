@@ -2,6 +2,8 @@
 angular
 	.module('devtools', ['ui','indx'])
 	.config(['$routeProvider', function ($routeProvider) {
+		'use strict';
+
 		$routeProvider
 			.when('/', { templateUrl: 'partials/root.html', controller: 'RootCtrl' })
 			.when('/manifest/:id', { templateUrl: 'partials/manifest.html', controller: 'ManifestCtrl' })
@@ -12,7 +14,6 @@ angular
 		'use strict';
 
 		var u = utils;
-
 
 		var TestsModel = Backbone.Model.extend({
 			initialize: function (attributes, options) {
@@ -47,7 +48,6 @@ angular
 					});
 			},
 			getResults: function () {
-				console.log('GET RESULTS', this);
 				var that = this,
 					promise = $.Deferred();
 				this.isLoading = true;
@@ -82,8 +82,6 @@ angular
 							}).get()
 						};
 					}).get()[0];
-
-					console.log('results', that.results)
 
 					promise.resolve();
 				}).always(function () {
@@ -138,12 +136,26 @@ angular
 		var Manifest = Backbone.Model.extend({
 			defaults: {
 				icons: {
-					128: '/apps/devtools/icons/default.png'
+					'128': '/apps/devtools/icons/default.png',
+					'font-awesome': { 'class': 'fa fa-cog', 'background': '#aaa', 'color': '#eee' }
 				}
 			},
 			initialize: function () {
 				this.documentation = new DocumentationModel(undefined, { manifest: this });
 				this.tests = new TestsModel(undefined, { manifest: this });
+				this.icon = '';
+				if (this.get('icons')) {
+					if (this.get('icons')['font-awesome']) {
+						var fa = this.get('icons')['font-awesome'];
+						this.icon = $('<i class="app-icon"></i>')
+							.addClass(fa['class'])
+							.css(fa)
+							.wrap('<p>').parent().html();
+					} else if (this.get('icons')['128']) {
+						var src = this.get('icons')['128'];
+						this.icon = '<img src="' + src + '" class="icon">';
+					}
+				}
 			}
 		});
 
@@ -193,123 +205,7 @@ angular
 		_.extend($scope, {
 			manifests: manifestsService.manifests
 		});
-		/*var u = utils;
-
-		var Test = Backbone.Model.extend({
-			idAttribute: 'name',
-			initialize: function () {
-				Backbone.Model.prototype.initialize.apply(this, arguments);
-				this.getResults();
-			},
-			run: function () {
-				var that = this;
-				this.isRunning = true;
-				$.post('api/tests/run_test?name=' + this.get('name')).always(function () {
-					that.isRunning = false;
-					u.safeApply($scope);
-				}).then(function (r) {
-					that.set(r.response);
-					that.err = false;
-					that.getResults().then(function () {
-						u.safeApply($scope);
-					});
-				}).fail(function () {
-					that.err = true;
-					u.safeApply($scope);
-				});
-			},
-			getResults: function () {
-				console.log('GET RESULTS', this);
-				var that = this,
-					promise = $.Deferred();
-				$.get('/' + this.get('url') + '/test-results.xml', function (data) {
-					var $tests = $(data).find('testsuite');
-
-					that.set('results', $tests.map(function () {
-						var $test = $(this),
-							failures = Number($test.attr('failures')),
-							errors = Number($test.attr('errors'));
-
-						return {
-							name: $test.attr('name'),
-							//fullname: $test.attr('name'),
-							failures: failures,
-							errors: errors,
-							tests: Number($test.attr('tests')),
-							pass: failures + errors === 0,
-							timestamp: $test.attr('timestamp'),
-							time: $test.attr('time'),
-							testcases: $test.find('testcase').map(function () {
-								var $testcase = $(this),
-									$failure = $testcase.find('failure');
-								return {
-									name: $testcase.attr('name'),
-									classname: $testcase.attr('classname'),
-									time: Number($testcase.attr('time')),
-									passed: !$failure.length,
-									failed: !!$failure.length,
-									failure: $failure.text()
-								};
-							}).get()
-						};
-					}).get());
-
-					u.safeApply($scope);
-
-					promise.resolve();
-				});
-				return promise;
-			}
-		});
-
-		var Doc = Backbone.Model.extend({
-			idAttribute: 'name',
-			build: function () {
-				var that = this;
-				this.isBuilding = true;
-				$.post('api/docs/generate_doc?name=' + this.get('name'))
-					.then(function (r) {
-						that.set(r.response);
-						that.err = false;
-						u.safeApply($scope);
-					})
-					.fail(function (r, s, err) {
-						that.err = r.status + ' - ' + err;
-						u.safeApply($scope);
-					})
-					.always(function () {
-						that.isBuilding = false;
-						u.safeApply($scope);
-					});
-			}
-		});
-
-		var Tests = Backbone.Collection.extend({
-			model: Test
-		});
-
-		var Docs = Backbone.Collection.extend({
-			model: Doc
-		});
-
-		var tests = new Tests(),
-			docs = new Docs();
-
-		$.get('api/tests/list_tests', function (r) {
-			tests.reset(r.response);
-		});
-
-		$.get('api/docs/list_docs', function (r) {
-			docs.reset(r.response);
-		});
-
-
-		_.extend($scope, {
-			tests: tests,
-			docs: docs,
-			manifests: manifests,
-			activeTest: {}
-		});
+		/*
 
 		// this pollution created by emax for supprting debugging
 		// declares box in devtools
@@ -336,17 +232,12 @@ angular
 		if (manifestsService.manifests.fetched) {
 			ready.resolve();
 		} else {
-			console.log('Q?')
-			manifestsService.manifests.on('all', function (a) {
-				console.log('b', a)
-			})
 			manifestsService.manifests.once('sync', function () {
 				ready.resolve();
 			});
 		}
 
 		ready.then(function () {
-			console.log('READY')
 			var manifest = manifestsService.manifests.get($routeParams.id);
 			if (!manifest) {
 				$location.path('/');
