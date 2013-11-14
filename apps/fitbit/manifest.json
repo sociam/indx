@@ -1,5 +1,5 @@
 {
-	"name": "Fitbit Harvester service",
+	"name": "Fitbit Harvester",
 	"type": ["service"],
 	"version": 0.1,
 	"description": "Harvester of your Fitbit data",

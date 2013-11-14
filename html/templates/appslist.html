@@ -5,7 +5,7 @@
 			<a ng-href='apps/{{ a.url || a["@id"] }}' target="_blank" title="{{ a.about }}">
 				<img class="appicon" ng-show="a.icons[128]" ng-src="apps/{{ a['@id'] }}/{{ a.icons[128] }}">
 				<img class="appicon" ng-show="!a.icons[128]" ng-src="/img/hypercube-lt.png">
-				<div class="appname">{{ a.name || a["@id"] }}</div>
+				<div class="appname">{{ (a.name || a["@id"]) | lowercase }}</div>
 			</a>
 		</li>
 	</ul>

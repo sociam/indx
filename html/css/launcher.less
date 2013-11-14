@@ -173,7 +173,7 @@ body{
 }
 
 .apps-toplevel {
-    width:608px; // todo make reactive
+    width:586px; // todo make reactive
 
     * { 
     	font-family:"Lato" !important; 
@@ -190,9 +190,11 @@ body{
 	padding:20px;
 	.applist {
 		list-style-type:none;
-		padding:0px; margin:0px 0px 0px -10px;
-		background:#fbfbfb;
+		padding:0px; margin:0px -13px -5px -13px;
+		background:#fcfcfc;
+		box-shadow:inset 0 0 4px #ccc;
 		.app {
+			box-shadow: 0px 2px #eee;
 			background:white;
 			cursor:pointer;
 			a{ text-decoration: none; }
@@ -208,8 +210,7 @@ body{
 			// margin:0px 0px 0px 0px;
 			vertical-align: middle !important;
 			&:hover {
-				border:1px solid #888;			
-				box-shadow:2px 2px #ee;
+				border:1px solid #ccc;			
 				.appname { 
 					font-weight:300;
 					color:black;
@@ -222,9 +223,9 @@ body{
 			}
 			.appname {
 				vertical-align:middle !important;
-				line-height:0.9em;
+				line-height:0.97em;
 				font-weight:200;
-				font-size:11pt;
+				font-size:10.8pt;
 				height:100%;
 				color:#888;
 			}
