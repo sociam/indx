@@ -33,50 +33,52 @@ angular
             sa(function() { $scope.status = stat; });
         };
 
-        var _get_config_from_service = function() {
+        var getConfigFromService = function() {
             s._ajax('GET', 'apps/fitbit/api/get_config').then(function(x) { 
                 console.log(x.config);
                 var config = x.config;
                 // var config = JSON.parse(x.config);
-                if (config.token) {
-                    sa(function() { 
-                        _($scope).extend({ 
-                            box : config.box,
-                            password: config.password,
-                            start: config.start,
-                            frequency: config.frequency, 
-                            token: config.token
+                if (config.fitbit) {
+                    if (config.fitbit.token) {
+                        sa(function() { 
+                            _($scope).extend({ 
+                                token: config.fitbit.token
+                            });
                         });
-                    });
-                } else if (config.url) {
-                    sa(function() { 
-                        _($scope).extend({ 
-                            url: config.url,
-                            box: config.box,
-                            password: config.password,
-                            start: config.start,
-                            frequency: config.frequency
+                    } else if (config.fitbit.url) {
+                        sa(function() { 
+                            _($scope).extend({ 
+                                url: config.fitbit.url,
+                                req_token: config.fitbit.req_token
+                            });
                         });
-                    });
+                    }
                 }
-
-                // restore the user
-                if (config.user && $scope.users) { 
-                    var match = $scope.users.filter(function(u) { return u['@id'] === config.user; });
-                    if (match.length) {
-                        console.log('match ', match[0]);
-                        window.match = match[0];
-                        sa(function() { $scope.user = match[0]; });
+                if (config.harvester) {
+                    sa(function() { 
+                        _($scope).extend({ 
+                            password: config.harvester.password,
+                            box: config.harvester.box, 
+                            start: config.harvester.start,
+                            frequency: config.harvester.frequency
+                        });
+                    });
+                    if (config.harvester.user && $scope.users) { 
+                        var match = $scope.users.filter(function(u) { return u['@id'] === config.harvester.user; });
+                        if (match.length) {
+                            console.log('match ', match[0]);
+                            window.match = match[0];
+                            sa(function() { $scope.user = match[0]; });
+                        }
                     }
                 }
                 console.log($scope);
-
             }).fail(function(err) { 
                 console.error('could not get config ', err);    
             });
         };
 
-        var get_users_and_boxes = function() { 
+        var getUsersAndBoxes = function() { 
             var dul = u.deferred(), dbl = u.deferred();
             // get the users
             s.getUserList().then(function(users) {
@@ -325,8 +327,8 @@ angular
         $scope.$watch('selectedUser', function() {
             if ($scope.selectedUser) {
                 console.log('selected ', $scope.selectedUser);
-                get_users_and_boxes().then(function() {
-                    _get_config_from_service();
+                getUsersAndBoxes().then(function() {
+                    getConfigFromService();
                 });
             }
         });

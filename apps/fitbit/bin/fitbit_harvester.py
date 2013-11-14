@@ -4,75 +4,100 @@ import keyring, keyring.util.platform_
 from keyring.backends.pyfs import PlaintextKeyring
 from fitbit import Fitbit, FitbitIntraDay
 from indxclient import IndxClient
+import oauth2 as oauth
 
-logging.basicConfig(filename="fitbit_harvester.log", level=logging.DEBUG)
+class FitbitHarvester:
 
-def parse_args():
-    parser = argparse.ArgumentParser(prog="run")
-    parser.add_argument('--config', help="Set config (input requires JSON) and exit.")
-    parser.add_argument('--get-config', action="store_true", help="Output current config as JSON and exit.")
-    args = vars(parser.parse_args())
-    return args
+    def __init__(self):
+        logging.basicConfig(filename="fitbit_harvester.log", level=logging.DEBUG)
+    
+        data_root = keyring.util.platform_.data_root()
+        if not os.path.exists(data_root):
+            os.mkdir(data_root)
+        keyring.set_keyring(PlaintextKeyring())
 
-def init():
-    # init keyring
-    # some platforms have no data root. we can take care of them now.
-    data_root = keyring.util.platform_.data_root()
-    if not os.path.exists(data_root):
-        os.mkdir(data_root)
-    keyring.set_keyring(PlaintextKeyring())
+        self.parser = argparse.ArgumentParser(prog="run")
+        self.parser.add_argument('--config', help="Set config (input requires JSON) and exit.")
+        self.parser.add_argument('--get-config', action="store_true", help="Output current config as JSON and exit.")
 
-    # init fitbit
-    consumer_key = "9cc7928d03fa4e1a92eda0d01ede2297"
-    consumer_secret = "340ea36a974e47738a335c0cccfe1fcf"
-    return Fitbit(consumer_key, consumer_secret)
+        # init fitbit
+        consumer_key = "9cc7928d03fa4e1a92eda0d01ede2297"
+        consumer_secret = "340ea36a974e47738a335c0cccfe1fcf"
+        self.fitbit = Fitbit(consumer_key, consumer_secret)
 
-def run(args, fitbit):
-    if args['config']:
-        print(keyring.util.platform_.data_root())
-        config = json.loads(args['config'])
-        print type(config)
-        if (type(config) != dict):
-            config = json.loads(config)
-        logging.debug("received config: {0}".format(config))
-        if 'pin' in config:
-            logging.debug("received pin: {0}".format(config['pin']))
-            try:
-                token = fitbit.get_token_with_pin(config['pin'])
-                if token:
-                    config['token']=token
-            except Exception as exc:
-                logging.error("could not authorise to fitbit, with pin {0}, error: {1}".format(config['pin'], exc))
-        keyring.set_password("INDX", "INDX_Fitbit_Service", json.dumps(config))
-    elif args['get_config']:
-        # TODO output the stored config (for passing ti back to the server)
-        result = json.loads(keyring.get_password("INDX", "INDX_Fitbit_Service"))
-        logging.debug("Loaded config from keyring: {0}".format(result))
-        if result is None :
-            url = fitbit.get_token_url()
-            result = json.dumps({'url': url})
-        elif 'token' not in result :
-            url = fitbit.get_token_url()
-            if (type(result) == dict):
-                rez = result
-            else:
-                rez = json.loads(result)
-            rez["url"] = url
-            result = json.dumps(rez)
-        print result
-    else:
-        config = keyring.get_password("INDX", "INDX_Fitbit_Service")
-        logging.debug("running the app with: {0}".format(config));
+    def set_config(self, args):
+        stored_config_harvester = keyring.get_password("INDX", "INDX_Fitbit_Harvester")
+        if stored_config_harvester is not None:
+            stored_config_harvester = json.loads(stored_config_harvester)
+        stored_config_fitbit = keyring.get_password("Fitbit.com", "Fitbit")
+        if stored_config_fitbit is not None:
+            stored_config_fitbit = json.loads(stored_config_fitbit)
+
+        received_config = json.loads(args['config'])
+        if (type(received_config) != dict):
+            received_config = json.loads(received_config)
+        logging.debug("Received config: {0}".format(received_config))
+        config = {}
+        if 'fitbit' in received_config:
+            fitbit_config = received_config['fitbit']
+            if fitbit_config and ('pin' in fitbit_config) and ('req_token' in fitbit_config): # this should check for the req_token in the stored config!
+                logging.debug("Received pin: {0}".format(fitbit_config['pin']))
+                try:
+                    token = self.fitbit.get_token_with_pin(fitbit_config['pin'], fitbit_config['req_token'])
+                    logging.debug("Got auth token {0}".format(token))
+                    logging.debug("Got auth token of type {0}".format(type(token)))
+                    if token:
+                        config['token']=token
+                        keyring.set_password("Fitbit.com", "Fitbit", json.dumps(config))
+                except Exception as exc:
+                    logging.error("Could not authorise to fitbit, with pin {0}, error: {1}".format(fitbit_config['pin'], exc))
+        if 'harvester' in received_config:
+            harvester_config = received_config['harvester']
+            if harvester_config != stored_config_harvester:
+                keyring.set_password("INDX", "INDX_Fitbit_Harvester", json.dumps(harvester_config)) 
+
+    def get_config(self, args):
+        stored_config_harvester = keyring.get_password("INDX", "INDX_Fitbit_Harvester")
+        stored_config_fitbit = keyring.get_password("Fitbit.com", "Fitbit")
+
+        logging.debug("Loaded harvester config from keyring: {0}".format(stored_config_harvester))
+        logging.debug("Loaded fitbit config from keyring: {0}".format(stored_config_fitbit))
+
+        if stored_config_fitbit is None :
+            token_url = self.fitbit.get_token_url()
+            config_fitbit = {}
+            config_fitbit["url"] = token_url['url']
+            config_fitbit["req_token"] = token_url['req_token']
+        else :
+            if (type(stored_config_fitbit) != dict):
+                config_fitbit = json.loads(stored_config_fitbit)
+            if (type(config_fitbit) != dict):
+                config_fitbit = json.loads(config_fitbit)
+            if 'token' not in config_fitbit :
+                token_url = self.fitbit.get_token_url()
+                config_fitbit["url"] = token_url['url']
+                config_fitbit["req_token"] = token_url['req_token']
+                keyring.set_password("Fitbit.com", "Fitbit", json.dumps(config_fitbit))
+        if stored_config_harvester is None:
+            return json.dumps({"fitbit":config_fitbit}) # don't send the req_token
+        return json.dumps({"fitbit":config_fitbit, "harvester":json.loads(stored_config_harvester)}) # don't send the req_token
+
+    def run(self):
+        args = vars(self.parser.parse_args())
+        if args['config']:
+            self.set_config(args)
+        elif args['get_config']:
+            print self.get_config(args)
+        else:
+            config = keyring.get_password("INDX", "INDX_Fitbit_Service")
+            logging.debug("running the app with: {0}".format(config))
 
     # keyring.set_password("INDX", "INDX_Blank_App", "{'password':'asdf', 'user':'laura', 'box':'blankie'}")
     # print keyring.get_password("INDX", "INDX_Blank_App")
 
 if __name__ == '__main__':
-    # parse out the parameters
-    args = parse_args();
-    fitbit = init();
-    run(args, fitbit);
-
+    harvester = FitbitHarvester()
+    harvester.run();
 
 
 #     def render(self, request):
