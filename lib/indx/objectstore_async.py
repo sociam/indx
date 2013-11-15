@@ -848,62 +848,6 @@ class ObjectStoreAsync:
         return result_d
 
 
-##    def _clone(self, cur, specified_prev_version, id_list = [], files_id_list = []):
-##        """ Make a new version of the database, excluding objects with the ids specified.
-##
-##            cur -- Cursor to execute the query in
-##            specified_prev_version -- the current version of the box, error returned if this isn't the current version
-##            id_list -- list of object IDs to exclude from the new version (optional)
-##            files_id_list -- list of file OIDs to exclude from the new version of the wb_files table (optional)
-##        """
-##        result_d = Deferred()
-##        self.debug("Objectstore _clone, specified_prev_version: {0}".format(specified_prev_version))
-##   
-##        def err_cb(failure):
-##            self.error("Objectstore _clone err_cb, failure: {0}".format(failure))
-##            result_d.errback(failure)
-##            return
-##
-##        def cloned_cb(cur): # self is the deferred
-##            self.debug("Objectstore _clone, cloned_cb cur: {0}".format(cur))
-##
-##            def files_cloned_cb(cur):
-##                self.debug("Objectstore _clone, files_cloned_cb cur: {0}".format(cur))
-##                result_d.callback(specified_prev_version + 1)
-##                return
-##
-##            files_parameters = [specified_prev_version, specified_prev_version + 1]
-##            # excludes these file OIDs when it clones the previous version
-##            files_parameters.extend(files_id_list)
-##
-##            files_query = "SELECT * FROM wb_clone_files_version(%s,%s,ARRAY["
-##            for j in range(len(files_id_list)):
-##                if j > 0:
-##                    files_query += ", "
-##                files_query += "%s"
-##            files_query += "]::text[])"
-##
-##            self.debug("Objectstore _clone, files_query: {0} files_params: {1}".format(files_query, files_parameters))
-##            self._curexec(cur, files_query, files_parameters).addCallbacks(files_cloned_cb, err_cb) # worked or errored
-##            return
-##
-##        parameters = [specified_prev_version, specified_prev_version + 1]
-##        # excludes these object IDs when it clones the previous version
-##        parameters.extend(id_list)
-##
-##        query = "SELECT * FROM wb_clone_version(%s,%s,ARRAY["
-##        for i in range(len(id_list)):
-##            if i > 0:
-##                query += ", "
-##            query += "%s"
-##        query += "]::text[])"
-##
-##        self.debug("Objectstore _clone, query: {0} params: {1}".format(query, parameters))
-##        self._curexec(cur, query, parameters).addCallbacks(cloned_cb, err_cb) # worked or errored
-##
-##        return result_d
-       
-
     def _curexec(self, cur, *args, **kwargs):
         """ Execute a query on a Cursor, and log what we're going. """
         self.debug("Objectstore _curexec, args: {0}, kwargs: {1}".format(args, kwargs))
@@ -933,7 +877,6 @@ class ObjectStoreAsync:
 
         # TODO XXX deal with new_files_oids and delete_files_oids
 
-
 ##         ### OLD STUFF FROM HERE
 ## 
 ##         # subject ids to not include in the clone
@@ -952,25 +895,7 @@ class ObjectStoreAsync:
             def interaction_err_cb(failure):
                 self.debug("Objectstore update, interaction_err_cb, failure: {0}".format(failure))
                 interaction_d.errback(failure) 
-## 
-##             def cloned_cb(new_ver):
-##                 self.debug("Objectstore update, cloned_cb new_ver: {0}".format(new_ver))
-## 
-##                 def added_cb(info):
-##                     # added object successfully
-##                     self.debug("Objectstore update, added_cb info: {0}".format(info))
-## 
-##                     def files_added_cb(info):
-##                         self.debug("Objectstore update, files_added_cb info: {0}".format(info))
-##                         self._notify(cur, new_ver).addCallbacks(lambda _: interaction_d.callback({"@version": new_ver}), interaction_err_cb)
-## 
-##                     self._add_files_to_version(cur, new_files_oids, new_ver).addCallbacks(files_added_cb, interaction_err_cb)
-## 
-##                 if len(objs) > 0: # skip if we're just deleting
-##                     self._add_objs_to_version(cur, objs, new_ver).addCallbacks(added_cb, interaction_err_cb)
-##                 else:
-##                     added_cb(new_ver)
-## 
+
             def ver_cb(latest_ver):
                 self.debug("Objectstore update, ver_cb, latest_ver: {0}".format(latest_ver))
                 latest_ver = latest_ver[0][0] or 0
@@ -1023,8 +948,6 @@ class ObjectStoreAsync:
                         objs_ids = map(lambda x: x['@id'], objs)
                         self.get_latest_objs(objs_ids, cur).addCallbacks(objs_cb, check_err_cb)
 
-
-##                         self._clone(cur, specified_prev_version, id_list = id_list, files_id_list = files_id_list).addCallbacks(cloned_cb, check_err_cb)
                     else:
                         self.debug("In objectstore update, the previous version of the box {0} didn't match the actual {1}".format(specified_prev_version, latest_ver))
                         ipve = IncorrectPreviousVersionException("Actual previous version is {0}, specified previous version is: {1}".format(latest_ver, specified_prev_version))
@@ -1485,7 +1408,7 @@ class ConnectionSharer:
                     observer(data)
 
             version = int(notify.payload)
-            old_version = version - 1 # TODO do this a better way?
+            old_version = version - 1 # TODO do this a better way? (if we moved away from int versions, we would return the old and new version in the payload instead of calcualting it here.)
 
             self.store.diff(old_version, version, "diff").addCallbacks(diff_cb, err_cb)
 
