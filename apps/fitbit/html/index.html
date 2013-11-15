@@ -41,11 +41,10 @@
         </td></tr>
       </table>
       <table class='params'>
-        <tr><td>Start date:</td><td><input type="text" name="start" ng-model="start"></input></td></tr>
-        <tr><td>Frequency (hours): </td><td><input type="text" name="freq" ng-model="frequency"></input></td></tr>
+        <tr><td>Start date (YYYY-mm-dd):</td><td><input type="text" name="start" ng-model="start"></input></td></tr>
       </table>
       <div class='submits'>
-        <div class="btn btn-default" ng-click="setConfig({harvester:{start:start,frequency:frequency,box:box,user:user['@id'],password:password},fitbit:{pin:pin,token:token,req_token:req_token}})">Configure</div>
+        <div class="btn btn-default" ng-click="setConfig({harvester:{start:start,box:box,user:user['@id'],password:password},fitbit:{pin:pin,token:token,req_token:req_token}})">Configure</div>
         <div class="status">{{ status }}</div>
       </div>
     </div>
