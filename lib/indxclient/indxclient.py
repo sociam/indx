@@ -359,7 +359,7 @@ class IndxClient:
         """
         self._debug("Called API: get_by_ids with object_ids_list: {0}".format(object_id_list))
 
-        id_tuples = map(lambda i: ("id", i), object_id_list)
+        id_tuples = map(lambda i: ("@id", i), object_id_list)
         return self._get(self.base, id_tuples)
 
     @require_token

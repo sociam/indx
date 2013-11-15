@@ -2,6 +2,7 @@
 	"name": "Fitbit Harvester",
 	"type": ["service"],
 	"version": 0.1,
+	"on_boot": 0,
 	"description": "Harvester of your Fitbit data",
 	"configpanel":"html/index.html",
 	"run":["python", "apps/fitbit/bin/fitbit_harvester.py"],

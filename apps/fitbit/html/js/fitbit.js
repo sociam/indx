@@ -59,8 +59,7 @@ angular
                         _($scope).extend({ 
                             password: config.harvester.password,
                             box: config.harvester.box, 
-                            start: config.harvester.start,
-                            frequency: config.harvester.frequency
+                            start: config.harvester.start
                         });
                     });
                     if (config.harvester.user && $scope.users) { 
