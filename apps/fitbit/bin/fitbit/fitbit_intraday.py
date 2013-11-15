@@ -24,6 +24,10 @@ class FitbitIntraDay():
     def get_intraday_time_series(self, resource_path, from_datetime, to_datetime, format='json'):
         # from_date and to_date of type datetime
         # use fitbit_timeseries helper functions for a list of possible resource paths
+        if from_datetime is None:
+            return []
+        if to_datetime is None :
+            return [self.get_day_time_series(resource_path, from_datetime.date(), format)]
         if (to_datetime.date() == from_datetime.date()):
             return [self.get_time_interval_time_series(resource_path, to_datetime.date(), from_datetime.time(), to_datetime.time(), format)]
         else:
@@ -46,18 +50,18 @@ class FitbitIntraDay():
         data = self.fitbit.call_get_api(url)
         return json.loads(data)
 
-    def get_calories(self, from_datetime, to_datetime, format='json'):
+    def get_calories(self, from_datetime, to_datetime=None, format='json'):
         return self.get_intraday_time_series("activities/calories", from_datetime, to_datetime, format)
 
-    def get_steps(self, from_datetime, to_datetime, format='json'):
+    def get_steps(self, from_datetime, to_datetime=None, format='json'):
         return self.get_intraday_time_series("activities/steps", from_datetime, to_datetime, format)
     
-    def get_distance(self, from_datetime, to_datetime, format='json'):
+    def get_distance(self, from_datetime, to_datetime=None, format='json'):
         return self.get_intraday_time_series("activities/distance", from_datetime, to_datetime, format)
     
-    def get_floors(self, from_datetime, to_datetime, format='json'):
+    def get_floors(self, from_datetime, to_datetime=None, format='json'):
         return self.get_intraday_time_series("activities/floors", from_datetime, to_datetime, format)    
 
-    def get_elevation(self, from_datetime, to_datetime, format='json'):
+    def get_elevation(self, from_datetime, to_datetime=None, format='json'):
         return self.get_intraday_time_series("activities/elevation", from_datetime, to_datetime, format)
     

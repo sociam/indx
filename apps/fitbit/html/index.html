@@ -9,13 +9,23 @@
   <body ng-app="FitbitHarvester" ng-controller="ConfigPage" ng-cloak>
     <toolbar box-var='selectedBox' username-var='selectedUser'></toolbar>
     <div class="main" ng-show="selectedUser">
-      <h2>Configuration for your INDX Fitbit Harvester Service</h2>
+      <h2>INDX Fitbit Harvester Service</h2>
+      <h3>Service status - {{ runstate }} </h3>
+      <div class="status">
+        <table>
+          <tr>
+            <td><div class="btn btn-success" ng-click="doStart()">Start</div></td>
+            <td><div class="btn btn-danger" ng-click="doStop()">Stop</div></td> 
+          </tr>
+        </table>
+      </div>
+      <h3>Service configuration</h3>
       <div class='auth'>
         <div ng-show="token">Harvester service is authenticated with Fitbit.com</div>
         <div ng-show="!token && url">
           <p>Harvester service is not authenticated with Fitbit and cannot access your data.<br/> 
           Please <a target="_blank" ng-href="{{url}}">click here</a> to log in to Fitbit and authorize the INDX Fitbit Harvester service.</p>
-          <p id="step-pin">Once you have authorized the app, please copy and paste the PIN in the box:
+          <p>Once you have authorized the app, please copy and paste the PIN in the box:
           <input type="text" name="pin" ng-model="pin"></input></p>
         </div>
       </div>
@@ -35,7 +45,7 @@
         <tr><td>Frequency (hours): </td><td><input type="text" name="freq" ng-model="frequency"></input></td></tr>
       </table>
       <div class='submits'>
-        <div class="btn btn-default" ng-click="setConfig({start:start,frequency:frequency,box:box,user:user['@id'],password:password,pin:pin,token:token})">Configure</div>
+        <div class="btn btn-default" ng-click="setConfig({harvester:{start:start,frequency:frequency,box:box,user:user['@id'],password:password},fitbit:{pin:pin,token:token,req_token:req_token}})">Configure</div>
         <div class="status">{{ status }}</div>
       </div>
     </div>

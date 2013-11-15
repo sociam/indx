@@ -15,6 +15,10 @@ class ServiceHandler(BaseHandler):
         manifest = self._load_manifest()
         return 'type' in manifest and 'service' in manifest['type']
 
+    def on_boot(self):
+        manifest = self._load_manifest()
+        return 'on_boot' in manifest and manifest['on_boot']
+
     def _make_subhandlers(self):
         return [
             {
