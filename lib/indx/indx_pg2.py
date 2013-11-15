@@ -107,7 +107,7 @@ class IndxDatabase:
             last_version = next_version # keep track of the last applied version - this will be saved in the tbl_indx_core k/v table
             while next_version != "":
                 logging.debug("indx_pg2: schema_upgrade adding sql from version: {0}".format(next_version))
-                sql_total.extend(schemas['updates']['versions'][next_version]['sql'])
+                sql_total.append("\n".join(schemas['updates']['versions'][next_version]['sql']))
                 last_version = next_version
                 if 'next-version' not in schemas['updates']['versions'][next_version]:
                     break
@@ -117,9 +117,16 @@ class IndxDatabase:
             logging.debug("indx_pg2: schema_upgrade saving last_version as {0}".format(last_version))
             sql_total.append("DELETE FROM tbl_indx_core WHERE key = 'last_schema_version';")
             sql_total.append("INSERT INTO tbl_indx_core (key, value) VALUES ('last_schema_version', '" + last_version + "');")
-            all_sql = u"\n".join(sql_total)
 
-            conn.runOperation(all_sql).addCallbacks(return_d.callback, return_d.errback) # execute all updates at once!
+            # execute queries one at a time
+            def do_next_query(empty):
+                if len(sql_total) < 1:
+                    return_d.callback(None)
+                else:
+                    query = sql_total.pop(0)
+                    conn.runOperation(query).addCallbacks(do_next_query, return_d.errback)
+
+            do_next_query(None)
 
 
         def table_cb(rows):
@@ -507,7 +514,7 @@ class IndxDatabase:
         connect(POSTGRES_DB, self.db_user, self.db_pass).addCallbacks(connected, return_d.errback)
         return return_d
 
-
+    #this lists all boxes of all users
     def list_boxes(self):
         return_d = Deferred()
         def db_list(dbs):
@@ -520,6 +527,24 @@ class IndxDatabase:
         d = self.list_databases()
         d.addCallbacks(db_list, return_d.errback)
 
+        return return_d
+    
+    #this lists all boxes of a particular user
+    def list_user_boxes(self, username):
+        return_d = Deferred()
+        
+        def connected(conn, username):
+            logging.debug(conn)
+            def db_list(rows):
+                boxes = []
+                for row in rows:
+                    box = row[0][len(INDX_PREFIX):]
+                    boxes.append(box)
+                return_d.callback(boxes)
+
+            conn.runQuery("SELECT DISTINCT tbl_keychain.db_name FROM tbl_keychain JOIN tbl_users ON (tbl_users.id_user = tbl_keychain.user_id) WHERE tbl_users.username = %s", [username]).addCallbacks(db_list, return_d.errback)
+
+        self.connect_indx_db().addCallbacks(lambda conn: connected(conn,username), return_d.errback)
         return return_d
 
 
@@ -553,11 +578,9 @@ class IndxDatabase:
         def done(conn, rows):
             logging.debug("indx_pg2.list_users.done : {0}".format(repr(rows)))        
             users = []
-            # TODO add "name": "Dan Smith" to this output
-            for r in rows:  users.append({"@id": r[0], "type": r[1], "user_metadata": r[2] or {}})
-            # conn.close() # close the connection        
+            for r in rows:
+                users.append({"@id": r[0], "type": r[1], "user_metadata": r[2] or {}})
             return_d.callback(users)
-            return
 
         def fail(err):
             logging.debug('indx_pg2.list_users failure >>>>>>> ');
@@ -568,13 +591,64 @@ class IndxDatabase:
             logging.debug("indx_pg2.list_users : connected")
             d = conn.runQuery("SELECT DISTINCT username, username_type, user_metadata_json FROM tbl_users")
             d.addCallbacks(lambda rows: done(conn, rows), lambda failure: fail(failure))
-            return
 
-        logging.debug('indx_pg2.list_users - connecting: {0}'.format(self.db_user));
+        logging.debug('indx_pg2.list_users - connecting: {0}'.format(self.db_user))
 
         self.connect_indx_db().addCallbacks(connected, return_d.errback)
         return return_d
-    
+
+
+    def get_root_boxes(self):
+        """ Get a list of the root boxes for each user. """
+        logging.debug('indx_pg2 get_root_boxes')
+        return_d = Deferred()
+
+        def connected(conn):
+            logging.debug("indx_pg2.get_root_boxes : connected")
+            d = conn.runQuery("SELECT DISTINCT username, root_box FROM tbl_users WHERE root_box IS NOT NULL")
+            d.addCallbacks(return_d.callback, return_d.errback)
+            return
+
+        self.connect_indx_db().addCallbacks(connected, return_d.errback)
+        return return_d
+
+
+    def create_root_box(self, box_name, username, password):
+        """ Create a new root box for the user name specified. """
+        logging.debug("indx_pg2 create_root_box {0} for user {1}".format(box_name, username))
+        result_d = Deferred()
+
+        try:
+            if username is None or username == "":
+                raise Exception("Username cannot be blank, value was {0}".format(username))
+            if box_name is None or box_name == "":
+                raise Exception("Box Name cannot be blank, value was {0}".format(box_name))
+
+            def created_cb(empty):
+                logging.debug("indx_pg2 create_root_box created_cb")
+
+                def connected_cb(conn):
+                    logging.debug("indx_pg2 create_root_box connected_cb")
+
+                    def do_acl(empty):
+                        logging.debug("indx_pg2 create_root_box do_acl")
+                        user = IndxUser(self, username)
+
+                        user.set_acl(box_name, "@indx", {"read": True, "write": False, "control": False, "owner": False}).addCallbacks(result_d.callback, result_d.errback)
+
+                    conn.runOperation("UPDATE tbl_users SET root_box = %s WHERE username = %s", [box_name, username]).addCallbacks(do_acl, result_d.errback)
+
+                self.connect_indx_db().addCallbacks(connected_cb, result_d.errback)
+
+            self.create_box(box_name, username, password).addCallbacks(created_cb, result_d.errback)
+
+        except Exception as e:
+            failure = Failure(e)
+            logging.error("indx_pg2 create_root_box error, calling errback. Error is: {0}".format(e))
+            result_d.errback(failure)
+
+        return result_d
+
 
     def lookup_best_acct(self, box_name, box_user, box_pass):
         """ Lookup the best account (i.e. RW if exists, otherwise RO) for this user to this database. """

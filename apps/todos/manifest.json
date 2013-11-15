@@ -1,0 +1,15 @@
+{
+	"name": "TODO List",
+	"version": 0.5,
+	"description": "Stay organised with a simple todo list!",
+	"icons": {
+		"128": "icon.png",
+		"font-awesome": { "class": "fa fa-list", "background": "#A5EF00" }
+	},
+	"author": [
+		{
+			"name": "Peter West",
+			"email": "peter.g.west@gmail.com"
+		}
+	]
+}

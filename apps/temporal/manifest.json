@@ -1,0 +1,11 @@
+{
+	"name": "Temporal Data",
+	"version": 0.1,
+	"type":["app"],
+	"description": "Temporal Data Manipulator",
+	"author": [
+		{
+			"name": "Gustavo"
+		}
+	]
+}

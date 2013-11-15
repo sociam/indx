@@ -313,6 +313,7 @@ angular
 			initialize:function(attributes, options) {
 				var this_ = this;
 				u.assert(options.store, "no store provided");
+                this.set({objcache: new ObjCollection(), objlist: [], files : new FileCollection() });
 				this.options = _({}).extend(this.defaultOptions, options);
 				this.store = options.store;
 				this.on('update-from-master', function() {
@@ -322,14 +323,23 @@ angular
 				});
 				this.store.on('login', function() { console.log('on login >> '); this_.reconnect(); });
 				this.on('new-token', function() { this_._setUpWebSocket(); });
-				this._reset();
 				this._setUpWebSocket();
+				this._reset();
 			},
 			_reset:function() {
-				this.set({objcache: new ObjCollection(), objlist: [], files : new FileCollection() });
+				// this._updateQueue = {};
+				// this._deleteQueue = {};
+				// this._fetchingQueue = {};
+				var rejectAll = function (dL) {
+					if (dL) { _(dL).values().map(function(d) { d.reject('reset'); });}
+				};
+				rejectAll(this._updateQueue);
 				this._updateQueue = {};
+				rejectAll(this._deleteQueue);
 				this._deleteQueue = {};
+				rejectAll(this._fetchingQueue);
 				this._fetchingQueue = {};
+				this.unset('token');
 			},
 			/// @arg {string} fid - file id
 			/// Tries to get a file with given id. If it doesn't exist, a file with that name is created.
@@ -343,7 +353,7 @@ angular
 			},
 			_setUpWebSocket:function() {
 				if (! this.getUseWebSockets() ) { return; }
-				if (this._ws) { this.disconnect(); }
+				this.disconnect();
 				var this_ = this, server_host = this.store.get('server_host'), store = this.store;
 				var protocol = (document.location.protocol === 'https:' || protocolOf(server_host) === 'https:') ? 'wss:/' : 'ws:/',
 					wprot = withoutProtocol(server_host),
@@ -355,14 +365,9 @@ angular
 					// u.debug('websocket :: incoming a message ', evt.data.toString()); // .substring(0,190));
 					var pdata = JSON.parse(evt.data);
 					if (pdata.action === 'diff') {
-						try {
-							this_._diffUpdate(pdata.data).then(function() {
-									// console.log('diffupdate success continuation >>>>>>>>> ');
-									this_.trigger('update-from-master', this_.getVersion());
-								}).fail(function(err) {
-									u.error(err); /*  u.log('done diffing '); */
-								});
-						} catch(e) { console.error(e); }
+						this_._diffUpdate(pdata.data).then(function() {
+							this_.trigger('update-from-master', this_.getVersion());
+						}).fail(function(err) {	u.error(err); });
 					}
 				};
 				/// @ignore
@@ -390,15 +395,18 @@ angular
 				return this._ws && this._ws.readyState === 1;
 			},
 			disconnect:function() {
-				if (this._ws) {
-					if (this.isConnected()) { this._ws.close(); }
-					delete this._ws; return true;
+				if (this._ws) { 
+					// if (this.isConnected()) { this._ws.close(); }
+					this._ws.close();
+					delete this._ws; return true; 
 				}
 				return false;
 			},
 			reconnect:function() {
+				var this_ = this;
+				this.disconnect();
 				this._reset();
-				return this.getToken();
+				return this.getToken().pipe(function() { return this_._fetch(); });
 			},
 			/// Gets whether the option to use websockets has been set; set this option using the store's options.use_websockets;
 			/// @return {boolean} - Whether will try to use websockets.
@@ -741,7 +749,7 @@ angular
 					this_._objcache().remove(rid);
 				});
 			},
-			_isFetched: function() {	return this.id !== undefined;	},
+			_isFetched: function() { return this.get('token') && this.id !== undefined;	},
 			_fetch:function() {
 				// all fetch really does is retrieve ids!
 				// new client :: this now _only_ fetches object ids
@@ -963,10 +971,10 @@ angular
 			getBox: function(boxid) {
 				var b = this.boxes().get(boxid) || this._create(boxid);
 				if (!b._getCachedToken()) {
-					return b.getToken().pipe(function() {
-						return b.fetch();
-					});
+					console.info('indxjs getToken(): getting token for box ', boxid);
+					return b.getToken().pipe(function() { return b.fetch();	});
 				}
+				console.info('indxjs getToken(): already have token for box --- ', boxid);
 				return u.dresolve(b);
 			},
 			/// @arg <string|number> boxid: the id for the box
@@ -1004,7 +1012,7 @@ angular
 						u.assert(response.username, "No username returned from whoami, server problem");
 						u.assert(response.type, "No user_type returned from whoami, server problem");
 						this_.set({username:response.username, user_type:response.type});
-						this_.trigger('login', user);
+						// this_.trigger('login', user);
 						var toReturn = _({}).chain().extend(response).extend(user).value();
 						return d.resolve(toReturn);
 					}
@@ -1046,13 +1054,13 @@ angular
 					}
 					d.reject({message:'OpenID authentication failed', status:0});
 				};
-				console.log('login openid >>> ', this._getBaseURL());
+				// console.log('login openid >>> ', this._getBaseURL());
 				var url = [this._getBaseURL(), 'auth', 'login_openid'].join('/');
 				var redirURL = [this._getBaseURL(), 'openid_return_to.html'].join('/');
-				console.log('redir url ', redirURL);
+				// console.log('redir url ', redirURL);
 				var params = { identity: encodeURIComponent(openid), redirect:encodeURIComponent(redirURL) };
 				url = url + "?" + _(params).map(function(v, k) { return k+'='+v; }).join('&');
-				console.log('opening url >>', url);
+				// console.info('OpenID :: opening url >>', url);
 				popup = window.open(url, 'indx_openid_popup', 'width=790,height=500');
 				intPopupChecker = setInterval(function() {
 					if (!popup.closed) { return; }
@@ -1131,8 +1139,27 @@ angular
 			getUserList:function() {
 				var d = u.deferred();
 				this._ajax('GET','admin/list_users')
-					.success(function(data) { d.resolve(data.users);})
-					.fail(function(err) { d.reject(err); });
+					.success(function(data) { 
+						var users = data.users;
+						users.map(function(u) {
+							if (u.user_metadata && typeof u.user_metadata === 'string') {
+								_(u).extend(JSON.parse(u.user_metadata));
+								delete u.user_metadata;
+							} else if (u.user_metadata && typeof u.user_metadata === 'object') {
+								_(u).extend(u.user_metadata);
+								delete u.user_metadata;
+							}							
+							if (!u.name) {
+								var id = u["@id"];
+								if (id.indexOf('http') == 0) {
+									id = id.split('/');
+									id = id[id.length-1];
+								}
+								u.name = id;
+							}
+						});
+						d.resolve(users);
+					}).fail(function(err) { d.reject(err); });
 				return d.promise();
 			},
 			getAppsList:function() {

@@ -17,10 +17,11 @@
 
 import logging, uuid
 import indx.indx_pg2 as database
+import indx.objectstore_async
 from indx.objectstore_async import ObjectStoreAsync
 from twisted.internet.defer import Deferred
+from twisted.python.failure import Failure
 
-SHARERS = {} # one connection per box to listen to updates
 
 class Token:
     """ Represents a token, which stores the credentials of the user,
@@ -54,6 +55,11 @@ class Token:
 
         def got_acct(new_acct):
 
+            if new_acct is False:
+                failure = Failure(Exception("No access to box {0} for user {1}".format(self.boxid, self.username)))
+                result_d.errback(failure)
+                return
+
             if self.best_acct is None:
                 self.best_acct = new_acct
 
@@ -66,8 +72,11 @@ class Token:
                 def get_sync():
                     return database.connect_box_sync(self.boxid, db_user, db_pass)
 
-                conns = {"conn": conn, "sync_conn": get_sync}
-                store = ObjectStoreAsync(conns, self.username, self.appid, self.clientip)
+                def get_raw():
+                    return database.connect_box_raw(self.boxid, db_user, db_pass)
+
+                conns = {"conn": conn, "sync_conn": get_sync, "raw_conn": get_raw}
+                store = ObjectStoreAsync(conns, self.username, self.boxid, self.appid, self.clientip)
                 result_d.callback(store)
 
             database.connect_box(self.boxid, db_user, db_pass).addCallbacks(connected_cb, result_d.errback)
@@ -80,75 +89,6 @@ class Token:
         return result_d
 
 
-    def subscribe(self, observer):
-        """ Add an observer to a box. """
-        logging.debug("Token: Adding subscriber to box {0}".format(self.boxid))
-
-        if self.boxid in SHARERS:
-            SHARERS[self.boxid].subscribe(observer)
-        else:
-
-            """ We create self.boxid in SHARERS immediately to try to avoid a race condition in the 'if' above.
-                This means we have to add the store via a function call, rather than through the constructor.
-                This is because the store is created through a callback, so there is a delay.
-                It works out OK because subscribers will always be added to the list at the point of
-                subscription, but they only receive notifications when the notification connection has been established.
-            """
-            SHARERS[self.boxid] = ConnectionSharer(self.boxid)
-            SHARERS[self.boxid].subscribe(observer)
-
-            def err_cb(failure):
-                logging.error("Token: subscribe, error on getting raw store: {0}".format(failure))
-                failure.trap(Exception)
-                raise failure.value # TODO check that exceptions are OK - I assume so becaus this function doesn't return a Deferred
-
-            def raw_store_cb(store):
-                SHARERS[self.boxid].add_store(store)
-
-            self._get_raw_store().addCallbacks(raw_store_cb, err_cb)
-
-    def _get_raw_store(self):
-        """ Get an ObjectStoreAsync that doesn't use the connection pool - used for listening for notifications. """
-        result_d = Deferred()
-        logging.debug("Token: Getting raw store for box: {0}, token: {1}".format(self.boxid, self.id))
-
-
-        def got_acct(new_acct):
-            if new_acct == False:
-                e = Exception("Permission Denied")
-                failure = Failure(e)
-                result_d.errback(failure)
-                return
-
-            if self.best_acct is None:
-                self.best_acct = new_acct
-
-            db_user, db_pass = new_acct
-
-            def connected_cb(conn):
-                logging.debug("Token get_raw_store connected, returning it.")
-                self.connections.append(conn)
-
-                def get_sync():
-                    return database.connect_box_sync(self.boxid, db_user, db_pass)
-
-                conns = {"conn": conn, "sync_conn": get_sync}
-                raw_store = ObjectStoreAsync(conns, self.username, self.appid, self.clientip)
-                result_d.callback(raw_store)
-
-            def err_cb(failure):
-                logging.error("Token get_raw_store error on connection: {0}".format(failure))
-                result_d.errback(failure)
-
-            database.connect_box_raw(self.boxid, db_user, db_pass).addCallbacks(connected_cb, err_cb)
-
-        if self.best_acct is None:
-            self.db.lookup_best_acct(self.boxid, self.username, self.password).addCallbacks(got_acct, result_d.errback)
-        else:
-            got_acct(self.best_acct)
-
-        return result_d
- 
     def verify(self,boxname,appname,origin):
         # origin is None means we're same origin
         verified = self.boxid == boxname and origin is None or self.origin == origin and appname # APPNAME CHECK TODO
@@ -192,46 +132,4 @@ class TokenKeeper:
         self.add(token)
         return token
 
-
-class ConnectionSharer:
-    """ Shares a single non-pooled connection to a box that hangs on a LISTEN call.
-    
-        The first authenticated user opens the connection and registers as a subscriber.
-        
-        Later authenticated users only subscribe to it. Each user receives the same update (that a change was made), they then each call a diff (or whatever they want to do) using their own authenticated and pooled connections - this is designed so that we have a single LISTEN call per database, but do not rely on that connection's permissions at all, that is handled by the individual user's connection pool privileges.
-    """
-
-    def __init__(self, box):
-        """
-            box -- The name of the box.
-        """
-
-        self.box = box
-        self.subscribers = []
-
-    def add_store(self, store):
-        """ A store has been connected, so we can start listening.
-            store -- A store using a non-pooled connection to the box (that supports adding an observer)
-        """
-        self.store = store
-        self.listen()
-
-    def subscribe(self, observer):
-        """ Subscribe to this box's updates.
-
-        observer - A function to call when an update occurs. Parameter sent is re-dispatched from the database.
-        """
-        self.subscribers.append(observer)
-
-    def listen(self):
-        """ Start listening to INDX updates. """
-
-        def observer(notify):
-            """ Receive a notification update from the store, and dispatch to subscribers. """
-            logging.debug("Received a notification in the ConnectionSharer for box {0}, dispatching to {1} subscribers.".format(self.box, len(self.subscribers)))
-
-            for observer in self.subscribers:
-                observer(notify)
-
-        self.store.listen(observer)
 

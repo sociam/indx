@@ -64,9 +64,15 @@
                 ]
             },
             "20131107-ADD_ROOT_BOX": {
-                "next-version": "",
+                "next-version": "20131112-ADD_INTERNAL_USER_TYPE-HAPPY_BIRTHDAY",
                 "sql": [
                     "ALTER TABLE tbl_users ADD COLUMN root_box text NULL;"
+                ]
+            },
+            "20131112-ADD_INTERNAL_USER_TYPE-HAPPY_BIRTHDAY": {
+                "next-version": "",
+                "sql": [
+                    "ALTER TYPE uname_type ADD VALUE 'internal';"
                 ]
             }
         }

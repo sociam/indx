@@ -40,6 +40,7 @@ class CLIClient:
                       'list_files': {'f': self.list_files, 'args': ['box']},
                       'set_acl': {'f': self.set_acl, 'args': ['box','acl','target_username']},
                       'get_acls': {'f': self.get_acls, 'args': ['box']},
+                      'create_root_box': {'f': self.create_root_box, 'args': ['box']},
                      }
 
         self.appid = appid
@@ -228,6 +229,11 @@ class CLIClient:
         """ Get ACLs for a database. """
         logging.debug("Calling get_acls on server '{0}' in box '{1}'".format(self.args['server'], self.args['box']))
         return self.indx.get_acls()
+
+    def create_root_box(self):
+        """ Create root box for a user. """
+        logging.debug("Calling create_root_box on server '{0}' for box '{1}'".format(self.args['server'], self.args['box']))
+        return self.indx.create_root_box(self.args['box'])
 
     def create_user(self):
         """ Create a new user. """

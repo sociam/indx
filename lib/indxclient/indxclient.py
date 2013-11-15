@@ -277,6 +277,14 @@ class IndxClient:
         url = "{0}admin/list_boxes".format(self.address)
         return self._get(url)
 
+    def create_root_box(self, box):
+        """ Create a new root box for a user on the INDX server. """
+        self._debug("Called API: create_root_box with box {0}".format(box))
+
+        url = "{0}admin/create_root_box".format(self.address)
+        values = {"box": box}
+        return self._get(url, values)
+
     def create_user(self, username, password):
         """ Create a new user. """
         self._debug("Called API: create_user with username: {0}".format(username))

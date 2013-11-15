@@ -22,17 +22,20 @@ from twisted.python.failure import Failure
 from indx.objectstore_query import ObjectStoreQuery
 from indx.object_diff import ObjectSetDiff
 
+RAW_LISTENERS = {} # one connection per box to listen to updates
+
 class ObjectStoreAsync:
     """ Stores objects in a database, handling import, export and versioning.
     """
 
-    def __init__(self, conns, username, appid, clientip):
+    def __init__(self, conns, username, boxid, appid, clientip):
         """
             conn is a postgresql psycopg2 database connection, or connection pool.
         """
         self.conn = conns['conn']
         self.conns = conns
         self.username = username
+        self.boxid = boxid
         self.appid = appid
         self.clientip = clientip
 
@@ -86,21 +89,42 @@ class ObjectStoreAsync:
 
         self.conn.autocommit = value
 
+    def unlisten(self, observer):
+        """ Stop listening to updates to the box by this observer. """
+        logging.debug("Objectstore unlisten.")
+        RAW_LISTENERS[self.boxid].unsubscribe(observer)
+
+
     def listen(self, observer):
         """ Listen for updates to the box, and send callbacks when they occur.
         
             observer -- Function that is called when there is a notification.
         """
-        result_d = Deferred()
+        logging.debug("Objectstore listen")
 
-        def err_cb(failure):
-            self.error("Objectstore listen, err_cb, failure: {0}".format(failure))
-            result_d.errback(failure)
-            return
+        if self.boxid in RAW_LISTENERS:
+            RAW_LISTENERS[self.boxid].subscribe(observer)
+        else:
+            """ We create box in RAW_LISTENERS immediately to try to avoid a race condition in the 'if' above.
+                This means we have to add the store via a function call, rather than through the constructor.
+                This is because the store is created through a callback, so there is a delay.
+                It works out OK because subscribers will always be added to the list at the point of
+                subscription, but they only receive notifications when the notification connection has been established.
+            """
+            RAW_LISTENERS[self.boxid] = ConnectionSharer(self.boxid, self)
+            RAW_LISTENERS[self.boxid].subscribe(observer)
 
-        self.conn.addNotifyObserver(observer)
-        self.conn.runOperation("LISTEN wb_new_version").addCallbacks(lambda _: result_d.callback(True), err_cb)
-        return result_d
+            def err_cb(failure):
+                logging.error("Token: subscribe, error on getting raw store: {0}".format(failure))
+                failure.trap(Exception)
+                raise failure.value # TODO check that exceptions are OK - I assume so becaus this function doesn't return a Deferred
+
+            def raw_conn_cb(conn):
+                logging.debug("Objectstore listen, raw_conn_cb")
+                RAW_LISTENERS[self.boxid].add_conn(conn)
+            
+            self.conns['raw_conn']().addCallbacks(raw_conn_cb, err_cb)
+
 
     def query(self, q, predicate_filter = None):
         """ Perform a query and return results.
@@ -1407,4 +1431,70 @@ class FileNotFoundException(BaseException):
 
 #         return {"data": "", "status": 200, "reason": "OK"} 
 
+
+class ConnectionSharer:
+    """ Shares a single non-pooled connection to a box that hangs on a LISTEN call.
+    
+        The first authenticated user opens the connection and registers as a subscriber.
+        
+        Later authenticated users only subscribe to it. Each user receives the same update (that a change was made), they then each call a diff (or whatever they want to do) using their own authenticated and pooled connections - this is designed so that we have a single LISTEN call per database, but do not rely on that connection's permissions at all, that is handled by the individual user's connection pool privileges.
+    """
+
+    def __init__(self, box, store):
+        """
+            box -- The name of the box.
+        """
+        self.box = box
+        self.store = store
+        self.subscribers = []
+
+    def add_conn(self, conn):
+        """ A connection has been connected, so we can start listening.
+            conn -- A raw connection using a non-pooled connection to the box (that supports adding an observer)
+        """
+        self.conn = conn
+        self.listen()
+
+    def unsubscribe(self, observer):
+        """ Unsubscribe this observer to this box's updates. """
+        self.subscribers.remove(observer)
+
+    def subscribe(self, observer):
+        """ Subscribe to this box's updates.
+
+        observer -- A function to call when an update occurs. Parameter sent is re-dispatched from the database.
+        """
+        self.subscribers.append(observer)
+
+    def listen(self):
+        """ Start listening to INDX updates. """
+
+        def observer(notify):
+            """ Receive a notification update from the store, and dispatch to subscribers. """
+            logging.debug("Received a notification in the ConnectionSharer for box {0}.".format(self.box))
+
+            def err_cb(failure):
+                # send something to listener?
+                failure.trap(Exception)
+                logging.error("ConnectionSharer observer error from diff: {0} {1}".format(failure, failure.value))
+
+            def diff_cb(data):
+                logging.debug("ConnectionSharer observer dispatching diff to {0} subscribers, diff: {1}".format(len(self.subscribers), data))
+
+                for observer in self.subscribers:
+                    observer(data)
+
+            version = int(notify.payload)
+            old_version = version - 1 # TODO do this a better way?
+
+            self.store.diff(old_version, version, "diff").addCallbacks(diff_cb, err_cb)
+
+        def err_cb(failure):
+            logging.error("ConnectionSharer listen, err_cb, failure: {0}".format(failure))
+
+        def done_cb(val):
+            logging.debug("ConnectionSharer listen, done_cb, val: {0}".format(val))
+
+        self.conn.addNotifyObserver(observer)
+        self.conn.runOperation("LISTEN wb_new_version").addCallbacks(done_cb, err_cb)
 

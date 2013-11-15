@@ -67,6 +67,11 @@ class AuthHandler(BaseHandler):
             logging.error("auth_login error, user or pwd is None, returning unauthorized")
             return self.return_unauthorized(request)
 
+        if user[0] == "@":
+            # for internal use only
+            logging.error("auth_login error, cannot login with users whose names start with '@' using the web interface.")
+            return self.return_unauthorized(request)
+
         def win():
             logging.debug("Login request auth for {0}, origin: {1}".format(user, request.getHeader("Origin")))
             wbSession = self.get_session(request)

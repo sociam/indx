@@ -1,28 +1,50 @@
 <html>
-    <head>
-        <link href="/css/bootstrap.css" rel="stylesheet">
-        <link href="/css/angular-ui.css" rel="stylesheet">
-        <link href="/css/select2.css" rel="stylesheet"/>
-        <link rel="stylesheet/less" type="text/css" href="/components/toolbar/toolbar.less">
-        <link rel="stylesheet/less" type="text/css" href="/components/modeltable/modeltable.less"/>	
-        <link rel="stylesheet" href="css/main.css">
-        <title>Fitbit Connector</title>
-    </head>
-    <body>
-        <div class="container" ng-app="fitbit" ng-controller='fitbit'>
-          <toolbar box-var='selectedBox' username-var='selectedUser'></toolbar>
+  <head>
+    <link href="/css/bootstrap.css" rel="stylesheet">
+    <link href="/css/angular-ui.css" rel="stylesheet">
+    <link rel="stylesheet/less" type="text/css" href="/components/toolbar/toolbar.less">
+    <link rel="stylesheet" href="css/fitbit.css">
+    <title>Fitbit Harvester - Configuration</title>
+  </head>
+  <body ng-app="FitbitHarvester" ng-controller="ConfigPage" ng-cloak>
+    <toolbar box-var='selectedBox' username-var='selectedUser'></toolbar>
+    <div class="main" ng-show="selectedUser">
+      <h2>Configuration for your INDX Fitbit Harvester Service</h2>
+      <div class='auth'>
+        <div ng-show="token">Harvester service is authenticated with Fitbit.com</div>
+        <div ng-show="!token && url">
+          <p>Harvester service is not authenticated with Fitbit and cannot access your data.<br/> 
+          Please <a target="_blank" ng-href="{{url}}">click here</a> to log in to Fitbit and authorize the INDX Fitbit Harvester service.</p>
+          <p id="step-pin">Once you have authorized the app, please copy and paste the PIN in the box:
+          <input type="text" name="pin" ng-model="pin"></input></p>
+        </div>
+      </div>
+      <table class='security'>
+        <tr><td>User</td><td><select ng-model="user" ng-options='u.name for u in users'></select></td></tr>
+        <tr><td>Password</td><td><input type="password" ng-model='password'></td></tr>
+        <tr><td>Box</td><td><select ng-model="box" ng-options='b for b in boxes'></select></td></tr>
+        <tr><td><td>
+          <div class="btn btn-warning" 
+          ng-show="user && box && (user['@id'] !== selectedUser.id) && !granted"
+          ng-click="grantACL(user, box)">Authorise {{ user.name }} to have access to {{ box }}</div>
+          <div ng-show="granted" class="granted"> {{ granted_status }} </div>
+        </td></tr>
+      </table>
+      <table class='params'>
+        <tr><td>Start date:</td><td><input type="text" name="start" ng-model="start"></input></td></tr>
+        <tr><td>Frequency (hours): </td><td><input type="text" name="freq" ng-model="frequency"></input></td></tr>
+      </table>
+      <div class='submits'>
+        <div class="btn btn-default" ng-click="setConfig({start:start,frequency:frequency,box:box,user:user['@id'],password:password,pin:pin,token:token})">Configure</div>
+        <div class="status">{{ status }}</div>
+      </div>
+    </div>
+    <div ng-show="!selectedUser">
+      <p>Login to INDX to configure your Fitbit Harvester Service.</p>
+    </div>
 
-            <h2>Download Fitbit Data</h2>
-            <div class="container">
-                <div ng-show="!selectedUser">
-                    <p>Login to INDX to start the download process.</p>
-                </div>
-                <div ng-show="selectedUser && !selectedBox">
-                    <p>Please select a box where to download your Fitbit data.</p>
-                </div>      
-            </div>
-            <div ng-show="selectedUser && selectedBox">
-                <div class="row" id="step-div">
+
+                <!-- <div class="row" id="step-div">
                     <div class="span12">
                         <p id="step-text">The first step is to authorise INDX to access your Fitbit data.</p>
                         <p id="step-authurl">Please <a id="step-authurl-a" target="_blank">click here</a> to log in to Fitbit and authorize the Fitbit Connector app.</p>
@@ -35,7 +57,7 @@
                     </div>
                 </div>
             </div>
-        </div> 
+        </div>  -->
 
     <script src="/js/vendor/lesscss.min.js" type="text/javascript"></script>  
     <script src="/js/vendor/jquery.min.js" type="text/javascript"></script> 

@@ -1,6 +1,6 @@
 {
     "@id": "sample-user",
-    "type": [ "user" ],
+    "type": [ "http://indx.ecs.soton.ac.uk/ontology/root-box/#user" ],
     "user-metadata": [ {
         "name": [ "A Sample User" ],
         "email": [ "sample@example.com" ]
@@ -16,31 +16,31 @@
     ],
     "server": [
         {
-            "type": [ "server" ],
+            "type": [ "http://indx.ecs.soton.ac.uk/ontology/root-box/#server" ],
             "url": [ "https://i.ld.is:8211/" ],
             "box": [
                 {
-                    "type": "box",
+                    "type": "http://indx.ecs.soton.ac.uk/ontology/root-box/#box",
                     "name": [ "samplebox" ],
                     "root-box": [ true ]
                 },
                 {
-                    "type": "box",
+                    "type": "http://indx.ecs.soton.ac.uk/ontology/root-box/#box",
                     "name": [ "musicbox" ]
                 }
             ]
         },
         {
-            "type": [ "server" ],
+            "type": [ "http://indx.ecs.soton.ac.uk/ontology/root-box/#server" ],
             "url": [ "https://servers.indx.ecs.soton.ac.uk/sample" ],
             "box": [
                 {
-                    "type": [ "box" ],
+                    "type": [ "http://indx.ecs.soton.ac.uk/ontology/root-box/#box" ],
                     "name": [ "samplebox" ],
                     "root-box": [ true ]
                 },
                 {
-                    "type": [ "box" ],
+                    "type": [ "http://indx.ecs.soton.ac.uk/ontology/root-box/#box" ],
                     "name": [ "personal" ]
                 }
             ]
@@ -48,14 +48,14 @@
     ],
     "messages": [
         {
-            "type": [ "message" ],
+            "type": [ "http://indx.ecs.soton.ac.uk/ontology/root-box/#message" ],
             "from-box": [ "https://servers.indx.ecs.soton.ac.uk/otheruser/otherbox" ],
             "from-openid": [ "https://id.indx.ecs.soton.ac.uk/identity/othersample" ],
             "to": [ "https://i.ld.is:8211/samplebox" ],
             "from-public-key": [ "MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEA4rjMOCvU5U9YZVQcMVqCdRDCwcbXS6paooIz7WAVTfM4JzsUq9etirxjqabKvlAeuBFRsNyFns89WDJ8O6M31aGD+t6STVfudJ4l9txDKu22ViYm3LZhahh1iDXrWPBpWfgZaH/eFU2X6bKNku5KzJJigK8FHZU5+qOE3ep6RRwitlBBboA1pJWfsMu8Sv6WsKvBx4nC543qzJeGLbeCt4//srEScDwAkRwrsvvsD6kjrY1OJASkYbalX31NzcyNgRpLyv0h7NK+VtUinjwWLh3MFaknFpzGV3UWVW0sXmmtGcqD0SzXNwfArxJkfs9BMNC9cQZDzNzc9DEd4ThlR5lbc7p6D3YyQqFq0/aPQToStVXQ/dKY1dGoVODdVO6qIFidLtvJSRFhmV3uw0Jhu6h8/s6S1kI5ezfaj5jnrJg8ME7SZKX3zBgbyyuDuEmCUQYHzjh4SOM9s4UDRHpngpP2VaS/vaRdhMdtm+EkcghKPP4kEyOJKKDjORLSmsqlAgMBAAE=" ],
             "subject": [ "New version of INDX applications" ],
             "payload": [ {
-                "type": [ "payload" ],
+                "type": [ "http://indx.ecs.soton.ac.uk/ontology/root-box/#payload" ],
                 "metadata": [ {
                     "name": [ "A Name" ],
                     "email": [ "othersample@example.com" ]

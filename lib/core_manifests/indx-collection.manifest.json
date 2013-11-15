@@ -1,0 +1,16 @@
+{
+	"name": "INDX Collection",
+	"version": 0.3,
+	"description": "Library for working with collections of objs",
+	"icons": {
+		"128": "/apps/devtools/icons/indx-collection.png",
+		"font-awesome": { "class": "fa fa-bars", "background": "#0B61A4" }
+	},
+	"author": [
+		{
+			"name": "Peter West",
+			"email": "peter.g.west@gmail.com"
+		}
+	],
+	"documentation": "indx-collection.docs-config.js"
+}

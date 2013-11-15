@@ -1,0 +1,15 @@
+{
+	"name": "JSON Import",
+	"version": 0.1,
+	"type":["app"],
+	"description": "JSON file loader",
+	"icons": {
+		"128": "imgs/brackets.png"
+	},
+	"author": [
+		{
+			"name": "Pete",
+			"email":"peter.g.west@gmail.com"
+		}
+	]
+}

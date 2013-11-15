@@ -1,0 +1,12 @@
+{
+	"name": "Examples",
+	"version": 0.1,
+	"type":["app"],
+	"description": "Examples",
+	"author": [
+		{
+			"name": "eMax",
+			"email":"max@hip.cat"
+		}
+	]
+}

@@ -1,0 +1,13 @@
+{
+	"name": "Moves",
+	"version": 0.1,
+	"type":["app"],
+	"description": "Moves App",
+	"configpanel":"html/index.html",
+	"author": [
+		{
+			"name": "eMax",
+			"email":"max@hip.cat"
+		}
+	]
+}
