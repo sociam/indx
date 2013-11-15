@@ -38,12 +38,22 @@
 				font-size: 25px;
 				padding: 10px 0;
 				line-height: 50px;
+				.edit { display: none; }
+				.static { display: block; }
 				&:hover {
 					background: #eee;
 				}
 				&.selected, &:hover.selected {
 					background: #26517C;
 					color: white;
+				}
+				&.editing {
+					.edit { display: block; }
+					.static { display: none; }
+
+					.icon:hover {
+						background: rgba(255, 255, 255, 0.3);
+					}
 				}
 				&.special {
 					position: absolute;
@@ -63,19 +73,49 @@
 					position: absolute;
 				}
 				.icon {
-					left: 10px;
-					top: 15px;
+					left: 5px;
+					top: 0;
 					text-align: center;
 					width: 28px;
 					font-size: 20px;
+					z-index: 20;
+					& > i {
+						padding: 15px 5px 0 5px;
+					}
+					.edit > i {
+						padding: 0 5px;
+					}
 				}
 				.title {
-					left: 50px;
+					left: 0;
 					top: 0;
+					right: 0;
+					bottom: 0;
+					text-indent: 50px;
+					z-index: 10;
+					input {
+						display: block;
+						background: transparent;
+						border: 0;
+						color: inherit;
+						width: 100%;
+						text-indent: 50px;
+						height: 100%;
+					}
 				}
 				.count {
 					right: 30px;
 					top: 0;
+					z-index: 20;
+				}
+				 .delete {
+					right: 15px;
+					top: 0;
+					z-index: 20;
+					padding: 0 10px;
+					&:hover {
+						background: rgba(255, 255, 255, 0.3);
+					}
 				}
 			}
 
@@ -199,7 +239,22 @@
 .todo-list-icons {
 	width: (@icon-w) * 7;
 	height: (@icon-w) * 4;
-	margin: 10px 5px 15px;
+	position: fixed;
+	top: 0;
+	background: white;
+	box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+	border-radius: 5px;
+	padding: 5px;
+	text-align: center;
+	box-sizing: content-box;
+	z-index: 100;
+	.pointer {
+		position: absolute;
+		bottom: 100%;
+		border-bottom: 10px solid white;
+		border-left: 10px solid transparent;
+		border-right: 10px solid transparent;
+	}
 	.fa {
 		display: inline-block;
 		width: @icon-w;

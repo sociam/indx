@@ -16,6 +16,7 @@
 
 	<div class="todos-main-body">
 		<div class="todos-sidebar">
+			<div class="todo-list-icons"></div>
 		</div>
 		<div class="todos-body">
 		</div>
@@ -31,7 +32,6 @@
 				<form>
 					<div class="dlg-body">
 						<input class="input-title form-control" width="255" type="text" placeholder="Title">
-						<div class="todo-list-icons"></div>
 						<button type="button" class="delete btn btn-danger">Delete this todo list</button>
 					</div>
 					<div class="dlg-controls">
@@ -43,9 +43,15 @@
 	</div>
 
 	<script id="template-todo-list" type="text/template">
-		<div class="icon"><i class="icon-<%= icon[0] %>"></i></div>
-		<div class="title"><%= title[0] %></div>
-		<div class="count"><%= count %></div>
+		<div class="icon">
+			<i class="fa fa-<%= icon[0] %>"></i>
+			<div class="edit"><i class="fa fa-caret-down"></i></div>
+		</div>
+		<div class="title">
+			<input type="text" value="<%= title[0] %>" disabled="disabled">
+		</div>
+		<div class="static count"><%= count %></div>
+		<div class="edit delete">&#x2715;</div>
 	</script>
 
 	<script id="template-todo" type="text/template">

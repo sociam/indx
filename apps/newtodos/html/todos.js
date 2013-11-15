@@ -42,6 +42,18 @@ angular
 			todoListsView = new TodoListsView({ todoLists: todoLists });
 			$('.todos-sidebar').html('').append(todoListsView.el);
 
+			var $iconslist = $('<div class="todo-list-icons"><div class="pointer"></div></div>');
+			_(icons).each(function (icon) {
+				var $icon = $('<a href="#"><i class="fa fa-' + icon + '"></i></a>')
+					.click(function () {
+						selectedIcon = icon;
+						$(this).addClass('active').siblings().removeClass('active');
+					});
+				$iconslist.append($icon);
+			});
+			$('.todos-sidebar').append($iconslist.hide());
+
+
 			// Initialise and render the list of todos
 			//todosView = new TodosView({ todoLists: todoLists });
 			//$('.todos-body').html('').append(todosView.el);
@@ -54,16 +66,8 @@ angular
 			initDlg();
 		});
 		var initDlg = function () {
-			var $iconlist = $('.new-todo-list-dlg .todo-list-icons'),
+			var $iconlist = $('.todo-list-icons'),
 				selectedIcon;
-			_(icons).each(function (icon) {
-				var $icon = $('<a href="#"><i class="fa fa-' + icon + '"></i></a>')
-					.click(function () {
-						selectedIcon = icon;
-						$(this).addClass('active').siblings().removeClass('active');
-					});
-				$iconlist.append($icon);
-			});
 			$('.new-todo-list-dlg')
 				.find('.close-dlg').click(function () {
 					$('.new-todo-list-dlg').fadeOut();
@@ -90,7 +94,7 @@ angular
 						// TODO
 					});
 				});
-		}
+		};
 
 		// Destroy the current views (if there are any)
 		var destroy = function () {
@@ -173,6 +177,12 @@ angular
 					renderTodos(that.todoList.todos);
 				}).on('deselect', function () {
 					that.$el.removeClass('selected');
+				}).on('edit', function () {
+					that.$el.addClass('editing')
+						.find('input').removeAttr('disabled');
+				}).on('editend', function () {
+					that.$el.removeClass('editing')
+						.find('input').attr('disabled', 'disabled');
 				});
 			},
 			render: function () {
@@ -195,7 +205,23 @@ angular
 				this.$el
 					.html(html)
 					.click(function () {
-						that.todoList.select();
+						if (that.todoList.selected && !(that.todoList.get('special') &&
+								that.todoList.get('special')[0])) {
+							that.todoList.edit();
+						}
+						if (!that.todoList.selected) {
+							that.todoList.select();
+						}
+					})
+					.find('.icon').click(function () {
+						var $icon = $(this),
+							offset = $icon.offset();
+						if (that.todoList.editing) {
+							$('.todo-list-icons').show().css({
+								top: offset.top + $icon.height() - 10,
+								left: offset.left - 1
+							});
+						}
 					});
 				return this;
 			},
@@ -286,10 +312,20 @@ angular
 			select: function () {
 				this.collection.setSelected(this);
 			},
+			edit: function (endedit) {
+				console.log('edit', endedit)
+				this.collection.setEditing(endedit ? undefined : this);
+			},
 			setSelected: function (selected) {
 				if (this.selected !== selected) {
 					this.selected = selected;
 					this.trigger(selected ? 'select' : 'deselect');
+				}
+			},
+			setEditing: function (editing) {
+				if (this.editing !== editing) {
+					this.editing = editing;
+					this.trigger(editing ? 'edit' : 'editend');
 				}
 			},
 			initTodos: function () {
@@ -354,19 +390,29 @@ angular
 				}
 			},
 			setSelected: function (todoList, options) {
-				var that = this;
 				options = _.extend({ save: true }, options);
-				if (this.selected !== todoList) {
-					this.selected = todoList;
-					// Deselect others
-					this.chain().filter(function (todoList) {
-						return todoList.selected && todoList !== that.selected;
-					}).each(function (todoList) {
-						todoList.setSelected(false);
-					});
-					this.selected.setSelected(true);
-					if (options.save) { this.obj.save('selected', [todoList]); }
-				}
+				if (this.selected === todoList) { return; }
+				this.selected = todoList;
+				// Deselect others
+				this.chain().filter(function (todoList) {
+					return todoList.selected;
+				}).each(function (todoList) {
+					todoList.setSelected(false);
+				});
+				this.selected.setSelected(true);
+				if (options.save) { this.obj.save('selected', [todoList]); }
+				this.setEditing();
+			},
+			setEditing: function (todoList) {
+				console.log('setedit', todoList)
+				if (this.editing === todoList) { return; }
+				this.editing = todoList;
+				this.chain().filter(function (todoList) {
+					return todoList.editing;
+				}).each(function (todoList) {
+					todoList.setEditing(false);
+				});
+				this.editing.setEditing(true);
 			},
 			initSpecialLists: function () {
 				var that = this;
