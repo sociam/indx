@@ -21,6 +21,7 @@ from twisted.internet import threads
 from twisted.python.failure import Failure
 from indx.objectstore_query import ObjectStoreQuery
 from indx.object_diff import ObjectSetDiff
+from indx.objectstore_types import Graph, Literal, Resource
 
 RAW_LISTENERS = {} # one connection per box to listen to updates
 
@@ -126,7 +127,7 @@ class ObjectStoreAsync:
             self.conns['raw_conn']().addCallbacks(raw_conn_cb, err_cb)
 
 
-    def query(self, q, predicate_filter = None):
+    def query(self, q, predicate_filter = None, render_json = True):
         """ Perform a query and return results.
         
             q -- Query of objects to search for
@@ -138,9 +139,12 @@ class ObjectStoreAsync:
         sql, params = query.to_sql(q, predicate_filter = predicate_filter)
 
         def results(rows):
-            objs_out = self.rows_to_json(rows)
-            result_d.callback(objs_out)
-            return
+            graph = Graph.from_rows(rows)
+            if render_json:
+                objs_out = graph.to_json()
+                result_d.callback(objs_out)
+            else:
+                result_d.callback(graph)
 
         def err_cb(failure):
             self.error("Objectstore query, err_cb, failure: {0}".format(failure))
@@ -151,52 +155,52 @@ class ObjectStoreAsync:
         return result_d
 
 
-    def value_to_json(self, obj_value, obj_type, obj_lang, obj_datatype):
-        """ Serialise a single value into the result format. """
-        if obj_type == "resource":
-            obj_key = "@id"
-        elif obj_type == "literal":
-            obj_key = "@value"
-        else:
-            raise Exception("Unknown object type from database {0}".format(obj_type)) # TODO create a custom exception to throw
+#    def value_to_json(self, obj_value, obj_type, obj_lang, obj_datatype):
+#        """ Serialise a single value into the result format. """
+#        if obj_type == "resource":
+#            obj_key = "@id"
+#        elif obj_type == "literal":
+#            obj_key = "@value"
+#        else:
+#            raise Exception("Unknown object type from database {0}".format(obj_type)) # TODO create a custom exception to throw
+#
+#        obj_struct = {}
+#        obj_struct[obj_key] = obj_value
+#
+#        if obj_lang is not None:
+#            obj_struct["@language"] = obj_lang
+#
+#        if obj_datatype is not None:
+#            obj_struct["@type"] = obj_datatype
+#
+#        return obj_struct
+#
+#
+#    def rows_to_json(self, rows):
+#        """ Serialise results from database view as JSON-LD
+#
+#            rows - The object(s) to serialise.
+#        """
+#        obj_out = {}
+#        for row in rows:
+#            (triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype) = row
+#
+#            if subject not in obj_out:
+#                obj_out[subject] = {}
+#
+#            if predicate not in obj_out[subject]:
+#                obj_out[subject][predicate] = []
+#
+#            obj_struct = self.value_to_json(obj_value, obj_type, obj_lang, obj_datatype)
+#            obj_out[subject][predicate].append(obj_struct)
+#
+#            # add @id key to the object
+#            obj_out[subject]['@id'] = subject
+#
+#        return obj_out
 
-        obj_struct = {}
-        obj_struct[obj_key] = obj_value
 
-        if obj_lang is not None:
-            obj_struct["@language"] = obj_lang
-
-        if obj_datatype is not None:
-            obj_struct["@type"] = obj_datatype
-
-        return obj_struct
-
-
-    def rows_to_json(self, rows):
-        """ Serialise results from database view as JSON-LD
-
-            rows - The object(s) to serialise.
-        """
-        obj_out = {}
-        for row in rows:
-            (triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype) = row
-
-            if subject not in obj_out:
-                obj_out[subject] = {}
-
-            if predicate not in obj_out[subject]:
-                obj_out[subject][predicate] = []
-
-            obj_struct = self.value_to_json(obj_value, obj_type, obj_lang, obj_datatype)
-            obj_out[subject][predicate].append(obj_struct)
-
-            # add @id key to the object
-            obj_out[subject]['@id'] = subject
-
-        return obj_out
-
-
-    def get_latest_objs(self, object_ids, cur = None):
+    def get_latest_objs(self, object_ids, cur = None, render_json = True):
         """ Get the latest version of objects in the box, as expanded JSON-LD notation.
 
             object_ids -- ids of the objects to return
@@ -211,10 +215,13 @@ class ObjectStoreAsync:
 
         def rows_cb(rows, version):
             self.error("Objectstore get_latest_objs, rows_cb, rows: {0}, version: {1}".format(rows, version))
-            obj_out = self.rows_to_json(rows)
-            obj_out["@version"] = version
-            result_d.callback(obj_out)
-       
+            graph = Graph.from_rows(rows)
+            if render_json:
+                obj_out = graph.to_json()
+                obj_out["@version"] = version
+                result_d.callback(obj_out) 
+            else:
+                result_d.callback(graph)
 
         def err_cb(failure):
             self.error("Objectstore get_latest_objs, err_cb, failure: {0}".format(failure))
@@ -323,7 +330,7 @@ class ObjectStoreAsync:
         return result_d
 
 
-    def get_latest(self):
+    def get_latest(self, render_json = True):
         """ Get the latest version of the box, as expanded JSON-LD notation.
         """
         result_d = Deferred()
@@ -335,12 +342,15 @@ class ObjectStoreAsync:
 
         def row_cb(rows, version):
             self.debug("get_latest row_cb: version={0}, rows={1}".format(version, len(rows)))
-            obj_out = self.rows_to_json(rows)
-            if version is None:
-                version = 0
-            obj_out["@version"] = version
-            result_d.callback(obj_out)
-            return
+            graph = Graph.from_rows(rows)
+            if render_json:
+                obj_out = graph.to_json()
+                if version is None:
+                    version = 0
+                obj_out["@version"] = version
+                result_d.callback(obj_out)
+            else:
+                result_d.callback(graph)
 
         def ver_cb(version):
             self.debug("get_latest ver_cb: {0}".format(version))
@@ -414,7 +424,8 @@ class ObjectStoreAsync:
                     diff['changed'][subject]["replaced"] = {}
                 if predicate not in diff['changed'][subject]["replaced"]:
                     diff['changed'][subject]["replaced"][predicate] = []
-                diff['changed'][subject]["replaced"][predicate].append(self.value_to_json(obj_value, obj_type, obj_lang, obj_datatype))
+                obj = Graph.value_from_row(obj_value, obj_type, obj_lang, obj_datatype) # TODO check this renders resources correctly
+                diff['changed'][subject]["replaced"][predicate].append(obj.to_json())
 
             elif diff_type == "add_triple":
                 if subject not in diff['changed']:
@@ -423,7 +434,8 @@ class ObjectStoreAsync:
                     diff['changed'][subject]["added"] = {}
                 if predicate not in diff['changed'][subject]["added"]:
                     diff['changed'][subject]["added"][predicate] = []
-                diff['changed'][subject]["added"][predicate].append(self.value_to_json(obj_value, obj_type, obj_lang, obj_datatype))
+                obj = Graph.value_from_row(obj_value, obj_type, obj_lang, obj_datatype) # TODO check this renders resources correctly
+                diff['changed'][subject]["added"][predicate].append(obj.to_json())
 
             else:
                 raise Exception("Unknown diff type from database")

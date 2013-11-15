@@ -18,6 +18,7 @@ import logging
 import json
 from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
+from indx.objectstore_types import Literal
 
 NS_ROOT_BOX = u"http://indx.ecs.soton.ac.uk/ontology/root-box/#"
 
@@ -50,6 +51,10 @@ class IndxSync:
         # ids of objects we are watching - these are id of objects with types in the TYPES list
         # if their ids appear in the diffs that hit our observer, then we re-run the sync queries against this box
         self.watched_objs = []
+
+        # internal model of the root store
+        self.model = {
+        }
 
         def observer(diff):
             """ Root box callback function returning an update. """
@@ -87,14 +92,19 @@ class IndxSync:
             # breaking out of the loops, and then calling the query at the same time
             except Exception as e:
                 # id was in watched items, or a diff object was added/changed with a type in the TYPES object
-                self.box_query() # TODO use the callbacks here? (doesn't return anything)
+
+                def updated_cb(response):
+                    # model updated, do a sync now
+                    logging.debug("IndxSync observer updated_cb")
+                    self.sync_boxes().addCallbacks(lambda foo: logging.debug("IndxSync observer updated_cb (post model-update) sync complete"), err_cb)
+
+                self.update_model_query().addCallbacks(lambda response: updated_cb, err_cb) # TODO use the callbacks here? (doesn't return anything)
+            else:
+                # only when the box doesn't need to be updated
+                # only sync this box, don't update the model first
+                self.sync_boxes().addCallbacks(lambda foo: logging.debug("IndxSync observer (no model-update) sync complete"), err_cb)
 
         self.observer = observer
-
-        def query_cb(results):
-            logging.debug("IndxSync __init__ query_cb, results: {0}".format(results))
-            # initial query finished, start listening to changes to the root box
-            root_store.listen(observer)
 
         def err_cb(failure):
             failure.trap()
@@ -102,7 +112,18 @@ class IndxSync:
             logging.error("IndxSync __init__ error querying box, raising: {0}".format(e))
             raise e
 
-        self.box_query(initial_query = True).addCallbacks(query_cb, err_cb)
+        def query_cb(results):
+            logging.debug("IndxSync __init__ query_cb, results: {0}".format(results))
+            # initial query finished, start listening to changes to the root box
+            logging.debug("IndxSync query_cb, model: {0}".format(self.model))
+
+            def sync_cb(empty):
+                logging.debug("IndxSync __init__ sync_cb")
+                root_store.listen(observer)
+
+            self.sync_boxes().addCallbacks(sync_cb, err_cb)
+
+        self.update_model_query(initial_query = True).addCallbacks(query_cb, err_cb)
 
 
     def destroy(self):
@@ -110,9 +131,41 @@ class IndxSync:
         self.root_store.unlisten(self.observer)
 
 
-    def box_query(self, initial_query = False):
-        """ Query the root box for root box objects. """
-        logging.debug("IndxSync box_query on box {0}".format(self.root_store.boxid))
+    def sync_boxes(self):
+        """ Synchronise boxes based on the internal model stored in this object. """
+        logging.debug("IndxSync sync_boxes")
+        return_d = Deferred()
+
+        for user in self.model[NS_ROOT_BOX + u"user"]:
+            userid = user.id
+            logging.debug("IndxSync sync_boxes user: {0}".format(userid))
+            servers = user.get("server")
+            for server in servers:
+                url = server.get("url")
+                if url is None:
+                    continue
+                url = url[0].value
+                logging.debug("IndxSync sync_boxes, server URL for userid {0}: {1}".format(userid, url))
+                for box in server.get("box"):
+                    name = box.get("name")
+                    if name is None:
+                        continue
+                    name = name[0].value
+                    if box.get("root-box") is not None:
+                        logging.debug("IndxSync sync_boxes user {0}, server {1}, box {2} is root box".format(userid, url, name))
+                        # TODO sync root boxes for each user
+
+        return_d.callback(True)
+
+        return return_d
+
+
+    def update_model_query(self, initial_query = False):
+        """ Query the root box for root box objects and update the model of the root box here.
+        
+            This is called at init and also whenever any of the model objects (users/servers/boxes etc.) are in the diff.
+        """
+        logging.debug("IndxSync update_model_query on box {0}".format(self.root_store.boxid))
         result_d = Deferred()
 
         # query for all objects of the types in our list of interesting types
@@ -122,20 +175,29 @@ class IndxSync:
 
         q_objs = {"$or": type_queries}
 
-        def objs_cb(results):
-            logging.debug("IndxSync box_query, objs_cb, results: {0}".format(results))
+        def objs_cb(graph):
+            logging.debug("IndxSync update_model_query, objs_cb, graph: {0}".format(graph))
             
             if initial_query:
                 # populate the watched_objs list
-                for id, obj in results.items():
-                    self.watched_objs.append(id)
+                self.watched_objs = graph.objects().keys()
 
-#            for server in results:
-#                url = server['url'][0]['@value']
+            # reset model, index by type URI
+            self.model = {
+            }
+            for typ in self.TYPES: self.model[typ] = []
+
+            for id, obj in graph.objects().items():
+                vals = obj.get("type")
+                if vals:
+                    for typ in self.TYPES:
+                        for val in vals:
+                            if isinstance(val, Literal) and val.value == typ:
+                                self.model[typ].append(obj) 
 
             result_d.callback(True) # for the initial call to succeed
 
-        self.root_store.query(q_objs).addCallbacks(objs_cb, result_d.errback)
+        self.root_store.query(q_objs, render_json = False).addCallbacks(objs_cb, result_d.errback)
 
         return result_d
 
