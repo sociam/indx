@@ -120,8 +120,9 @@ class AdminHandler(BaseHandler):
                 logging.debug(' result > {0} '.format(result))
 
                 def created_cb(empty):
+                    self.webserver.register_box(box_name, self.webserver.root)
                     self.webserver.sync_box(box_name, username)
-                    self.return_ok(request)
+                    self.return_created(request)
 
                 self.database.create_root_box(box_name, username, password).addCallbacks(created_cb, err_cb)
             except Exception as e :
