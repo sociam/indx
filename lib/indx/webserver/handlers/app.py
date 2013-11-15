@@ -88,7 +88,9 @@ class AppsMetaHandler(Resource):
             if handler.is_service() :
                 logging.debug(" This is a service, so registering an api child >>>>>>>>>>>>>>>>>>>>>>>> ");
                 ## putting child under api
-                file_handler.putChild('api', handler)                
+                file_handler.putChild('api', handler) 
+                if handler.on_boot() :
+                    handler.start()
             else:
                 logging.debug("{0} Not a service, so not registering an app".format(appbase))
                 pass
