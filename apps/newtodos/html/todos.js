@@ -33,7 +33,7 @@ angular
 
 			// Get the todo lists
 			todoLists.fetch().then(function () {
-				console.log('lists', todoLists.toJSON())
+				console.log('lists', todoLists.toJSON());
 			});
 
 			// Initialise and render the list of todo lists to be shown in the sidebar
@@ -41,8 +41,10 @@ angular
 			$('.todos-sidebar').html('').append(todoListsView.el);
 
 			// Initialise and render the list of todos
-			todosView = new TodosView({ todoLists: todoLists });
-			$('.todos-body').html('').append(todosView.el);
+			//todosView = new TodosView({ todoLists: todoLists });
+			//$('.todos-body').html('').append(todosView.el);
+
+			$('.todos-main-body').show();
 		};
 
 		// Destroy the current views (if there are any)
@@ -55,7 +57,8 @@ angular
 
 		var showMessage = function (msg) {
 			$('.todos-messages').show().html(msg);
-		}
+			$('.todos-main-body').hide();
+		};
 		// watches for login or box changes
 		$scope.$watch('selectedBox + selectedUser', function () {
 			destroy();
@@ -89,14 +92,18 @@ angular
 				});
 			},
 			render: function () {
-				console.log('render lists')
+				console.log('render lists');
 				var that = this;
 				that.$el.html('');
 				this.todoLists.each(function (todoList) {
 					var todoListView = new TodoListView({ todoList: todoList }); // FIXME: delete old views
 					that.$el.append(todoListView.render().el);
 				});
-				that.$el.append('<li><div class="title">New todo list</div></li>');
+				var $newTodo = $('<li><div class="title">New todo list</div></li>');
+				$newTodo.click(function () {
+					$('.new-todo-list-dialog').show();
+				});
+				that.$el.append($newTodo);
 				return this;
 			},
 			close: function () {
@@ -150,12 +157,14 @@ angular
 			var currentTodosView = new TodosView({ todos: todos });
 			currentTodosView.close();
 			$('.todos-body').html('').append(currentTodosView.render().el);
-		}
+		};
+
 		var TodosView = Backbone.View.extend({
 			tagName: 'ul',
 			initialize: function (options) {
 				var that = this;
 				this.todos = options.todos;
+				console.log(this);
 				this.todos.on('reset add remove', function () { // FIXME
 					that.render();
 				});
@@ -232,8 +241,28 @@ angular
 				}
 			},
 			initTodos: function () {
+				var that = this,
+					updateSpecial,
+					specialType;
 				if (this.has('special')) {
 					this.todos = new Todos();
+					specialType = this.get('special')[0];
+					updateSpecial = function () {
+						var allTodos = todoLists.reduce(function (todos, todoList) {
+							var models;
+							if (specialType === 'all') {
+								models = todoList.todos.models;
+							} else if (specialType === 'completed') {
+								models = todoList.todos.filter(function (model) {
+									return model.has('completed') && model.get('completed')[0] === true;
+								});
+							}
+							return todos.concat(models);
+						}, []);
+						that.todos.reset(allTodos);
+					};
+					updateSpecial();
+					todoLists.on('change', updateSpecial);
 				} else {
 					this.todos = new Todos(undefined, {
 						box: this.box,

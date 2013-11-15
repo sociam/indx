@@ -13,7 +13,7 @@
 .todos-messages {
 	font-size: 20px;
 	text-align: center;
-	margin: 10px 20px;
+	margin: 60px 20px;
 	display: none;
 }
 
@@ -38,7 +38,10 @@
 				font-size: 25px;
 				padding: 10px 0;
 				line-height: 50px;
-				&.selected {
+				&:hover {
+					background: #eee;
+				}
+				&.selected, &:hover.selected {
 					background: #26517C;
 					color: white;
 				}
