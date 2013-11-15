@@ -6,16 +6,18 @@ angular
 
 
 		var urgencies = ['low', 'med', 'high', 'urgent'],
-			icons = ['facetime-video', 'gear', 'flag-checkered', 'phone', 'music', 'road',
-			'magic', 'food', 'shield', 'rocket', 'suitcase', 'globe', 'gamepad', 'inbox',
-			'glass', 'umbrella', 'magnet', 'picture', 'book', 'bookmark', 'group', 'bullhorn',
+			icons = ['video-camera', 'gear', 'flag-checkered', 'phone', 'music', 'road',
+			'magic', 'cutlery', 'shield', 'rocket', 'suitcase', 'globe', 'gamepad', 'inbox',
+			'glass', 'umbrella', 'magnet', 'picture-o', 'book', 'bookmark', 'group', 'bullhorn',
 			'laptop', 'money', 'gift', 'bug', 'truck', 'calendar'];
 
 		var u = utils,
 
 			todoLists,
 			todoListsView,
-			todosView;
+			todosView,
+
+			editingTodoList;
 
 		// Wait until user is logged in and a box has been selected
 		var render = function (box) {
@@ -45,7 +47,50 @@ angular
 			//$('.todos-body').html('').append(todosView.el);
 
 			$('.todos-main-body').show();
+
 		};
+
+		$(function () {
+			initDlg();
+		});
+		var initDlg = function () {
+			var $iconlist = $('.new-todo-list-dlg .todo-list-icons'),
+				selectedIcon;
+			_(icons).each(function (icon) {
+				var $icon = $('<a href="#"><i class="fa fa-' + icon + '"></i></a>')
+					.click(function () {
+						selectedIcon = icon;
+						$(this).addClass('active').siblings().removeClass('active');
+					});
+				$iconlist.append($icon);
+			});
+			$('.new-todo-list-dlg')
+				.find('.close-dlg').click(function () {
+					$('.new-todo-list-dlg').fadeOut();
+				}).end()
+				.find('form').submit(function () {
+					var title = $('.new-todo-list-dlg').find('.input-title').val(),
+						promise;
+					if (editingTodoList) {
+						editingTodoList.set({ title: [title], icon: [selectedIcon] });
+						promise = editingTodoList.save();
+					} else {
+						promise = todoLists.create({
+							id: 'todo-list-' + u.uuid(),
+							title: [title],
+							icon: [selectedIcon]
+						});
+					}
+					promise.then(function () {
+						console.log('success saving/creating');
+						$('.new-todo-list-dlg').fadeOut();
+						// TODO select it
+					}).fail(function () {
+						console.error('some error occured');
+						// TODO
+					});
+				});
+		}
 
 		// Destroy the current views (if there are any)
 		var destroy = function () {
@@ -59,6 +104,12 @@ angular
 			$('.todos-messages').show().html(msg);
 			$('.todos-main-body').hide();
 		};
+
+		var editTodoList = function (todoList) {
+			editingTodoList = todoList;
+			$('.new-todo-list-dlg').show();
+		};
+
 		// watches for login or box changes
 		$scope.$watch('selectedBox + selectedUser', function () {
 			destroy();
@@ -101,7 +152,7 @@ angular
 				});
 				var $newTodo = $('<li><div class="title">New todo list</div></li>');
 				$newTodo.click(function () {
-					$('.new-todo-list-dialog').show();
+					editTodoList();
 				});
 				that.$el.append($newTodo);
 				return this;
@@ -177,6 +228,8 @@ angular
 					var todoView = new TodoView({ todo: todo }); // FIXME: delete old views
 					that.$el.append(todoView.render().el);
 				});
+				var $newTodo = $('<li><div class="title text-muted">New todo</div></li>');
+				that.$el.append($newTodo);
 				return this;
 			},
 			close: function () {
@@ -218,8 +271,7 @@ angular
 			initialize: function () {
 				var that = this;
 				this.initTodos();
-				console.log('TODOS', this.todos.toJSON())
-				if (this.has('special')) {
+				if (this.get('special') && this.get('special')[0]) {
 					this.collection.on('reset', function () {
 						that.initTodos();
 					});
@@ -241,10 +293,11 @@ angular
 				}
 			},
 			initTodos: function () {
+				if (!this.id) { return; }
 				var that = this,
 					updateSpecial,
 					specialType;
-				if (this.has('special')) {
+				if (this.get('special') && this.get('special')[0]) {
 					this.todos = new Todos();
 					specialType = this.get('special')[0];
 					updateSpecial = function () {
@@ -332,6 +385,9 @@ angular
 					}
 				});
 
+			},
+			close: function () {
+				// todo
 			}
 		});
 

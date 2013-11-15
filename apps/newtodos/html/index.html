@@ -21,6 +21,27 @@
 		</div>
 	</div>
 
+	<div class="new-todo-list-dlg" hidden>
+
+		<div class="modal-cover modal-fixed" class="close-dlg"></div>
+
+		<div class="dlg-container">
+			<div class="dlg">
+				<div class="dlg-title">Add todo list</div>
+				<form>
+					<div class="dlg-body">
+						<input class="input-title form-control" width="255" type="text" placeholder="Title">
+						<div class="todo-list-icons"></div>
+						<button type="button" class="delete btn btn-danger">Delete this todo list</button>
+					</div>
+					<div class="dlg-controls">
+						<button type="button" class="close-dlg">Close</button><button type="submit">Save</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+
 	<script id="template-todo-list" type="text/template">
 		<div class="icon"><i class="icon-<%= icon[0] %>"></i></div>
 		<div class="title"><%= title[0] %></div>

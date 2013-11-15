@@ -7,7 +7,7 @@
 	top: 0;
 	left: 0;
 	right: 0;
-	z-index: 10;
+	z-index: 1080;
 }
 
 .todos-messages {
@@ -144,4 +144,76 @@
 	border-color: #FF0000 !important;
 	color: white;
 	.todo-urgency-up { opacity: 0.4; }
+}
+
+
+.dlg-container {
+	width: 100%;
+	position: fixed;
+	top: 20%;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	text-align: center;
+	z-index: 1000;
+}
+
+.dlg {
+	display: inline-block;
+	background: white;
+	border-radius: 4px;
+	box-shadow: 0px 0px 7px rgba(0,0,0,0.4);
+	.dlg-title {
+		padding: 10px;
+		font-weight: bold;
+		border-bottom: 1px solid #ddd;
+		font-size: 18px;
+	}
+	.dlg-body {
+		padding: 20px;
+		width: 300px;
+	}
+	.dlg-controls {
+		button {
+			box-sizing: border-box;
+			background: white;
+			border-bottom-width: 0;
+			border-right-width: 0;
+			border-top: 1px solid #ccc;
+			border-left: 1px solid #ccc;
+			width: 50%;
+			height: 40px;
+			&:first-child {
+				border-left-width: 0px;
+				border-radius: 0 0 0 5px;
+			}
+			&:last-child {
+				border-radius: 0 0 5px 0;
+			}
+		}
+	}
+}
+
+@icon-w: 35px;
+
+.todo-list-icons {
+	width: (@icon-w) * 7;
+	height: (@icon-w) * 4;
+	margin: 10px 5px 15px;
+	.fa {
+		display: inline-block;
+		width: @icon-w;
+		height: @icon-w;
+		padding: 5px;
+		line-height: @icon-w - 10px;
+		cursor: pointer;
+		color: #333;
+		&:hover {
+			background: #eee;
+		}
+		&.active {
+			background: #fbeed5;
+			color: #000;
+		}
+	}
 }
