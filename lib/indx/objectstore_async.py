@@ -181,11 +181,6 @@ class ObjectStoreAsync:
         for row in rows:
             (triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype) = row
 
-            #if "@version" not in obj_out:
-            #    if version is None:
-            #        version = 0
-            #    obj_out["@version"] = version
-
             if subject not in obj_out:
                 obj_out[subject] = {}
 
