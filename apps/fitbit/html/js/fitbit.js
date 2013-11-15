@@ -126,9 +126,27 @@ angular
             });
         };
 
-
-
-
+        $scope.doStart = function() {
+            s._ajax('GET', 'apps/fitbit/api/start').then(function(x) { 
+                console.info('App doStart result: ', x); 
+                status('Start command successful'); 
+            }).fail(function(x) { status(' Error ' + x.toString()); });
+        };
+        $scope.doStop = function() {
+            console.log('App doStop');
+            s._ajax('GET', 'apps/fitbit/api/stop')
+            .then(function(x) { console.info('App Stop result (): ', x); status('Stop command successful'); })
+            .fail(function(x) { status(' Error ' + x.toString()); });
+        };
+        setInterval(function() { 
+            s._ajax('GET','apps/fitbit/api/is_running').then(function(r) { 
+                sa(function() { 
+                    $scope.runstate = r.running ? 'Running' : 'Stopped';  
+                });
+            }).fail(function(r) {
+                sa(function() { $scope.runstate = 'Unknown'; });
+            });
+        }, 1000);
 
         // var initialise = function() {
         //     $("#step-text").hide();

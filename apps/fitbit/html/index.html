@@ -9,7 +9,17 @@
   <body ng-app="FitbitHarvester" ng-controller="ConfigPage" ng-cloak>
     <toolbar box-var='selectedBox' username-var='selectedUser'></toolbar>
     <div class="main" ng-show="selectedUser">
-      <h2>Configuration for your INDX Fitbit Harvester Service</h2>
+      <h2>INDX Fitbit Harvester Service</h2>
+      <h3>Service status - {{ runstate }} </h3>
+      <div class="status">
+        <table>
+          <tr>
+            <td><div class="btn btn-success" ng-click="doStart()">Start</div></td>
+            <td><div class="btn btn-danger" ng-click="doStop()">Stop</div></td> 
+          </tr>
+        </table>
+      </div>
+      <h3>Service configuration</h3>
       <div class='auth'>
         <div ng-show="token">Harvester service is authenticated with Fitbit.com</div>
         <div ng-show="!token && url">
