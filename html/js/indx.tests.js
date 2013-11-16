@@ -20,12 +20,16 @@
 		};
 */
 
-(function (jasmine, $, _, Backbone) {
+(function (params, jasmine, $, _, Backbone) {
 	'use strict';
 
-	var user = 'tester',
-		pass = 'foobar',
-		boxcreations = 3,
+	var user = params.username,
+		pass = params.password,
+		hostname = params.hostname,
+		port = params.port,
+		host = hostname + ':' + port;
+
+	var boxcreations = 3,
 		suppressLogs = true;
 
 	console.log('**** RUNNING TESTS (u: ' + user + ', p: ' + pass + ') ****');
@@ -38,8 +42,8 @@
 		var injector = angular.injector(['ng', 'indx']),
 			indx = injector.get('client'),
 			u = injector.get('utils'),
-			store1 = new indx.Store({ server_host: 'localhost:8211' }),
-			store2 = new indx.Store({ server_host: 'localhost:8211' });
+			store1 = new indx.Store({ server_host: host }),
+			store2 = new indx.Store({ server_host: host });
 
 		it('is a Backbone Model', function () {
 			expect(store1 instanceof Backbone.Model).toBe(true);
@@ -394,4 +398,4 @@
 
 	});
 
-}(this.jasmine, this.$, this._, this.Backbone));
+}(this.params, this.jasmine, this.$, this._, this.Backbone));
