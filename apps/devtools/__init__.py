@@ -58,7 +58,7 @@ class DevToolsApp(BaseHandler):
         currdir = os.path.dirname(os.path.abspath(__file__))
 
         logging.debug('getting list of core manifests')
-        core_dir = os.path.normpath(os.path.sep.join([currdir, '..', '..', 
+        core_dir = os.path.normpath(os.path.sep.join([currdir, '..', '..',
             'lib', 'core_manifests']))
         core_manifests = self.list_manifests_in(core_dir)
         for manifest in core_manifests:
@@ -98,10 +98,10 @@ class DevToolsApp(BaseHandler):
         return manifests
 
     def doc_info(self, manifest, config_file):
-        path = os.path.sep.join(['apps', 'devtools', 'html', 'docs', 
+        path = os.path.sep.join(['apps', 'devtools', 'html', 'docs',
             manifest['type'], manifest['id']])
         return {
-            'url': '/apps/devtools/docs/{0}/{1}'.format(manifest['type'], 
+            'url': '/apps/devtools/docs/{0}/{1}'.format(manifest['type'],
                 manifest['id']),
             'built': os.path.exists(path),
             'path': path,
@@ -109,14 +109,20 @@ class DevToolsApp(BaseHandler):
         }
 
     def test_info(self, manifest, config_file):
-        path = os.path.sep.join(['apps', 'devtools', 'html', 'tests', 
+        path = os.path.sep.join(['apps', 'devtools', 'html', 'tests',
             manifest['type'], manifest['id']])
+        if 'tests_params' in manifest:
+            params = manifest['tests_params']
+            del manifest['tests_params']
+        else:
+            params = None
         return {
             'url': '/apps/devtools/tests/{0}/{1}/test-results.xml'.format(
                 manifest['type'], manifest['id']),
             'have_been_run': os.path.exists(path),
             'path': path,
-            'config_path': manifest['manifest_dir'] + os.path.sep + config_file
+            'config_path': manifest['manifest_dir'] + os.path.sep + config_file,
+            'params': params
         }
 
     def list_manifests(self, request):
@@ -132,10 +138,10 @@ class DevToolsApp(BaseHandler):
                 del manifest['tests']['config_path']
                 del manifest['tests']['path']
         self.return_ok(request, data = { 'response': manifests })
-        
-    def get_requested_manifest(self, request): 
+
+    def get_requested_manifest(self, request):
         manifests = self.list_all_manifests()
-        if not request.args['id']:
+        if not 'id' in request.args:
             self.return_forbidden(request)
             return
         manifest_id = request.args['id'][0]
@@ -187,16 +193,18 @@ class DevToolsApp(BaseHandler):
         cmd_str = 'node lib/tests/run.js %s ' % (config['config_path'])
         cmd_str += '--reporters junit '
         cmd_str += '--output-directory=%s ' % (config['path'])
-        cmd_str += '--log-stdout'
+        cmd_str += '--log-stdout '
+        if 'params' in request.args:
+            cmd_str += '--params=\'%s\'' % request.args['params'][0]
         logging.debug('Exec %s' % cmd_str)
-        cmd = subprocess.Popen([cmd_str], stdout=subprocess.PIPE, 
+        cmd = subprocess.Popen([cmd_str], stdout=subprocess.PIPE,
             stderr=subprocess.PIPE, shell=True)
         out, err = cmd.communicate()
         logging.debug(out);
-        # if cmd.returncode != 0:
-        #     logging.debug('Non-zero exit status %s' % err)
-        #     self.return_internal_error(request)
-        #     return
+        if cmd.returncode != 0:
+            logging.debug('Non-zero exit status %s' % err)
+            self.return_internal_error(request)
+            return
         config['build_output'] = out;
         config['have_been_run'] = os.path.exists(config['path']);
         self.return_ok(request, data = { "response": config })
