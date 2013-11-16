@@ -19,5 +19,21 @@
 		}
 	],
 	"documentation": "indx.docs-config.js",
-	"tests": "indx.tests-config.js"
+	"tests": "indx.tests-config.js",
+	"tests_params": [
+		{	"name": "username",
+			"title": "Test user username",
+			"type": "text" },
+		{	"name": "password",
+			"title": "Test user password",
+			"type": "password" },
+		{	"name": "hostname",
+			"title": "Hostname",
+			"type": "text",
+			"default": "localhost" },
+		{	"name": "port",
+			"title": "Port",
+			"type": "text",
+			"default": "8211" }
+	]
 }
