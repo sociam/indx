@@ -78,7 +78,8 @@ class Graph:
         """ Get the list of object in the JSON format. """
         obj_out = {}
         for id, obj in self.objects().items():
-            obj_out[id] = obj.to_json()
+            if len(obj.model.keys()) > 1: # length 1 means only "@id" i.e. just hanging off the end of a triple, so dont put as a root obj
+                obj_out[id] = obj.to_json()
         return obj_out
 
     def __hash__(self):
