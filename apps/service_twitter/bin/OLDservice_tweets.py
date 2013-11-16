@@ -25,18 +25,22 @@ from tweepy import OAuthHandler
 from tweepy import Stream
 from tweepy import API
 from tweepy import Status
+    
+logging.basicConfig(level=logging.INFO)
+
 
 appid = "twitter_service"
 
 class TwitterService:
 
-    def __init__(self, credentials, configs, twitter_add_info):
-        #logging.debug("Got config items {0}".format(self.config))        
+    def __init__(self, config):
+        config = config.replace("\"","'")
+        self.config = ast.literal_eval(config)
+        logging.debug("Got config items {0}".format(self.config))
+        
         try:
-            if len(credentials)==4 and len(configs)>=4:
-                self.credentials = credentials
-                self.configs = configs
-                self.twitter_add_info = twitter_add_info
+            self.credentials, self.configs, self.twitter_add_info = self.load_parameters(self.config)
+            if len(self.credentials)==4 and len(self.configs)>=4:
                 print "loading Service Instance"
                 self.indx_con = IndxClient(self.credentials['address'], self.credentials['box'], self.credentials['username'], self.credentials['password'], appid)
                 self.consumer_key= self.configs['consumer_key']
@@ -51,23 +55,38 @@ class TwitterService:
                 #set the auth access control
                 self.auth = OAuthHandler(self.consumer_key, self.consumer_secret)
                 self.auth.set_access_token(self.access_token, self.access_token_secret)
+
+                #see if other harvesters needed (indx con needed to sumbit data)
+                self.load_additional_harvesters(self.twitter_add_info, self)
+
+                #now get the tweets
+                words_to_search = self.get_search_criteria()
+                self.get_tweets(words_to_search)
+
+
         except:
             logging.error("could not start TwitterService, check config details - params might be missing")
 
-    def stop_and_exit_service(self):
-        print "HARD QUIT - TWITTER SERVICE"
-        sys.exit()
-   
+      
 
-    def run_main_services(self):
-        #now get the tweets
-        words_to_search = self.get_search_criteria()
-        self.get_tweets(words_to_search)
+    #load and managed parameters
+    def load_parameters(self, config):
+        try:
+            print "loading Credentials...."
+            for k,v in config.iteritems():
+                print k,v
+            self.credentials = {"address": config['address'], "box": config['box'], "username": config['user'], "password": config['password']} 
+            self.configs = {"consumer_key": config['consumer_key'], "consumer_secret": config['consumer_secret'], "access_token": config['access_token'], 
+            "access_token_secret": config['access_token_secret'], "twitter_username": config['twitter_username'], "twitter_search_words": config['twitter_search_words']}
+            try:
+                self.twitter_add_info = {"twitter_status":config['twitter_status'], "twitter_network":config['twitter_network']}
+            except:
+                self.twitter_add_info = {}
 
-    def run_additional_services(self):
-        #see if other harvesters needed (indx con needed to sumbit data)
-        self.load_additional_harvesters(self.twitter_add_info, self)
-
+            return (self.credentials, self.configs, self.twitter_add_info)
+        except:
+            logging.error("COULD NOT START TWITTER APP - NO/INCORRECT CREDENTIALS "+str(sys.exc_info()))
+            return False       
 
     def load_additional_harvesters(self, additional_params, service):
         try:

@@ -1,9 +1,26 @@
+#    Copyright (C) 2011-2013 University of Southampton
+#    Copyright (C) 2011-2013 Daniel Alexander Smith
+#    Copyright (C) 2011-2013 Max Van Kleek
+#    Copyright (C) 2011-2013 Nigel R. Shadbolt
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU Affero General Public License, version 3,
+#    as published by the Free Software Foundation.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU Affero General Public License for more details.
+#
+#    You should have received a copy of the GNU Affero General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 import logging,json,argparse,sys,time,os
 import logging.config
 import keyring
 import keyring.util.platform_
 from keyring.backends.pyfs import PlaintextKeyring
-from service_tweets import TwitterService
+from service_controller_twitter import TwitterServiceController
 
 
 logging.basicConfig(filename="blank.log", level=logging.DEBUG)
@@ -41,7 +58,9 @@ def run(args):
         logging.debug("running the app with: {0}".format(config));
         config = json.loads(config)
         #test run with configs
-        twitter_service = TwitterService(config)
+        #twitter_service = TwitterService(config)
+        service_controler = TwitterServiceController(config)
+        service_controler.load_service_instance()
         time.sleep(2)
 
     # keyring.set_password("INDX", "INDX_Blank_App", "{'password':'asdf', 'user':'laura', 'box':'blankie'}")
