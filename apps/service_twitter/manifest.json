@@ -1,6 +1,7 @@
 {
 	"name": "Twitter Service",
 	"version": 0.1,
+	"type":["service"],
 	"description": "service_twitter",
 	"configpanel":"html/index.html",
 	"run":["python", "apps/service_twitter/bin/run.py"],
