@@ -15,13 +15,10 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import os, logging, json, re
+import os, logging, json
 from indx.webserver.handlers.base import BaseHandler
-from twisted.web.server import NOT_DONE_YET
-import requests
 from subprocess import check_output
 import subprocess
-import shutil
 import glob
 
 
@@ -48,7 +45,8 @@ class DevToolsApp(BaseHandler):
                     manifest['manifest_name'] = manifest_file[len(appdir) + 1:]
                     manifests.append(manifest)
                 except ValueError:
-                    logging.warn('Failed to load JSON file (might be invalid?): %s', manifest_file)
+                    logging.warn('Failed to parse JSON (might be invalid?):',
+                        manifest_file)
                 manifest_json.close()
 
         return manifests
@@ -60,11 +58,13 @@ class DevToolsApp(BaseHandler):
         currdir = os.path.dirname(os.path.abspath(__file__))
 
         logging.debug('getting list of core manifests')
-        core_dir = os.path.normpath(os.path.sep.join([currdir, '..', '..', 'lib', 'core_manifests']))
+        core_dir = os.path.normpath(os.path.sep.join([currdir, '..', '..', 
+            'lib', 'core_manifests']))
         core_manifests = self.list_manifests_in(core_dir)
         for manifest in core_manifests:
             manifest['type'] = 'core'
-            manifest['id'] = 'core-' + '.'.join(manifest['manifest_name'].split('.')[:-2])
+            manifest_name = manifest['manifest_name']
+            manifest['id'] = 'core-' + '.'.join(manifest_name.split('.')[:-2])
             manifests.append(manifest)
 
         logging.debug('getting list of app manifests')
@@ -83,7 +83,8 @@ class DevToolsApp(BaseHandler):
                     manifest['id'] = 'app-' + d
                     if 'icons' in manifest:
                         for icon_type, icon in manifest['icons'].items():
-                            manifest['icons'][icon_type] = url + '/' + icon
+                            if icon_type != 'font-awesome':
+                                manifest['icons'][icon_type] = url + '/' + icon
                     manifests.append(manifest)
 
         for manifest in manifests:
@@ -97,18 +98,22 @@ class DevToolsApp(BaseHandler):
         return manifests
 
     def doc_info(self, manifest, config_file):
-        path = os.path.sep.join(['apps', 'devtools', 'html', 'docs', manifest['type'], manifest['id']])
+        path = os.path.sep.join(['apps', 'devtools', 'html', 'docs', 
+            manifest['type'], manifest['id']])
         return {
-            'url': '/apps/devtools/docs/{0}/{1}'.format(manifest['type'], manifest['id']),
+            'url': '/apps/devtools/docs/{0}/{1}'.format(manifest['type'], 
+                manifest['id']),
             'built': os.path.exists(path),
             'path': path,
             'config_path': manifest['manifest_dir'] + os.path.sep + config_file
         }
 
     def test_info(self, manifest, config_file):
-        path = os.path.sep.join(['apps', 'devtools', 'html', 'tests', manifest['type'], manifest['id']])
+        path = os.path.sep.join(['apps', 'devtools', 'html', 'tests', 
+            manifest['type'], manifest['id']])
         return {
-            'url': '/apps/devtools/tests/{0}/{1}/test-results.xml'.format(manifest['type'], manifest['id']),
+            'url': '/apps/devtools/tests/{0}/{1}/test-results.xml'.format(
+                manifest['type'], manifest['id']),
             'have_been_run': os.path.exists(path),
             'path': path,
             'config_path': manifest['manifest_dir'] + os.path.sep + config_file
@@ -184,26 +189,16 @@ class DevToolsApp(BaseHandler):
         cmd_str += '--output-directory=%s ' % (config['path'])
         cmd_str += '--log-stdout'
         logging.debug('Exec %s' % cmd_str)
-        cmd = subprocess.Popen([cmd_str], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        cmd = subprocess.Popen([cmd_str], stdout=subprocess.PIPE, 
+            stderr=subprocess.PIPE, shell=True)
         out, err = cmd.communicate()
         logging.debug(out);
         # if cmd.returncode != 0:
         #     logging.debug('Non-zero exit status %s' % err)
         #     self.return_internal_error(request)
         #     return
-
-        # results_file = os.path.dirname(config['config_path']) + os.path.sep + 'test-results.xml'
-        # logging.debug('put at %s' % results_file)
-        # if os.path.exists(results_file):
-        #     if not os.path.isdir(config['path']):
-        #         os.makedirs(config['path'])
-        #     newpath = config['path'] + os.path.sep + 'test-results.xml'
-        #     if os.path.exists(newpath):
-        #         os.remove(newpath)
-        #     # move test-results.xml to where we want
-        #     logging.debug('move %s to %s' % (results_file, config['path']))
-        #     shutil.move(results_file, config['path'] + os.path.sep)
         config['build_output'] = out;
+        config['have_been_run'] = os.path.exists(config['path']);
         self.return_ok(request, data = { "response": config })
 
 

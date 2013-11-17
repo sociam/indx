@@ -16,6 +16,8 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging, os, json
+from functools import partial
+from operator import is_not
 
 from twisted.web.resource import Resource
 from twisted.web.static import File
@@ -100,20 +102,26 @@ class AppsMetaHandler(Resource):
 
 
     def get_manifest(self, modulename):
-        manifest_path = os.path.join(apps.BASEDIR, modulename, 'manifest.json')
-        manifest_data = open(manifest_path,'r')
-        manifest = json.load(manifest_data)
-        manifest_data.close()
-        return manifest
+        try:
+            manifest_path = os.path.join(apps.BASEDIR, modulename, 'manifest.json')
+            manifest_data = open(manifest_path,'r')
+            manifest = json.load(manifest_data)
+            manifest_data.close()
+            return manifest
+        except Exception as e:
+            logging.error("Unable to load module {0}, skipping.".format(modulename))
+            return None
 
     def get_modules(self):
         ## apps and services are modules
         all = set(apps.MODULES.keys()).union(self.getNewModuleNames())
         def kv(k):
             kv = self.get_manifest(k)
+            if kv is None:
+                return None
             kv["@id"] = k
             return kv
-        return [kv(k) for k in all]
+        return filter(partial(is_not, None), [kv(k) for k in all])
     
     def options(self, request):
         self.return_ok(request)

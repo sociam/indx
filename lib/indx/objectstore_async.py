@@ -21,6 +21,7 @@ from twisted.internet import threads
 from twisted.python.failure import Failure
 from indx.objectstore_query import ObjectStoreQuery
 from indx.object_diff import ObjectSetDiff
+from indx.objectstore_types import Graph, Literal, Resource
 
 RAW_LISTENERS = {} # one connection per box to listen to updates
 
@@ -126,7 +127,7 @@ class ObjectStoreAsync:
             self.conns['raw_conn']().addCallbacks(raw_conn_cb, err_cb)
 
 
-    def query(self, q, predicate_filter = None):
+    def query(self, q, predicate_filter = None, render_json = True):
         """ Perform a query and return results.
         
             q -- Query of objects to search for
@@ -138,9 +139,12 @@ class ObjectStoreAsync:
         sql, params = query.to_sql(q, predicate_filter = predicate_filter)
 
         def results(rows):
-            objs_out = self.rows_to_json(rows)
-            result_d.callback(objs_out)
-            return
+            graph = Graph.from_rows(rows)
+            if render_json:
+                objs_out = graph.to_json()
+                result_d.callback(objs_out)
+            else:
+                result_d.callback(graph)
 
         def err_cb(failure):
             self.error("Objectstore query, err_cb, failure: {0}".format(failure))
@@ -151,57 +155,52 @@ class ObjectStoreAsync:
         return result_d
 
 
-    def value_to_json(self, obj_value, obj_type, obj_lang, obj_datatype):
-        """ Serialise a single value into the result format. """
-        if obj_type == "resource":
-            obj_key = "@id"
-        elif obj_type == "literal":
-            obj_key = "@value"
-        else:
-            raise Exception("Unknown object type from database {0}".format(obj_type)) # TODO create a custom exception to throw
-
-        obj_struct = {}
-        obj_struct[obj_key] = obj_value
-
-        if obj_lang is not None:
-            obj_struct["@language"] = obj_lang
-
-        if obj_datatype is not None:
-            obj_struct["@type"] = obj_datatype
-
-        return obj_struct
-
-
-    def rows_to_json(self, rows):
-        """ Serialise results from database view as JSON-LD
-
-            rows - The object(s) to serialise.
-        """
-        obj_out = {}
-        for row in rows:
-            (triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype) = row
-
-            #if "@version" not in obj_out:
-            #    if version is None:
-            #        version = 0
-            #    obj_out["@version"] = version
-
-            if subject not in obj_out:
-                obj_out[subject] = {}
-
-            if predicate not in obj_out[subject]:
-                obj_out[subject][predicate] = []
-
-            obj_struct = self.value_to_json(obj_value, obj_type, obj_lang, obj_datatype)
-            obj_out[subject][predicate].append(obj_struct)
-
-            # add @id key to the object
-            obj_out[subject]['@id'] = subject
-
-        return obj_out
+#    def value_to_json(self, obj_value, obj_type, obj_lang, obj_datatype):
+#        """ Serialise a single value into the result format. """
+#        if obj_type == "resource":
+#            obj_key = "@id"
+#        elif obj_type == "literal":
+#            obj_key = "@value"
+#        else:
+#            raise Exception("Unknown object type from database {0}".format(obj_type)) # TODO create a custom exception to throw
+#
+#        obj_struct = {}
+#        obj_struct[obj_key] = obj_value
+#
+#        if obj_lang is not None:
+#            obj_struct["@language"] = obj_lang
+#
+#        if obj_datatype is not None:
+#            obj_struct["@type"] = obj_datatype
+#
+#        return obj_struct
+#
+#
+#    def rows_to_json(self, rows):
+#        """ Serialise results from database view as JSON-LD
+#
+#            rows - The object(s) to serialise.
+#        """
+#        obj_out = {}
+#        for row in rows:
+#            (triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype) = row
+#
+#            if subject not in obj_out:
+#                obj_out[subject] = {}
+#
+#            if predicate not in obj_out[subject]:
+#                obj_out[subject][predicate] = []
+#
+#            obj_struct = self.value_to_json(obj_value, obj_type, obj_lang, obj_datatype)
+#            obj_out[subject][predicate].append(obj_struct)
+#
+#            # add @id key to the object
+#            obj_out[subject]['@id'] = subject
+#
+#        return obj_out
 
 
-    def get_latest_objs(self, object_ids, cur = None):
+    def get_latest_objs(self, object_ids, cur = None, render_json = True):
         """ Get the latest version of objects in the box, as expanded JSON-LD notation.
 
             object_ids -- ids of the objects to return
@@ -216,10 +215,13 @@ class ObjectStoreAsync:
 
         def rows_cb(rows, version):
             self.error("Objectstore get_latest_objs, rows_cb, rows: {0}, version: {1}".format(rows, version))
-            obj_out = self.rows_to_json(rows)
-            obj_out["@version"] = version
-            result_d.callback(obj_out)
-       
+            graph = Graph.from_rows(rows)
+            if render_json:
+                obj_out = graph.to_json()
+                obj_out["@version"] = version
+                result_d.callback(obj_out) 
+            else:
+                result_d.callback(graph)
 
         def err_cb(failure):
             self.error("Objectstore get_latest_objs, err_cb, failure: {0}".format(failure))
@@ -328,7 +330,7 @@ class ObjectStoreAsync:
         return result_d
 
 
-    def get_latest(self):
+    def get_latest(self, render_json = True):
         """ Get the latest version of the box, as expanded JSON-LD notation.
         """
         result_d = Deferred()
@@ -340,12 +342,15 @@ class ObjectStoreAsync:
 
         def row_cb(rows, version):
             self.debug("get_latest row_cb: version={0}, rows={1}".format(version, len(rows)))
-            obj_out = self.rows_to_json(rows)
-            if version is None:
-                version = 0
-            obj_out["@version"] = version
-            result_d.callback(obj_out)
-            return
+            graph = Graph.from_rows(rows)
+            if render_json:
+                obj_out = graph.to_json()
+                if version is None:
+                    version = 0
+                obj_out["@version"] = version
+                result_d.callback(obj_out)
+            else:
+                result_d.callback(graph)
 
         def ver_cb(version):
             self.debug("get_latest ver_cb: {0}".format(version))
@@ -419,7 +424,8 @@ class ObjectStoreAsync:
                     diff['changed'][subject]["replaced"] = {}
                 if predicate not in diff['changed'][subject]["replaced"]:
                     diff['changed'][subject]["replaced"][predicate] = []
-                diff['changed'][subject]["replaced"][predicate].append(self.value_to_json(obj_value, obj_type, obj_lang, obj_datatype))
+                obj = Graph.value_from_row(obj_value, obj_type, obj_lang, obj_datatype) # TODO check this renders resources correctly
+                diff['changed'][subject]["replaced"][predicate].append(obj.to_json())
 
             elif diff_type == "add_triple":
                 if subject not in diff['changed']:
@@ -428,7 +434,8 @@ class ObjectStoreAsync:
                     diff['changed'][subject]["added"] = {}
                 if predicate not in diff['changed'][subject]["added"]:
                     diff['changed'][subject]["added"][predicate] = []
-                diff['changed'][subject]["added"][predicate].append(self.value_to_json(obj_value, obj_type, obj_lang, obj_datatype))
+                obj = Graph.value_from_row(obj_value, obj_type, obj_lang, obj_datatype) # TODO check this renders resources correctly
+                diff['changed'][subject]["added"][predicate].append(obj.to_json())
 
             else:
                 raise Exception("Unknown diff type from database")
@@ -848,62 +855,6 @@ class ObjectStoreAsync:
         return result_d
 
 
-##    def _clone(self, cur, specified_prev_version, id_list = [], files_id_list = []):
-##        """ Make a new version of the database, excluding objects with the ids specified.
-##
-##            cur -- Cursor to execute the query in
-##            specified_prev_version -- the current version of the box, error returned if this isn't the current version
-##            id_list -- list of object IDs to exclude from the new version (optional)
-##            files_id_list -- list of file OIDs to exclude from the new version of the wb_files table (optional)
-##        """
-##        result_d = Deferred()
-##        self.debug("Objectstore _clone, specified_prev_version: {0}".format(specified_prev_version))
-##   
-##        def err_cb(failure):
-##            self.error("Objectstore _clone err_cb, failure: {0}".format(failure))
-##            result_d.errback(failure)
-##            return
-##
-##        def cloned_cb(cur): # self is the deferred
-##            self.debug("Objectstore _clone, cloned_cb cur: {0}".format(cur))
-##
-##            def files_cloned_cb(cur):
-##                self.debug("Objectstore _clone, files_cloned_cb cur: {0}".format(cur))
-##                result_d.callback(specified_prev_version + 1)
-##                return
-##
-##            files_parameters = [specified_prev_version, specified_prev_version + 1]
-##            # excludes these file OIDs when it clones the previous version
-##            files_parameters.extend(files_id_list)
-##
-##            files_query = "SELECT * FROM wb_clone_files_version(%s,%s,ARRAY["
-##            for j in range(len(files_id_list)):
-##                if j > 0:
-##                    files_query += ", "
-##                files_query += "%s"
-##            files_query += "]::text[])"
-##
-##            self.debug("Objectstore _clone, files_query: {0} files_params: {1}".format(files_query, files_parameters))
-##            self._curexec(cur, files_query, files_parameters).addCallbacks(files_cloned_cb, err_cb) # worked or errored
-##            return
-##
-##        parameters = [specified_prev_version, specified_prev_version + 1]
-##        # excludes these object IDs when it clones the previous version
-##        parameters.extend(id_list)
-##
-##        query = "SELECT * FROM wb_clone_version(%s,%s,ARRAY["
-##        for i in range(len(id_list)):
-##            if i > 0:
-##                query += ", "
-##            query += "%s"
-##        query += "]::text[])"
-##
-##        self.debug("Objectstore _clone, query: {0} params: {1}".format(query, parameters))
-##        self._curexec(cur, query, parameters).addCallbacks(cloned_cb, err_cb) # worked or errored
-##
-##        return result_d
-       
-
     def _curexec(self, cur, *args, **kwargs):
         """ Execute a query on a Cursor, and log what we're going. """
         self.debug("Objectstore _curexec, args: {0}, kwargs: {1}".format(args, kwargs))
@@ -933,7 +884,6 @@ class ObjectStoreAsync:
 
         # TODO XXX deal with new_files_oids and delete_files_oids
 
-
 ##         ### OLD STUFF FROM HERE
 ## 
 ##         # subject ids to not include in the clone
@@ -952,25 +902,7 @@ class ObjectStoreAsync:
             def interaction_err_cb(failure):
                 self.debug("Objectstore update, interaction_err_cb, failure: {0}".format(failure))
                 interaction_d.errback(failure) 
-## 
-##             def cloned_cb(new_ver):
-##                 self.debug("Objectstore update, cloned_cb new_ver: {0}".format(new_ver))
-## 
-##                 def added_cb(info):
-##                     # added object successfully
-##                     self.debug("Objectstore update, added_cb info: {0}".format(info))
-## 
-##                     def files_added_cb(info):
-##                         self.debug("Objectstore update, files_added_cb info: {0}".format(info))
-##                         self._notify(cur, new_ver).addCallbacks(lambda _: interaction_d.callback({"@version": new_ver}), interaction_err_cb)
-## 
-##                     self._add_files_to_version(cur, new_files_oids, new_ver).addCallbacks(files_added_cb, interaction_err_cb)
-## 
-##                 if len(objs) > 0: # skip if we're just deleting
-##                     self._add_objs_to_version(cur, objs, new_ver).addCallbacks(added_cb, interaction_err_cb)
-##                 else:
-##                     added_cb(new_ver)
-## 
+
             def ver_cb(latest_ver):
                 self.debug("Objectstore update, ver_cb, latest_ver: {0}".format(latest_ver))
                 latest_ver = latest_ver[0][0] or 0
@@ -1023,8 +955,6 @@ class ObjectStoreAsync:
                         objs_ids = map(lambda x: x['@id'], objs)
                         self.get_latest_objs(objs_ids, cur).addCallbacks(objs_cb, check_err_cb)
 
-
-##                         self._clone(cur, specified_prev_version, id_list = id_list, files_id_list = files_id_list).addCallbacks(cloned_cb, check_err_cb)
                     else:
                         self.debug("In objectstore update, the previous version of the box {0} didn't match the actual {1}".format(specified_prev_version, latest_ver))
                         ipve = IncorrectPreviousVersionException("Actual previous version is {0}, specified previous version is: {1}".format(latest_ver, specified_prev_version))
@@ -1485,7 +1415,7 @@ class ConnectionSharer:
                     observer(data)
 
             version = int(notify.payload)
-            old_version = version - 1 # TODO do this a better way?
+            old_version = version - 1 # TODO do this a better way? (if we moved away from int versions, we would return the old and new version in the payload instead of calcualting it here.)
 
             self.store.diff(old_version, version, "diff").addCallbacks(diff_cb, err_cb)
 

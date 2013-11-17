@@ -1,0 +1,15 @@
+{
+	"name": "Simple Messenger",
+	"type": ["app"],
+	"version": 0.1,
+	"description": "Simple Messenger",
+	"icons": {
+		"128": "imgs/keyboard.png"
+	},
+	"author": [
+		{
+			"name": "Peter",
+			"email": "peter.g.west@gmail.com"
+		}
+	]
+}
