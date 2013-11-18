@@ -25,6 +25,10 @@ angular
 				});
 				var raw = this.manifest.get('tests');
 				this.set(raw);
+				this.params = this.get('params');
+				_.each(this.params, function (param) {
+					param.value = param['default'];
+				});
 				this.isAvailable = !!raw;
 				this.getResults();
 			},
@@ -32,7 +36,15 @@ angular
 				var that = this;
 				this.results = null;
 				this.isRunning = true;
-				$.post('api/run_tests?id=' + this.manifest.id)
+				var params = '';
+				if (this.params) {
+					var paramsObj = {};
+					_.each(this.params, function (param) {
+						paramsObj[param.name] = param.value;
+					});
+					params = '&params=' + JSON.stringify(paramsObj);
+				}
+				$.post('api/run_tests?id=' + this.manifest.id + params)
 					.always(function () {
 						that.isRunning = false;
 						u.safeApply($rootScope);
@@ -210,15 +222,15 @@ angular
 		// this pollution created by emax for supprting debugging
 		// declares box in devtools
 		var loadBox = function(bid) {
-			client.store.getBox(bid).then(function(box) { 
+			client.store.getBox(bid).then(function(box) {
 				console.log('got box >> ', box.id);
-				window.box = box; 
+				window.box = box;
 			});
-		};		
+		};
 		var init = function() {
 			console.log('change on box and user --- init >> ', $scope.selectedBox, $scope.selectedUser);
-			if ($scope.selectedUser && $scope.selectedBox) { 
-				loadBox($scope.selectedBox); 
+			if ($scope.selectedUser && $scope.selectedBox) {
+				loadBox($scope.selectedBox);
 			}
 		};
 		$scope.$watch('selectedBox + selectedUser', init);
@@ -247,7 +259,7 @@ angular
 			if (panes.indexOf($routeParams.section) > -1) {
 				pane = $routeParams.section;
 			}
-			
+
 			$scope.manifest = manifest;
 			$scope.pane = pane;
 		});
