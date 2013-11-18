@@ -22,18 +22,22 @@
 	"tests": "indx.tests-config.js",
 	"tests_params": [
 		{	"name": "username",
-			"title": "Test user username",
+			"title": "Test Username",
 			"type": "text" },
 		{	"name": "password",
-			"title": "Test user password",
+			"title": "Test User password",
 			"type": "password" },
-		{	"name": "hostname",
-			"title": "Hostname",
+		{	"name": "indxURL",
+			"title": "INDX URL",
 			"type": "text",
-			"default": "localhost" },
-		{	"name": "port",
-			"title": "Port",
+			"default": "http://localhost:8211" },
+		{	"name": "suppressLogs",
+			"title": "Supress Logs?",
 			"type": "text",
-			"default": "8211" }
+			"default": "false" },
+		{	"name": "boxCreations",
+			"title": "Number of box creations",
+			"type": "text",
+			"default": "3" }
 	]
 }
