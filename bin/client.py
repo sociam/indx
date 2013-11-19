@@ -40,6 +40,7 @@ class CLIClient:
                       'list_files': {'f': self.list_files, 'args': ['box']},
                       'set_acl': {'f': self.set_acl, 'args': ['box','acl','target_username']},
                       'get_acls': {'f': self.get_acls, 'args': ['box']},
+                      'generate_new_key': {'f': self.generate_new_key, 'args': ['box']},
                       'create_root_box': {'f': self.create_root_box, 'args': ['box']},
                      }
 
@@ -229,6 +230,11 @@ class CLIClient:
         """ Get ACLs for a database. """
         logging.debug("Calling get_acls on server '{0}' in box '{1}'".format(self.args['server'], self.args['box']))
         return self.indx.get_acls()
+
+    def generate_new_key(self):
+        """ Generate and store a new key, returning the public and public-hash parts of the key. """
+        logging.debug("Calling generate_new_key on server '{0}' in box '{1}'".format(self.args['server'], self.args['box']))
+        return self.indx.generate_new_key()
 
     def create_root_box(self):
         """ Create root box for a user. """

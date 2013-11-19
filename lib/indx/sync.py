@@ -16,9 +16,12 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import logging
 import json
+import uuid
+from indx.crypto import generate_rsa_keypair
 from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
 from indx.objectstore_types import Literal
+from indxclient import IndxClient
 
 NS_ROOT_BOX = u"http://indx.ecs.soton.ac.uk/ontology/root-box/#"
 
@@ -31,22 +34,27 @@ class IndxSync:
     TYPES = [
         NS_ROOT_BOX + u"box",
         NS_ROOT_BOX + u"server",
+        NS_ROOT_BOX + u"sync-network",
         NS_ROOT_BOX + u"user",
         NS_ROOT_BOX + u"payload",
         NS_ROOT_BOX + u"message",
+        NS_ROOT_BOX + u"key",
     ]
 
-    def __init__(self, root_store, database, url):
+    def __init__(self, root_store, database, url, keystore):
         """ Initialise with the root box and connection to the INDX db.
         
             root_store -- Connected objectstore to the root box.
             database -- Connection to the database (indx_pg2).
+            url -- URL of this INDX server
+            keystore -- IndxKeystore
         """
         logging.debug("IndxSync __init__ root_store {0}".format(root_store))
 
         self.root_store = root_store
         self.database = database
         self.url = url
+        self.keystore = keystore
 
         # ids of objects we are watching - these are id of objects with types in the TYPES list
         # if their ids appear in the diffs that hit our observer, then we re-run the sync queries against this box
@@ -131,6 +139,78 @@ class IndxSync:
         self.root_store.unlisten(self.observer)
 
 
+    def link_remote_box(self, remote_server, remote_box, remote_user, remote_pass):
+        """ Link a remote box with this local box (either a root box, or just a non-root synced box).
+
+            Requires the credentials of the remote box, and will exchange keys using these credentials, store public keys of each box in the synced boxes, and then not require the credentials again in future to sync.
+        """
+        logging.debug("IndxSync link_remote_box, local: {0}, to remote: {1} @ {2}".format(self.root_store.boxid, remote_server, remote_box))
+        return_d = Deferred()
+
+        local_keys = generate_rsa_keypair(3072)
+
+        def new_remote_key_cb(remote_keys):
+            logging.debug("IndxSync link_remote_box, new_remote_key_cb, remote_keys: {0}".format(remote_keys))
+            # NB: no "private" in remote_keys, that never leaves the remote box.
+            remote_keys = remote_keys['data'] # remove the Indx HTTP response padding
+
+            link_uid = uuid.uuid1()
+            local_key_uid = uuid.uuid1()
+            remote_key_uid = uuid.uuid1()
+
+            # objects get updated to local box, and then synced across to the other boxes once the syncing starts
+            new_objs = [
+                {   "@id": "link-{0}".format(link_uid),
+                    "type": [ {"@value": "http://indx.ecs.soton.ac.uk/ontology/root-box/#sync-network"} ],
+                    "boxes": [ {"@id": "box-{0}".format(local_key_uid)}, # links to the objs below
+                               {"@id": "box-{0}".format(remote_key_uid)}, # links to the objs below
+                             ],
+                },
+                {   "@id": "box-{0}".format(local_key_uid),
+                    "type": [ {"@value": "http://indx.ecs.soton.ac.uk/ontology/root-box/#box"} ],
+                    "server-url": [ {"@value": self.url } ],
+                    "box": [ {"@value": self.root_store.boxid} ],
+                    "key": [ {"@id": local_keys['public-hash']}], # links to the key objs below
+                },
+                {   "@id": "box-{0}".format(remote_key_uid),
+                    "type": [ {"@value": "http://indx.ecs.soton.ac.uk/ontology/root-box/#box"} ],
+                    "server-url": [ {"@value": remote_server } ],
+                    "box": [ {"@value": remote_box} ],
+                    "key": [ {"@id": remote_keys['public-hash']}], # links to the key objs below
+                },
+                {   "@id": local_keys['public-hash'],
+                    "type": [ {"@value": "http://indx.ecs.soton.ac.uk/ontology/root-box/#key"} ],
+                    "public-key": [ {"@value": local_keys['public']} ], # share the full public keys everywhere (private keys only in respective server's keystores)
+                },
+                {   "@id": remote_keys['public-hash'],
+                    "type": [ {"@value": "http://indx.ecs.soton.ac.uk/ontology/root-box/#key"} ],
+                    "public-key": [ {"@value": remote_keys['public']} ], # share the full public keys everywhere
+                },
+            ]
+
+            def local_added_cb(empty):
+                logging.debug("IndxSync link_remote_box, local_added_cb")
+
+                def ver_cb(ver):
+                    logging.debug("IndxSync link_remote_box, ver_cb {0}".format(ver))
+                    # add new objects to local store
+
+                    def added_cb(response):
+                        # TODO start connecting using the new key
+                        pass
+
+                    self.root_store.update(new_objs, ver).addCallbacks(added_cb, return_d.errback)
+
+                self.root_store._get_latest_ver().addCallbacks(ver_cb, return_d.errback)
+
+            # add the local key to the local store
+            self.keystore.put(local_keys).addCallbacks(local_added_cb, return_d.errback) # store in the local keystore
+
+        client = IndxClient(remote_server, remote_box, remote_user, remote_pass, "INDXSync Server Module")
+        client.generate_new_key().addCallbacks(new_remote_key_cb, return_d.errback)
+        return return_d
+
+
     def sync_boxes(self):
         """ Synchronise boxes based on the internal model stored in this object. """
         logging.debug("IndxSync sync_boxes")
@@ -153,7 +233,10 @@ class IndxSync:
                     name = name[0].value
                     if box.get("root-box") is not None:
                         logging.debug("IndxSync sync_boxes user {0}, server {1}, box {2} is root box".format(userid, url, name))
-                        # TODO sync root boxes for each user
+
+                        #if box.get("keys") is None:
+                        #    # no keys - need to generate
+                            
 
         return_d.callback(True)
 
