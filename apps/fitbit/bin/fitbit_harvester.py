@@ -149,6 +149,9 @@ class FitbitHarvester:
     def yesterday(self):
         return datetime.combine((datetime.now()+timedelta(days=-1)).date(), time(00,00,00))
 
+    def today(self):
+        return datetime.combine(datetime.now().date(), time(00,00,00))
+
     def harvest(self, server_url):
         start, box, user, password = self.check_configuration()
         logging.debug("Starting download from date: {0}".format(start))
@@ -166,8 +169,8 @@ class FitbitHarvester:
         harvester = self.find_create(indx, harvester_id, {"http://www.w3.org/2000/01/rdf-schema#label":"INDX Fitbit Harvester extra info"})
         if harvester :
             if "fetched_days" in harvester :
-                fetched_days = harvester["fetched_days"]
-        print harvester
+                fetched_days = self.parse_list(harvester["fetched_days"])
+        logging.debug("Fetched days: {0}".format(fetched_days))
         # else: 
         #     logging.error("Harvester object still not created! Trying again ..")
         #     harvester = self.find_create(indx, harvester_id, {"http://www.w3.org/2000/01/rdf-schema#label":"INDX Fitbit Harvester extra info"})
@@ -191,7 +194,7 @@ class FitbitHarvester:
         floors_ts = self.find_create(indx, floors_ts_id, {"http://www.w3.org/2000/01/rdf-schema#label":"Fitbit Floors Time Series", "http://www.w3.org/1999/02/22-rdf-syntax-ns#type":"http://purl.org/linked-data/cube#Dataset"})
         elevation_ts = self.find_create(indx, elevation_ts_id, {"http://www.w3.org/2000/01/rdf-schema#label":"Fitbit Elevation Time Series", "http://www.w3.org/1999/02/22-rdf-syntax-ns#type":"http://purl.org/linked-data/cube#Dataset"})
 
-        while day <= self.yesterday():
+        while day < self.today():
             if day.date().isoformat() in fetched_days:
                 logging.debug("Data for {0} was already fetched, overwriting!".format(day.date().isoformat()))
                 self.find_and_delete_points(indx, day)
@@ -234,6 +237,11 @@ class FitbitHarvester:
 
             self.safe_update(indx, harvester)
             day = day + timedelta(days=+1)
+
+    def parse_list(self, vlist):
+        out = [x['@value'] for x in vlist]
+        logging.debug("Parsed value list: {0}".format(out))
+        return out
 
     def create_data_points(self, day, data, ts_id, rdf_type=None):
         logging.debug("Started creating data points.")
