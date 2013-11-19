@@ -20,7 +20,7 @@ class FitbitHarvester:
         self.parser = argparse.ArgumentParser(prog="run")
         self.parser.add_argument('--config', help="Set config (input requires JSON) and exit.")
         self.parser.add_argument('--get-config', action="store_true", help="Output current config as JSON and exit.")
-        self.parser.add_argument('server', help="The server URL to connect to.")
+        self.parser.add_argument('--server', help="The server URL to connect to.")
 
         # init fitbit
         consumer_key = "9cc7928d03fa4e1a92eda0d01ede2297"
