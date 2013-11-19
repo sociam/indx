@@ -156,7 +156,7 @@ class FitbitHarvester:
         fitbit_intraday = FitbitIntraDay(self.fitbit)
         logging.debug("Created FitbitIntraDay.")
 
-        indx = IndxClient("http://doirin:8211/", box, user, password, "INDX_Fitbit_Harvester")
+        indx = IndxClient("http://indx.local:8211/", box, user, password, "INDX_Fitbit_Harvester")
         logging.debug("Created INDXClient.")
 
         fetched_days = []
