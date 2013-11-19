@@ -23,17 +23,17 @@
 	"tests_params": [
 		{	"name": "username",
 			"title": "Test user username",
-			"type": "text" },
+			"type": "text", "value":"" },
 		{	"name": "password",
 			"title": "Test user password",
 			"type": "password" },
-		{	"name": "hostname",
-			"title": "Hostname",
+		{	"name": "url",
+			"title": "INDX URL",
 			"type": "text",
-			"default": "localhost" },
-		{	"name": "port",
-			"title": "Port",
+			"default": "http://localhost:8211" },
+		{	"name": "singleRun",
+			"title": "Single Run",
 			"type": "text",
-			"default": "8211" }
+			"default": "false" }
 	]
 }
