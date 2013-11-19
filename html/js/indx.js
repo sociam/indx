@@ -433,16 +433,26 @@ angular
 			/// Gets an auth token for the box. This is done automatically
 			/// by a store when constructed by getBox.
 			getToken:function() {
-				// utils.debug('>> getToken ', ' id: ',this.id, ' cid: ',this.cid);
+				console.debug('>> getToken ', ' id: ',this.id, ' cid: ',this.cid);
 				// try { throw new Error(''); } catch(e) { console.error(e); }
-				var this_ = this, d = u.deferred();
-				this._ajax('POST', 'auth/get_token', { app: this.store.get('app') })
-					.then(function(data) {
-						// debug('setting token ', data.token);
-						this_._setToken( data.token );
-						this_.trigger('new-token', data.token);
-						d.resolve(this_);
-					}).fail(d.reject);
+				if (this._get_token_queue === undefined) { this._get_token_queue = []; }
+				var tq = this._get_token_queue, this_ = this, d = u.deferred();
+				tq.push(d); 				
+				if (tq.length === 1) { 
+					console.debug('tq === 1, calling -------------- get_token');
+					this._ajax('POST', 'auth/get_token', { app: this.store.get('app') })
+						.then(function(data) {
+							console.debug('setting token ', data.token, 'triggering ', tq.length);
+							this_._setToken( data.token );
+							this_.trigger('new-token', data.token);
+							this_._get_token_queue.map(function(d) { d.resolve(this_); });
+							this_._get_token_queue = [];
+						}).fail(function() { 
+							var args = arguments;
+							this_._get_token_queue.map(function(d) { d.reject.apply(d,arguments); });
+							this_._get_token_queue = [];
+						});
+				}	
 				return d.promise();
 			},
 			/// Gets this box's id
