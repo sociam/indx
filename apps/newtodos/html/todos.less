@@ -46,8 +46,11 @@
 				&.selected, &:hover.selected {
 					background: #26517C;
 					color: white;
+					cursor: text;
 				}
-				&.editing {
+				&.editing, &:hover.editing {
+					background: white;
+					color: black;
 					.edit { display: block; }
 					.static { display: none; }
 

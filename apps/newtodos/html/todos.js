@@ -156,7 +156,7 @@ angular
 				});
 				var $newTodo = $('<li><div class="title">New todo list</div></li>');
 				$newTodo.click(function () {
-					editTodoList();
+					that.todoLists.newTodoList().select().edit();
 				});
 				that.$el.append($newTodo);
 				return this;
@@ -179,7 +179,7 @@ angular
 					that.$el.removeClass('selected');
 				}).on('edit', function () {
 					that.$el.addClass('editing')
-						.find('input').removeAttr('disabled');
+						.find('input').removeAttr('disabled').focus();
 				}).on('editend', function () {
 					that.$el.removeClass('editing')
 						.find('input').attr('disabled', 'disabled');
@@ -311,30 +311,36 @@ angular
 			},
 			select: function () {
 				this.collection.setSelected(this);
+				return this;
 			},
 			edit: function (endedit) {
 				console.log('edit', endedit)
 				this.collection.setEditing(endedit ? undefined : this);
+				return this;
 			},
 			setSelected: function (selected) {
 				if (this.selected !== selected) {
 					this.selected = selected;
 					this.trigger(selected ? 'select' : 'deselect');
 				}
+				return this;
 			},
 			setEditing: function (editing) {
 				if (this.editing !== editing) {
 					this.editing = editing;
 					this.trigger(editing ? 'edit' : 'editend');
 				}
+				return this;
 			},
 			initTodos: function () {
-				if (!this.id) { return; }
 				var that = this,
 					updateSpecial,
 					specialType;
+
+				this.todos = new Todos();
+
+				if (!this.id) { return; }
 				if (this.get('special') && this.get('special')[0]) {
-					this.todos = new Todos();
 					specialType = this.get('special')[0];
 					updateSpecial = function () {
 						var allTodos = todoLists.reduce(function (todos, todoList) {
@@ -412,7 +418,9 @@ angular
 				}).each(function (todoList) {
 					todoList.setEditing(false);
 				});
-				this.editing.setEditing(true);
+				if (this.editing) {
+					this.editing.setEditing(true);
+				}
 			},
 			initSpecialLists: function () {
 				var that = this;
@@ -434,6 +442,11 @@ angular
 			},
 			close: function () {
 				// todo
+			},
+			newTodoList: function () {
+				var todoList = new TodoList();
+				this.add(todoList);
+				return todoList;
 			}
 		});
 
