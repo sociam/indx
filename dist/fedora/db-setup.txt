@@ -29,8 +29,7 @@ create user indx with createdb createrole login password 'indx';
 psql -U indx -l 
 
 # delete the databases (except postgres, template.. ) one by one with 
-dropdb indx
-dropdb ... 
+dropdb -U indx -W indx  /.. 
 
 # list all users / roles created by indx
 psql -U postgres
