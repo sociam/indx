@@ -20,6 +20,7 @@ class FitbitHarvester:
         self.parser = argparse.ArgumentParser(prog="run")
         self.parser.add_argument('--config', help="Set config (input requires JSON) and exit.")
         self.parser.add_argument('--get-config', action="store_true", help="Output current config as JSON and exit.")
+        self.parser.add_argument('server', help="The server URL to connect to.")
 
         # init fitbit
         consumer_key = "9cc7928d03fa4e1a92eda0d01ede2297"
@@ -136,18 +137,19 @@ class FitbitHarvester:
 
     def run(self):
         args = vars(self.parser.parse_args())
+        logging.debug("Received arguments: {0}".format(args))
         if args['config']:
             self.set_config(args)
         elif args['get_config']:
             print self.get_config(args)
         else:
             logging.debug("Starting the harvester. ")
-            self.harvest()
+            self.harvest(args['server'])
 
     def yesterday(self):
         return datetime.combine((datetime.now()+timedelta(days=-1)).date(), time(00,00,00))
 
-    def harvest(self):
+    def harvest(self, server_url):
         start, box, user, password = self.check_configuration()
         logging.debug("Starting download from date: {0}".format(start))
         day = datetime.strptime(start, "%Y-%m-%d")
@@ -156,7 +158,7 @@ class FitbitHarvester:
         fitbit_intraday = FitbitIntraDay(self.fitbit)
         logging.debug("Created FitbitIntraDay.")
 
-        indx = IndxClient("http://doirin:8211/", box, user, password, "INDX_Fitbit_Harvester")
+        indx = IndxClient(server_url, box, user, password, "INDX_Fitbit_Harvester")
         logging.debug("Created INDXClient.")
 
         fetched_days = []

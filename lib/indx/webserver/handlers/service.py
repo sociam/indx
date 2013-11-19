@@ -120,6 +120,7 @@ class ServiceHandler(BaseHandler):
            self.stop()
         manifest = self._load_manifest()
         command = manifest['run']
+        command.append(self.webserver.server_url)
         self.pipe = subprocess.Popen(command)
         return self.is_running()
 
