@@ -22,18 +22,26 @@
 	"tests": "indx.tests-config.js",
 	"tests_params": [
 		{	"name": "username",
-			"title": "Test user username",
-			"type": "text", "value":"" },
+			"title": "Test Username",
+			"type": "text" },
 		{	"name": "password",
-			"title": "Test user password",
+			"title": "Test User password",
 			"type": "password" },
-		{	"name": "url",
-			"title": "INDX URL",
-			"type": "text",
-			"default": "http://localhost:8211" },
 		{	"name": "singleRun",
 			"title": "Single Run",
 			"type": "text",
 			"default": "false" }
+		{	"name": "indxURL",
+			"title": "INDX URL",
+			"type": "text",
+			"default": "http://localhost:8211" },
+		{	"name": "suppressLogs",
+			"title": "Supress Logs?",
+			"type": "text",
+			"default": "false" },
+		{	"name": "boxCreations",
+			"title": "Number of box creations",
+			"type": "text",
+			"default": "3" }
 	]
 }

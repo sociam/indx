@@ -25,14 +25,12 @@
 
 	var user = params.username,
 		pass = params.password,
-		hostname = params.hostname,
-		port = params.port,
-		host = hostname + ':' + port;
-
-	var boxcreations = 3,
-		suppressLogs = true;
+		url = params.indxURL,
+		suppressLogs = Boolean(params.suppressLogs),
+		boxcreations = parseInt(params.boxCreations);
 
 	console.log('**** RUNNING TESTS (u: ' + user + ', p: ' + pass + ') ****');
+	console.log('Testing with parameters : ', JSON.stringify(params));
 
 	var testboxname = 'boxtest' + (new Date()).getTime() + 'r' + Math.round(Math.random() * 10000); // FIXME can't have dash in name?
 
@@ -42,15 +40,14 @@
 		var injector = angular.injector(['ng', 'indx']),
 			indx = injector.get('client'),
 			u = injector.get('utils'),
-			store1 = new indx.Store({ server_host: host }),
-			store2 = new indx.Store({ server_host: host });
+			store1 = new indx.Store({ server_host: url }),
+			store2 = new indx.Store({ server_host: url });
 
 		it('is a Backbone Model', function () {
 			expect(store1 instanceof Backbone.Model).toBe(true);
 		});
 
 		it('should be logged out', function () {
-
 		});
 
 		it('should fail to be logged in with invalid credentials', function () {
@@ -69,7 +66,7 @@
 		it('should successfully be logged in with valid credentials', function () {
 			var loggedin;
 			store1.login(user, pass).then(function () { loggedin = true; });
-			waitsFor(function() { return loggedin; }, 'the user to be logged in', 500);
+			waitsFor(function() { return loggedin; }, 'the user to be logged in', 1500);
 			runs(function () { expect(loggedin).toBe(true); });
 		});
 
@@ -171,7 +168,7 @@
 
 			_.times(boxcreations, function (i) {
 				var boxname = testboxname + 'tmp' + i,
-					$dfd = $.Deferred();
+					$dfd = new $.Deferred();
 
 				tmpBoxesDfds = $dfd;
 
