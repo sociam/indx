@@ -16,52 +16,69 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import argparse, ast, logging, getpass, sys, urllib2, json, sys, tweepy, datetime, time, threading
+import argparse, ast, logging, getpass, sys, urllib, urllib2, json, sys, datetime, time, threading
 from datetime import datetime
 from threading import Timer, Thread
 from indxclient import IndxClient
-from tweepy.streaming import StreamListener
-from tweepy import OAuthHandler
-from tweepy import Stream
-from tweepy import API
-from tweepy import Status
 from service_facebook import FacebookService
 
     
 logging.basicConfig(level=logging.INFO)
 
 
+FACEBOOK_APP_ID = "415327441930292"
+FACEBOOK_APP_SECRET = "f8a18987d9c8641b9797df94d916b653"
+
+
 class FacebookServiceController:
 
     def __init__(self, config):
         #First get the parameters ready for the Harvester
-        self.credentials, self.configs, self.twitter_add_info = self.load_parameters(config)
+        self.load_parameters(config)
 
 
     #load and managed parameters
     def load_parameters(self, config):
-        credentials = {}
-        configs = {}
-        twitter_add_info = {}
         try:
             print "loading Credentials...."
-            config = config.replace("\"","'")
-            config = ast.literal_eval(config)
+            #config = config.replace("\"","'")
+            #config = ast.literal_eval(config)
             for k,v in config.iteritems():
                 print k,v
-            credentials = {"address": config['address'], "box": config['box'], "username": config['user'], "password": config['password']} 
-            configs = {"consumer_key": config['consumer_key'], "consumer_secret": config['consumer_secret'], "access_token": config['access_token'], 
-            "access_token_secret": config['access_token_secret'], "twitter_username": config['twitter_username'], "twitter_search_words": config['twitter_search_words']}
-            try:
-                twitter_add_info = {"twitter_status":config['twitter_status'], "twitter_network":config['twitter_network']}
-            except:
-                twitter_add_info = {}
 
-            return (credentials, configs, twitter_add_info)
+            #first set of parameters might only be the Facebook Access Key and token...
+            token_type = config['facebook_auth_status']
+            if "Short" in token_type:
+                #we need to get a long life token...
+                print "Trying to Get Long TOKEN"
+                grant_type= "fb_exchange_token"
+                fb_exchange_token = config['facebook_access_token']
+                self.get_long_token(grant_type,FACEBOOK_APP_ID,FACEBOOK_APP_SECRET,fb_exchange_token)
         except:
-            logging.error("COULD NOT START Facebook Service - NO/INCORRECT CREDENTIALS "+str(sys.exc_info()))
-            return (credentials, configs, twitter_add_info)       
+            pass
 
+    def get_long_token(self, grant_type,FACEBOOK_APP_ID,FACEBOOK_APP_SECRET,fb_exchange_token):
+        """ Get a API token using a user's credentials and store it in this object. """
+        try:
+            url = "https://graph.facebook.com/oauth/access_token?"
+
+            """ Make the HTTP request. """
+            body = urllib.urlencode({"grant_type": grant_type, "client_id": FACEBOOK_APP_ID, "client_secret": FACEBOOK_APP_SECRET, "fb_exchange_token": fb_exchange_token })
+            req = urllib2.Request(url, body)
+            response = urllib2.urlopen(req)
+            fb_response = response.read()
+            #store the access token
+            self.facebook_access_token_long = fb_response.split("&expires=")[0].replace("access_token=","")
+            self.facebook_access_token_expire_time = fb_response.split("&expires=")[1]
+            #print self.access_token_long
+            #print self.expire_time
+        except:
+            print sys.exc_info()
+
+    def getAccesstokenConfig(self):
+        config = {"facebook_access_token_long": self.facebook_access_token_long, "facebook_access_token_expire_time": self.facebook_access_token_expire_time}
+        config = json.dumps(config)
+        return config
 
     def load_service_instance(self):
 

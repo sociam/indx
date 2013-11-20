@@ -5,9 +5,9 @@
 	"description": "facebook_service",
 	"configpanel":"html/index.html",
 	"on_boot": 0,
-	"run":["python", "apps/facebook_service/bin/run.py"],
-	"set_config":["python", "apps/facebook_service/bin/run.py", "--config", "{0}"],
-	"get_config":["python", "apps/facebook_service/bin/run.py", "--get-config"],
+	"run":["python", "apps/service_facebook/bin/run.py"],
+	"set_config":["python", "apps/service_facebook/bin/run.py", "--config", "{0}"],
+	"get_config":["python", "apps/service_facebook/bin/run.py", "--get-config"],
 	"icons": { 
 		"128": "img/icon-128.png",
 		"512": "img/icon-512.png" 

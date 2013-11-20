@@ -15,7 +15,7 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging,json,argparse,sys,time,os
+import ast,logging,json,argparse,sys,time,os
 import logging.config
 import keyring
 import keyring.util.platform_
@@ -41,17 +41,14 @@ def init():
     keyring.set_keyring(PlaintextKeyring())
 
 def run(args):
+    #print "RECEIVED RUN ARGS OF:"+str(args)
     if args['config']:
         print(keyring.util.platform_.data_root())
         config = json.loads(args['config'])
         logging.debug("received config: {0}".format(config))
         keyring.set_password("INDX", "INDX_Twitter_App", json.dumps(config))
     elif args['get_config']:
-        # TODO output the stored config (for passing ti back to the server)
-        result = keyring.get_password("INDX", "INDX_Twitter_App")
-        if result is None:
-            result = "{}"
-        print result
+        print get_config(args)
     else:
         # print(keyring.util.platform_.data_root())
         config = keyring.get_password("INDX", "INDX_Twitter_App")
@@ -65,6 +62,18 @@ def run(args):
 
     # keyring.set_password("INDX", "INDX_Blank_App", "{'password':'asdf', 'user':'laura', 'box':'blankie'}")
     # print keyring.get_password("INDX", "INDX_Blank_App")
+
+
+def get_config(args):
+    #print "Getting config from keychain..."
+    stored_config = keyring.get_password("INDX", "INDX_Twitter_App")
+    #print "stored config----------"+str(stored_config)
+    stored_config = ast.literal_eval(stored_config)
+    logging.debug("stored twitter config {0}".format(stored_config))
+    return stored_config
+
+
+
 
 if __name__ == '__main__':
     # parse out the parameters

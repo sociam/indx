@@ -43,32 +43,28 @@ def init():
     keyring.set_keyring(PlaintextKeyring())
 
 def run(args):
-    #print "RECEIVED RUN ARGS OF:"+str(args)
+    print "RECEIVED RUN ARGS OF:"+str(args)
     if args['config']:
-        #print(keyring.util.platform_.data_root())
+        print(keyring.util.platform_.data_root())
         config = json.loads(args['config'])
         config = ast.literal_eval(config)
-        token_type = config['facebook_auth_status']
-
-        if "Short" in token_type:
-            #print "getting long token"
+        if (config['facebook_userid']) and (config['facebook_access_token']):
+            print "getting long token"
             service_controler = FacebookServiceController(config)
             config = service_controler.getAccesstokenConfig()
-            #print "heres a new config file: "+str(config)            
+            print "heres a new config file: "+str(config)            
             #logging.debug("received config: {0}".format(config))
             try:
-                config = json.dumps(config)
-                keyring.set_password("INDX", "INDX_Facebook_App", config)
-                print "short token config added to keyring: "+str(config)
+                keyring.set_password("INDX", "INDX_Facebook_App", json.dumps(config))
             except:
                 print sys.exc_info()
         else:
             #TODO - NEED TO PUT OTHER CASSE WHEN IT IS FULL CONFIG
             keyring.set_password("INDX", "INDX_Facebook_App", json.dumps(config))
-            print "Full config added to keyring: "+str(config)
+
     elif args['get_config']:
         # TODO output the stored config (for passing ti back to the server)
-        print get_config(args);
+        get_config(args);
     else:
         # print(keyring.util.platform_.data_root())
         config = keyring.get_password("INDX", "INDX_Facebook_App")
@@ -78,26 +74,20 @@ def run(args):
         #test run with configs
         #twitter_service = TwitterService(config)
 
-        #only proceed with run IF the long token has been acheived.
-        if (config['facebook_access_token_long']):
-            service_controler = FacebookServiceController(config)
-            #service_controler.load_service_instance()
-            time.sleep(2)
+        service_controler = FacebookServiceController(config)
+        #service_controler.load_service_instance()
+        time.sleep(2)
 
 def get_config(args):
-    #print "Getting config from keychain..."
+    print "Getting config from keychain..."
     stored_config = keyring.get_password("INDX", "INDX_Facebook_App")
-    if "box" in stored_config:
-        stored_config = json.dumps(stored_config)
-    stored_config = ast.literal_eval(stored_config)
-    return stored_config
+
 
     # keyring.set_password("INDX", "INDX_Blank_App", "{'password':'asdf', 'user':'laura', 'box':'blankie'}")
     # print keyring.get_password("INDX", "INDX_Blank_App")
 
 if __name__ == '__main__':
     # parse out the parameters
-    #print "Starting RUN.PY"
     args = parse_args();
     init()
     run(args);
