@@ -59,7 +59,8 @@ angular
                         _($scope).extend({ 
                             password: config.harvester.password,
                             box: config.harvester.box, 
-                            start: config.harvester.start
+                            start: config.harvester.start, 
+                            overwrite: config.harvester.overwrite
                         });
                     });
                     if (config.harvester.user && $scope.users) { 
@@ -137,15 +138,15 @@ angular
             .then(function(x) { console.info('App Stop result (): ', x); status('Stop command successful'); })
             .fail(function(x) { status(' Error ' + x.toString()); });
         };
-        setInterval(function() { 
-            s._ajax('GET','apps/fitbit/api/is_running').then(function(r) { 
-                sa(function() { 
-                    $scope.runstate = r.running ? 'Running' : 'Stopped';  
-                });
-            }).fail(function(r) {
-                sa(function() { $scope.runstate = 'Unknown'; });
-            });
-        }, 1000);
+        // setInterval(function() { 
+        //     s._ajax('GET','apps/fitbit/api/is_running').then(function(r) { 
+        //         sa(function() { 
+        //             $scope.runstate = r.running ? 'Running' : 'Stopped';  
+        //         });
+        //     }).fail(function(r) {
+        //         sa(function() { $scope.runstate = 'Unknown'; });
+        //     });
+        // }, 1000);
 
         // var initialise = function() {
         //     $("#step-text").hide();
