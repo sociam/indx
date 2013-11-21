@@ -5,7 +5,7 @@
 	"on_boot": 0,
 	"description": "Harvester of your Fitbit data",
 	"configpanel":"html/index.html",
-	"run":["python", "apps/fitbit/bin/fitbit_harvester.py"],
+	"run":["python", "apps/fitbit/bin/fitbit_harvester.py", "--server", "{0}"],
 	"set_config":["python", "apps/fitbit/bin/fitbit_harvester.py", "--config", "{0}"],
 	"get_config":["python", "apps/fitbit/bin/fitbit_harvester.py", "--get-config"],
 	"icons": { 

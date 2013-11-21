@@ -27,6 +27,10 @@
 		{	"name": "password",
 			"title": "Test User password",
 			"type": "password" },
+		{	"name": "singleRun",
+			"title": "Single Run",
+			"type": "text",
+			"default": "false" }
 		{	"name": "indxURL",
 			"title": "INDX URL",
 			"type": "text",

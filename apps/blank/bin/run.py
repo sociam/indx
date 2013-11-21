@@ -11,7 +11,7 @@ def parse_args():
     parser = argparse.ArgumentParser(prog="run")
     parser.add_argument('--config', help="Set config (input requires JSON) and exit.")
     parser.add_argument('--get-config', action="store_true", help="Output current config as JSON and exit.")
-    parsed = parser.parse_args()
+    parser.add_argument('--server', help="The server URL to connect to.")
     args = vars(parser.parse_args())
     return args
 
@@ -23,6 +23,7 @@ def init():
     keyring.set_keyring(PlaintextKeyring())
 
 def run(args):
+    logging.debug("Received arguments: {0}".format(args))
     if args['config']:
         print(keyring.util.platform_.data_root())
         config = json.loads(args['config'])
