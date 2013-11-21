@@ -7,8 +7,8 @@
                                         <div ng-repeat="i in u.range(12)" class="bar{{ i + 1 }}"></div>
                                 </div>
                         </div>
-                        <button data-toggle="modal" href="#login-dialog" ng-show="!isLoggedIn()" class="btn btn-primary login-btn">        <label>log in</label> </button>
-                        <button data-toggle="modal" href="#logout-dialog" ng-show="isLoggedIn()" class="btn btn-primary login-btn">
+                        <button data-toggle="modal" href=".login-dialog" ng-show="!isLoggedIn()" class="btn btn-primary login-btn"><label>log in</label></button>
+                        <button data-toggle="modal" href=".logout-dialog" ng-show="isLoggedIn()" class="btn btn-primary login-btn">
                                 <label>{{ user.name }}</label><div class='usericon' ng-bind-html-unsafe="usericon"></div>
                         </button>
                         <div ng-show="isLoggedIn()"  class="btn-group box-selector">
@@ -19,69 +19,31 @@
                         </div>
                 </div> <!-- navbar-inner -->
         </div>
-          <!-- login dialog without open id -->
-        <!-- Markus working to get openid in here as well
-        <div id="login-dialog" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="loginlabel" aria-hidden="true">
-                <div class="modal-dialog">
-                        <div class="modal-content">
-                                <form role="form">
-                                        <div class="modal-header">
-                                                <a type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</a>
-                                                <span class="text">please log in</span>
-                                        </div>
-                                        <div class="modal-body">
-                                                <!-- 
-                                                        AUTOCOMPLETE TURNED OFF BECAUSE OF HORRIBLE PROBLEMS WITH BROWSERS + ANGULARJS 
-                                                        See: https://github.com/angular/angular.js/issues/1460#issuecomment-18572604
-                                                -->
-                                                <!--<div class="form-group">
-                                                        <label for="login-username">username:</label>
-                                                        <input type="text" id="login-username" class="form-control" ng-model="_loginUsername" autofocus autocomplete='off'></input>                
-                                                  </div>
-                                                <div class="form-group">
-                                                        <label for="login-password">password:</label>
-                                                        <input type="password" id="login-password" class="form-control" ng-model="_loginPassword" autocomplete='off'></input>
-                                                </div>
-                                        </div>
-                                  <div class="modal-footer">
-                                        <div class='error' ng-show='error' ng-bind-html-unsafe='error'></div>
-                                        <div class="spinner" ng-show="loading > 0">
-                                          <div ng-repeat="i in u.range(12)" class="bar{{ i + 1 }}"></div>
-                                        </div>                  
-                                        <a class="btn" data-dismiss="modal" aria-hidden="true">Cancel</a>
-                                        <input type="submit" data-dismiss="modal" class="btn btn-primary" value="Log in" ng-click="loginboxTryLogin(        _loginUsername,_loginPassword)"></input>
-                                  </div>
-                                </form>
-                        </div> <!-- modal-content -->
-                <!--</div> <!-- modal-dialog -->
-        <!--</div> <!-- modal -->
-        <!-- login dialog with open id-->
-        <div id="login-dialog" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="loginlabel" aria-hidden="true">
+        <div class="login-dialog modal fade" tabindex="-1" role="dialog" aria-labelledby="loginlabel" aria-hidden="true">
                 <div class="modal-dialog">
                         <div class="modal-content">
                                 <userlist model="users" ng-controller="ToolbarLogin"></userlist>
                         </div>
                 </div>
         </div>
-          <!-- logout dialog -->
-        <div id="logout-dialog" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="logoutlabel" aria-hidden="true">
+        <div class="logout-dialog modal fade" tabindex="-1" role="dialog" aria-labelledby="logoutlabel" aria-hidden="true">
                 <div class="modal-dialog">
                         <div class="modal-content">
-                                <div class="modal-header">
-                                        <a type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</a>
-                                        LOG OUT
-                                </div>
-                                <div class="modal-body">
-                                        <div class="logout-msg">Log out {{ user.name }}?</div>
-                                        <div class='buttons'>
-                                                <a class="btn" data-dismiss="modal" aria-hidden="true">Cancel</a>
-                                                <input type='submit' id="logout-ok" class="btn btn-primary" data-dismiss="modal" ng-click="doLogout()" autofocus value="Yes, log out"></button>
-                                        </div>
-                                </div>
+                            <div class="modal-header">
+                                <a type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</a>
+                                LOG OUT
+                            </div>
+                            <div class="modal-body">
+                                <div class="logout-msg">Log out {{ user.name }}?</div>
+                            </div>
+                            <div class="modal-footer">
+                                <a class="btn" data-dismiss="modal" aria-hidden="true">Cancel</a>
+                                <input type='submit' id="logout-ok" class="btn btn-primary" data-dismiss="modal" ng-click="doLogout()" autofocus value="Yes, log out"></button>
+                            </div>
                         </div>
                 </div>
         </div>
-        <div id="new-box-dialog" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="newboxlabel" aria-hidden="true">
+        <div class="new-box-dialog modal fade" tabindex="-1" role="dialog" aria-labelledby="newboxlabel" aria-hidden="true">
                 <div class="modal-dialog">
                         <div class="modal-content">
                                 <form role="form">

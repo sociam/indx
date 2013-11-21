@@ -1,4 +1,3 @@
-/*global $,_,document,window,console,escape,Backbone */
 /*jslint vars:true, todo:true, sloppy:true */
 angular
 	.module('indx')
@@ -9,11 +8,11 @@ angular
 			templateUrl:'/components/toolbar/toolbar.html',
 			link:function($scope, $element) {
 				$scope.el = $element;
-				$element.find('#login-dialog').on('shown.bs.modal', function() {
-					$element.find('#login-username').focus();
+				$element.find('.login-dialog').on('shown.bs.modal', function() {
+					$element.find('.login-username').focus();
 				});
-				$element.find('#logout-dialog').on('shown.bs.modal', function() { 
-					$element.find('#logout-ok').focus();
+				$element.find('.logout-dialog').on('shown.bs.modal', function() { 
+					$element.find('.logout-ok').focus();
 				});
 			},
 			scope: { box:"=boxVar", user:"=usernameVar" },
@@ -23,10 +22,10 @@ angular
 				
 				var model = new Backbone.Model({visible:true});
 				var apply = function(fn) { return utils.safeApply($scope, fn); };
-				var loginDialog = function() { return $($scope.el).find('#login-dialog'); }
-				var logoutDialog = function() { return $($scope.el).find('#logout-dialog'); }
+				var loginDialog = function() { return $($scope.el).find('.login-dialog'); }
+				var logoutDialog = function() { return $($scope.el).find('.logout-dialog'); }
 				var getStore = function() {	return client.store;};
-				var newBoxDialog = function() { return $($scope.el).find('#new-box-dialog'); }
+				var newBoxDialog = function() { return $($scope.el).find('.new-box-dialog'); }
 				
 				toolbar.on = function(msg, fn) {  return model.on(msg,fn); };
 				toolbar.off = function(msg, fn) {  return model.off(msg,fn); };
@@ -256,7 +255,7 @@ angular
             replace:true 
         }   
 	}).controller('ToolbarLogin',function($scope, $location, client, backbone, utils) {
-		$scope.loginDialog = function() { return $('#login-dialog'); }
+		$scope.loginDialog = function() { return $('.login-dialog'); }
 		$scope.isLocalUser = function(u) { return u && (u.type == 'local_owner' || u.type == 'local'); };
 		$scope.isOpenIDUser = function(u) { return u.type == 'openid'; };
 		console.log('route::login');
