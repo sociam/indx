@@ -198,10 +198,12 @@ class FitbitHarvester:
 
         while day < self.today():
             skip = False
+            day_points = None
             if day.date().isoformat() in fetched_days:
                 if overwrite :
                     logging.debug("Data for {0} was already fetched, overwriting!".format(day.date().isoformat()))
-                    self.find_and_delete_points(indx, day)
+                    # self.find_and_delete_points(indx, day)
+                    day_points = self.find_day_points(indx, day) # {"dataset_id":{hash based on start time}, "dataset_id":{hash based on start time}, ...}
                 else :
                     logging.debug("Data for {0} was already fetched, skipping day!".format(day.date().isoformat()))
                     skip = True
@@ -214,9 +216,13 @@ class FitbitHarvester:
                 # processing steps
                 if steps_ts:
                     steps = self.download_steps(day, fitbit_intraday)
-                    steps_points = self.create_data_points(day, steps, self.steps_ts_id, "http://sociam.org/ontology/health/StepCount") # a subclass of http://www.qudt.org/qudt/owl/1.0.0/quantity/index.html#Frequency and subclass of http://purl.org/linked-data/cube#Observation
-                    logging.debug("Fetched {0} step data points.".format(len(steps_points)))
-                    self.save(indx, steps_points)
+                    logging.debug("Fetched {0} step data points.".format(len(steps)))
+                    steps_points = []
+                    if day_points[self.steps_ts_id]:
+                        steps_points = self.replace_data_points(day, steps, day_points[self.steps_ts_id], self.steps_ts_id, "http://sociam.org/ontology/health/StepCount")
+                    else:
+                        steps_points = self.create_data_points(day, steps, self.steps_ts_id, "http://sociam.org/ontology/health/StepCount") # a subclass of http://www.qudt.org/qudt/owl/1.0.0/quantity/index.html#Frequency and subclass of http://purl.org/linked-data/cube#Observation
+                    # self.save(indx, steps_points)
 
                 # # processing calories
                 # if calories_ts:
@@ -246,7 +252,7 @@ class FitbitHarvester:
                 #     logging.debug("Fetched {0} elevation data points.".format(len(elevation_points)))
                 #     self.save(indx, elevation_points)
 
-                self.safe_update(indx, harvester)
+                # self.safe_update(indx, harvester)
 
             day = day + timedelta(days=+1)
             logging.debug("Suspending execution for 1 hour at {0}.".format(datetime.now().isoformat()))
@@ -261,7 +267,7 @@ class FitbitHarvester:
         logging.debug("Started creating data points.")
         data_points = []
         for key in data.keys():
-            if (key.endswith('-intraday')):
+            if key.endswith('-intraday'):
                 for point in data[key]["dataset"]:
                     interval_start = datetime.combine(day, datetime.strptime(point["time"], "%H:%M:%S").time()) 
                     interval_end = interval_start+timedelta(minutes=1) 
@@ -280,6 +286,44 @@ class FitbitHarvester:
                     data_points.append(data_point)
                     # logging.debug("Created and appended data point: {0}".format(data_point))
         logging.debug("Finished creating data points.")
+        return data_points
+
+    def replace_data_points(self, day, new_data, old_data, ts_id, rdf_type=None):
+        logging.debug("Started replacing values in data points.")
+        data_points = []
+        replaced = 0
+        kept = 0
+        created = 0
+        for key in new_data.keys():
+            if key.endswith('-intraday'):
+                for point in new_data[key]["dataset"]:
+                    data_point = None
+                    interval_start = datetime.combine(day, datetime.strptime(point["time"], "%H:%M:%S").time()) 
+                    interval_end = interval_start+timedelta(minutes=1) 
+                    value = point["value"]
+                    if interval_start in old_data:
+                        if len(old_data[interval_start]) > 1 :
+                            logging.error("There are {0} points for the same start time {1} in the same dataset {2}!!".format(len(old_data[interval_start]), interval_start, ts_id))
+                        old_point = old_data[interval_start][0] # there shouldn't be more than 1 point here!!!
+                        if int(old_point['http://sociam.org/ontology/timeseries/value'][0]['@value']) == value:
+                            kept = kept+1
+                        else:
+                            replaced = replaced+1
+                            # if all_other_fields_match:
+                            data_point = {  "@id": old_point['@id'] }
+                    else:
+                        created = created+1
+                        data_point = {  "@id": "fitbit_dp_{0}".format(uuid.uuid4()) }
+                    if data_point :
+                        logging.debug("Making a data point for {0}".format(interval_start.isoformat()))
+                        data_point["http://sociam.org/ontology/timeseries/start"] = interval_start.isoformat()
+                        data_point["http://sociam.org/ontology/timeseries/end"] = interval_end.isoformat()
+                        data_point["http://sociam.org/ontology/timeseries/value"] = value
+                        data_point["http://purl.org/linked-data/cube#dataset"] = ts_id 
+                        if rdf_type:
+                            data_point["http://www.w3.org/1999/02/22-rdf-syntax-ns#type"] = [ rdf_type ]
+                        data_points.append(data_point)
+        logging.debug("Finished replacing values in data points - replaced: {0}, kept: {1}, created: {2}".format(replaced, kept, created))
         return data_points
 
     def download_steps(self, day, fitbit_intraday):
@@ -354,6 +398,31 @@ class FitbitHarvester:
                 logging.debug("Object {0} not found!".format(oid))
         return None
 
+    def find_day_points(self, indx, day) :
+        logging.debug("Find day data points from {0}".format(day.date().isoformat()))
+        out = {self.steps_ts_id:{}, self.calories_ts_id:{}, self.distance_ts_id:{}, self.floors_ts_id:{}, self.elevation_ts_id:{}}
+        for h in range(24):
+            for m in range(60):
+                find_start = datetime.combine(day.date(), time(h,m,0)) 
+                logging.debug("Looking for data points with start time: {0}".format(find_start.isoformat()))
+                resp = indx.query(json.dumps({"http://sociam.org/ontology/timeseries/start":find_start.isoformat()}))
+                if resp and 'code' in resp and resp['code']==200 and 'data' in resp:
+                    for pt in resp['data'] :
+                        obj = resp['data'][pt]
+                        if 'http://purl.org/linked-data/cube#dataset' in obj and obj['http://purl.org/linked-data/cube#dataset'][0]['@value'] in [self.steps_ts_id, self.calories_ts_id, self.distance_ts_id, self.floors_ts_id, self.elevation_ts_id] :
+                            objs_date_hash = out[obj['http://purl.org/linked-data/cube#dataset'][0]['@value']]
+                            if find_start in objs_date_hash:
+                                objs_list = objs_date_hash[find_start]
+                            else:
+                                objs_list = []
+                            objs_list.append(obj) 
+                            objs_date_hash[find_start] = objs_list
+                            out[obj['http://purl.org/linked-data/cube#dataset'][0]['@value']] = objs_date_hash
+                        logging.debug("Found points with start time {0}: {1}".format(find_start.isoformat(),objs_list))
+        logging.debug("The points found for the day: ".format(out))
+        return out
+
+
     def safe_update(self, indx, obj) :
         try:
             logging.debug("Updating object {0} at box version {1}".format(obj, self.version))
@@ -382,7 +451,7 @@ class FitbitHarvester:
             resp = indx.delete(self.version, objs)
             logging.debug("safe_delete: received response: {0}".format(resp))
             if resp and "code" in resp and "data" in resp:
-                if resp["code"] == 200:
+                if resp["code"] == 201: # why is it 201 that is returned??
                     self.version = resp["data"]["@version"]
                     logging.debug("Deleted objects! new box version: {0}".format(self.version))
                     return self.version
