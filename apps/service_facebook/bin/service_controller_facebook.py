@@ -50,10 +50,14 @@ class FacebookServiceController:
             token_type = config['facebook_auth_status']
             if "Short" in token_type:
                 #we need to get a long life token...
+                print "Service Controller Facebook - Received short Token"
                 print "Trying to Get Long TOKEN"
                 grant_type= "fb_exchange_token"
                 fb_exchange_token = config['facebook_access_token']
                 self.get_long_token(grant_type,FACEBOOK_APP_ID,FACEBOOK_APP_SECRET,fb_exchange_token)
+            elif "Long" in token_type:
+                print "Service Controller Facebook - Received full token"
+                self.config = config
         except:
             pass
 
@@ -82,6 +86,11 @@ class FacebookServiceController:
 
     def load_service_instance(self):
 
-        facebook_service = FacebookService()
+        facebook_service = FacebookService(self.config)
+        #check if the token hasnt expired, if not, let's go!
+        if(facebook_service.is_token_active()):
+            print "Service Controller Facebook - Running Harvester as the Token is active!"
+            facebook_service.harvest_facebook_statuses()
+            facebook_service.harvest_facebook_friends()
 
     

@@ -79,9 +79,11 @@ def run(args):
         #twitter_service = TwitterService(config)
 
         #only proceed with run IF the long token has been acheived.
-        if (config['facebook_access_token_long']):
+        token_type = config['facebook_auth_status']
+
+        if "Long" in token_type:
             service_controler = FacebookServiceController(config)
-            #service_controler.load_service_instance()
+            service_controler.load_service_instance()
             time.sleep(2)
 
 def get_config(args):
