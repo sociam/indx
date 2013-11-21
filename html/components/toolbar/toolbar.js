@@ -256,7 +256,7 @@ angular
             replace:true 
         }   
 	}).controller('ToolbarLogin',function($scope, $location, client, backbone, utils) {
-		$scope.loginDialog = function() { return $scope.el.find('#login-dialog'); }
+		$scope.loginDialog = function() { return $('#login-dialog'); }
 		$scope.isLocalUser = function(u) { return u && (u.type == 'local_owner' || u.type == 'local'); };
 		$scope.isOpenIDUser = function(u) { return u.type == 'openid'; };
 		console.log('route::login');
@@ -283,7 +283,7 @@ angular
 			var user = $scope.selected.user, p = $scope.selected.password;
 			if ($scope.isLocalUser(user)) {
 				return store.login($scope.selected.user["@id"], $scope.selected.password).then(function() {
-					sa(function() { delete $scope.selected.user; delete $scope.selected.password; $('.fade').hide();});
+					sa(function() { delete $scope.selected.user; delete $scope.selected.password; $scope.loginDialog().modal('hide');});
 				}).fail(function() {
 					sa(function() {
 						delete $scope.selected.password;
@@ -297,7 +297,9 @@ angular
 					console.log('launcherjs >> openid_login success continuation ---------------- ');
 					sa(function() { 
 						delete $scope.openidError; 
-						$location.path('/apps'); 
+						delete $scope.selected.user;
+						delete $scope.selected.password;
+						$scope.loginDialog().modal('hide');
 					});
 				}).fail(function(error) {
 					console.log('launcherjs >> openid_login failure continuation ---------------- ', error);
