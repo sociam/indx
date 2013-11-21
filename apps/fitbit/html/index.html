@@ -31,7 +31,7 @@
       </div>
       <table class='security'>
         <tr><td>User</td><td><select ng-model="user" ng-options='u.name for u in users'></select></td></tr>
-        <tr><td>Password</td><td><input type="password" ng-model='password'></td></tr>
+        <tr><td>Password</td><td><input type="password" ng-model='password' /></td></tr>
         <tr><td>Box</td><td><select ng-model="box" ng-options='b for b in boxes'></select></td></tr>
         <tr><td><td>
           <div class="btn btn-warning" 
@@ -41,11 +41,11 @@
         </td></tr>
       </table>
       <table class='params'>
-        <tr><td>Start date:</td><td><input type="text" name="start" ng-model="start"></input></td></tr>
-        <tr><td>Frequency (hours): </td><td><input type="text" name="freq" ng-model="frequency"></input></td></tr>
+        <tr><td>Start date (YYYY-mm-dd):</td><td><input type="text" name="start" ng-model="start"></input></td></tr>
+        <tr><td>Overwrite existing? </td><td><input type="checkbox" ng-model="overwrite" checked='overwrite' /></td></tr>
       </table>
       <div class='submits'>
-        <div class="btn btn-default" ng-click="setConfig({harvester:{start:start,frequency:frequency,box:box,user:user['@id'],password:password},fitbit:{pin:pin,token:token,req_token:req_token}})">Configure</div>
+        <div class="btn btn-default" ng-click="setConfig({harvester:{start:start,box:box,user:user['@id'],password:password,overwrite:overwrite},fitbit:{pin:pin,token:token,req_token:req_token}})">Configure</div>
         <div class="status">{{ status }}</div>
       </div>
     </div>

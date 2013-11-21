@@ -59,9 +59,33 @@
 			<button type="button" class="btn btn-default btn-sm" ng-click="manifest.tests.run()">Run</button>
 			<button type="button" class="btn btn-default btn-sm" ng-click="manifest.tests.refresh()" ng-if="manifest.tests.haveBeenRun">Refresh</button>
 			<a href="{{ manifest.tests.get('url') }}" target="_blank" class="btn btn-default btn-sm" ng-if="manifest.tests.haveBeenRun">Download results</a>
+			<button type="button" class="btn btn-default btn-sm" ng-click="manifest.tests.editingParams = true" ng-if="manifest.tests.params">Parameters</button>
 		</form>
 		<p class="navbar-text navbar-right" ng-if="manifest.tests.haveBeenRun">Last tested on</p>
 	</nav>
+	<div class="modal-bg" ng-show="manifest.tests.editingParams">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" ng-click="manifest.tests.editingParams = false">&times;</button>
+					<h4 class="modal-title">Edit test parameters</h4>
+				</div>
+				<div class="modal-body">
+					<table><tbody>
+						<tr ng-repeat="param in manifest.tests.params">
+							<th>{{param.title}}</th>
+							<td>
+								<input type="{{ param.type }}" ng-model="param.value" class="form-control">
+							</td>
+						</tr>
+					</tbody></table>
+				</div>
+				<div class="modal-footer">
+					<button ng-click="manifest.tests.editingParams = false">Close</button>
+				</div>
+			</div>
+		</div>
+	</div>
 	<div ng-if="!manifest.tests.isAvailable">
 		<p class="description">No tests has been provided</p>
 	</div>
