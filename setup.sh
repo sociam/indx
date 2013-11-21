@@ -22,7 +22,9 @@ echo "export PYTHONPATH=\"\$VIRTUAL_ENV/../lib:\$PYTHONPATH\"" >> env/bin/activa
 source env/bin/activate
 
 # install the required modules
-pip install --ignore-installed --upgrade -r requirements.txt
+# emax changed from "--ignore-installed" b/c that wreaks havoc w/ virutalnev
+pip install --upgrade -r requirements.txt
+
 
 # install doc and test framework dependencies
 (cd lib/docs; npm install)
