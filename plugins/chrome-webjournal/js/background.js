@@ -321,7 +321,7 @@
                 //  ---------------------------------------
 
                 this.on('connection-error', function(e) {  
-                    chrome.extension.getBackgroundPage().displayFail('server error');
+                    setErrorBadge(':(');
                     console.error('connection-error', e);
                     this_._attempt_reconnect();
                     // ignore.
