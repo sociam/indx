@@ -19,6 +19,7 @@ import logging, json
 from indx.webserver.handlers.base import BaseHandler
 from indx.objectstore_async import IncorrectPreviousVersionException, FileNotFoundException
 from indx.user import IndxUser
+from indx.crypto import generate_rsa_keypair
 
 class BoxHandler(BaseHandler):
     base_path = ''
@@ -111,6 +112,26 @@ class BoxHandler(BaseHandler):
                 return self.return_internal_error(request)
 
         token.get_store().addCallbacks(store_cb, err_cb)
+
+
+    def generate_new_key(self, request):
+        """ Generate a new key and store it in the keystore. Return the public and public-hash parts of the key. """
+        token = self.get_token(request)
+        if not token:
+            return self.return_forbidden(request)
+        BoxHandler.log(logging.DEBUG, "BoxHandler generate_new_key", extra = {"request": request, "token": token})
+
+        def err_cb(failure):
+            failure.trap(Exception)
+            BoxHandler.log(logging.ERROR, "BoxHandler generate_new_key err_cb: {0}".format(failure), extra = {"request": request, "token": token})
+            return self.return_internal_error(request)
+
+        def created_cb(empty):
+            self.return_created(request, {"data": {"public": local_keys['public'], "public-hash": local_keys['public-hash']}})
+
+        local_keys = generate_rsa_keypair(3072)
+        self.webserver.keystore.put(local_keys).addCallbacks(created_cb, err_cb) # store in the local keystore
+
 
     def get_acls(self, request):
         """ Get all of the ACLs for this box.
@@ -494,10 +515,30 @@ BoxHandler.subhandlers = [
         'methods': ['GET', 'PUT', 'DELETE'],
         'require_auth': False,
         'require_token': True,
-        'require_acl': ['read', 'write'], # split this function into separate ones to allow for read-only file reading
+        'require_acl': ['write'], # split this function into separate ones to allow for read-only file reading
         'force_get': True, # force the token function to get it from the query string for every method
         'handler': BoxHandler.files,
         'accept':['*/*'],
+        'content-type':'application/json'
+        },
+#    {
+#        "prefix": "link_remote_box",
+#        'methods': ['POST'],
+#        'require_auth': False,
+#        'require_token': True,
+#        'require_acl': ['control'],
+#        'handler': BoxHandler.link_remote_box,
+#        'accept':['application/json'],
+#        'content-type':'application/json'
+#        },
+    {
+        "prefix": "generate_new_key",
+        'methods': ['GET'],
+        'require_auth': False,
+        'require_token': True,
+        'require_acl': ['control'],
+        'handler': BoxHandler.generate_new_key,
+        'accept':['application/json'],
         'content-type':'application/json'
         },
     {

@@ -70,9 +70,25 @@
                 ]
             },
             "20131112-ADD_INTERNAL_USER_TYPE-HAPPY_BIRTHDAY": {
-                "next-version": "",
+                "next-version": "20131119-ADD_KEYSTORE_TABLE",
                 "sql": [
                     "ALTER TYPE uname_type ADD VALUE 'internal';"
+                ]
+            },
+            "20131119-ADD_KEYSTORE_TABLE": {
+                "next-version": "",
+                "sql": [
+                    "CREATE TABLE tbl_keystore",
+                    "(",
+                    "  id_keystore serial NOT NULL,",
+                    "  public_hash text NOT NULL,",
+                    "  public_key text NOT NULL,",
+                    "  private_key text NOT NULL,",
+                    "  CONSTRAINT pk_id_keystore PRIMARY KEY (id_keystore)",
+                    ")",
+                    "WITH (",
+                    "    OIDS=FALSE",
+                    ");"
                 ]
             }
         }
