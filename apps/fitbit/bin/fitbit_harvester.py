@@ -20,11 +20,14 @@ class FitbitHarvester:
         self.parser = argparse.ArgumentParser(prog="run")
         self.parser.add_argument('--config', help="Set config (input requires JSON) and exit.")
         self.parser.add_argument('--get-config', action="store_true", help="Output current config as JSON and exit.")
+        self.parser.add_argument('--server', help="The server URL to connect to.")
 
         # init fitbit
         consumer_key = "9cc7928d03fa4e1a92eda0d01ede2297"
         consumer_secret = "340ea36a974e47738a335c0cccfe1fcf"
         self.fitbit = Fitbit(consumer_key, consumer_secret)
+
+        self.version = 0
 
     def set_config(self, args):
         stored_config_harvester = keyring.get_password("INDX", "INDX_Fitbit_Harvester")
@@ -134,62 +137,64 @@ class FitbitHarvester:
 
     def run(self):
         args = vars(self.parser.parse_args())
+        logging.debug("Received arguments: {0}".format(args))
         if args['config']:
             self.set_config(args)
         elif args['get_config']:
             print self.get_config(args)
         else:
             logging.debug("Starting the harvester. ")
-            self.harvest()
+            self.harvest(args['server'])
 
     def yesterday(self):
         return datetime.combine((datetime.now()+timedelta(days=-1)).date(), time(00,00,00))
 
-    def harvest(self):
+    def today(self):
+        return datetime.combine(datetime.now().date(), time(00,00,00))
+
+    def harvest(self, server_url):
         start, box, user, password = self.check_configuration()
         logging.debug("Starting download from date: {0}".format(start))
         day = datetime.strptime(start, "%Y-%m-%d")
         logging.debug("day as {0}: {1}".format(type(day), day))
 
-        version = 0
-
         fitbit_intraday = FitbitIntraDay(self.fitbit)
         logging.debug("Created FitbitIntraDay.")
 
-        indx = IndxClient("http://doirin:8211/", box, user, password, "INDX_Fitbit_Harvester")
+        indx = IndxClient(server_url, box, user, password, "INDX_Fitbit_Harvester")
         logging.debug("Created INDXClient.")
 
+        fetched_days = []
         harvester_id = "fitbit_harvester"
-        version, harvester = self.find_create(indx, harvester_id, {"http://www.w3.org/2000/01/rdf-schema#label":"INDX Fitbit Harvester extra info"})
+        harvester = self.find_create(indx, harvester_id, {"http://www.w3.org/2000/01/rdf-schema#label":"INDX Fitbit Harvester extra info"})
         if harvester :
             if "fetched_days" in harvester :
-                fetched_days = harvester["fetched_days"]
-            else : 
-                fetched_days = []
-        else: 
-            logging.error("Harvester object still not created! Trying again ..")
-            version, harvester = self.find_create(indx, harvester_id, {"http://www.w3.org/2000/01/rdf-schema#label":"INDX Fitbit Harvester extra info"})
-            if harvester :
-                if "fetched_days" in harvester :
-                    fetched_days = harvester["fetched_days"]
-                else : 
-                    fetched_days = []
-            else: 
-                logging.error("Harvester object still not created! Giving up ..")
-                sys.exit(1)
+                fetched_days = self.parse_list(harvester["fetched_days"])
+        logging.debug("Fetched days: {0}".format(fetched_days))
+        # else: 
+        #     logging.error("Harvester object still not created! Trying again ..")
+        #     harvester = self.find_create(indx, harvester_id, {"http://www.w3.org/2000/01/rdf-schema#label":"INDX Fitbit Harvester extra info"})
+        #     if harvester :
+        #         if "fetched_days" in harvester :
+        #             fetched_days = harvester["fetched_days"]
+        #         else : 
+        #             fetched_days = []
+        #     else: 
+        #         logging.error("Harvester object still not created! Giving up ..")
+        #         sys.exit(1)
 
         steps_ts_id = "fitbit_steps_ts"
         calories_ts_id = "fitbit_calories_ts"
         distance_ts_id = "fitbit_distance_ts"
         floors_ts_id = "fitbit_floors_ts"
         elevation_ts_id = "fitbit_elevation_ts"
-        version, steps_ts = self.find_create(indx, steps_ts_id, {"http://www.w3.org/2000/01/rdf-schema#label":"Fitbit Steps Time Series", "http://www.w3.org/1999/02/22-rdf-syntax-ns#type":"http://purl.org/linked-data/cube#Dataset"})
-        version, calories_ts = self.find_create(indx, calories_ts_id, {"http://www.w3.org/2000/01/rdf-schema#label":"Fitbit Calories Time Series", "http://www.w3.org/1999/02/22-rdf-syntax-ns#type":"http://purl.org/linked-data/cube#Dataset"})
-        version, distance_ts = self.find_create(indx, distance_ts_id, {"http://www.w3.org/2000/01/rdf-schema#label":"Fitbit Distance Time Series", "http://www.w3.org/1999/02/22-rdf-syntax-ns#type":"http://purl.org/linked-data/cube#Dataset"})
-        version, floors_ts = self.find_create(indx, floors_ts_id, {"http://www.w3.org/2000/01/rdf-schema#label":"Fitbit Floors Time Series", "http://www.w3.org/1999/02/22-rdf-syntax-ns#type":"http://purl.org/linked-data/cube#Dataset"})
-        version, elevation_ts = self.find_create(indx, elevation_ts_id, {"http://www.w3.org/2000/01/rdf-schema#label":"Fitbit Elevation Time Series", "http://www.w3.org/1999/02/22-rdf-syntax-ns#type":"http://purl.org/linked-data/cube#Dataset"})
+        steps_ts = self.find_create(indx, steps_ts_id, {"http://www.w3.org/2000/01/rdf-schema#label":"Fitbit Steps Time Series", "http://www.w3.org/1999/02/22-rdf-syntax-ns#type":"http://purl.org/linked-data/cube#Dataset"})
+        calories_ts = self.find_create(indx, calories_ts_id, {"http://www.w3.org/2000/01/rdf-schema#label":"Fitbit Calories Time Series", "http://www.w3.org/1999/02/22-rdf-syntax-ns#type":"http://purl.org/linked-data/cube#Dataset"})
+        distance_ts = self.find_create(indx, distance_ts_id, {"http://www.w3.org/2000/01/rdf-schema#label":"Fitbit Distance Time Series", "http://www.w3.org/1999/02/22-rdf-syntax-ns#type":"http://purl.org/linked-data/cube#Dataset"})
+        floors_ts = self.find_create(indx, floors_ts_id, {"http://www.w3.org/2000/01/rdf-schema#label":"Fitbit Floors Time Series", "http://www.w3.org/1999/02/22-rdf-syntax-ns#type":"http://purl.org/linked-data/cube#Dataset"})
+        elevation_ts = self.find_create(indx, elevation_ts_id, {"http://www.w3.org/2000/01/rdf-schema#label":"Fitbit Elevation Time Series", "http://www.w3.org/1999/02/22-rdf-syntax-ns#type":"http://purl.org/linked-data/cube#Dataset"})
 
-        while day <= self.yesterday():
+        while day < self.today():
             if day.date().isoformat() in fetched_days:
                 logging.debug("Data for {0} was already fetched, overwriting!".format(day.date().isoformat()))
                 self.find_and_delete_points(indx, day)
@@ -203,30 +208,40 @@ class FitbitHarvester:
             # processing steps
             if steps_ts:
                 steps_points = self.create_data_points(day, steps, steps_ts_id, "http://sociam.org/ontology/health/StepCount") # a subclass of http://www.qudt.org/qudt/owl/1.0.0/quantity/index.html#Frequency and subclass of http://purl.org/linked-data/cube#Observation
-                version = self.store(indx, version, steps_points)
+                logging.debug("Fetched {0} step data points.".format(len(steps_points)))
+                self.save(indx, steps_points)
 
             # processing calories
             if calories_ts:
                 calories_points = self.create_data_points(day, calories, calories_ts_id, "http://sociam.org/ontology/health/CaloriesBurned") # subclass of http://purl.org/linked-data/cube#Observation
-                version = self.store(indx, version, calories_points)
+                logging.debug("Fetched {0} calories data points.".format(len(calories_points)))
+                self.save(indx, calories_points)
 
             # processing distance
             if distance_ts:
                 distance_points = self.create_data_points(day, distance, distance_ts_id, "http://sociam.org/ontology/health/Distance") # subclass of http://purl.org/linked-data/cube#Observation
-                version = self.store(indx, version, distance_points)
+                logging.debug("Fetched {0} distance data points.".format(len(distance_points)))
+                self.save(indx, distance_points)
 
             # processing floors
             if floors_ts:
                 floors_points = self.create_data_points(day, floors, floors_ts_id, "http://sociam.org/ontology/health/FloorsClimbed") # subclass of http://purl.org/linked-data/cube#Observation
-                version = self.store(indx, version, floors_points)
+                logging.debug("Fetched {0} floors data points.".format(len(floors_points)))
+                self.save(indx, floors_points)
 
             # processing elevation
             if elevation_ts:
                 elevation_points = self.create_data_points(day, elevation, elevation_ts_id, "http://sociam.org/ontology/health/Elevation") # subclass of http://purl.org/linked-data/cube#Observation
-                version = self.store(indx, version, elevation_points)
+                logging.debug("Fetched {0} elevation data points.".format(len(elevation_points)))
+                self.save(indx, elevation_points)
 
-            self.safe_update(indx, version, harvester)
+            self.safe_update(indx, harvester)
             day = day + timedelta(days=+1)
+
+    def parse_list(self, vlist):
+        out = [x['@value'] for x in vlist]
+        logging.debug("Parsed value list: {0}".format(out))
+        return out
 
     def create_data_points(self, day, data, ts_id, rdf_type=None):
         logging.debug("Started creating data points.")
@@ -238,10 +253,14 @@ class FitbitHarvester:
                     interval_end = interval_start+timedelta(minutes=1) 
                     value = point["value"]
                     data_point = {  "@id": "fitbit_dp_{0}".format(uuid.uuid4()), 
-                                    "http://sociam.org/ontology/timeseries/start": [ { "@type": "http://www.w3.org/2001/XMLSchema#dateTime", "@value": interval_start.isoformat() } ],
-                                    "http://sociam.org/ontology/timeseries/end": [ { "@type": "http://www.w3.org/2001/XMLSchema#dateTime", "@value": interval_end.isoformat() } ],
-                                    "http://sociam.org/ontology/timeseries/value": [ { "@type": "http://www.w3.org/2001/XMLSchema#int", "@value": value } ],
-                                    "http://purl.org/linked-data/cube#dataset": [ ts_id ] }
+                                    # "http://sociam.org/ontology/timeseries/start": [ { "@type": "http://www.w3.org/2001/XMLSchema#dateTime", "@value": interval_start.isoformat() } ],
+                                    # "http://sociam.org/ontology/timeseries/end": [ { "@type": "http://www.w3.org/2001/XMLSchema#dateTime", "@value": interval_end.isoformat() } ],
+                                    # "http://sociam.org/ontology/timeseries/value": [ { "@type": "http://www.w3.org/2001/XMLSchema#int", "@value": value } ],
+                                    # "http://purl.org/linked-data/cube#dataset": [ ts_id ] }
+                                    "http://sociam.org/ontology/timeseries/start": interval_start.isoformat(),
+                                    "http://sociam.org/ontology/timeseries/end": interval_end.isoformat(),
+                                    "http://sociam.org/ontology/timeseries/value": value,
+                                    "http://purl.org/linked-data/cube#dataset": ts_id }
                     if rdf_type:
                         data_point["http://www.w3.org/1999/02/22-rdf-syntax-ns#type"] = [ rdf_type ]
                     data_points.append(data_point)
@@ -271,47 +290,62 @@ class FitbitHarvester:
 
         return steps, calories, distance, floors, elevation
 
-    def store(self, indx, version, points):
-        resp = self.safe_update(indx, version, points)
-        logging.debug("Received response: {0}".format(resp))
-        if resp and "code" in resp and "data" in resp:
-            if resp["code"] == 201 or resp["code"] == 200:
-                return resp["data"]["@version"]
-        logging.error("Couldn't save data points! {0} {1}".format(resp["code"], resp["message"]))
-        return 0
+    def save(self, indx, points):
+        self.safe_update(indx, points)
 
-    def find_create(self, indx, oid, attrs={}):
-        resp = indx.get_by_ids(oid)
-        logging.debug("Received response: {0}".format(resp))
+    def find_and_delete_points(self, indx, day):
+        logging.debug("Find and delete data points from {0}".format(day.date().isoformat()))
+        for h in range(24):
+            for m in range(60):
+                find_start = datetime.combine(day.date(), time(h,m,0)) 
+                logging.debug("looking for data points with start time: {0}".format(find_start.isoformat()))
+                step_points = indx.query(json.dumps({"http://sociam.org/ontology/timeseries/start":find_start.isoformat(), "http://www.w3.org/1999/02/22-rdf-syntax-ns#type":"http://sociam.org/ontology/health/StepCount"}))
+                logging.debug("Found step points from {0}: {1}".format(find_start.date().isoformat(), step_points))
+                # indx.delete(version, step_points)
+
+    def find_by_id(self, indx, oid) :
+        logging.debug("Searchin object by id {0}".format(oid))
+        resp = indx.query(json.dumps({"@id": oid}))
+        logging.debug("find_by_id: received response: {0}".format(resp))
         if resp and "code" in resp and resp["code"] == 200 and "data" in resp:
             resp_data = resp["data"]
-            version = resp_data["@version"]
             if oid in resp_data:
                 logging.debug("Object {0} found!".format(oid))
-                return version, resp_data[oid]
+                return resp_data[oid]
             else:
-                logging.debug("Object {0} not found! Creating it.".format(oid))
-                attrs.update({"@id":oid})
-                resp1 = self.safe_update(indx, version, attrs)
-                logging.debug("Received response: {0}".format(resp1))
-                if resp1 and "code" in resp1 and resp1["code"] == 201:
-                    logging.debug("Object {0} created!".format(oid))
-        return 0, None
+                logging.debug("Object {0} not found!".format(oid))
+        return None
 
-    def safe_update(self, indx, v, obj) :
+    def safe_update(self, indx, obj) :
         try:
-            indx.update(v, obj)
+            logging.debug("Updating object {0} at box version {1}".format(obj, self.version))
+            resp = indx.update(self.version, obj)
+            logging.debug("safe_update: received response: {0}".format(resp))
+            if resp and "code" in resp and "data" in resp:
+                if resp["code"] == 201 or resp["code"] == 200:
+                    self.version = resp["data"]["@version"]
+                    logging.debug("Updated objects! new box version: {0}".format(self.version))
+                    return self.version
         except Exception as e:
             if isinstance(e, urllib2.HTTPError): # handle a version incorrect error, and update the version
                 if e.code == 409: # 409 Obsolete
                     response = e.read()
                     json_response = json.loads(response)
-                    new_v = json_response['@version']
-                    self.safe_update(indx, new_v, obj) # try updating again now the version is correct
+                    self.version = json_response['@version']
+                    return self.safe_update(indx, obj) # try updating again now the version is correct
                 pass
             else:
                 logging.error("Error updating INDX: {0}".format(e))
-                sys.exit(1)          
+                sys.exit(1)         
+
+    def find_create(self, indx, oid, attrs={}):
+        obj = self.find_by_id(indx, oid)
+        if obj is None:
+            logging.debug("Object {0} not found! Creating it.".format(oid))
+            attrs.update({"@id":oid})
+            self.safe_update(indx, attrs)
+            obj = attrs
+        return obj
 
 if __name__ == '__main__':
     harvester = FitbitHarvester()
