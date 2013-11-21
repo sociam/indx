@@ -7,8 +7,8 @@
                                         <div ng-repeat="i in u.range(12)" class="bar{{ i + 1 }}"></div>
                                 </div>
                         </div>
-                        <button data-toggle="modal" href=".login-dialog" ng-show="!isLoggedIn()" class="btn btn-primary login-btn"><label>log in</label></button>
-                        <button data-toggle="modal" href=".logout-dialog" ng-show="isLoggedIn()" class="btn btn-primary login-btn">
+                        <button data-toggle="modal" href=".login-dialog" ng-show="!isLoggedIn()" class="btn btn-primary login-btn"><label>log in to indx</label></button>
+                        <button data-toggle="modal" href=".logout-dialog" ng-show="isLoggedIn()" class="btn btn-primary login-btn is-logged-in">
                                 <label>{{ user.name }}</label><div class='usericon' ng-bind-html-unsafe="usericon"></div>
                         </button>
                         <div ng-show="isLoggedIn()"  class="btn-group box-selector">
