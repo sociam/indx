@@ -44,8 +44,8 @@
 		<table class='search_params'>
 		    <tr><td>Twitter Username :</td><td><input type="text" name="twitter_username" ng-model="twitter_username"></input></td></tr>
 		    <tr><td>Twitter Search Words : </td><td><input type="text" name="twitter_search_words" ng-model="twitter_search_words"></input></td></tr>
-		    <tr><td>Harvest Twitter Timeline: </td><td> <input type="checkbox" ng-model="twitter_status" ng-true-value="True" ng-false-value="False"</input></td></tr>
-		    <tr><td>Harvest Twitter Network: </td><td> <input type="checkbox" ng-model="twitter_network" ng-true-value="True" ng-false-value="False"</input></input></td></tr>
+		    <tr><td>Harvest Twitter Timeline: </td><td> <input type="checkbox" ng-model="twitter_status" ng-true-value="True" ng-false-value="False"></input></td></tr>
+		    <tr><td>Harvest Twitter Network: </td><td> <input type="checkbox" ng-model="twitter_network" ng-true-value="True" ng-false-value="False"></input></td></tr>
 	    </table>
 	    <div class='submits'>
 		    <div class="btn btn-default" ng-click="setConfig({consumer_key:consumer_key, consumer_secret:consumer_secret, access_token:access_token, access_token_secret:access_token_secret, box:app.box, user:app.user['@id'], address:app.address, password:app.password, twitter_username:twitter_username, twitter_search_words:twitter_search_words, twitter_status:twitter_status, twitter_network:twitter_network})">Set config</div>

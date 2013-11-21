@@ -38,16 +38,18 @@
 			ng-show="app.user && app.box && (app.user['@id'] !== selectedUser.id)"
 			ng-click="fbAsyncInit()">Authorise Facebook to have access to interact with {{ app.user.name}} INDX account</div> -->
 			<div id="fb-root"></div>
-				 <tr><td>Facebook Authorised Status: {{ facebook_auth_status }}. Expires in: {{ facebook_access_token_expire_time }} seconds. Token set on {{ timestamp }}</td></tr><br><br>
- 				<button ng-click="FacebookLogin()">Authorise Facebook</button><br> 
-			<table class='params'> 
-	    </table>
+			<table class='params'>
+				 <tr><td>Facebook Authorised Status: </td><td> {{ facebook_auth_status }}. </td></tr>
+				 <tr><td>Expires in: </td><td> {{ facebook_access_token_expire_time }} seconds. </td></tr>
+				 <tr><td> Token set on: </td><td> {{ timestamp }}</td></tr>
+ 				 <tr><td> <button ng-click="FacebookLogin()">Authorise Facebook</button></td></tr> 
+ 			</table>
 		<table class='search_params'>
-		    <tr><td>Harvest facebook Timeline: </td><td> <input type="checkbox" ng-model="facebook_status" ng-true-value="True" ng-false-value="False"</input></td></tr>
-		    <tr><td>Harvest facebook Network: </td><td> <input type="checkbox" ng-model="facebook_network" ng-true-value="True" ng-false-value="False"</input></input></td></tr>
+		    <tr><td>Harvest facebook Timeline:</td><td> <input type="checkbox" ng-model="facebook_havest_timeline" ng-true-value="True" ng-false-value="False"></input></td></tr>
+		    <tr><td>Harvest facebook Network:</td><td> <input type="checkbox" ng-model="facebook_havest_network" ng-true-value="True" ng-false-value="False"></input></td></tr>
 	    </table>
 	    <div class='submits'>
-		    <div class="btn btn-default" ng-click="setConfig({box:app.box, user:app.user['@id'], address:app.address, password:app.password, facebook_havest_status:facebook_status, facebook_havest_timeline:facebook_network})">Set config</div>
+		    <div class="btn btn-default" ng-click="setConfig({box:app.box, user:app.user['@id'], address:app.address, password:app.password, facebook_havest_timeline:facebook_havest_timeline, facebook_havest_network:facebook_havest_network})">Set config</div>
 		    <div class="status">{{ status }}</div>
 		</div>
 	</div>	
