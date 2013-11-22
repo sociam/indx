@@ -200,12 +200,6 @@ angular
 		});
 
 
-		var manifests = new Manifests();
-		manifests.fetch().then(function () {
-			manifests.fetched = true;
-			u.safeApply($rootScope);
-		});
-
 		window.$scope = $rootScope;
 
 		window.resizeIFrame = function (iframe, noEvents) {
@@ -220,12 +214,20 @@ angular
 			}
 		};
 
-		// this pollution created by emax for supprting debugging
-		// declares box in devtools
+		var manifests = new Manifests();
+
+		var start = function () {
+			manifests.fetch().then(function () {
+				manifests.fetched = true;
+				u.safeApply($rootScope);
+			});
+		};
+
 		var loadBox = function(bid) {
-			client.store.getBox(bid).then(function(box) {
-				console.log('got box >> ', box.id);
-				box = box;
+			client.store.getBox(bid).then(function (_box) {
+				console.log('got box >> ', _box.id);
+				box = _box;
+				start();
 			});
 		};
 		var init = function() {
