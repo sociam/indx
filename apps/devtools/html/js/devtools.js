@@ -32,7 +32,7 @@ angular
 				this.isAvailable = !!raw;
 				this.getResults();
 			},
-			run: function () {
+			run: function (continuous) {
 				var that = this;
 				this.results = null;
 				this.isRunning = true;
@@ -42,7 +42,10 @@ angular
 					_.each(this.params, function (param) {
 						paramsObj[param.name] = param.value;
 					});
-					params = '&params=' + JSON.stringify(paramsObj);
+					params += '&params=' + JSON.stringify(paramsObj);
+				}
+				if (continuous) {
+					params += '&continuous=' + true;
 				}
 				$.post('api/run_tests?id=' + this.manifest.id + params)
 					.always(function () {
@@ -58,6 +61,9 @@ angular
 						that.err = true;
 						u.safeApply($rootScope);
 					});
+			},
+			start: function () {
+				this.run(true);
 			},
 			getResults: function () {
 				var that = this,

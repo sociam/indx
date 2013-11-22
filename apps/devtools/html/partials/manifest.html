@@ -57,6 +57,7 @@
 	<nav class="navbar navbar-default navbar-static-top nav-mini" role="navigation">
 		<form class="navbar-form navbar-left" ng-if="manifest.tests.isAvailable">
 			<button type="button" class="btn btn-default btn-sm" ng-click="manifest.tests.run()">Run</button>
+			<button type="button" class="btn btn-default btn-sm" ng-click="manifest.tests.start()">Start</button>
 			<button type="button" class="btn btn-default btn-sm" ng-click="manifest.tests.refresh()" ng-if="manifest.tests.haveBeenRun">Refresh</button>
 			<a href="{{ manifest.tests.get('url') }}" target="_blank" class="btn btn-default btn-sm" ng-if="manifest.tests.haveBeenRun">Download results</a>
 			<button type="button" class="btn btn-default btn-sm" ng-click="manifest.tests.editingParams = true" ng-if="manifest.tests.params">Parameters</button>

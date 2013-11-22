@@ -17,11 +17,10 @@
 
 import os, logging, json
 from indx.webserver.handlers.base import BaseHandler
-from subprocess import check_output
+from subprocess import check_output, PIPE, Popen
+from threading  import Thread
 import subprocess
 import glob
-
-
 
 class DevToolsApp(BaseHandler):
 
@@ -50,7 +49,6 @@ class DevToolsApp(BaseHandler):
                 manifest_json.close()
 
         return manifests
-
 
     def list_all_manifests (self):
         manifests = []
@@ -195,19 +193,40 @@ class DevToolsApp(BaseHandler):
         cmd_str += '--output-directory=%s ' % (config['path'])
         cmd_str += '--log-stdout '
         if 'params' in request.args:
-            cmd_str += '--params=\'%s\'' % request.args['params'][0]
+            cmd_str += '--params=\'%s\' ' % request.args['params'][0]
+        if 'continuous' in request.args:
+            cmd_str += '--continuous'
         logging.debug('Exec %s' % cmd_str)
-        cmd = subprocess.Popen([cmd_str], stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE, shell=True)
-        out, err = cmd.communicate()
-        logging.debug(out);
-        if cmd.returncode != 0:
-            logging.debug('Non-zero exit status %s' % err)
-            self.return_internal_error(request)
-            return
-        config['build_output'] = out;
-        config['have_been_run'] = os.path.exists(config['path']);
-        self.return_ok(request, data = { "response": config })
+
+        def output_cb(strs):
+            logging.debug(strs);
+            #self.return_ok(request)
+
+        self.execute(cmd_str, output_cb)
+        self.return_ok(request)
+
+        # out, err = cmd.communicate()
+        # logging.debug(out);
+        # if cmd.returncode != 0:
+        #     logging.debug('Non-zero exit status %s' % err)
+        #     self.return_internal_error(request)
+        #     return
+        # config['build_output'] = out;
+        # config['have_been_run'] = os.path.exists(config['path']);
+        # self.return_ok(request, data = { "response": config })
+
+
+    def execute(self, cmd_str, output_cb):
+        def enqueue_output(out):
+            for line in iter(out.readline, b''):
+                output_cb(line);
+            out.close()
+
+        p = Popen([cmd_str], stdout=PIPE, stderr=PIPE, bufsize=1, shell=True)
+        t = Thread(target=enqueue_output, args=[p.stdout])
+        t.daemon = True # thread dies with program
+        t.start()
+
 
 
 DevToolsApp.base_path = "devtools/api"
