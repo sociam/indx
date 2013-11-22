@@ -26,6 +26,9 @@ from tweepy import Stream
 from tweepy import API
 from tweepy import Status
 from service_tweets import TwitterService
+from twisted.internet.defer import Deferred as D
+from twisted.internet import task
+from twisted.internet import reactor
 
     
 logging.basicConfig(level=logging.INFO)
@@ -71,12 +74,32 @@ class TwitterServiceController:
         #load the main services
         #twitter_service.run_main_services()
 
-        thread_main = ThreadMain(twitter_service)
-        thread_additional = ThreadAdditional(twitter_service)
+        def called(result):
+            print result
+
+        def command_die(err):
+            err.printTraceback()    
+
+        print "Service Controller Twitter - running Additional Taks with Twisted Reactor"
+        task_get_additional_stream = task.LoopingCall(twitter_service.run_additional_services())
+        returned = D()
+        result = task_get_additional_stream.start(15.0)
+        result.addCallback(called)
+        result.addErrback(command_die) 
+        #task_get_additional_stream.addCallback(called)   
+
+        print "Service Controller Twitter - running Main service"
+        task_main_get_stream = task.deferLater(reactor, 3.5, twitter_service.run_main_services())
+        task_main_get_stream.addCallback(called)
+        
+        reactor.run()
+
+        #thread_main = ThreadMain(twitter_service)
+        #thread_additional = ThreadAdditional(twitter_service)
         #somethings are on timers, lets set those up as well!
-        print " starting timers"
-        thread_additional.start()
-        thread_main.start()
+        #print " starting timers"
+        #thread_additional.start()
+        #thread_main.start()
 
 
 class ThreadMain(threading.Thread):

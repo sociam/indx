@@ -227,6 +227,7 @@ class INDXListener(StreamListener):
                 response = self.service.indx_con.update(self.service.version, self.service.batch)
                 self.service.version = response['data']['@version'] # update the version
                 self.service.batch = []
+                logging.info('inserted batch of tweets')
         except Exception as e:
             if isinstance(e, urllib2.HTTPError): # handle a version incorrect error, and update the version
                 if e.code == 409: # 409 Obsolete
