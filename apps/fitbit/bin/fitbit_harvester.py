@@ -152,7 +152,7 @@ class FitbitHarvester:
             print self.get_config(args)
         else:
             logging.debug("Starting the harvester. ")
-            self.harvest(args['server'])
+            self.work(args['server'])
 
     def yesterday(self):
         return datetime.combine((datetime.now()+timedelta(days=-1)).date(), time(00,00,00))
@@ -160,7 +160,7 @@ class FitbitHarvester:
     def today(self):
         return datetime.combine(datetime.now().date(), time(00,00,00))
 
-    def harvest(self, server_url):
+    def work(self, server_url):
         start, box, user, password, overwrite = self.check_configuration()
         logging.debug("Starting download from date: {0}".format(start))
         day = datetime.strptime(start, "%Y-%m-%d")
@@ -172,23 +172,33 @@ class FitbitHarvester:
         indx = IndxClient(server_url, box, user, password, "INDX_Fitbit_Harvester")
         logging.debug("Created INDXClient.")
 
+        harvester = self.find_create(indx, self.harvester_id, {"http://www.w3.org/2000/01/rdf-schema#label":"INDX Fitbit Harvester extra info"})
+        if harvester :
+            if "zeros_from" in harvester :
+                all_zeros_from = datetime.strptime(harvester["zeros_from"][0]["@value"], "%Y-%m-%dT%H:%M:%S")
+                if day < all_zeros_from :
+                    if overwrite :
+                        harvester["zeros_from"] = day.isoformat()
+            else :
+                harvester["zeros_from"] = day.isoformat()
+        self.safe_update(indx, harvester)    
+        
+        while 1: 
+            self.harvest(indx, fitbit_intraday)
+            logging.debug("Harvested! Suspending execution for 1 hour at {0}.".format(datetime.now().isoformat()))
+            sleep(3600)
+
+
+    def harvest(self, indx, fitbit_intraday):
         fetched_days = []
+        day = self.today()
         harvester = self.find_create(indx, self.harvester_id, {"http://www.w3.org/2000/01/rdf-schema#label":"INDX Fitbit Harvester extra info"})
         if harvester :
             if "fetched_days" in harvester :
                 fetched_days = self.parse_list(harvester["fetched_days"])
-        logging.debug("Fetched days: {0}".format(fetched_days))
-        # else: 
-        #     logging.error("Harvester object still not created! Trying again ..")
-        #     harvester = self.find_create(indx, harvester_id, {"http://www.w3.org/2000/01/rdf-schema#label":"INDX Fitbit Harvester extra info"})
-        #     if harvester :
-        #         if "fetched_days" in harvester :
-        #             fetched_days = harvester["fetched_days"]
-        #         else : 
-        #             fetched_days = []
-        #     else: 
-        #         logging.error("Harvester object still not created! Giving up ..")
-        #         sys.exit(1)
+            if "zeros_from" in harvester :
+                day = datetime.strptime(harvester["zeros_from"][0]["@value"], "%Y-%m-%dT%H:%M:%S")
+        logging.debug("Fetched days : {0}, Start from : {1}".format(fetched_days, day.isoformat()))
 
         steps_ts = self.find_create(indx, self.steps_ts_id, {"http://www.w3.org/2000/01/rdf-schema#label":"Fitbit Steps Time Series", "http://www.w3.org/1999/02/22-rdf-syntax-ns#type":"http://purl.org/linked-data/cube#Dataset"})
         calories_ts = self.find_create(indx, self.calories_ts_id, {"http://www.w3.org/2000/01/rdf-schema#label":"Fitbit Calories Time Series", "http://www.w3.org/1999/02/22-rdf-syntax-ns#type":"http://purl.org/linked-data/cube#Dataset"})
@@ -196,72 +206,94 @@ class FitbitHarvester:
         floors_ts = self.find_create(indx, self.floors_ts_id, {"http://www.w3.org/2000/01/rdf-schema#label":"Fitbit Floors Time Series", "http://www.w3.org/1999/02/22-rdf-syntax-ns#type":"http://purl.org/linked-data/cube#Dataset"})
         elevation_ts = self.find_create(indx, self.elevation_ts_id, {"http://www.w3.org/2000/01/rdf-schema#label":"Fitbit Elevation Time Series", "http://www.w3.org/1999/02/22-rdf-syntax-ns#type":"http://purl.org/linked-data/cube#Dataset"})
 
+        got_all_zeros = self.today()
+
         while day < self.today():
-            skip = False
+            # skip = False
             day_points = None
             if day.date().isoformat() in fetched_days:
-                if overwrite :
-                    logging.debug("Data for {0} was already fetched, overwriting!".format(day.date().isoformat()))
-                    # self.find_and_delete_points(indx, day)
-                    day_points = self.find_day_points(indx, day) # {"dataset_id":{hash based on start time}, "dataset_id":{hash based on start time}, ...}
-                else :
-                    logging.debug("Data for {0} was already fetched, skipping day!".format(day.date().isoformat()))
-                    skip = True
+                logging.debug("Data for {0} was already fetched, rechecking!".format(day.date().isoformat()))
+                # self.find_and_delete_points(indx, day)
+                day_points = self.find_day_points(indx, day) # {"dataset_id":{hash based on start time}, "dataset_id":{hash based on start time}, ...}
+                # else :
+                #     logging.debug("Data for {0} was already fetched, skipping day!".format(day.date().isoformat()))
+                #     skip = True
             else:
                 logging.debug("Data for {0} was not yet fetched. Getting it now.".format(day.date().isoformat()))
                 fetched_days.append(day.date().isoformat())
                 harvester["fetched_days"] = fetched_days
+                self.safe_update(indx, harvester)
 
-            if not skip:
-                # processing steps
-                if steps_ts:
-                    steps = self.download_steps(day, fitbit_intraday)
-                    logging.debug("Fetched {0} step data points.".format(len(steps)))
-                    steps_points = []
-                    if day_points[self.steps_ts_id]:
-                        steps_points = self.replace_data_points(day, steps, day_points[self.steps_ts_id], self.steps_ts_id, "http://sociam.org/ontology/health/StepCount")
-                    else:
-                        steps_points = self.create_data_points(day, steps, self.steps_ts_id, "http://sociam.org/ontology/health/StepCount") # a subclass of http://www.qudt.org/qudt/owl/1.0.0/quantity/index.html#Frequency and subclass of http://purl.org/linked-data/cube#Observation
-                    # self.save(indx, steps_points)
+            # processing steps
+            steps = self.download_steps(day, fitbit_intraday)
+            zeros = False
+            zeros = self.check_all_zero(steps)
+            if zeros :
+                logging.debug("Step data points are all 0. ")
+                if got_all_zeros > day:
+                    got_all_zeros = day
+            else :
+                got_all_zeros = self.today()
+            steps_points = []
+            if day_points and self.steps_ts_id in day_points and day_points[self.steps_ts_id] :
+                steps_points = self.replace_data_points(day, steps, day_points[self.steps_ts_id], self.steps_ts_id, "http://sociam.org/ontology/health/StepCount")
+            else:
+                steps_points = self.create_data_points(day, steps, self.steps_ts_id, "http://sociam.org/ontology/health/StepCount") # a subclass of http://www.qudt.org/qudt/owl/1.0.0/quantity/index.html#Frequency and subclass of http://purl.org/linked-data/cube#Observation
+            logging.debug("Saving {0} step data points.".format(len(steps_points)))
+            self.save(indx, steps_points)
 
-                # # processing calories
-                # if calories_ts:
-                #     calories = self.download_calories(day, fitbit_intraday)
-                #     calories_points = self.create_data_points(day, calories, self.calories_ts_id, "http://sociam.org/ontology/health/CaloriesBurned") # subclass of http://purl.org/linked-data/cube#Observation
-                #     logging.debug("Fetched {0} calories data points.".format(len(calories_points)))
-                #     self.save(indx, calories_points)
+            # processing calories
+            calories = self.download_calories(day, fitbit_intraday)
+            calories_points = []
+            if day_points and self.calories_ts_id in day_points and day_points[self.calories_ts_id] :
+                calories_points = self.replace_data_points(day, calories, day_points[self.calories_ts_id], self.calories_ts_id, "http://sociam.org/ontology/health/CaloriesBurned")
+            else:
+                calories_points = self.create_data_points(day, calories, self.calories_ts_id, "http://sociam.org/ontology/health/CaloriesBurned") # subclass of http://purl.org/linked-data/cube#Observation
+            logging.debug("Saving {0} calories data points.".format(len(calories_points)))
+            self.save(indx, calories_points)
 
-                # # processing distance
-                # if distance_ts:
-                #     distance = self.download_distance(day, fitbit_intraday)
-                #     distance_points = self.create_data_points(day, distance, self.distance_ts_id, "http://sociam.org/ontology/health/Distance") # subclass of http://purl.org/linked-data/cube#Observation
-                #     logging.debug("Fetched {0} distance data points.".format(len(distance_points)))
-                #     self.save(indx, distance_points)
+            # # processing distance
+            # if distance_ts:
+            #     distance = self.download_distance(day, fitbit_intraday)
+            #     distance_points = self.create_data_points(day, distance, self.distance_ts_id, "http://sociam.org/ontology/health/Distance") # subclass of http://purl.org/linked-data/cube#Observation
+            #     logging.debug("Fetched {0} distance data points.".format(len(distance_points)))
+            #     self.save(indx, distance_points)
 
-                # # processing floors
-                # if floors_ts:
-                #     floors = self.download_floors(day, fitbit_intraday)
-                #     floors_points = self.create_data_points(day, floors, self.floors_ts_id, "http://sociam.org/ontology/health/FloorsClimbed") # subclass of http://purl.org/linked-data/cube#Observation
-                #     logging.debug("Fetched {0} floors data points.".format(len(floors_points)))
-                #     self.save(indx, floors_points)
+            # # processing floors
+            # if floors_ts:
+            #     floors = self.download_floors(day, fitbit_intraday)
+            #     floors_points = self.create_data_points(day, floors, self.floors_ts_id, "http://sociam.org/ontology/health/FloorsClimbed") # subclass of http://purl.org/linked-data/cube#Observation
+            #     logging.debug("Fetched {0} floors data points.".format(len(floors_points)))
+            #     self.save(indx, floors_points)
 
-                # # processing elevation
-                # if elevation_ts:
-                #     elevation = self.download_elevation(day, fitbit_intraday)
-                #     elevation_points = self.create_data_points(day, elevation, self.elevation_ts_id, "http://sociam.org/ontology/health/Elevation") # subclass of http://purl.org/linked-data/cube#Observation
-                #     logging.debug("Fetched {0} elevation data points.".format(len(elevation_points)))
-                #     self.save(indx, elevation_points)
+            # # processing elevation
+            # if elevation_ts:
+            #     elevation = self.download_elevation(day, fitbit_intraday)
+            #     elevation_points = self.create_data_points(day, elevation, self.elevation_ts_id, "http://sociam.org/ontology/health/Elevation") # subclass of http://purl.org/linked-data/cube#Observation
+            #     logging.debug("Fetched {0} elevation data points.".format(len(elevation_points)))
+            #     self.save(indx, elevation_points)
 
-                # self.safe_update(indx, harvester)
+            harvester["zeros_from"] = got_all_zeros.isoformat()
+            self.safe_update(indx, harvester)
 
             day = day + timedelta(days=+1)
-            logging.debug("Suspending execution for 1 hour at {0}.".format(datetime.now().isoformat()))
-            sleep(3600)
+            logging.debug("Suspending execution for 5 minutes at {0}.".format(datetime.now().isoformat()))
+            sleep(300)
+
+        logging.debug("Finished harvesting round! Exiting harvest() .. ")
 
     def parse_list(self, vlist):
         out = [x['@value'] for x in vlist]
         logging.debug("Parsed value list: {0}".format(out))
         return out
+
+    def check_all_zero(self, data):
+        for key in data.keys():
+            if key.endswith('-intraday'):
+                for pt in data[key]["dataset"]:
+                    if pt["value"] > 0 :
+                        return False
+        return True
 
     def create_data_points(self, day, data, ts_id, rdf_type=None):
         logging.debug("Started creating data points.")
@@ -273,10 +305,6 @@ class FitbitHarvester:
                     interval_end = interval_start+timedelta(minutes=1) 
                     value = point["value"]
                     data_point = {  "@id": "fitbit_dp_{0}".format(uuid.uuid4()), 
-                                    # "http://sociam.org/ontology/timeseries/start": [ { "@type": "http://www.w3.org/2001/XMLSchema#dateTime", "@value": interval_start.isoformat() } ],
-                                    # "http://sociam.org/ontology/timeseries/end": [ { "@type": "http://www.w3.org/2001/XMLSchema#dateTime", "@value": interval_end.isoformat() } ],
-                                    # "http://sociam.org/ontology/timeseries/value": [ { "@type": "http://www.w3.org/2001/XMLSchema#int", "@value": value } ],
-                                    # "http://purl.org/linked-data/cube#dataset": [ ts_id ] }
                                     "http://sociam.org/ontology/timeseries/start": interval_start.isoformat(),
                                     "http://sociam.org/ontology/timeseries/end": interval_end.isoformat(),
                                     "http://sociam.org/ontology/timeseries/value": value,
@@ -305,7 +333,7 @@ class FitbitHarvester:
                         if len(old_data[interval_start]) > 1 :
                             logging.error("There are {0} points for the same start time {1} in the same dataset {2}!!".format(len(old_data[interval_start]), interval_start, ts_id))
                         old_point = old_data[interval_start][0] # there shouldn't be more than 1 point here!!!
-                        if int(old_point['http://sociam.org/ontology/timeseries/value'][0]['@value']) == value:
+                        if old_point['http://sociam.org/ontology/timeseries/value'][0]['@value'] == str(value):
                             kept = kept+1
                         else:
                             replaced = replaced+1
