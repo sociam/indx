@@ -10,10 +10,11 @@ angular
 			.when('/manifest/:id/:section', { templateUrl: 'partials/manifest.html', controller: 'ManifestCtrl' })
 			.otherwise({ redirectTo: '/' });
 	}])
-	.service('manifestsService', function ($rootScope, utils) {
+	.service('manifestsService', function ($rootScope, utils, client) {
 		'use strict';
 
-		var u = utils;
+		var u = utils,
+			box;
 
 		var TestsModel = Backbone.Model.extend({
 			initialize: function (attributes, options) {
@@ -30,6 +31,12 @@ angular
 					param.value = param['default'];
 				});
 				this.isAvailable = !!raw;
+				box.getObj('test-' + this.manifest.get('name')).then(function (obj) {
+					that.obj = obj;
+					obj.on('change', function () {
+						console.log('test obj change', obj);
+					});
+				});
 				this.getResults();
 			},
 			run: function (continuous) {
@@ -213,6 +220,24 @@ angular
 			}
 		};
 
+		// this pollution created by emax for supprting debugging
+		// declares box in devtools
+		var loadBox = function(bid) {
+			client.store.getBox(bid).then(function(box) {
+				console.log('got box >> ', box.id);
+				box = box;
+			});
+		};
+		var init = function() {
+			console.log('change on box and user --- init >> ', $rootScope.selectedBox, $rootScope.selectedUser);
+			if ($rootScope.selectedUser && $rootScope.selectedBox) {
+				loadBox($rootScope.selectedBox);
+			}
+		};
+		$rootScope.$watch('selectedBox + selectedUser', init);
+		init();
+		window.store = client.store;
+
 		return {
 			manifests: manifests
 		};
@@ -223,25 +248,6 @@ angular
 		_.extend($scope, {
 			manifests: manifestsService.manifests
 		});
-		/*
-
-		// this pollution created by emax for supprting debugging
-		// declares box in devtools
-		var loadBox = function(bid) {
-			client.store.getBox(bid).then(function(box) {
-				console.log('got box >> ', box.id);
-				window.box = box;
-			});
-		};
-		var init = function() {
-			console.log('change on box and user --- init >> ', $scope.selectedBox, $scope.selectedUser);
-			if ($scope.selectedUser && $scope.selectedBox) {
-				loadBox($scope.selectedBox);
-			}
-		};
-		$scope.$watch('selectedBox + selectedUser', init);
-		init();
-		window.store = client.store;*/
 	}).controller('ManifestCtrl', function ($scope, $location, manifestsService, $routeParams) {
 		'use strict';
 
