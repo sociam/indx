@@ -48,6 +48,7 @@ def decrypt(cyphertext, password):
 
 import Crypto.Random.OSRNG.posix
 import Crypto.PublicKey.RSA
+import Crypto.Hash.SHA512
 
 # Use a key size of 3072, recommended from http://en.wikipedia.org/wiki/Key_size / http://www.emc.com/emc-plus/rsa-labs/standards-initiatives/key-size.htm
 def generate_rsa_keypair(size):
@@ -59,7 +60,13 @@ def generate_rsa_keypair(size):
 
     public_key = key.publickey().exportKey()
     private_key = key.exportKey()
-    return {"public": public_key, "private": private_key}
+
+    # generate a SHA512 hash of the public key to identify it
+    h = Crypto.Hash.SHA512.new()
+    h.update(public_key)
+    public_hash = h.hexdigest()
+
+    return {"public": public_key, "private": private_key, "public-hash": public_hash}
 
 def load_key(key):
     """ Load a key from a string into a RSA key object. """

@@ -58,7 +58,7 @@ class ObjectStoreQuery:
         join = "JOIN wb_v_latest_triples AS {0} ON ({1} = {2}) ".format(join_name, join_table1, join_table2)
         self.joins.append(join)
 
-        wheres.append("{0}.predicate = %s AND {0}.obj_value {1} %s".format(join_name, operator))
+        wheres.append("({0}.predicate = %s AND {0}.obj_value {1} %s)".format(join_name, operator))
         self.params.extend([predicate, "{0}".format(val)])
 
         return wheres

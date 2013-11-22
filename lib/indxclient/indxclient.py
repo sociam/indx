@@ -394,6 +394,14 @@ class IndxClient:
         return self._get(url)
 
     @require_token
+    def generate_new_key(self):
+        """ Generate new key and store it in the keystore. Return the public and public-hash parts. (Not the private part.)  """
+        self._debug("Called API: generate_new_key")
+
+        url = "{0}/generate_new_key".format(self.base)
+        return self._get(url)
+
+    @require_token
     def diff(self, return_objs, from_version, to_version = None):
         """ Get the difference between two versions of the objects in the box.
         
