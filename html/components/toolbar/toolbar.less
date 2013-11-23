@@ -1,24 +1,51 @@
 
 @import url('/components/toolbar/spinner.less');
 body.modal-open { margin: 0px !important; }
+@font-face { 
+  font-family: "Lato"; 
+  src: url('/fonts/Lato/Lato-Regular.ttf'); 
+}
+@font-face
+{
+font-family: "Lato-Light";
+src: url('/fonts/Lato/Lato-Light.ttf'),
+}
 .indx-toolbar {
+	font-family:'Lato', 'helvetica neue', 'helvetica';
+	font-weight:200;
+	box-sizing:border-box;
+	.modal { 
+		overflow-y:hidden !important; 
+	}
 	z-index: 10000;
 	color:#aaa;
+	.navbar {
+		opacity:0.88;
+		background-color:white;
+		min-height:34px;
+		height:42px;
+	}
+	div.navbar.navbar-default.navbar-static-top {
+	}
+	.btn { height:27px !important; 
+		padding: 3px 12px;
+	}
 	label, .modal-header {
 		font-variant:small-caps;
 		// font-size:120%;
 		line-height:90%;
-		font-weight:100;
+		font-weight:120;
 	}
     .login-btn {
     	color:#666;
     	position:absolute;
-		right:8px; top:9px;
-		background-color:rgba(247,247,247,1.0);
+		right:10px; top:7px;
+		padding:2px 10px 6px 10px;
+		// background-color:rgba(247,247,247,1.0);
+		background-color:white;
 		border:1px solid rgba(0,0,0,0.1);
-		padding:7px 10px 3px 10px;
 		&.is-logged-in {
-			padding:7px 34px 3px 14px;
+			padding:2px 34px 8px 14px;
 		}
 		.usericon { 
 			position:absolute;
@@ -29,10 +56,16 @@ body.modal-open { margin: 0px !important; }
 	}
 	position:relative;
 	margin:0px 0px 0px 0px !important;
-	* { box-sizing:border-box; }
 	&.hide { display:none; }	
     .right-align{ text-align:right;   }
-	.navbar-brand { font-weight: 100; font-size:180%; margin-left:15px;}
+	.navbar-brand { 
+		position:absolute;
+		font-weight: 100; font-size:16pt; 
+		margin-left:15px;
+		padding:2px;
+		top:50%;
+		margin-top:-9pt;
+	}
     .modal-backdrop {
 		// -webkit-filter:	blur(10px) grayscale(.5) opacity(0.8) !important;
     }
@@ -67,7 +100,7 @@ body.modal-open { margin: 0px !important; }
 	}
     .modal-footer { vertical-align:middle;  }
 	.box-selector {
-		margin:9px 0px 0px 9px;
+		margin:9px 0px 0px 80px;
 		* { font-size:88%; color:#aaa !important; }
 		.btn {
 			background-color:rgba(0,0,0,0);
