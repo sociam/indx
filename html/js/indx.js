@@ -55,7 +55,7 @@
 angular
 	.module('indx', [])
 	.factory('client',function(utils) {
-		var u = utils, log = utils.log, error = utils.error, debug = utils.debug;
+		var u = utils, log = utils.log, error = utils.error, debug = utils.debug, jQ = jQuery;
 		var DEFAULT_HOST = document.location.host; // which may contain the port
 		var WS_MESSAGES_SEND = {
 			auth: function(token) { return JSON.stringify({action:'auth', token:token}); },
@@ -81,7 +81,7 @@ angular
 		var serialiseObj = function(obj) {
 			var uri = obj.id;
 			var outObj = {};
-			$.each(obj.attributes, function(pred, vals){
+			jQ.each(obj.attributes, function(pred, vals){
 				if (pred[0] === "_" || pred[0] === "@"){
 					// don't expand @id etc.
 					return;
@@ -90,7 +90,7 @@ angular
 				if (!(vals instanceof Array)){
 					vals = [vals];
 				}
-				$.each(vals, function(){
+				jQ.each(vals, function(){
 					var val = this;
 					if (val instanceof File) {
 						objVals.push({"@value": val.id, "@type":"indx-file", "@language":val.get('content-type')});
@@ -168,7 +168,7 @@ angular
 					app:this.box.store.get('app'),
 					token:this.box.get('token'),
 					box:this.box.getID()
-				}, url = [this.box.store._getBaseURL(), this.box.id, 'files'].join('/') + '?' + $.param(params);
+				}, url = [this.box.store._getBaseURL(), this.box.id, 'files'].join('/') + '?' + jQ.param(params);
 				// u.debug("IMAGE URL IS ", url, params);
 				return url;
 			}
@@ -500,14 +500,14 @@ angular
 				var boxid = this.id || this.cid,
 				baseURL = [this.store._getBaseURL(), boxid, 'files'].join('/'),
 				options = { app: this.store.get('app'), id: id, token:this.get('token'),  box: boxid, version: this.getVersion() },
-				optionParams = $.param(options),
+				optionParams = jQ.param(options),
 				url = baseURL+"?"+optionParams,
 				d = u.deferred();
 				debug("PUTTING FILE ", url);
 				var ajaxArgs  = _(_(this.store.ajaxDefaults).clone()).extend(
 					{ url: url, method : 'PUT', crossDomain:false, data:file, contentType: contenttype, processData:false }
 				);
-				return $.ajax( ajaxArgs );
+				return jQ.ajax( ajaxArgs );
 			},
 			/// @arg {Object} queryPattern - a query pattern to match
 			/// @opt {string[]} predicates - optional array of predicates to return, or entire objects otherwise
@@ -949,9 +949,6 @@ angular
 
 		var BoxCollection = Backbone.Collection.extend({ model: Box });
 
-		// debug ---------| 
-		window._stores = [];
-
 		var Store =  Backbone.Model.extend({
 			defaults: {
 				server_host:DEFAULT_HOST,
@@ -968,9 +965,6 @@ angular
 			initialize: function(attributes, options){
 				this.set({boxes : new BoxCollection([], {store: this})});
 
-				// debug ---------------
-				_stores.push(this);
-				_(_stores).map(function(s, j) { console.log(":: Store ", j, s.isConnected()); });
 			},
 
 			/// Check that the
@@ -1194,9 +1188,10 @@ angular
 				var defaultData = { app: this.get('app') };
 				var options = _({}).extend(
 					this.ajaxDefaults,
-					{ url: url, method : method, crossDomain: !this.isSameDomain(), data: _({}).extend(defaultData,data) }
+					{ url: url, type : method, crossDomain: !this.isSameDomain(), data: _({}).extend(defaultData,data) }
 				);
-				return $.ajax( options ); // returns a deferred
+				console.log(' debug indxJS _ajax url ', options.url, options.method, options);
+				return jQuery.ajax( options ); // returns a deferred
 			},
 			sync: function(method, model, options){
 				switch(method){
