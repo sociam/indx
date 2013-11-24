@@ -92,10 +92,10 @@ class TwitterServiceController:
             twitter_service.run_additional_services()
             if first_run:
                 twitter_service.run_main_services()
-            print "setting up lopp..."
+            logging.debug("setting up Reactor loop...")
             reactor.callLater(15.0, loop_harvester);
 
-        print "Service Controller Twitter - running Additional Taks with Twisted Reactor"
+        logging.info("Service Controller Twitter - running Additional Taks with Twisted Reactor")
         loop_harvester() 
 
         first_run = False

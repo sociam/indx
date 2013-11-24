@@ -21,6 +21,8 @@ from datetime import datetime
 from threading import Timer, Thread
 from indxclient import IndxClient
 from service_facebook import FacebookService
+from twisted.internet import task
+from twisted.internet import reactor
 
     
 logging.basicConfig(level=logging.INFO)
@@ -40,7 +42,7 @@ class FacebookServiceController:
     #load and managed parameters
     def load_parameters(self, config):
         try:
-            print "loading Credentials...."
+            logging.debug("loading Credentials....")
             #config = config.replace("\"","'")
             #config = ast.literal_eval(config)
             for k,v in config.iteritems():
@@ -50,13 +52,13 @@ class FacebookServiceController:
             token_type = config['facebook_auth_status']
             if "Short" in token_type:
                 #we need to get a long life token...
-                print "Service Controller Facebook - Received short Token"
-                print "Trying to Get Long TOKEN"
+                logging.debug("Service Controller Facebook - Received short Token")
+                logging.debug("Trying to Get Long TOKEN")
                 grant_type= "fb_exchange_token"
                 fb_exchange_token = config['facebook_access_token']
                 self.get_long_token(grant_type,FACEBOOK_APP_ID,FACEBOOK_APP_SECRET,fb_exchange_token)
             elif "Long" in token_type:
-                print "Service Controller Facebook - Received full token"
+                logging.debug("Service Controller Facebook - Received full token")
                 self.config = config
         except:
             pass
@@ -77,7 +79,7 @@ class FacebookServiceController:
             #print self.access_token_long
             #print self.expire_time
         except:
-            print sys.exc_info()
+            logging.debug("Facebook Service Controller - Couldn not get long token due to {0}".format(sys.exc_info()))
 
     def getAccesstokenConfig(self):
         config = {"facebook_access_token_long": self.facebook_access_token_long, "facebook_access_token_expire_time": self.facebook_access_token_expire_time}
@@ -86,11 +88,27 @@ class FacebookServiceController:
 
     def load_service_instance(self):
 
-        facebook_service = FacebookService(self.config)
-        #check if the token hasnt expired, if not, let's go!
-        if(facebook_service.is_token_active()):
-            print "Service Controller Facebook - Running Harvester as the Token is active!"
+        facebook_service = FacebookService(self.config)         
+
+        def loop_harvester():
+            facebook_service.harvest_facebook_profile()
             facebook_service.harvest_facebook_statuses()
             facebook_service.harvest_facebook_friends()
+            #update every hour
+            reactor.callLater(3600.0, loop_harvester);
+
+        #check if the token hasnt expired, if not, let's go!
+        if(facebook_service.is_token_active()):
+            logging.info("Service Controller Facebook - Running Harvester as the Token is active!")
+            loop_harvester() 
+            reactor.run()
+
+
+    def start_reactor(self):
+        reactor.run()
+
+
+
+
 
     

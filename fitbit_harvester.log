@@ -5,3 +5,11 @@ DEBUG:root:Received arguments: {'get_config': True, 'config': None, 'server': No
 DEBUG:root:Loaded harvester config from keyring: None
 DEBUG:root:Loaded fitbit config from keyring: None
 INFO:fitbit:Successfully got request oauth_token: ce77d3f6f6432a0e858dc01ade311388, oauth_token_secret: 3151ebbfa29c26dbf91ec1b42992e2f8
+DEBUG:root:Received arguments: {'get_config': True, 'config': None, 'server': None}
+DEBUG:root:Loaded harvester config from keyring: None
+DEBUG:root:Loaded fitbit config from keyring: None
+INFO:fitbit:Successfully got request oauth_token: 02ad78312792154bce16c2be03e9558c, oauth_token_secret: 1f5e3c9630c687f5c632e8e79447e83f
+DEBUG:root:Received arguments: {'get_config': True, 'config': None, 'server': None}
+DEBUG:root:Loaded harvester config from keyring: None
+DEBUG:root:Loaded fitbit config from keyring: None
+INFO:fitbit:Successfully got request oauth_token: e8b16ca877498cca0ac8812d5ec4ac1c, oauth_token_secret: a15608eacdf537d4d92db7fce5269eb1
