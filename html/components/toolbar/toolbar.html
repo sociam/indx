@@ -1,11 +1,16 @@
 <div class="ng-cloak indx-toolbar" ng-show="visible">
         <div class="navbar navbar-default navbar-static-top">
                 <div class="navbar-inner" ng-init="_initialise()">
-                        <div class="navbar-brand">INDX
-                                <div class="spinner" ng-show="loading > 0">
-                                        <div ng-repeat="i in u.range(12)" class="bar{{ i + 1 }}"></div>
-                                </div>
+                        <div class="spinner" ng-show="loading > 0">
+                                <div ng-repeat="i in u.range(12)" class="bar{{ i + 1 }}"></div>
                         </div>
+                        <!-- either the brand (if not an app) or the apps' icon -->
+                        <div class="navbar-brand" ng-show="!getAppID()">INDX</div>
+                        <div class="navbar-app-brand" ng-show="getAppID()">
+                            <img class="appicon" ng-show="appicon_url" ng-src="{{ appicon_url }}">
+                            <span> {{ appname | lowercase }} </span>
+                        </div>
+                        <!-- end of branding -->
                         <button data-toggle="modal" href=".login-dialog" ng-show="!isLoggedIn()" class="btn btn-primary login-btn"><label>log in to indx</label></button>
                         <button data-toggle="modal" href=".logout-dialog" ng-show="isLoggedIn()" class="btn btn-primary login-btn is-logged-in">
                                 <label>{{ user.name }}</label><div class='usericon' ng-bind-html-unsafe="usericon"></div>
