@@ -7,7 +7,7 @@ var angular = require('angular'),
 	jQuery = require('jquery'),
 	fs = require('fs');
 
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0"
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
 var window = {}, document = {location:{}};
 
@@ -15,7 +15,6 @@ var savage_require = function(path) { eval(fs.readFileSync(path)+''); };
 
 var indx_ = savage_require('../../html/js/indx.js'),
 	utils_ = savage_require('../../html/js/indx-utils.js');
-
 
 var	injector = angular.injector(['ng','indx']);
 

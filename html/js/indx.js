@@ -56,7 +56,33 @@ angular
 	.module('indx', [])
 	.factory('client',function(utils) {
 		var u = utils, log = utils.log, error = utils.error, debug = utils.debug, jQ = jQuery;
+		var ajax;
 		var DEFAULT_HOST = document.location.host; // which may contain the port
+
+		// new patch for nodejs support
+		if (typeof process !== undefined && process.title === 'node') {
+			var request = require('request'), qs = require('querystring');
+			ajax = function(options) {	
+				var d = u.deferred();
+				var args = options.data;
+				if (typeof args == 'object') {	args = JSON.stringify(args); }
+				request({
+					url:options.url,
+					method:options.type,
+					headers:{ contentType:options.contentType },
+					jar:true,
+					body:args
+					},function(error, clientresp, response) {
+						console.log('response >> e:' , error, ' - response', response);
+						if (error) { return d.reject(error); }
+						d.resolve(response);
+					});
+				return d.promise();
+			};
+		} else {
+			ajax = jQ.ajax;
+		}
+
 		var WS_MESSAGES_SEND = {
 			auth: function(token) { return JSON.stringify({action:'auth', token:token}); },
 			diff: function(token) { return JSON.stringify({action:'diff', operation:"start"}); }
@@ -507,7 +533,7 @@ angular
 				var ajaxArgs  = _(_(this.store.ajaxDefaults).clone()).extend(
 					{ url: url, method : 'PUT', crossDomain:false, data:file, contentType: contenttype, processData:false }
 				);
-				return jQ.ajax( ajaxArgs );
+				return ajax( ajaxArgs );
 			},
 			/// @arg {Object} queryPattern - a query pattern to match
 			/// @opt {string[]} predicates - optional array of predicates to return, or entire objects otherwise
@@ -1136,14 +1162,14 @@ angular
 			getBoxList:function() {
 				var d = u.deferred();
 				this._ajax('GET','admin/list_boxes')
-					.success(function(data) {d.resolve(data.list);})
+					.then(function(data) {d.resolve(data.list);})
 					.fail(function(err) { d.reject(err); });
 				return d.promise();
 			},
 			getUserList:function() {
 				var d = u.deferred();
 				this._ajax('GET','admin/list_users')
-					.success(function(data) { 
+					.then(function(data) { 
 						var users = data.users;
 						users.map(function(u) {
 							if (u.user_metadata && typeof u.user_metadata === 'string') {
@@ -1169,7 +1195,7 @@ angular
 			getAppsList:function() {
 				var d = u.deferred();
 				this._ajax('GET','admin/list_apps')
-					.success(function(data) { d.resolve(data.apps); })
+					.then(function(data) { d.resolve(data.apps); })
 					.fail(function(err) { d.reject(err); });
 				return d.promise();
 			},
@@ -1191,7 +1217,7 @@ angular
 					{ url: url, type : method, crossDomain: !this.isSameDomain(), data: _({}).extend(defaultData,data) }
 				);
 				console.log(' debug indxJS _ajax url ', options.url, options.method, options);
-				return jQuery.ajax( options ); // returns a deferred
+				return ajax( options ); // returns a deferred
 			},
 			sync: function(method, model, options){
 				switch(method){
