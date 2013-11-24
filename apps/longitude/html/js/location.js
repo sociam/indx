@@ -41,7 +41,7 @@ angular
 		var readingsSortedByTime = function(locs) {
 			locs = locs.concat([]);
 			locs.sort(function(x,y) { return y.get('start')[0] - x.get('start')[0]; });
-			return locs;
+			return _(locs).uniq();
 		};
 		var getLocation = function() {			
 			var d = u.deferred();
@@ -165,6 +165,7 @@ angular
 			console.log('update diary view >> ', locs.length);
 			var bd = [];
 			var curDay;
+			console.log("locs >> ", locs.length, ' uniq locs ', _(locs).uniq().length , 'uuniq ', _(locs).uniq(false, function(x) { return JSON.stringify(x); }).length);
 			locs.map(function(loc) {
 				var start = loc.get('start')[0];
 				if ( curDay === undefined || (topOfDay(start) > curDay.start)) {
