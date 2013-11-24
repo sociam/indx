@@ -1,23 +1,58 @@
 
 @import url('/components/toolbar/spinner.less');
 body.modal-open { margin: 0px !important; }
+@font-face { 
+  font-family: "Lato"; 
+  src: url('/fonts/Lato/Lato-Regular.ttf'); 
+}
+@font-face
+{
+font-family: "Lato-Light";
+src: url('/fonts/Lato/Lato-Light.ttf'),
+}
 .indx-toolbar {
-	color:#aaa;
+	font-family:'Lato', 'helvetica neue', 'helvetica';  
+	font-weight:100;
+	box-sizing:border-box;
+	position:relative;
+	margin:0px 0px 0px 0px !important;
+	z-index: 10000;
+	&.hide { display:none; }	
+    .right-align{ text-align:right;   }
+
+    // fixes a bug which causes things to resize weirdly
+	.modal { overflow-y:hidden !important; 	}
+	.navbar {
+		opacity:0.88;
+		background-color:white;
+		min-height:34px;
+		height:42px;
+	}
+	.btn { 
+		height:27px !important; 
+		padding: 3px 8px;
+		border: 1px solid rgba(0,0,0,0) !important;
+		&:hover{
+			border: 1px solid rgba(0,0,0,0.1) !important;
+		}
+		* { vertical-align: top; }
+	}
 	label, .modal-header {
 		font-variant:small-caps;
 		// font-size:120%;
 		line-height:90%;
-		font-weight:100;
+		font-weight:120;
 	}
     .login-btn {
     	color:#666;
     	position:absolute;
-		right:8px; top:9px;
-		background-color:rgba(247,247,247,1.0);
-		border:1px solid rgba(0,0,0,0.1);
-		padding:7px 10px 3px 10px;
+		right:10px; top:7px;
+		padding:6px 10px 8px 10px;
+		// background-color:rgba(247,247,247,1.0);
+		background-color:white;
+		border:1px solid rgba(0,0,0,0.2);
 		&.is-logged-in {
-			padding:7px 34px 3px 14px;
+			padding:7px 34px 10px 14px;
 		}
 		.usericon { 
 			position:absolute;
@@ -26,12 +61,26 @@ body.modal-open { margin: 0px !important; }
 			margin-top:-9px;
 		}
 	}
-	position:relative;
-	margin:0px 0px 0px 0px !important;
-	* { box-sizing:border-box; }
-	&.hide { display:none; }	
-    .right-align{ text-align:right;   }
-	.navbar-brand { font-weight: 100; font-size:180%; margin-left:15px;}
+
+    /// navbar brand ----------------------
+	.navbar-brand, .navbar-app-brand { 
+		display:inline-block;
+		color:black;
+		font-family:"Lato-Light";  
+		font-weight:100 !important; 
+		font-size:13pt; 
+		margin-left:15px;
+		padding:8px 0px 0px 0px;
+		.appicon {
+			max-width:22px;
+			margin:-3px 4px 0px 0px;
+		}
+	}
+	.navbar-brand {
+		margin-top:4px;
+		color:rgba(0,0,0,0.3);
+		font-size:16pt;
+	}
     .modal-backdrop {
 		// -webkit-filter:	blur(10px) grayscale(.5) opacity(0.8) !important;
     }
@@ -66,11 +115,16 @@ body.modal-open { margin: 0px !important; }
 	}
     .modal-footer { vertical-align:middle;  }
 	.box-selector {
-		margin:9px 0px 0px 9px;
+		display:inline-block;
 		* { font-size:88%; color:#aaa !important; }
 		.btn {
+			position:relative;
+			margin:7px 10px 10px 10px;
 			background-color:rgba(0,0,0,0);
-			border:1px solid rgba(0,0,0,0.1);
+			border:1px solid rgba(0,0,0,0.2);
+			.caret { 
+				vertical-align:middle;
+			}
 		}
 	}
 	.login-window, .password-dialog {
