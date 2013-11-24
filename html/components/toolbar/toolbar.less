@@ -14,11 +14,14 @@ src: url('/fonts/Lato/Lato-Light.ttf'),
 	font-family:'Lato', 'helvetica neue', 'helvetica';  
 	font-weight:100;
 	box-sizing:border-box;
-	.modal { 
-		overflow-y:hidden !important; 
-	}
+	position:relative;
+	margin:0px 0px 0px 0px !important;
 	z-index: 10000;
-	color:#aaa;
+	&.hide { display:none; }	
+    .right-align{ text-align:right;   }
+
+    // fixes a bug which causes things to resize weirdly
+	.modal { overflow-y:hidden !important; 	}
 	.navbar {
 		opacity:0.88;
 		background-color:white;
@@ -27,7 +30,12 @@ src: url('/fonts/Lato/Lato-Light.ttf'),
 	}
 	.btn { 
 		height:27px !important; 
-		padding: 3px 12px;
+		padding: 3px 8px;
+		border: 1px solid rgba(0,0,0,0) !important;
+		&:hover{
+			border: 1px solid rgba(0,0,0,0.1) !important;
+		}
+		* { vertical-align: top; }
 	}
 	label, .modal-header {
 		font-variant:small-caps;
@@ -39,12 +47,12 @@ src: url('/fonts/Lato/Lato-Light.ttf'),
     	color:#666;
     	position:absolute;
 		right:10px; top:7px;
-		padding:4px 10px 6px 10px;
+		padding:6px 10px 8px 10px;
 		// background-color:rgba(247,247,247,1.0);
 		background-color:white;
 		border:1px solid rgba(0,0,0,0.2);
 		&.is-logged-in {
-			padding:6px 34px 8px 14px;
+			padding:7px 34px 10px 14px;
 		}
 		.usericon { 
 			position:absolute;
@@ -53,10 +61,8 @@ src: url('/fonts/Lato/Lato-Light.ttf'),
 			margin-top:-9px;
 		}
 	}
-	position:relative;
-	margin:0px 0px 0px 0px !important;
-	&.hide { display:none; }	
-    .right-align{ text-align:right;   }
+
+    /// navbar brand ----------------------
 	.navbar-brand, .navbar-app-brand { 
 		display:inline-block;
 		color:black;
@@ -64,14 +70,16 @@ src: url('/fonts/Lato/Lato-Light.ttf'),
 		font-weight:100 !important; 
 		font-size:13pt; 
 		margin-left:15px;
-		vertical-align:middle;
-		padding:6px 0px 0px 0px;
-		top:50%;
-		//margin-top:-9pt;
+		padding:8px 0px 0px 0px;
 		.appicon {
 			max-width:22px;
 			margin:-3px 4px 0px 0px;
 		}
+	}
+	.navbar-brand {
+		margin-top:4px;
+		color:rgba(0,0,0,0.3);
+		font-size:16pt;
 	}
     .modal-backdrop {
 		// -webkit-filter:	blur(10px) grayscale(.5) opacity(0.8) !important;
@@ -108,11 +116,15 @@ src: url('/fonts/Lato/Lato-Light.ttf'),
     .modal-footer { vertical-align:middle;  }
 	.box-selector {
 		display:inline-block;
-		margin:6px 0px 0px 10px;
 		* { font-size:88%; color:#aaa !important; }
 		.btn {
+			position:relative;
+			margin:7px 10px 10px 10px;
 			background-color:rgba(0,0,0,0);
 			border:1px solid rgba(0,0,0,0.2);
+			.caret { 
+				vertical-align:middle;
+			}
 		}
 	}
 	.login-window, .password-dialog {
