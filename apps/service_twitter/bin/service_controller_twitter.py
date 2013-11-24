@@ -29,6 +29,8 @@ from service_tweets import TwitterService
 from twisted.internet.defer import Deferred as D
 from twisted.internet import task
 from twisted.internet import reactor
+from twisted.python import log
+
 
     
 logging.basicConfig(level=logging.INFO)
@@ -75,70 +77,31 @@ class TwitterServiceController:
         #twitter_service.run_main_services()
 
         def called(result):
-            print result
+            logging.info('Service Controller Twitter - Retreiving Stream')
 
-        def command_die(err):
-            err.printTraceback()    
+
+        def command_die(reason):
+            logging.error('Service Controller Twitter - Retreiving Stream Failed, error is {0}'.format(reason))
+
+        
+        first_run = True
+
+        def loop_harvester():
+            #print "running harvester"
+            twitter_service.run_additional_services()
+            if first_run:
+                twitter_service.run_main_services()
+            print "setting up lopp..."
+            reactor.callLater(15.0, loop_harvester);
 
         print "Service Controller Twitter - running Additional Taks with Twisted Reactor"
-        task_get_additional_stream = task.LoopingCall(twitter_service.run_additional_services())
-        returned = D()
-        result = task_get_additional_stream.start(15.0)
-        result.addCallback(called)
-        result.addErrback(command_die) 
-        #task_get_additional_stream.addCallback(called)   
+        loop_harvester() 
 
-        print "Service Controller Twitter - running Main service"
-        task_main_get_stream = task.deferLater(reactor, 3.5, twitter_service.run_main_services())
-        task_main_get_stream.addCallback(called)
+        first_run = False
+        #print "Service Controller Twitter - running Main service"
+        #task_main_get_stream = reactor.callLater(3.5, twitter_service.run_main_services())
+        #task_main_get_stream.addCallback(called)
+        #task_main_get_stream.addErrback(command_die)
         
+        #run the reactor!
         reactor.run()
-
-        #thread_main = ThreadMain(twitter_service)
-        #thread_additional = ThreadAdditional(twitter_service)
-        #somethings are on timers, lets set those up as well!
-        #print " starting timers"
-        #thread_additional.start()
-        #thread_main.start()
-
-
-class ThreadMain(threading.Thread):
-    def __init__(self, twitter_service):
-        print "Creating Thread"
-        threading.Thread.__init__(self)
-        self.event = threading.Event()
-        self.twitter_service = twitter_service
-
-    def run(self):
-        while not self.event.is_set():
-            try:    
-                self.twitter_service.run_main_services()
-            except (KeyboardInterrupt, SystemExit):
-                print "Stopping Twitter Threads!"
-                self.stop()
-                self.twitter_service.stop_and_exit_service()
-
-    def stop(self):
-        self.event.set()
-
-
-class ThreadAdditional(threading.Thread):
-    def __init__(self, twitter_service):
-        print "Creating Thread"
-        threading.Thread.__init__(self)
-        self.event = threading.Event()
-        self.twitter_service = twitter_service
-
-    def run(self):
-        while not self.event.is_set():
-            try:
-                self.twitter_service.run_additional_services()
-                time.sleep(3600) # check every hour for updates on a users timeline and network!
-            except (KeyboardInterrupt, SystemExit):
-                print "Stopping Twitter Threads!"
-                self.stop()
-                self.twitter_service.stop_and_exit_service()
-
-    def stop(self):
-        self.event.set()
-
