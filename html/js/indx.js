@@ -60,20 +60,32 @@ angular
 		var DEFAULT_HOST = document.location.host; // which may contain the port
 
 		// new patch for nodejs support
-		if (typeof process !== undefined && process.title === 'node') {
-			var request = require('request'), qs = require('querystring');
+		if (typeof process != 'undefined' && process.title === 'node') {
+			var request = require('request'), qs = require('querystring'), j = request.jar();
+			process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+
+			var get_headers = function(options) {
+				return {
+					accept:"*/*",
+					'content-type':options.contentType,
+				};
+			};
 			ajax = function(options) {	
 				var d = u.deferred();
 				var args = options.data;
 				if (typeof args == 'object') {	args = JSON.stringify(args); }
 				request({
-					url:options.url,
-					method:options.type,
-					headers:{ contentType:options.contentType },
-					jar:true,
-					body:args
+						url:options.url,
+						method:options.type,
+						headers:get_headers(options),
+						jar:j,
+						rejectUnauthorized: false,
+						requestCert: true,
+						agent: false,					
+						body:args
 					},function(error, clientresp, response) {
-						console.log('response >> e:' , error, ' - response', response);
+						console.log('response >> e:' , error, ' - response', response, clientresp);
+						console.log("clientResp.statuscode ", clientresp.statusCode, clientresp.statusMessage);
 						if (error) { return d.reject(error); }
 						d.resolve(response);
 					});
