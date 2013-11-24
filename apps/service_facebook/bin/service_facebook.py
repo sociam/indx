@@ -35,15 +35,16 @@ app_token = "441447542599170|8B8irGqMVlyLl1Bke4Nm9Y6pquo"
 class FacebookService:
 
 	def __init__(self, config):
-	 	print "Facebook Service - Getting configs from Facebook Controller"
+	 	logging.debug('Facebook Service - Getting configs from Facebook Controller')
 	 	self.facebook_access_token_long = config['facebook_access_token_long']
 	 	self.facebook_userid = config['facebook_userid']
 	 	self.facebook_access_token_expire_time = config['facebook_access_token_expire_time']
 	 	self.config_timestamp = config['config_timestamp']
 	 	#in reality this is all we need from facebook, but we want to also check that the current date is not over 60 days...
-	 	print "Facebook Service - Checking if token is not expired"
+	 	logging.debug('Facebook Service - Checking if token is not expired')
 	 	self.token_active = False
 	 	if self.check_if_token_not_expired():
+	 		logging.debug('Facebook Service - Token is active still. Great News!')
 	 		self.token_active = True
 
 	def is_token_active(self):
@@ -75,6 +76,7 @@ class FacebookService:
 
     ##here are all the facebook methods to havest the data
 	def harvest_facebook_statuses(self):
+		logging.debug('Facebook Service - Getting users Facebook Statuses')
 		graph = facebook.GraphAPI(self.facebook_access_token_long)
 		#profile = graph.get_object("me")
 		#rint profile
@@ -85,6 +87,7 @@ class FacebookService:
 			print status
 
 	def harvest_facebook_friends(self):
+		logging.debug('Facebook Service - Getting users Facebook Statuses')
 		graph = facebook.GraphAPI(self.facebook_access_token_long)
 		#profile = graph.get_object("me")
 		#rint profile
@@ -93,17 +96,5 @@ class FacebookService:
 		for f in friend_list:
 			print f
 
-# args = dict(client_id=FACEBOOK_APP_ID, redirect_uri=self.request.path_url)
-# redirect = "https://graph.facebook.com/oauth/authorize?" + urllib.urlencode(args)
-# print redirect
 
-
-# class User(db.Model):
-#     """User Model Class"""
-#     id = db.StringProperty(required=True) #facebook user-id
-#     created = db.DateTimeProperty(auto_now_add=True)
-#     updated = db.DateTimeProperty(auto_now=True)
-#     name = db.StringProperty(required=True)
-#     profile_url = db.StringProperty(required=True)
-#     access_token = db.StringProperty(required=True)  #fb OAUTH access token
 

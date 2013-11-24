@@ -50,8 +50,9 @@ class TwitterServiceController:
         twitter_add_info = {}
         try:
             print "loading Credentials...."
-            config = config.replace("\"","'")
-            config = ast.literal_eval(config)
+            #config = json.dumps(config)
+            #config = config.replace("\"","'")
+            #config = ast.literal_eval(config)
             for k,v in config.iteritems():
                 print k,v
             credentials = {"address": config['address'], "box": config['box'], "username": config['user'], "password": config['password']} 

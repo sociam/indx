@@ -31,6 +31,7 @@ def parse_args():
     parser = argparse.ArgumentParser(prog="run")
     parser.add_argument('--config', help="Set config (input requires JSON) and exit.")
     parser.add_argument('--get-config', action="store_true", help="Output current config as JSON and exit.")
+    parser.add_argument('--server', help="The server URL to connect to.")
     parsed = parser.parse_args()
     args = vars(parser.parse_args())
     return args
@@ -72,9 +73,11 @@ def run(args):
     else:
         # print(keyring.util.platform_.data_root())
         config = keyring.get_password("INDX", "INDX_Facebook_App")
-        print "Didnt match any args value, working with config of: "+str(config)
-        logging.debug("running the app with: {0}".format(config));
+        #print "Didnt match any args value, working with config of: "+str(config)
+        logging.debug("Facebook run.py - running the app with: {0}".format(config));
         config = json.loads(config)
+        config['address'] = args['server']
+        logging.debug("Facebook run.py - Adding INDX address to config, new config loaded: {0}".format(config));
         #test run with configs
         #twitter_service = TwitterService(config)
 

@@ -54,11 +54,16 @@ def run(args):
         # print(keyring.util.platform_.data_root())
         config = keyring.get_password("INDX", "INDX_Twitter_App")
         logging.info("running the app with: {0}".format(config))
-        config = config.replace("\"","'")
-        config = ast.literal_eval(config)
+        #config = json.dumps(config)
+        #config = config.replace("\\\"","'")
+        config = ast.literal_eval(ast.literal_eval(config))
+        address = args['server']
+        config['address'] = address
         #config = json.loads(config)
-        #logging.info("In twitter Run - With new config file JSON", config)
-        #config['address'] = args['server']
+        #logging.info("In twitter Run - With new config file JSON {0}".format(config))
+        #to_add = {}
+        #to_add = {"address": address}
+        #config_new = (config, to_add)
         logging.info("In twitter Run - With new config file {0}".format(config))
         #test run with configs
         #twitter_service = TwitterService(config)
@@ -74,8 +79,9 @@ def get_config(args):
     #print "Getting config from keychain..."
     stored_config = keyring.get_password("INDX", "INDX_Twitter_App")
     #print "stored config----------"+str(stored_config)
-    stored_config = ast.literal_eval(stored_config)
-    logging.debug("stored twitter config {0}".format(stored_config))
+    stored_config = json.loads(stored_config)
+    #stored_config = ast.literal_eval(stored_config)
+    logging.debug("Twitter Run.py - get_configs stored twitter config {0}".format(stored_config))
     return stored_config
 
 
