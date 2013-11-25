@@ -48,7 +48,7 @@
 			replace:true
 		};
 	}).controller('Login',function($scope, $location, client, backbone, utils) {
-		$scope.isLocalUser = function(u) { return u && (u.type == 'local_owner' || u.type == 'local_user'); };
+		$scope.isLocalUser = function(u) { return u && (u.type == 'local_owner' || u.type == 'local'); };
 		$scope.isOpenIDUser = function(u) { return u.type == 'openid'; };
 		console.log('route::login');
 		var u = utils, store = client.store, sa = function(f) { return utils.safeApply($scope,f);};

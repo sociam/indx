@@ -140,101 +140,20 @@
             localStorage.indx_box = boxid;
             get_watcher()._load_box();
         };
-
-        // var helper = function() {
-        //     var me = arguments.callee;
-        //     connect(client,utils).then(function(server, result) {
-        //         utils.safeApply($scope, function() {
-        //             if (!result.is_authenticated) {
-        //                 $scope.status = 'connected but not logged in';
-        //                 $scope.status_error = true;
-        //                 return setTimeout(function() { console.info('not logged in, trying again '); me(); }, 1000);
-        //             }
-        //             server.getBoxList().then(function(boxes) { 
-        //                 console.log('boxes', boxes);
-        //                 utils.safeApply($scope, function() { $scope.boxes = boxes; });
-        //             });
-        //             // for feedback
-        //             server.getBox(getBoxName()).then(function(box) {
-        //                 console.log('got box by name ', box);
-        //                 box.on('obj-add', function(objid) {
-        //                     console.log('new obj - -', objid);
-        //                     // if (obj.get('type') && obj.get('type')[0] == OBJ_TYPE) {
-        //                     //     box.get_obj(obj)
-        //                     // }
-        //                 });
-        //             });
-        //             server.on('disconnect', function() { 
-        //                 utils.safeApply($scope, function() { 
-        //                     console.info('received ws:disconnect, waiting 10 and reconnecting ');
-        //                     $scope.status = 'disconnected ';
-        //                     delete $scope.user;
-        //                 });
-        //                 setTimeout(me, 10000); 
-        //             });
-        //             server.on('logout', logout);
-        //         });
-        //     }).fail(function(err) { 
-        //         delete $scope.user;
-        //         utils.safeApply($scope, function() { $scope.user_logged_in = 'error connecting'; });
-        //         setTimeout(function() { console.log('error connecting ', err, 'going again >>'); me(); }, 1000);
-        //     });
-        // };
-        // helper();
     })
     // main controller
-    .controller('main', function($scope, watcher, geowatcher, client, utils) {
-        // main 
+    .controller('background', function($scope, watcher, geowatcher, client, utils) {
+        // background page
         window.utils = utils;
-        var winstance = watcher.init(), n_logged = 0, _timeout, geoinstance = geowatcher.init();
-        // var 
+        var winstance = watcher.init(), n_logged = 0, geoinstance = geowatcher.init();
+        // 
         var displayFail = function(reason) { 
             setErrorBadge('x' , reason);
             winstance.setError(reason);
         };
         window.watcher_instance = winstance;
-        winstance.on('connection-error', function(e) {  
-            displayFail('server error');
-            console.error('connection-error', e);
-            // disconnect server
-            var b = winstance.box;
-            if (b) { 
-                console.info('Attempting to refresh tokens ... ');
-                var do_refresh = function() { 
-                    b.reconnect().then(function() { 
-                        console.info('box refresh ok!'); 
-                    }).fail(function(e) { 
-                        console.error('box refresh fail :( '); 
-                        if (!_timeout) { 
-                            console.error('scheduling a refresh ... ');
-                            _timeout = setTimeout(function() { 
-                                console.error('attempting refresh ... ');
-                                _timeout = undefined;
-                                do_refresh();
-                            }, 1000);
-                        }                        
-                    });
-                };
-                do_refresh();
-            }
-            // var s = winstance.get('store');
-            // if (s) { 
-            //     s.disconnect();
-            //     winstance.set_store();
-            // }
+        winstance.on('new-entries', function(entries) { n_logged += entries.length; setOKBadge(''+n_logged);  });
 
-            // if (!_timeout) { 
-            //     console.error('scheduling a reconnect ... ');
-            //     _timeout = setTimeout(function() { 
-            //         console.error('attempting reconnect... ');
-            //         _timeout = undefined;
-            //         runner();
-            //     }, 1000);
-            // }
-        });
-        winstance.on('new-entries', function(entries) { 
-            n_logged += entries.length; setOKBadge(''+n_logged); 
-        });
         var initStore = function(store) {
             console.info('connect successful >> ', store);
             window.s = store;
@@ -268,7 +187,7 @@
                 navigator.geolocation.getCurrentPosition(function(pos) { this_.trigger('geoevent', pos); },err);
                 this.on('geoevent', function() { this_._handle_geo.apply(this_, arguments); });
                 this.on('change:current_position', function(pos) { console.info('current position changed', pos); });
-                this.on('change:store', function(s) { this_._load_box();  });
+                this.on('change:store', function(s) { console.info('geo::change::store '); this_._load_box();  });
                 this.on('change:journal', function() { 
                     // we may have been waiting on things, let's try again
                     this_._commit(); 
@@ -400,15 +319,48 @@
                 this._init_history();
                 // todo: start it up on current focused window.
                 //  ---------------------------------------
+
+                this.on('connection-error', function(e) {  
+                    setErrorBadge(':(');
+                    console.error('connection-error', e);
+                    this_._attempt_reconnect();
+                    // ignore.
+                });
+            },
+            _attempt_reconnect:function() {
+                var this_ = this;
+                if (this_.box && !this_._timeout) { 
+                    console.info('Attempting to refresh tokens ... ');
+                    var do_refresh = function() { 
+                        var b = this_.box;
+                        if (!b) { return; }
+                        b.reconnect()
+                        .then(function() { 
+                            delete this_._timeout;
+                            console.info('box refresh ok!'); 
+                        })
+                        .fail(function(e) {
+                            console.error('box refresh fail :( ');
+                            console.error('scheduling a refresh ... ');
+                            delete this_._timeout;
+                            this_._timeout = setTimeout(function() {
+                                console.error('attempting refresh ... ');
+                                do_refresh();
+                            }, 1000);
+                        });
+                    };
+                    do_refresh();
+                }
             },
             _init_history:function() { 
                 // keep history around for plugins etc 
                 var this_ = this;
                 if (!this._history) { this._history = []; }
-                var N = 250, records = this._history, threshold_secs = 0; //.80;
+                var N = 25, records = this._history, threshold_secs = 0; //.80;
                 this.on('new-entries', function(entries) {
-                    records = _(records).union(entries).filter(function(d) { return duration_secs(d) > threshold_secs; });
-                    records = records.slice(0,N);
+                    var longies = entries.filter(function(d) { return duration_secs(d) > threshold_secs; });
+                    records = _(records).union(longies);
+                    records = records.slice(-N);
                     this.trigger('updated-history', records);
                     this_._history = records;
                 });
@@ -504,6 +456,7 @@
                         _rec_map[id] = rec;
                         return id;
                     });
+                    ids = utils.uniqstr(ids);
                     box.getObj(ids).then(function(rec_objs) {
                         rec_objs.map(function(rec_obj) {
                             var src = _({}).extend(_rec_map[rec_obj.id], {collection:journal});

@@ -92,6 +92,7 @@ class BaseHandler(Resource):
 
     def _matches_auth_requirements(self, request, subhandler):
         session = self.get_session(request)
+        logging.debug('matches_auth_requirements -- {0} - session {1}, {2}, {3}'.format(request, session, session.is_authenticated, session.username))
         if subhandler['require_auth'] and not session.is_authenticated:
             return False
         # @TODO

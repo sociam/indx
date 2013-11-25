@@ -3,8 +3,9 @@
 	"version": 0.1,
 	"type":["service"],
 	"description": "Example external app",
+	"on_boot": 1,
 	"configpanel":"html/index.html",
-	"run":["python", "apps/blank/bin/run.py"],
+	"run":["python", "apps/blank/bin/run.py", "--server", "{0}"],
 	"set_config":["python", "apps/blank/bin/run.py", "--config", "{0}"],
 	"get_config":["python", "apps/blank/bin/run.py", "--get-config"],
 	"icons": { 

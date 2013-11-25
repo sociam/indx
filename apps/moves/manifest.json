@@ -9,5 +9,8 @@
 			"name": "eMax",
 			"email":"max@hip.cat"
 		}
-	]
+	],
+	"icons":{
+		"128":"img/m.png"
+	}
 }

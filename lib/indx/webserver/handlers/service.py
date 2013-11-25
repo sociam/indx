@@ -15,6 +15,10 @@ class ServiceHandler(BaseHandler):
         manifest = self._load_manifest()
         return 'type' in manifest and 'service' in manifest['type']
 
+    def on_boot(self):
+        manifest = self._load_manifest()
+        return 'on_boot' in manifest and manifest['on_boot']
+
     def _make_subhandlers(self):
         return [
             {
@@ -77,18 +81,22 @@ class ServiceHandler(BaseHandler):
 
     def get_config(self, request):
         try:
+            #print "in service.py - get config"
             manifest = self._load_manifest()
             result = subprocess.check_output(manifest['get_config'])
+            #print "service.py - getConfig Manifest returned: "+str(result)
             logging.debug(' get config result {0} '.format(result))
-            result = json.loads(result)
+            #result = json.loads(result)
             logging.debug(' get json config result {0} '.format(result))
             return self.return_ok(request,data={'config':result})
         except :
+            print "error in service.py get config"+str(sys.exc_info())
             logging.error("Error in get_config {0}".format(sys.exc_info()[0]))
             return self.return_internal_error(request)
         
     def set_config(self, request): 
         try:
+            #print "in service.py - set config"
             # invoke external process to set their configs
             logging.debug("set_config -- getting config from request")        
             config = self.get_arg(request, "config")
@@ -115,7 +123,7 @@ class ServiceHandler(BaseHandler):
         if self.is_running():
            self.stop()
         manifest = self._load_manifest()
-        command = manifest['run']
+        command = [x.format(self.webserver.server_url) for x in manifest['run']]
         self.pipe = subprocess.Popen(command)
         return self.is_running()
 

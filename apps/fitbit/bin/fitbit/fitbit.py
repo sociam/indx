@@ -19,7 +19,7 @@ class Fitbit:
         baseurl = "https://www.fitbit.com"
         request_url = baseurl + "/oauth/request_token"
         authorize_url = baseurl + "/oauth/authorize"
-        callback_url = "http://localhost:8211/apps/fitbit/authorized"
+        callback_url = "http://Silva:8211/apps/fitbit/authorized"
         client = oauth.Client(self.consumer)
 
         resp, body = client.request(request_url, method="POST")
@@ -35,13 +35,14 @@ class Fitbit:
         # this interaction needs to be improved, but works for now 
         # print "Go to the following link in your browser:"
         gotourl = "{0}?oauth_token={1}".format(authorize_url, self.req_token['oauth_token'])
-        # print gotourl
-        return gotourl
 
-    def get_token_with_pin(self, pin):
+        # print gotourl
+        return {"url":gotourl, "req_token":self.req_token}
+
+    def get_token_with_pin(self, pin, req_token):
         baseurl = "https://www.fitbit.com"
         access_url = baseurl + "/oauth/access_token"
-        token = oauth.Token(self.req_token['oauth_token'], self.req_token['oauth_token_secret'])
+        token = oauth.Token(req_token['oauth_token'], req_token['oauth_token_secret'])
         token.set_verifier(pin)
         client = oauth.Client(self.consumer, token)
 
@@ -53,7 +54,7 @@ class Fitbit:
         self.token = oauth.Token(auth['oauth_token'], auth['oauth_token_secret'])
 
         self.logger.info("Successfully got access oauth_token: {0}, oauth_token_secret: {1}".format(auth['oauth_token'], auth['oauth_token_secret']))
-        return self.token
+        return auth
 
     def call_get_api(self, url):
         full_url = "{0}{1}".format(self.api_base_url, url)
@@ -68,3 +69,11 @@ class Fitbit:
         resp = urllib2.urlopen(req)
         data = resp.read()
         return data
+
+    def set_token(self, token):
+        if token is not None:
+            self.token = oauth.Token(token['oauth_token'], token['oauth_token_secret'])
+
+    def get_token(self):
+        return self.token
+

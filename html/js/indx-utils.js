@@ -3,6 +3,7 @@
 		.module('indx')
 		.factory('utils',function() {
 			var DEBUG=0, INFO=1, LOG=2, WARN=3, ERROR=4, DEBUG_LEVEL = DEBUG;
+			var jQ = jQuery;
 			return {
 				DEBUG_LEVELS: { INFO:INFO, LOG:LOG, WARN:WARN, ERROR:ERROR },
 				setDebugLevel:function(lvl) {	DEBUG_LEVEL = lvl; return lvl; },
@@ -60,7 +61,7 @@
 				debug : function() { try { if (DEBUG_LEVEL >= DEBUG) { console.debug.apply(console,arguments); }} catch(e) { } },
 				error : function() { try { if (DEBUG_LEVEL >= ERROR) { console.error.apply(console,arguments); }} catch(e) {}},
 				isInteger:function(n) { return n % 1 === 0; },
-				deferred:function() { return new $.Deferred(); },
+				deferred:function() { return new jQ.Deferred(); },
 				chunked:function(l,n) {
 					return this.range(Math.floor(l.length / n) + (l.length % n === 0 ? 0 : 1)).map(function(ith) { 
 						var start = ith*n;
@@ -68,7 +69,7 @@
 					});
 				},
 				shake:function(el, times, px) {
-					var d = new $.Deferred(), l = px || 20;
+					var d = new jQ.Deferred(), l = px || 20;
 					for (var i = 0; i < 4; i++) {
 						$(el).animate({'margin-left':"+=" + (l = -l) + 'px'}, 50);
 					}
@@ -77,16 +78,16 @@
 					return d.promise();
 				},
 				dresolve:function(val) {
-					var d = new $.Deferred();
+					var d = new jQ.Deferred();
 					d.resolve(val);
 					return d.promise();
 				},
 				dreject:function(err) {
-					var d = new $.Deferred();
+					var d = new jQ.Deferred();
 					d.reject(err);
 					return d.promise();
 				},
-				whend:function(deferredArray) { return $.when.apply($,deferredArray); },
+				whend:function(deferredArray) { return jQ.when.apply($,deferredArray); },
 				t:function(template,v) { return _(template).template(v); },
 				assert:function(t,s) { if (!t) { throw new Error(s); }},
 				TO_OBJ: function(pairs) { var o = {};	pairs.map(function(pair) { o[pair[0]] = pair[1]; }); return o; },
@@ -134,13 +135,13 @@
 				},
 				when:function(x) {
 					var d = this.deferred();
-					$.when.apply($,x).then(function() {	d.resolve(_.toArray(arguments)); }).fail(d.reject);
+					jQ.when.apply(jQ,x).then(function() {	d.resolve(_.toArray(arguments)); }).fail(d.reject);
 					return d.promise();
 				},
 				whenSteps:function(fns, failFast) {
 					// executes a bunch of functions that return deferreds in sequence
 					var me = arguments.callee;
-					var d = new $.Deferred();
+					var d = new jQ.Deferred();
 					if (fns.length == 1) { return fns[0]().then(d.resolve).fail(d.reject);	}
 					fns[0]().then(function() {
 						me(fns.slice(1));
