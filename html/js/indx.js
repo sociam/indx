@@ -1199,7 +1199,7 @@ angular
 					this.ajaxDefaults,
 					{ url: url, type : method, crossDomain: !this.isSameDomain(), data: _({}).extend(defaultData,data) }
 				);
-				console.log(' debug indxJS _ajax url ', options.url, options.method, options);
+				// console.log(' debug indxJS _ajax url ', options.url, options.method, options);
 				return ajax( options ); // returns a deferred
 			},
 			sync: function(method, model, options){
