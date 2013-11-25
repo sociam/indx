@@ -13,3 +13,7 @@ DEBUG:root:Received arguments: {'get_config': True, 'config': None, 'server': No
 DEBUG:root:Loaded harvester config from keyring: None
 DEBUG:root:Loaded fitbit config from keyring: None
 INFO:fitbit:Successfully got request oauth_token: e8b16ca877498cca0ac8812d5ec4ac1c, oauth_token_secret: a15608eacdf537d4d92db7fce5269eb1
+DEBUG:root:Received arguments: {'get_config': True, 'config': None, 'server': None}
+DEBUG:root:Loaded harvester config from keyring: None
+DEBUG:root:Loaded fitbit config from keyring: None
+INFO:fitbit:Successfully got request oauth_token: 7300a6934a636494be2c2f8931cd832b, oauth_token_secret: 03945379964b50c31e5aa1a76a07c230
