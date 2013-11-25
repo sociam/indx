@@ -533,17 +533,18 @@ angular
 				var parameters = {"q": JSON.stringify(queryPattern)};
 				var this_ = this;
 				if (predicates) {
-					_(parameters).extend({predicateList: predicates });
+					if (!_.isArray(predicates)) { predicates = [predicates]; }
+					_(parameters).extend({predicate_list: predicates});
 					console.log('new query pattern >> ', parameters);
 				}
-				this._ajax("GET", [this.id, "query"].join('/'), parameters)
+				var query_url = [this.getID(), 'query'].join('/');
+				this._ajax("GET", query_url, parameters)
 					.then(function(results) {
 						if (predicates) {
 							// raw partials just including predicates - these are not whole
 							// objects
 							return d.resolve(results);
 						}
-						console.log('results >> ', results.data);
 						// otherwise we are getting full objects, so ...
 						d.resolve(_(results.data).map(function(dobj,id) {
 							console.log('getting id ', id);
