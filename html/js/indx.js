@@ -56,89 +56,15 @@ angular
 	.module('indx', [])
 	.factory('client',function(utils) {
 		var u = utils, log = utils.log, error = utils.error, debug = utils.debug, jQ = jQuery;
-		var ajax;
+
 		var DEFAULT_HOST = document.location.host; // which may contain the port
 
 		// new patch for nodejs support
-		if (typeof process != 'undefined' && process.title === 'node') {
-			process.env.NODE_TLS_REJECT_UNAUTHORIZED = 0;
-
-			/* this also sucks eggs
-
-			var cookies = [];
-			ajax = function(options) {
-				options = _(options).clone();
-				options.xhrFields={ withCredentials: true };
-				options.crossdomain = true;
-				var d = u.deferred();
-				if (cookies.length) {
-					options.headers = options.headers || {};
-					options.headers.Cookie = cookies.map(function(kv) { 
-						return [kv.key, kv.value].join('=');
-					}).join(';');
-					console.log('cookie >> ', options.headers.Cookie);
-				}
-				options.success = function(data,textStatus,jqXHR) {
-					console.log('jqXHR >> ', jqXHR, jqXHR.getAllResponseHeaders());
-					console.log("BING BING");
-					var sc = jqXHR.getResponseHeader('Set-Cookie');
-					console.log('set cookie header >> ', sc);
-					if (sc) { 
-						console.log('setcookie >> ', sc);
-						sc.split(';').map(function(kv) {
-							var k = kv.split('=')[0], v = kv.split('=')[1];
-							sc[k] = v;
-						})
-					}
-					d.resolve(data,textStatus,jqXHR);
-				};
-				options.error=function(err) { 
-					console.log('error >> ', err);
-					d.reject.apply(d,argument);
-				};
-				jQ.ajax(options);
-				return d.promise();
-			};
-			*/
-
-			// this sucks eggs
-
-			var request = require('request'), qs = require('querystring'), j = request.jar();
-			var get_headers = function(options) {
-				return {'content-type':options.contentType};
-			};
-			ajax = function(options) {	
-				var d = u.deferred();
-				var args = options.data;
-				var url = options.url, body;
-				args = u.dict( _(args).map(function(v, k) { if (v !== undefined) { return [k,v]; } }).filter(function(x) { return x; }));
-				if (typeof args == 'object') {	args = jQ.param(args); }
-				if (options.type === 'GET') { 
-					url = url + '?' + args;
-				} else {
-					body = args;
-				}
-				request({
-						auth:undefined,
-						url:url,
-						method:options.type,
-						headers:get_headers(options),
-						jar:j,
-						strictSSL:false,
-						rejectUnauthorized: false,
-						body:body
-					},function(error, clientresp, response) {
-						console.log("clientResp.statuscode ", clientresp.statusCode, response);
-						if (!error && (clientresp.statusCode == 200 || clientresp.statusCode == 201)) { 
-							return d.resolve(JSON.parse(response));
-						}
-						d.reject(response);
-					});
-				return d.promise();
-			};
-		} else {
-			ajax = jQ.ajax;
-		}
+		var ajax = jQ.ajax;		
+		console.log('typeof _NODE_AJAX ', typeof _NODE_AJAX); 
+		if (typeof process != 'undefined' && process.title === 'node' && typeof _NODE_AJAX !== 'undefined') {
+			ajax = _NODE_AJAX(u,jQ);
+		} 
 
 		var WS_MESSAGES_SEND = {
 			auth: function(token) { return JSON.stringify({action:'auth', token:token}); },

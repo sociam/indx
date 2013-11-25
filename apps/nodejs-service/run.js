@@ -15,7 +15,8 @@ var window = {}, document = {location:{}};
 
 var savage_require = function(path) { eval(fs.readFileSync(path)+''); };
 
-var indx_ = savage_require('../../html/js/indx.js'),
+var _NODE_AJAX = require('./node_ajax.js'),
+	indx_ = savage_require('../../html/js/indx.js'),
 	utils_ = savage_require('../../html/js/indx-utils.js');
 
 var	injector = angular.injector(['ng','indx']);
