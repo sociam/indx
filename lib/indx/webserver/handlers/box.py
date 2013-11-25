@@ -15,7 +15,7 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging, json
+import logging, json, cjson
 from indx.webserver.handlers.base import BaseHandler
 from indx.objectstore_async import IncorrectPreviousVersionException, FileNotFoundException
 from indx.user import IndxUser
@@ -422,7 +422,8 @@ class BoxHandler(BaseHandler):
             else:
                 return self.return_bad_request(request,"Specify a previous version with &version=")
 
-            objs = json.loads(self.get_arg(request, "data"))
+            #objs = json.loads(self.get_arg(request, "data"))
+            objs = cjson.decode(self.get_arg(request, "data"))
 
             if type(objs) != type([]):
                 objs = [objs]
