@@ -135,7 +135,7 @@
 				},
 				when:function(x) {
 					var d = this.deferred();
-					jQ.when.apply($,x).then(function() {	d.resolve(_.toArray(arguments)); }).fail(d.reject);
+					jQ.when.apply(jQ,x).then(function() {	d.resolve(_.toArray(arguments)); }).fail(d.reject);
 					return d.promise();
 				},
 				whenSteps:function(fns, failFast) {

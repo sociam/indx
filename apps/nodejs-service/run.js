@@ -8,22 +8,21 @@ var angular = require('angular'),
 	fs = require('fs'),
 	WebSocket = require('ws');
 
-process.env.NODE_TLS_REJECT_UNAUTHORIZED=0;
+
+// compatibility shims start here >>>>>>> 
 console.debug = console.log;
-
 var window = {}, document = {location:{}};
-
 var savage_require = function(path) { eval(fs.readFileSync(path)+''); };
 
+// now we are going to start the load
 var _NODE_AJAX = require('./node_ajax.js'),
 	indx_ = savage_require('../../html/js/indx.js'),
 	utils_ = savage_require('../../html/js/indx-utils.js');
-
 var	injector = angular.injector(['ng','indx']);
-
 var u = injector.get('utils'),
 	indx = injector.get('client');
 
+// please set these parameters to what you want htem to be.
 var username='emax',
 	password='emax',
 	hostname = 'https://indx.local:8211';
@@ -34,9 +33,8 @@ var s = new indx.Store({server_host:hostname});
 s.login(username,password).then(function(x) {
 	console.log('conclusion of login ...................... ');
 	s.getBoxList().then(function(bL) { 
-	 	console.log('box list >> ', bL, ' - getting box ', bL.length && bL[0]);
 	 	if (bL.length) { 
-		 	var b0 = 'uber';
+	 		var b0 = bL[0];
 		 	s.getBox(b0).then(function(b) { 
 		 		console.log("Got box >> ", b.id, ' - ', b.getObjIDs());
 		 	});
