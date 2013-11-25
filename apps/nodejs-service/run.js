@@ -5,9 +5,11 @@ var angular = require('angular'),
 	Backbone = require('backbone'),
 	_ = require('underscore'),
 	jQuery = require('jquery'),
-	fs = require('fs');
+	fs = require('fs'),
+	WebSocket = require('ws');
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED=0;
+console.debug = console.log;
 
 var window = {}, document = {location:{}};
 
@@ -30,11 +32,17 @@ console.log('store is >> ', indx.Store);
 var s = new indx.Store({server_host:hostname});
 s.login(username,password).then(function(x) {
 	console.log('conclusion of login ...................... ');
-	// s.getBoxList().then(function(bL) { 
-	// 	console.log('box list >> ', bL);
-	// }).fail(function(ff) {
-	// 	console.error('failure trying to list boxes ', ff); 
-	// });
+	s.getBoxList().then(function(bL) { 
+	 	console.log('box list >> ', bL, ' - getting box ', bL.length && bL[0]);
+	 	if (bL.length) { 
+		 	var b0 = 'uber';
+		 	s.getBox(b0).then(function(b) { 
+		 		console.log("Got box >> ", b.id, ' - ', b.getObjIDs());
+		 	});
+		}
+	}).fail(function(ff) {
+	 	console.error('failure trying to list boxes ', ff); 
+	});
 }).fail(function(err) {
 	console.error('failure trying to log in >>> ', err);
 });

@@ -11,8 +11,9 @@
   "dependencies": {
     "angular":"",
     "underscore": "~1.5.2",
-    "jquery":"~1.8.3",
+    "jquery":"~1.8.2",
     "backbone":"",
-    "request":""
+    "request":"",
+    "ws":""
   }
 }
