@@ -45,6 +45,10 @@
     .config(function($compileProvider){ 
         $compileProvider.aHrefSanitizationWhitelist(/^\s*(https?|ftp|mailto|file|chrome-extension):/); 
     })
+    .config(function($sceProvider) {
+      // Completely disable SCE - options iframe interference
+      $sceProvider.enabled(false);
+    })
     // popup controller
     .controller('popup', function($scope, watcher, utils) {
         window.$s = $scope;
