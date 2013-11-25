@@ -135,7 +135,7 @@ class FacebookService:
                     logging.debug('INDX insert error in Twitter Service Object: '+str(response))
                     try:
                         response = self.indx_con.update(self.version, obj)
-                        logging.info('Facebook Service - Successfully added Objects into Box')
+                        logging.debug('Facebook Service - Successfully added Objects into Box')
                     except:
                         logging.error('Facebook Service, error on insert {0}'.format(response))
                 else:

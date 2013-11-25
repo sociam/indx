@@ -60,13 +60,13 @@ def run(args):
             try:
                 config = json.dumps(config)
                 keyring.set_password("INDX", "INDX_Facebook_App", config)
-                print "short token config added to keyring: "+str(config)
+                logging.debug('short token config added to keyring: {0}'.format(config))
             except:
-                print sys.exc_info()
+                logging.debug('Facebook Run.py Error in getting Keyring {0}'.format(sys.exc_info()))
         else:
             #TODO - NEED TO PUT OTHER CASSE WHEN IT IS FULL CONFIG
             keyring.set_password("INDX", "INDX_Facebook_App", json.dumps(config))
-            print "Full config added to keyring: "+str(config)
+            logging.debug('Full config added to keyring: {0}'.format(config))
     elif args['get_config']:
         # TODO output the stored config (for passing ti back to the server)
         print get_config(args);

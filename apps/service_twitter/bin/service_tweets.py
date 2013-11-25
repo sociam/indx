@@ -37,7 +37,7 @@ class TwitterService:
                 self.credentials = credentials
                 self.configs = configs
                 self.twitter_add_info = twitter_add_info
-                logging.info('Twitter Service - loading Service Instance')
+                logging.debug('Twitter Service - loading Service Instance')
                 self.indx_con = IndxClient(self.credentials['address'], self.credentials['box'], self.credentials['username'], self.credentials['password'], appid)
                 self.consumer_key= self.configs['consumer_key']
                 self.consumer_secret= self.configs['consumer_secret']
@@ -109,7 +109,7 @@ class TwitterService:
 
         stream = Stream(self.auth, l)
         if len(words_to_track) > 0:
-            logging.info('getting tweets...')
+            logging.info('Twitter Service - Stream Open and Storing Tweets')
             stream.filter(track=words_to_track)
         else:
             stream.sample()
@@ -181,7 +181,7 @@ class TwitterService:
                     logging.debug('INDX insert error in Twitter Service Object: '+str(response))
                     try:
                         response = service.indx_con.update(service.version, obj)
-                        logging.info('Twitter Service - Successfully added Objects into Box')
+                        logging.debug('Twitter Service - Successfully added Objects into Box')
                     except:
                         logging.error('Twitter Service, error on insert {0}'.format(response))
                 else:
@@ -226,7 +226,7 @@ class INDXListener(StreamListener):
                 response = self.service.indx_con.update(self.service.version, self.service.batch)
                 self.service.version = response['data']['@version'] # update the version
                 self.service.batch = []
-                logging.info('inserted batch of tweets')
+                logging.debug('inserted batch of tweets')
         except Exception as e:
             if isinstance(e, urllib2.HTTPError): # handle a version incorrect error, and update the version
                 if e.code == 409: # 409 Obsolete

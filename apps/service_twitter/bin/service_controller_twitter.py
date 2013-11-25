@@ -49,12 +49,12 @@ class TwitterServiceController:
         configs = {}
         twitter_add_info = {}
         try:
-            print "loading Credentials...."
+            logging.debug("Twitter Service - loading Credentials....")
             #config = json.dumps(config)
             #config = config.replace("\"","'")
             #config = ast.literal_eval(config)
-            for k,v in config.iteritems():
-                print k,v
+            #for k,v in config.iteritems():
+                #print k,v
             credentials = {"address": config['address'], "box": config['box'], "username": config['user'], "password": config['password']} 
             configs = {"consumer_key": config['consumer_key'], "consumer_secret": config['consumer_secret'], "access_token": config['access_token'], 
             "access_token_secret": config['access_token_secret'], "twitter_username": config['twitter_username'], "twitter_search_words": config['twitter_search_words']}
@@ -87,22 +87,18 @@ class TwitterServiceController:
         
         first_run = True
 
+        logging.info("Service Controller Twitter - Running Twitter Service!")
+
         def loop_harvester():
             #print "running harvester"
             twitter_service.run_additional_services()
-            if first_run:
+            if not first_run:
                 twitter_service.run_main_services()
             logging.debug("setting up Reactor loop...")
             reactor.callLater(15.0, loop_harvester);
 
-        logging.info("Service Controller Twitter - running Additional Taks with Twisted Reactor")
         loop_harvester() 
 
         first_run = False
-        #print "Service Controller Twitter - running Main service"
-        #task_main_get_stream = reactor.callLater(3.5, twitter_service.run_main_services())
-        #task_main_get_stream.addCallback(called)
-        #task_main_get_stream.addErrback(command_die)
-        
-        #run the reactor!
+
         reactor.run()

@@ -42,12 +42,11 @@ class FacebookServiceController:
     #load and managed parameters
     def load_parameters(self, config):
         try:
-            logging.debug("loading Credentials....")
+            logging.debug("Facebook Service - loading Credentials....")
             #config = config.replace("\"","'")
             #config = ast.literal_eval(config)
-            for k,v in config.iteritems():
-                print k,v
-
+            #for k,v in config.iteritems():
+                #print k,vs
             #first set of parameters might only be the Facebook Access Key and token...
             token_type = config['facebook_auth_status']
             if "Short" in token_type:
@@ -99,7 +98,7 @@ class FacebookServiceController:
 
         #check if the token hasnt expired, if not, let's go!
         if(facebook_service.is_token_active()):
-            logging.info("Service Controller Facebook - Running Harvester as the Token is active!")
+            logging.info("Service Controller Facebook - Running Facebook Service!")
             loop_harvester() 
             reactor.run()
 

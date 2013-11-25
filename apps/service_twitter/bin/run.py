@@ -53,7 +53,7 @@ def run(args):
     else:
         # print(keyring.util.platform_.data_root())
         config = keyring.get_password("INDX", "INDX_Twitter_App")
-        logging.info("running the app with: {0}".format(config))
+        logging.debug("running the app with: {0}".format(config))
         #config = json.dumps(config)
         #config = config.replace("\\\"","'")
         config = ast.literal_eval(ast.literal_eval(config))
@@ -64,7 +64,7 @@ def run(args):
         #to_add = {}
         #to_add = {"address": address}
         #config_new = (config, to_add)
-        logging.info("In twitter Run - With new config file {0}".format(config))
+        logging.debug("In twitter Run - With new config file {0}".format(config))
         #test run with configs
         #twitter_service = TwitterService(config)
         service_controler = TwitterServiceController(config)
