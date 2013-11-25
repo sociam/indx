@@ -31,6 +31,7 @@ def parse_args():
     parser = argparse.ArgumentParser(prog="run")
     parser.add_argument('--config', help="Set config (input requires JSON) and exit.")
     parser.add_argument('--get-config', action="store_true", help="Output current config as JSON and exit.")
+    parser.add_argument('--server', help="The server URL to connect to.")
     parsed = parser.parse_args()
     args = vars(parser.parse_args())
     return args
@@ -59,22 +60,24 @@ def run(args):
             try:
                 config = json.dumps(config)
                 keyring.set_password("INDX", "INDX_Facebook_App", config)
-                print "short token config added to keyring: "+str(config)
+                logging.debug('short token config added to keyring: {0}'.format(config))
             except:
-                print sys.exc_info()
+                logging.debug('Facebook Run.py Error in getting Keyring {0}'.format(sys.exc_info()))
         else:
             #TODO - NEED TO PUT OTHER CASSE WHEN IT IS FULL CONFIG
             keyring.set_password("INDX", "INDX_Facebook_App", json.dumps(config))
-            print "Full config added to keyring: "+str(config)
+            logging.debug('Full config added to keyring: {0}'.format(config))
     elif args['get_config']:
         # TODO output the stored config (for passing ti back to the server)
         print get_config(args);
     else:
         # print(keyring.util.platform_.data_root())
         config = keyring.get_password("INDX", "INDX_Facebook_App")
-        print "Didnt match any args value, working with config of: "+str(config)
-        logging.debug("running the app with: {0}".format(config));
+        #print "Didnt match any args value, working with config of: "+str(config)
+        logging.debug("Facebook run.py - running the app with: {0}".format(config));
         config = json.loads(config)
+        config['address'] = args['server']
+        logging.debug("Facebook run.py - Adding INDX address to config, new config loaded: {0}".format(config));
         #test run with configs
         #twitter_service = TwitterService(config)
 

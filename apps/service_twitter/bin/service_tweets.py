@@ -37,7 +37,7 @@ class TwitterService:
                 self.credentials = credentials
                 self.configs = configs
                 self.twitter_add_info = twitter_add_info
-                print "loading Service Instance"
+                logging.debug('Twitter Service - loading Service Instance')
                 self.indx_con = IndxClient(self.credentials['address'], self.credentials['box'], self.credentials['username'], self.credentials['password'], appid)
                 self.consumer_key= self.configs['consumer_key']
                 self.consumer_secret= self.configs['consumer_secret']
@@ -55,7 +55,7 @@ class TwitterService:
             logging.error("could not start TwitterService, check config details - params might be missing")
 
     def stop_and_exit_service(self):
-        print "HARD QUIT - TWITTER SERVICE"
+        logging.debug('Twitter Service - HARD QUIT - TWITTER SERVICE')
         sys.exit()
    
 
@@ -78,14 +78,14 @@ class TwitterService:
                 logging.debug("Adding Twitter Status Harvester/Timer")
                 #threading.Timer(15, self.run_timeline_harvest, args=(service,)).start()
                 self.run_timeline_harvest(service)
-                print "GETTING STATUS"
+                #print "GETTING STATUS"
         except:
             logging.error("couldnt get status "+str(sys.exc_info()) )
 
         try:
             is_get_network = additional_params['twitter_network']
             if "True" in str(is_get_network):
-                print "GETTING NETWORK"
+                #print "GETTING NETWORK"
                 logging.debug("Adding Twitter Network Harvester")
                 self.harvest_network(service)
         except:
@@ -109,7 +109,7 @@ class TwitterService:
 
         stream = Stream(self.auth, l)
         if len(words_to_track) > 0:
-            print 'getting tweets...'
+            logging.info('Twitter Service - Stream Open and Storing Tweets')
             stream.filter(track=words_to_track)
         else:
             stream.sample()
@@ -127,14 +127,14 @@ class TwitterService:
             #now append the results
             self.insert_object_to_indx(service, friends_objs)
         except:
-            print "harvest network failed"
+            logging.debug('harvest network failed')
 
     def run_timeline_harvest(self, service):
 
         #first check if INDX has already got the latest version...
         #to-do
         try:
-            print "SINCE_ID "+str(service.since_id)
+            logging.info('Getting Users Twitter Timeline since the last Id of {0}'.format(service.since_id))
             self.api = tweepy.API(service.auth)
             try:
                 if service.since_id > 0:
@@ -142,16 +142,15 @@ class TwitterService:
                 else:
                     status_timeline = self.api.user_timeline(service.twitter_username)
             except:
-                print "COULDNT GET STATUS, PROBABLY NO UPDATES AS OF YET..."
+                logging.debug('COULDNT GET STATUS, PROBABLY NO UPDATES AS OF YET...')
                 status_timeline = {}
-
-            print "GOT STATUS TIMELINE: "+str(len(status_timeline))
+            #print "GOT STATUS TIMELINE: "+str(len(status_timeline))
             #have we got any statuses?
             if len(status_timeline)>0:
                 #guess so - lets commit these to INDX
                 #update since_id
                 service.since_id = status_timeline[len(status_timeline)-1].id
-                print "NEW SINCE_ID :"+str(service.since_id)
+                #print "NEW SINCE_ID :"+str(service.since_id)
                 current_timestamp = str(datetime.now())
                 uniq_id = "timeline_at_"+current_timestamp
                 status_list = []
@@ -165,7 +164,7 @@ class TwitterService:
             #now append the results
                 self.insert_object_to_indx(service, status_objs)
         except:
-            "harvest status failed "+str(sys.exc_info())
+            logging.error('twitter timeline harvest failed {0}'.format(sys.exc_info()))
     
     def insert_object_to_indx(self, service, obj):
      
@@ -179,14 +178,14 @@ class TwitterService:
                     response = e.read()
                     json_response = json.loads(response)
                     service.version = json_response['@version']
-                    logging.error('INDX insert error in Twitter Service Object: '+str(response))
+                    logging.debug('INDX insert error in Twitter Service Object: '+str(response))
                     try:
                         response = service.indx_con.update(service.version, obj)
-                        print "INSERT SUCCESS A SECOND TIME OBJECT"
+                        logging.debug('Twitter Service - Successfully added Objects into Box')
                     except:
-                        print '-------ERROR on second insert: '+str(response)
+                        logging.error('Twitter Service, error on insert {0}'.format(response))
                 else:
-                    print '-------ERROR: ',e.read()
+                    logging.error('Twitter Service Unknow error: {0}'.format(e.read()))
             else:
                 logging.error("Error updating INDX: {0}".format(e))
 
@@ -227,7 +226,7 @@ class INDXListener(StreamListener):
                 response = self.service.indx_con.update(self.service.version, self.service.batch)
                 self.service.version = response['data']['@version'] # update the version
                 self.service.batch = []
-                logging.info('inserted batch of tweets')
+                logging.debug('inserted batch of tweets')
         except Exception as e:
             if isinstance(e, urllib2.HTTPError): # handle a version incorrect error, and update the version
                 if e.code == 409: # 409 Obsolete
@@ -236,38 +235,12 @@ class INDXListener(StreamListener):
                     self.service.version = json_response['@version']
                     self.on_data(tweet_data) # try updating again now the version is correct
                 else:
-                    print '-------ERROR: ',e.read()
+                    logging.error('Twitter Service - Streaming Error {0}'.format(e.read()))
             else:
-                print "didnt insert tweet"
+                #print "didnt insert tweet"
                 logging.error("Error updating INDX: {0}".format(e))
                 sys.exit(0)                    
         return True
 
     def on_error(self, status):
-        print "Status Error ",status
-
-
-class RepeatedTimer(object):
-    def __init__(self, interval, function, *args, **kwargs):
-        self._timer     = None
-        self.function   = function
-        self.interval   = interval
-        self.args       = args
-        self.kwargs     = kwargs
-        self.is_running = False
-        self.start()
-
-    def _run(self):
-        self.is_running = False
-        self.start()
-        self.function(*self.args, **self.kwargs)
-
-    def start(self):
-        if not self.is_running:
-            self._timer = Timer(self.interval, self._run)
-            self._timer.start()
-            self.is_running = True
-
-    def stop(self):
-        self._timer.cancel()
-        self.is_running = False
+        logging.debug('Twitter Service - Streaming Error From Twitter API {0}'.format(status))

@@ -5,7 +5,7 @@
 	"description": "service_twitter",
 	"configpanel":"html/index.html",
 	"on_boot": 0,
-	"run":["python", "apps/service_twitter/bin/run.py"],
+	"run":["python", "apps/service_twitter/bin/run.py", "--server", "{0}"],
 	"set_config":["python", "apps/service_twitter/bin/run.py", "--config", "{0}"],
 	"get_config":["python", "apps/service_twitter/bin/run.py", "--get-config"],
 	"icons": { 

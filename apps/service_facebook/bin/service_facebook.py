@@ -20,7 +20,7 @@ import argparse, ast, logging, getpass, sys, urllib2, json, sys, datetime, time,
 from facebook import GraphAPI
 from datetime import timedelta
 from threading import Timer
-#from indxclient import IndxClient
+from indxclient import IndxClient
 
 
 
@@ -31,79 +31,115 @@ user_token = "CAACEdEose0cBAMcqUvpsZCb4tqByxcL7lUceoXjArKieThZAUaIFEtNTa7dcErlZB
 #user_token = "CAAGRfoP2rgIBAAjSVaznIsZCxubV8KzTYZBrhRaDhA9pGA8hK2kOjRtgQlTUZANl0n0uJFtk3ZBDO1mBZCfOE06ku3P1NRr8NrN30xsHUgZBCwJJgCMoEoW2J7w7l85C6ZBC89ggaLxkaZAUdSaK8nYKT8ZBZAsSHayzGAPQS1kSPZALMVGf201oaTPf13VMGm32EIY4egRXy7wDAZDZD"
 app_token = "441447542599170|8B8irGqMVlyLl1Bke4Nm9Y6pquo"
 
+app_id = "facebook_service"
 
 class FacebookService:
 
-	def __init__(self, config):
-	 	print "Facebook Service - Getting configs from Facebook Controller"
-	 	self.facebook_access_token_long = config['facebook_access_token_long']
-	 	self.facebook_userid = config['facebook_userid']
-	 	self.facebook_access_token_expire_time = config['facebook_access_token_expire_time']
-	 	self.config_timestamp = config['config_timestamp']
-	 	#in reality this is all we need from facebook, but we want to also check that the current date is not over 60 days...
-	 	print "Facebook Service - Checking if token is not expired"
-	 	self.token_active = False
-	 	if self.check_if_token_not_expired():
-	 		self.token_active = True
+    def __init__(self, config):
+        logging.debug('Facebook Service - Getting configs from Facebook Controller')
+        self.indx_con = IndxClient(config['address'], config['box'], config['user'], config['password'], app_id)
+        self.facebook_access_token_long = config['facebook_access_token_long']
+        self.facebook_userid = config['facebook_userid']
+        self.facebook_access_token_expire_time = config['facebook_access_token_expire_time']
+        self.config_timestamp = config['config_timestamp']
+        self.version = 0
+        #in reality this is all we need from facebook, but we want to also check that the current date is not over 60 days...
+        logging.debug('Facebook Service - Checking if token is not expired')
+        self.token_active = False
+        if self.check_if_token_not_expired():
+            logging.debug('Facebook Service - Token is active still. Great News!')
+            self.token_active = True
 
-	def is_token_active(self):
-		return self.token_active
+    def is_token_active(self):
+        return self.token_active
 
 
-	#need to check if the token has already expired, we have around 60 days. Returns true if token still active
-	def check_if_token_not_expired(self):
-		current_time = datetime.datetime.now()
-		access_token_time = (self.config_timestamp).split(".")[0] # we just want it as yyyy-mm-ddT:hh:mm:ss
-		access_token_time = self.createTimestamp(access_token_time);
-		delta = current_time - access_token_time
-		delta_days = delta.days
-		if (delta_days) < 60:
-			return True
-		else:
-			return False
+    #need to check if the token has already expired, we have around 60 days. Returns true if token still active
+    def check_if_token_not_expired(self):
+        current_time = datetime.datetime.now()
+        access_token_time = (self.config_timestamp).split(".")[0] # we just want it as yyyy-mm-ddT:hh:mm:ss
+        access_token_time = self.createTimestamp(access_token_time);
+        delta = current_time - access_token_time
+        delta_days = delta.days
+        if (delta_days) < 60:
+            return True
+        else:
+            return False
 
-	#this should be a library function somewhere...
-	def createTimestamp(self,strTimestamp):
-	    try:
-	        return datetime.datetime.strptime(strTimestamp, '%Y-%m-%dT%H:%S:%M')
-	    except:
-	        if not ":" in str(strTimestamp):
-	            strTimestamp = strTimestamp+" 00:00:00"
-	            return datetime.datetime.strptime(strTimestamp, '%Y-%m-%d %H:%S:%M')
-	        else:
-	            pass
+    #this should be a library function somewhere...
+    def createTimestamp(self,strTimestamp):
+        try:
+            return datetime.datetime.strptime(strTimestamp, '%Y-%m-%dT%H:%S:%M')
+        except:
+            if not ":" in str(strTimestamp):
+                strTimestamp = strTimestamp+" 00:00:00"
+                return datetime.datetime.strptime(strTimestamp, '%Y-%m-%d %H:%S:%M')
+            else:
+                pass
+
+
+        ##here are all the facebook methods to havest the data
+    def harvest_facebook_profile(self):
+        logging.debug('Facebook Service - Getting users Facebook Profile')
+        graph = facebook.GraphAPI(self.facebook_access_token_long)
+        profile = graph.get_object("me")
+        current_timestamp = str(datetime.datetime.now())
+        uniq_id = "facebook_profile_at_"+current_timestamp
+        object_to_insert = {"@id":uniq_id, "app_object": app_id, "timestamp": current_timestamp, "facebook_profile": profile}
+        self.insert_object_to_indx(object_to_insert)
+        logging.info("Facebook Service - Found Facebook Profile information, Added To INDX {0} profile items".format(len(profile)))
 
     ##here are all the facebook methods to havest the data
-	def harvest_facebook_statuses(self):
-		graph = facebook.GraphAPI(self.facebook_access_token_long)
-		#profile = graph.get_object("me")
-		#rint profile
-		statuses = graph.get_connections("me", "statuses/")
-		#print friends
-		#friend_list = [friend['id'] for friend in friends['data']]
-		for status in statuses['data']:
-			print status
+    def harvest_facebook_statuses(self):
+        logging.debug('Facebook Service - Getting users Facebook Statuses')
+        graph = facebook.GraphAPI(self.facebook_access_token_long)
+        statuses = graph.get_connections("me", "statuses")
+        statuses = statuses['data']
+        current_timestamp = str(datetime.datetime.now())
+        uniq_id = "facebook_statuses_at_"+current_timestamp
+        object_to_insert = {"@id":uniq_id, "app_object": app_id, "timestamp": current_timestamp, "facebook_statuses": statuses}
+        self.insert_object_to_indx(object_to_insert)
+        logging.info("Facebook Service - Found Statuses, Added To INDX {0} statuses".format(len(statuses)))
+        #for status in statuses['data']:
+            #print status
 
-	def harvest_facebook_friends(self):
-		graph = facebook.GraphAPI(self.facebook_access_token_long)
-		#profile = graph.get_object("me")
-		#rint profile
-		friends = graph.get_connections("me", "friends")
-		friend_list = [friend['id'] for friend in friends['data']]
-		for f in friend_list:
-			print f
+    def harvest_facebook_friends(self):
+        logging.debug('Facebook Service - Getting users Facebook Statuses')
+        graph = facebook.GraphAPI(self.facebook_access_token_long)
+        #profile = graph.get_object("me")
+        #rint profile
+        friends = graph.get_connections("me", "friends")
+        friends = friends['data']
+        #print friends
+        #friend_list = [friend['id'] for friend in friends['data']]
+        current_timestamp = str(datetime.datetime.now())
+        uniq_id = "facebook_friends_list_at_"+current_timestamp
+        object_to_insert = {"@id":uniq_id, "app_object": app_id, "timestamp":current_timestamp, "facebook_friends_list": friends}
+        self.insert_object_to_indx(object_to_insert)
+        logging.info("Facebook Service - Found Friends List, Added To INDX {0} Friends".format(len(friends)))
+        #for f in friend_list:
+            #print f
 
-# args = dict(client_id=FACEBOOK_APP_ID, redirect_uri=self.request.path_url)
-# redirect = "https://graph.facebook.com/oauth/authorize?" + urllib.urlencode(args)
-# print redirect
-
-
-# class User(db.Model):
-#     """User Model Class"""
-#     id = db.StringProperty(required=True) #facebook user-id
-#     created = db.DateTimeProperty(auto_now_add=True)
-#     updated = db.DateTimeProperty(auto_now=True)
-#     name = db.StringProperty(required=True)
-#     profile_url = db.StringProperty(required=True)
-#     access_token = db.StringProperty(required=True)  #fb OAUTH access token
+    def insert_object_to_indx(self, obj):
+     
+        try:
+            if len(obj)>0:
+                response = self.indx_con.update(self.version, obj)
+                logging.debug("Inserted Object into INDX: ".format(response))
+        except Exception as e:
+            if isinstance(e, urllib2.HTTPError): # handle a version incorrect error, and update the version
+                if e.code == 409: # 409 Obsolete
+                    response = e.read()
+                    json_response = json.loads(response)
+                    self.version = json_response['@version']
+                    logging.debug('INDX insert error in Twitter Service Object: '+str(response))
+                    try:
+                        response = self.indx_con.update(self.version, obj)
+                        logging.debug('Facebook Service - Successfully added Objects into Box')
+                    except:
+                        logging.error('Facebook Service, error on insert {0}'.format(response))
+                else:
+                    logging.error('Facebook Service Unknow error: {0}'.format(e.read()))
+            else:
+                logging.error("Error updating INDX: {0}".format(e))
 
