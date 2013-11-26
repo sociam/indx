@@ -442,16 +442,16 @@ angular
 			/// Gets an auth token for the box. This is done automatically
 			/// by a store when constructed by getBox.
 			getToken:function() {
-				console.debug('>> getToken ', ' id: ',this.id, ' cid: ',this.cid);
+				// console.debug('>> getToken ', ' id: ',this.id, ' cid: ',this.cid);
 				// try { throw new Error(''); } catch(e) { console.error(e); }
 				if (this._get_token_queue === undefined) { this._get_token_queue = []; }
 				var tq = this._get_token_queue, this_ = this, d = u.deferred();
 				tq.push(d); 				
 				if (tq.length === 1) { 
-					console.debug('tq === 1, calling -------------- get_token');
+					// console.debug('tq === 1, calling -------------- get_token');
 					this._ajax('POST', 'auth/get_token', { app: this.store.get('app') })
 						.then(function(data) {
-							console.debug('setting token ', data.token, 'triggering ', tq.length);
+							// console.debug('setting token ', data.token, 'triggering ', tq.length);
 							this_._setToken( data.token );
 							this_.trigger('new-token', data.token);
 							this_._get_token_queue.map(function(d) { d.resolve(this_); });
@@ -985,7 +985,7 @@ angular
 			getBox: function(boxid) {
 				var b = this.boxes().get(boxid) || this._create(boxid);
 				if (!b._getCachedToken()) {
-					console.info('indxjs getToken(): getting token for box ', boxid);
+					// console.info('indxjs getToken(): getting token for box ', boxid);
 					return b.getToken().pipe(function() { return b.fetch();	});
 				}
 				console.info('indxjs getToken(): already have token for box --- ', boxid);
