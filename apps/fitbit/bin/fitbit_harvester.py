@@ -248,6 +248,8 @@ class FitbitHarvester:
             logging.debug("Saving {0} step data points.".format(len(steps_points)))
             self.save(indx, steps_points)
 
+            logging.debug("Suspending execution for 1 minute at {0}.".format(datetime.now().isoformat()))
+            sleep(60)
 
             # processing calories
             calories = self.download_calories(day, fitbit_intraday)
@@ -259,6 +261,9 @@ class FitbitHarvester:
             logging.debug("Saving {0} calories data points.".format(len(calories_points)))
             self.save(indx, calories_points)
 
+            logging.debug("Suspending execution for 1 minute at {0}.".format(datetime.now().isoformat()))
+            sleep(60)
+
             # processing distance
             distance = self.download_distance(day, fitbit_intraday)
             distance_points = []
@@ -268,6 +273,9 @@ class FitbitHarvester:
                 distance_points = self.create_data_points(day, distance, self.distance_ts_id, "http://sociam.org/ontology/health/Distance") # subclass of http://purl.org/linked-data/cube#Observation
             logging.debug("Saving {0} distance data points.".format(len(distance_points)))
             self.save(indx, distance_points)
+
+            logging.debug("Suspending execution for 1 minute at {0}.".format(datetime.now().isoformat()))
+            sleep(60)
 
             # processing floors
             floors = self.download_floors(day, fitbit_intraday)
@@ -279,6 +287,9 @@ class FitbitHarvester:
             logging.debug("Saving {0} floors data points.".format(len(floors_points)))
             self.save(indx, floors_points)
 
+            logging.debug("Suspending execution for 1 minute at {0}.".format(datetime.now().isoformat()))
+            sleep(60)
+
             # processing elevation
             elevation = self.download_elevation(day, fitbit_intraday)
             elevation_points = []
@@ -289,9 +300,10 @@ class FitbitHarvester:
             logging.debug("Saving {0} elevation data points.".format(len(elevation_points)))
             self.save(indx, elevation_points)
 
+            logging.debug("Suspending execution for 1 minute at {0}.".format(datetime.now().isoformat()))
+            sleep(60)
+
             day = day + timedelta(days=+1)
-            logging.debug("Suspending execution for 5 minutes at {0}.".format(datetime.now().isoformat()))
-            sleep(300)
 
         logging.debug("Finished harvesting round! Exiting harvest() .. ")
 
@@ -460,7 +472,7 @@ class FitbitHarvester:
                             objs_date_hash[find_start] = objs_list
                             out[obj['http://purl.org/linked-data/cube#dataset'][0]['@value']] = objs_date_hash
                         logging.debug("Found points with start time {0}: {1}".format(find_start.isoformat(),objs_list))
-        logging.debug("The points found for the day: ".format(out))
+        logging.debug("The points found for the day: {0}".format(out))
         return out
 
 
