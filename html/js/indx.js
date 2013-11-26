@@ -442,16 +442,16 @@ angular
 			/// Gets an auth token for the box. This is done automatically
 			/// by a store when constructed by getBox.
 			getToken:function() {
-				console.debug('>> getToken ', ' id: ',this.id, ' cid: ',this.cid);
+				// console.debug('>> getToken ', ' id: ',this.id, ' cid: ',this.cid);
 				// try { throw new Error(''); } catch(e) { console.error(e); }
 				if (this._get_token_queue === undefined) { this._get_token_queue = []; }
 				var tq = this._get_token_queue, this_ = this, d = u.deferred();
 				tq.push(d); 				
 				if (tq.length === 1) { 
-					console.debug('tq === 1, calling -------------- get_token');
+					// console.debug('tq === 1, calling -------------- get_token');
 					this._ajax('POST', 'auth/get_token', { app: this.store.get('app') })
 						.then(function(data) {
-							console.debug('setting token ', data.token, 'triggering ', tq.length);
+							// console.debug('setting token ', data.token, 'triggering ', tq.length);
 							this_._setToken( data.token );
 							this_.trigger('new-token', data.token);
 							this_._get_token_queue.map(function(d) { d.resolve(this_); });
@@ -533,17 +533,18 @@ angular
 				var parameters = {"q": JSON.stringify(queryPattern)};
 				var this_ = this;
 				if (predicates) {
-					_(parameters).extend({predicateList: predicates });
+					if (!_.isArray(predicates)) { predicates = [predicates]; }
+					_(parameters).extend({predicate_list: predicates});
 					console.log('new query pattern >> ', parameters);
 				}
-				this._ajax("GET", [this.id, "query"].join('/'), parameters)
+				var query_url = [this.getID(), 'query'].join('/');
+				this._ajax("GET", query_url, parameters)
 					.then(function(results) {
 						if (predicates) {
 							// raw partials just including predicates - these are not whole
 							// objects
 							return d.resolve(results);
 						}
-						console.log('results >> ', results.data);
 						// otherwise we are getting full objects, so ...
 						d.resolve(_(results.data).map(function(dobj,id) {
 							console.log('getting id ', id);
@@ -984,7 +985,7 @@ angular
 			getBox: function(boxid) {
 				var b = this.boxes().get(boxid) || this._create(boxid);
 				if (!b._getCachedToken()) {
-					console.info('indxjs getToken(): getting token for box ', boxid);
+					// console.info('indxjs getToken(): getting token for box ', boxid);
 					return b.getToken().pipe(function() { return b.fetch();	});
 				}
 				console.info('indxjs getToken(): already have token for box --- ', boxid);

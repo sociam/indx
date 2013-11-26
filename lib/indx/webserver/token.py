@@ -65,21 +65,21 @@ class Token:
 
             db_user, db_pass = new_acct
 
-            def connected_cb(conn):
-                logging.debug("Token get_store connected, returning it.")
-                self.connections.append(conn)
+            #self.connections.append(conn)
 
-                def get_sync():
-                    return database.connect_box_sync(self.boxid, db_user, db_pass)
+            def get_sync():
+                return database.connect_box_sync(self.boxid, db_user, db_pass)
 
-                def get_raw():
-                    return database.connect_box_raw(self.boxid, db_user, db_pass)
+            def get_raw():
+                return database.connect_box_raw(self.boxid, db_user, db_pass)
 
-                conns = {"conn": conn, "sync_conn": get_sync, "raw_conn": get_raw}
-                store = ObjectStoreAsync(conns, self.username, self.boxid, self.appid, self.clientip)
-                result_d.callback(store)
+            def get_conn():
+                return database.connect_box(self.boxid, db_user, db_pass)
 
-            database.connect_box(self.boxid, db_user, db_pass).addCallbacks(connected_cb, result_d.errback)
+            conns = {"conn": get_conn, "sync_conn": get_sync, "raw_conn": get_raw}
+            store = ObjectStoreAsync(conns, self.username, self.boxid, self.appid, self.clientip)
+            result_d.callback(store)
+
 
         if self.best_acct is None:
             self.db.lookup_best_acct(self.boxid, self.username, self.password).addCallbacks(got_acct, result_d.errback)
