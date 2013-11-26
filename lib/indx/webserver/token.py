@@ -66,15 +66,25 @@ class Token:
             db_user, db_pass = new_acct
 
             #self.connections.append(conn)
+            def conn_passthru(conn, deferred):
+                """ Pass a connection through to a callback, while keeping a reference of it here. """
+                self.connections.append(conn)
+                deferred.callback(conn)
 
             def get_sync():
-                return database.connect_box_sync(self.boxid, db_user, db_pass)
+                return_d = Deferred()
+                database.connect_box_sync(self.boxid, db_user, db_pass).addCallbacks(lambda conn: conn_passthru(conn, return_d), return_d.errback)
+                return return_d
 
             def get_raw():
-                return database.connect_box_raw(self.boxid, db_user, db_pass)
+                return_d = Deferred()
+                database.connect_box_raw(self.boxid, db_user, db_pass).addCallbacks(lambda conn: conn_passthru(conn, return_d), return_d.errback)
+                return return_d
 
             def get_conn():
-                return database.connect_box(self.boxid, db_user, db_pass)
+                return_d = Deferred()
+                database.connect_box(self.boxid, db_user, db_pass).addCallbacks(lambda conn: conn_passthru(conn, return_d), return_d.errback)
+                return return_d
 
             conns = {"conn": get_conn, "sync_conn": get_sync, "raw_conn": get_raw}
             store = ObjectStoreAsync(conns, self.username, self.boxid, self.appid, self.clientip)

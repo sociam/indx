@@ -47,6 +47,9 @@ class ObjectSetDiff:
                 "params": [],
                 "query_prefix": "INSERT INTO wb_vers_diffs (version, diff_type, subject, predicate, object, object_order) VALUES "
             },
+            "prelatest": { # queries that are to be run immediately before latest. i.e., DELETE FROM before new INSERT INTO are run when replacing objects
+                "queries": [], # just bare queries, no prefixing/rendering
+            },
             "latest": {
                 "values": [],
                 "params": [],
@@ -79,18 +82,35 @@ class ObjectSetDiff:
             quer = keys.pop(0)
 
             if len(self.queries[quer]['params']) > max_params:
+
+                querylist = []
+            
+                # do prelatest before latest, only when latest has hit max_params
+                if quer == 'latest':
+                    querylist.extend(self.queries['prelatest']['queries'])
+                    self.queries['prelatest']['queries'] = [] # empty the list of queries
+
                 query = self.queries[quer]['query_prefix'] + ", ".join(self.queries[quer]['values'])
                 params = self.queries[quer]['params']
+
+                querylist.append( (query, params) ) # querylist is tuples of (query, params)
 
                 self.queries[quer]['values'] = []
                 self.queries[quer]['params'] = []
 
-                def ran_cb(result):
-                    logging.debug("ObjectSetDiff gen_queries, ran_cb, result: {0}".format(result))
-                    result_d.callback(True)
+                def run_querylist(empty):
 
-                logging.debug("ObjectSetDiff gen_queries, running: query: {0}, params: {1}".format(query,params))
-                cur.execute(query, params).addCallbacks(run_next, result_d.errback)
+                    if len(querylist) < 1:
+                        run_next(None)
+                        return
+
+                    qp_pair = querylist.pop(0)
+                    query, params = qp_pair
+
+                    logging.debug("ObjectSetDiff gen_queries, run_querylist running: query: {0}, params: {1}".format(query,params))
+                    cur.execute(query, params).addCallbacks(run_querylist, result_d.errback)
+
+                run_querylist(None)
             else:
                 run_next(None)
 
@@ -280,20 +300,18 @@ class ObjectSetDiff:
     def apply_diffs_to_latest(self, cur):
         """ Make the queries used to INSERT/DELETE from the wb_latest_vers table. """
         
-        queries = [] # list of tuples, of (query, params) to execute in order
-
         for row in self.queries['latest_diffs']['remove_subject']:
             subject, predicate, sub_obj, object_order = row
-            queries.append(("DELETE FROM wb_latest_vers USING wb_triples, wb_strings AS subjects WHERE subjects.id_string = wb_triples.subject AND wb_latest_vers.triple = wb_triples.id_triple AND subjects.string = %s", [subject])) # XXX TODO test
+            self.queries['prelatest']['queries'].append(("DELETE FROM wb_latest_vers USING wb_triples, wb_strings AS subjects WHERE subjects.id_string = wb_triples.subject AND wb_latest_vers.triple = wb_triples.id_triple AND subjects.string = %s", [subject])) # XXX TODO test
 
         for row in self.queries['latest_diffs']['remove_predicate']:
             subject, predicate, sub_obj, object_order = row
-            queries.append(("DELETE FROM wb_latest_vers USING wb_triples, wb_strings AS predicates, wb_strings AS subjects WHERE wb_latest_vers.triple = wb_triples.id_triple AND predicates.id_string = wb_triples.predicate AND subjects.id_string = wb_triples.subject AND subjects.string = %s AND predicates.string = %s", [subject, predicate])) # XXX TODO test ## same as below
+            self.queries['prelatest']['queries'].append(("DELETE FROM wb_latest_vers USING wb_triples, wb_strings AS predicates, wb_strings AS subjects WHERE wb_latest_vers.triple = wb_triples.id_triple AND predicates.id_string = wb_triples.predicate AND subjects.id_string = wb_triples.subject AND subjects.string = %s AND predicates.string = %s", [subject, predicate])) # XXX TODO test ## same as below
         
         for row in self.queries['latest_diffs']['replace_objects']:
             subject, predicate, sub_obj, object_order = row
             # remove existing first
-            queries.append(("DELETE FROM wb_latest_vers USING wb_triples, wb_strings AS predicates, wb_strings AS subjects WHERE wb_latest_vers.triple = wb_triples.id_triple AND predicates.id_string = wb_triples.predicate AND subjects.id_string = wb_triples.subject AND subjects.string = %s AND predicates.string = %s", [subject, predicate])) # XXX TODO test ## same as above, remove everything with subject AND predicate
+            self.queries['prelatest']['queries'].append(("DELETE FROM wb_latest_vers USING wb_triples, wb_strings AS predicates, wb_strings AS subjects WHERE wb_latest_vers.triple = wb_triples.id_triple AND predicates.id_string = wb_triples.predicate AND subjects.id_string = wb_triples.subject AND subjects.string = %s AND predicates.string = %s", [subject, predicate])) # XXX TODO test ## same as above, remove everything with subject AND predicate
 
 
 

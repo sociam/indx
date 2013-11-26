@@ -210,7 +210,7 @@ class ObjectStoreAsync:
             object_ids = [object_ids]
 
         def rows_cb(rows, version):
-            self.error("Objectstore get_latest_objs, rows_cb, rows: {0}, version: {1}".format(rows, version))
+            self.debug("Objectstore get_latest_objs, rows_cb, rows: {0}, version: {1}".format(rows, version))
             graph = Graph.from_rows(rows)
             if render_json:
                 obj_out = graph.to_json()
