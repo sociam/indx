@@ -1,8 +1,4 @@
-
-
-
 (function() {
-
 	angular.module('launcher', ['indx'])
 		.config(['$routeProvider', function($routeProvider) {
 			$routeProvider

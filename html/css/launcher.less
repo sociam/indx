@@ -1,4 +1,6 @@
 div.main {
+	box-spacing:border-box; * { box-spacing:border-box; }
+
 	.animate-show, .animate-hide {
 		-webkit-transition:all linear 0.25s;
 		-moz-transition:all linear 0.25s;
@@ -24,13 +26,12 @@ div.main {
 	.animate-hide.animate-hide-active {
 		opacity:0;
 	}
-	.login-window, .apps-toplevel, .password-dialog {
+	.login-window, .password-dialog {
 		background:white;
 		box-spacing:border-box;
 		border:1px solid #eee;
 		padding:20px;
-		width:440px; // todo make reactive
-		margin:40px auto 0px auto;
+		margin:20px auto 0px auto;
 		position:relative;
 		box-shadow: 0 0 5px #888;
 		-moz-box-shadow: 0 0 5px #888;
@@ -38,6 +39,7 @@ div.main {
 		oveflow:hidden;
 	}
 	.login-window {
+		width:440px; // todo make reactive
 		.userlist {
 			margin:20px 20px 0px 20px;
 			padding:10px;	
@@ -101,6 +103,8 @@ div.main {
 	}
 
 	.password-dialog {
+		width:440px; // todo make reactive
+
 		-moz-user-select: -moz-none;
 		-khtml-user-select: none;
 		-webkit-user-select: none;
@@ -165,13 +169,22 @@ div.main {
 		}
 	}
 
-	.apps-toplevel {
-	    width:586px; // todo make reactive
+	@appswidth:352px;
+	@boxeswidth:550px;
+	@toplevelmargin:20px;
+	.apps {	max-width:@appswidth; margin: 0px @toplevelmargin 0px 0px; }
+	.boxes { max-width:@boxeswidth - 3; width:@boxeswidth - 3; margin:0px; }
+	.toplevel {
+		width:@appswidth + @boxeswidth + @toplevelmargin + 4;
+		margin:20px auto;
+		padding:0px;
+	}
+	.apps, .boxes {
+		display:inline-block;
+		vertical-align:top;
 		padding:0px; 
-    //	margin:0px -13px -5px -13px;
 	   	background:#fcfcfc;
 	   	box-shadow:inset 0 0 4px #ccc;
-
 	    * { 
 	    	font-family:"Lato-Light" !important; 
 	    	font-weight:100;
