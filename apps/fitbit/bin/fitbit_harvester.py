@@ -164,6 +164,7 @@ class FitbitHarvester:
         start, box, user, password, overwrite = self.check_configuration()
         logging.debug("Starting download from date: {0}".format(start))
         day = datetime.strptime(start, "%Y-%m-%d")
+        day = day+timedelta(days=+1)
         logging.debug("day as {0}: {1}".format(type(day), day))
 
         fitbit_intraday = FitbitIntraDay(self.fitbit)
@@ -209,6 +210,7 @@ class FitbitHarvester:
         elevation_ts = self.find_create(indx, self.elevation_ts_id, {"http://www.w3.org/2000/01/rdf-schema#label":"Fitbit Elevation Time Series", "http://www.w3.org/1999/02/22-rdf-syntax-ns#type":"http://purl.org/linked-data/cube#Dataset"})
 
         got_all_zeros = self.today()
+        day = day + timedelta(days=-1) # recheck the last day that was not all zeros, in case only a part of it was synced, this also ensures that at least 1 day of data is fetched
 
         while day < self.today():
             # skip = False
@@ -248,8 +250,8 @@ class FitbitHarvester:
             logging.debug("Saving {0} step data points.".format(len(steps_points)))
             self.save(indx, steps_points)
 
-            logging.debug("Suspending execution for 1 minute at {0}.".format(datetime.now().isoformat()))
-            sleep(60)
+            # logging.debug("Suspending execution for 1 minute at {0}.".format(datetime.now().isoformat()))
+            # sleep(60)
 
             # processing calories
             calories = self.download_calories(day, fitbit_intraday)
@@ -261,8 +263,8 @@ class FitbitHarvester:
             logging.debug("Saving {0} calories data points.".format(len(calories_points)))
             self.save(indx, calories_points)
 
-            logging.debug("Suspending execution for 1 minute at {0}.".format(datetime.now().isoformat()))
-            sleep(60)
+            # logging.debug("Suspending execution for 1 minute at {0}.".format(datetime.now().isoformat()))
+            # sleep(60)
 
             # processing distance
             distance = self.download_distance(day, fitbit_intraday)
@@ -274,8 +276,8 @@ class FitbitHarvester:
             logging.debug("Saving {0} distance data points.".format(len(distance_points)))
             self.save(indx, distance_points)
 
-            logging.debug("Suspending execution for 1 minute at {0}.".format(datetime.now().isoformat()))
-            sleep(60)
+            # logging.debug("Suspending execution for 1 minute at {0}.".format(datetime.now().isoformat()))
+            # sleep(60)
 
             # processing floors
             floors = self.download_floors(day, fitbit_intraday)
@@ -287,8 +289,8 @@ class FitbitHarvester:
             logging.debug("Saving {0} floors data points.".format(len(floors_points)))
             self.save(indx, floors_points)
 
-            logging.debug("Suspending execution for 1 minute at {0}.".format(datetime.now().isoformat()))
-            sleep(60)
+            # logging.debug("Suspending execution for 1 minute at {0}.".format(datetime.now().isoformat()))
+            # sleep(60)
 
             # processing elevation
             elevation = self.download_elevation(day, fitbit_intraday)
@@ -300,8 +302,8 @@ class FitbitHarvester:
             logging.debug("Saving {0} elevation data points.".format(len(elevation_points)))
             self.save(indx, elevation_points)
 
-            logging.debug("Suspending execution for 1 minute at {0}.".format(datetime.now().isoformat()))
-            sleep(60)
+            # logging.debug("Suspending execution for 1 minute at {0}.".format(datetime.now().isoformat()))
+            # sleep(60)
 
             day = day + timedelta(days=+1)
 
@@ -403,7 +405,7 @@ class FitbitHarvester:
         logging.debug("Retrieved distance data for {0}.".format(day.date()))
         return distance
 
-    def download_floors(self, day, fitbit_intrugaday):
+    def download_floors(self, day, fitbit_intraday):
         if (day == None):
             logging.error("No date given for download.")
             return []
