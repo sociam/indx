@@ -16,6 +16,8 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
+import os
+import json
 from twisted.internet.defer import Deferred
 from twisted.internet import threads
 from twisted.python.failure import Failure
@@ -40,6 +42,97 @@ class ObjectStoreAsync:
 
         self.loggerClass = logging
         self.loggerExtra = {}
+
+        self.schema_upgrade()
+
+    def schema_upgrade(self):
+        """ Perform INDX schema upgrades.
+        
+            conn -- Connection to INDX database.
+        """
+        return_d = Deferred()
+
+        fh_schemas = open(os.path.join(os.path.dirname(__file__),"..","data","indx-schemas.json")) # FIXME put into config
+        schemas = json.load(fh_schemas)
+
+        def indx_conn_cb(indx_conn):
+            logging.debug("Objectstore schema_upgrade, indx_conn_cb")
+
+            def conn_cb(conn):
+                logging.debug("Objectstore schema_upgrade, conn_cb")
+
+                def upgrade_from_version(next_version):
+                    """ Upgrade the schema from the specified version. """
+                    logging.debug("Objectstore schema_upgrade from next_version {0}".format(next_version))
+
+                    sql_total = []
+                    indx_sql_total = []
+                    last_version = next_version # keep track of the last applied version - this will be saved in the tbl_indx_core k/v table
+                    while next_version != "":
+                        logging.debug("Objectstore schema_upgrade adding sql from version: {0}".format(next_version))
+                        sql_total.append("\n".join(schemas['store-updates']['versions'][next_version]['sql']))
+                        last_version = next_version
+                        if 'next-version' not in schemas['store-updates']['versions'][next_version]:
+                            break
+
+                        next_version = schemas['store-updates']['versions'][next_version]['next-version']
+
+                    logging.debug("Objectstore schema_upgrade saving last_version as {0}".format(last_version))
+                    indx_sql_total.append("DELETE FROM tbl_indx_core WHERE key = 'box_last_schema_version' AND boxid = '" + self.boxid + "';")
+                    indx_sql_total.append("INSERT INTO tbl_indx_core (key, value, boxid) VALUES ('box_last_schema_version', '" + last_version + "', '" + self.boxid + "');")
+
+                    # execute queries one at a time
+                    def do_next_query(empty):
+                        if len(sql_total) < 1:
+
+                            def do_next_indx_query(empty):
+                                if len(indx_sql_total) < 1:
+                                    return_d.callback(None)
+                                    return
+
+                                query = indx_sql_total.pop(0)
+                                indx_conn.runOperation(query).addCallbacks(do_next_indx_query, return_d.errback)
+
+                            do_next_indx_query(None)
+                        else:
+                            query = sql_total.pop(0)
+                            conn.runOperation(query).addCallbacks(do_next_query, return_d.errback)
+
+                    do_next_query(None)
+
+
+                # query from a version onwards
+                query = "SELECT value FROM tbl_indx_core WHERE key = %s AND boxid = %s"
+                params = ['box_last_schema_version', self.boxid]
+
+                def version_cb(rows):
+                    if len(rows) < 1:
+                        # no previous version
+                        first_version = schemas['store-updates']['first-version']
+                        upgrade_from_version(first_version)
+                        return
+                    else:
+                        this_version = rows[0][0]
+                        if 'next-version' in schemas['store-updates']['versions'][this_version]:
+                            next_version = schemas['store-updates']['versions'][this_version]['next-version']
+                        else:
+                            return_d.callback(True)
+                            return # no next version
+
+                        if next_version == "":
+                            return_d.callback(True)
+                            return # no next version
+
+                        upgrade_from_version(next_version)
+                        return
+
+                indx_conn.runQuery(query, params).addCallbacks(version_cb, return_d.errback)
+        
+            self.conns['conn']().addCallbacks(conn_cb, return_d.errback)
+        
+        self.conns['indx_conn']().addCallbacks(indx_conn_cb, return_d.errback)
+        return return_d
+
 
     def setLoggerClass(self, loggerClass, extra = None):
         """ Set the class to call .log() on. """

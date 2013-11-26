@@ -86,7 +86,12 @@ class Token:
                 database.connect_box(self.boxid, db_user, db_pass).addCallbacks(lambda conn: conn_passthru(conn, return_d), return_d.errback)
                 return return_d
 
-            conns = {"conn": get_conn, "sync_conn": get_sync, "raw_conn": get_raw}
+            def get_indx_conn():
+                return_d = Deferred()
+                self.db.connect_indx_db().addCallbacks(lambda conn: conn_passthru(conn, return_d), return_d.errback)
+                return return_d
+
+            conns = {"conn": get_conn, "sync_conn": get_sync, "raw_conn": get_raw, "indx_conn": get_indx_conn}
             store = ObjectStoreAsync(conns, self.username, self.boxid, self.appid, self.clientip)
             result_d.callback(store)
 
