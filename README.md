@@ -120,13 +120,32 @@ step and proceed to the next.
 
 You can create a self-signed certificate using the handy provided script
 
-indx/bin/generate_cert.sh
+    indx/bin/generate_cert.sh
 
 This will create the files server.crt and server.key in your indx directory.
 
 Then, run indx as follows:
 
-python server.py <usernmae> <hostname> --ssl-cert <path to crt file> --ssl
+    python server.py <usernmae> <hostname> --ssl-cert <path to crt file> --ssl
+
+## tuning PostgreSQL
+
+If your server is running slowly, there are some ways to configure postgresql
+to perform better.
+
+You need to locate your configuration file called `postgresql.conf`.
+
+In OSX using the Postgres-App, this is located in:
+
+    /Users/ds/Library/Application Support/Postgres/var/postgresql.conf
+
+Find the lines that set the values for `work_mem` and `maintenance_work_mem`, ensure they are uncommented (remove a # at the start of the line if there is one), and set them to:
+
+    work_mem = 250MB
+    maintenance_work_mem = 500MB
+
+Now restart your postgres server.
+
 
 ## contact us
 

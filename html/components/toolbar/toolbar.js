@@ -40,8 +40,8 @@ angular
 				};
 				var setLastUsedBox = function(bid) {
 					localStorage["indx__lastUsedBox::" + document.location.toString()] = bid;
-				};				
-
+				};
+				
 				_($scope).extend({
 					visible: true,
 					u: utils,
@@ -62,7 +62,35 @@ angular
 
 				$scope.usericon = "<div class='glyphicon glyphicon-user'></div>"; // TODO.
 				$scope.caret = "<span class='caret'></span>";
-				
+
+				// will get overridden
+				$scope.getAppID = function() { 
+					var re = new RegExp("^\/apps\/([^/]+)\/")
+					var match = re.exec(document.location.pathname);
+					if (match) { return match[1];		} 
+				};
+
+				var init_app_icon = function() { 
+					var s = getStore();
+					if (s && $scope.getAppID()) { 
+						s.getAppsList().then(function(apps) { 
+							var ourname = $scope.getAppID();
+							var matchapps = apps.filter(function(x) { return x["@id"] === ourname; });
+							if (matchapps.length > 0 && matchapps[0].icons && matchapps[0].icons["128"]) {
+								sa(function() { 
+									$scope.appicon_url = matchapps[0].icons["128"]; 
+									$scope.appname = matchapps[0].name;
+								});
+								return;
+							}
+							console.error('fail getting app icon for ', ourname, ' ', apps);
+						}).fail(function(err) {
+							console.log('fail getting app icon for us ', err);
+						});
+					}
+				};
+				model.on('login', init_app_icon);
+
 				$scope.incrLoading = function () {	$scope.loading++; };
 				$scope.decrLoading = function () {	$scope.loading = Math.max(0,$scope.loading-1); };
 				
@@ -326,8 +354,7 @@ angular
 						throw new Error("Unknown user type ", x);
 					});
 				});
-			}).fail(function(err) { u.error(err);
-		});
+			}).fail(function(err) { u.error(err); });
 	});
 
 		

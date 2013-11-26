@@ -1,12 +1,20 @@
-<div class="apps-toplevel">
-	<h2>Your Apps:</h2>
-	<ul class="applist">
-		<li ng-repeat='a in apps' class="app">
-			<a ng-href='apps/{{ a.url || a["@id"] }}' target="_blank" title="{{ a.about }}">
-				<img class="appicon" ng-show="a.icons[128]" ng-src="apps/{{ a['@id'] }}/{{ a.icons[128] }}">
-				<img class="appicon" ng-show="!a.icons[128]" ng-src="/img/hypercube-lt.png">
-				<div class="appname">{{ (a.name || a["@id"]) | lowercase }}</div>
-			</a>
-		</li>
-	</ul>
+<div class="toplevel">
+	<div class="apps">
+		<h2>apps:</h2>
+		<ul class="applist">
+			<li ng-repeat='a in apps' class="app">
+				<a ng-href='apps/{{ a.url || a["@id"] }}' target="_blank" title="{{ a.about }}">
+					<img class="appicon" ng-show="a.icons[128]" ng-src="apps/{{ a['@id'] }}/{{ a.icons[128] }}">
+					<img class="appicon" ng-show="!a.icons[128]" ng-src="/img/hypercube-lt.png">
+					<div class="appname">{{ (a.name || a["@id"]) | lowercase }}</div>
+				</a>
+			</li>
+		</ul>
+	</div>
+	<div class="boxes">
+		<h2>boxes:</h2>
+		<ul>
+			<li><indx-boxlist-box ng-repeat="b in boxes" box="b"></indx-boxlist-box></li>
+		</ul>
+	</div>
 </div>

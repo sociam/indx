@@ -15,7 +15,7 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging, json, urllib, urllib2, cookielib, uuid, pprint
+import logging, json, urllib, urllib2, cookielib, uuid, pprint, cjson
 
 # Decorator function to ensure that the IndxClient object has a token when the function requires one
 def require_token(function):
@@ -314,7 +314,7 @@ class IndxClient:
         """
         self._debug("Called API: update_raw with version: {0}, objects: {1}".format(version, objects)) 
 
-        values = {"data": json.dumps(objects), "version": version}
+        values = {"data": cjson.encode(objects), "version": version}
         return self._put(self.base, values)
 
     @require_token
@@ -329,7 +329,7 @@ class IndxClient:
         prepared_objects = self._prepare_objects(objects)
         self._debug("update: prepared_objects: {0}".format(pprint.pformat(prepared_objects, indent=2, width=80)))
         
-        values = {"data": json.dumps(prepared_objects), "version": version}
+        values = {"data": cjson.encode(prepared_objects), "version": version}
         return self._put(self.base, values)
 
     @require_token

@@ -4,7 +4,8 @@
 	"type":["service"],
 	"description": "service_twitter",
 	"configpanel":"html/index.html",
-	"run":["python", "apps/service_twitter/bin/run.py"],
+	"on_boot": 0,
+	"run":["python", "apps/service_twitter/bin/run.py", "--server", "{0}"],
 	"set_config":["python", "apps/service_twitter/bin/run.py", "--config", "{0}"],
 	"get_config":["python", "apps/service_twitter/bin/run.py", "--get-config"],
 	"icons": { 
@@ -13,12 +14,12 @@
 	},
 	"author": [
 		{
-			"name": "Laura",
-			"email": "aprilush@gmail.com"
+			"name": "Ramine Tinati",
+			"email": "rt506@ecs.soton.ac.uk"
 		},
 		{
-			"name": "eMax",
-			"email":"max@hip.cat"
+			"name": ".",
+			"email":"."
 		}
 	]
 }
