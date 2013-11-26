@@ -25,6 +25,8 @@ class ObjectSetDiff:
         each object as well as the objects that have been added and removed.
     """
 
+    MAX_PARAMS_PER_QUERY = 10000 # split queries up into separate queries if there are more parameters than this
+
     def __init__(self, conn, objs1, objs2, version):
         """ Compare two objects in an INDX database. """
         logging.debug("ObjectSetDiff conn: {0}, objs1: {1}, objs2: {2}, version: {3}".format(conn, objs1, objs2, version))
@@ -60,63 +62,90 @@ class ObjectSetDiff:
             },
         }
 
-    def gen_queries(self, keys):
-        query_list = []
-        for quer in keys:
-            if len(self.queries[quer]['params']) > 0:
-                query_list.append((self.queries[quer]['query_prefix'] + ", ".join(self.queries[quer]['values']), self.queries[quer]['params']))
-        return query_list
+
+    def gen_queries(self, keys, cur, max_params = None):
+        """ Check if the number of parameters in the queries is above the MAX_PARAMS_PER_QUERY, and if so, render that query and reset it. """
+        result_d = Deferred()
+
+        if max_params is None:
+            max_params = self.MAX_PARAMS_PER_QUERY
+
+        def run_next(empty):
+
+            if len(keys) < 1:
+                result_d.callback(True)
+                return
+
+            quer = keys.pop(0)
+
+            if len(self.queries[quer]['params']) > max_params:
+                query = self.queries[quer]['query_prefix'] + ", ".join(self.queries[quer]['values'])
+                params = self.queries[quer]['params']
+
+                self.queries[quer]['values'] = []
+                self.queries[quer]['params'] = []
+
+                def ran_cb(result):
+                    logging.debug("ObjectSetDiff gen_queries, ran_cb, result: {0}".format(result))
+                    result_d.callback(True)
+
+                logging.debug("ObjectSetDiff gen_queries, running: query: {0}, params: {1}".format(query,params))
+                cur.execute(query, params).addCallbacks(run_next, result_d.errback)
+            else:
+                run_next(None)
+
+        run_next(None)
+
+        return result_d
 
     def run_queries(self, cur):
         """ Run all of the queries. """
         result_d = Deferred()
 
 
+        def diff_cb(results):
 
-        queries = collections.deque(self.gen_queries(['diff']))
-        queries.extend(self.apply_diffs_to_latest())
-        queries.extend(self.gen_queries(['latest','subjects']))
+            def applied_cb(results):
 
-        if len(queries) > 0:
-            logging.debug("ObjectSetDiff run_queries, queries: {0}".format(pprint.pformat(queries[0])))
-        else:
-            logging.debug("ObjectSetDiff run_queries, queries: [empty]")
+                def latest_cb(results):
+                    result_d.callback(True)
 
-        #### test
-#        mega_query = ""
-#        mega_queries = []
-#        mega_params = []
+                self.gen_queries(['latest', 'subjects'], cur, max_params = 0).addCallbacks(latest_cb, result_d.errback)
+
+            self.apply_diffs_to_latest(cur).addCallbacks(applied_cb, result_d.errback)
+
+        self.gen_queries(['diff'], cur, max_params = 0).addCallbacks(diff_cb, result_d.errback)
+
+#        queries = collections.deque(self.gen_queries(['diff'], max_params = 0))
+#        queries.extend(self.apply_diffs_to_latest())
+#        queries.extend(self.gen_queries(['latest','subjects'], max_params = 0))
 #
-#        while len(queries) > 0:
+#        if len(queries) > 0:
+#            logging.debug("ObjectSetDiff run_queries, queries: {0}".format(pprint.pformat(queries[0])))
+#        else:
+#            logging.debug("ObjectSetDiff run_queries, queries: [empty]")
+#
+#
+#        def exec_queries():
+#            logging.debug("ObjectSetDiff exec_queries, len(queries): {0}".format(len(queries)))
+#            if len(queries) < 1:
+#                logging.debug("ObjectSetDiff exec_queries callback sent")
+#                result_d.callback(None)
+#                return
+#
+#            def ran_cb(result):
+#                # TODO check value
+#                logging.debug("ObjectSetDiff run_queries, ran_cb, result: {0}".format(ran_cb))
+#                exec_queries()
+#
+#            def err_cb(failure):
+#                result_d.errback(failure)
+#
 #            query, params = queries.popleft()
-#            mega_queries.append(query)
-#            mega_params.extend(params)
+#            logging.debug("ObjectSetDiff run_queries, query: {0}, params: {1}".format(query,params))
+#            cur.execute(query, params).addCallbacks(ran_cb, err_cb)
 #
-#        mega_query = " UNION ".join(mega_queries)
-#        
-#        queries = collections.deque([(mega_query, mega_params)])
-        ####
-
-        def exec_queries():
-            logging.debug("ObjectSetDiff exec_queries, len(queries): {0}".format(len(queries)))
-            if len(queries) < 1:
-                logging.debug("ObjectSetDiff exec_queries callback sent")
-                result_d.callback(None)
-                return
-
-            def ran_cb(result):
-                # TODO check value
-                logging.debug("ObjectSetDiff run_queries, ran_cb, result: {0}".format(ran_cb))
-                exec_queries()
-
-            def err_cb(failure):
-                result_d.errback(failure)
-
-            query, params = queries.popleft()
-            logging.debug("ObjectSetDiff run_queries, query: {0}, params: {1}".format(query,params))
-            cur.execute(query, params).addCallbacks(ran_cb, err_cb)
-
-        exec_queries()
+#        exec_queries()
 
         return result_d
 
@@ -138,21 +167,35 @@ class ObjectSetDiff:
             obj_id = obj["@id"]
             ids[obj_id] = obj
 
-        for obj in self.objs2:
+        
+        def next_obj2(empty):
+
+            if len(self.objs2) < 1:
+
+                # check for removed subjects, e.g. ids still in ids 
+                for obj_id, obj in ids.items():
+                    # SUBJECT REMOVED
+                    self.add_diff_query(cur, "remove_subject", obj_id)
+
+                self.run_queries(cur).addCallbacks(result_d.callback, result_d.errback)
+                return
+
+            obj = self.objs2.pop(0)
+
             obj_id = obj["@id"]
             if obj_id not in ids:
                 # NEW SUBJECT
-                self.add_diff_query("add_subject", obj_id)
+                self.add_diff_query(cur, "add_subject", obj_id)
                 for predicate, sub_objs in obj.items():
                     if len(predicate) > 0 and predicate[0] == "@":
                         continue
 
                     if sub_objs is None or len(sub_objs) < 1:
-                        self.add_diff_query("add_predicate", obj_id, predicate = predicate)
+                        self.add_diff_query(cur, "add_predicate", obj_id, predicate = predicate)
                     else:
                         order = 1
                         for sub_obj in sub_objs:
-                            self.add_diff_query("add_triple", obj_id, predicate = predicate, sub_obj = sub_obj, object_order = order)
+                            self.add_diff_query(cur, "add_triple", obj_id, predicate = predicate, sub_obj = sub_obj, object_order = order)
                             order += 1
 
             else:
@@ -169,17 +212,17 @@ class ObjectSetDiff:
 
                     if predicate not in obj.keys():
                         # predicate removed
-                        self.add_diff_query("remove_predicate", obj_id, predicate = predicate)
+                        self.add_diff_query(cur, "remove_predicate", obj_id, predicate = predicate)
                     elif predicate not in prev_obj.keys():
                         # predicate added
                         sub_objs = obj[predicate]
 
                         if sub_objs is None or len(sub_objs) < 1:
-                            self.add_diff_query("add_predicate", obj_id, predicate = predicate)
+                            self.add_diff_query(cur, "add_predicate", obj_id, predicate = predicate)
                         else:
                             order = 1
                             for sub_obj in sub_objs:
-                                self.add_diff_query("add_triple", obj_id, predicate = predicate, sub_obj = sub_obj, object_order = order)
+                                self.add_diff_query(cur, "add_triple", obj_id, predicate = predicate, sub_obj = sub_obj, object_order = order)
                                 order += 1
 
                     else:
@@ -193,32 +236,23 @@ class ObjectSetDiff:
                         else:
                             # not the same, remove the previous, add the new
                             if sub_objs is None or len(sub_objs) < 1:
-                                self.add_diff_query("replace_objects", obj_id, predicate = predicate, sub_obj = None)
+                                self.add_diff_query(cur, "replace_objects", obj_id, predicate = predicate, sub_obj = None)
                             else:
                                 order = 1
                                 for sub_obj in sub_objs:
-                                    self.add_diff_query("replace_objects", obj_id, predicate = predicate, sub_obj = sub_obj, object_order = order)
+                                    self.add_diff_query(cur, "replace_objects", obj_id, predicate = predicate, sub_obj = sub_obj, object_order = order)
                                     order += 1
 
                 del ids[obj_id] # remove this object from ids
 
-        # check for removed subjects, e.g. ids still in ids 
-        for obj_id, obj in ids.items():
-            # SUBJECT REMOVED
-            self.add_diff_query("remove_subject", obj_id)
+            self.gen_queries(['diff'], cur).addCallbacks(next_obj2, result_d.errback) # render queries periodically
 
-        def err_cb(failure):
-            logging.error("ObjectSetDiff compare, err_cb, failure: {0}".format(failure))
-            result_d.errback(failure)
-            return
+        next_obj2(None)
 
-        self.run_queries(cur).addCallbacks(result_d.callback, err_cb)
         return result_d
 
-    def add_diff_query(self, diff_type, subject, predicate = None, sub_obj = None, object_order = None):
+    def add_diff_query(self, cur, diff_type, subject, predicate = None, sub_obj = None, object_order = None):
         """ Make the queries used to INSERT into the wb_vers_diffs table. """
-
-        
 
         if sub_obj is not None:
             obj_type, obj_value, obj_lang, obj_datatype = self.obj_to_obj_tuple(sub_obj)
@@ -230,6 +264,7 @@ class ObjectSetDiff:
 
         # apply the diff to the latest table
         self.queries['latest_diffs'][diff_type].append((subject, predicate, sub_obj, object_order))
+        return
 
 
 #         params = []
@@ -242,7 +277,7 @@ class ObjectSetDiff:
 # 
 #         return (query, params)
 
-    def apply_diffs_to_latest(self):
+    def apply_diffs_to_latest(self, cur):
         """ Make the queries used to INSERT/DELETE from the wb_latest_vers table. """
         
         queries = [] # list of tuples, of (query, params) to execute in order
@@ -315,7 +350,9 @@ class ObjectSetDiff:
 
             #queries.append(("SELECT * FROM wb_add_triple_to_latest(%s, %s, %s, %s, %s, %s)", [subject, predicate, value, thetype, language, datatype]))
 
-        return queries
+        # returns the deferred
+        return self.gen_queries(['latest','subjects'], cur) # render queries periodically
+#        return queries
 
 
     def obj_to_obj_tuple(self, sub_obj):

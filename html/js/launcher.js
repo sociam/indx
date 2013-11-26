@@ -1,8 +1,4 @@
-
-
-
 (function() {
-
 	angular.module('launcher', ['indx'])
 		.config(['$routeProvider', function($routeProvider) {
 			$routeProvider
@@ -150,6 +146,35 @@
 			});
 		};
 		getAppsList();
+
+		// box list too!
+		var getBoxesList = function() {
+			store.getBoxList().then(function(bids) {
+				console.log('got box list >> ', bids);
+				var remaining = bids.concat(), success_boxes = [];
+				var d = u.deferred();
+				var dfds = bids.map(function(bid) { 
+					console.log('getting ', bid);
+					store.getBox(bid).then(function(b) { 
+						success_boxes.push(b);
+						remaining = _(remaining).without(bid);
+						if (remaining.length == 0) { d.resolve(success_boxes); }
+					}).fail(function(err) {
+						remaining = _(remaining).without(bid);
+						if (remaining.length == 0) { d.resolve(success_boxes); }						
+					});
+				});
+				d.then(function() {
+					console.log("SUCCESS BOXES >> ", success_boxes);
+					sa(function() { $scope.boxes = success_boxes; });
+				});
+			}).fail(function() {
+				sa(function() { delete $scope.boxes; });
+				u.error('oops can\'t get boxes - not ready i guess');
+			});
+		};
+		store.on('login', getBoxesList);
+		getBoxesList();
 	}).controller('main', function($location, $scope, client, utils) {
 		var u = utils;
 		// we want to route
@@ -189,6 +214,8 @@
 				u.safeApply($scope, function() { $location.path('/login'); });
 			}
 		});
+
+		window.store = client.store;
 
 	}).controller('BoxesList', function($location, $scope, client, utils) {
 		var u = utils,store = client.store, sa = function(f) { return utils.safeApply($scope,f); };

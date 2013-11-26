@@ -72,7 +72,7 @@ angular
 
 				var init_app_icon = function() { 
 					var s = getStore();
-					if (s) { 
+					if (s && $scope.getAppID()) { 
 						s.getAppsList().then(function(apps) { 
 							var ourname = $scope.getAppID();
 							var matchapps = apps.filter(function(x) { return x["@id"] === ourname; });
