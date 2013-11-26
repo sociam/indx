@@ -524,31 +524,43 @@ class ObjectStoreAsync:
                     diff['added'][subject] = {}
 
             elif diff_type == "add_predicate":
-                if subject not in diff['changed']:
-                    diff['changed']['added'][subject] = {}
-                if "added" not in diff['changed'][subject]:
-                    diff['changed'][subject]["added"] = {}
-                diff['changed'][subject]["added"][predicate] = []
+                subkey = 'changed'
+                if subject in diff['added']:
+                    subkey = 'added'
+
+                if subject not in diff[subkey]:
+                    diff[subkey]['added'][subject] = {}
+                if "added" not in diff[subkey][subject]:
+                    diff[subkey][subject]["added"] = {}
+                diff[subkey][subject]["added"][predicate] = []
 
             elif diff_type == "replace_objects":
-                if subject not in diff['changed']:
-                    diff['changed'][subject] = {}
-                if "replaced" not in diff['changed'][subject]:
-                    diff['changed'][subject]["replaced"] = {}
-                if predicate not in diff['changed'][subject]["replaced"]:
-                    diff['changed'][subject]["replaced"][predicate] = []
+                subkey = 'changed'
+                if subject in diff['added']:
+                    subkey = 'added'
+
+                if subject not in diff[subkey]:
+                    diff[subkey][subject] = {}
+                if "replaced" not in diff[subkey][subject]:
+                    diff[subkey][subject]["replaced"] = {}
+                if predicate not in diff[subkey][subject]["replaced"]:
+                    diff[subkey][subject]["replaced"][predicate] = []
                 obj = Graph.value_from_row(obj_value, obj_type, obj_lang, obj_datatype) # TODO check this renders resources correctly
-                diff['changed'][subject]["replaced"][predicate].append(obj.to_json())
+                diff[subkey][subject]["replaced"][predicate].append(obj.to_json())
 
             elif diff_type == "add_triple":
-                if subject not in diff['changed']:
-                    diff['changed'][subject] = {}
-                if "added" not in diff['changed'][subject]:
-                    diff['changed'][subject]["added"] = {}
-                if predicate not in diff['changed'][subject]["added"]:
-                    diff['changed'][subject]["added"][predicate] = []
+                subkey = 'changed'
+                if subject in diff['added']:
+                    subkey = 'added'
+
+                if subject not in diff[subkey]:
+                    diff[subkey][subject] = {}
+                if "added" not in diff[subkey][subject]:
+                    diff[subkey][subject]["added"] = {}
+                if predicate not in diff[subkey][subject]["added"]:
+                    diff[subkey][subject]["added"][predicate] = []
                 obj = Graph.value_from_row(obj_value, obj_type, obj_lang, obj_datatype) # TODO check this renders resources correctly
-                diff['changed'][subject]["added"][predicate].append(obj.to_json())
+                diff[subkey][subject]["added"][predicate].append(obj.to_json())
 
             else:
                 raise Exception("Unknown diff type from database")
