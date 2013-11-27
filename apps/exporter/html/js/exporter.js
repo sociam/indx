@@ -2,46 +2,19 @@ angular
 	.module('exporter', ['ui','indx'])
 	.controller('main', function($scope, client, utils) {
 		var box, u = utils;
-		$scope.output = {format:'json'};
 		$scope.objs = [];
 		$scope.$watch('selectedBox + selectedUser', function() {
 			if ($scope.selectedUser && $scope.selectedBox) {
 				console.log('getting box', $scope.selectedBox);
 				client.store.getBox($scope.selectedBox).then(function(b) {
 					box = b;
+					$scope.box = b;
 					$scope.objs = b.getObjIDs();
 				}).fail(function(e) { u.error('error ', e); });
 			}
 		});
 		window.box = box;
 		window.s = client.store;
-
-		// if (!(window.File && window.FileReader && window.FileList && window.Blob)) {
-		// 	$scope.error = 'The File APIs are not fully supported in this browser.';
-		// 	return;
-		// }
-		// var handleDragOver = function(evt) {
-		// 	evt.stopPropagation();
-		// 	evt.preventDefault();
-		// 	evt.dataTransfer.dropEffect = 'copy';
-		// 	console.log('drag over');
-		// 	$('.dropzone').addClass('dragover');
-		// };
-
-		// var findIdColumn = function() {
-		// 	var cols = $scope.cols;
-		// 	var selected = cols.filter(function(c) { return c.id; });
-		// 	if (selected.length > 0) { return selected[0].name; }
-		// 	selected = cols.filter(function(c) { return c.name.toLowerCase().trim() == 'id'; });
-		// 	if (selected.length > 0) { return selected[0].name; }
-		// 	return cols[0].name;
-		// };
-
-		// var remapColumns = function(src) {
-		// 	var out = {}, cols = $scope.cols;
-		// 	_(cols).map(function(c) { out[c.newname] = src[c.name];	});
-		// 	return out;
-		// };
 
 		var setWait = function(b) {
 			u.safeApply($scope, function() { $scope.wait = b;	});
@@ -52,10 +25,30 @@ angular
 			return $scope.save().pipe(function (x) { setWait(false); console.log(x); });
 		};
 
+		var serialize = function(o) {
+			console.log("serializing object ", o);
+			return "ooo";
+		};
+
 		$scope.save = function() {
 			var dd = u.deferred();
 			console.log("box has : ", $scope.objs.length);
-			return "aaa";
+			console.log("the format : ", $scope.format);
+
+			box.getObj($scope.objs).then(function(objects) {
+				var serialized = objects.map(function(o) {
+					return serialize(o);
+				});
+			});
+
+			u.when(serialized).then(function() {
+				u.safeApply($scope, function() {
+					$scope.serialized_box = serialized;
+				});
+				dd.resolve;
+			}).fail(dd.reject);
+
+			return dd.promise();
 		};
 
 		// $scope.err = function(e) {
@@ -63,89 +56,89 @@ angular
 		// };
 
 		// var filters = {
-		var formats = {
-			'outputGtime' : function(objsById) {
-				// get the time series, segment into offsets
-				var objs = _(objsById).values(),
-					t = function(o) { return Number(o[$scope.output.gtime.timecol.newname]); },
-					v = function(o) { return Number(o[$scope.output.gtime.valcol.newname]); },
-					channel = $scope.output.gtime.channel,
-					source = $scope.output.gtime.source,
-					units = $scope.output.gtime.units,
-					dataId = 'gtimeseries-'+source+"-"+channel;
+		// var formats = {
+		// 	'outputGtime' : function(objsById) {
+		// 		// get the time series, segment into offsets
+		// 		var objs = _(objsById).values(),
+		// 			t = function(o) { return Number(o[$scope.output.gtime.timecol.newname]); },
+		// 			v = function(o) { return Number(o[$scope.output.gtime.valcol.newname]); },
+		// 			channel = $scope.output.gtime.channel,
+		// 			source = $scope.output.gtime.source,
+		// 			units = $scope.output.gtime.units,
+		// 			dataId = 'gtimeseries-'+source+"-"+channel;
 
-				objs.sort(function(o1, o2) { return t(o1) - t(o2); });
-				var makeSegment = function(startObj, nextObj) {
-					if (nextObj) {
-						return { start : t(startObj), channel: channel, source: source, values: [ v(startObj), v(nextObj) ], delta : t(nextObj) - t(startObj) };
-					}
-					return { start : t(startObj), channel: channel, source: source, values: [ v(startObj) ], delta: 0};
-				};
+		// 		objs.sort(function(o1, o2) { return t(o1) - t(o2); });
+		// 		var makeSegment = function(startObj, nextObj) {
+		// 			if (nextObj) {
+		// 				return { start : t(startObj), channel: channel, source: source, values: [ v(startObj), v(nextObj) ], delta : t(nextObj) - t(startObj) };
+		// 			}
+		// 			return { start : t(startObj), channel: channel, source: source, values: [ v(startObj) ], delta: 0};
+		// 		};
 
-				var segments = [];
-				var updateLastSegment = function(obj) {
-					var segment = segments[segments.length-1];
-					segment.values.push(v(obj));
-				};
-				var lastDelta = function() { return segments[segments.length-1].delta;	};
-				var lastTime = function() { return segments[segments.length-1].start + ((segments[segments.length-1].values.length-1) * lastDelta());	};
+		// 		var segments = [];
+		// 		var updateLastSegment = function(obj) {
+		// 			var segment = segments[segments.length-1];
+		// 			segment.values.push(v(obj));
+		// 		};
+		// 		var lastDelta = function() { return segments[segments.length-1].delta;	};
+		// 		var lastTime = function() { return segments[segments.length-1].start + ((segments[segments.length-1].values.length-1) * lastDelta());	};
 
-				if (objs.length > 0) {
-					segment = makeSegment(objs[0], objs.length > 1 ? objs[1] : undefined);
-					segments.push(segment);
-				}
+		// 		if (objs.length > 0) {
+		// 			segment = makeSegment(objs[0], objs.length > 1 ? objs[1] : undefined);
+		// 			segments.push(segment);
+		// 		}
 
-				for (var i = 2; i < objs.length; i++) {
-					// requires: at least 1 segment
-					var obj = objs[i];
-					console.log("i >> ", i, obj, t(obj), lastTime(), segments[segments.length-1],  lastDelta());
+		// 		for (var i = 2; i < objs.length; i++) {
+		// 			// requires: at least 1 segment
+		// 			var obj = objs[i];
+		// 			console.log("i >> ", i, obj, t(obj), lastTime(), segments[segments.length-1],  lastDelta());
 
-					if (t(obj) - lastTime() !== lastDelta()) {
-						// uh oh difference, make new segemnt
-						console.log('new segment! ', t(obj) - lastTime(), lastDelta());
-						segments.push(makeSegment(objs[i], objs[++i]));
-					} else {
-						updateLastSegment(obj);
-					}
-				}
-				var segmentsById = u.dict(segments.map(function(s) { return ["gtime-segment-" + [s.channel, s.source, s.start].join('-'), s]; }));
-				var dsave = u.deferred(), d = u.deferred();
-				box.getObj(_(segmentsById).keys()).then(function(segModels) {
-					var saved = segModels.map(function(m) {
-						u.assert(segmentsById[m.id], "something went wrong :(");
-						m.set(segmentsById[m.id]);
-						return m.save();
-					});
-					u.when(saved).then(function() { dsave.resolve(segModels); });
-				});
+		// 			if (t(obj) - lastTime() !== lastDelta()) {
+		// 				// uh oh difference, make new segemnt
+		// 				console.log('new segment! ', t(obj) - lastTime(), lastDelta());
+		// 				segments.push(makeSegment(objs[i], objs[++i]));
+		// 			} else {
+		// 				updateLastSegment(obj);
+		// 			}
+		// 		}
+		// 		var segmentsById = u.dict(segments.map(function(s) { return ["gtime-segment-" + [s.channel, s.source, s.start].join('-'), s]; }));
+		// 		var dsave = u.deferred(), d = u.deferred();
+		// 		box.getObj(_(segmentsById).keys()).then(function(segModels) {
+		// 			var saved = segModels.map(function(m) {
+		// 				u.assert(segmentsById[m.id], "something went wrong :(");
+		// 				m.set(segmentsById[m.id]);
+		// 				return m.save();
+		// 			});
+		// 			u.when(saved).then(function() { dsave.resolve(segModels); });
+		// 		});
 
-				dsave.then(function(segModels) {
-					d.resolve(u.dict([[dataId, { source:source, channel:channel, units:units, segments:segModels } ]]));
-				});
-				return d.promise();
-			},
-			'outputGannotation': function(objsById) {
-				var todate = function(n) {
-					if (isNaN(Number(n))) { return new Date(n); }
-					return new Date(Number(n));
-				};
-				return u.dresolve(u.dict(_(objsById).map(function(obj,id) {
-					obj.type = 'gannotation';
-					obj.start =todate(obj[$scope.output.gannotate.startcol.newname]);
-					obj.end = todate(obj[$scope.output.gannotate.endcol.newname]);
-					obj.label = obj[$scope.output.gannotate.labelcol.newname];
-					obj.source = $scope.output.gannotate.source;
-					obj.category = $scope.output.gannotate.annotationtype;
-					return [id,obj];
-				})));
-			}
-		};
+		// 		dsave.then(function(segModels) {
+		// 			d.resolve(u.dict([[dataId, { source:source, channel:channel, units:units, segments:segModels } ]]));
+		// 		});
+		// 		return d.promise();
+		// 	},
+		// 	'outputGannotation': function(objsById) {
+		// 		var todate = function(n) {
+		// 			if (isNaN(Number(n))) { return new Date(n); }
+		// 			return new Date(Number(n));
+		// 		};
+		// 		return u.dresolve(u.dict(_(objsById).map(function(obj,id) {
+		// 			obj.type = 'gannotation';
+		// 			obj.start =todate(obj[$scope.output.gannotate.startcol.newname]);
+		// 			obj.end = todate(obj[$scope.output.gannotate.endcol.newname]);
+		// 			obj.label = obj[$scope.output.gannotate.labelcol.newname];
+		// 			obj.source = $scope.output.gannotate.source;
+		// 			obj.category = $scope.output.gannotate.annotationtype;
+		// 			return [id,obj];
+		// 		})));
+		// 	}
+		// };
 
-		var outputFilter = function(objsById) {
-			if (filters[$scope.output.format]) {
-				return filters[$scope.output.format](objsById);
-			}
-		};
+		// var outputFilter = function(objsById) {
+		// 	if (filters[$scope.output.format]) {
+		// 		return filters[$scope.output.format](objsById);
+		// 	}
+		// };
 
 		// $scope.save = function() {
 		// 		try {
