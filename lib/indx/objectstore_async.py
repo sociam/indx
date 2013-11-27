@@ -621,35 +621,52 @@ class ObjectStoreAsync:
 
         for uri in next_ver_diff['changed']:
             # /added/pred /replaced/pred /deleted/pred
+    
+            # TODO look in existing_diff['added'] and if there is the uri in there, then act differently.
+            is_new = uri in existing_diff['added']
+            if is_new:
+                subkey = "added"
+            else:
+                subkey = "changed"
+
 
             if "added" in next_ver_diff['changed'][uri]:
                 # added in the new diff
-                if uri in existing_diff['changed']:
+                if uri in existing_diff[subkey]:
                     # extend existing
-                    if "added" not in existing_diff['changed'][uri]:
-                        existing_diff['changed'][uri]['added'] = {}
-                    existing_diff['changed'][uri]['added'].update( next_ver_diff['changed'][uri]['added'] )
+                    if "added" not in existing_diff[subkey][uri]:
+                        existing_diff[subkey][uri]['added'] = {}
+                    existing_diff[subkey][uri]['added'].update( next_ver_diff['changed'][uri]['added'] )
                 else:
-                    existing_diff['changed'][uri] = next_ver_diff['changed'][uri]
+                    existing_diff[subkey][uri] = next_ver_diff['changed'][uri]
 
             if "replaced" in next_ver_diff['changed'][uri]:
                 # replaced in the new diff
 
-                if uri in existing_diff['changed']:
+                if uri in existing_diff[subkey]:
+                    # subkey is 'added', or 'changed'
+
+                    if "added" in existing_diff[subkey][uri]:
+                        existing_diff[subkey][uri]["added"] = next_ver_diff['changed'][uri]['replaced']
+                    elif "replaced" in existing_diff[subkey][uri]:
+                        existing_diff[subkey][uri]["replaced"] = next_ver_diff['changed'][uri]['replaced']
+                    elif "deleted" in existing_diff[subkey][uri]:
+                        del existing_diff[subkey][uri]["deleted"]
+                        existing_diff[subkey][uri]["replaced"] = next_ver_diff['changed'][uri]['replaced']
 
                     #if "added" in existing_diff['changed'][uri]:
                     #    # if they are added, then add to that, instead of creating a new "changed" entry
                     #    existing_diff['changed'][uri]["added"].update( next_ver_diff['changed'][uri]['replaced'] )
 
-                    if "replaced" in existing_diff['changed'][uri]:
-                        existing_diff['changed'][uri]["replaced"].update( next_ver_diff['changed'][uri]['replaced'] )
-
-                    if "deleted" in existing_diff['changed'][uri]:
-                        # remove reference to deleted, and instead replace it all
-                        del existing_diff['changed'][uri]['deleted']
-                        existing_diff['changed'][uri]["replaced"] = next_ver_diff['changed'][uri]['replaced']
+#                    if "replaced" in existing_diff['changed'][uri]:
+#
+#                    if "deleted" in existing_diff['changed'][uri]:
+#                        # remove reference to deleted, and instead replace it all
+#                        del existing_diff['changed'][uri]['deleted']
+#                        existing_diff['changed'][uri]["replaced"] = next_ver_diff['changed'][uri]['replaced']
 
                 elif uri in existing_diff['deleted']:
+                    subkey = "deleted"
                     del existing_diff['deleted'][uri]
 
                     if uri not in existing_diff['changed']:
@@ -658,11 +675,16 @@ class ObjectStoreAsync:
                         existing_diff['changed'][uri]['replaced'] = {}
                     existing_diff['changed'][uri]['replaced'].update( next_ver_diff['changed'][uri]['replaced'] )
                 else:
-                    if uri not in existing_diff['changed']:
-                        existing_diff['changed'][uri] = {}
-                    if "replaced" not in existing_diff['changed'][uri]:
-                        existing_diff['changed'][uri]['replaced'] = {}
-                    existing_diff['changed'][uri]['replaced'].update( next_ver_diff['changed'][uri]['replaced'] )
+                    # uri not in existing diff
+                    existing_diff['changed'][uri] = {}
+                    existing_diff['changed'][uri]['replaced'] = next_ver_diff['changed'][uri]['replaced']
+#
+#
+#                    if uri not in existing_diff['changed']:
+#                        existing_diff['changed'][uri] = {}
+#                    if "replaced" not in existing_diff['changed'][uri]:
+#                        existing_diff['changed'][uri]['replaced'] = {}
+#                    existing_diff['changed'][uri]['replaced'].update( next_ver_diff['changed'][uri]['replaced'] )
 
             if "deleted" in next_ver_diff['changed'][uri]:
                 # deleted in the new diff, remove all 'added' and 'replaced' in existing diff
@@ -672,7 +694,7 @@ class ObjectStoreAsync:
                     del existing_diff['changed'][uri]['replaced']
                 if "deleted" not in existing_diff['changed'][uri]:
                     existing_diff['changed'][uri]['deleted'] = {}
-                existing_diff['changed'][uri]['deleted'].update( next_ver_diff['changed'][uri]['deleted'] )
+                existing_diff['changed'][uri]['deleted'] = next_ver_diff['changed'][uri]['deleted']
 
         return existing_diff
 
