@@ -234,15 +234,21 @@ angular
 				// returns a promise
 				var this_ = this;
 				var dfds = _(s_obj).map(function(vals, key) {
+					if (key.indexOf('@') === 0) { return; }
+
+
 					var kd = u.deferred();
 					// skip "@id" etc etc
-					if (key.indexOf('@') === 0) { return; }
+					var fetch_dfds = {};
+
 					var val_dfds = vals.map(function(val) {
 						var vd = u.deferred();
 						// it's an object, so return that
 						if (val.hasOwnProperty("@id")) {
 							// object
-							this_.box.getObj(val["@id"]).then(vd.resolve).fail(vd.reject);
+							var oid = val["@id"];
+							fetch_dfds[oid] = fetch_dfds[oid] ? fetch_dfds[oid].concat(vd) : [vd];
+							// this_.box.getObj(val["@id"]).then(vd.resolve).fail(vd.reject);
 						}
 						else if (val.hasOwnProperty("@value")) {
 							// literal
@@ -254,6 +260,18 @@ angular
 						}
 						return vd.promise();
 					});
+
+					if (_(fetch_dfds).keys().length) { 
+						console.log('batch fetch!', _(fetch_dfds).keys());
+						this_.box.getObj(_(fetch_dfds).keys()).then(function(objs) {
+							objs.map(function(o) { 
+								fetch_dfds[o.id].map(function(dfd) { dfd.resolve(o); });
+							});
+						}).fail(function() { 
+							_(fetch_dfds).values().map(function(dfd) { dfd.reject('error fetching obj'); });
+						});
+					}
+
 					u.when(val_dfds).then(function(objVals) {
 						// only update keys that have changed
 						var prevVals = this_.get(key);
@@ -519,20 +537,18 @@ angular
 				return ajax( ajaxArgs );
 			},
 			/// @arg {Object} queryPattern - a query pattern to match
-			/// @opt {string[]} predicates - optional array of predicates to return, or entire objects otherwise
+			/// @opt {string[]} predicates - optional array of predicates to return, or entire objects otherwise; if '*' is passed, then raw JSON is returned and not returned as objects
 			///
 			/// Issues query to server, which then returns either entire objects or just values of the props specified
 			///
 			/// @then({Objs[]} Objects matching query) - When the query is successful
 			/// @fail({string} Error) - When the query fails
 			query: function(queryPattern, predicates){
-				// @param - queryPattern is an object like { key1 : val1, key2: val2 } .. that
-				//   returns / fetches all objects
 				var d = u.deferred();
 				var cache = this._objcache();
 				var parameters = {"q": JSON.stringify(queryPattern)};
 				var this_ = this;
-				if (predicates) {
+				if (predicates && predicates !== '*') {
 					if (!_.isArray(predicates)) { predicates = [predicates]; }
 					_(parameters).extend({predicate_list: predicates});
 					console.log('new query pattern >> ', parameters);
