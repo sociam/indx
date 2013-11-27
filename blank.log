@@ -313,3 +313,23 @@ DEBUG:root:Received arguments: {'get_config': False, 'config': None, 'server': '
 DEBUG:root:running the app with: "{\"user\":\"ramine\",\"password\":\"password\"}"
 DEBUG:root:Received arguments: {'get_config': False, 'config': None, 'server': 'http://localhost:8211'}
 DEBUG:root:running the app with: "{\"user\":\"ramine\",\"password\":\"password\"}"
+DEBUG:root:Received arguments: {'get_config': False, 'config': None, 'server': 'http://localhost:8211'}
+DEBUG:root:running the app with: "{\"user\":\"ramine\",\"password\":\"password\"}"
+DEBUG:root:Received arguments: {'get_config': False, 'config': None, 'server': 'http://localhost:8211'}
+DEBUG:root:running the app with: "{\"user\":\"ramine\",\"password\":\"password\"}"
+DEBUG:root:Received arguments: {'get_config': False, 'config': None, 'server': 'http://localhost:8211'}
+DEBUG:root:Received arguments: {'get_config': False, 'config': None, 'server': 'http://localhost:8211'}
+DEBUG:root:running the app with: "{\"user\":\"ramine\",\"password\":\"password\"}"
+DEBUG:root:running the app with: "{\"user\":\"ramine\",\"password\":\"password\"}"
+DEBUG:root:Received arguments: {'get_config': False, 'config': None, 'server': 'http://localhost:8211'}
+DEBUG:root:running the app with: "{\"user\":\"ramine\",\"password\":\"password\"}"
+DEBUG:root:Received arguments: {'get_config': False, 'config': None, 'server': 'http://localhost:8211'}
+DEBUG:root:running the app with: "{\"user\":\"ramine\",\"password\":\"password\"}"
+DEBUG:root:Received arguments: {'get_config': False, 'config': None, 'server': 'http://localhost:8211'}
+DEBUG:root:Received arguments: {'get_config': False, 'config': None, 'server': 'http://localhost:8211'}
+DEBUG:root:running the app with: "{\"user\":\"ramine\",\"password\":\"password\"}"
+DEBUG:root:running the app with: "{\"user\":\"ramine\",\"password\":\"password\"}"
+DEBUG:root:Received arguments: {'get_config': False, 'config': None, 'server': 'http://localhost:8211'}
+DEBUG:root:running the app with: "{\"user\":\"ramine\",\"password\":\"password\"}"
+DEBUG:root:Received arguments: {'get_config': False, 'config': None, 'server': 'http://localhost:8211'}
+DEBUG:root:running the app with: "{\"user\":\"ramine\",\"password\":\"password\"}"
