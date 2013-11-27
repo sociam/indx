@@ -16,6 +16,8 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
+import os
+import json
 from twisted.internet.defer import Deferred
 from twisted.internet import threads
 from twisted.python.failure import Failure
@@ -31,19 +33,106 @@ class ObjectStoreAsync:
 
     def __init__(self, conns, username, boxid, appid, clientip):
         """
-            conn is a postgresql psycopg2 database connection, or connection pool.
         """
-        self.conn = conns['conn']
         self.conns = conns
         self.username = username
         self.boxid = boxid
         self.appid = appid
         self.clientip = clientip
 
-        # TODO FIXME determine if autocommit has to be off for PL/pgsql support
-        self.conn.autocommit = True
         self.loggerClass = logging
         self.loggerExtra = {}
+
+        self.schema_upgrade()
+
+    def schema_upgrade(self):
+        """ Perform INDX schema upgrades.
+        
+            conn -- Connection to INDX database.
+        """
+        return_d = Deferred()
+
+        fh_schemas = open(os.path.join(os.path.dirname(__file__),"..","data","indx-schemas.json")) # FIXME put into config
+        schemas = json.load(fh_schemas)
+
+        def indx_conn_cb(indx_conn):
+            logging.debug("Objectstore schema_upgrade, indx_conn_cb")
+
+            def conn_cb(conn):
+                logging.debug("Objectstore schema_upgrade, conn_cb")
+
+                def upgrade_from_version(next_version):
+                    """ Upgrade the schema from the specified version. """
+                    logging.debug("Objectstore schema_upgrade from next_version {0}".format(next_version))
+
+                    sql_total = []
+                    indx_sql_total = []
+                    last_version = next_version # keep track of the last applied version - this will be saved in the tbl_indx_core k/v table
+                    while next_version != "":
+                        logging.debug("Objectstore schema_upgrade adding sql from version: {0}".format(next_version))
+                        sql_total.append("\n".join(schemas['store-updates']['versions'][next_version]['sql']))
+                        last_version = next_version
+                        if 'next-version' not in schemas['store-updates']['versions'][next_version]:
+                            break
+
+                        next_version = schemas['store-updates']['versions'][next_version]['next-version']
+
+                    logging.debug("Objectstore schema_upgrade saving last_version as {0}".format(last_version))
+                    indx_sql_total.append("DELETE FROM tbl_indx_core WHERE key = 'box_last_schema_version' AND boxid = '" + self.boxid + "';")
+                    indx_sql_total.append("INSERT INTO tbl_indx_core (key, value, boxid) VALUES ('box_last_schema_version', '" + last_version + "', '" + self.boxid + "');")
+
+                    # execute queries one at a time
+                    def do_next_query(empty):
+                        if len(sql_total) < 1:
+
+                            def do_next_indx_query(empty):
+                                if len(indx_sql_total) < 1:
+                                    return_d.callback(None)
+                                    return
+
+                                query = indx_sql_total.pop(0)
+                                indx_conn.runOperation(query).addCallbacks(do_next_indx_query, return_d.errback)
+
+                            do_next_indx_query(None)
+                        else:
+                            query = sql_total.pop(0)
+                            conn.runOperation(query).addCallbacks(do_next_query, return_d.errback)
+
+                    do_next_query(None)
+
+
+                # query from a version onwards
+                query = "SELECT value FROM tbl_indx_core WHERE key = %s AND boxid = %s"
+                params = ['box_last_schema_version', self.boxid]
+
+                def version_cb(rows):
+                    if len(rows) < 1:
+                        # no previous version
+                        first_version = schemas['store-updates']['first-version']
+                        upgrade_from_version(first_version)
+                        return
+                    else:
+                        this_version = rows[0][0]
+                        if 'next-version' in schemas['store-updates']['versions'][this_version]:
+                            next_version = schemas['store-updates']['versions'][this_version]['next-version']
+                        else:
+                            return_d.callback(True)
+                            return # no next version
+
+                        if next_version == "":
+                            return_d.callback(True)
+                            return # no next version
+
+                        upgrade_from_version(next_version)
+                        return
+
+                indx_conn.runQuery(query, params).addCallbacks(version_cb, return_d.errback)
+        
+            self.conns['conn']().addCallbacks(conn_cb, return_d.errback)
+        
+        self.conns['indx_conn']().addCallbacks(indx_conn_cb, return_d.errback)
+        return return_d
+
 
     def setLoggerClass(self, loggerClass, extra = None):
         """ Set the class to call .log() on. """
@@ -82,13 +171,13 @@ class ObjectStoreAsync:
         return result_d
 
 
-    def autocommit(self, value):
-        """ Set autocommit on/off, for speeding up large INSERTs. """
-        if self.conn.autocommit is False and value is True:
-            # if we were in a transaction and now are not, then commit first
-            self.conn.commit()
-
-        self.conn.autocommit = value
+#    def autocommit(self, value):
+#        """ Set autocommit on/off, for speeding up large INSERTs. """
+#        if self.conn.autocommit is False and value is True:
+#            # if we were in a transaction and now are not, then commit first
+#            self.conn.commit()
+#
+#        self.conn.autocommit = value
 
     def unlisten(self, observer):
         """ Stop listening to updates to the box by this observer. """
@@ -145,13 +234,13 @@ class ObjectStoreAsync:
                 result_d.callback(objs_out)
             else:
                 result_d.callback(graph)
+ 
+        def conn_cb(conn):
+            logging.debug("Objectstore query, conn_cb")
+            conn.runQuery(sql, params).addCallbacks(results, result_d.errback)
+        
+        self.conns['conn']().addCallbacks(conn_cb, result_d.errback)
 
-        def err_cb(failure):
-            self.error("Objectstore query, err_cb, failure: {0}".format(failure))
-            result_d.errback(failure)
-            return
-
-        self.conn.runQuery(sql, params).addCallbacks(results, err_cb)
         return result_d
 
 
@@ -214,7 +303,7 @@ class ObjectStoreAsync:
             object_ids = [object_ids]
 
         def rows_cb(rows, version):
-            self.error("Objectstore get_latest_objs, rows_cb, rows: {0}, version: {1}".format(rows, version))
+            self.debug("Objectstore get_latest_objs, rows_cb, rows: {0}, version: {1}".format(rows, version))
             graph = Graph.from_rows(rows)
             if render_json:
                 obj_out = graph.to_json()
@@ -236,7 +325,11 @@ class ObjectStoreAsync:
 
 
             if cur is None:
-                self.conn.runQuery(query, [object_ids]).addCallbacks(lambda rows: rows_cb(rows, version), err_cb)
+                def conn_cb(conn):
+                    logging.debug("Objectstore get_latest_objs, conn_cb")
+                    conn.runQuery(query, [object_ids]).addCallbacks(lambda rows: rows_cb(rows, version), err_cb)
+                
+                self.conns['conn']().addCallbacks(conn_cb, result_d.errback)
             else:
 
                 def exec_cb(cur):
@@ -298,7 +391,12 @@ class ObjectStoreAsync:
             result_d.errback(failure)
             return
 
-        self.conn.runQuery("SELECT DISTINCT subject FROM wb_v_all_triples WHERE version = %s", [version]).addCallbacks(rows_cb, err_cb)
+        def conn_cb(conn):
+            logging.debug("Objectstore _ids_in_version, conn_cb")
+            conn.runQuery("SELECT DISTINCT subject FROM wb_v_all_triples WHERE version = %s", [version]).addCallbacks(rows_cb, err_cb)
+        
+        self.conns['conn']().addCallbacks(conn_cb, result_d.errback)
+
         return result_d
 
 
@@ -323,8 +421,12 @@ class ObjectStoreAsync:
             self.debug("get_object_ids ver_cb: {0}".format(version))
             if version == 0:
                 return result_d.callback({"@version": 0 })
-            self.conn.runQuery("SELECT DISTINCT subject FROM wb_v_latest_triples", []).addCallbacks(lambda rows2: row_cb(rows2, version), err_cb)
-            return
+
+            def conn_cb(conn):
+                logging.debug("Objectstore get_object_ids, conn_cb")
+                conn.runQuery("SELECT DISTINCT j_subject.string AS subject FROM wb_latest_vers JOIN wb_triples ON wb_triples.id_triple = wb_latest_vers.triple JOIN wb_strings j_subject ON j_subject.id_string = wb_triples.subject", []).addCallbacks(lambda rows2: row_cb(rows2, version), err_cb)
+            
+            self.conns['conn']().addCallbacks(conn_cb, result_d.errback)
 
         self._get_latest_ver().addCallbacks(ver_cb, err_cb)
         return result_d
@@ -354,7 +456,13 @@ class ObjectStoreAsync:
 
         def ver_cb(version):
             self.debug("get_latest ver_cb: {0}".format(version))
-            self.conn.runQuery("SELECT triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples", []).addCallbacks(lambda rows2: row_cb(rows2, version), err_cb) # ORDER BY is implicit, defined by the view, so no need to override it here
+
+            def conn_cb(conn):
+                logging.debug("Objectstore get_latest, conn_cb")
+                conn.runQuery("SELECT triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples", []).addCallbacks(lambda rows2: row_cb(rows2, version), err_cb) # ORDER BY is implicit, defined by the view, so no need to override it here
+            
+            self.conns['conn']().addCallbacks(conn_cb, result_d.errback)
+
             return
 
         self._get_latest_ver().addCallbacks(ver_cb, err_cb)
@@ -385,7 +493,12 @@ class ObjectStoreAsync:
             query = "SELECT * FROM wb_v_diffs WHERE version = ANY(%s)"
             params = [versions]
 
-        self.conn.runQuery(query, params).addCallbacks(result_d.callback, result_d.errback)
+
+        def conn_cb(conn):
+            logging.debug("Objectstore _get_diff_versions, conn_cb")
+            conn.runQuery(query, params).addCallbacks(result_d.callback, result_d.errback)
+        
+        self.conns['conn']().addCallbacks(conn_cb, result_d.errback)
         return result_d
 
     def _db_diff_to_diff(self, diff_rows):
@@ -411,31 +524,43 @@ class ObjectStoreAsync:
                     diff['added'][subject] = {}
 
             elif diff_type == "add_predicate":
-                if subject not in diff['changed']:
-                    diff['changed']['added'][subject] = {}
-                if "added" not in diff['changed'][subject]:
-                    diff['changed'][subject]["added"] = {}
-                diff['changed'][subject]["added"][predicate] = []
+                subkey = 'changed'
+                if subject in diff['added']:
+                    subkey = 'added'
+
+                if subject not in diff[subkey]:
+                    diff[subkey]['added'][subject] = {}
+                if "added" not in diff[subkey][subject]:
+                    diff[subkey][subject]["added"] = {}
+                diff[subkey][subject]["added"][predicate] = []
 
             elif diff_type == "replace_objects":
-                if subject not in diff['changed']:
-                    diff['changed'][subject] = {}
-                if "replaced" not in diff['changed'][subject]:
-                    diff['changed'][subject]["replaced"] = {}
-                if predicate not in diff['changed'][subject]["replaced"]:
-                    diff['changed'][subject]["replaced"][predicate] = []
+                subkey = 'changed'
+                if subject in diff['added']:
+                    subkey = 'added'
+
+                if subject not in diff[subkey]:
+                    diff[subkey][subject] = {}
+                if "replaced" not in diff[subkey][subject]:
+                    diff[subkey][subject]["replaced"] = {}
+                if predicate not in diff[subkey][subject]["replaced"]:
+                    diff[subkey][subject]["replaced"][predicate] = []
                 obj = Graph.value_from_row(obj_value, obj_type, obj_lang, obj_datatype) # TODO check this renders resources correctly
-                diff['changed'][subject]["replaced"][predicate].append(obj.to_json())
+                diff[subkey][subject]["replaced"][predicate].append(obj.to_json())
 
             elif diff_type == "add_triple":
-                if subject not in diff['changed']:
-                    diff['changed'][subject] = {}
-                if "added" not in diff['changed'][subject]:
-                    diff['changed'][subject]["added"] = {}
-                if predicate not in diff['changed'][subject]["added"]:
-                    diff['changed'][subject]["added"][predicate] = []
+                subkey = 'changed'
+                if subject in diff['added']:
+                    subkey = 'added'
+
+                if subject not in diff[subkey]:
+                    diff[subkey][subject] = {}
+                if "added" not in diff[subkey][subject]:
+                    diff[subkey][subject]["added"] = {}
+                if predicate not in diff[subkey][subject]["added"]:
+                    diff[subkey][subject]["added"][predicate] = []
                 obj = Graph.value_from_row(obj_value, obj_type, obj_lang, obj_datatype) # TODO check this renders resources correctly
-                diff['changed'][subject]["added"][predicate].append(obj.to_json())
+                diff[subkey][subject]["added"][predicate].append(obj.to_json())
 
             else:
                 raise Exception("Unknown diff type from database")
@@ -765,17 +890,17 @@ class ObjectStoreAsync:
         return self.update([], specified_prev_version, delete_ids=id_list)
 
 
-    def _log_connections(self):
-        """ Log the state of the connection pool (for debugging disconnections). """
-        try:
-            self.debug("_log_connections: State of connection pool")
-            size = range(len(self.conn.connections))
-            count = 0
-            for connection in self.conn.connections:
-                count += 1
-                self.debug("_log_connections: connection {0}/{1}: {2}".format(count, size, vars(connection)))
-        except Exception as e:
-            self.error("_log_connections: could not check state of connections: {0}".format(e))
+#    def _log_connections(self):
+#        """ Log the state of the connection pool (for debugging disconnections). """
+#        try:
+#            self.debug("_log_connections: State of connection pool")
+#            size = range(len(self.conn.connections))
+#            count = 0
+#            for connection in self.conn.connections:
+#                count += 1
+#                self.debug("_log_connections: connection {0}/{1}: {2}".format(count, size, vars(connection)))
+#        except Exception as e:
+#            self.error("_log_connections: could not check state of connections: {0}".format(e))
 
 
     def _get_latest_ver(self, cur=None):
@@ -806,7 +931,11 @@ class ObjectStoreAsync:
             return
 
         if cur is None:
-            self.conn.runQuery("SELECT latest_version FROM wb_v_latest_version", []).addCallbacks(ver_cb, err_cb)
+            def conn_cb(conn):
+                logging.debug("Objectstore _get_latest_ver, conn_cb")
+                conn.runQuery("SELECT latest_version FROM wb_v_latest_version", []).addCallbacks(ver_cb, err_cb)
+            
+            self.conns['conn']().addCallbacks(conn_cb, result_d.errback)
         else:
 
             def exec_cb(cur):
@@ -947,9 +1076,14 @@ class ObjectStoreAsync:
                                 del objs_full[key]
 
                             objs_full = objs_full.values() # objs_full is "id: {obj}", so extract just the objs
+
+                            def conn_cb(conn):
+                                logging.debug("Objectstore update, conn_cb")
+                                set_diff = ObjectSetDiff(conn, objs_full, objs, new_ver)
+                                set_diff.compare(cur).addCallbacks(compare_cb, check_err_cb) # changes the DB for us
+                            
+                            self.conns['conn']().addCallbacks(conn_cb, result_d.errback)
  
-                            set_diff = ObjectSetDiff(self.conn, objs_full, objs, new_ver)
-                            set_diff.compare(cur).addCallbacks(compare_cb, check_err_cb) # changes the DB for us
 
                         # add full objects from db to objs_orig if their id is in objs         
                         objs_ids = map(lambda x: x['@id'], objs)
@@ -993,7 +1127,11 @@ class ObjectStoreAsync:
             ##self.conn.runOperation("VACUUM").addCallbacks(lambda _: result_d.callback(ver_response), err_cb)
             result_d.callback(ver_response)
  
-        self.conn.runInteraction(interaction_cb).addCallbacks(interaction_complete_d, err_cb)
+        def iconn_cb(conn):
+            logging.debug("Objectstore update, iconn_cb")
+            conn.runInteraction(interaction_cb).addCallbacks(interaction_complete_d, err_cb)
+        
+        self.conns['conn']().addCallbacks(iconn_cb, result_d.errback)
         return result_d
 
 
@@ -1144,7 +1282,12 @@ class ObjectStoreAsync:
             result_d.callback(out)
 
         query = "SELECT version, file_id, contenttype FROM wb_files WHERE version = (SELECT latest_version FROM wb_v_latest_version)"
-        self.conn.runQuery(query).addCallbacks(list_cb, err_cb)
+
+        def conn_cb(conn):
+            logging.debug("Objectstore list_files, conn_cb")
+            conn.runQuery(query).addCallbacks(list_cb, err_cb)
+        
+        self.conns['conn']().addCallbacks(conn_cb, result_d.errback)
         return result_d
 
     def update_files(self, specified_prev_version, new_files=[], delete_files_ids=[]):
@@ -1191,7 +1334,7 @@ class ObjectStoreAsync:
             data -- File bytes
             return the oid of the new object.
         """
-        self.debug("ObjectStoreAsync add_file_data, opening new lobject with connection: {0}".format(self.conn))
+        self.debug("ObjectStoreAsync add_file_data, opening new lobject with connection: {0}".format(conn))
         lobj = conn.lobject()
         lobj.write(data) # FIXME this is not async. txpostgres may not support this :(
         oid = lobj.oid
@@ -1240,7 +1383,12 @@ class ObjectStoreAsync:
             result_d.callback((obj, contenttype))
 
         query = "SELECT data, contenttype FROM wb_files WHERE version = (SELECT MAX(version) FROM wb_files) AND file_id = %s"
-        self.conn.runQuery(query, [file_id]).addCallbacks(file_cb, err_cb) 
+
+        def conn_cb(conn):
+            logging.debug("Objectstore get_latest_file, conn_cb")
+            conn.runQuery(query, [file_id]).addCallbacks(file_cb, err_cb) 
+        
+        self.conns['conn']().addCallbacks(conn_cb, result_d.errback)
         return result_d
 
 

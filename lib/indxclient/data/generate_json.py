@@ -19,7 +19,7 @@ import json, string, random
 
 """ Script to generate JSON files for testing importing/updating. """
 
-objects = 10
+objects = 5000
 properties = 10
 values = 3
 

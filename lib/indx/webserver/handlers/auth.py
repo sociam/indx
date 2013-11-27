@@ -60,6 +60,8 @@ class AuthHandler(BaseHandler):
         ##                return ok
         ##     else: -> return error
 
+        logging.debug('request !! {0}'.format(request));
+
         user = self.get_arg(request, "username")
         pwd = self.get_arg(request, "password")
 
