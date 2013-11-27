@@ -47,6 +47,8 @@ class TwitterService:
                 self.since_id = 0
                 self.version = 0
                 self.batch = []
+                self.tweet_count = 0
+                self.tweet_count_total=0
                 
                 #set the auth access control
                 self.auth = OAuthHandler(self.consumer_key, self.consumer_secret)
@@ -116,11 +118,17 @@ class TwitterService:
     def get_tweets(self, words_to_track):
         l = INDXListener(self)
 
-        stream = Stream(self.auth, l)
+        self.stream = Stream(self.auth, l)
         try:
             if len(words_to_track) > 0:
                 logging.info('Twitter Service - Stream Open and Storing Tweets')
-                stream.filter(track=words_to_track)
+                self.stream.filter(track=words_to_track)
+                #recursive,
+                if not self.stream.running:
+                    logging.debug('Service Tweets - Stream reached 100 tweets, now harvesting additional services again')
+                    self.run_additional_services()
+                    logging.debug('Service Tweets - Additional services harvsted, now harvesting stream again')
+                    self.get_tweets(words_to_track)
         except:
             logging.error('Service Tweets - error, Twitter Stream encountered an error {0}'.format(sys.exc_info()))
             return False
@@ -209,7 +217,8 @@ class INDXListener(StreamListener):
     """
 
     def __init__(self, twitter_serv):
-        self.service = twitter_serv        
+        self.service = twitter_serv 
+        self.tweet_count = 0       
 
 
     def on_data(self, tweet_data):
@@ -232,6 +241,8 @@ class INDXListener(StreamListener):
             tweet["@id"] = unicode(tweet['id'])
             tweet["app_object"] = appid
             text = unicode(tweet['text'])
+            self.service.tweet_count += 1
+            self.service.tweet_count_total +=1
             #print text
             self.service.batch.append(tweet)
             if len(self.service.batch) > 25:
@@ -239,6 +250,12 @@ class INDXListener(StreamListener):
                 self.service.version = response['data']['@version'] # update the version
                 self.service.batch = []
                 logging.debug('inserted batch of tweets')
+            #need to give time to reset the stream...    
+            if self.service.tweet_count > 10000:
+                self.service.tweet_count = 0
+                self.service.stream.disconnect()
+                logging.info('Service Tweets - Disconnecting Twitter Stream, total tweets harvsted since boot {0}'.format(self.service.tweet_count_total))
+                #
         except Exception as e:
             if isinstance(e, urllib2.HTTPError): # handle a version incorrect error, and update the version
                 if e.code == 409: # 409 Obsolete
