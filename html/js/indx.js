@@ -262,7 +262,7 @@ angular
 					});
 
 					if (_(fetch_dfds).keys().length) { 
-						console.log('batch fetch!', _(fetch_dfds).keys());
+						// console.log('batch fetch!', _(fetch_dfds).keys());
 						this_.box.getObj(_(fetch_dfds).keys()).then(function(objs) {
 							objs.map(function(o) { 
 								fetch_dfds[o.id].map(function(dfd) { dfd.resolve(o); });
@@ -901,7 +901,11 @@ angular
 				this._ajax("PUT",  this.getID() + "/update", { version: escape(version), data : JSON.stringify(sobjs)  })
 					.then(function(response) {
 						this_._setVersion(response.data["@version"]);
-						this_._updateObjectList(undefined, objIDs, []); // update object list
+						var newids = _(objIDs).difference(this_.getObjIDs());
+						if (newids.length) {
+							// update objectlist
+							this_._updateObjectList(undefined, newids, []);
+						}
 						d.resolve(this_);
 					}).fail(d.reject);
 				return d.promise();
