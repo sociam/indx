@@ -19,29 +19,33 @@
 		}
 	],
 	"documentation": "indx.docs-config.js",
-	"tests": "indx.tests-config.js",
-	"tests_params": [
-		{	"name": "username",
-			"title": "Test Username",
-			"type": "text" },
-		{	"name": "password",
-			"title": "Test User password",
-			"type": "password" },
-		{	"name": "singleRun",
-			"title": "Single Run",
-			"type": "text",
-			"default": "false" }
-		{	"name": "indxURL",
-			"title": "INDX URL",
-			"type": "text",
-			"default": "http://localhost:8211" },
-		{	"name": "suppressLogs",
-			"title": "Supress Logs?",
-			"type": "text",
-			"default": "false" },
-		{	"name": "boxCreations",
-			"title": "Number of box creations",
-			"type": "text",
-			"default": "3" }
+	"tests": [
+		{ 	"type": "browser-js",
+			"config": "indx.tests-config.js",
+			"params": [
+				{	"name": "username",
+					"title": "Test Username",
+					"type": "text" },
+				{	"name": "password",
+					"title": "Test User password",
+					"type": "password" },
+				{	"name": "singleRun",
+					"title": "Single Run",
+					"type": "text",
+					"default": "false" }
+				{	"name": "indxURL",
+					"title": "INDX URL",
+					"type": "text",
+					"default": "http://localhost:8211" },
+				{	"name": "suppressLogs",
+					"title": "Supress Logs?",
+					"type": "text",
+					"default": "false" },
+				{	"name": "boxCreations",
+					"title": "Number of box creations",
+					"type": "text",
+					"default": "3" }
+			]
+		}
 	]
 }
