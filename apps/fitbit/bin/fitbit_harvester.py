@@ -464,15 +464,15 @@ class FitbitHarvester:
                 if resp and 'code' in resp and resp['code']==200 and 'data' in resp:
                     for pt in resp['data'] :
                         obj = resp['data'][pt]
-                        if 'http://purl.org/linked-data/cube#dataset' in obj and obj['http://purl.org/linked-data/cube#dataset'][0]['@value'] in [self.steps_ts_id, self.calories_ts_id, self.distance_ts_id, self.floors_ts_id, self.elevation_ts_id] :
-                            objs_date_hash = out[obj['http://purl.org/linked-data/cube#dataset'][0]['@value']]
+                        if 'http://purl.org/linked-data/cube#dataset' in obj and obj['http://purl.org/linked-data/cube#dataset'][0]['@id'] in [self.steps_ts_id, self.calories_ts_id, self.distance_ts_id, self.floors_ts_id, self.elevation_ts_id] :
+                            objs_date_hash = out[obj['http://purl.org/linked-data/cube#dataset'][0]['@id']]
                             if find_start in objs_date_hash:
                                 objs_list = objs_date_hash[find_start]
                             else:
                                 objs_list = []
                             objs_list.append(obj) 
                             objs_date_hash[find_start] = objs_list
-                            out[obj['http://purl.org/linked-data/cube#dataset'][0]['@value']] = objs_date_hash
+                            out[obj['http://purl.org/linked-data/cube#dataset'][0]['@id']] = objs_date_hash
                         logging.debug("Found points with start time {0}: {1}".format(find_start.isoformat(),objs_list))
         logging.debug("The points found for the day: {0}".format(out))
         return out

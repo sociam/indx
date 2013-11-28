@@ -13,8 +13,6 @@ angular
 				}).fail(function(e) { u.error('error ', e); });
 			}
 		});
-		// window.box = box;
-		// window.s = client.store;
 
 		var setWait = function(b) {
 			console.log
@@ -26,27 +24,25 @@ angular
 			return $scope.save().pipe(function() { setWait(false); });
 		};
 
-		// var serialize = function(o) {
-		// 	return $scope.object_formats[$scope.format](o);
-		// };
-
 		$scope.save = function() {
 			var dd = u.deferred();
 			console.log("box has : ", $scope.objs.length);
 			console.log("the format : ", $scope.format);
 
-			box.getObj($scope.objs).then(function(objects) {
-				// var serialized = objects.map(function(o) {
-				// 	return serialize(o);
-				// });
-				// u.when(serialized).then(function() {
-					// console.log("serialized : ",serialized);
-					u.safeApply($scope, function() {
-						$scope.boxData = $scope.serializers[$scope.format](objects);
-						$scope.fileext = file_formats[$scope.format];
-					});
-					dd.resolve();
-				// }).fail(dd.reject);
+			// box.getObj($scope.objs).then(function(objects) {
+			// 	u.safeApply($scope, function() {
+			// 		$scope.boxData = $scope.serializers[$scope.format](objects);
+			// 		$scope.fileext = file_formats[$scope.format];
+			// 	});
+			// 	dd.resolve();
+			// }).fail(dd.reject);
+			box.query({}, "*").then(function(response) {
+				objects = response["data"];
+				u.safeApply($scope, function() {
+					$scope.boxData = $scope.serializers[$scope.format](objects);
+					$scope.fileext = file_formats[$scope.format];
+				});
+				dd.resolve();
 			}).fail(dd.reject);
 
 			return dd.promise();
@@ -67,38 +63,24 @@ angular
 
 		};
 
-		// $scope.object_formats = {
-		// 	'json' : function(o) {
-		// 		console.log("serializing to json ", o);
-		// 		return JSON.stringify(o);
-		// 	},
-		// 	'jsonld' : function(o) {
-		// 		console.log("serializing to json-ld ", o);
-		// 		// @list if the values are multiple 
-		// 		return JSON.stringify(o);	
-		// 	},
-		// 	'turtle' : function(o) {
-		// 		console.log("serializing to turtle ", o);
-		// 		return "some turtle"
-		// 	}
-		// };
 		$scope.serializers = {
-			'json' : function(l) {
+			'json' : function(obs) {
 				console.log("serializing list to json");
-				strs = l.map(function(x) {return JSON.stringify(x); });
-				return ['[',strs.join(',\n'),']'].join('\n');
+				// strs = l.map(function(x) {return JSON.stringify(x); });
+				// return ['[',strs.join(',\n'),']'].join('\n');
+				return JSON.stringify(obs);
 			},
-			'jsonld' : function(l) {
+			'jsonld' : function(obs) {
 				console.log("serializing list to json-ld");
 				// create a context for the list, containing as base/vocab? the url of the server/box
 				context = $scope.createContextObj();
 				// save the box as a graph? with @graph? or not needed ...
 
-				return ['[',l.join(',\n'),']'].join('\n');	
+				return ['[',obs.join(',\n'),']'].join('\n');	
 			},
-			'turtle' : function(l) {
+			'turtle' : function(obs) {
 				console.log("serializing list to turtle");
-				return l.join('\n');
+				return toTurtle(obs);
 			}
 		};
 		var file_formats = {
