@@ -335,9 +335,9 @@ class FitbitHarvester:
                                     "http://sociam.org/ontology/timeseries/start": interval_start.isoformat(),
                                     "http://sociam.org/ontology/timeseries/end": interval_end.isoformat(),
                                     "http://sociam.org/ontology/timeseries/value": value,
-                                    "http://purl.org/linked-data/cube#dataset": ts_id }
+                                    "http://purl.org/linked-data/cube#dataset": { "@id": ts_id } }
                     if rdf_type:
-                        data_point["http://www.w3.org/1999/02/22-rdf-syntax-ns#type"] = [ rdf_type ]
+                        data_point["http://www.w3.org/1999/02/22-rdf-syntax-ns#type"] = [ { "@id": rdf_type } ]
                     data_points.append(data_point)
                     # logging.debug("Created and appended data point: {0}".format(data_point))
         logging.debug("Finished creating data points.")
@@ -374,9 +374,9 @@ class FitbitHarvester:
                         data_point["http://sociam.org/ontology/timeseries/start"] = interval_start.isoformat()
                         data_point["http://sociam.org/ontology/timeseries/end"] = interval_end.isoformat()
                         data_point["http://sociam.org/ontology/timeseries/value"] = value
-                        data_point["http://purl.org/linked-data/cube#dataset"] = ts_id 
+                        data_point["http://purl.org/linked-data/cube#dataset"] = { "@id": ts_id } 
                         if rdf_type:
-                            data_point["http://www.w3.org/1999/02/22-rdf-syntax-ns#type"] = [ rdf_type ]
+                            data_point["http://www.w3.org/1999/02/22-rdf-syntax-ns#type"] = [ { "@id": rdf_type } ]
                         data_points.append(data_point)
         logging.debug("Finished replacing values in data points - replaced: {0}, kept: {1}, created: {2}".format(replaced, kept, created))
         return data_points
