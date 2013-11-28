@@ -61,8 +61,17 @@ class TwitterService:
 
     def run_main_services(self):
         #now get the tweets
-        words_to_search = self.get_search_criteria()
-        self.get_tweets(words_to_search)
+        try:
+            words_to_search = self.get_search_criteria()
+            stream_active = True
+            while(stream_active):
+                stream_active = self.get_tweets(words_to_search)
+            #the stream probably crashed out - Not my fault by silly twitter...
+            #if this is the case, it's a good time harvest the user again, then restart the stream!
+            self.frun_additional_services()
+            self.run_main_services()
+        except:
+            logging.debug('Service Tweets - Could not run main service due to error: {0}'.format(sys.exc_info()))
 
     def run_additional_services(self):
         #see if other harvesters needed (indx con needed to sumbit data)
@@ -108,11 +117,14 @@ class TwitterService:
         l = INDXListener(self)
 
         stream = Stream(self.auth, l)
-        if len(words_to_track) > 0:
-            logging.info('Twitter Service - Stream Open and Storing Tweets')
-            stream.filter(track=words_to_track)
-        else:
-            stream.sample()
+        try:
+            if len(words_to_track) > 0:
+                logging.info('Twitter Service - Stream Open and Storing Tweets')
+                stream.filter(track=words_to_track)
+        except:
+            logging.error('Service Tweets - error, Twitter Stream encountered an error {0}'.format(sys.exc_info()))
+            return False
+
 
 
     #datamodel is {timestamp: {friends:[friend_id]}
