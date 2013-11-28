@@ -56,6 +56,13 @@ angular
 			saveAs(new Blob([$scope.boxData], {type: "text/plain"}), $scope.filename || $scope.selectedBox+"."+$scope.fileext );
 		};
 
+		$scope.isIdOfOther = function(s) {
+			if ($scope.objs.indexOf(s) !== -1) {
+				return true;
+			}
+			return false;
+		};
+
 		var object_formats = {
 			'json' : function(o) {
 				console.log("serializing to json ", o);
@@ -63,6 +70,7 @@ angular
 			},
 			'jsonld' : function(o) {
 				console.log("serializing to json-ld ", o);
+				// @list if the values are multiple 
 				return JSON.stringify(o);	
 			},
 			'turtle' : function(o) {
@@ -72,7 +80,7 @@ angular
 		};
 		var file_formats = {
 			'json' : 'json',
-			'jsonld' : 'json',
+			'jsonld' : 'jsonld',
 			'turtle' : 'ttl'
 		};
 		var list_formats = {
@@ -82,6 +90,9 @@ angular
 			},
 			'jsonld' : function(l) {
 				console.log("serializing list to json-ld");
+				// create a context for the list, containing as base/vocab? the url of the server/box
+				// @list for the list of objects if it's ordered
+				// save the box as a graph? with @graph? or not needed ...
 				return ['[',l.join(',\n'),']'].join('\n');	
 			},
 			'turtle' : function(l) {
