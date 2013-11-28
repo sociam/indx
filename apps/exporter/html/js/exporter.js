@@ -26,9 +26,9 @@ angular
 			return $scope.save().pipe(function() { setWait(false); });
 		};
 
-		var serialize = function(o) {
-			return object_formats[$scope.format](o);
-		};
+		// var serialize = function(o) {
+		// 	return $scope.object_formats[$scope.format](o);
+		// };
 
 		$scope.save = function() {
 			var dd = u.deferred();
@@ -36,17 +36,17 @@ angular
 			console.log("the format : ", $scope.format);
 
 			box.getObj($scope.objs).then(function(objects) {
-				var serialized = objects.map(function(o) {
-					return serialize(o);
-				});
-				u.when(serialized).then(function() {
-					console.log("serialized : ",serialized);
+				// var serialized = objects.map(function(o) {
+				// 	return serialize(o);
+				// });
+				// u.when(serialized).then(function() {
+					// console.log("serialized : ",serialized);
 					u.safeApply($scope, function() {
-						$scope.boxData = $scope.list_formats[$scope.format](serialized);
+						$scope.boxData = $scope.serializers[$scope.format](objects);
 						$scope.fileext = file_formats[$scope.format];
 					});
 					dd.resolve();
-				}).fail(dd.reject);
+				// }).fail(dd.reject);
 			}).fail(dd.reject);
 
 			return dd.promise();
@@ -67,26 +67,26 @@ angular
 
 		};
 
-
-		$scope.object_formats = {
-			'json' : function(o) {
-				console.log("serializing to json ", o);
-				return JSON.stringify(o);
-			},
-			'jsonld' : function(o) {
-				console.log("serializing to json-ld ", o);
-				// @list if the values are multiple 
-				return JSON.stringify(o);	
-			},
-			'turtle' : function(o) {
-				console.log("serializing to turtle ", o);
-				return "some turtle"
-			}
-		};
-		$scope.list_formats = {
+		// $scope.object_formats = {
+		// 	'json' : function(o) {
+		// 		console.log("serializing to json ", o);
+		// 		return JSON.stringify(o);
+		// 	},
+		// 	'jsonld' : function(o) {
+		// 		console.log("serializing to json-ld ", o);
+		// 		// @list if the values are multiple 
+		// 		return JSON.stringify(o);	
+		// 	},
+		// 	'turtle' : function(o) {
+		// 		console.log("serializing to turtle ", o);
+		// 		return "some turtle"
+		// 	}
+		// };
+		$scope.serializers = {
 			'json' : function(l) {
 				console.log("serializing list to json");
-				return ['[',l.join(',\n'),']'].join('\n');
+				strs = l.map(function(x) {return JSON.stringify(x); });
+				return ['[',strs.join(',\n'),']'].join('\n');
 			},
 			'jsonld' : function(l) {
 				console.log("serializing list to json-ld");

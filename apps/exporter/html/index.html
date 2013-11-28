@@ -19,12 +19,11 @@
 		  		<label class="btn"><input ng-model='format' type="radio" value="jsonld" name="output-type">JSON-LD</label>
 		  	</div>	
 		  	<div class="btn btn-primary savebtn" ng-disabled="wait" ng-click='doSave()'><span class="glyphicon glyphicon-floppy-open"></span> Export </div>
-		</div>	
-	  	<div class="output" ng-show='boxData'>
-	  		<hr/><br/>
-            <div class="btn btn-primary savebtn" ng-disabled="wait" ng-click='toFile()'><span class="glyphicon glyphicon-floppy-open"></span> Save as </div>
-            <input type="text" ng-model="filename" style="align:right;" placeholder="{{ selectedBox }}.{{ fileext }}"/>
-	  		<pre> {{ boxData }} </pre>
+            <div class="btn btn-primary savebtn" ng-disabled="wait" ng-click='toFile()' ng-show='boxData'><span class="glyphicon glyphicon-floppy-open"></span> Save as </div>
+            <input type="text" ng-show='boxData' ng-model="filename" style="align:right;" placeholder="{{ selectedBox }}.{{ fileext }}"/>
+		  	<div ng-show='boxData'>
+		  		<hr/><pre> {{ boxData }} </pre>
+	        </div>
 	  	</div>
 	  	<div class="waitoverlay" ng-show="wait">
 	  		<div class="pleasewait">please wait ..</div>
