@@ -23,7 +23,7 @@ from keyring.backends.pyfs import PlaintextKeyring
 from service_controller_twitter import TwitterServiceController
 
 
-logging.basicConfig(filename="blank.log", level=logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG)
 
 def parse_args():
     parser = argparse.ArgumentParser(prog="run")
