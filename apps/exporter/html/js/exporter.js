@@ -42,7 +42,7 @@ angular
 				u.when(serialized).then(function() {
 					console.log("serialized : ",serialized);
 					u.safeApply($scope, function() {
-						$scope.boxData = list_formats[$scope.format](serialized);
+						$scope.boxData = $scope.list_formats[$scope.format](serialized);
 						$scope.fileext = file_formats[$scope.format];
 					});
 					dd.resolve();
@@ -63,7 +63,12 @@ angular
 			return false;
 		};
 
-		var object_formats = {
+		$scope.createContextObj = function() {
+
+		};
+
+
+		$scope.object_formats = {
 			'json' : function(o) {
 				console.log("serializing to json ", o);
 				return JSON.stringify(o);
@@ -78,12 +83,7 @@ angular
 				return "some turtle"
 			}
 		};
-		var file_formats = {
-			'json' : 'json',
-			'jsonld' : 'jsonld',
-			'turtle' : 'ttl'
-		};
-		var list_formats = {
+		$scope.list_formats = {
 			'json' : function(l) {
 				console.log("serializing list to json");
 				return ['[',l.join(',\n'),']'].join('\n');
@@ -91,8 +91,9 @@ angular
 			'jsonld' : function(l) {
 				console.log("serializing list to json-ld");
 				// create a context for the list, containing as base/vocab? the url of the server/box
-				// @list for the list of objects if it's ordered
+				context = $scope.createContextObj();
 				// save the box as a graph? with @graph? or not needed ...
+
 				return ['[',l.join(',\n'),']'].join('\n');	
 			},
 			'turtle' : function(l) {
@@ -100,4 +101,10 @@ angular
 				return l.join('\n');
 			}
 		};
+		var file_formats = {
+			'json' : 'json',
+			'jsonld' : 'jsonld',
+			'turtle' : 'ttl'
+		};
+
 	});
