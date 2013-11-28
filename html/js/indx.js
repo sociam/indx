@@ -55,8 +55,17 @@
 angular
 	.module('indx', [])
 	.factory('client',function(utils) {
-		var u = utils, log = utils.log, error = utils.error, debug = utils.debug;
+		var u = utils, log = utils.log, error = utils.error, debug = utils.debug, jQ = jQuery;
+
 		var DEFAULT_HOST = document.location.host; // which may contain the port
+
+		// new patch for nodejs support
+		var ajax = jQ.ajax;		
+		console.log('typeof _NODE_AJAX ', typeof _NODE_AJAX); 
+		if (typeof process != 'undefined' && process.title === 'node' && typeof _NODE_AJAX !== 'undefined') {
+			ajax = _NODE_AJAX(u,jQ);
+		} 
+
 		var WS_MESSAGES_SEND = {
 			auth: function(token) { return JSON.stringify({action:'auth', token:token}); },
 			diff: function(token) { return JSON.stringify({action:'diff', operation:"start"}); }
@@ -81,7 +90,7 @@ angular
 		var serialiseObj = function(obj) {
 			var uri = obj.id;
 			var outObj = {};
-			$.each(obj.attributes, function(pred, vals){
+			jQ.each(obj.attributes, function(pred, vals){
 				if (pred[0] === "_" || pred[0] === "@"){
 					// don't expand @id etc.
 					return;
@@ -90,7 +99,7 @@ angular
 				if (!(vals instanceof Array)){
 					vals = [vals];
 				}
-				$.each(vals, function(){
+				jQ.each(vals, function(){
 					var val = this;
 					if (val instanceof File) {
 						objVals.push({"@value": val.id, "@type":"indx-file", "@language":val.get('content-type')});
@@ -168,7 +177,7 @@ angular
 					app:this.box.store.get('app'),
 					token:this.box.get('token'),
 					box:this.box.getID()
-				}, url = [this.box.store._getBaseURL(), this.box.id, 'files'].join('/') + '?' + $.param(params);
+				}, url = [this.box.store._getBaseURL(), this.box.id, 'files'].join('/') + '?' + jQ.param(params);
 				// u.debug("IMAGE URL IS ", url, params);
 				return url;
 			}
@@ -225,15 +234,21 @@ angular
 				// returns a promise
 				var this_ = this;
 				var dfds = _(s_obj).map(function(vals, key) {
+					if (key.indexOf('@') === 0) { return; }
+
+
 					var kd = u.deferred();
 					// skip "@id" etc etc
-					if (key.indexOf('@') === 0) { return; }
+					var fetch_dfds = {};
+
 					var val_dfds = vals.map(function(val) {
 						var vd = u.deferred();
 						// it's an object, so return that
 						if (val.hasOwnProperty("@id")) {
 							// object
-							this_.box.getObj(val["@id"]).then(vd.resolve).fail(vd.reject);
+							var oid = val["@id"];
+							fetch_dfds[oid] = fetch_dfds[oid] ? fetch_dfds[oid].concat(vd) : [vd];
+							// this_.box.getObj(val["@id"]).then(vd.resolve).fail(vd.reject);
 						}
 						else if (val.hasOwnProperty("@value")) {
 							// literal
@@ -245,6 +260,18 @@ angular
 						}
 						return vd.promise();
 					});
+
+					if (_(fetch_dfds).keys().length) { 
+						// console.log('batch fetch!', _(fetch_dfds).keys());
+						this_.box.getObj(_(fetch_dfds).keys()).then(function(objs) {
+							objs.map(function(o) { 
+								fetch_dfds[o.id].map(function(dfd) { dfd.resolve(o); });
+							});
+						}).fail(function() { 
+							_(fetch_dfds).values().map(function(dfd) { dfd.reject('error fetching obj'); });
+						});
+					}
+
 					u.when(val_dfds).then(function(objVals) {
 						// only update keys that have changed
 						var prevVals = this_.get(key);
@@ -433,16 +460,16 @@ angular
 			/// Gets an auth token for the box. This is done automatically
 			/// by a store when constructed by getBox.
 			getToken:function() {
-				console.debug('>> getToken ', ' id: ',this.id, ' cid: ',this.cid);
+				// console.debug('>> getToken ', ' id: ',this.id, ' cid: ',this.cid);
 				// try { throw new Error(''); } catch(e) { console.error(e); }
 				if (this._get_token_queue === undefined) { this._get_token_queue = []; }
 				var tq = this._get_token_queue, this_ = this, d = u.deferred();
 				tq.push(d); 				
 				if (tq.length === 1) { 
-					console.debug('tq === 1, calling -------------- get_token');
+					// console.debug('tq === 1, calling -------------- get_token');
 					this._ajax('POST', 'auth/get_token', { app: this.store.get('app') })
 						.then(function(data) {
-							console.debug('setting token ', data.token, 'triggering ', tq.length);
+							// console.debug('setting token ', data.token, 'triggering ', tq.length);
 							this_._setToken( data.token );
 							this_.trigger('new-token', data.token);
 							this_._get_token_queue.map(function(d) { d.resolve(this_); });
@@ -500,41 +527,40 @@ angular
 				var boxid = this.id || this.cid,
 				baseURL = [this.store._getBaseURL(), boxid, 'files'].join('/'),
 				options = { app: this.store.get('app'), id: id, token:this.get('token'),  box: boxid, version: this.getVersion() },
-				optionParams = $.param(options),
+				optionParams = jQ.param(options),
 				url = baseURL+"?"+optionParams,
 				d = u.deferred();
 				debug("PUTTING FILE ", url);
 				var ajaxArgs  = _(_(this.store.ajaxDefaults).clone()).extend(
 					{ url: url, method : 'PUT', crossDomain:false, data:file, contentType: contenttype, processData:false }
 				);
-				return $.ajax( ajaxArgs );
+				return ajax( ajaxArgs );
 			},
 			/// @arg {Object} queryPattern - a query pattern to match
-			/// @opt {string[]} predicates - optional array of predicates to return, or entire objects otherwise
+			/// @opt {string[]} predicates - optional array of predicates to return, or entire objects otherwise; if '*' is passed, then raw JSON is returned and not returned as objects
 			///
 			/// Issues query to server, which then returns either entire objects or just values of the props specified
 			///
 			/// @then({Objs[]} Objects matching query) - When the query is successful
 			/// @fail({string} Error) - When the query fails
 			query: function(queryPattern, predicates){
-				// @param - queryPattern is an object like { key1 : val1, key2: val2 } .. that
-				//   returns / fetches all objects
 				var d = u.deferred();
 				var cache = this._objcache();
 				var parameters = {"q": JSON.stringify(queryPattern)};
 				var this_ = this;
-				if (predicates) {
-					_(parameters).extend({predicateList: predicates });
+				if (predicates && predicates !== '*') {
+					if (!_.isArray(predicates)) { predicates = [predicates]; }
+					_(parameters).extend({predicate_list: predicates});
 					console.log('new query pattern >> ', parameters);
 				}
-				this._ajax("GET", [this.id, "query"].join('/'), parameters)
+				var query_url = [this.getID(), 'query'].join('/');
+				this._ajax("GET", query_url, parameters)
 					.then(function(results) {
 						if (predicates) {
 							// raw partials just including predicates - these are not whole
 							// objects
 							return d.resolve(results);
 						}
-						console.log('results >> ', results.data);
 						// otherwise we are getting full objects, so ...
 						d.resolve(_(results.data).map(function(dobj,id) {
 							console.log('getting id ', id);
@@ -875,7 +901,11 @@ angular
 				this._ajax("PUT",  this.getID() + "/update", { version: escape(version), data : JSON.stringify(sobjs)  })
 					.then(function(response) {
 						this_._setVersion(response.data["@version"]);
-						this_._updateObjectList(undefined, objIDs, []); // update object list
+						var newids = _(objIDs).difference(this_.getObjIDs());
+						if (newids.length) {
+							// update objectlist
+							this_._updateObjectList(undefined, newids, []);
+						}
 						d.resolve(this_);
 					}).fail(d.reject);
 				return d.promise();
@@ -949,9 +979,6 @@ angular
 
 		var BoxCollection = Backbone.Collection.extend({ model: Box });
 
-		// debug ---------| 
-		window._stores = [];
-
 		var Store =  Backbone.Model.extend({
 			defaults: {
 				server_host:DEFAULT_HOST,
@@ -968,9 +995,6 @@ angular
 			initialize: function(attributes, options){
 				this.set({boxes : new BoxCollection([], {store: this})});
 
-				// debug ---------------
-				_stores.push(this);
-				_(_stores).map(function(s, j) { console.log(":: Store ", j, s.isConnected()); });
 			},
 
 			/// Check that the
@@ -981,7 +1005,7 @@ angular
 			getBox: function(boxid) {
 				var b = this.boxes().get(boxid) || this._create(boxid);
 				if (!b._getCachedToken()) {
-					console.info('indxjs getToken(): getting token for box ', boxid);
+					// console.info('indxjs getToken(): getting token for box ', boxid);
 					return b.getToken().pipe(function() { return b.fetch();	});
 				}
 				console.info('indxjs getToken(): already have token for box --- ', boxid);
@@ -1142,14 +1166,14 @@ angular
 			getBoxList:function() {
 				var d = u.deferred();
 				this._ajax('GET','admin/list_boxes')
-					.success(function(data) {d.resolve(data.list);})
+					.then(function(data) {d.resolve(data.list);})
 					.fail(function(err) { d.reject(err); });
 				return d.promise();
 			},
 			getUserList:function() {
 				var d = u.deferred();
 				this._ajax('GET','admin/list_users')
-					.success(function(data) { 
+					.then(function(data) { 
 						var users = data.users;
 						users.map(function(u) {
 							if (u.user_metadata && typeof u.user_metadata === 'string') {
@@ -1175,7 +1199,7 @@ angular
 			getAppsList:function() {
 				var d = u.deferred();
 				this._ajax('GET','admin/list_apps')
-					.success(function(data) { d.resolve(data.apps); })
+					.then(function(data) { d.resolve(data.apps); })
 					.fail(function(err) { d.reject(err); });
 				return d.promise();
 			},
@@ -1194,9 +1218,10 @@ angular
 				var defaultData = { app: this.get('app') };
 				var options = _({}).extend(
 					this.ajaxDefaults,
-					{ url: url, method : method, crossDomain: !this.isSameDomain(), data: _({}).extend(defaultData,data) }
+					{ url: url, type : method, crossDomain: !this.isSameDomain(), data: _({}).extend(defaultData,data) }
 				);
-				return $.ajax( options ); // returns a deferred
+				// console.log(' debug indxJS _ajax url ', options.url, options.method, options);
+				return ajax( options ); // returns a deferred
 			},
 			sync: function(method, model, options){
 				switch(method){

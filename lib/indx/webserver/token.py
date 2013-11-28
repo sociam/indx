@@ -65,21 +65,36 @@ class Token:
 
             db_user, db_pass = new_acct
 
-            def connected_cb(conn):
-                logging.debug("Token get_store connected, returning it.")
+            #self.connections.append(conn)
+            def conn_passthru(conn, deferred):
+                """ Pass a connection through to a callback, while keeping a reference of it here. """
                 self.connections.append(conn)
+                deferred.callback(conn)
 
-                def get_sync():
-                    return database.connect_box_sync(self.boxid, db_user, db_pass)
+            def get_sync():
+                return_d = Deferred()
+                database.connect_box_sync(self.boxid, db_user, db_pass).addCallbacks(lambda conn: conn_passthru(conn, return_d), return_d.errback)
+                return return_d
 
-                def get_raw():
-                    return database.connect_box_raw(self.boxid, db_user, db_pass)
+            def get_raw():
+                return_d = Deferred()
+                database.connect_box_raw(self.boxid, db_user, db_pass).addCallbacks(lambda conn: conn_passthru(conn, return_d), return_d.errback)
+                return return_d
 
-                conns = {"conn": conn, "sync_conn": get_sync, "raw_conn": get_raw}
-                store = ObjectStoreAsync(conns, self.username, self.boxid, self.appid, self.clientip)
-                result_d.callback(store)
+            def get_conn():
+                return_d = Deferred()
+                database.connect_box(self.boxid, db_user, db_pass).addCallbacks(lambda conn: conn_passthru(conn, return_d), return_d.errback)
+                return return_d
 
-            database.connect_box(self.boxid, db_user, db_pass).addCallbacks(connected_cb, result_d.errback)
+            def get_indx_conn():
+                return_d = Deferred()
+                self.db.connect_indx_db().addCallbacks(lambda conn: conn_passthru(conn, return_d), return_d.errback)
+                return return_d
+
+            conns = {"conn": get_conn, "sync_conn": get_sync, "raw_conn": get_raw, "indx_conn": get_indx_conn}
+            store = ObjectStoreAsync(conns, self.username, self.boxid, self.appid, self.clientip)
+            result_d.callback(store)
+
 
         if self.best_acct is None:
             self.db.lookup_best_acct(self.boxid, self.username, self.password).addCallbacks(got_acct, result_d.errback)

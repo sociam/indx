@@ -45,6 +45,10 @@
     .config(function($compileProvider){ 
         $compileProvider.aHrefSanitizationWhitelist(/^\s*(https?|ftp|mailto|file|chrome-extension):/); 
     })
+    .config(function($sceProvider) {
+      // Completely disable SCE - options iframe interference
+      $sceProvider.enabled(false);
+    })
     // popup controller
     .controller('popup', function($scope, watcher, utils) {
         window.$s = $scope;
@@ -356,10 +360,11 @@
                 // keep history around for plugins etc 
                 var this_ = this;
                 if (!this._history) { this._history = []; }
-                var N = 250, records = this._history, threshold_secs = 0; //.80;
+                var N = 25, records = this._history, threshold_secs = 0; //.80;
                 this.on('new-entries', function(entries) {
-                    records = _(records).union(entries).filter(function(d) { return duration_secs(d) > threshold_secs; });
-                    records = records.slice(0,N);
+                    var longies = entries.filter(function(d) { return duration_secs(d) > threshold_secs; });
+                    records = _(records).union(longies);
+                    records = records.slice(-N);
                     this.trigger('updated-history', records);
                     this_._history = records;
                 });
@@ -455,6 +460,7 @@
                         _rec_map[id] = rec;
                         return id;
                     });
+                    ids = utils.uniqstr(ids);
                     box.getObj(ids).then(function(rec_objs) {
                         rec_objs.map(function(rec_obj) {
                             var src = _({}).extend(_rec_map[rec_obj.id], {collection:journal});
