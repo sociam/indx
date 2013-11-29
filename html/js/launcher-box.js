@@ -13,7 +13,7 @@ angular.module('launcher')
 				var u = utils, sa = function(f) { utils.safeApply($scope,f); };
 				$scope.obj_count = $scope.box ? $scope.box.getObjIDs().length : 0;
 				$scope.box.on('obj-add', function(result) { 
-					console.log('obj add ', result, typeof(result));
+					// console.log('obj add ', result, typeof(result));
 					sa(function() { $scope.obj_count++; });
 				});
 			}

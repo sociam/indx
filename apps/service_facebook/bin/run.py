@@ -23,7 +23,7 @@ from keyring.backends.pyfs import PlaintextKeyring
 from service_controller_facebook import FacebookServiceController
 
 
-logging.basicConfig(filename="facebook_service.log", level=logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG)
 
 config = {}
 
