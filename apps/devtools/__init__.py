@@ -182,7 +182,7 @@ class DevToolsApp(BaseHandler):
         self.return_ok(request, data = { "response": config })
 
 
-    def run_test(self, request):
+    def start_test(self, request):
         manifest = self.get_requested_manifest(request)
 
         logging.debug('running tests %s' % manifest['name'])
@@ -251,11 +251,11 @@ DevToolsApp.subhandlers = [
         'content-type':'application/json'
         },
     {
-        "prefix": "devtools/api/run_tests",
+        "prefix": "devtools/api/start_test",
         'methods': ['POST'],
         'require_auth': False,
         'require_token': False,
-        'handler': DevToolsApp.run_test,
+        'handler': DevToolsApp.start_test,
         'accept':['application/json'],
         'content-type':'application/json'
         }
