@@ -924,7 +924,7 @@ angular
 				this._ajax("PUT",  this.getID() + "/update", { version: escape(version), data : JSON.stringify(sobjs)  })
 					.then(function(response) {
 						this_._setVersion(response.data["@version"]);
-						var dobjlist = this_._dobjlist(); 
+						var dobjlist = this_._objlistdict(); 
 						var newids = _(objIDs).filter(function(oid) { return !(dobjlist[oid]); });
 						if (newids.length) {
 							// update objectlist
