@@ -12,6 +12,7 @@
     "karma": "~0.8.8",
     "optimist": "~0.6.0",
     "node-promise": "~0.5.8",
-    "underscore": "~1.5.2"
+    "underscore": "~1.5.2",
+    "glob": "~3.2.7"
   }
 }
