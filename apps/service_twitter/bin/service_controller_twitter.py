@@ -19,7 +19,6 @@
 import argparse, ast, logging, getpass, sys, urllib2, json, sys, tweepy, datetime, time, threading
 from datetime import datetime
 from threading import Timer, Thread
-from indxclient import IndxClient
 from tweepy.streaming import StreamListener
 from tweepy import OAuthHandler
 from tweepy import Stream
@@ -77,28 +76,32 @@ class TwitterServiceController:
         #load the main services
         #twitter_service.run_main_services()
 
-        def called(result):
-            logging.info('Service Controller Twitter - Retreiving Stream')
+        def indx_cb(empty):
+
+            def called(result):
+                logging.info('Service Controller Twitter - Retreiving Stream')
 
 
-        def command_die(reason):
-            logging.error('Service Controller Twitter - Retreiving Stream Failed, error is {0}'.format(reason))
+            def command_die(reason):
+                logging.error('Service Controller Twitter - Retreiving Stream Failed, error is {0}'.format(reason))
 
-        
-        first_run = True
+            
+            first_run = True
 
-        logging.info("Service Controller Twitter - Running Twitter Service!")
+            logging.info("Service Controller Twitter - Running Twitter Service!")
 
-        def loop_harvester():
-            #print "running harvester"
-            twitter_service.run_additional_services()
-            if not first_run:
-                twitter_service.run_main_services()
-            logging.debug("setting up Reactor loop...")
-            reactor.callLater(15.0, loop_harvester);
+            def loop_harvester():
+                #print "running harvester"
+                twitter_service.run_additional_services()
+                if not first_run:
+                    twitter_service.run_main_services()
+                logging.debug("setting up Reactor loop...")
+                reactor.callLater(15.0, loop_harvester);
 
-        loop_harvester() 
+            loop_harvester() 
 
-        first_run = False
+            first_run = False
 
+        twitter_service.get_indx().addCallbacks(indx_cb, lambda failure: logging.error("Facebook Service Controller error logging into INDX: {0}".format(failure)))
         reactor.run()
+

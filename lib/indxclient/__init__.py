@@ -1,1 +1,1 @@
-from indxclient import IndxClient
+from indxclient import IndxClient, IndxClientAuth, IndxHTTPClient

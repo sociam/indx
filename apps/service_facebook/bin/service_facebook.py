@@ -20,7 +20,8 @@ import argparse, ast, logging, getpass, sys, urllib2, json, sys, datetime, time,
 from facebook import GraphAPI
 from datetime import timedelta
 from threading import Timer
-from indxclient import IndxClient
+from indxclient import IndxClient, IndxClientAuth
+from twisted.internet.defer import Deferred
 
 
 
@@ -37,7 +38,7 @@ class FacebookService:
 
     def __init__(self, config):
         logging.debug('Facebook Service - Getting configs from Facebook Controller')
-        self.indx_con = IndxClient(config['address'], config['box'], config['user'], config['password'], app_id)
+        self.config = config
         self.facebook_access_token_long = config['facebook_access_token_long']
         self.facebook_userid = config['facebook_userid']
         self.facebook_access_token_expire_time = config['facebook_access_token_expire_time']
@@ -49,6 +50,20 @@ class FacebookService:
         if self.check_if_token_not_expired():
             logging.debug('Facebook Service - Token is active still. Great News!')
             self.token_active = True
+
+    def get_indx(self):
+        return_d = Deferred()
+#        self.indx_con = IndxClient(self.config['address'], self.config['box'], self.config['user'], self.config['password'], app_id)
+        def authed_cb(): 
+            def token_cb(token):
+                self.indx_con = IndxClient(self.config['address'], self.config['box'], app_id, token = token)
+                return_d.callback(True)
+
+            authclient.get_token(self.config['box']).addCallbacks(token_cb, return_d.errback)
+            
+        authclient = IndxClientAuth(self.config['address'], app_id)
+        authclient.auth_plain(self.config['user'], self.config['password']).addCallbacks(lambda response: authed_cb(), return_d.errback)
+        return return_d
 
     def is_token_active(self):
         return self.token_active
