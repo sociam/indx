@@ -63,12 +63,46 @@ angular
 
 		};
 
+		var parseValue = function(val) {
+			console.log("parsing value ", val);
+			if (Array.isArray(val)) {
+				return val.map(function(o) {
+					if (o.hasOwnProperty("@id")) {
+						return o["@id"];
+					} 
+					if (o.hasOwnProperty("@value")) {
+						console.log(o["@type"]);
+						return literalDeserialisers[o["@type"]](o["@value"]);
+					}
+				});
+			} else {
+				return val;
+			}
+		};
+		var literalDeserialisers = {
+			'': function(v) { return v; },
+			"http://www.w3.org/2001/XMLSchema#integer": function(v) { return parseInt(v, 10); },
+			"http://www.w3.org/2001/XMLSchema#float": function(v) { return parseFloat(v, 10); },
+			"http://www.w3.org/2001/XMLSchema#double": function(v) { return parseFloat(v, 10); },
+			"http://www.w3.org/2001/XMLSchema#boolean": function(v) { return v.toLowerCase() === 'true'; },
+			"http://www.w3.org/2001/XMLSchema#dateTime": function(v) { return new Date(Date.parse(v)); }
+		};
+
 		$scope.serializers = {
 			'json' : function(obs) {
 				console.log("serializing list to json");
-				// strs = l.map(function(x) {return JSON.stringify(x); });
-				// return ['[',strs.join(',\n'),']'].join('\n');
-				return JSON.stringify(obs);
+				ids = Object.keys(obs);
+				newobs = ids.map(function(oid) {
+					console.log("processing object ",obs[oid]);
+					obj = obs[oid];
+					newobj = {};
+					keys = Object.keys(obj);
+					for (i in keys) {
+						newobj[keys[i]] = parseValue(obj[keys[i]]);
+					}
+					return newobj;
+				});
+				return JSON.stringify(newobs);
 			},
 			'jsonld' : function(obs) {
 				console.log("serializing list to json-ld");
@@ -80,7 +114,11 @@ angular
 			},
 			'turtle' : function(obs) {
 				console.log("serializing list to turtle");
-				return toTurtle(obs);
+				// return toTurtle(obs);
+			}, 
+			'csv' : function(obs) {
+				console.log("serializing list to csv");
+				// return toCSV(obs);
 			}
 		};
 		var file_formats = {
