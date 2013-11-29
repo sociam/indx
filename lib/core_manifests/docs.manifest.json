@@ -13,5 +13,5 @@
 		}
 	],
 	"documentation": "docs.docs-config.js",
-	"tests": "docs.tests-config.js"
+	"tests": [ { "config": "docs.tests-config.js" } ]
 }
