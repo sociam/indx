@@ -36,8 +36,8 @@ angular
         var getConfigFromService = function() {
             s._ajax('GET', 'apps/fitbit/api/get_config').then(function(x) { 
                 console.log(x.config);
-                var config = x.config;
-                // var config = JSON.parse(x.config);
+                // var config = x.config;
+                var config = JSON.parse(x.config);
                 if (config.fitbit) {
                     if (config.fitbit.token) {
                         sa(function() { 
@@ -138,15 +138,15 @@ angular
             .then(function(x) { console.info('App Stop result (): ', x); status('Stop command successful'); })
             .fail(function(x) { status(' Error ' + x.toString()); });
         };
-        // setInterval(function() { 
-        //     s._ajax('GET','apps/fitbit/api/is_running').then(function(r) { 
-        //         sa(function() { 
-        //             $scope.runstate = r.running ? 'Running' : 'Stopped';  
-        //         });
-        //     }).fail(function(r) {
-        //         sa(function() { $scope.runstate = 'Unknown'; });
-        //     });
-        // }, 1000);
+        setInterval(function() { 
+            s._ajax('GET','apps/fitbit/api/is_running').then(function(r) { 
+                sa(function() { 
+                    $scope.runstate = r.running ? 'Running' : 'Stopped';  
+                });
+            }).fail(function(r) {
+                sa(function() { $scope.runstate = 'Unknown'; });
+            });
+        }, 3000);
 
         // var initialise = function() {
         //     $("#step-text").hide();
