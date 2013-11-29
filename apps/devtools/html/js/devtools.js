@@ -36,11 +36,13 @@ angular
 				});
 				this.getResults();
 			},
-			run: function (continuous) {
+			start: function (singleRun) {
 				var that = this;
 				this.results = null;
 				this.isRunning = true;
-				var params = '';
+				console.log(this)
+				var params = 'id=' + this.id;
+				params += '&manifest_id=' + this.manifest.id;
 				if (this.params) {
 					var paramsObj = {};
 					_.each(this.params, function (param) {
@@ -48,10 +50,10 @@ angular
 					});
 					params += '&params=' + JSON.stringify(paramsObj);
 				}
-				if (continuous) {
-					params += '&continuous=' + true;
+				if (singleRun) {
+					params += '&singlerun=' + true;
 				}
-				$.post('api/run_tests?id=' + this.manifest.id + params)
+				$.post('api/start_test?' + params)
 					.always(function () {
 						that.isRunning = false;
 						u.safeApply($rootScope);
@@ -66,8 +68,8 @@ angular
 						u.safeApply($rootScope);
 					});
 			},
-			start: function () {
-				this.run(true);
+			runOnce: function () {
+				this.singleRun(true);
 			},
 			getResults: function () {
 				var that = this,
@@ -125,7 +127,18 @@ angular
 				this.options = options;
 			},
 			add: function (model, options) {
-				if (!(_.isArray(model)) && !(model instanceof Backbone.Model)) {
+				var that = this;
+				console.log('adding', model)
+				if (_.isArray(model)) {
+					_.each(model, function (model) {
+						that.add(model, options);
+					});
+					return this;
+				}
+				if (!(model instanceof Backbone.Model)) {
+					console.log('we\'re adding', model)
+					model.id = this.length;
+					console.log(model)
 					model = new this.model(model, this.options);
 				}
 				return Backbone.Collection.prototype.add.call(this, model, options);
