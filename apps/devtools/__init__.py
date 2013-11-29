@@ -89,9 +89,9 @@ class DevToolsApp(BaseHandler):
             if 'documentation' in manifest:
                 config_file = manifest['documentation']
                 manifest['documentation'] = self.doc_info(manifest, config_file)
-            if 'tests' in manifest:
-                config_file = manifest['tests']
-                manifest['tests'] = self.test_info(manifest, config_file)
+            #if 'tests' in manifest:
+                #config_file = manifest['tests']
+                #manifest['tests'] = self.test_info(manifest, config_file)
 
         return manifests
 
@@ -132,9 +132,9 @@ class DevToolsApp(BaseHandler):
             if 'documentation' in manifest:
                 del manifest['documentation']['config_path']
                 del manifest['documentation']['path']
-            if 'tests' in manifest:
-                del manifest['tests']['config_path']
-                del manifest['tests']['path']
+            #if 'tests' in manifest:
+            #    del manifest['tests']['config_path']
+            #    del manifest['tests']['path']
         self.return_ok(request, data = { 'response': manifests })
 
     def get_requested_manifest(self, request):

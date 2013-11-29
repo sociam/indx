@@ -16,7 +16,7 @@ angular
 		var u = utils,
 			box;
 
-		var TestsModel = Backbone.Model.extend({
+		var Test = Backbone.Model.extend({
 			initialize: function (attributes, options) {
 				var that = this;
 				this.manifest = options.manifest;
@@ -24,13 +24,10 @@ angular
 					that.haveBeenRun = that.get('have_been_run');
 					that.getResults();
 				});
-				var raw = this.manifest.get('tests');
-				this.set(raw);
 				this.params = this.get('params');
 				_.each(this.params, function (param) {
 					param.value = param['default'];
 				});
-				this.isAvailable = !!raw;
 				box.getObj('test-' + this.manifest.get('name')).then(function (obj) {
 					that.obj = obj;
 					obj.on('change', function () {
@@ -122,6 +119,19 @@ angular
 			}
 		});
 
+		var Tests = Backbone.Collection.extend({
+			model: Test,
+			initialize: function (models, options) {
+				this.options = options;
+			},
+			add: function (model, options) {
+				if (!(_.isArray(model)) && !(model instanceof Backbone.Model)) {
+					model = new this.model(model, this.options);
+				}
+				return Backbone.Collection.prototype.add.call(this, model, options);
+			}
+		});
+
 		var DocumentationModel = Backbone.Model.extend({
 			initialize: function (attrs, options) {
 				var that = this;
@@ -167,7 +177,7 @@ angular
 			},
 			initialize: function () {
 				this.documentation = new DocumentationModel(undefined, { manifest: this });
-				this.tests = new TestsModel(undefined, { manifest: this });
+				this.tests = new Tests(this.get('tests'), { manifest: this });
 				this.icon = '';
 				if (this.get('icons')) {
 					if (this.get('icons')['font-awesome']) {
@@ -239,6 +249,8 @@ angular
 		$rootScope.$watch('selectedBox + selectedUser', init);
 		init();
 		window.store = client.store;
+
+		window.manifests = manifests;
 
 		return {
 			manifests: manifests

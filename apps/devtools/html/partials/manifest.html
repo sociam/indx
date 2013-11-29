@@ -87,10 +87,10 @@
 			</div>
 		</div>
 	</div>
-	<div ng-if="!manifest.tests.isAvailable">
+	<div ng-if="!manifest.tests.length">
 		<p class="description">No tests has been provided</p>
 	</div>
-	<div ng-if="manifest.tests.isAvailable">
+	<div ng-if="manifest.tests.length">
 		<div ng-if="manifest.tests.isRunning">
 			<p class="description">Please wait, tests are running.</p>
 			<div class="progress progress-striped active">
