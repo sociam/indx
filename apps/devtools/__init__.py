@@ -193,7 +193,7 @@ class DevToolsApp(BaseHandler):
         if 'params' in request.args:
             cmd_str += '--params=\'%s\' ' % request.args['params'][0]
         if 'singlerun' in request.args:
-            cmd_str += '--singlerun'
+            cmd_str += '--single-run'
         logging.debug('Exec %s' % cmd_str)
 
         def output_cb(strs):
