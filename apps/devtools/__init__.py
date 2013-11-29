@@ -235,8 +235,8 @@ DevToolsApp.subhandlers = [
     {
         "prefix": "devtools/api/manifests",
         'methods': ['GET'],
-        'require_auth': False,
-        'require_token': False,
+        'require_auth': True,
+        'require_token': True,
         'handler': DevToolsApp.list_manifests,
         'accept':['application/json'],
         'content-type':'application/json'
@@ -244,8 +244,8 @@ DevToolsApp.subhandlers = [
     {
         "prefix": "devtools/api/build_doc",
         'methods': ['POST'],
-        'require_auth': False,
-        'require_token': False,
+        'require_auth': True,
+        'require_token': True,
         'handler': DevToolsApp.build_doc,
         'accept':['application/json'],
         'content-type':'application/json'
@@ -253,8 +253,8 @@ DevToolsApp.subhandlers = [
     {
         "prefix": "devtools/api/start_test",
         'methods': ['POST'],
-        'require_auth': False,
-        'require_token': False,
+        'require_auth': True,
+        'require_token': True,
         'handler': DevToolsApp.start_test,
         'accept':['application/json'],
         'content-type':'application/json'
