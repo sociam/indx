@@ -20,7 +20,8 @@
 	],
 	"documentation": "indx.docs-config.js",
 	"tests": [
-		{ 	"type": "browser-js",
+		{ 	"title": "Browser JavaScript testing",
+			"type": "browser-js",
 			"config": "indx.tests-config.js",
 			"params": [
 				{	"name": "username",
@@ -32,7 +33,7 @@
 				{	"name": "singleRun",
 					"title": "Single Run",
 					"type": "text",
-					"default": "false" }
+					"default": "false" },
 				{	"name": "indxURL",
 					"title": "INDX URL",
 					"type": "text",
