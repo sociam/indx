@@ -24,10 +24,9 @@ import glob
 
 class DevToolsApp(BaseHandler):
 
-
     def __init__(self, server):
         BaseHandler.__init__(self, server)
-        logging.debug(' hello')
+        self.started_tests = []
         self.isLeaf = True
 
     def list_manifests_in(self, appdir):
@@ -76,9 +75,9 @@ class DevToolsApp(BaseHandler):
 
                 for manifest in app_manifests:
                     url = '/apps/' + d
+                    manifest['id'] = 'app-' + d
                     manifest['url'] = url
                     manifest['type'] = 'app'
-                    manifest['id'] = 'app-' + d
                     if 'icons' in manifest:
                         for icon_type, icon in manifest['icons'].items():
                             if icon_type != 'font-awesome':
@@ -93,10 +92,12 @@ class DevToolsApp(BaseHandler):
                 for i, test in enumerate(manifest['tests']):
                     path = os.path.sep.join(['apps', 'devtools', 'html', 'tests',
                         manifest['id'], str(i)])
+                    started_test = self.started_test(manifest['id'], str(i))
                     test['url'] = '/apps/devtools/tests/{0}/{1}/test-results.xml'.format(manifest['id'], str(i))
-                    test['built'] = os.path.exists(path)
                     test['path'] = path
+                    test['built'] = os.path.exists(path)
                     test['config'] = manifest['manifest_dir'] + os.path.sep + test['config']
+                    test['started'] = bool(started_test)
 
         return manifests
 
@@ -184,7 +185,7 @@ class DevToolsApp(BaseHandler):
             self.return_not_found(request)
             return
 
-        logging.debug('running test %s from %s' % (test_id, manifest['name']))
+        logging.debug('starting test %s from %s' % (test_id, manifest['name']))
 
         cmd_str = 'node lib/tests/run.js %s %s ' % (test['type'], test['config'])
         # cmd_str += '--reporters junit '
@@ -198,32 +199,58 @@ class DevToolsApp(BaseHandler):
 
         def output_cb(strs):
             logging.debug(strs);
-            #self.return_ok(request)
 
-        self.execute(cmd_str, output_cb)
-        self.return_ok(request)
+        p = self.execute(cmd_str, output_cb)
+        self.started_tests.append([manifest['id'], test_id, p])
 
-        # out, err = cmd.communicate()
-        # logging.debug(out);
-        # if cmd.returncode != 0:
-        #     logging.debug('Non-zero exit status %s' % err)
-        #     self.return_internal_error(request)
-        #     return
-        # config['build_output'] = out;
-        # config['have_been_run'] = os.path.exists(config['path']);
-        # self.return_ok(request, data = { "response": config })
+        manifest = self.get_requested_manifest(request) # refresh the manifest
+        self.return_ok(request, data = { 'response': manifest })
+
+    def started_test(self, manifest_id, test_id):
+        test = None
+        for _test in self.started_tests:
+            if _test[0] == manifest_id and _test[1] == test_id:
+                test = _test
+        return test
+
+    def stop_test(self, request):
+        manifest = self.get_requested_manifest(request)
+
+        if not 'id' in request.args:
+            self.return_forbidden(request)
+            return
+
+        test_id = request.args['id'][0]
+        test = manifest['tests'][int(test_id)]
+
+        if not test:
+            self.return_not_found(request)
+            return  
+
+        logging.debug('stopping test %s from %s' % (test_id, manifest['name']))
+
+        started_test = self.started_test(manifest['id'], test_id)
+
+        if not started_test:
+            self.return_not_found(request)
+
+        started_test[2].terminate()
+
+        manifest = self.get_requested_manifest(request) # refresh the manifest
+        self.return_ok(request, data = { 'response': manifest })
 
 
     def execute(self, cmd_str, output_cb):
         def enqueue_output(out):
             for line in iter(out.readline, b''):
-                output_cb(line);
+                output_cb(line.strip());
             out.close()
 
         p = Popen([cmd_str], stdout=PIPE, stderr=PIPE, bufsize=1, shell=True)
         t = Thread(target=enqueue_output, args=[p.stdout])
         t.daemon = True # thread dies with program
         t.start()
+        return p
 
 
 
@@ -254,6 +281,15 @@ DevToolsApp.subhandlers = [
         'require_auth': True,
         'require_token': False,
         'handler': DevToolsApp.start_test,
+        'accept':['application/json'],
+        'content-type':'application/json'
+        },
+    {
+        "prefix": "devtools/api/stop_test",
+        'methods': ['POST'],
+        'require_auth': True,
+        'require_token': False,
+        'handler': DevToolsApp.stop_test,
         'accept':['application/json'],
         'content-type':'application/json'
         }
