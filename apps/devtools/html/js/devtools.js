@@ -21,9 +21,12 @@ angular
 				var that = this;
 				this.manifest = options.manifest;
 				this.on('change', function () {
+					console.log('changed', that.toJSON())
 					that.haveBeenRun = that.get('have_been_run');
+					that.isStarted = that.get('started');
 					that.getResults();
 				});
+				this.trigger('change');
 				this.params = this.get('params');
 				_.each(this.params, function (param) {
 					param.value = param['default'];
@@ -38,9 +41,28 @@ angular
 			},
 			start: function (singleRun) {
 				var that = this;
-				this.results = null;
-				this.isRunning = true;
-				console.log(this)
+				//this.results = null;
+				//this.isRunning = true;
+				var params = this.paramsStr();
+				if (singleRun) {
+					params += '&singlerun=' + true;
+				}
+				$.post('api/start_test?' + params)
+					.always(function () {
+						//that.isRunning = false;
+						u.safeApply($rootScope);
+					}).then(function (r) {
+						that.set(r.response);
+						that.err = false;
+						//that.getResults().then(function () {
+						//	u.safeApply($rootScope);
+						//});
+					}).fail(function () {
+						that.err = true;
+						u.safeApply($rootScope);
+					});
+			},
+			paramsStr: function () {
 				var params = 'id=' + this.id;
 				params += '&manifest_id=' + this.manifest.id;
 				if (this.params) {
@@ -50,19 +72,22 @@ angular
 					});
 					params += '&params=' + JSON.stringify(paramsObj);
 				}
-				if (singleRun) {
-					params += '&singlerun=' + true;
-				}
-				$.post('api/start_test?' + params)
+				return params;
+			},
+			stop: function (singleRun) {
+				var that = this;
+				//this.isRunning = true;
+				var params = this.paramsStr();
+				$.post('api/stop_test?' + params)
 					.always(function () {
-						that.isRunning = false;
+						//that.isRunning = false;
 						u.safeApply($rootScope);
 					}).then(function (r) {
 						that.set(r.response);
 						that.err = false;
-						that.getResults().then(function () {
-							u.safeApply($rootScope);
-						});
+						//that.getResults().then(function () {
+						//	u.safeApply($rootScope);
+						//});
 					}).fail(function () {
 						that.err = true;
 						u.safeApply($rootScope);

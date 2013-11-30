@@ -15,7 +15,7 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import os, logging, json
+import os, logging, json, signal
 from indx.webserver.handlers.base import BaseHandler
 from subprocess import check_output, PIPE, Popen
 from threading  import Thread
@@ -185,6 +185,11 @@ class DevToolsApp(BaseHandler):
             self.return_not_found(request)
             return
 
+        started_test = self.started_test(manifest['id'], test_id)
+
+        if started_test: # already started
+            self.return_forbidden(request)
+
         logging.debug('starting test %s from %s' % (test_id, manifest['name']))
 
         cmd_str = 'node lib/tests/run.js %s %s ' % (test['type'], test['config'])
@@ -204,7 +209,7 @@ class DevToolsApp(BaseHandler):
         self.started_tests.append([manifest['id'], test_id, p])
 
         manifest = self.get_requested_manifest(request) # refresh the manifest
-        self.return_ok(request, data = { 'response': manifest })
+        self.return_ok(request, data = { 'response': manifest['tests'][int(test_id)] })
 
     def started_test(self, manifest_id, test_id):
         test = None
@@ -234,10 +239,15 @@ class DevToolsApp(BaseHandler):
         if not started_test:
             self.return_not_found(request)
 
-        started_test[2].terminate()
+        p = started_test[2]
+        #p.kill()
+        #p.wait()
+        os.kill(p.pid, signal.SIGINT) # WHY WON'T YOU DIE
+
+        self.started_tests.remove(started_test)
 
         manifest = self.get_requested_manifest(request) # refresh the manifest
-        self.return_ok(request, data = { 'response': manifest })
+        self.return_ok(request, data = { 'response': manifest['tests'][int(test_id)] })
 
 
     def execute(self, cmd_str, output_cb):

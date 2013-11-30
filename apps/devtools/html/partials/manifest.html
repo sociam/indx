@@ -70,18 +70,18 @@
 				<tr>
 					<th>{{test.get('title')}}</th>
 					<td>
-						<button type="button" class="btn btn-default btn-sm" ng-click="test.editingParams = true" ng-if="manifest.tests.params">Parameters</button>
-						<button type="button" class="btn btn-default btn-sm" ng-click="test.start()" ng-if="!manifest.tests.isStarted">Start</button>
-						<button type="button" class="btn btn-default btn-sm" ng-click="test.stop()" ng-if="manifest.tests.isStarted">Stop</button>
+						<button type="button" class="btn btn-default btn-sm" ng-click="test.editingParams = true" ng-if="test.params">Parameters</button>
+						<button type="button" class="btn btn-default btn-sm" ng-click="test.start()" ng-if="!test.isStarted">Start</button>
+						<button type="button" class="btn btn-default btn-sm" ng-click="test.stop()" ng-if="test.isStarted">Stop</button>
 						<button type="button" class="btn btn-default btn-sm" ng-click="test.runOnce()">Run once</button>
-						<a href="{{ manifest.tests.get('url') }}" target="_blank" class="btn btn-default btn-sm" ng-if="manifest.results">Download results</a>
+						<a href="{{ test.get('url') }}" target="_blank" class="btn btn-default btn-sm" ng-if="manifest.results">Download results</a>
 						<p class="navbar-text navbar-right" ng-if="tests.results">Last tested on</p>
 					</td>
 					<td>
 						<div ng-if="test.results">
 							{{ test.results.tests }} tests, 
 							<span ng-if="test.results.failures === 0" class="text-success">All passed</span>
-							<span ng-if="test.results.failures > 0">{{ manifest.tests.results.failures }} failed</span>
+							<span ng-if="test.results.failures > 0">{{ test.results.failures }} failed</span>
 						</div>
 						<div ng-if="test.isRunning">
 							<p class="description">Please wait, tests are running.</p>
