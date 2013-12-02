@@ -1,0 +1,25 @@
+{
+	"name": "Instagram Service",
+	"version": 0.1,
+	"type":["service"],
+	"description": "service_instagram",
+	"configpanel":"html/index.html",
+	"on_boot": 0,
+	"run":["python", "apps/service_instagram/bin/run.py", "--server", "{0}"],
+	"set_config":["python", "apps/service_instagram/bin/run.py", "--config", "{0}"],
+	"get_config":["python", "apps/service_instagram/bin/run.py", "--get-config"],
+	"icons": { 
+		"128": "img/icon-128.png",
+		"512": "img/icon-512.png" 
+	},
+	"author": [
+		{
+			"name": "Ramine Tinati",
+			"email": "rt506@ecs.soton.ac.uk"
+		},
+		{
+			"name": ".",
+			"email":"."
+		}
+	]
+}
