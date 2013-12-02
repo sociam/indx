@@ -292,7 +292,7 @@
                 chrome.windows.onCreated.addListener(function(w) {
                     if (w && w.id) {
                         console.log('on created >> ', w);
-                        chrome.tabs.getSelected(w.id, function(tab) { this_.trigger("user-action", { url: tab.url, title: tab.title });  });
+                        chrome.tabs.getSelected(w.id, function(tab) { this_.trigger("user-action", { url: tab.url, title: tab.title, favicon:tab.favIconUrl, tabid: tab.id, windowid:w.id });  });
                     }
                 });
                 // removed window, meaning focus lost
@@ -303,21 +303,21 @@
                     if (w >= 0) {
                         chrome.tabs.getSelected(w, function(tab) {
                             // console.info("window focus-change W:", w, ", tab:", tab, 'tab url', tab.url);
-                            this_.trigger("user-action", tab !== undefined ? { url: tab.url, title: tab.title } : undefined);
+                            this_.trigger("user-action", tab !== undefined ? { url: tab.url, title: tab.title, favicon:tab.favIconUrl, tabid: tab.id, windowid:w.id } : undefined);
                         });
                     }
                 });
                 // tab selection changed
                 chrome.tabs.onSelectionChanged.addListener(function(tabid, info, t) {
                     chrome.tabs.getSelected(info.windowId, function(tab) {
-                        this_.trigger("user-action", tab !== undefined ? { url: tab.url, title: tab.title } : undefined);
+                        this_.trigger("user-action", tab !== undefined ? { url: tab.url, title: tab.title, favicon:tab.favIconUrl, tabid:tab.id, windowid:info.windowId } : undefined);
                     });
                 });
                 // updated a tab 
                 chrome.tabs.onUpdated.addListener(function(tabid, changeinfo, tab) {
                     // console.info("tab_updated", t.url, changeinfo.status);
                     if (changeinfo.status == 'loading') { return; }
-                    this_.trigger("user-action", { url: tab.url, title: tab.title });
+                    this_.trigger("user-action", { url: tab.url, title: tab.title, tabid: tab.id, favicon:tab.favIconUrl, windowid:window.id });
                 });
 
                 this._init_history();
@@ -418,6 +418,7 @@
             },
             handle_action:function(tabinfo) {
                 var url = tabinfo && tabinfo.url, title = tabinfo && tabinfo.title;
+                if (tabinfo.favicon) { console.log('FAVICON ', tabinfo.favicon); }
                 var this_ = this;
                 setTimeout(function() { 
                     var now = new Date();
@@ -425,6 +426,7 @@
                         this_.current_record.end = now;
                         this_._record_updated(this_.current_record);
                         if (url === this_.current_record.location) { 
+                            _(this_.current_record).extend(tabinfo);
                             // we're done
                             // console.info('just updated, returning');
                             return;
@@ -437,7 +439,7 @@
                     }
                     // go on to create a new record
                     if (url !== undefined) {
-                        this_.current_record = this_.make_record({start: now, end:now, to: url, location: url, title:title});
+                        this_.current_record = this_.make_record(_({start: now, end:now, to: url, location: url, title:title}).extend(tabinfo));
                         this_.data.push(this_.current_record);
                         this_._record_updated(this_.current_record);
                     }

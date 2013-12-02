@@ -8,6 +8,14 @@
 				DEBUG_LEVELS: { INFO:INFO, LOG:LOG, WARN:WARN, ERROR:ERROR },
 				setDebugLevel:function(lvl) {	DEBUG_LEVEL = lvl; return lvl; },
                 uuid: function(){ return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {var r = Math.random()*16|0,v=c=='x'?r:r&0x3|0x8;return v.toString(16);});},
+                toBlankDict:function(L) {
+                	var o = {};
+                	L.map(function(l) { o[l] = true; });
+                	return o;
+                },
+                fastkeys:function(obj) {
+                	return Object.keys(obj); 
+                },
 				guid: function(len) {
 					len = len || 64;
 					var alpha = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ-';
