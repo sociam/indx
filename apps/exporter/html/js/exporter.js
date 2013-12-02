@@ -68,14 +68,14 @@ angular
 		};
 
 		var parseValue = function(val) {
-			console.log("parsing value ", val);
+			// console.log("parsing value ", val);
 			if (Array.isArray(val)) {
 				return val.map(function(o) {
 					if (o.hasOwnProperty("@id")) {
 						return o["@id"];
 					} 
 					if (o.hasOwnProperty("@value")) {
-						console.log(o["@type"]);
+						// console.log(o["@type"]);
 						return literalDeserialisers[o["@type"]](o["@value"]);
 					}
 				});
@@ -140,11 +140,11 @@ angular
 				});				
 				return JSON.stringify(out);	
 			},
-			'turtle' : function(obs) {
+			'ntriples' : function(obs) {
 				console.log("serializing list to turtle");
 				defaultPrefix = "@prefix : <"+client.store.get('server_host')+"/box/"+$scope.selectedBox+"/"+"> .\n";
 				indxPrefix = "@prefix indx: <http://sociam.org/ontology/indx/> .\n";
-				return defaultPrefix + indxPrefix + "\n"+ toTurtle(obs);
+				return defaultPrefix + indxPrefix + "\n"+ toN3(obs);
 			}, 
 			'csv' : function(obs) {
 				console.log("serializing list to csv");
@@ -185,7 +185,7 @@ angular
 			return cols + "\n" +rows.join("\n");
 		};
 
-		var toTurtle = function(obs) {
+		var toN3 = function(obs) {
 			ids = Object.keys(obs);
 			triples = ids.map(function(oid) {
 				obj = obs[oid];
@@ -195,16 +195,22 @@ angular
 					key = keys[i];
 					if (key != "@id") {
 						console.log(obj[key]);
-						val = parseValue(obj[key]);
-						console.log(val);
-						// if (Array.isArray(val) && (val.length > 1)) {
-						// 	objTriples.push("\t :"+key + " :"+val.toString());
-						// } else {
-						// 	row.push('"'+val.toString()+'"');
-						// }
+						if (Array.isArray(obj[key])) {
+							values = obj[key].map(function(o) {
+								if (o.hasOwnProperty("@id")) {
+									return ":"+o["@id"]; // make this check when it's a absolute or relative url
+								} 
+								if (o.hasOwnProperty("@value")) {
+									return "\""+o["@value"]+"\"";
+								}
+							});
+							objTriples.push("\t :"+key + " "+values.toString());
+						} else {
+							objTriples.push("\t :"+ key+ " "+ parseValue(obj[key]).toString());
+						}
 					}
 				}
-				return objTriples.join(";") + " .";
+				return objTriples.join(";\n") + " .";
 			});
 			return triples.join("\n");
 		}
@@ -212,7 +218,7 @@ angular
 		var file_formats = {
 			'json' : 'json',
 			'jsonld' : 'jsonld',
-			'turtle' : 'ttl', 
+			'ntriples' : 'nt', 
 			'csv' : 'csv'
 		};
 
