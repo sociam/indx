@@ -23,6 +23,7 @@ import cookielib
 import uuid
 import pprint
 import cjson
+from indx.crypto import rsa_encrypt, sha512_hash
 from twisted.internet import reactor, threads
 from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
@@ -397,7 +398,7 @@ class IndxHTTPClient:
                     return_d.errback(Failure(Exception("No session ID was available ")))
 
             # do a request to start a session and get a cookie
-            self.get("auth/whoami").addCallbacks(whoami_cb, return_d.errback)
+            self.get("{0}auth/whoami".format(self.address)).addCallbacks(whoami_cb, return_d.errback)
         return return_d
 
 
@@ -573,37 +574,37 @@ class IndxClientAuth:
 
         return return_d
         
-    def auth_keys(self, key_local_public, key_local_private, key_remote):
+    def auth_keys(self, key_remote):
         """ Key based authentication, similar to RFC4252. """
         return_d = Deferred()
         try:
-            pass
-#            self.is_authed = False
-#
-#            url = "{0}auth/login".format(self.address)
-#            #values = { ...  keys etc}
-#
-#            self._debug("Calling auth_keys")
-#
-#            try:
-#                # TODO implement
-#                # status = self.client.post(url, values)
-#
-#                if status['code'] != 200:
-#                    errmsg = "Authentication failed"
-#                    self._error(errmsg)
-#                    
-#                    return_d.errback(Failure(Exception(errmsg)))
-#                    return
-#
-#                self._debug("Authentication successful")
-#                self.is_authed = True
-#                return_d.callback(status)
-#            except Exception as e:
-#                return_d.errback(Failure(e))
+            SSH_MSG_USERAUTH_REQUEST = "50"
+            self.is_authed = False
 
             def session_id_cb(sessionid):
-                pass
+                algo = "SHA512"
+                ordered_signature_text = '{0}\t{1}\t"publickey"\t{2}\t{3}'.format(SSH_MSG_USERAUTH_REQUEST, sessionid, algo, key_remote)
+                signature = sha512_hash(rsa_encrypt(key_remote, key_remote))
+
+                body = "{0}\n{1}".format(ordered_signature_text, signature)
+
+                url = "{0}auth/login".format(self.address)
+                values = {"key_signature": body}
+
+                self._debug("Calling auth_keys")
+
+                # TODO change client.post etc to be async using twisted web clients
+                def responded_cb(status):
+                    if status['code'] != 200:
+                        errmsg = "Authentication failed"
+                        self._error(errmsg)
+                        raise Exception(errmsg)
+
+                    self._debug("Authentication successful")
+                    self.is_authed = True
+                    return_d.callback(status)
+                
+                self.client.post(url, values).addCallbacks(responded_cb, return_d.errback)
 
             self.get_session_identifier().addCallbacks(session_id_cb, return_d.errback)
 
