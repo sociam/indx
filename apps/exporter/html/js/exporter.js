@@ -60,7 +60,11 @@ angular
 		};
 
 		$scope.createContextObj = function() {
-
+			context = {};
+			// what is the box url in indx? 
+			context["vocab"]=client.store.get('server_host')+"/box/"+$scope.selectedBox+"/";
+			// what else should go in context? 
+			return context
 		};
 
 		var parseValue = function(val) {
@@ -107,24 +111,109 @@ angular
 			'jsonld' : function(obs) {
 				console.log("serializing list to json-ld");
 				// create a context for the list, containing as base/vocab? the url of the server/box
-				context = $scope.createContextObj();
-				// save the box as a graph? with @graph? or not needed ...
-
-				return ['[',obs.join(',\n'),']'].join('\n');	
+				out = {}
+				out["@context"] = $scope.createContextObj();
+				// save the box as a graph? with @graph? or not needed ...	
+				ids = Object.keys(obs);
+				out["@graph"] = ids.map(function(oid) {
+					console.log("processing object ",obs[oid]);
+					obj = obs[oid];
+					newobj = {};
+					keys = Object.keys(obj);
+					for (i in keys) {
+						key = keys[i];
+						val = obj[keys[i]];
+						if (Array.isArray(val)) {
+							newVal = val.map(function(o) {
+								if (o.hasOwnProperty("@id")) {
+									return {"@id":o["@id"]};
+								} else {
+									return o;
+								}
+							});
+							newobj[key] = newVal;
+						} else {
+							newobj[key] = val;
+						}
+					}
+					return newobj;
+				});				
+				return JSON.stringify(out);	
 			},
 			'turtle' : function(obs) {
 				console.log("serializing list to turtle");
-				// return toTurtle(obs);
+				defaultPrefix = "@prefix : <"+client.store.get('server_host')+"/box/"+$scope.selectedBox+"/"+"> .\n";
+				indxPrefix = "@prefix indx: <http://sociam.org/ontology/indx/> .\n";
+				return defaultPrefix + indxPrefix + "\n"+ toTurtle(obs);
 			}, 
 			'csv' : function(obs) {
 				console.log("serializing list to csv");
-				// return toCSV(obs);
+				return toCSV(obs);
 			}
 		};
+
+		var toCSV = function(obs) {
+			ids = Object.keys(obs);
+			cols=["@id"]
+			ids.map(function(oid) {
+				keys = Object.keys(obs[oid]);
+				for (i in keys) {
+					key = keys[i];
+					if (cols.indexOf(key) == -1) {
+						cols.push(key);
+					}
+				}
+			});
+			console.log(cols);
+			rows = ids.map(function(oid) {
+				obj = obs[oid];
+				row = [];
+				for (i in cols) {
+					if (obj.hasOwnProperty(cols[i])) {
+						val = parseValue(obj[cols[i]]);
+						if (Array.isArray(val) && (val.length > 1)) {
+							row.push('"['+val.toString()+']"');
+						} else {
+							row.push('"'+val.toString()+'"');
+						}
+					} else {
+						row.push("");
+					}
+				}
+				return row;
+			});
+			return cols + "\n" +rows.join("\n");
+		};
+
+		var toTurtle = function(obs) {
+			ids = Object.keys(obs);
+			triples = ids.map(function(oid) {
+				obj = obs[oid];
+				objTriples = [":"+oid+" a indx:Object"];
+				keys = Object.keys(obj);
+				for (i in keys) {
+					key = keys[i];
+					if (key != "@id") {
+						console.log(obj[key]);
+						val = parseValue(obj[key]);
+						console.log(val);
+						// if (Array.isArray(val) && (val.length > 1)) {
+						// 	objTriples.push("\t :"+key + " :"+val.toString());
+						// } else {
+						// 	row.push('"'+val.toString()+'"');
+						// }
+					}
+				}
+				return objTriples.join(";") + " .";
+			});
+			return triples.join("\n");
+		}
+
 		var file_formats = {
 			'json' : 'json',
 			'jsonld' : 'jsonld',
-			'turtle' : 'ttl'
+			'turtle' : 'ttl', 
+			'csv' : 'csv'
 		};
 
 	});
