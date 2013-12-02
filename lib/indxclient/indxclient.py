@@ -370,8 +370,36 @@ class IndxHTTPClient:
         self.params = params
 
         """ Set up a cookies-enabled opener locally. """
-        cj = cookielib.LWPCookieJar()
-        self.opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
+        self.cj = cookielib.LWPCookieJar()
+        self.opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(self.cj))
+
+    def get_session_identifier(self):
+        """ Get the identifier for the INDX session (initiates a session if necessary). """
+        return_d = Deferred()
+
+        def check_cookies():
+            for cookie in self.cj:
+                logging.debug("COOKIE: {0}".format(cookie))
+                if cookie.name == "TWISTED_SESSION":
+                    return cookie.value
+            return None
+
+        existing = check_cookies()
+        if existing is not None:
+            return_d.callback(existing)
+        else:
+
+            def whoami_cb(response):
+                session_id = check_cookies()
+                if session_id is not None:
+                    return_d.callback(session_id)
+                else:
+                    return_d.errback(Failure(Exception("No session ID was available ")))
+
+            # do a request to start a session and get a cookie
+            self.get("auth/whoami").addCallbacks(whoami_cb, return_d.errback)
+        return return_d
+
 
     def get(self, url, values = None, raw = False, method = "GET"):
         """ Do a GET, decode the result JSON and return it. """
@@ -573,6 +601,11 @@ class IndxClientAuth:
 #                return_d.callback(status)
 #            except Exception as e:
 #                return_d.errback(Failure(e))
+
+            def session_id_cb(sessionid):
+                pass
+
+            self.get_session_identifier().addCallbacks(session_id_cb, return_d.errback)
 
         except Exception as e:
             return_d.errback(Failure(e))
