@@ -453,7 +453,7 @@ angular
 				delete this.attributes.objlist; // next refresh
 				this.attributes.dobjlist = dol;
 			},
-			_setObjListfromList:function(dol) { 
+			_setObjDictfromList:function(dol) { 
 				this.attributes.objlist = dol;
 				this.attributes.dobjlist = utils.toBlankDict(dol);
 			},
@@ -784,7 +784,7 @@ angular
 				// u.debug('_updateObjectList +', added || ' ', deleted || ' ');
 				if (updatedObjIDs === undefined ) {
 					_(olds).extend(added);
-					deleted.map(function(d) { delete olds[d]; });
+					if (deleted) { deleted.map(function(d) { delete olds[d]; }); }
 					// current = _(u.uniqstr(olds.concat(added))).difference(deleted); //_(olds).chain().union(added).difference(deleted).value();
 					news = (added || []).slice(); died = (deleted || []).slice();
 					this._setObjListfromDict(olds);
@@ -797,7 +797,7 @@ angular
 					// console.info('warning: slow operation');
 					// died = _(_(olds).keys()).difference(current);
 					console.debug('setobjlistfromlist >> ', current.length);
-					this._setObjListfromList(current);
+					this._setObjDictfromList(current);
 				}
 
 				// u.debug('old objlist had ', olds.length, ' new has ', current.length, 'news > ', news);
