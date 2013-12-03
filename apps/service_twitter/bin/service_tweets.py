@@ -66,7 +66,7 @@ class TwitterService:
             authclient.get_token(self.credentials['box']).addCallbacks(token_cb, return_d.errback)
             
         authclient = IndxClientAuth(self.credentials['address'], appid)
-        authclient.auth_plain(self.credentials['user'], self.credentials['password']).addCallbacks(lambda response: authed_cb(), return_d.errback)
+        authclient.auth_plain(self.credentials['username'], self.credentials['password']).addCallbacks(lambda response: authed_cb(), return_d.errback)
         return return_d
 
     def stop_and_exit_service(self):
