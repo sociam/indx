@@ -3,7 +3,7 @@
 	"version": 0.1,
 	"type":["service"],
 	"description": "example nodejs service",
-	"on_boot": 1,
+	"on_boot": 0,
 	"configpanel":"html/index.html",
 	"run":["node", "bin/run.js", "--server", "{0}"],
 	"set_config":["node", "bin/run.js", "--config", "{0}"],
