@@ -15,6 +15,6 @@
     "backbone":"",
     "request":"",
     "ws":"",
-    "simpleWeather":"https://github.com/monkeecreate/jquery.simpleWeather.git"
+    "optimist":""
   }
 }
