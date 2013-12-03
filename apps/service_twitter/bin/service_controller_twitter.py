@@ -87,9 +87,7 @@ class TwitterServiceController:
 
             
             first_run = True
-
             logging.info("Service Controller Twitter - Running Twitter Service!")
-
             def loop_harvester():
                 #print "running harvester"
                 twitter_service.run_additional_services()
@@ -102,6 +100,6 @@ class TwitterServiceController:
 
             first_run = False
 
-        twitter_service.get_indx().addCallbacks(indx_cb, lambda failure: logging.error("Facebook Service Controller error logging into INDX: {0}".format(failure)))
+        twitter_service.get_indx().addCallbacks(indx_cb, lambda failure: logging.error("Twitter Service Controller error logging into INDX: {0}".format(failure)))
         reactor.run()
 

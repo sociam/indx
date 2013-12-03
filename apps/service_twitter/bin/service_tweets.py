@@ -48,6 +48,9 @@ class TwitterService:
                 self.since_id = 0
                 self.version = 0
                 self.batch = []
+                self.batch_users = []
+                self.tweet_count = 0
+                self.tweet_count_total=0
                 
                 #set the auth access control
                 self.auth = OAuthHandler(self.consumer_key, self.consumer_secret)
@@ -76,8 +79,17 @@ class TwitterService:
 
     def run_main_services(self):
         #now get the tweets
-        words_to_search = self.get_search_criteria()
-        self.get_tweets(words_to_search)
+        try:
+            words_to_search = self.get_search_criteria()
+            stream_active = True
+            while(stream_active):
+                stream_active = self.get_tweets(words_to_search)
+            #the stream probably crashed out - Not my fault by silly twitter...
+            #if this is the case, it's a good time harvest the user again, then restart the stream!
+            self.frun_additional_services()
+            self.run_main_services()
+        except:
+            logging.debug('Service Tweets - Could not run main service due to error: {0}'.format(sys.exc_info()))
 
     def run_additional_services(self):
         #see if other harvesters needed (indx con needed to sumbit data)
@@ -122,12 +134,21 @@ class TwitterService:
     def get_tweets(self, words_to_track):
         l = INDXListener(self)
 
-        stream = Stream(self.auth, l)
-        if len(words_to_track) > 0:
-            logging.info('Twitter Service - Stream Open and Storing Tweets')
-            stream.filter(track=words_to_track)
-        else:
-            stream.sample()
+        self.stream = Stream(self.auth, l)
+        try:
+            if len(words_to_track) > 0:
+                logging.info('Twitter Service - Stream Open and Storing Tweets')
+                self.stream.filter(track=words_to_track)
+                #recursive,
+                if not self.stream.running:
+                    logging.debug('Service Tweets - Stream reached 100 tweets, now harvesting additional services again')
+                    self.run_additional_services()
+                    logging.debug('Service Tweets - Additional services harvsted, now harvesting stream again')
+                    self.get_tweets(words_to_track)
+        except:
+            logging.error('Service Tweets - error, Twitter Stream encountered an error {0}'.format(sys.exc_info()))
+            return False
+
 
 
     #datamodel is {timestamp: {friends:[friend_id]}
@@ -138,7 +159,9 @@ class TwitterService:
             current_timestamp = str(datetime.now())
             uniq_id = "friends_at_"+current_timestamp
             friends_objs = {"@id":uniq_id, "app_object": appid, "timestamp":current_timestamp, "friends_list": friends_list}
-            
+            #print friends_objs
+            #for friend in friends_list:
+                #print friend
             #now append the results
             self.insert_object_to_indx(service, friends_objs)
         except:
@@ -172,10 +195,10 @@ class TwitterService:
                 for x in status_timeline:
                     #convert date
                     timestamp =  x.created_at.strftime("%Y-%m-%d %H:%M:%S")
-                    status = {"user": x.author.name, "created_at": timestamp, "id": x.id, "text": x.text,  "coordinates": x.coordinates, "retweet_count": x.retweet_count}
+                    status = {"@id": x.id, "user": x.author.name, "created_at": timestamp, "text": x.text,  "coordinates": x.coordinates, "retweet_count": x.retweet_count}
                     status_list.append(status)
                 status_objs = {"@id":uniq_id, "app_object": appid, "timestamp":current_timestamp, "since_id": service.since_id, "status_list": status_list}
-
+                #print status_objs
             #now append the results
                 self.insert_object_to_indx(service, status_objs)
         except:
@@ -212,7 +235,8 @@ class INDXListener(StreamListener):
     """
 
     def __init__(self, twitter_serv):
-        self.service = twitter_serv        
+        self.service = twitter_serv 
+        self.tweet_count = 0       
 
 
     def on_data(self, tweet_data):
@@ -226,22 +250,61 @@ class INDXListener(StreamListener):
 
         try:
             tweet = json.loads(tweet_data)
+            #print tweet
             #logging.debug("{0}, {1}".format(type(tweet), tweet))
             if not tweet.get('text'):
                 # TODO: log these for provenance?                
                 #logging.info("Skipping informational message: '{0}'".format(tweet_data.encode("utf-8")))
                 return
             #logging.info("Adding tweet: '{0}'".format(tweet['text'].encode("utf-8")))            
-            tweet["@id"] = unicode(tweet['id'])
-            tweet["app_object"] = appid
-            text = unicode(tweet['text'])
-            #print text
-            self.service.batch.append(tweet)
+            try:
+                tweet_indx = {}
+                tweet_indx['@id'] = unicode(tweet['id'])
+                tweet_indx['app_object'] = appid
+                tweet_indx['tweet_lang'] = tweet['lang']
+                text = unicode(tweet['text'])
+                tweet_indx['tweet_text'] = text
+                tweet_indx['created_at'] = tweet['created_at']
+                tweet_indx['was_retweeted'] = tweet['retweeted']
+                tweet_indx['coordinates'] = tweet['coordinates']
+
+                tweet_user = tweet['user']
+                tweet_indx['tweet_user_id'] = tweet_user['id']
+
+                twitter_user_indx = {}
+                twitter_user_indx['@id'] = unicode(tweet_user['id'])
+                twitter_user_indx['twitter_user_name'] = tweet_user['name']
+                twitter_user_indx['account_created_at'] = tweet_user['created_at']
+                twitter_user_indx['followers_count'] = tweet_user['followers_count']
+                twitter_user_indx['friends_count'] = tweet_user['friends_count']
+                twitter_user_indx['statuses_count'] = tweet_user['statuses_count']
+
+                #print twitter_user_indx
+
+                self.service.tweet_count += 1
+                self.service.tweet_count_total +=1
+                #print text
+                self.service.batch.append(tweet_indx)
+                self.service.batch_users.append(twitter_user_indx)
+            except:
+                print sys.exc_info()
             if len(self.service.batch) > 25:
                 response = self.service.indx_con.update(self.service.version, self.service.batch)
                 self.service.version = response['data']['@version'] # update the version
+                logging.debug('inserted batch of tweets {0}'.format(self.service.batch))
                 self.service.batch = []
-                logging.debug('inserted batch of tweets')
+                time.sleep(2)
+            if len(self.service.batch_users) > 25:
+                response = self.service.indx_con.update(self.service.version, self.service.batch_users)
+                self.service.version = response['data']['@version'] # update the version
+                logging.debug('inserted batch of users {0}'.format(self.service.batch_users))
+                self.service.batch_users = []
+            #need to give time to reset the stream...    
+            if self.service.tweet_count > 10000:
+                self.service.tweet_count = 0
+                self.service.stream.disconnect()
+                logging.info('Service Tweets - Disconnecting Twitter Stream, total tweets harvsted since boot {0}'.format(self.service.tweet_count_total))
+                #
         except Exception as e:
             if isinstance(e, urllib2.HTTPError): # handle a version incorrect error, and update the version
                 if e.code == 409: # 409 Obsolete

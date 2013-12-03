@@ -234,15 +234,21 @@ angular
 				// returns a promise
 				var this_ = this;
 				var dfds = _(s_obj).map(function(vals, key) {
+					if (key.indexOf('@') === 0) { return; }
+
+
 					var kd = u.deferred();
 					// skip "@id" etc etc
-					if (key.indexOf('@') === 0) { return; }
+					var fetch_dfds = {};
+
 					var val_dfds = vals.map(function(val) {
 						var vd = u.deferred();
 						// it's an object, so return that
 						if (val.hasOwnProperty("@id")) {
 							// object
-							this_.box.getObj(val["@id"]).then(vd.resolve).fail(vd.reject);
+							var oid = val["@id"];
+							fetch_dfds[oid] = fetch_dfds[oid] ? fetch_dfds[oid].concat(vd) : [vd];
+							// this_.box.getObj(val["@id"]).then(vd.resolve).fail(vd.reject);
 						}
 						else if (val.hasOwnProperty("@value")) {
 							// literal
@@ -254,6 +260,18 @@ angular
 						}
 						return vd.promise();
 					});
+
+					if (_(fetch_dfds).keys().length) { 
+						// console.log('batch fetch!', _(fetch_dfds).keys());
+						this_.box.getObj(_(fetch_dfds).keys()).then(function(objs) {
+							objs.map(function(o) { 
+								fetch_dfds[o.id].map(function(dfd) { dfd.resolve(o); });
+							});
+						}).fail(function() { 
+							_(fetch_dfds).values().map(function(dfd) { dfd.reject('error fetching obj'); });
+						});
+					}
+
 					u.when(val_dfds).then(function(objVals) {
 						// only update keys that have changed
 						var prevVals = this_.get(key);
@@ -322,7 +340,7 @@ angular
 			initialize:function(attributes, options) {
 				var this_ = this;
 				u.assert(options.store, "no store provided");
-                this.set({objcache: new ObjCollection(), objlist: [], files : new FileCollection() });
+                this.set({objcache: new ObjCollection(), objlist: {}, dobjlist: {}, files : new FileCollection() });
 				this.options = _({}).extend(this.defaultOptions, options);
 				this.store = options.store;
 				this.on('update-from-master', function() {
@@ -425,10 +443,24 @@ angular
 			getCacheSize:function() { return this._objcache().length; },
 			/// Gets all of the ids contained in the box
 			/// @return {string[]} - Set of IDs
-			getObjIDs:function() { return this._objlist().slice(); },
+			getObjIDs:function() { 
+				var ol = this.attributes.objlist;
+				if (ol !== undefined) { return ol; }
+				// this is going to be painful
+				this.attributes.objlist = utils.fastkeys(this.attributes.dobjlist);
+				return this.attributes.objlist;
+			},
+			_setObjListfromDict:function(dol) { 
+				delete this.attributes.objlist; // next refresh
+				this.attributes.dobjlist = dol;
+			},
+			_setObjListfromList:function(dol) { 
+				this.attributes.objlist = dol;
+				this.attributes.dobjlist = utils.toBlankDict(dol);
+			},
+			_objlist : function() { return this.attributes.objlist; },
+			_objlistdict : function() { return this.attributes.dobjlist; },			
 			_objcache:function() { return this.attributes.objcache; },
-			_objlist:function() { return this.attributes.objlist !== undefined ? this.attributes.objlist : []; },
-			_setObjList:function(ol) { return this.set({objlist:ol.slice()}); },
 			_getCachedToken:function() { return this.get("token"); },
 			_setToken:function(token) { this.set("token", token);	},
 			_setVersion:function(v) { this.set("version", v);	},
@@ -519,20 +551,18 @@ angular
 				return ajax( ajaxArgs );
 			},
 			/// @arg {Object} queryPattern - a query pattern to match
-			/// @opt {string[]} predicates - optional array of predicates to return, or entire objects otherwise
+			/// @opt {string[]} predicates - optional array of predicates to return, or entire objects otherwise; if '*' is passed, then raw JSON is returned and not returned as objects
 			///
 			/// Issues query to server, which then returns either entire objects or just values of the props specified
 			///
 			/// @then({Objs[]} Objects matching query) - When the query is successful
 			/// @fail({string} Error) - When the query fails
 			query: function(queryPattern, predicates){
-				// @param - queryPattern is an object like { key1 : val1, key2: val2 } .. that
-				//   returns / fetches all objects
 				var d = u.deferred();
 				var cache = this._objcache();
 				var parameters = {"q": JSON.stringify(queryPattern)};
 				var this_ = this;
-				if (predicates) {
+				if (predicates && predicates !== '*') {
 					if (!_.isArray(predicates)) { predicates = [predicates]; }
 					_(parameters).extend({predicate_list: predicates});
 					console.log('new query pattern >> ', parameters);
@@ -750,19 +780,28 @@ angular
 			},
 			// ----------------------------------------------------
 			_updateObjectList:function(updatedObjIDs, added, deleted) {
-				var current, olds = this._objlist().slice(), this_ = this, news, died;
+				var current, olds = this._objlistdict(), this_ = this, news, died;
 				// u.debug('_updateObjectList +', added ? added.length : ' ', '-', deleted ? deleted.length : ' ');
 				// u.debug('_updateObjectList +', added || ' ', deleted || ' ');
 				if (updatedObjIDs === undefined ) {
-					current = _(u.uniqstr(olds.concat(added))).difference(deleted); //_(olds).chain().union(added).difference(deleted).value();
+					_(olds).extend(added);
+					deleted.map(function(d) { delete olds[d]; });
+					// current = _(u.uniqstr(olds.concat(added))).difference(deleted); //_(olds).chain().union(added).difference(deleted).value();
 					news = (added || []).slice(); died = (deleted || []).slice();
+					this._setObjListfromDict(olds);
 				} else {
+					// only during fetch
 					current = updatedObjIDs.slice();
-					news = _(current).difference(olds);
-					died = _(olds).difference(current);
+					news = [], died = [];
+					news = _(current).filter(function(fid) { return !(fid in olds); }); // difference(olds);
+					// not used 
+					// console.info('warning: slow operation');
+					// died = _(_(olds).keys()).difference(current);
+					console.log('setobjlistfromlist >> ', current.length);
+					this._setObjListfromList(current);
 				}
+
 				// u.debug('old objlist had ', olds.length, ' new has ', current.length, 'news > ', news);
-				this._setObjList(current);
 				news.map(function(aid) { this_.trigger('obj-add', aid);	});
 				died.map(function(rid) {
 					this_.trigger('obj-remove', rid);
@@ -885,7 +924,12 @@ angular
 				this._ajax("PUT",  this.getID() + "/update", { version: escape(version), data : JSON.stringify(sobjs)  })
 					.then(function(response) {
 						this_._setVersion(response.data["@version"]);
-						this_._updateObjectList(undefined, objIDs, []); // update object list
+						var dobjlist = this_._objlistdict(); 
+						var newids = _(objIDs).filter(function(oid) { return !(dobjlist[oid]); });
+						if (newids.length) {
+							// update objectlist
+							this_._updateObjectList(undefined, newids, []);
+						}
 						d.resolve(this_);
 					}).fail(d.reject);
 				return d.promise();

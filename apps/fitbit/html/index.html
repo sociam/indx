@@ -3,7 +3,7 @@
     <link href="/css/bootstrap.css" rel="stylesheet">
     <link href="/css/angular-ui.css" rel="stylesheet">
     <link rel="stylesheet/less" type="text/css" href="/components/toolbar/toolbar.less">
-    <link rel="stylesheet" href="css/fitbit.css">
+    <link rel="stylesheet/less" type="text/css" href="css/fitbit.less">
     <title>Fitbit Harvester - Configuration</title>
   </head>
   <body ng-app="FitbitHarvester" ng-controller="ConfigPage" ng-cloak>
@@ -11,37 +11,50 @@
     <div class="main" ng-show="selectedUser">
       <h2>INDX Fitbit Harvester Service</h2>
       <h3>Service status - {{ runstate }} </h3>
-      <div class="status">
-        <table>
-          <tr>
-            <td><div class="btn btn-success" ng-click="doStart()">Start</div></td>
-            <td><div class="btn btn-danger" ng-click="doStop()">Stop</div></td> 
-          </tr>
-        </table>
+      <table>
+        <tr>
+          <td></td>
+          <td><div class="btn btn-success" ng-click="doStart()">Start</div></td>
+          <td><div class="btn btn-danger" ng-click="doStop()">Stop</div></td> 
+        </tr>
+      </table>
+      <h3>Fitbit.com service authentication</h3>
+      <div ng-show="token">
+        <div class='auth'>Harvester service is authenticated with Fitbit.com</div>
       </div>
-      <h3>Service configuration</h3>
-      <div class='auth'>
-        <div ng-show="token">Harvester service is authenticated with Fitbit.com</div>
-        <div ng-show="!token && url">
-          <p>Harvester service is not authenticated with Fitbit and cannot access your data.<br/> 
-          Please <a target="_blank" ng-href="{{url}}">click here</a> to log in to Fitbit and authorize the INDX Fitbit Harvester service.</p>
-          <p>Once you have authorized the app, please copy and paste the PIN in the box:
-          <input type="text" name="pin" ng-model="pin"></input></p>
-        </div>
+      <div ng-show="!token && url">
+        <p>Harvester service is not authenticated with Fitbit and cannot access your data.<br/> 
+        Please <a target="_blank" ng-href="{{url}}">click here</a> to log in to Fitbit and authorize the INDX Fitbit Harvester service.</p>
+        <p>Once you have authorized the app, please copy and paste the PIN in the box:
+        <input type="text" name="pin" ng-model="pin"></input></p>
       </div>
+      <h3>INDX service access</h3>
       <table class='security'>
-        <tr><td>User</td><td><select ng-model="user" ng-options='u.name for u in users'></select></td></tr>
-        <tr><td>Password</td><td><input type="password" ng-model='password' /></td></tr>
-        <tr><td>Box</td><td><select ng-model="box" ng-options='b for b in boxes'></select></td></tr>
-        <tr><td><td>
-          <div class="btn btn-warning" 
+        <tr>
+          <td>User</td>
+          <td><select ng-model="user" ng-options='u.name for u in users'></select></td>
+        </tr>
+        <tr>
+          <td>Password</td>
+          <td><input type="password" ng-model='password' /></td>
+        </tr>
+        <tr>
+          <td>Box</td>
+          <td><select ng-model="box" ng-options='b for b in boxes'></select></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>
+            <div class="btn btn-warning" 
           ng-show="user && box && (user['@id'] !== selectedUser.id) && !granted"
           ng-click="grantACL(user, box)">Authorise {{ user.name }} to have access to {{ box }}</div>
-          <div ng-show="granted" class="granted"> {{ granted_status }} </div>
-        </td></tr>
+            <div ng-show="granted" class="granted"> {{ granted_status }} </div>
+          </td>
+        </tr>
       </table>
+      <h3>Service parameters</h3>
       <table class='params'>
-        <tr><td>Start date (YYYY-mm-dd):</td><td><input type="text" name="start" ng-model="start"></input></td></tr>
+        <tr><td>Start date:</td><td><input type="text" placeholder="YYYY-mm-dd" name="start" ng-model="start"></input></td></tr>
         <tr><td>Overwrite existing? </td><td><input type="checkbox" ng-model="overwrite" checked='overwrite' /></td></tr>
       </table>
       <div class='submits'>
