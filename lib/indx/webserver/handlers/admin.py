@@ -121,8 +121,11 @@ class AdminHandler(BaseHandler):
 
                 def created_cb(empty):
                     self.webserver.register_box(box_name, self.webserver.root)
-                    self.webserver.sync_box(box_name, username)
-                    self.return_created(request)
+
+                    def synced_cb(indxsync):
+                        self.return_created(request)
+
+                    self.webserver.sync_box(box_name).addCallbacks(synced_cb, err_cb)
 
                 self.database.create_root_box(box_name, username, password).addCallbacks(created_cb, err_cb)
             except Exception as e :

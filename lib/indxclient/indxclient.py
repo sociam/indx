@@ -23,7 +23,6 @@ import cookielib
 import uuid
 import pprint
 import cjson
-from indx.crypto import rsa_encrypt, sha512_hash
 from twisted.internet import reactor, threads
 from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
@@ -363,6 +362,14 @@ class IndxClient:
         url = "{0}/files".format(self.base)
         return self.client.get(url)
 
+    @require_token
+    def link_remote_box(self, remote_address, remote_box, remote_token):
+        """ Link a remote box with a local box. """
+        self._debug("Called API: link_remote_box, on remote_address '{0}', remote_box '{1}', remote_token '{2}'".format(remote_address, remote_box, remote_token))
+
+        url = "{0}/query".format(self.base)
+        return self.client.get(url, {'remote_address': remote_address, 'remote_box': remote_box, 'remote_token': remote_token})
+
 
 class IndxHTTPClient:
     """ An HTTP requests client with cookie jar. """
@@ -573,23 +580,24 @@ class IndxClientAuth:
             return_d.errback(Failure(e))
 
         return return_d
-        
+
+
     def auth_keys(self, key_remote):
         """ Key based authentication, similar to RFC4252. """
         return_d = Deferred()
         try:
             SSH_MSG_USERAUTH_REQUEST = "50"
+            method = "publickey"
+            algo = "SHA512"
+
             self.is_authed = False
 
             def session_id_cb(sessionid):
-                algo = "SHA512"
-                ordered_signature_text = '{0}\t{1}\t"publickey"\t{2}\t{3}'.format(SSH_MSG_USERAUTH_REQUEST, sessionid, algo, key_remote)
-                signature = sha512_hash(rsa_encrypt(key_remote, key_remote))
+                ordered_signature_text = '{0}\t{1}\t"{2}"\t{3}\t{4}'.format(SSH_MSG_USERAUTH_REQUEST, sessionid, method, algo, key_remote)
+                signature = self.rsa_encrypt(key_remote, ordered_signature_text)
 
-                body = "{0}\n{1}".format(ordered_signature_text, signature)
-
-                url = "{0}auth/login".format(self.address)
-                values = {"key_signature": body}
+                url = "{0}auth/login_keys".format(self.address)
+                values = {"key_signature": signature, "key": key_remote, "algo": algo, "method": method}
 
                 self._debug("Calling auth_keys")
 
@@ -612,4 +620,10 @@ class IndxClientAuth:
             return_d.errback(Failure(e))
 
         return return_d
+
+    # PKI functions from indx.crypto (copied to remove the depency on INDX.)
+    def rsa_encrypt(self, key, message):
+        """ Use a public key (RSA object loaded using the load_key function above) to encrypt a message into a string. """
+        import base64
+        return base64.encodestring(key.encrypt(message, None)[0])
 
