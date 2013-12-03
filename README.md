@@ -144,8 +144,19 @@ Find the lines that set the values for `work_mem` and `maintenance_work_mem`, en
     work_mem = 250MB
     maintenance_work_mem = 500MB
 
-Now restart your postgres server.
+Now restart your postgres server. 
 
+IMPORTANT: If you're on OS X, doing this may exceed the maximum shared memory the kernel allows, which will be exhibited by postgres crashing on start.  Fortunately you can easily fix this by tweaking your sysctl. To do this, edit or create a /etc/sysctl.conf .
+
+Here is an example /etc/sysctl.conf that we use:
+
+    kern.sysv.shmmax=134217728
+    kern.sysv.shmmin=1
+    kern.sysv.shmmni=256
+    kern.sysv.shmseg=64
+    kern.sysv.shmall=32768
+    
+Create that file and make sure you reboot your machine.
 
 ## contact us
 

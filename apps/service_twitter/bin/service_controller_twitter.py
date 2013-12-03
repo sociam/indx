@@ -92,10 +92,10 @@ class TwitterServiceController:
         def loop_harvester():
             #print "running harvester"
             twitter_service.run_additional_services()
-            if not first_run:
-                twitter_service.run_main_services()
+            #if not first_run:
+                #twitter_service.run_main_services()
             logging.debug("setting up Reactor loop...")
-            reactor.callLater(15.0, loop_harvester);
+            reactor.callLater(10.0, twitter_service.run_main_services());
 
         loop_harvester() 
 
