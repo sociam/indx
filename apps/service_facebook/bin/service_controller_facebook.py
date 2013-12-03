@@ -19,7 +19,6 @@
 import argparse, ast, logging, getpass, sys, urllib, urllib2, json, sys, datetime, time, threading
 from datetime import datetime
 from threading import Timer, Thread
-from indxclient import IndxClient
 from service_facebook import FacebookService
 from twisted.internet import task
 from twisted.internet import reactor
@@ -87,20 +86,23 @@ class FacebookServiceController:
 
     def load_service_instance(self):
 
-        facebook_service = FacebookService(self.config)         
+        facebook_service = FacebookService(self.config)
 
-        def loop_harvester():
-            facebook_service.harvest_facebook_profile()
-            facebook_service.harvest_facebook_statuses()
-            facebook_service.harvest_facebook_friends()
-            #update every hour
-            reactor.callLater(3600.0, loop_harvester);
+        def indx_cb(empty):
+            def loop_harvester():
+                facebook_service.harvest_facebook_profile()
+                facebook_service.harvest_facebook_statuses()
+                facebook_service.harvest_facebook_friends()
+                #update every hour
+                reactor.callLater(3600.0, loop_harvester);
 
-        #check if the token hasnt expired, if not, let's go!
-        if(facebook_service.is_token_active()):
-            logging.info("Service Controller Facebook - Running Facebook Service!")
-            loop_harvester() 
-            reactor.run()
+            #check if the token hasnt expired, if not, let's go!
+            if(facebook_service.is_token_active()):
+                logging.info("Service Controller Facebook - Running Facebook Service!")
+                loop_harvester() 
+
+        facebook_service.get_indx().addCallbacks(indx_cb, lambda failure: logging.error("Facebook Service Controller error logging into INDX: {0}".format(failure)))
+        reactor.run()
 
 
     def start_reactor(self):

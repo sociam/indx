@@ -17,7 +17,8 @@
 #    along with python-nikeplus-2013.  If not, see <http://www.gnu.org/licenses/>.
 
 import argparse, getpass, logging, nikeplus, pprint, urllib2, sys, json
-from indxclient import IndxClient
+from indxclient import IndxClient, IndxClientAuth
+from twisted.internet.defer import Deferred
 
 """ A simple command-line client to demontrate usage of the library. """
 
@@ -42,63 +43,78 @@ if args['debug']:
 else:
     logging.basicConfig(level=logging.INFO)
 
-indx = IndxClient(args['address'], args['box'], args['user'], indx_password, args['appid'])
-version = 0 # box version
+def get_indx(server_url, box, user, password, appid):
+    return_d = Deferred()
+    def authed_cb(): 
+        def token_cb(token):
+            indx = IndxClient(server_url, box, appid, token = token)
+            return_d.callback(indx)
 
-def update(data):
-    """ Assert data into the INDX.
-        If the version is incorrect, the correct version will be grabbed and the update re-sent.
+        authclient.get_token(box).addCallbacks(token_cb, return_d.errback)
+        
+    authclient = IndxClientAuth(server_url, appid)
+    authclient.auth_plain(user, password).addCallbacks(lambda response: authed_cb(), return_d.errback)
+    return return_d
 
-        data -- An object to assert into the box.
-    """
-    global version
-    try:
-        response = indx.update(version, data)
-        version = response['data']['@version'] # update the version
-    except Exception as e:
-        if isinstance(e, urllib2.HTTPError) and e.code == 409: # handle a version incorrect error, and update the version
-            response = e.read()
-            json_response = json.loads(response)
-            version = json_response['@version']
-            update(data) # try updating again now the version is correct
-        else:
-            logging.error("Error updating INDX: {0}".format(e))
-            sys.exit(0)
+def indx_cb(indx):
 
-def get_last_date():
-    try:
-        resp = indx.get_by_ids([args['statusid']])
-        data = resp['data']
-        val = data[args['statusid']]['last_date'][0]
-        return val['@value']
-    except Exception as e:
-        logging.error("Error reading last date (usually means this is the first time this has been run - not a problem), e: {0}".format(e))
-        return args['earliest']
+    version = 0 # box version
 
-def set_last_date(last_date):
-    data = {"@id": args['statusid'], "last_date": last_date}
-    update(data)
+    def update(data):
+        """ Assert data into the INDX.
+            If the version is incorrect, the correct version will be grabbed and the update re-sent.
 
-def yesterday():
-    from datetime import date, timedelta
-    yesterday = date.today() - timedelta(1)
-    return yesterday.strftime("%Y-%m-%d")
+            data -- An object to assert into the box.
+        """
+        global version
+        try:
+            response = indx.update(version, data)
+            version = response['data']['@version'] # update the version
+        except Exception as e:
+            if isinstance(e, urllib2.HTTPError) and e.code == 409: # handle a version incorrect error, and update the version
+                response = e.read()
+                json_response = json.loads(response)
+                version = json_response['@version']
+                update(data) # try updating again now the version is correct
+            else:
+                logging.error("Error updating INDX: {0}".format(e))
+                sys.exit(0)
 
-last_date = get_last_date()
+    def get_last_date():
+        try:
+            resp = indx.get_by_ids([args['statusid']])
+            data = resp['data']
+            val = data[args['statusid']]['last_date'][0]
+            return val['@value']
+        except Exception as e:
+            logging.error("Error reading last date (usually means this is the first time this has been run - not a problem), e: {0}".format(e))
+            return args['earliest']
 
-nikeplus = nikeplus.NikePlus()
-nikeplus.login(args['email'], password)
-nikeplus.get_token()
+    def set_last_date(last_date):
+        data = {"@id": args['statusid'], "last_date": last_date}
+        update(data)
 
-activities = nikeplus.get_activities(last_date, yesterday())
-for activity_container in activities:
-    for activity in activity_container:
-        activity_id = activity['activityId']
-        logging.debug("activity id: {0}".format(activity_id))
-        detail = nikeplus.get_activity_detail(activity_id)
-        logging.debug("activity_details: {0}".format(pprint.pformat(detail)))
-        detail['@id'] = "nikeplus-activity-detail-{0}".format(activity_id)
-        update(detail)
-    
-set_last_date(yesterday())
+    def yesterday():
+        from datetime import date, timedelta
+        yesterday = date.today() - timedelta(1)
+        return yesterday.strftime("%Y-%m-%d")
 
+    last_date = get_last_date()
+
+    nikeplus = nikeplus.NikePlus()
+    nikeplus.login(args['email'], password)
+    nikeplus.get_token()
+
+    activities = nikeplus.get_activities(last_date, yesterday())
+    for activity_container in activities:
+        for activity in activity_container:
+            activity_id = activity['activityId']
+            logging.debug("activity id: {0}".format(activity_id))
+            detail = nikeplus.get_activity_detail(activity_id)
+            logging.debug("activity_details: {0}".format(pprint.pformat(detail)))
+            detail['@id'] = "nikeplus-activity-detail-{0}".format(activity_id)
+            update(detail)
+        
+    set_last_date(yesterday())
+
+get_indx(args['address'], args['box'], args['user'], indx_password, args['appid']).addCallbacks(indx_cb, lambda failure: logging.error("Error: {0}".format(failure)))
