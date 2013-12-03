@@ -8,4 +8,15 @@ var nodeindx = require('../../lib/services/nodejs/nodeindx'),
 	simpleweather = require('./jquery.simpleWeather').load(jQuery),
 	nodeservice = require('./nodeservice');
 
-if (require.main === module) { new nodeservice.NodeService(); }
+var WeatherService = Object.create(nodeservice.NodeService, {
+	run:{ 
+		value: function(store) {
+			this.debug(' weather ran instead!! ', store);
+		}
+	}
+});
+
+if (require.main === module) { 
+	var ws = Object.create(WeatherService);
+	ws.init();
+}

@@ -8,11 +8,10 @@ var nodeindx = require('../../lib/services/nodejs/nodeindx'),
 	config_file = path.resolve(__dirname, '.config.json'),
 	debugfilename = path.resolve(__dirname, '.debug.log');
 
-var NodeService = function() {
-	this._check_args();
-};
-
-_(NodeService.prototype).extend({ 
+var NodeService = { 
+	init:function() {
+		this._check_args();
+	},
 	_check_args: function() {
 		var argv = require('optimist').argv, this_ = this;
 		if (argv.getconfig) {
@@ -85,8 +84,14 @@ _(NodeService.prototype).extend({
 		}
 		return d.promise();
 	}
-});
+};
 
 module.exports = {
 	NodeService:NodeService
 };
+
+
+if (require.main === module) { 
+	var ns = Object.create(NodeService);
+	ns.init();
+}
