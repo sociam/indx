@@ -63,7 +63,7 @@ _(NodeService.prototype).extend({
 	debug : function() {
 		console.debug.apply(console,arguments);
 		var argstr = _(arguments).toArray().map(function(x) { return x ? x.toString() : ''; });
-		fs.appendFile(debugfilename, (new Date()).valueOf() + ' - ' + argstr.join(' ') + '\n', function(err) { 
+		fs.appendFile(debugfilename, (new Date()).toString() + ' - ' + argstr.join(' ') + '\n', function(err) { 
 			if (err) { console.error('error outputting debug'); }
 		});
 	},
