@@ -5,10 +5,10 @@ var nodeindx = require('../../lib/services/nodejs/nodeindx'),
     _ = require('underscore')
 	fs = require('fs'),
 	jQuery = require('jquery'),
-	config_file = __dirname + '/.config.json',
+	path = require('path'),
+	config_file = path.resolve(__dirname, '/.config.json'),
 	simpleweather = require('./jquery.simpleWeather').load(jQuery),
-	debugfilename = './debug.log';
-
+	debugfilename = path.resolve(__dirname, './.debug.log');
 
 var NodeService = function() {
 	this._check_args();
