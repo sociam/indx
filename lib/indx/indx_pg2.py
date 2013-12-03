@@ -23,7 +23,7 @@ import json
 from indx.connectionpool import IndxConnectionPool
 from txpostgres import txpostgres
 from hashing_passwords import make_hash, check_hash
-from indx.crypto import encrypt, decrypt, rsa_encrypt, rsa_decrypt
+from indx.crypto import encrypt, rsa_encrypt, rsa_decrypt
 from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
 from indx.user import IndxUser

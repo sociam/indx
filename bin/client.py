@@ -51,6 +51,7 @@ class CLIClient:
                       'get_acls': {'f': self.get_acls, 'args': ['box']},
                       'generate_new_key': {'f': self.generate_new_key, 'args': ['box']},
                       'create_root_box': {'f': self.create_root_box, 'args': ['box']},
+                      'link_remote_box': {'f': self.link_remote_box, 'args': ['box', 'remote_token', 'remote_box', 'remote_address']},
                      }
 
         self.appid = appid
@@ -266,6 +267,11 @@ class CLIClient:
         logging.debug("Calling create_user on server '{0}' with target username '{1}'".format(self.args['server'], self.args['target_username']))
         return self.indx.create_user(self.args['target_username'], self.args['target_password'])
 
+    def link_remote_box(self):
+        """ Link a remote box with a local box. """
+        logging.debug("Calling link_remote_box on remote_address '{0}', remote_box '{1}', remote_token '{2}'".format(self.args['remote_address'], self.args['remote_box'], self.args['remote_token']))
+        return self.indx.link_remote_box(self.args['remote_address'], self.args['remote_box'], self.args['remote_token'])
+
 
 if __name__ == "__main__":
     client = CLIClient()
@@ -290,6 +296,9 @@ if __name__ == "__main__":
     parser.add_argument('--acl', action="store", type=str, help='Access Control List (ACL) in JSON format, must have "read", "write" and "control" keys, all with boolean values, e.g. {"read": true, "write": true", "control": false}')
     parser.add_argument('--target_username', action="store", type=str, help='Target username, e.g. when creating a new user, or for setting ACLs for')
     parser.add_argument('--target_password', action="store", type=str, help='Target password, e.g. when creating a new user')
+    parser.add_argument('--remote_address', action="store", type=str, help='Remote INDX address, e.g. when linking remote boxes')
+    parser.add_argument('--remote_box', action="store", type=str, help='Remote box, e.g. when linking remote boxes')
+    parser.add_argument('--remote_token', action="store", type=str, help='Remote INDX auth token, e.g. when linking remote boxes')
 
     args = vars(parser.parse_args())
 
