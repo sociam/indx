@@ -9,9 +9,19 @@ var nodeindx = require('../../lib/services/nodejs/nodeindx'),
 	nodeservice = require('./nodeservice');
 
 var WeatherService = Object.create(nodeservice.NodeService, {
-	run:{ 
+	run: { // ecmascript 5, don't be confused!
 		value: function(store) {
-			this.debug(' weather ran instead!! ', store);
+			this.get_config().then(function(config) {
+				if (!config || !_(config).keys()) {
+					this_.debug(' no configuration set, aborting '); 
+					return;
+				} else {
+					var sleep = config.sleep, loc = config.latlng;
+					this_.debug('configured for ', loc, ' sleeping ', sleep, 'msec ');
+					var sleepmsec = parseInt(sleep,10), locs = loc.split(' ').map(function(x) { return x.split(','); });
+					this_.debug('locs ', locs, ' sleeping ', sleepmsec, 'msec ');
+				}
+			}).fail(function() {this_.debug('error getting config ');});
 		}
 	}
 });
