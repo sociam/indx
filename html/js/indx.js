@@ -61,7 +61,6 @@ angular
 
 		// new patch for nodejs support
 		var ajax = jQ.ajax;		
-		console.log('typeof _NODE_AJAX ', typeof _NODE_AJAX); 
 		if (typeof process != 'undefined' && process.title === 'node' && typeof _NODE_AJAX !== 'undefined') {
 			ajax = _NODE_AJAX(u,jQ);
 		} 
@@ -262,7 +261,7 @@ angular
 					});
 
 					if (_(fetch_dfds).keys().length) { 
-						// console.log('batch fetch!', _(fetch_dfds).keys());
+						// console.debug('batch fetch!', _(fetch_dfds).keys());
 						this_.box.getObj(_(fetch_dfds).keys()).then(function(objs) {
 							objs.map(function(o) { 
 								fetch_dfds[o.id].map(function(dfd) { dfd.resolve(o); });
@@ -348,7 +347,7 @@ angular
 					this_._flushUpdateQueue();
 					this_._flushDeleteQueue();
 				});
-				this.store.on('login', function() { console.log('on login >> '); this_.reconnect(); });
+				this.store.on('login', function() { console.debug('on login >> '); this_.reconnect(); });
 				this.on('new-token', function() { this_._setUpWebSocket(); });
 				this._setUpWebSocket();
 				this._reset();
@@ -454,7 +453,7 @@ angular
 				delete this.attributes.objlist; // next refresh
 				this.attributes.dobjlist = dol;
 			},
-			_setObjListfromList:function(dol) { 
+			_setObjDictfromList:function(dol) { 
 				this.attributes.objlist = dol;
 				this.attributes.dobjlist = utils.toBlankDict(dol);
 			},
@@ -565,7 +564,7 @@ angular
 				if (predicates && predicates !== '*') {
 					if (!_.isArray(predicates)) { predicates = [predicates]; }
 					_(parameters).extend({predicate_list: predicates});
-					console.log('new query pattern >> ', parameters);
+					console.debug('new query pattern >> ', parameters);
 				}
 				var query_url = [this.getID(), 'query'].join('/');
 				this._ajax("GET", query_url, parameters)
@@ -577,9 +576,9 @@ angular
 						}
 						// otherwise we are getting full objects, so ...
 						d.resolve(_(results.data).map(function(dobj,id) {
-							console.log('getting id ', id);
-							if (cache.get(id)) { console.log('cached! ', id); return cache.get(id); }
-							console.log('not cached! ', id);
+							console.debug('getting id ', id);
+							if (cache.get(id)) { console.debug('cached! ', id); return cache.get(id); }
+							console.debug('not cached! ', id);
 							var model = this_._createModelForID(id);
 							model._deserialiseAndSet(dobj, true);
 							return model;
@@ -620,7 +619,7 @@ angular
 			},
 			// handles updates from websockets the server
 			_diffUpdate:function(response) {
-				console.log("diffUpdate > ", response);
+				console.debug("diffUpdate > ", response);
 				var d = u.deferred(), this_ = this, latestVersion = response['@to_version'],
 				addedIDs  = _(response.data.added).keys(),
 				changedIDs = _(response.data.changed).keys(),
@@ -679,10 +678,10 @@ angular
                             }).fail(dd.reject);
                             return dd.promise();
                         });
-                        console.log('dfdlengths >> ', added.length, ' - ', deleted.length, ' ', replaced.length);
+                        console.debug('dfdlengths >> ', added.length, ' - ', deleted.length, ' ', replaced.length);
                         u.when(added.concat(deleted).concat(replaced)).then(function() {
 							// u.debug("triggering changed properties ", changedprops);
-							console.log('changedprops ', changedprops, ' ', u.uniqstr(changedprops));
+							console.debug('changedprops ', changedprops, ' ', u.uniqstr(changedprops));
 							u.uniqstr(changedprops).map(function(k) {
 								cached_obj.trigger('change:'+k, cached_obj, (cached_obj.get(k) || []).slice());
 								// u.debug("trigger! change:"+k);
@@ -706,7 +705,7 @@ angular
 			/// @fail({string} Error raised during process)
 			getObj:function(objid) {
 				// getObj always returns a promise
-				// console.log(' getObj() >> ', objid);
+				// console.debug(' getObj() >> ', objid);
 
 				u.assert(typeof objid === 'string' || typeof objid === 'number' || _.isArray(objid), "objid has to be a number or string or an array of such things");
 				var multi = _.isArray(objid),
@@ -738,9 +737,9 @@ angular
 				});
 				var lacks = _(missingModels).keys();
 				if (lacks.length > 0) {
-					// console.log('calling with lacks ', lacks.length);
+					// console.debug('calling with lacks ', lacks.length);
 					u.dmap(u.chunked(lacks, 150), function(lids) {
-						// console.log('lids length ', lids.length);
+						// console.debug('lids length ', lids.length);
 						this_._ajax('GET', this_.getID(), {'id':lids}).then(function(response) {
 							var resolvedIDs = _(response.data).map(function(mraw,id) {
 								if (id[0] === '@') { return; }
@@ -748,7 +747,7 @@ angular
 								u.assert(id, "Got an id undefined");
 								u.assert(model, "Got a model we didnt ask for", id);
 								model._setFetched(true);
-								// console.log('calling deserialise and set on ', mraw);
+								// console.debug('calling deserialise and set on ', mraw);
 								model._deserialiseAndSet(mraw).then(function() {
 									dmissingByID[id].resolve(model);
 									delete this_._fetchingQueue[id];
@@ -774,7 +773,7 @@ angular
 						return u.when(lids.map(function(id) { return dmissingByID[id]; }));
 					});
 				} else {
-					// console.log('already have all the models, returning directly ');
+					// console.debug('already have all the models, returning directly ');
 				}
 				return multi ? u.when(ds) : ds[0];
 			},
@@ -785,7 +784,7 @@ angular
 				// u.debug('_updateObjectList +', added || ' ', deleted || ' ');
 				if (updatedObjIDs === undefined ) {
 					_(olds).extend(added);
-					deleted.map(function(d) { delete olds[d]; });
+					if (deleted) { deleted.map(function(d) { delete olds[d]; }); }
 					// current = _(u.uniqstr(olds.concat(added))).difference(deleted); //_(olds).chain().union(added).difference(deleted).value();
 					news = (added || []).slice(); died = (deleted || []).slice();
 					this._setObjListfromDict(olds);
@@ -797,8 +796,8 @@ angular
 					// not used 
 					// console.info('warning: slow operation');
 					// died = _(_(olds).keys()).difference(current);
-					console.log('setobjlistfromlist >> ', current.length);
-					this._setObjListfromList(current);
+					console.debug('setobjlistfromlist >> ', current.length);
+					this._setObjDictfromList(current);
 				}
 
 				// u.debug('old objlist had ', olds.length, ' new has ', current.length, 'news > ', news);
@@ -1101,21 +1100,21 @@ angular
 							try {
 								userMetadata = JSON.parse(userMetadata);
 								_(user).extend(userMetadata);
-								console.log('user is now --' , user)
+								console.debug('user is now --' , user)
 							} catch(e) { console.error('error parsing json, no biggie', userMetadata);	}
 						}
 						u.log('logging in user >>', user);
 						this_.trigger('login', user);
 						this_.set({user_type:'openid',username:openid});
-						console.log('successful login! setting user type OPENID, id', this_.get('user_type'), " - ", this_.get('username'));
+						console.debug('successful login! setting user type OPENID, id', this_.get('user_type'), " - ", this_.get('username'));
 						return d.resolve(user);
 					}
 					d.reject({message:'OpenID authentication failed', status:0});
 				};
-				// console.log('login openid >>> ', this._getBaseURL());
+				// console.debug('login openid >>> ', this._getBaseURL());
 				var url = [this._getBaseURL(), 'auth', 'login_openid'].join('/');
 				var redirURL = [this._getBaseURL(), 'openid_return_to.html'].join('/');
-				// console.log('redir url ', redirURL);
+				// console.debug('redir url ', redirURL);
 				var params = { identity: encodeURIComponent(openid), redirect:encodeURIComponent(redirURL) };
 				url = url + "?" + _(params).map(function(v, k) { return k+'='+v; }).join('&');
 				// console.info('OpenID :: opening url >>', url);
@@ -1173,7 +1172,7 @@ angular
 			/// @then(): Logout complete
 			/// @fail(): Logout failed
 			logout : function() {
-				console.log('store --- logout');
+				console.debug('store --- logout');
 				var d = u.deferred();
 				var this_ = this;
 				this._ajax('POST', 'auth/logout')
@@ -1230,7 +1229,7 @@ angular
 			_fetch:function() {	throw new Error('dont fetch a store - any more!');	},
 			_getBaseURLHelper:utils.memoise_fast1(function(server_host) {
 				var url = server_host.indexOf('://') >= 0 ? server_host : [location.protocol, '', server_host].join('/');
-				console.log('executing getbaseurlhelper >> ', url);
+				console.debug('executing getbaseurlhelper >> ', url);
 				return url;
 			}),
 			_getBaseURL: function() {
@@ -1244,7 +1243,7 @@ angular
 					this.ajaxDefaults,
 					{ url: url, type : method, crossDomain: !this.isSameDomain(), data: _({}).extend(defaultData,data) }
 				);
-				// console.log(' debug indxJS _ajax url ', options.url, options.method, options);
+				// console.debug(' debug indxJS _ajax url ', options.url, options.method, options);
 				return ajax( options ); // returns a deferred
 			},
 			sync: function(method, model, options){

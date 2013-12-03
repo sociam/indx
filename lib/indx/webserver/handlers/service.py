@@ -101,7 +101,7 @@ class ServiceHandler(BaseHandler):
         try:
             #print "in service.py - get config"
             manifest = self._load_manifest()
-            result = subprocess.check_output(manifest['get_config'])
+            result = subprocess.check_output(manifest['get_config'],cwd=self.get_app_cwd())
             #print "service.py - getConfig Manifest returned: "+str(result)
             logging.debug(' get config result {0} '.format(result))
             #result = json.loads(result)
@@ -111,6 +111,11 @@ class ServiceHandler(BaseHandler):
             print "error in service.py get config"+str(sys.exc_info())
             logging.error("Error in get_config {0}".format(sys.exc_info()[0]))
             return self.return_internal_error(request)
+
+    def get_app_cwd(self):
+        cwd = "apps/{0}".format(self.service_path)
+        logging.debug('getappcwd {0}'.format(cwd))
+        return cwd
         
     def set_config(self, request): 
         try:
@@ -125,7 +130,7 @@ class ServiceHandler(BaseHandler):
             # somewhere inside this we have put {0} wildcard so we wanna substitute that
             # with the actual config obj
             expanded = [x.format(jsonconfig) for x in manifest['set_config']]
-            result = subprocess.call(expanded)
+            result = subprocess.call(expanded, cwd=self.get_app_cwd())
             logging.debug("result of subprocess call {0}".format(result))
             return self.return_ok(request, data={'result': result})
         except :
@@ -142,7 +147,7 @@ class ServiceHandler(BaseHandler):
            self.stop()
         manifest = self._load_manifest()
         command = [x.format(self.webserver.server_url) for x in manifest['run']]
-        self.pipe = subprocess.Popen(command)
+        self.pipe = subprocess.Popen(command,cwd=self.get_app_cwd())
         return self.is_running()
 
     def start_handler(self,request):
