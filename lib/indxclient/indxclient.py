@@ -23,7 +23,6 @@ import cookielib
 import uuid
 import pprint
 import cjson
-from indx.crypto import rsa_encrypt, sha512_hash
 from twisted.internet import reactor, threads
 from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
@@ -584,7 +583,7 @@ class IndxClientAuth:
             def session_id_cb(sessionid):
                 algo = "SHA512"
                 ordered_signature_text = '{0}\t{1}\t"publickey"\t{2}\t{3}'.format(SSH_MSG_USERAUTH_REQUEST, sessionid, algo, key_remote)
-                signature = sha512_hash(rsa_encrypt(key_remote, key_remote))
+                signature = self.sha512_hash(self.rsa_encrypt(key_remote, key_remote))
 
                 body = "{0}\n{1}".format(ordered_signature_text, signature)
 
@@ -612,4 +611,18 @@ class IndxClientAuth:
             return_d.errback(Failure(e))
 
         return return_d
+
+    # PKI functions from indx.crypto (copied to remove the depency on INDX.)
+    def rsa_encrypt(self, key, message):
+        """ Use a public key (RSA object loaded using the load_key function above) to encrypt a message into a string. """
+        import base64
+        return base64.encodestring(key.encrypt(message, None)[0])
+
+    def sha512_hash(self, src):
+        import Crypto.Random.OSRNG.posix
+        import Crypto.PublicKey.RSA
+        import Crypto.Hash.SHA512
+        h = Crypto.Hash.SHA512.new()
+        h.update(src)
+        return h.hexdigest()
 
