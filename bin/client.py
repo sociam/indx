@@ -15,8 +15,17 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import traceback, argparse, logging, pprint, json, cjson
-from indxclient import IndxClient
+import traceback
+import argparse
+import logging
+import pprint
+import json
+import cjson
+import sys
+from indxclient import IndxClient, IndxClientAuth
+from twisted.internet.defer import Deferred
+from twisted.python.failure import Failure
+from twisted.internet import reactor
 
 class CLIClient:
 
@@ -75,15 +84,25 @@ class CLIClient:
 
     def call_action(self, name, *args, **kwargs):
         """ Calls an action by name. """
+        return_d = Deferred()
 
         action = self.actions[name]
         f = action['f']
         self.check_args(action['args'])
 
         if not self.indx:
-            self.indx = IndxClient(self.args['server'], self.args['box'], self.args['username'], self.args['password'], self.appid)
 
-        return self.parse_status(name, f(*args, **kwargs))
+            def authed_cb(): 
+                def token_cb(token):
+                    self.indx = IndxClient(self.args['server'], self.args['box'], self.appid, token = token)
+                    f(*args, **kwargs).addCallbacks(lambda status: return_d.callback(self.parse_status(name, status)), return_d.errback)
+
+                authclient.get_token(self.args['box']).addCallbacks(token_cb, return_d.errback)
+                
+            authclient = IndxClientAuth(self.args['server'], self.appid)
+            authclient.auth_plain(self.args['username'], self.args['password']).addCallbacks(lambda response: authed_cb(), return_d.errback)
+            
+        return return_d
 
 
     def parse_status(self, source, status):
@@ -94,10 +113,11 @@ class CLIClient:
                 raise Exception("{0} in box {1} failed. Response is {2} with code {3}".format(source, self.args['box'], status['message'], status['code']))
             else:
                 if "data" in status and self.args['jsondata']:
-                    print json.dumps(status['data'], indent = 2)
+                    return json.dumps(status['data'], indent = 2)
                 else:
                     pretty = pprint.pformat(status, indent=2, width=80)
                     logging.info("{0} in box {1} successful, return is: {2}".format(source, self.args['box'], pretty))
+                    return None
 
 
     """ Test functions."""
@@ -278,12 +298,23 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(level='INFO')
 
+    def err_cb(failure):
+        failure.trap(Exception)
+        logging.error("Error: {0}".format(failure))
+        if args['debug']:
+            traceback.print_exc()
+
     try:
         action = args['action'][0]
         client.set_args(args)
-        client.call_action(action)
+
+        def responded_cb(response):
+            if response is not None:
+                print response
+            reactor.stop()
+
+        client.call_action(action).addCallbacks(responded_cb, err_cb)
+        reactor.run()
     except Exception as e:
-        if args['debug']:
-            traceback.print_exc()
-        print "There was a problem: {0}".format(e)
+        err_cb(Failure(e))
 

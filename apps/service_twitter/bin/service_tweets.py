@@ -19,12 +19,13 @@
 import argparse, ast, logging, getpass, sys, urllib2, json, sys, tweepy, datetime, time, threading
 from datetime import datetime
 from threading import Timer
-from indxclient import IndxClient
+from indxclient import IndxClient, IndxClientAuth
 from tweepy.streaming import StreamListener
 from tweepy import OAuthHandler
 from tweepy import Stream
 from tweepy import API
 from tweepy import Status
+from twisted.internet.defer import Deferred
 
 appid = "twitter_service"
 
@@ -38,7 +39,7 @@ class TwitterService:
                 self.configs = configs
                 self.twitter_add_info = twitter_add_info
                 logging.debug('Twitter Service - loading Service Instance')
-                self.indx_con = IndxClient(self.credentials['address'], self.credentials['box'], self.credentials['username'], self.credentials['password'], appid)
+#                self.indx_con = IndxClient(self.credentials['address'], self.credentials['box'], self.credentials['username'], self.credentials['password'], appid)
                 self.consumer_key= self.configs['consumer_key']
                 self.consumer_secret= self.configs['consumer_secret']
                 self.access_token = self.configs['access_token']
@@ -56,6 +57,20 @@ class TwitterService:
                 self.auth.set_access_token(self.access_token, self.access_token_secret)
         except:
             logging.error("could not start TwitterService, check config details - params might be missing")
+
+    def get_indx(self):
+        return_d = Deferred()
+#        self.indx_con = IndxClient(self.config['address'], self.config['box'], self.config['user'], self.config['password'], app_id)
+        def authed_cb(): 
+            def token_cb(token):
+                self.indx_con = IndxClient(self.credentials['address'], self.credentials['box'], appid, token = token)
+                return_d.callback(True)
+
+            authclient.get_token(self.credentials['box']).addCallbacks(token_cb, return_d.errback)
+            
+        authclient = IndxClientAuth(self.credentials['address'], appid)
+        authclient.auth_plain(self.credentials['user'], self.credentials['password']).addCallbacks(lambda response: authed_cb(), return_d.errback)
+        return return_d
 
     def stop_and_exit_service(self):
         logging.debug('Twitter Service - HARD QUIT - TWITTER SERVICE')
