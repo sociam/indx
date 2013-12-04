@@ -59,7 +59,11 @@ class IndxClient:
         self.token = token
         self.appid = appid
 
-        self.params = {"app": self.appid, "token": self.token, "box": self.box} # used in requests
+        self.params = {"app": self.appid}
+        if self.token is not None:
+            self.params["token"] = self.token
+        if self.box is not None:
+            self.params["box"] = self.box # used in requests
 
         if client is None:
             self.client = IndxHTTPClient(self.params)

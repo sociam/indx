@@ -95,10 +95,14 @@ class CLIClient:
 
             def authed_cb(): 
                 def token_cb(token):
-                    self.indx = IndxClient(self.args['server'], self.args['box'], self.appid, token = token)
+                    self.indx = IndxClient(self.args['server'], self.args['box'], self.appid, token = token, client = authclient.client)
                     f(*args, **kwargs).addCallbacks(lambda status: return_d.callback(self.parse_status(name, status)), return_d.errback)
 
-                authclient.get_token(self.args['box']).addCallbacks(token_cb, return_d.errback)
+                if self.args['box'] is None:
+                    # no box means no token required.
+                    token_cb(None)
+                else:
+                    authclient.get_token(self.args['box']).addCallbacks(token_cb, return_d.errback)
                 
             authclient = IndxClientAuth(self.args['server'], self.appid)
             authclient.auth_plain(self.args['username'], self.args['password']).addCallbacks(lambda response: authed_cb(), return_d.errback)
