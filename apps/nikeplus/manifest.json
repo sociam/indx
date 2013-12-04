@@ -1,0 +1,25 @@
+{
+	"name": "Nike+ Harvester",
+	"type": ["service"],
+	"version": 0.1,
+	"on_boot": 0,
+	"description": "Harvester of your Nike+ data",
+	"configpanel":"html/index.html",
+	"run":["python", "bin/nike_harvester.py", "--server", "{0}"],
+	"set_config":["python", "bin/nike_harvester.py", "--config", "{0}"],
+	"get_config":["python", "bin/nike_harvester.py", "--get-config"],
+	"icons": { 
+		"128": "img/nike-128.png",
+		"512": "img/nike-512.png" 
+	},
+	"author": [
+		{
+			"name": "Laura",
+			"email": "aprilush@gmail.com"
+		},
+		{
+			"name": "Daniel Alexander Smith",
+			"email": ""
+		}
+	]
+}
