@@ -98,8 +98,7 @@ class CLIClient:
                     self.indx = IndxClient(self.args['server'], self.args['box'], self.appid, token = token, client = authclient.client)
                     f(*args, **kwargs).addCallbacks(lambda status: return_d.callback(self.parse_status(name, status)), return_d.errback)
 
-                if self.args['box'] is None:
-                    # no box means no token required.
+                if not IndxClient.requires_token(f):
                     token_cb(None)
                 else:
                     authclient.get_token(self.args['box']).addCallbacks(token_cb, return_d.errback)
@@ -316,6 +315,7 @@ if __name__ == "__main__":
         logging.error("Error: {0}".format(failure))
         if args['debug']:
             traceback.print_exc()
+        reactor.stop()
 
     try:
         action = args['action'][0]

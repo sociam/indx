@@ -1087,6 +1087,7 @@ class ObjectStoreAsync:
                                     objs_full[obj_id] = {"@id": obj_id}
 
                             for obj_id in delete_ids:
+                                # delete objs[obj_id]
                                 objs_full[obj_id] = {"@id": obj_id}
 
                             # remove "@version" etc from objs_full

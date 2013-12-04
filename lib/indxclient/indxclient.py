@@ -151,6 +151,28 @@ class IndxClient:
 
         return objects_new
 
+    @staticmethod
+    def requires_token(call):
+        requires = [
+            'get_object_ids',
+            'update_raw',
+            'update',
+            'delete',
+            'get_latest',
+            'get_by_ids',
+            'query',
+            'set_acl',
+            'get_acls',
+            'generate_new_key',
+            'diff',
+            'add_file',
+            'delete_file',
+            'get_file',
+            'list_files',
+            'link_remote_box',
+        ]
+        return call.func_name in requires
+
 
     # API access functions
 
