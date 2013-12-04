@@ -122,9 +122,9 @@ angular
 			},
 			'ntriples' : function(obs) {
 				console.log("serializing list to turtle");
-				defaultPrefix = "@prefix : <"+client.store.get('server_host')+"/box/"+$scope.selectedBox+"/"+"> .\n";
-				indxPrefix = "@prefix indx: <http://sociam.org/ontology/indx/> .\n";
-				return defaultPrefix + indxPrefix + "\n"+ toN3(obs);
+				defaultPrefix = "@prefix : <http://"+client.store.get('server_host')+"/"+$scope.selectedBox+"/"+"> .\n";
+				rdfsPrefix = "@prefix rdfs : <http://www.w3.org/2000/01/rdf-schema#> . \n";
+				return defaultPrefix + rdfsPrefix + "\n"+ toN3(obs);
 			}, 
 			'csv' : function(obs) {
 				console.log("serializing list to csv");
@@ -169,7 +169,7 @@ angular
 			ids = Object.keys(obs);
 			triples = ids.map(function(oid) {
 				obj = obs[oid];
-				objTriples = [":"+oid+" a indx:Object"];
+				objTriples = [":"+oid+" a rdfs:Resource"];
 				keys = Object.keys(obj);
 				for (i in keys) {
 					key = keys[i];
