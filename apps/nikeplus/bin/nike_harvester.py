@@ -90,28 +90,26 @@ class NikeHarvester:
             stored_config_harvester = json.loads(stored_config_harvester)
             logging.debug("stored_config_harvester type (after 1 loads): {0}".format(type(stored_config_harvester)))
 
-        token = self.nike.get_token()
-        if token is None:
-            stored_config_nike = keyring.get_password("Nike.com", "Nike+")
-            logging.debug("stored_config_nike type: {0}".format(type(stored_config_nike)))
-            logging.debug("Loaded nike config from keyring: {0}".format(stored_config_nike))
+        stored_config_nike = keyring.get_password("Nike.com", "Nike+")
+        logging.debug("stored_config_nike type: {0}".format(type(stored_config_nike)))
+        logging.debug("Loaded nike config from keyring: {0}".format(stored_config_nike))
 
-            if stored_config_nike is None :
-                logging.error("No credentials for Nike.com. Please configure before use.")
-                sys.exit(1)
-            else :
-                if (type(stored_config_nike) != dict):
-                    stored_config_nike = json.loads(stored_config_nike)
-                    logging.debug("stored_config_nike type (after 1 loads): {0}".format(type(stored_config_nike)))
-                if ('password' in stored_config_nike) and ('user' in stored_config_nike):
-                    try:
-                        self.nike.login(stored_config_nike['user'], stored_config_nike['password'])
-                        logging.debug("Logged in with username {0} and password {1}", stored_config_nike['user'], stored_config_nike['password'])
-                        token = self.nike.get_token()
-                        logging.debug("Got token {0}".format(token))
-                    except Exception as exc: 
-                        logging.error("Could not authorise to nike, error: {1}".format(exc))
-                        sys.exit(1)
+        if stored_config_nike is None :
+            logging.error("No credentials for Nike.com. Please configure before use.")
+            sys.exit(1)
+        else :
+            if (type(stored_config_nike) != dict):
+                stored_config_nike = json.loads(stored_config_nike)
+                logging.debug("stored_config_nike type (after 1 loads): {0}".format(type(stored_config_nike)))
+            if ('password' in stored_config_nike) and ('user' in stored_config_nike):
+                try:
+                    self.nike.login(stored_config_nike['user'], stored_config_nike['password'])
+                    logging.debug("Logged in with username {0} and password {1}", stored_config_nike['user'], stored_config_nike['password'])
+                    token = self.nike.get_token()
+                    logging.debug("Got token {0}".format(token))
+                except Exception as exc: 
+                    logging.error("Could not authorise to nike, error: {1}".format(exc))
+                    sys.exit(1)
 
         return stored_config_harvester['box'], stored_config_harvester['user'], stored_config_harvester['password'], stored_config_harvester['overwrite']
 
