@@ -70,6 +70,8 @@ class IndxClient:
         else:
             self.client = client
 
+        self.client.params = self.params
+
         """ Ensure self.server always ends in a / """
         if self.address[-1:] != "/":
             self.address += "/"
