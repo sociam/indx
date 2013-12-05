@@ -71,17 +71,25 @@ class NikePlus:
         time.sleep(1)
 
         response = json.loads(resp)
-        self.logger.debug("get_token: received response: {0}".format(pprint.pformat(response)))
-
-        body = json.loads(response['body']) # double JSON encoded. seriously.
-        self.logger.debug("get_token: received response body: {0}".format(pprint.pformat(body)))
-
-        token = body['access_token']
-        expires_in = body['expires_in']
+        self.logger.debug("get_token: received response: {0}".format(response))
         
-        self.logger.debug("Successfully got token: {0}, expires in: {1}".format(token, expires_in))
-        self.token = token
-        return token
+        body = json.loads(response['body']) # double JSON encoded. seriously.
+        self.logger.debug("get_token: received response body: {0}".format(body))
+
+        if 'access_token' in body:
+            token = body['access_token']
+            expires_in = body['expires_in']
+        
+            self.logger.debug("Successfully got token: {0}, expires in: {1}".format(token, expires_in))
+            self.token = token
+            return token
+        elif 'serviceResponse' in body:
+            header = body['serviceResponse']['header']
+            self.logger.debug("get_token: received response header: {0}".format(header))
+            if header["success"] == 'false':
+                raise LoginError(header["errorCodes"])
+        else:
+            self.logger("Couldn't get token.")
 
     def get_activities(self, start_date, end_date, offset = 1):
         """ Get the list of activity IDs for this user. """
@@ -159,3 +167,9 @@ class NikePlus:
         self.logger.debug("get_activities: received response body: {0}".format(pprint.pformat(body)))
 
         return body
+
+class LoginError(Exception):
+    def __init__(self, error):
+        self.error = error
+    def __str__(self):
+        return str(self.error[0]['message'])

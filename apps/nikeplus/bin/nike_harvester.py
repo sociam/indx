@@ -52,13 +52,18 @@ class NikeHarvester:
                 logging.debug("Received user: {0} and password: {1}".format(nike_config['user'], nike_config['password']))
                 try:
                     self.nike.login(nike_config['user'], nike_config['password'])
-                    logging.debug("Logged in with username {0} and password {1}", nike_config['user'], nike_config['password'])
+                    logging.debug("Logged in with username {0} and password {1}".format(nike_config['user'], nike_config['password']))
                     token = self.nike.get_token()
                     logging.debug("Got token {0}".format(token))
                     if token:
-                        keyring.set_password("Nike.com", "Nike+", json.dumps(nike_config))
+                        nike_config['token'] = token
+                        if 'error' in nike_config:
+                            del nike_config['error']
                 except Exception as exc:
                     logging.error("Could not authorise to Nike, with username {0} and password {1},  error: {2}".format(nike_config['user'], nike_config['password'], exc))
+                    nike_config['error'] = str(exc)
+                    del nike_config['password']
+                keyring.set_password("Nike.com", "Nike+", json.dumps(nike_config))
         if 'harvester' in received_config:
             harvester_config = received_config['harvester']
             if harvester_config != stored_config_harvester:
@@ -104,11 +109,11 @@ class NikeHarvester:
             if ('password' in stored_config_nike) and ('user' in stored_config_nike):
                 try:
                     self.nike.login(stored_config_nike['user'], stored_config_nike['password'])
-                    logging.debug("Logged in with username {0} and password {1}", stored_config_nike['user'], stored_config_nike['password'])
+                    logging.debug("Logged in with username {0} and password {1}".format(stored_config_nike['user'], stored_config_nike['password']))
                     token = self.nike.get_token()
                     logging.debug("Got token {0}".format(token))
                 except Exception as exc: 
-                    logging.error("Could not authorise to nike, error: {1}".format(exc))
+                    logging.error("Could not authorise to nike, error: {0}".format(exc))
                     sys.exit(1)
 
         return stored_config_harvester['box'], stored_config_harvester['user'], stored_config_harvester['password'], stored_config_harvester['overwrite']

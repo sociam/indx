@@ -19,10 +19,10 @@
         </tr>
       </table>
       <h3>Nike.com service authentication</h3>
-      <div ng-show="creds">
+      <div ng-show="nikeuser && nikepassword">
         <p>Harvester service has the following credentials set.</p>
       </div>
-      <div ng-show="!creds">
+      <div ng-show="!nikeuser || ! nikepassword">
         <p>Harvester service does not have any credentials set and cannot access your data.</p> 
       </div>
       <table class='auth'>
@@ -34,7 +34,16 @@
           <td>Nike+ password</td>
           <td><input type="password" ng-model='nikepassword' /></td>
         </tr>
-
+        <tr>
+          <td></td>
+          <td>
+            <div class="btn btn-danger" ng-show="nikeerror" ng-click=""> {{ nikeerror }} </div>
+            <div class="btn btn-warning" ng-show="nikeuser && nikepassword && !token" 
+            ng-click="testLogin({nike:{user:nikeuser,password:nikepassword}})">Test login</div>
+            <div class="btn btn-success" ng-show="token && nikeuser && nikepassword" > Login successful </div>
+          </td>
+        </tr>
+      </table>
       <h3>INDX service access</h3>
       <table class='security'>
         <tr>
@@ -55,7 +64,7 @@
             <div class="btn btn-warning" 
           ng-show="user && box && (user['@id'] !== selectedUser.id) && !granted"
           ng-click="grantACL(user, box)">Authorise {{ user.name }} to have access to {{ box }}</div>
-            <div ng-show="granted" class="granted"> {{ granted_status }} </div>
+            <div class="btn btn-success" ng-show="granted_status" > {{ granted_status }} </div>
           </td>
         </tr>
       </table>
