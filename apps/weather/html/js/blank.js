@@ -18,8 +18,8 @@ angular
 							box : config.box,
 							password: config.password,
 						},
-						latlng:config.latlng,
-						frequency:config.frequency
+						latlngs:config.latlngs,
+						sleep:config.sleep || 60000
 					});
 				});
 				// restore the user
@@ -100,18 +100,19 @@ angular
 				load_box($scope.selectedBox).then(function() {  _get_config_from_service();	});
 			}
 		});
-
 		$scope.geolocateme = function() {
+			console.log('geolocateme');
 			var d = u.deferred();
-			navigator.geolocation.getCurrentPosition(d.resolve, d.reject, {timeout: 1500});
-			d.then(function(location) { 
-				console.log('location!!!!!! ', location);
+			navigator.geolocation.getCurrentPosition(function(location, err) { 
+				if (err) { console.error('error! ', err); return; }
+				console.log('got location ', location);
 				if (location && location.coords) {
 					sa(function() { 
-						$scope.location = [location.coords.latitude.toFixed(3) + '', location.coords.longitude.toFixed(3) + ''].join(','); 
+						var locstring = [location.coords.latitude.toFixed(3) + '', location.coords.longitude.toFixed(3) + ''].join(','); 
+						$scope.latlngs = locstring;
 					});
 				}
-			});
+			}, null, {timeout:2000});
 			d.reject(function(error) { status('error getting current location ' + error.toString()); });
 		};
 
