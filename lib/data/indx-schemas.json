@@ -113,9 +113,15 @@
                 ]
             },
             "20131126-ALTER_BOXES_DIFF_VIEW": {
-                "next-version": "",
+                "next-version": "20131205-ADD_USERNAME_TO_KEYSTORE",
                 "sql": [
                     "ALTER TABLE tbl_indx_core ADD COLUMN boxid text NULL;"
+                ]
+            },
+            "20131205-ADD_USERNAME_TO_KEYSTORE": {
+                "next-version": "",
+                "sql": [
+                    "ALTER TABLE tbl_keystore ADD COLUMN username text NULL;"
                 ]
             }
         }

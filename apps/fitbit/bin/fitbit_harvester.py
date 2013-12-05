@@ -347,10 +347,14 @@ class FitbitHarvester:
                     interval_end = interval_start+timedelta(minutes=1) 
                     value = point["value"]
                     data_point = {  "@id": "fitbit_dp_{0}".format(uuid.uuid4()), 
-                                    "http://sociam.org/ontology/timeseries/start": interval_start.isoformat(),
-                                    "http://sociam.org/ontology/timeseries/end": interval_end.isoformat(),
-                                    "http://sociam.org/ontology/timeseries/value": value,
-                                    "http://purl.org/linked-data/cube#dataset": { "@id": ts_id } }
+                                    # "http://sociam.org/ontology/timeseries/start": interval_start.isoformat(),
+                                    # "http://sociam.org/ontology/timeseries/end": interval_end.isoformat(),
+                                    # "http://sociam.org/ontology/timeseries/value": value,
+                                    # "http://purl.org/linked-data/cube#dataset": { "@id": ts_id } }
+                                    "start": interval_start.isoformat(),
+                                    "end": interval_end.isoformat(),
+                                    "value": value,
+                                    "timeseries": { "@id": ts_id } }
                     if rdf_type:
                         data_point["http://www.w3.org/1999/02/22-rdf-syntax-ns#type"] = [ { "@id": rdf_type } ]
                     data_points.append(data_point)
@@ -386,10 +390,14 @@ class FitbitHarvester:
                         data_point = {  "@id": "fitbit_dp_{0}".format(uuid.uuid4()) }
                     if data_point :
                         logging.debug("Making a data point for {0}".format(interval_start.isoformat()))
-                        data_point["http://sociam.org/ontology/timeseries/start"] = interval_start.isoformat()
-                        data_point["http://sociam.org/ontology/timeseries/end"] = interval_end.isoformat()
-                        data_point["http://sociam.org/ontology/timeseries/value"] = value
-                        data_point["http://purl.org/linked-data/cube#dataset"] = { "@id": ts_id } 
+                        # data_point["http://sociam.org/ontology/timeseries/start"] = interval_start.isoformat()
+                        # data_point["http://sociam.org/ontology/timeseries/end"] = interval_end.isoformat()
+                        # data_point["http://sociam.org/ontology/timeseries/value"] = value
+                        # data_point["http://purl.org/linked-data/cube#dataset"] = { "@id": ts_id } 
+                        data_point["start"] = interval_start.isoformat()
+                        data_point["end"] = interval_end.isoformat()
+                        data_point["value"] = value
+                        data_point["timeseries"] = { "@id": ts_id } 
                         if rdf_type:
                             data_point["http://www.w3.org/1999/02/22-rdf-syntax-ns#type"] = [ { "@id": rdf_type } ]
                         data_points.append(data_point)
@@ -450,7 +458,8 @@ class FitbitHarvester:
                 if resp and 'code' in resp and resp['code']==200 and 'data' in resp:
                     for pt in resp['data'] :
                         obj = resp['data'][pt]
-                        if 'http://purl.org/linked-data/cube#dataset' in obj and obj['http://purl.org/linked-data/cube#dataset'][0]['@value'] in [self.steps_ts_id, self.calories_ts_id, self.distance_ts_id, self.floors_ts_id, self.elevation_ts_id] :
+                        # if 'http://purl.org/linked-data/cube#dataset' in obj and obj['http://purl.org/linked-data/cube#dataset'][0]['@value'] in [self.steps_ts_id, self.calories_ts_id, self.distance_ts_id, self.floors_ts_id, self.elevation_ts_id] :
+                        if 'timeseries' in obj and obj['timeseries'][0]['@value'] in [self.steps_ts_id, self.calories_ts_id, self.distance_ts_id, self.floors_ts_id, self.elevation_ts_id] :
                             point_ids.append(pt) 
                 logging.debug("Found points with start time {0}: {1}".format(find_start.isoformat(), point_ids))
                 self.safe_delete(indx, point_ids)
@@ -479,15 +488,18 @@ class FitbitHarvester:
                 if resp and 'code' in resp and resp['code']==200 and 'data' in resp:
                     for pt in resp['data'] :
                         obj = resp['data'][pt]
-                        if 'http://purl.org/linked-data/cube#dataset' in obj and obj['http://purl.org/linked-data/cube#dataset'][0]['@id'] in [self.steps_ts_id, self.calories_ts_id, self.distance_ts_id, self.floors_ts_id, self.elevation_ts_id] :
-                            objs_date_hash = out[obj['http://purl.org/linked-data/cube#dataset'][0]['@id']]
+                        # if 'http://purl.org/linked-data/cube#dataset' in obj and obj['http://purl.org/linked-data/cube#dataset'][0]['@id'] in [self.steps_ts_id, self.calories_ts_id, self.distance_ts_id, self.floors_ts_id, self.elevation_ts_id] :
+                        #     objs_date_hash = out[obj['http://purl.org/linked-data/cube#dataset'][0]['@id']]
+                        if 'timeseries' in obj and obj['timeseries'][0]['@id'] in [self.steps_ts_id, self.calories_ts_id, self.distance_ts_id, self.floors_ts_id, self.elevation_ts_id] :
+                            objs_date_hash = out[obj['timeseries'][0]['@id']]
                             if find_start in objs_date_hash:
                                 objs_list = objs_date_hash[find_start]
                             else:
                                 objs_list = []
                             objs_list.append(obj) 
                             objs_date_hash[find_start] = objs_list
-                            out[obj['http://purl.org/linked-data/cube#dataset'][0]['@id']] = objs_date_hash
+                            # out[obj['http://purl.org/linked-data/cube#dataset'][0]['@id']] = objs_date_hash
+                            out[obj['timeseries'][0]['@id']] = objs_date_hash
                         logging.debug("Found points with start time {0}: {1}".format(find_start.isoformat(),objs_list))
         logging.debug("The points found for the day: {0}".format(out))
         return out

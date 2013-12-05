@@ -2,14 +2,12 @@ angular
 	.module('exporter', ['ui','indx'])
 	.controller('main', function($scope, client, utils) {
 		var box, u = utils;
-		$scope.objs = [];
 		$scope.format = 'json';
 		$scope.$watch('selectedBox + selectedUser', function() {
 			if ($scope.selectedUser && $scope.selectedBox) {
 				console.log('getting box', $scope.selectedBox);
 				client.store.getBox($scope.selectedBox).then(function(b) {
 					box = b;
-					$scope.objs = b.getObjIDs();
 				}).fail(function(e) { u.error('error ', e); });
 			}
 		});
@@ -26,16 +24,7 @@ angular
 
 		$scope.save = function() {
 			var dd = u.deferred();
-			console.log("box has : ", $scope.objs.length);
-			console.log("the format : ", $scope.format);
-
-			// box.getObj($scope.objs).then(function(objects) {
-			// 	u.safeApply($scope, function() {
-			// 		$scope.boxData = $scope.serializers[$scope.format](objects);
-			// 		$scope.fileext = file_formats[$scope.format];
-			// 	});
-			// 	dd.resolve();
-			// }).fail(dd.reject);
+			console.log("saving in the format : ", $scope.format);
 			box.query({}, "*").then(function(response) {
 				objects = response["data"];
 				u.safeApply($scope, function() {
@@ -52,13 +41,6 @@ angular
 			saveAs(new Blob([$scope.boxData], {type: "text/plain"}), $scope.filename || $scope.selectedBox+"."+$scope.fileext );
 		};
 
-		$scope.isIdOfOther = function(s) {
-			if ($scope.objs.indexOf(s) !== -1) {
-				return true;
-			}
-			return false;
-		};
-
 		$scope.createContextObj = function() {
 			context = {};
 			// what is the box url in indx? 
@@ -68,14 +50,12 @@ angular
 		};
 
 		var parseValue = function(val) {
-			// console.log("parsing value ", val);
 			if (Array.isArray(val)) {
 				return val.map(function(o) {
 					if (o.hasOwnProperty("@id")) {
 						return o["@id"];
 					} 
 					if (o.hasOwnProperty("@value")) {
-						// console.log(o["@type"]);
 						return literalDeserialisers[o["@type"]](o["@value"]);
 					}
 				});
@@ -142,9 +122,9 @@ angular
 			},
 			'ntriples' : function(obs) {
 				console.log("serializing list to turtle");
-				defaultPrefix = "@prefix : <"+client.store.get('server_host')+"/box/"+$scope.selectedBox+"/"+"> .\n";
-				indxPrefix = "@prefix indx: <http://sociam.org/ontology/indx/> .\n";
-				return defaultPrefix + indxPrefix + "\n"+ toN3(obs);
+				defaultPrefix = "@prefix : <http://"+client.store.get('server_host')+"/"+$scope.selectedBox+"/"+"> .\n";
+				rdfsPrefix = "@prefix rdfs : <http://www.w3.org/2000/01/rdf-schema#> . \n";
+				return defaultPrefix + rdfsPrefix + "\n"+ toN3(obs);
 			}, 
 			'csv' : function(obs) {
 				console.log("serializing list to csv");
@@ -189,7 +169,7 @@ angular
 			ids = Object.keys(obs);
 			triples = ids.map(function(oid) {
 				obj = obs[oid];
-				objTriples = [":"+oid+" a indx:Object"];
+				objTriples = [":"+oid+" a rdfs:Resource"];
 				keys = Object.keys(obj);
 				for (i in keys) {
 					key = keys[i];

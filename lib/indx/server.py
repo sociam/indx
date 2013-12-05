@@ -24,6 +24,7 @@ from twisted.web.static import File
 from twisted.internet import reactor, ssl
 from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
+from twisted.web.server import Session
 
 import indx.webserver.handlers as handlers
 from indx.webserver.handlers.box import BoxHandler
@@ -254,6 +255,11 @@ class WebServer:
     
     def start(self):        
         factory = WebSocketSite(self.root)
+
+        class LongSession(Session):
+                sessionTimeout = 60 * 60 * 6 # = 6 hours (value is in seconds - default is 15 minutes)
+
+        factory.sessionFactory = LongSession
 
         ## WebSockets is a Handler that is created for each request, so we add it differently here:
         factory.webserver = self;

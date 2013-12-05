@@ -84,5 +84,14 @@ def rsa_decrypt(key, ciphertext):
     """ Use a private key (RSA object loaded using the load_key function above) to decrypt a message into the original string. """
     return key.decrypt(base64.decodestring(ciphertext))
 
+def rsa_sign(private_key, plaintext):
+    """ Hash and sign a plaintext using a private key. Verify using rsa_verify with the public key. """
+    hsh = sha512_hash(plaintext)
+    PRNG = Crypto.Random.OSRNG.posix.new().read
+    return private_key.sign(hsh, PRNG)
 
+def rsa_verify(public_key, plaintext, signature):
+    """ Hash and and verify a plain text using a public key. """
+    hsh = sha512_hash(plaintext)
+    return public_key.verify(hsh, signature) == True # convert from 0/1 to False/True
 
