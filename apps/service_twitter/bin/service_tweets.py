@@ -55,8 +55,10 @@ class TwitterService:
                 #set the auth access control
                 self.auth = OAuthHandler(self.consumer_key, self.consumer_secret)
                 self.auth.set_access_token(self.access_token, self.access_token_secret)
-        except:
-            logging.error("could not start TwitterService, check config details - params might be missing")
+            else:
+                raise Exception("Credentials or Configs missing, credentials: {0}, configs: {1}".format(credentials, configs))
+        except Exception as e:
+            logging.error("Could not start TwitterService, check config details - params might be missing, exception: {0}".format(e))
 
     def get_indx(self):
         return_d = Deferred()
