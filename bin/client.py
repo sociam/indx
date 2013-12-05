@@ -315,7 +315,8 @@ if __name__ == "__main__":
         logging.error("Error: {0}".format(failure))
         if args['debug']:
             traceback.print_exc()
-        reactor.stop()
+        if reactor.running:
+            reactor.stop()
 
     try:
         action = args['action'][0]
