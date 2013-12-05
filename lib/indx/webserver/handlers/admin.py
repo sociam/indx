@@ -65,7 +65,7 @@ class AdminHandler(BaseHandler):
             logging.error("Box name is empty - returning 400.")
             return self.return_bad_request(request)
 
-        self.database.delete_box(box_name).addCallbacks(lambda success: self.return_no_content(request), lambda fail: self.return_internal_error(request))
+        self.database.delete_box(box_name).addCallbacks(lambda success: self.return_ok(request), lambda fail: self.return_internal_error(request))
     
     def create_box_handler(self, request):
         """ Create a new box. """

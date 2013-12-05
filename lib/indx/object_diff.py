@@ -77,42 +77,44 @@ class ObjectSetDiff:
 
             if len(keys) < 1:
                 result_d.callback(True)
-                return
-
-            quer = keys.pop(0)
-
-            if len(self.queries[quer]['params']) > max_params:
-
-                querylist = []
-            
-                # do prelatest before latest, only when latest has hit max_params
-                if quer == 'latest':
-                    querylist.extend(self.queries['prelatest']['queries'])
-                    self.queries['prelatest']['queries'] = [] # empty the list of queries
-
-                query = self.queries[quer]['query_prefix'] + ", ".join(self.queries[quer]['values'])
-                params = self.queries[quer]['params']
-
-                querylist.append( (query, params) ) # querylist is tuples of (query, params)
-
-                self.queries[quer]['values'] = []
-                self.queries[quer]['params'] = []
-
-                def run_querylist(empty):
-
-                    if len(querylist) < 1:
-                        run_next(None)
-                        return
-
-                    qp_pair = querylist.pop(0)
-                    query, params = qp_pair
-
-                    logging.debug("ObjectSetDiff gen_queries, run_querylist running: query: {0}, params: {1}".format(query,params))
-                    cur.execute(query, params).addCallbacks(run_querylist, result_d.errback)
-
-                run_querylist(None)
             else:
-                run_next(None)
+                quer = keys.pop(0)
+
+                # max_params == 0 override is required because if quer is 'latest' and has no params, 'prelatest' might still have queries
+                if len(self.queries[quer]['params']) > max_params or max_params == 0:
+
+                    logging.debug("ObjectSetDiff gen_queries, queries for {0}, queries are: {1}".format(quer, self.queries['prelatest']['queries']))
+
+                    querylist = []
+                
+                    # do prelatest before latest, only when latest has hit max_params
+                    if quer == 'latest':
+                        querylist.extend(self.queries['prelatest']['queries'])
+                        self.queries['prelatest']['queries'] = [] # empty the list of queries
+
+                    if len(self.queries[quer]['values']) > 0:
+                        query = self.queries[quer]['query_prefix'] + ", ".join(self.queries[quer]['values'])
+                        params = self.queries[quer]['params']
+
+                        querylist.append( (query, params) ) # querylist is tuples of (query, params)
+
+                        self.queries[quer]['values'] = []
+                        self.queries[quer]['params'] = []
+
+                    def run_querylist(empty):
+
+                        if len(querylist) < 1:
+                            run_next(None)
+                        else:
+                            qp_pair = querylist.pop(0)
+                            query, params = qp_pair
+
+                            logging.debug("ObjectSetDiff gen_queries, run_querylist running: query: {0}, params: {1}".format(query,params))
+                            cur.execute(query, params).addCallbacks(run_querylist, result_d.errback)
+
+                    run_querylist(None)
+                else:
+                    run_next(None)
 
         run_next(None)
 
