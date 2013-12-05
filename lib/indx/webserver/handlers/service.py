@@ -15,10 +15,7 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging
-import json
-import subprocess
-import sys
+import logging, json, tempfile, subprocess, sys
 from indx.webserver.handlers.base import BaseHandler
 
 class ServiceHandler(BaseHandler):
@@ -28,6 +25,12 @@ class ServiceHandler(BaseHandler):
         self.pipe = None
         self.service_path = service_path
         self.subhandlers = self._make_subhandlers()
+        self._set_up_message_buffer()
+
+    def _set_up_message_buffer(self):
+        self.errpipe_out = tempfile.NamedTemporaryFile()
+        self.errpipe_in = open(self.errpipe_out.name,'r')
+        self.err_messages = []
 
     def is_service(self):
         manifest = self._load_manifest()
@@ -81,6 +84,15 @@ class ServiceHandler(BaseHandler):
                 'require_auth': True,
                 'require_token': False,
                 'handler': ServiceHandler.is_running_handler,
+                'accept':['application/json'],
+                'content-type':'application/json'
+            },
+            {
+                "prefix": "{0}/api/get_stderr".format(self.service_path),
+                'methods': ['GET'],
+                'require_auth': True,
+                'require_token': False,
+                'handler': ServiceHandler.get_stderr_messages,
                 'accept':['application/json'],
                 'content-type':'application/json'
             }
@@ -143,12 +155,25 @@ class ServiceHandler(BaseHandler):
         return self.pipe is not None and self.pipe.poll() is None
 
     def start(self):
-        if self.is_running():
-           self.stop()
+        if self.is_running(): self.stop()
         manifest = self._load_manifest()
         command = [x.format(self.webserver.server_url) for x in manifest['run']]
-        self.pipe = subprocess.Popen(command,cwd=self.get_app_cwd())
+        self._set_up_message_buffer()
+        self.pipe = subprocess.Popen(command,cwd=self.get_app_cwd(),stderr=self.errpipe_out)
         return self.is_running()
+
+    def _dequeue_stderr(self):
+        logging.debug('ERRPIPE {0} - {0}'.format(self.errpipe_out.tell(), self.errpipe_in.tell()))
+        if (self.errpipe_out.tell() == self.errpipe_in.tell()): return
+        new_lines = self.errpipe_in.read()
+        if new_lines:
+            self.err_messages.extend([x.strip() for x in new_lines.split('\n') if len(x.strip()) > 0])
+
+    def get_stderr_messages(self,request):
+        self._dequeue_stderr()
+        from_id = self.get_arg(request, "from")
+        if not from_id: from_id = 0
+        return self.return_ok(request,data={'messages':self.err_messages[from_id:]})
 
     def start_handler(self,request):
         result = self.start()
