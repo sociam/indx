@@ -16,7 +16,6 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
-import json
 from indx.webserver.handlers.base import BaseHandler
 import indx.indx_pg2 as database
 from twisted.internet.defer import Deferred
@@ -24,17 +23,13 @@ from twisted.internet.defer import Deferred
 import urlparse
 import urllib
 from openid.store import memstore
-#from openid.store import filestore
 from openid.consumer import consumer
 from openid.oidutil import appendArgs
-#from openid.cryptutil import randomString
-#from openid.fetchers import setDefaultFetcher, Urllib2Fetcher
 from openid.extensions import pape, sreg, ax
 
 from indx.openid import IndxOpenID
 from indx.user import IndxUser
-from indx.crypto import sha512_hash
-from hashing_passwords import make_hash, check_hash
+from indx.crypto import rsa_verify
 
 OPENID_PROVIDER_NAME = "INDX OpenID Handler"
 OPENID_PROVIDER_URL = "http://indx.ecs.soton.ac.uk/"
@@ -100,38 +95,38 @@ class AuthHandler(BaseHandler):
             wbSession.setUser(None)
             wbSession.setUserType(None)
             wbSession.setPassword(None)            
-            self.return_unauthorized(request)
+            return self.return_unauthorized(request)
 
         SSH_MSG_USERAUTH_REQUEST = "50"
 
-        key_signature = self.get_arg(request, "key_signature")
-        key = self.get_arg(request, "key")
+        signature = self.get_arg(request, "signature")
+        key_hash = self.get_arg(request, "key_hash")
         algo = self.get_arg(request, "algo")
         method = self.get_arg(request, "method")
 
-        if key_signature is None or key is None or algo is None or method is None:
-            logging.error("auth_keys error, key_signature, key, algo or method is None, returning unauthorized")
+        if signature is None or key_hash is None or algo is None or method is None:
+            logging.error("auth_keys error, signature, key, algo or method is None, returning unauthorized")
             return fail()
 
-        key_hash = sha512_hash(key)
-
-        keypair = self.webserver.keystore(key_hash)
+        keystore_results = self.webserver.keystore.get(key_hash)
+        key = keystore_results['key']
+        user = keystore_results['user']
 
         sessionid = request.getSession().uid
 
-        ordered_signature_text = '{0}\t{1}\t"{2}"\t{3}\t{4}'.format(SSH_MSG_USERAUTH_REQUEST, sessionid, method, algo, key)
-        signature = self.rsa_encrypt(key, ordered_signature_text)
+        ordered_signature_text = '{0}\t{1}\t"{2}"\t{3}\t{4}'.format(SSH_MSG_USERAUTH_REQUEST, sessionid, method, algo, key_hash)
+        verified = rsa_verify(key['public'], ordered_signature_text, signature)
         
-        if signature != key_signature:
-            logging.error("auth_keys error, key_signature does not match signature, returning unauthorized")
+        if not verified:
+            logging.error("auth_keys error, signature does not verify, returning unauthorized")
             return fail()
         
-        logging.debug("Login request auth for {0}, origin: {1}".format(user, request.getHeader("Origin")))
+        logging.debug("Login request auth_keys for {0}, origin: {1}".format(user, request.getHeader("Origin")))
         wbSession = self.get_session(request)
         wbSession.setAuthenticated(True)
         wbSession.setUser(user)
         wbSession.setUserType("auth")
-        wbSession.setPassword(pwd)
+        wbSession.setPassword("")
         self.return_ok(request)
 
 

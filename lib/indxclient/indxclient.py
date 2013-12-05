@@ -23,6 +23,10 @@ import cookielib
 import uuid
 import pprint
 import cjson
+import base64
+import Crypto.Random.OSRNG.posix
+import Crypto.PublicKey.RSA
+import Crypto.Hash.SHA512
 from twisted.internet import reactor, threads
 from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
@@ -610,7 +614,7 @@ class IndxClientAuth:
         return return_d
 
 
-    def auth_keys(self, key_remote):
+    def auth_keys(self, private_key, key_hash):
         """ Key based authentication, similar to RFC4252. """
         return_d = Deferred()
         try:
@@ -621,15 +625,14 @@ class IndxClientAuth:
             self.is_authed = False
 
             def session_id_cb(sessionid):
-                ordered_signature_text = '{0}\t{1}\t"{2}"\t{3}\t{4}'.format(SSH_MSG_USERAUTH_REQUEST, sessionid, method, algo, key_remote)
-                signature = self.rsa_encrypt(key_remote, ordered_signature_text)
+                ordered_signature_text = '{0}\t{1}\t"{2}"\t{3}\t{4}'.format(SSH_MSG_USERAUTH_REQUEST, sessionid, method, algo, key_hash)
+                signature = self.rsa_sign(private_key, ordered_signature_text)
 
                 url = "{0}auth/login_keys".format(self.address)
-                values = {"key_signature": signature, "key": key_remote, "algo": algo, "method": method}
+                values = {"signature": signature, "key_hash": key_hash, "algo": algo, "method": method}
 
                 self._debug("Calling auth_keys")
 
-                # TODO change client.post etc to be async using twisted web clients
                 def responded_cb(status):
                     if status['code'] != 200:
                         errmsg = "Authentication failed"
@@ -640,6 +643,7 @@ class IndxClientAuth:
                     self.is_authed = True
                     return_d.callback(status)
                 
+                # TODO change client.post etc to be async using twisted web clients
                 self.client.post(url, values).addCallbacks(responded_cb, return_d.errback)
 
             self.get_session_identifier().addCallbacks(session_id_cb, return_d.errback)
@@ -650,8 +654,14 @@ class IndxClientAuth:
         return return_d
 
     # PKI functions from indx.crypto (copied to remove the depency on INDX.)
-    def rsa_encrypt(self, key, message):
-        """ Use a public key (RSA object loaded using the load_key function above) to encrypt a message into a string. """
-        import base64
-        return base64.encodestring(key.encrypt(message, None)[0])
+    def rsa_sign(self, private_key, plaintext):
+        """ Hash and sign a plaintext using a private key. Verify using rsa_verify with the public key. """
+        hsh = self.sha512_hash(plaintext)
+        PRNG = Crypto.Random.OSRNG.posix.new().read
+        return private_key.sign(hsh, PRNG)
+
+    def sha512_hash(self, src):
+        h = Crypto.Hash.SHA512.new()
+        h.update(src)
+        return h.hexdigest()
 

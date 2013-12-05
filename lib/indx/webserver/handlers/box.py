@@ -159,7 +159,7 @@ class BoxHandler(BaseHandler):
             self.return_created(request, {"data": {"public": local_keys['public'], "public-hash": local_keys['public-hash']}})
 
         local_keys = generate_rsa_keypair(3072)
-        self.webserver.keystore.put(local_keys).addCallbacks(created_cb, err_cb) # store in the local keystore
+        self.webserver.keystore.put(local_keys, token.username).addCallbacks(created_cb, err_cb) # store in the local keystore
 
 
     def get_acls(self, request):
