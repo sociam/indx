@@ -28,8 +28,7 @@ def setup_logger(logfile, stdout, error_log):
 
     logger = logging.getLogger() # root logger
     logger.setLevel(logging.DEBUG)
-    for handler in logger.handlers: # remove default handler
-        logger.removeHandler(handler)
+    map(lambda handler: logger.removeHandler(handler), logger.handlers) # remove default handler(s)
     logger.addHandler(log_handler) # add out new handlers with their specific formatting
 
     if stdout:
