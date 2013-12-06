@@ -18,12 +18,7 @@
 import os, logging, sys, getpass, argparse
 from indx.server import WebServer
 
-def password_prompt():
-    """ Prompt for a password from the user. """
-    return getpass.getpass()
-
-
-def setup_logger(logfile, stdout):
+def setup_logger(logfile, stdout, error_log):
     """ Set up the logger, based on options. """
     formatter = logging.Formatter('%(name)s\t%(levelname)s\t%(asctime)s\t%(message)s')
 
@@ -43,6 +38,12 @@ def setup_logger(logfile, stdout):
         stdout_handler.setFormatter(formatter)
         logger.addHandler(stdout_handler)
 
+    if error_log:
+        error_log_handler = logging.FileHandler(error_log, "a")
+        error_log_handler.setLevel(logging.ERROR)
+        error_log_handler.setFormatter(formatter)
+        logger.addHandler(error_log_handler)
+
 """ Set up the arguments, and their defaults. """
 parser = argparse.ArgumentParser(description='Run an INDX server.')
 parser.add_argument('user', type=str, help="PostgreSQL server username, e.g. indx - This user must have CREATEDB and CREATEROLE privileges")
@@ -50,6 +51,7 @@ parser.add_argument('hostname', type=str, help="Hostname of the INDX server, e.g
 parser.add_argument('--db-host', default="localhost", type=str, help="PostgreSQL host, e.g. localhost")
 parser.add_argument('--db-port', default=5432, type=int, help="PostgreSQL port, e.g. 5432")
 parser.add_argument('--log', default="/tmp/indx.log", type=str, help="Location of logfile e.g. /tmp/indx.log")
+parser.add_argument('--error-log', default=None, type=str, help="Location of errors-only logfile e.g. /tmp/indx_error.log (off by default)")
 parser.add_argument('--port', default=8211, type=int, help="Override the server listening port")
 parser.add_argument('--log-stdout', default=False, action="store_true", help="Also log to stdout?")
 parser.add_argument('--ssl', default=False, action="store_true", help="Turn on SSL")
@@ -63,12 +65,12 @@ args = vars(parser.parse_args())
 
 """ Prompt the user for a password. """
 if args['password'] is None:
-	password = password_prompt()
+	password = getpass.getpass()
 else:
 	password = args['password']
 
 """ Set up the logging based on the user's options. """
-setup_logger(args['log'], args['log_stdout'])
+setup_logger(args['log'], args['log_stdout'], args['error_log'])
 
 """ Set up the configuration structure. """
 config = {
