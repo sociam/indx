@@ -40,6 +40,7 @@ def run(args):
         config = keyring.get_password("INDX", "INDX_Blank_App")
         logging.debug("running the app with: {0}".format(config));
         print >>sys.stderr, "well hello there stderr"
+        print 'to stdout'
         import random
         for x in range(10):
             print >>sys.stderr, "here's a number for you > {0}".format(random.randint(0,100))

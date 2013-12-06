@@ -25,12 +25,16 @@ class ServiceHandler(BaseHandler):
         self.pipe = None
         self.service_path = service_path
         self.subhandlers = self._make_subhandlers()
-        self._set_up_message_buffer()
+        self._set_up_output_buffers()
 
-    def _set_up_message_buffer(self):
+    def _set_up_output_buffers(self):
         self.errpipe_out = tempfile.NamedTemporaryFile()
         self.errpipe_in = open(self.errpipe_out.name,'r')
-        self.err_messages = []
+        self.err_output = []
+        self.stdoutpipe_out = tempfile.NamedTemporaryFile()
+        self.stdoutpipe_in = open(self.stdoutpipe_out.name,'r')
+        self.std_output = []
+
 
     def is_service(self):
         manifest = self._load_manifest()
@@ -92,7 +96,16 @@ class ServiceHandler(BaseHandler):
                 'methods': ['GET'],
                 'require_auth': True,
                 'require_token': False,
-                'handler': ServiceHandler.get_stderr_messages,
+                'handler': ServiceHandler.get_stderr_log,
+                'accept':['application/json'],
+                'content-type':'application/json'
+            },
+            {
+                "prefix": "{0}/api/get_stdout".format(self.service_path),
+                'methods': ['GET'],
+                'require_auth': True,
+                'require_token': False,
+                'handler': ServiceHandler.get_stdout_log,
                 'accept':['application/json'],
                 'content-type':'application/json'
             }
@@ -158,22 +171,29 @@ class ServiceHandler(BaseHandler):
         if self.is_running(): self.stop()
         manifest = self._load_manifest()
         command = [x.format(self.webserver.server_url) for x in manifest['run']]
-        self._set_up_message_buffer()
-        self.pipe = subprocess.Popen(command,cwd=self.get_app_cwd(),stderr=self.errpipe_out)
+        self._set_up_output_buffers()
+        self.pipe = subprocess.Popen(command,cwd=self.get_app_cwd(),stderr=self.errpipe_out,stdout=self.stdoutpipe_out)
         return self.is_running()
 
     def _dequeue_stderr(self):
-        logging.debug('ERRPIPE {0} - {0}'.format(self.errpipe_out.tell(), self.errpipe_in.tell()))
         if (self.errpipe_out.tell() == self.errpipe_in.tell()): return
         new_lines = self.errpipe_in.read()
-        if new_lines:
-            self.err_messages.extend([x.strip() for x in new_lines.split('\n') if len(x.strip()) > 0])
+        if new_lines: self.err_output.extend([x.strip() for x in new_lines.split('\n') if len(x.strip()) > 0])
+    def _dequeue_stdout(self):
+        if (self.stdoutpipe_out.tell() == self.stdoutpipe_in.tell()): return
+        new_lines = self.stdoutpipe_in.read()
+        if new_lines: self.std_output.extend([x.strip() for x in new_lines.split('\n') if len(x.strip()) > 0])
 
-    def get_stderr_messages(self,request):
+    def get_stderr_log(self,request):
         self._dequeue_stderr()
-        from_id = self.get_arg(request, "from")
+        from_id = self.get_arg(request, "start")
         if not from_id: from_id = 0
-        return self.return_ok(request,data={'messages':self.err_messages[from_id:]})
+        return self.return_ok(request,data={'messages':self.err_output[from_id:]})
+    def get_stdout_log(self,request):
+        self._dequeue_stdout()
+        from_id = self.get_arg(request, "start")
+        if not from_id: from_id = 0
+        return self.return_ok(request,data={'messages':self.std_output[from_id:]})
 
     def start_handler(self,request):
         result = self.start()
