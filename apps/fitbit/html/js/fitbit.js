@@ -95,6 +95,7 @@ angular
                 // get the boxes
             s.getBoxList().then(function(boxes) { 
                 sa(function() { $scope.boxes = boxes; });
+                console.log('boxes >> ', boxes);
                 dbl.resolve();
             }).fail(function(e) {
                 sa(function() { $scope.status = 'error getting box list'; });
