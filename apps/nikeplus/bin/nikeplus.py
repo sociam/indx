@@ -82,6 +82,7 @@ class NikePlus:
         
             self.logger.debug("Successfully got token: {0}, expires in: {1}".format(token, expires_in))
             self.token = token
+            self.user = body["User"]
             return token
         elif 'serviceResponse' in body:
             header = body['serviceResponse']['header']
