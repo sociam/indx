@@ -139,7 +139,7 @@ class IndxSync:
         self.root_store.unlisten(self.observer)
 
 
-    def link_remote_box(self, remote_address, remote_box, remote_token):
+    def link_remote_box(self, local_user, remote_address, remote_box, remote_token):
         """ Link a remote box with this local box (either a root box, or just a non-root synced box).
 
             Requires the credentials of the remote box, and will exchange keys using these credentials, store public keys of each box in the synced boxes, and then not require the credentials again in future to sync.
@@ -204,7 +204,7 @@ class IndxSync:
                 self.root_store._get_latest_ver().addCallbacks(ver_cb, return_d.errback)
 
             # add the local key to the local store
-            self.keystore.put(local_keys).addCallbacks(local_added_cb, return_d.errback) # store in the local keystore
+            self.keystore.put(local_keys, local_user).addCallbacks(local_added_cb, return_d.errback) # store in the local keystore
 
         client = IndxClient(remote_address, remote_box, "INDXSync Server Module", token = remote_token)
         client.generate_new_key().addCallbacks(new_remote_key_cb, return_d.errback)
