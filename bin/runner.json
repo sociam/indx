@@ -1,0 +1,26 @@
+[
+    {
+        "server": {
+            "port": 8221
+        },
+        "indx_db": "indx_1"
+    },
+    {
+        "server": {
+            "port": 8222
+        },
+        "indx_db": "indx_2"
+    },
+    {
+        "server": {
+            "port": 8223
+        },
+        "indx_db": "indx_3"
+    },
+    {
+        "server": {
+            "port": 8224
+        },
+        "indx_db": "indx_4"
+    }
+]

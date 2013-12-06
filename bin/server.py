@@ -15,8 +15,15 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import os, logging, sys, getpass, argparse
+import os
+import logging
+import sys
+import getpass
+import argparse
+import json
+import copy
 from indx.server import WebServer
+from twisted.internet import reactor
 
 def setup_logger(logfile, stdout, error_log):
     """ Set up the logger, based on options. """
@@ -43,6 +50,34 @@ def setup_logger(logfile, stdout, error_log):
         error_log_handler.setFormatter(formatter)
         logger.addHandler(error_log_handler)
 
+def deep_update(original, updates, route):
+    """ Update an original multi-level dict with individual updates that miss out key/values. """
+
+    new_route = copy.copy(route)
+
+    newvalue = updates
+    while len(new_route) > 0:
+        node = new_route.pop(0)
+        newvalue = newvalue[node]
+
+    if type(newvalue) == type({}):
+        for key in newvalue.keys():
+            next_route = copy.copy(route)
+            next_route.append(key)
+            original = deep_update(original, updates, next_route)
+    else:
+        new_route = copy.copy(route)
+        oldvalue = original
+        while len(new_route) > 0:
+            node = new_route.pop(0)
+            if len(new_route) == 0:
+                oldvalue[node] = newvalue
+            else:
+                oldvalue = oldvalue[node]
+
+    return original
+
+
 """ Set up the arguments, and their defaults. """
 parser = argparse.ArgumentParser(description='Run an INDX server.')
 parser.add_argument('user', type=str, help="PostgreSQL server username, e.g. indx - This user must have CREATEDB and CREATEROLE privileges")
@@ -60,6 +95,7 @@ parser.add_argument('--no-browser', default=False, action="store_true", help="Do
 parser.add_argument('--address', default="", type=str, help="Specify IP address to bind to")
 parser.add_argument('--password', default=None, type=str, help="Specify password on the command line instead of interactively")
 parser.add_argument('--indx-db', default="indx", type=str, help="Specify the name of the INDX configuration database")
+parser.add_argument('--runners', default=None, type=str, help="Run multiple servers using a runner JSON configuration, using the other command-line options as common values.")
 args = vars(parser.parse_args())
 
 """ Prompt the user for a password. """
@@ -89,7 +125,26 @@ config = {
     "no_browser": args['no_browser'],
 }
 
-""" Run the server using our configuration. """
-server = WebServer(config)
-server.run()
+if args['runners']:
+    """ Use 'config' as the base configuration, but run multiple servers using the differences in runners JSON. """
+
+    f = open(args['runners'])
+    runners_conf = json.load(f)
+    f.close()
+
+    for runner in runners_conf:
+        new_config = copy.deepcopy(config)
+        new_config = deep_update(new_config, runner, [])
+
+        logging.debug("Running a server with config: {0}".format(new_config))
+
+        server = WebServer(new_config)
+        server.run(reactor_start = False)
+
+    reactor.run()
+
+else:
+    """ Run the server using our configuration. """
+    server = WebServer(config)
+    server.run()
 
