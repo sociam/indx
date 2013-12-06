@@ -64,10 +64,7 @@ parser.add_argument('--indx-db', default="indx", type=str, help="Specify the nam
 args = vars(parser.parse_args())
 
 """ Prompt the user for a password. """
-if args['password'] is None:
-	password = getpass.getpass()
-else:
-	password = args['password']
+password = args['password'] or getpass.getpass()
 
 """ Set up the logging based on the user's options. """
 setup_logger(args['log'], args['log_stdout'], args['error_log'])
