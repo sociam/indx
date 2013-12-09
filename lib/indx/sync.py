@@ -33,12 +33,12 @@ class IndxSync:
     # (i.e. where the following are the in the list of values of the property "type")
     TYPES = [
         NS_ROOT_BOX + u"box",
+        NS_ROOT_BOX + u"link",
+        NS_ROOT_BOX + u"key",
         NS_ROOT_BOX + u"server",
-        NS_ROOT_BOX + u"sync-network",
         NS_ROOT_BOX + u"user",
         NS_ROOT_BOX + u"payload",
         NS_ROOT_BOX + u"message",
-        NS_ROOT_BOX + u"key",
     ]
 
     def __init__(self, root_store, database, url, keystore):
@@ -161,7 +161,7 @@ class IndxSync:
             # objects get updated to local box, and then synced across to the other boxes once the syncing starts
             new_objs = [
                 {   "@id": "link-{0}".format(link_uid),
-                    "type": [ {"@value": "http://indx.ecs.soton.ac.uk/ontology/root-box/#sync-network"} ],
+                    "type": [ {"@value": "http://indx.ecs.soton.ac.uk/ontology/root-box/#link"} ],
                     "boxes": [ {"@id": "box-{0}".format(local_key_uid)}, # links to the objs below
                                {"@id": "box-{0}".format(remote_key_uid)}, # links to the objs below
                              ],
