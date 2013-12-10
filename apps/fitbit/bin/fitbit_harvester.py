@@ -7,7 +7,7 @@ from indxclient import IndxClient, IndxClientAuth
 import oauth2 as oauth
 from time import sleep
 from datetime import date, datetime, timedelta, time
-from twisted.internet.defer import Deferred
+from twisted.internet.defer import Deferred, DeferredList
 from twisted.internet import reactor, threads
 
 class FitbitHarvester:
@@ -194,13 +194,14 @@ class FitbitHarvester:
     def work(self, server_url):
         start, box, user, password, self.overwrite = self.check_configuration()
         self.logger.debug("Starting download from date: {0}".format(start))
-        self.day = datetime.strptime(start, "%Y-%m-%d")+timedelta(days=+1) # adding 1 ecasue we actually start harvesting 1 day early in harvest(..)
+        self.start_day = datetime.strptime(start, "%Y-%m-%d")#+timedelta(days=+1) 
 
         self.fitbit_intraday = FitbitIntraDay(self.fitbit)
         self.logger.debug("Created FitbitIntraDay.")
 
         def indx_cb(indx):
             self.logger.debug("Created INDXClient.")
+            r_d = Deferred()
 
             def timeseries_cb(indx):
                 self.logger.debug("Found or created all 5 time series.")
@@ -210,12 +211,14 @@ class FitbitHarvester:
                     if harvester :
                         if "zeros_from" in harvester :
                             all_zeros_from = datetime.strptime(harvester["zeros_from"][0]["@value"], "%Y-%m-%dT%H:%M:%S")
-                            if self.day < all_zeros_from :
+                            if self.start_day < all_zeros_from :
                                 if self.overwrite :
-                                    harvester["zeros_from"] = self.day.isoformat()
+                                    harvester["zeros_from"] = self.start_day.isoformat()
                                     self.overwrite = False; # will only overwrite the first time if the flag is set
+                                else:
+                                    self.start_day = all_zeros_from+timedelta(days=-1) 
                         else :
-                            harvester["zeros_from"] = self.day.isoformat()
+                            harvester["zeros_from"] = self.start_day.isoformat()
                     self.safe_update(indx, harvester).addCallbacks(return_d.callback, return_d.errback)
                     return return_d
 
@@ -223,19 +226,18 @@ class FitbitHarvester:
                     def wait():
                         self.logger.debug("Harvested! Suspending execution for 6 hours at {0}.".format(datetime.now().isoformat()))
                         sleep(21600)
+                        r_d.callback(None)
 
                     self.harvest(indx).addCallbacks(wait, lambda er: self.logger.error("Error during harvesting: {0}".format(er)))
                 
                 self.find_create(indx, self.harvester_id, {"http://www.w3.org/2000/01/rdf-schema#label":"INDX Fitbit Harvester extra info"}).addCallbacks(harvester_cb, lambda er: self.logger.error("Error getting harvester: {0}".format(er))).addCallbacks(harvest_cb, lambda er: self.logger.error("Error during updating harvester: {0}".format(er)))
             
             self.find_create_timeseries(indx).addCallbacks(timeseries_cb, lambda f: self.logger.error("Failed to find or create one or more of the time series. {0}".format(f)))
+            return r_d
 
-
-
-        def loop():
-            while 1: 
-                self.get_indx(server_url, box, user, password).addCallbacks(indx_cb, lambda failure: self.logger.error("Error getting indx: {0}".format(failure)))
-                wait()
+        def loop(x=None):
+            # while 1: 
+                self.get_indx(server_url, box, user, password).addCallbacks(indx_cb, lambda failure: self.logger.error("Error getting indx: {0}".format(failure))).addCallbacks(loop, lambda f: self.logger.error("Error harvesting: {0}".format(f)))
 
         threads.deferToThread(loop)
 
@@ -278,27 +280,23 @@ class FitbitHarvester:
         return_d = Deferred()
 
         def harvester_cb(harvester, indx=indx):
-            fetched_days = []
-            day = self.today()
-            if harvester :
-                if "fetched_days" in harvester :
-                    fetched_days = self.parse_list(harvester["fetched_days"])
-                if "zeros_from" in harvester :
-                    day = datetime.strptime(harvester["zeros_from"][0]["@value"], "%Y-%m-%dT%H:%M:%S")
-            self.logger.debug("Fetched days : {0}, Start from : {1}".format(fetched_days, day.isoformat()))
-            got_all_zeros = self.today()
-            day = day + timedelta(days=-1) # recheck the last day that was not all zeros, in case only a part of it was synced, this also ensures that at least 1 day of data is fetched
+            
+            def get_day_points(day):
+                return_d = Deferred()
 
-            while day < self.today():
-                day_points = None
-                if day.date().isoformat() in fetched_days:
+                def points_cb(pts):
+                    return_d.callback(pts)
+
+                if day.date().isoformat() in self.fetched_days:
                     self.logger.debug("Data for {0} was already fetched, rechecking!".format(day.date().isoformat()))
-                    day_points = self.find_day_points(indx, day) # {"dataset_id":{hash based on start time}, "dataset_id":{hash based on start time}, ...}
+                    self.find_day_points(indx, day).addCallbacks(points_cb, return_d.errback)
                 else:
                     self.logger.debug("Data for {0} was not yet fetched. Getting it now.".format(day.date().isoformat()))
-                    fetched_days.append(day.date().isoformat())
-                    harvester["fetched_days"] = fetched_days
-                    self.safe_update(indx, harvester)
+                    self.fetched_days.append(day.date().isoformat())
+                    return_d.callback(None)
+                return return_d
+
+            def processing_cb(day_points):
 
                 # processing steps
                 steps = self.download_steps(day)
@@ -307,12 +305,10 @@ class FitbitHarvester:
                 zeros = self.check_all_zero(steps)
                 if zeros :
                     self.logger.debug("Step data points are all 0. ")
-                    if got_all_zeros > day:
-                        got_all_zeros = day
+                    if self.all_zeros > day:
+                        self.all_zeros = day
                 else :
-                    got_all_zeros = self.today()
-                harvester["zeros_from"] = got_all_zeros.isoformat()
-                self.safe_update(indx, harvester)
+                    self.all_zeros = self.today()
 
                 steps_points = []
                 if day_points and self.steps_ts_id in day_points and day_points[self.steps_ts_id] :
@@ -320,7 +316,6 @@ class FitbitHarvester:
                 else:
                     steps_points = self.create_data_points(day, steps, self.steps_ts_id, "http://sociam.org/ontology/health/StepCount") # a subclass of http://www.qudt.org/qudt/owl/1.0.0/quantity/index.html#Frequency and subclass of http://purl.org/linked-data/cube#Observation
                 self.logger.debug("Saving {0} step data points.".format(len(steps_points)))
-                self.save(indx, steps_points)
 
                 # processing calories
                 calories = self.download_calories(day)
@@ -330,7 +325,6 @@ class FitbitHarvester:
                 else:
                     calories_points = self.create_data_points(day, calories, self.calories_ts_id, "http://sociam.org/ontology/health/CaloriesBurned") # subclass of http://purl.org/linked-data/cube#Observation
                 self.logger.debug("Saving {0} calories data points.".format(len(calories_points)))
-                self.save(indx, calories_points)
 
                 # processing distance
                 distance = self.download_distance(day)
@@ -340,7 +334,6 @@ class FitbitHarvester:
                 else:
                     distance_points = self.create_data_points(day, distance, self.distance_ts_id, "http://sociam.org/ontology/health/Distance") # subclass of http://purl.org/linked-data/cube#Observation
                 self.logger.debug("Saving {0} distance data points.".format(len(distance_points)))
-                self.save(indx, distance_points)
 
                 # processing floors
                 floors = self.download_floors(day)
@@ -350,7 +343,6 @@ class FitbitHarvester:
                 else:
                     floors_points = self.create_data_points(day, floors, self.floors_ts_id, "http://sociam.org/ontology/health/FloorsClimbed") # subclass of http://purl.org/linked-data/cube#Observation
                 self.logger.debug("Saving {0} floors data points.".format(len(floors_points)))
-                self.save(indx, floors_points)
 
                 # processing elevation
                 elevation = self.download_elevation(day)
@@ -360,10 +352,38 @@ class FitbitHarvester:
                 else:
                     elevation_points = self.create_data_points(day, elevation, self.elevation_ts_id, "http://sociam.org/ontology/health/Elevation") # subclass of http://purl.org/linked-data/cube#Observation
                 self.logger.debug("Saving {0} elevation data points.".format(len(elevation_points)))
-                self.save(indx, elevation_points)
+                
+                proc_return_d = Deferred()
+                def saved_cb(x):
+                    for (success, value) in x:
+                        if not success:
+                            self.logger.error("Error saving data to INDX: {0}", value)
+                    proc_return_d.callback(None)
 
-                day = day + timedelta(days=+1)
-                self.logger.debug("Finished harvesting round! Exiting harvest() .. ")
+                harvester["fetched_days"] = self.fetched_days
+                harvester["zeros_from"] = self.all_zeros.isoformat()
+                save_deferred = DeferredList([self.safe_update(indx, steps_points), self.safe_update(indx, calories_points), self.safe_update(indx, distance_points), self.safe_update(indx, floors_points), self.safe_update(indx, elevation_points), self.safe_update(indx, harvester)])
+                save_deferred.addCallbacks(saved_cb, proc_return_d.errback)
+                return proc_return_d
+
+            def advance_cb(x, day):
+                if day < self.today():
+                    get_day_points(day).addCallbacks(processing_cb, lambda f: self.logger.error("Error getting day points {0}".format(f))).addCallbacks(advance_cb, lambda f: self.logger.error("Error processing day points {0}".format(f)), callbackArgs=[day + timedelta(days=+1)])
+                else:
+                    self.logger.debug("Finished harvesting round! Exiting harvest() .. ")
+
+            self.fetched_days = []
+            # self.start_day = self.today()
+            if harvester :
+                if "fetched_days" in harvester :
+                    self.fetched_days = self.parse_list(harvester["fetched_days"])
+                # if "zeros_from" in harvester : # already have the correct value in self.start_day
+                #     self.start_day = datetime.strptime(harvester["zeros_from"][0]["@value"], "%Y-%m-%dT%H:%M:%S")
+            self.logger.debug("Fetched days : {0}, Start from : {1}".format(self.fetched_days, self.start_day.isoformat()))
+            self.all_zeros = self.today()
+            # start_day = start_day + timedelta(days=-1) # recheck the last day that was not all zeros, in case only a part of it was synced, this also ensures that at least 1 day of data is fetched
+            
+            advance_cb(None, self.start_day)
 
         self.find_create(indx, self.harvester_id, {"http://www.w3.org/2000/01/rdf-schema#label":"INDX Fitbit Harvester extra info"}).addCallbacks(harvester_cb, lambda er: self.logger.error("Error getting harvester: {0}".format(er)))
         return return_d
@@ -423,7 +443,7 @@ class FitbitHarvester:
                         if len(old_data[interval_start]) > 1 :
                             self.logger.error("There are {0} points for the same start time {1} in the same dataset {2}!!".format(len(old_data[interval_start]), interval_start, ts_id))
                         old_point = old_data[interval_start][0] # there shouldn't be more than 1 point here!!!
-                        if old_point['http://sociam.org/ontology/timeseries/value'][0]['@value'] == str(value):
+                        if old_point['value'][0]['@value'] == str(value):
                             kept = kept+1
                         else:
                             replaced = replaced+1
@@ -488,25 +508,22 @@ class FitbitHarvester:
         self.logger.debug("Retrieved elevation data for {0}.".format(day.date()))
         return elevation
 
-    def save(self, indx, points):
-        self.safe_update(indx, points)
-
-    def find_and_delete_points(self, indx, day):
-        self.logger.debug("Find and delete data points from {0}".format(day.date().isoformat()))
-        for h in range(24):
-            for m in range(60):
-                point_ids = []
-                find_start = datetime.combine(day.date(), time(h,m,0)) 
-                self.logger.debug("Looking for data points with start time: {0}".format(find_start.isoformat()))
-                resp = indx.query(json.dumps({"http://sociam.org/ontology/timeseries/start":find_start.isoformat()}))
-                if resp and 'code' in resp and resp['code']==200 and 'data' in resp:
-                    for pt in resp['data'] :
-                        obj = resp['data'][pt]
-                        # if 'http://purl.org/linked-data/cube#dataset' in obj and obj['http://purl.org/linked-data/cube#dataset'][0]['@value'] in [self.steps_ts_id, self.calories_ts_id, self.distance_ts_id, self.floors_ts_id, self.elevation_ts_id] :
-                        if 'timeseries' in obj and obj['timeseries'][0]['@value'] in [self.steps_ts_id, self.calories_ts_id, self.distance_ts_id, self.floors_ts_id, self.elevation_ts_id] :
-                            point_ids.append(pt) 
-                self.logger.debug("Found points with start time {0}: {1}".format(find_start.isoformat(), point_ids))
-                self.safe_delete(indx, point_ids)
+    # def find_and_delete_points(self, indx, day):
+    #     self.logger.debug("Find and delete data points from {0}".format(day.date().isoformat()))
+    #     for h in range(24):
+    #         for m in range(60):
+    #             point_ids = []
+    #             find_start = datetime.combine(day.date(), time(h,m,0)) 
+    #             self.logger.debug("Looking for data points with start time: {0}".format(find_start.isoformat()))
+    #             resp = indx.query(json.dumps({"start":find_start.isoformat()}))
+    #             if resp and 'code' in resp and resp['code']==200 and 'data' in resp:
+    #                 for pt in resp['data'] :
+    #                     obj = resp['data'][pt]
+    #                     # if 'http://purl.org/linked-data/cube#dataset' in obj and obj['http://purl.org/linked-data/cube#dataset'][0]['@value'] in [self.steps_ts_id, self.calories_ts_id, self.distance_ts_id, self.floors_ts_id, self.elevation_ts_id] :
+    #                     if 'timeseries' in obj and obj['timeseries'][0]['@value'] in [self.steps_ts_id, self.calories_ts_id, self.distance_ts_id, self.floors_ts_id, self.elevation_ts_id] :
+    #                         point_ids.append(pt) 
+    #             self.logger.debug("Found points with start time {0}: {1}".format(find_start.isoformat(), point_ids))
+    #             self.safe_delete(indx, point_ids)
 
     def find_by_id(self, indx, oid) :
         return_d = Deferred()
@@ -531,31 +548,41 @@ class FitbitHarvester:
 
     def find_day_points(self, indx, day) :
         self.logger.debug("Find day data points from {0}".format(day.date().isoformat()))
-        out = {self.steps_ts_id:{}, self.calories_ts_id:{}, self.distance_ts_id:{}, self.floors_ts_id:{}, self.elevation_ts_id:{}}
+        return_d = Deferred()
+
+        def found_cb(results):
+            out = {self.steps_ts_id:{}, self.calories_ts_id:{}, self.distance_ts_id:{}, self.floors_ts_id:{}, self.elevation_ts_id:{}}
+            for (success, resp) in results:
+                if success:
+                    if resp and 'code' in resp and resp['code']==200 and 'data' in resp:
+                        for pt in resp['data'] :
+                            obj = resp['data'][pt]
+                            # if 'http://purl.org/linked-data/cube#dataset' in obj and obj['http://purl.org/linked-data/cube#dataset'][0]['@id'] in [self.steps_ts_id, self.calories_ts_id, self.distance_ts_id, self.floors_ts_id, self.elevation_ts_id] :
+                            #     objs_date_hash = out[obj['http://purl.org/linked-data/cube#dataset'][0]['@id']]
+                            if 'timeseries' in obj and obj['timeseries'][0]['@id'] in [self.steps_ts_id, self.calories_ts_id, self.distance_ts_id, self.floors_ts_id, self.elevation_ts_id] :
+                                objs_date_hash = out[obj['timeseries'][0]['@id']]
+                                if find_start in objs_date_hash:
+                                    objs_list = objs_date_hash[find_start]
+                                else:
+                                    objs_list = []
+                                objs_list.append(obj) 
+                                objs_date_hash[find_start] = objs_list
+                                # out[obj['http://purl.org/linked-data/cube#dataset'][0]['@id']] = objs_date_hash
+                                out[obj['timeseries'][0]['@id']] = objs_date_hash
+                            self.logger.debug("Found points with start time {0}: {1}".format(find_start.isoformat(),objs_list))                    
+                else:
+                    self.logger.error("Didn't find any timepoints: {0}".format(resp))
+            return_d.callback(out)
+
+        deferreds = []
         for h in range(24):
             for m in range(60):
                 find_start = datetime.combine(day.date(), time(h,m,0)) 
                 self.logger.debug("Looking for data points with start time: {0}".format(find_start.isoformat()))
-                resp = indx.query(json.dumps({"http://sociam.org/ontology/timeseries/start":find_start.isoformat()}))
-                if resp and 'code' in resp and resp['code']==200 and 'data' in resp:
-                    for pt in resp['data'] :
-                        obj = resp['data'][pt]
-                        # if 'http://purl.org/linked-data/cube#dataset' in obj and obj['http://purl.org/linked-data/cube#dataset'][0]['@id'] in [self.steps_ts_id, self.calories_ts_id, self.distance_ts_id, self.floors_ts_id, self.elevation_ts_id] :
-                        #     objs_date_hash = out[obj['http://purl.org/linked-data/cube#dataset'][0]['@id']]
-                        if 'timeseries' in obj and obj['timeseries'][0]['@id'] in [self.steps_ts_id, self.calories_ts_id, self.distance_ts_id, self.floors_ts_id, self.elevation_ts_id] :
-                            objs_date_hash = out[obj['timeseries'][0]['@id']]
-                            if find_start in objs_date_hash:
-                                objs_list = objs_date_hash[find_start]
-                            else:
-                                objs_list = []
-                            objs_list.append(obj) 
-                            objs_date_hash[find_start] = objs_list
-                            # out[obj['http://purl.org/linked-data/cube#dataset'][0]['@id']] = objs_date_hash
-                            out[obj['timeseries'][0]['@id']] = objs_date_hash
-                        self.logger.debug("Found points with start time {0}: {1}".format(find_start.isoformat(),objs_list))
-        self.logger.debug("The points found for the day: {0}".format(out))
-        return out
-
+                deferreds.append(indx.query(json.dumps({"start":find_start.isoformat()})))
+        DeferredList(deferreds).addCallbacks(found_cb, lambda f: self.logger.error("Error retrieving day points from indx for {0}: {1}".format(day.isoformat(), f)))
+        
+        return return_d
 
     def safe_update(self, indx, obj) :
         return_d = Deferred()
