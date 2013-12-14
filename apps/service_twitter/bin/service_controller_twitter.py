@@ -102,4 +102,3 @@ class TwitterServiceController:
 
         twitter_service.get_indx().addCallbacks(indx_cb, lambda failure: logging.error("Twitter Service Controller error logging into INDX: {0}".format(failure)))
         reactor.run()
-

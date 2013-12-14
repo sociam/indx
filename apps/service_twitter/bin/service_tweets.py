@@ -64,8 +64,10 @@ class TwitterService:
         return_d = Deferred()
 #        self.indx_con = IndxClient(self.config['address'], self.config['box'], self.config['user'], self.config['password'], app_id)
         def authed_cb(): 
+            logging.info("in service_tweets - Authed Callback")
+            logging.info("in service_tweets - get_indx authclient Auth status: {0}".format(authclient.is_authed))
             def token_cb(token):
-                self.indx_con = IndxClient(self.credentials['address'], self.credentials['box'], appid, token = token)
+                self.indx_con = IndxClient(self.credentials['address'], self.credentials['box'], appid, token = token, client = authclient.client)
                 return_d.callback(True)
 
             authclient.get_token(self.credentials['box']).addCallbacks(token_cb, return_d.errback)
@@ -73,7 +75,6 @@ class TwitterService:
         authclient = IndxClientAuth(self.credentials['address'], appid)
         authclient.auth_plain(self.credentials['username'], self.credentials['password']).addCallbacks(lambda response: authed_cb(), return_d.errback)
         return return_d
-
     def stop_and_exit_service(self):
         logging.debug('Twitter Service - HARD QUIT - TWITTER SERVICE')
         sys.exit()
@@ -88,7 +89,7 @@ class TwitterService:
                 stream_active = self.get_tweets(words_to_search)
             #the stream probably crashed out - Not my fault by silly twitter...
             #if this is the case, it's a good time harvest the user again, then restart the stream!
-            self.frun_additional_services()
+            self.run_additional_services()
             self.run_main_services()
         except:
             logging.debug('Service Tweets - Could not run main service due to error: {0}'.format(sys.exc_info()))
@@ -207,27 +208,59 @@ class TwitterService:
             logging.error('twitter timeline harvest failed {0}'.format(sys.exc_info()))
     
     def insert_object_to_indx(self, service, obj):
-     
-        try:
-            if len(obj)>0:
-                response = service.indx_con.update(service.version, obj)
-                logging.debug("Inserted Object into INDX: ".format(response))
-        except Exception as e:
-            if isinstance(e, urllib2.HTTPError): # handle a version incorrect error, and update the version
-                if e.code == 409: # 409 Obsolete
-                    response = e.read()
+
+        update_d = Deferred()
+
+        def update_cb(resp):
+            logging.info("Succesfully Updated INDX with Objects in update_cb")
+            #logging.debug("Inserted Object into INDX: ".format(resp))
+            update_d.callback(service.version)
+
+        def exception_cb(e, service=service, obj=obj):
+            logging.info("Exception Inserting into INDX, probably wrong version given")
+            if isinstance(e.value, urllib2.HTTPError): # handle a version incorrect error, and update the version
+                if e.value.code == 409: # 409 Obsolete
+                    response = e.value.read()
                     json_response = json.loads(response)
                     service.version = json_response['@version']
                     logging.debug('INDX insert error in Twitter Service Object: '+str(response))
                     try:
-                        response = service.indx_con.update(service.version, obj)
-                        logging.debug('Twitter Service - Successfully added Objects into Box')
+                        service.indx_con.update(service.version, obj).addCallbacks(update_cb, exception_cb)
+                        #logging.debug('Twitter Service - Successfully added Objects into Box')
                     except:
                         logging.error('Twitter Service, error on insert {0}'.format(response))
+                        update_d.errback(e.value)
                 else:
-                    logging.error('Twitter Service Unknow error: {0}'.format(e.read()))
+                    logging.error('Twitter Service Unknow error: {0}'.format(e.value.read()))
+                    update_d.errback(e.value)
             else:
-                logging.error("Error updating INDX: {0}".format(e))
+                logging.error("Error updating INDX: {0}".format(e.value))
+                update_d.errback(e.value)
+
+        service.indx_con.update(service.version, obj).addCallbacks(update_cb, exception_cb)
+     
+        # try:
+        #     if len(obj)>0:
+        #         response = service.indx_con.update(service.version, obj)
+        #         logging.debug("Inserted Object into INDX: ".format(response))
+        # except Exception as e:
+        #     if isinstance(e, urllib2.HTTPError): # handle a version incorrect error, and update the version
+        #         if e.code == 409: # 409 Obsolete
+        #             response = e.read()
+        #             json_response = json.loads(response)
+        #             service.version = json_response['@version']
+        #             logging.debug('INDX insert error in Twitter Service Object: '+str(response))
+        #             try:
+        #                 response = service.indx_con.update(service.version, obj)
+        #                 logging.debug('Twitter Service - Successfully added Objects into Box')
+        #             except:
+        #                 logging.error('Twitter Service, error on insert {0}'.format(response))
+        #         else:
+        #             logging.error('Twitter Service Unknow error: {0}'.format(e.read()))
+        #     else:
+        #         logging.error("Error updating INDX: {0}".format(e))
+
+
 
 
 class INDXListener(StreamListener):
@@ -238,10 +271,12 @@ class INDXListener(StreamListener):
 
     def __init__(self, twitter_serv):
         self.service = twitter_serv 
-        self.tweet_count = 0       
+        self.tweet_count = 0
+        #self.stream_d = Deferred()      
 
 
     def on_data(self, tweet_data):
+
         """ Assert the tweet into INDX.
         If the version is incorrect, the correct version will be grabbed and the update re-sent.
         
@@ -290,37 +325,116 @@ class INDXListener(StreamListener):
                 self.service.batch_users.append(twitter_user_indx)
             except:
                 print sys.exc_info()
+
+
+
+            def exception_users_cb(e, service=self.service, obj=self.service.batch_users):
+                logging.info("Exception Stream Inserting into INDX, probably wrong version given")
+                if isinstance(e.value, urllib2.HTTPError): # handle a version incorrect error, and update the version
+                    if e.value.code == 409: # 409 Obsolete
+                        response = e.value.read()
+                        json_response = json.loads(response)
+                        service.version = json_response['@version']
+                        logging.debug('INDX insert error in Twitter Stream Object: '+str(response))
+                        try:
+                            service.indx_con.update(service.version, obj).addCallbacks(stream_update_users_cb, exception_users_cb)
+                            logging.debug('Twitter Stream - Successfully added Objects into Box')
+                        except:
+                            logging.error('Twitter Stream, error on insert {0}'.format(response))
+                            stream_d.errback(e.value)
+                    else:
+                        logging.error('Twitter Stream Unknow error: {0}'.format(e.value.read()))
+                        stream_d.errback(e.value)
+                else:
+                    logging.error("Stream Error updating INDX: {0}".format(e.value))
+                    stream_d.errback(e.value)
+
+
+
+
+            
+
+            def stream_update_users_cb(resp):
+                self.service.version = resp['data']['@version']
+                logging.info('inserted batch of tweets to new version {0}'.format(self.service.version))                
+                self.service.batch_users = []
+                #time.sleep(2)
+                stream_d.callback(self.service.version)
+
+
             if len(self.service.batch) > 25:
-                response = self.service.indx_con.update(self.service.version, self.service.batch)
-                self.service.version = response['data']['@version'] # update the version
-                logging.debug('inserted batch of tweets {0}'.format(self.service.batch))
+                self.insert_tweets(self.service)
+                #self.service.indx_con.update(self.service.version, self.service.batch).addCallbacks(stream_update_tweets_cb, exception_tweets_cb)
+                # self.service.version = response['data']['@version'] # update the version
+                # logging.debug('inserted batch of tweets {0}'.format(self.service.batch))
                 self.service.batch = []
                 time.sleep(2)
-            if len(self.service.batch_users) > 25:
-                response = self.service.indx_con.update(self.service.version, self.service.batch_users)
-                self.service.version = response['data']['@version'] # update the version
-                logging.debug('inserted batch of users {0}'.format(self.service.batch_users))
-                self.service.batch_users = []
+
+            #if len(self.service.batch_users) > 25:
+                #self.service.indx_con.update(self.service.version, self.service.batch_users).addCallbacks(stream_update_users_cb, exception_users_cb)
+                # self.service.version = response['data']['@version'] # update the version
+                # logging.debug('inserted batch of users {0}'.format(self.service.batch_users))
+                # self.service.batch_users = []
             #need to give time to reset the stream...    
             if self.service.tweet_count > 10000:
                 self.service.tweet_count = 0
                 self.service.stream.disconnect()
                 logging.info('Service Tweets - Disconnecting Twitter Stream, total tweets harvsted since boot {0}'.format(self.service.tweet_count_total))
                 #
+        
         except Exception as e:
-            if isinstance(e, urllib2.HTTPError): # handle a version incorrect error, and update the version
-                if e.code == 409: # 409 Obsolete
-                    response = e.read()
-                    json_response = json.loads(response)
-                    self.service.version = json_response['@version']
-                    self.on_data(tweet_data) # try updating again now the version is correct
-                else:
-                    logging.error('Twitter Service - Streaming Error {0}'.format(e.read()))
-            else:
-                #print "didnt insert tweet"
-                logging.error("Error updating INDX: {0}".format(e))
-                sys.exit(0)                    
+            info.error("Service Tweets - on_data error {0}".format(e))
+        #     if isinstance(e, urllib2.HTTPError): # handle a version incorrect error, and update the version
+        #         if e.code == 409: # 409 Obsolete
+        #             response = e.read()
+        #             json_response = json.loads(response)
+        #             self.service.version = json_response['@version']
+        #             self.on_data(tweet_data) # try updating again now the version is correct
+        #         else:
+        #             logging.error('Twitter Service - Streaming Error {0}'.format(e.read()))
+        #     else:
+        #         #print "didnt insert tweet"
+        #         logging.error("Error updating INDX: {0}".format(e))
+        #         sys.exit(0)                    
         return True
+
+
+    def insert_tweets(self, service):
+
+        stream_d = Deferred()
+
+        def exception_tweets_cb(e, service=service, obj=service.batch):
+            logging.info("Exception Stream Inserting into INDX, probably wrong version given")
+            if isinstance(e.value, urllib2.HTTPError): # handle a version incorrect error, and update the version
+                if e.value.code == 409: # 409 Obsolete
+                    response = e.value.read()
+                    json_response = json.loads(response)
+                    service.version = json_response['@version']
+                    logging.debug('INDX insert error in Twitter Stream Object: '+str(response))
+                    try:
+                        service.indx_con.update(service.version, obj).addCallbacks(stream_update_tweets_cb, exception_tweets_cb)
+                        logging.debug('Twitter Stream - Successfully added Objects into Box')
+                    except:
+                        logging.error('Twitter Stream, error on insert {0}'.format(response))
+                        stream_d.errback(e.value)
+                else:
+                    logging.error('Twitter Stream Unknow error: {0}'.format(e.value.read()))
+                    stream_d.errback(e.value)
+            else:
+                logging.error("Stream Error updating INDX: {0}".format(e.value))
+                stream_d.errback(e.value)
+
+        def stream_update_tweets_cb(resp):
+            service.version = resp['data']['@version']
+            logging.info('inserted batch of tweets to new version {0}'.format(service.version))                
+            #self.service.batch = []
+            stream_d.callback(service.version)
+            time.sleep(2)
+
+        service.indx_con.update(service.version, service.batch).addCallbacks(stream_update_tweets_cb, exception_tweets_cb)
+
+
+    
 
     def on_error(self, status):
         logging.debug('Twitter Service - Streaming Error From Twitter API {0}'.format(status))
