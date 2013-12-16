@@ -231,6 +231,7 @@ class TwitterService:
             service.version = resp['data']['@version']
             #logging.debug("Inserted Object into INDX: ".format(resp))
             update_d.callback(service.version)
+            time.sleep(2)
 
         def exception_cb(e, service=service, obj=obj):
             logging.info("Exception Inserting into INDX, probably wrong version given")
@@ -252,9 +253,10 @@ class TwitterService:
             else:
                 logging.error("Error updating INDX: {0}".format(e.value))
                 update_d.errback(e.value)
-
+        
         service.indx_con.update(service.version, obj).addCallbacks(update_cb, exception_cb)
         return update_d
+
 
         # try:
         #     if len(obj)>0:
@@ -381,18 +383,31 @@ class INDXListener(StreamListener):
 
             if len(self.service.batch) > 25:
 
+                logging.info("Trying to Insert new batch of Tweets with a batch size of: {0}".format(len(self.service.batch)))
+
                 def update_cb(re):
-                    logging.debug("batch async worked {0}".format(re))
+                    logging.info("updated INDX with tweets, result {0}".format(re))
+                    self.service.batch = []
 
                 def update_cb_fail(re):
-                    logging.error("batch async failed {0}".format(re))
+                    logging.error("timeline harvest async failed {0}".format(re))
 
-                self.insert_tweets(self.service).addCallbacks(update_cb, update_cb_fail).addCallbacks(update_cb, update_cb_fail)
-                #self.service.indx_con.update(self.service.version, self.service.batch).addCallbacks(stream_update_tweets_cb, exception_tweets_cb)
-                # self.service.version = response['data']['@version'] # update the version
-                # logging.debug('inserted batch of tweets {0}'.format(self.service.batch))
-                self.service.batch = []
-                time.sleep(2)
+                self.service.insert_object_to_indx(self.service, self.service.batch).addCallbacks(update_cb, update_cb_fail)
+
+
+
+                # def update_cb(re):
+                #     logging.debug("batch async worked {0}".format(re))
+
+                # def update_cb_fail(re):
+                #     logging.error("batch async failed {0}".format(re))
+
+                # self.insert_tweets(self.service).addCallbacks(update_cb, update_cb_fail).addCallbacks(update_cb, update_cb_fail)
+                # #self.service.indx_con.update(self.service.version, self.service.batch).addCallbacks(stream_update_tweets_cb, exception_tweets_cb)
+                # # self.service.version = response['data']['@version'] # update the version
+                # # logging.debug('inserted batch of tweets {0}'.format(self.service.batch))
+                # self.service.batch = []
+                # time.sleep(2)
 
             #if len(self.service.batch_users) > 25:
                 #self.service.indx_con.update(self.service.version, self.service.batch_users).addCallbacks(stream_update_users_cb, exception_users_cb)
