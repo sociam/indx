@@ -17,7 +17,7 @@ class NikeHarvester:
         data_root = keyring.util.platform_.data_root()
         if not os.path.exists(data_root):
             os.mkdir(data_root)
-        keyring.set_keyring(PlaintextKeyring())
+        keyring.set_keyring(PlaintextKeyring())!!
 
         self.parser = argparse.ArgumentParser(prog="run")
         self.parser.add_argument('--config', help="Set config (input requires JSON) and exit.")
