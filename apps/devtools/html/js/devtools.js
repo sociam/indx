@@ -47,8 +47,8 @@ angular
 				box.getObj(this.obj.id + '-instance-' + u.uuid()).then(function (instance) {
 					instance.save({
 						'invoked': [true],
-						'singleRun': [singleRun],
-						'params': that.get('params')
+						'singleRun': [!!singleRun],
+						'params': [JSON.stringify(that.params)]
 					}).then(function () {
 						var instances = that.obj.get('instances') || [];
 						instances.push(instance);
