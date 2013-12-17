@@ -200,6 +200,8 @@ angular
 			},
 			_isFetched: function() { return this._fetched || false; },
 			_setFetched : function() { this._fetched = true; },
+			/// @return {String} - ID of this object
+			/// returns the id of this object
 			getID:function() { return this.id;	},
 			_valueToArray:function(k,v) {
 				if (k === '@id') { return v; }
@@ -208,6 +210,10 @@ angular
 				}
 				return v;
 			},
+			/// @arg {String} p - Property to fetch
+			/// @return {value || undefined} - Returns this.get('property')[0] if the property exists
+			/// returns the id of this object			
+			getFirst:function(p) { return this.get(p) && this.get(p)[0]; },
 			_allValuesToArrays:function(o) {
 				if (!_(o).isObject()) { utils.error(' not an object', o); return o; }
 				var this_ = this;
