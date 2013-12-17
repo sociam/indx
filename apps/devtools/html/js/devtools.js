@@ -14,7 +14,8 @@ angular
 		'use strict';
 
 		var u = utils,
-			box;
+			box,
+			testrunner;
 
 		var Test = Backbone.Model.extend({
 			initialize: function (attributes, options) {
@@ -24,26 +25,48 @@ angular
 					console.log('changed', that.toJSON())
 					that.haveBeenRun = that.get('have_been_run');
 					that.isStarted = that.get('started');
-					that.getResults();
+					//that.getResults();
 				});
 				this.trigger('change');
 				this.params = this.get('params');
 				_.each(this.params, function (param) {
 					param.value = param['default'];
 				});
-				box.getObj('test-' + this.manifest.get('name')).then(function (obj) {
+				/*box.getObj('test-' + this.manifest.get('name')).then(function (obj) {
 					that.obj = obj;
 					obj.on('change', function () {
 						console.log('test obj change', obj);
 					});
-				});
-				this.getResults();
+				});*/
+				//this.getResults();
 			},
 			start: function (singleRun) {
-				var that = this;
+				var that = this,
+					promise = $.Deferred();
+
+				box.getObj(this.obj.id + '-instance-' + u.uuid()).then(function (instance) {
+					instance.save({
+						'invoked': [true],
+						'singleRun': [singleRun],
+						'params': that.get('params')
+					}).then(function () {
+						var instances = that.obj.get('instances') || [];
+						instances.push(instance);
+						that.obj.save({
+							instances: instances
+						}).then(function () {
+							promise.resolve();
+							u.safeApply($rootScope);
+						});
+					});
+				});
+
+				return promise;
+
+
 				//this.results = null;
 				//this.isRunning = true;
-				var params = this.paramsStr();
+				/*var params = this.paramsStr();
 				if (singleRun) {
 					params += '&singlerun=' + true;
 				}
@@ -60,9 +83,9 @@ angular
 					}).fail(function () {
 						that.err = true;
 						u.safeApply($rootScope);
-					});
+					});*/
 			},
-			paramsStr: function () {
+			/*paramsStr: function () {
 				var params = 'id=' + this.id;
 				params += '&manifest_id=' + this.manifest.id;
 				if (this.params) {
@@ -92,11 +115,11 @@ angular
 						that.err = true;
 						u.safeApply($rootScope);
 					});
-			},
+			},*/
 			runOnce: function () {
 				this.singleRun(true);
 			},
-			getResults: function () {
+			/*getResults: function () {
 				var that = this,
 					promise = $.Deferred();
 				this.isLoading = true;
@@ -143,7 +166,7 @@ angular
 				this.getResults().then(function () {
 					u.safeApply($rootScope);
 				});
-			}
+			}*/
 		});
 
 		var Tests = Backbone.Collection.extend({
@@ -266,16 +289,60 @@ angular
 
 		var start = function () {
 			manifests.fetch().then(function () {
-				manifests.fetched = true;
-				u.safeApply($rootScope);
+				var promises = [];
+				// populate the testrunner object
+				manifests.each(function (manifest) {
+					manifest.tests.each(function (test) {
+						var promise = $.Deferred(),
+							obj = _(testrunner.get('tests')).find(function (obj) {
+								return ((obj.get('manifest_id') || [])[0] === manifest.id) &&
+									((obj.get('test_id') || [])[0] === test.id);
+							});
+						if (obj) {
+							promise.resolve();
+						} else {
+							console.log('test', manifest.id, test.id, '  NOT FOUND')
+							box.getObj('test-' + manifest.id + '-' + test.id).then(function (_obj) {
+								obj = _obj;
+								obj.save({
+									manifest_id: [manifest.id],
+									test_id: [test.id],
+									instances: []
+								}).then(function () {
+									testrunner.get('tests').push(obj);
+									testrunner.save().then(function () {
+										promise.resolve();
+									});
+								});
+							});
+						}
+						promise.then(function () {
+							test.obj = obj;
+						});
+						promises.push(promise);
+					});
+				});
+				$.when.apply($, promises).then(function () {
+					manifests.fetched = true;
+					u.safeApply($rootScope);
+				});
 			});
 		};
 
 		var loadBox = function(bid) {
+			console.log('LOAD BOX', bid)
 			client.store.getBox(bid).then(function (_box) {
 				console.log('got box >> ', _box.id);
 				box = _box;
-				start();
+				window.box = box;
+				box.getObj('testrunner').then(function (_testrunner) {
+					testrunner = _testrunner;
+					console.log('GOT testrunner', testrunner.get('tests'))
+					if (!testrunner.has('tests')) {
+						testrunner.set({ tests: [] });
+					}
+					start();
+				});
 			});
 		};
 		var init = function() {
@@ -285,7 +352,6 @@ angular
 			}
 		};
 		$rootScope.$watch('selectedBox + selectedUser', init);
-		init();
 		window.store = client.store;
 
 		window.manifests = manifests;
