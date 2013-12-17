@@ -1,33 +1,31 @@
 
-// first ever angular
+// test
+var nodeindx = require('../../lib/services/nodejs/nodeindx'),
+    u = nodeindx.utils;
+var fs = require('fs');
+var config_file = __dirname + '/.config.json';
+var argv = require('optimist').argv;
 
-var angular = require('angular'),
-	Backbone = require('backbone'),
-	_ = require('underscore'),
-	jQuery = require('jquery'),
-	fs = require('fs'),
-	WebSocket = require('ws');
+// savin' the config
+var save_config = function(config) {
+	var pretty = JSON.stringify(config, null, 4), d = u.deferred();
+	fs.writeFile(config_file, pretty, function(err) {
+		if(err) { d.reject(err); return; }
+		d.resolve();
+	}); 
+	return d.promise();
+};
 
-
-// compatibility shims start here >>>>>>> 
-console.debug = console.log;
-var window = {}, document = {location:{}};
-var savage_require = function(path) { eval(fs.readFileSync(path)+''); };
-
-// now we are going to start the load
-var _NODE_AJAX = require('./node_ajax.js'),
-	indx_ = savage_require('../../html/js/indx.js'),
-	utils_ = savage_require('../../html/js/indx-utils.js');
-var	injector = angular.injector(['ng','indx']);
-var u = injector.get('utils'),
-	indx = injector.get('client');
-
-// please set these parameters to what you want htem to be.
-var username='emax',
-	password='emax',
-	hostname='https://indx.local:8211';
-
-console.log('store is >> ', indx.Store);
+// loadin' the config
+var load_config = function() {
+	var d = u.deferred();
+	fs.readFile(config_file, 'utf8', function (err, data) {
+		if (err) { d.reject(err); return;	}
+		data = JSON.parse(data);
+		d.resolve(data);
+	});
+	return d.promise();
+};
 
 var counts_to_hist = function(raw_counts) {
 	var hist = {};
@@ -36,7 +34,6 @@ var counts_to_hist = function(raw_counts) {
 	});
 	return hist;
 };
-
 var __lz_timeout = [], _timeout;
 var lazy_timeout = function(fn) {
 	__lz_timeout.push(fn);
@@ -49,21 +46,18 @@ var lazy_timeout = function(fn) {
 	}, 1000);
 };
 
-
 var count_props = function(box) {
 	var ids = box.getObjIDs().concat(['boxstats-hist-n-properties']);
 	var count_obj = function(o) { return _(o.attributes).size();};
 	var boxstats;
-
 	var update_boxstats = function(hist) {
 		boxstats.set(hist);
 		boxstats.set({min: _(hist).chain().keys().min().value(), max:_(hist).chain().keys().max().value() });
-		console.log('checking lz_timeout ', __lz_timeout.length);
+		console.debug('checking lz_timeout ', __lz_timeout.length);
 		if (!__lz_timeout.length) { 
-			lazy_timeout(function() { console.log(" lets save > "); boxstats.save(); });
+			lazy_timeout(function() { console.debug(" lets save > "); boxstats.save(); });
 		}
 	};
-
 	box.getObj(ids).then(function(objs) {
 		boxstats = objs[objs.length-1];
 		objs = objs.slice(0,objs.length - 1);
@@ -73,11 +67,11 @@ var count_props = function(box) {
 	});
 	box.on('obj-add', function(id) {
 		// dynamically update boxstats	
-		console.log('obj-add new item! ', id);
+		console.debug('obj-add new item! ', id);
 		if (boxstats) {
 			box.getObj(id).then(function(obj) {
 				var count = count_obj(obj);
-				console.log(' has count ', count);
+				console.debug(' has count ', count);
 				hist[count] = hist[count] ? hist[count] + 1 : 1;
 				update_boxstats(hist);
 			});
@@ -85,21 +79,30 @@ var count_props = function(box) {
 	});
 };
 
-var s = new indx.Store({server_host:hostname});
-s.login(username,password).then(function(x) {
-	console.log('conclusion of login ...................... ');
-	s.getBoxList().then(function(bL) {
-		if (bL.length) { 
-			var b0 = bL[0];
-			s.getBox(b0).then(function(b) {
-				console.log("Got box >> ", b.id, ' - ', b.getObjIDs()); // count_types(b);
-		 		count_props(b);
-		 	});
+if (require.main === module) {
+	// check arguments
+	if (argv.get_config) {
+		load_config().then(function(config) {  console.log(config);	});
+	} else if (argv.set_config) {
+		try{ 
+			var jsonconfig = JSON.parse(argv.set_config);
+			save_config(jsonconfig).then(function() { 
+				console.log(JSON.stringify({status:200,message:"ok"}));
+			}).fail(function(f) {
+				console.error(f);
+			});
+		} catch(e) {
+			console.error("error parsing config json ", argv.set_config);
 		}
-	}).fail(function(ff) {
-		console.error('failure trying to list boxes ', ff); 
-	});
-}).fail(function(err) {
-	console.error('failure trying to log in >>> ', err);
-});
-
+	} else {
+		// run!
+		console.debug('starting up >> ');
+		nodeindx.login().then(function(store) { 
+			store.getBoxList().then(function(bid) { 
+				store.getBox(bid).then(function(box) { count_props(box); }).fail(function(err) { console.error(err); });
+			}).fail(function(err) { 
+				console.debug('error > ', err);
+			});
+		}).fail(function() { console.error('fail logging :('); });
+	}	
+}

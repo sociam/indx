@@ -15,8 +15,17 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import traceback, argparse, logging, pprint, json, cjson
-from indxclient import IndxClient
+import traceback
+import argparse
+import logging
+import pprint
+import json
+import cjson
+import sys
+from indxclient import IndxClient, IndxClientAuth
+from twisted.internet.defer import Deferred
+from twisted.python.failure import Failure
+from twisted.internet import reactor
 
 class CLIClient:
 
@@ -42,6 +51,7 @@ class CLIClient:
                       'get_acls': {'f': self.get_acls, 'args': ['box']},
                       'generate_new_key': {'f': self.generate_new_key, 'args': ['box']},
                       'create_root_box': {'f': self.create_root_box, 'args': ['box']},
+                      'link_remote_box': {'f': self.link_remote_box, 'args': ['box', 'remote_token', 'remote_box', 'remote_address']},
                      }
 
         self.appid = appid
@@ -75,15 +85,28 @@ class CLIClient:
 
     def call_action(self, name, *args, **kwargs):
         """ Calls an action by name. """
+        return_d = Deferred()
 
         action = self.actions[name]
         f = action['f']
         self.check_args(action['args'])
 
         if not self.indx:
-            self.indx = IndxClient(self.args['server'], self.args['box'], self.args['username'], self.args['password'], self.appid)
 
-        return self.parse_status(name, f(*args, **kwargs))
+            def authed_cb(): 
+                def token_cb(token):
+                    self.indx = IndxClient(self.args['server'], self.args['box'], self.appid, token = token, client = authclient.client)
+                    f(*args, **kwargs).addCallbacks(lambda status: return_d.callback(self.parse_status(name, status)), return_d.errback)
+
+                if not IndxClient.requires_token(f):
+                    token_cb(None)
+                else:
+                    authclient.get_token(self.args['box']).addCallbacks(token_cb, return_d.errback)
+                
+            authclient = IndxClientAuth(self.args['server'], self.appid)
+            authclient.auth_plain(self.args['username'], self.args['password']).addCallbacks(lambda response: authed_cb(), return_d.errback)
+            
+        return return_d
 
 
     def parse_status(self, source, status):
@@ -94,10 +117,11 @@ class CLIClient:
                 raise Exception("{0} in box {1} failed. Response is {2} with code {3}".format(source, self.args['box'], status['message'], status['code']))
             else:
                 if "data" in status and self.args['jsondata']:
-                    print json.dumps(status['data'], indent = 2)
+                    return json.dumps(status['data'], indent = 2)
                 else:
                     pretty = pprint.pformat(status, indent=2, width=80)
                     logging.info("{0} in box {1} successful, return is: {2}".format(source, self.args['box'], pretty))
+                    return None
 
 
     """ Test functions."""
@@ -246,6 +270,11 @@ class CLIClient:
         logging.debug("Calling create_user on server '{0}' with target username '{1}'".format(self.args['server'], self.args['target_username']))
         return self.indx.create_user(self.args['target_username'], self.args['target_password'])
 
+    def link_remote_box(self):
+        """ Link a remote box with a local box. """
+        logging.debug("Calling link_remote_box on remote_address '{0}', remote_box '{1}', remote_token '{2}'".format(self.args['remote_address'], self.args['remote_box'], self.args['remote_token']))
+        return self.indx.link_remote_box(self.args['remote_address'], self.args['remote_box'], self.args['remote_token'])
+
 
 if __name__ == "__main__":
     client = CLIClient()
@@ -270,6 +299,9 @@ if __name__ == "__main__":
     parser.add_argument('--acl', action="store", type=str, help='Access Control List (ACL) in JSON format, must have "read", "write" and "control" keys, all with boolean values, e.g. {"read": true, "write": true", "control": false}')
     parser.add_argument('--target_username', action="store", type=str, help='Target username, e.g. when creating a new user, or for setting ACLs for')
     parser.add_argument('--target_password', action="store", type=str, help='Target password, e.g. when creating a new user')
+    parser.add_argument('--remote_address', action="store", type=str, help='Remote INDX address, e.g. when linking remote boxes')
+    parser.add_argument('--remote_box', action="store", type=str, help='Remote box, e.g. when linking remote boxes')
+    parser.add_argument('--remote_token', action="store", type=str, help='Remote INDX auth token, e.g. when linking remote boxes')
 
     args = vars(parser.parse_args())
 
@@ -278,12 +310,25 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(level='INFO')
 
+    def err_cb(failure):
+        failure.trap(Exception)
+        logging.error("Error: {0}".format(failure))
+        if args['debug']:
+            traceback.print_exc()
+        if reactor.running:
+            reactor.stop()
+
     try:
         action = args['action'][0]
         client.set_args(args)
-        client.call_action(action)
+
+        def responded_cb(response):
+            if response is not None:
+                print response
+            reactor.stop()
+
+        client.call_action(action).addCallbacks(responded_cb, err_cb)
+        reactor.run()
     except Exception as e:
-        if args['debug']:
-            traceback.print_exc()
-        print "There was a problem: {0}".format(e)
+        err_cb(Failure(e))
 

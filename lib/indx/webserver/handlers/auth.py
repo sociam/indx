@@ -16,7 +16,6 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
-import json
 from indx.webserver.handlers.base import BaseHandler
 import indx.indx_pg2 as database
 from twisted.internet.defer import Deferred
@@ -24,16 +23,13 @@ from twisted.internet.defer import Deferred
 import urlparse
 import urllib
 from openid.store import memstore
-#from openid.store import filestore
 from openid.consumer import consumer
 from openid.oidutil import appendArgs
-#from openid.cryptutil import randomString
-#from openid.fetchers import setDefaultFetcher, Urllib2Fetcher
 from openid.extensions import pape, sreg, ax
 
 from indx.openid import IndxOpenID
 from indx.user import IndxUser
-from hashing_passwords import make_hash, check_hash
+from indx.crypto import rsa_verify
 
 OPENID_PROVIDER_NAME = "INDX OpenID Handler"
 OPENID_PROVIDER_URL = "http://indx.ecs.soton.ac.uk/"
@@ -54,13 +50,7 @@ class AuthHandler(BaseHandler):
     # authentication
     def auth_login(self, request):
         """ User logged in (POST) """
-        ## @TODO : check username/password by authenticating against postgres
-        ## 1. check username/password
-        ##     if auth -> save username/password in wbsession
-        ##                return ok
-        ##     else: -> return error
-
-        logging.debug('request !! {0}'.format(request));
+        logging.debug('auth login: request, {0}'.format(request));
 
         user = self.get_arg(request, "username")
         pwd = self.get_arg(request, "password")
@@ -93,6 +83,52 @@ class AuthHandler(BaseHandler):
             self.return_unauthorized(request)
 
         self.database.auth(user,pwd).addCallback(lambda loggedin: win() if loggedin else fail())
+
+    def auth_keys(self, request):
+        """ Log in using pre-shared keys. (POST) """
+        logging.debug('auth_keys, request: {0}'.format(request));
+
+        def fail():
+            logging.debug("Login request fail, origin: {0}".format(self.get_origin(request)))
+            wbSession = self.get_session(request)
+            wbSession.setAuthenticated(False)
+            wbSession.setUser(None)
+            wbSession.setUserType(None)
+            wbSession.setPassword(None)            
+            return self.return_unauthorized(request)
+
+        SSH_MSG_USERAUTH_REQUEST = "50"
+
+        signature = self.get_arg(request, "signature")
+        key_hash = self.get_arg(request, "key_hash")
+        algo = self.get_arg(request, "algo")
+        method = self.get_arg(request, "method")
+
+        if signature is None or key_hash is None or algo is None or method is None:
+            logging.error("auth_keys error, signature, key, algo or method is None, returning unauthorized")
+            return fail()
+
+        keystore_results = self.webserver.keystore.get(key_hash)
+        key = keystore_results['key']
+        user = keystore_results['user']
+
+        sessionid = request.getSession().uid
+
+        ordered_signature_text = '{0}\t{1}\t"{2}"\t{3}\t{4}'.format(SSH_MSG_USERAUTH_REQUEST, sessionid, method, algo, key_hash)
+        verified = rsa_verify(key['public'], ordered_signature_text, signature)
+        
+        if not verified:
+            logging.error("auth_keys error, signature does not verify, returning unauthorized")
+            return fail()
+        
+        logging.debug("Login request auth_keys for {0}, origin: {1}".format(user, request.getHeader("Origin")))
+        wbSession = self.get_session(request)
+        wbSession.setAuthenticated(True)
+        wbSession.setUser(user)
+        wbSession.setUserType("auth")
+        wbSession.setPassword("")
+        self.return_ok(request)
+
 
     def auth_logout(self, request):
         """ User logged out (GET, POST) """
@@ -351,6 +387,15 @@ AuthHandler.subhandlers = [
         'require_auth': False,
         'require_token': False,
         'handler': AuthHandler.auth_login,
+        'content-type':'text/plain', # optional
+        'accept':['application/json']                
+        },
+    {
+        'prefix':'login_keys',
+        'methods': ['POST'],
+        'require_auth': False,
+        'require_token': False,
+        'handler': AuthHandler.auth_keys,
         'content-type':'text/plain', # optional
         'accept':['application/json']                
         },

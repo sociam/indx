@@ -110,6 +110,7 @@ class BaseHandler(Resource):
 
         return default
 
+
     def _matches_acl_requirements(self, request, subhandler):
         """ Check the ACL permissions for this user matches the requirements for this access. """
         logging.debug("BaseHandler _matches_acl_requirements")
@@ -123,8 +124,9 @@ class BaseHandler(Resource):
             req_acl = subhandler['require_acl']
             logging.debug("BaseHandler _matches_acl_requirements got req_acl: {0}".format(req_acl))
 
-            wbSession = self.get_session(request)
-            user = IndxUser(self.database, wbSession.username)
+            username = self.get_token(request).username
+#            wbSession = self.get_session(request)
+            user = IndxUser(self.database, username)
 
             force_get = False
             if force_get in subhandler:

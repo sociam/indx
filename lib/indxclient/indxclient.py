@@ -15,30 +15,66 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging, json, urllib, urllib2, cookielib, uuid, pprint, cjson
+import logging
+import json
+import urllib
+import urllib2
+import cookielib
+import uuid
+import pprint
+import cjson
+import base64
+import Crypto.Random.OSRNG.posix
+import Crypto.PublicKey.RSA
+import Crypto.Hash.SHA512
+from twisted.internet import reactor, threads
+from twisted.internet.defer import Deferred
+from twisted.python.failure import Failure
 
 # Decorator function to ensure that the IndxClient object has a token when the function requires one
 def require_token(function):
     def wrapper(self, *args, **kwargs):
         self._debug("require_token, token is: {0}".format(self.token))
         if self.token is None:
-            self.get_token()
+            logging.error("require_token, throwing exception")
+            raise Exception("Non-null token required for this call.")
         logging.debug("require_token, self: {0}, *args: {1}, **kwargs: {2}".format(self, args, kwargs))
         return function(self, *args, **kwargs)
     return wrapper
+
+def value_truncate(data, max_length = 255):
+    """ Truncate a string before logging it (e.g. for file data). """
+    if data is None:
+        return data
+
+    if len(data) > max_length:
+        return data[:max_length] + "...[truncated, original length {0}]".format(len(data))
+    else:
+        return data
 
 
 class IndxClient:
     """ Authenticates and accesses an INDX. """
 
-    def __init__(self, address, box, username, password, appid, token = None):
+    def __init__(self, address, box, appid, token = None, client = None):
         """ Connect to an INDX and authenticate. """
         self.address = address
         self.box = box
-        self.username = username
-        self.password = password
         self.token = token
         self.appid = appid
+
+        self.params = {"app": self.appid}
+        if self.token is not None:
+            self.params["token"] = self.token
+        if self.box is not None:
+            self.params["box"] = self.box # used in requests
+
+        if client is None:
+            self.client = IndxHTTPClient(self.params)
+        else:
+            self.client = client
+
+        self.client.params = self.params
 
         """ Ensure self.server always ends in a / """
         if self.address[-1:] != "/":
@@ -46,27 +82,11 @@ class IndxClient:
 
         self.base = "{0}{1}".format(self.address, self.box)
 
-        """ Set up a cookies-enabled opener locally. """
-        cj = cookielib.LWPCookieJar()
-        self.opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
-
-        self.params = {"app": self.appid, "token": self.token, "box": self.box} # used in requests
-        self.auth()
-
-    def _truncate(self, data, max_length = 255):
-        """ Truncate a string before logging it (e.g. for file data). """
-        if data is None:
-            return data
-
-        if len(data) > max_length:
-            return data[:max_length] + "...[truncated, original length {0}]".format(len(data))
-        else:
-            return data
 
     def _log(self, loglevel, message):
         """ Write a log message including the server and box information. """
         logger = logging.getLogger("indxclient")
-        return logger.log(loglevel, u"%s\t%s\t%s\t%s\t%s", self.address, self.box, self.username, self.token, message)
+        return logger.log(loglevel, u"%s\t%s\t%s\t%s", self.address, self.box, self.token, message)
     
     def _debug(self, message):
         return self._log(logging.DEBUG, message)
@@ -74,122 +94,8 @@ class IndxClient:
     def _error(self, message):
         return self._log(logging.ERROR, message)
 
-    def auth(self):
-        """ Authenticate to an INDX, and get a token. """
-        url = "{0}auth/login".format(self.address)
-        values = {"username": self.username, "password": self.password}
 
-        self._debug("Calling auth")
-        status = self._post(url, values)
-
-        if status['code'] != 200:
-            errmsg = "Authentication failed"
-            self._error(errmsg)
-            raise Exception(errmsg)
-
-        self._debug("Authentication successful")
-
-    def get_token(self):
-        """ Get a token for this box. """
-        url = "{0}auth/get_token".format(self.address)
-        values = {"box": self.box, "app": self.appid}
-
-        self._debug("Getting token")
-        status = self._post(url, values)
-
-        if status['code'] != 200:
-            errmsg = "Getting a token failed"
-            self._error(errmsg)
-            raise Exception(errmsg)
-        else:
-            self._debug("Getting a token was successful: {0}".format(status['token']))
-            self.params['token'] = status['token']
-            self.token = status['token']
-
-    
     # Utility Functions
-
-    def _req(self, method, url, body = None, raw = False, headers = []):
-        """ HTTP request. Uses the global cookie jar. """
-        self._debug("HTTP Request of url: {0}, method: {1}, raw: {2}, headers: {3}, body: {4}".format(url, method, raw, headers, self._truncate(body)))
-
-        req = urllib2.Request(url, body)
-        for header in headers:
-            req.add_header(header[0], header[1])
-        req.get_method = lambda: method
-        response = self.opener.open(req)
-        the_page = response.read()
-
-        self._debug("HTTP Request: response headers: {0}".format(response.info().headers))
-        if raw:
-            self._debug("HTTP Request, returning raw results")
-            return the_page
-        else:
-            self._debug("HTTP Request, raw results: {0}".format(self._truncate(the_page)))
-            status = json.loads(the_page)
-            self._debug("HTTP Request, returning JSON decoded results: {0}".format(status))
-            return status
-
-
-    def _encode(self, values):
-        """ Encode some values, either a dict or a list of tuples. """
-        self._debug("Encode called with values: {0}".format(values))
-
-        # encode values separately because values may be a list of tuples
-        params = urllib.urlencode(self.params)
-
-        if values is None or len(values) == 0:
-            self._debug("Encode is returning basic params: {0}".format(params))
-            return params
-
-        encoded = params + "&" + urllib.urlencode(values)
-        self._debug("Encode is returning encoded values: {0}".format(encoded))
-        return encoded
-
-
-    def _get(self, url, values = None, raw = False, method = "GET"):
-        """ Do a GET, decode the result JSON and return it. """
-        self._debug("GET request with url: {0}, values: {1}".format(url, values))
-        url += "?" + self._encode(values)
-        return self._req(method, url, raw = raw)
-
-
-    def _req_body(self, url, values, method, content_type):
-        """ Do an HTTP request with arguments in the body (POST/PUT/DELETE etc), using the specified method.
-        """
-        headers = [("Content-Type", content_type)]
-        self._debug("Body request with url: {0}, values: {1}, method: {2}, headers: {3}".format(url, values, method, headers))
-        return self._req(method, url, body = self._encode(values), headers = headers)
-
-
-    def _req_file(self, url, values, method, body, content_type):
-        """ Do an HTTP request with arguments in the URL, and file data as the body.
-        """
-        url += "?" + self._encode(values)
-        headers = [("Content-Type", content_type)]
-        self._debug("File request with url: {0}, values: {1}, method: {2}, headers: {3}, body: {4}".format(url, values, method, headers, self._truncate(body)))
-        return self._req(method, url, body = body, headers = headers)
-
-
-    def _delete(self, url, values, content_type="application/json"):
-        """ Do a DELETE, decode the result JSON and return it.
-        """
-        self._debug("DELETE request with url: {0}, values: {1}".format(url, values))
-        return self._req_body(url, values, "DELETE", content_type)
-
-
-    def _put(self, url, values, content_type="application/json"):
-        """ Do a PUT, decode the result JSON and return it.
-        """
-        self._debug("PUT request with url: {0}, values: {1}".format(url, values))
-        return self._req_body(url, values, "PUT", content_type)
-
-
-    def _post(self, url, values, content_type="application/json"):
-        """ Do a POST, decode the result JSON and return it. """
-        self._debug("POST request with url: {0}, values: {1}".format(url, values))
-        return self._req_body(url, values, "POST", content_type)
-
 
     def _gen_bnode_id(self):
         """ Generate an ID for a bnode. """
@@ -251,6 +157,28 @@ class IndxClient:
 
         return objects_new
 
+    @staticmethod
+    def requires_token(call):
+        requires = [
+            'get_object_ids',
+            'update_raw',
+            'update',
+            'delete',
+            'get_latest',
+            'get_by_ids',
+            'query',
+            'set_acl',
+            'get_acls',
+            'generate_new_key',
+            'diff',
+            'add_file',
+            'delete_file',
+            'get_file',
+            'list_files',
+            'link_remote_box',
+        ]
+        return call.func_name in requires
+
 
     # API access functions
 
@@ -260,7 +188,7 @@ class IndxClient:
 
         url = "{0}admin/create_box".format(self.address)
         values = {"name": self.box}
-        return self._post(url, values)
+        return self.client.post(url, values)
 
     def delete_box(self):
         """ Delete a box. """
@@ -268,14 +196,14 @@ class IndxClient:
 
         url = "{0}admin/delete_box".format(self.address)
         values = {"name": self.box}
-        return self._post(url, values)
+        return self.client.post(url, values)
 
     def list_boxes(self):
         """ List the boxes on the INDX server. """
         self._debug("Called API: list_boxes")
 
         url = "{0}admin/list_boxes".format(self.address)
-        return self._get(url)
+        return self.client.get(url)
 
     def create_root_box(self, box):
         """ Create a new root box for a user on the INDX server. """
@@ -283,7 +211,7 @@ class IndxClient:
 
         url = "{0}admin/create_root_box".format(self.address)
         values = {"box": box}
-        return self._get(url, values)
+        return self.client.get(url, values)
 
     def create_user(self, username, password):
         """ Create a new user. """
@@ -291,7 +219,7 @@ class IndxClient:
 
         url = "{0}admin/create_user".format(self.address)
         values = {"username": username, "password": password}
-        return self._post(url, values)
+        return self.client.post(url, values)
 
     @require_token
     def get_object_ids(self):
@@ -299,11 +227,7 @@ class IndxClient:
         self._debug("Called API: get_object_ids")
 
         url = "{0}/get_object_ids".format(self.base)
-        return self._get(url)
-
-    @require_token
-    def update_json(self, version, objects):
-        pass
+        return self.client.get(url)
 
     @require_token
     def update_raw(self, version, objects):
@@ -315,7 +239,7 @@ class IndxClient:
         self._debug("Called API: update_raw with version: {0}, objects: {1}".format(version, objects)) 
 
         values = {"data": cjson.encode(objects), "version": version}
-        return self._put(self.base, values)
+        return self.client.put(self.base, values)
 
     @require_token
     def update(self, version, objects):
@@ -330,7 +254,7 @@ class IndxClient:
         self._debug("update: prepared_objects: {0}".format(pprint.pformat(prepared_objects, indent=2, width=80)))
         
         values = {"data": cjson.encode(prepared_objects), "version": version}
-        return self._put(self.base, values)
+        return self.client.put(self.base, values)
 
     @require_token
     def delete(self, version, object_id_list):
@@ -342,14 +266,14 @@ class IndxClient:
         self._debug("Called API: delete with version: {0}, object_id_list: {1}".format(version, object_id_list)) 
 
         values = {"data": json.dumps(object_id_list), "version": version}
-        return self._delete(self.base, values)
+        return self.client.delete(self.base, values)
 
     @require_token
     def get_latest(self):
         """ Get the latest version of every object in this box. """
         self._debug("Called API: get_latest")
 
-        return self._get(self.base)
+        return self.client.get(self.base)
 
     @require_token
     def get_by_ids(self, object_id_list):
@@ -360,7 +284,7 @@ class IndxClient:
         self._debug("Called API: get_by_ids with object_ids_list: {0}".format(object_id_list))
 
         id_tuples = map(lambda i: ("id", i), object_id_list)
-        return self._get(self.base, id_tuples)
+        return self.client.get(self.base, id_tuples)
 
     @require_token
     def query(self, query):
@@ -371,7 +295,7 @@ class IndxClient:
         self._debug("Called API: query with query: {0}".format(query))
 
         url = "{0}/query".format(self.base)
-        return self._get(url, {'q': query})
+        return self.client.get(url, {'q': query})
 
     @require_token
     def set_acl(self, acl, target_username):
@@ -383,7 +307,7 @@ class IndxClient:
         self._debug("Called API: set_acl with acl: {0}, target_username: {1}".format(acl, target_username))
 
         url = "{0}/set_acl".format(self.base)
-        return self._get(url, {'acl': acl, 'target_username': target_username})
+        return self.client.get(url, {'acl': acl, 'target_username': target_username})
 
     @require_token
     def get_acls(self):
@@ -391,7 +315,7 @@ class IndxClient:
         self._debug("Called API: get_acls")
 
         url = "{0}/get_acls".format(self.base)
-        return self._get(url)
+        return self.client.get(url)
 
     @require_token
     def generate_new_key(self):
@@ -399,7 +323,7 @@ class IndxClient:
         self._debug("Called API: generate_new_key")
 
         url = "{0}/generate_new_key".format(self.base)
-        return self._get(url)
+        return self.client.get(url)
 
     @require_token
     def diff(self, return_objs, from_version, to_version = None):
@@ -420,7 +344,7 @@ class IndxClient:
         if to_version is not None:
             params['to_version'] = to_version
 
-        return self._get(url, params)
+        return self.client.get(url, params)
 
     @require_token
     def add_file(self, version, file_id, file_data, contenttype):
@@ -431,11 +355,11 @@ class IndxClient:
             file_data -- The actual file data to upload
             contenttype -- The Content-Type of the file
         """
-        self._debug("Called API: add_file with version: {0}, file_id: {1}, contenttype: {2}, file_data: {3}".format(version, file_id, contenttype, self._truncate(file_data)))
+        self._debug("Called API: add_file with version: {0}, file_id: {1}, contenttype: {2}, file_data: {3}".format(version, file_id, contenttype, value_truncate(file_data)))
 
         url = "{0}/files".format(self.base)
         values = {"id": file_id, "version": version}
-        return self._req_file(url, values, "PUT", file_data, contenttype)
+        return self.client.req_file(url, values, "PUT", file_data, contenttype)
 
     @require_token
     def delete_file(self, version, file_id):
@@ -448,7 +372,7 @@ class IndxClient:
 
         url = "{0}/files".format(self.base)
         values = {"id": file_id, "version": version}
-        return self._get(url, values, method = "DELETE")
+        return self.client.get(url, values, method = "DELETE")
 
     @require_token
     def get_file(self, file_id):
@@ -460,7 +384,7 @@ class IndxClient:
 
         url = "{0}/files".format(self.base)
         params = {'id': file_id}
-        return self._get(url, params, raw = True)
+        return self.client.get(url, params, raw = True)
 
     @require_token
     def list_files(self):
@@ -468,28 +392,276 @@ class IndxClient:
         self._debug("Called API: list_files")
 
         url = "{0}/files".format(self.base)
-        return self._get(url)
+        return self.client.get(url)
+
+    @require_token
+    def link_remote_box(self, remote_address, remote_box, remote_token):
+        """ Link a remote box with a local box. """
+        self._debug("Called API: link_remote_box, on remote_address '{0}', remote_box '{1}', remote_token '{2}'".format(remote_address, remote_box, remote_token))
+
+        url = "{0}/query".format(self.base)
+        return self.client.get(url, {'remote_address': remote_address, 'remote_box': remote_box, 'remote_token': remote_token})
 
 
-#    @require_token
-#    def listen(self):
-#        """ Listen to updates to the database (locally, not with HTTP) and print out the diff in realtime. """
-#        self.check_args(['box', 'username', 'password'])
-#
-#        def observer(notify):
-#            print "Version updated to: {0}".format(notify.payload)
-#
-#        def err_cb(failure):
-#            logging.error("Error in test listen: {0}".format(failure))
-#            reactor.stop()
-#
-#        def connected_cb(conn):
-#            print "Listening..."
-#            conns = {"conn": conn}
-#            store = ObjectStoreAsync(conns, self.args['username'], self.appid, "127.0.0.1") # TODO get the IP a better way? does it matter here?
-#            store.listen(observer)
-#
-#        d = database.connect_box_raw(self.args['box'], self.args['username'], self.args['password'])
-#        d.addCallbacks(connected_cb, err_cb)
-#        reactor.run()
+class IndxHTTPClient:
+    """ An HTTP requests client with cookie jar. """
+
+    def __init__(self, params):
+        self.params = params
+
+        """ Set up a cookies-enabled opener locally. """
+        self.cj = cookielib.LWPCookieJar()
+        self.opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(self.cj))
+
+    def get_session_identifier(self):
+        """ Get the identifier for the INDX session (initiates a session if necessary). """
+        return_d = Deferred()
+
+        def check_cookies():
+            for cookie in self.cj:
+                logging.debug("COOKIE: {0}".format(cookie))
+                if cookie.name == "TWISTED_SESSION":
+                    return cookie.value
+            return None
+
+        existing = check_cookies()
+        if existing is not None:
+            return_d.callback(existing)
+        else:
+
+            def whoami_cb(response):
+                session_id = check_cookies()
+                if session_id is not None:
+                    return_d.callback(session_id)
+                else:
+                    return_d.errback(Failure(Exception("No session ID was available ")))
+
+            # do a request to start a session and get a cookie
+            self.get("{0}auth/whoami".format(self.address)).addCallbacks(whoami_cb, return_d.errback)
+        return return_d
+
+
+    def get(self, url, values = None, raw = False, method = "GET"):
+        """ Do a GET, decode the result JSON and return it. """
+        logging.debug("GET request with url: {0}, values: {1}".format(url, values))
+        url += "?" + self._encode(values)
+        return self._req(method, url, raw = raw)
+
+    def put(self, url, values, content_type="application/json"):
+        """ Do a PUT, decode the result JSON and return it. """
+        logging.debug("PUT request with url: {0}, values: {1}".format(url, values))
+        return self._req_body(url, values, "PUT", content_type)
+
+    def post(self, url, values, content_type="application/json"):
+        """ Do a POST, decode the result JSON and return it. """
+        logging.debug("POST request with url: {0}, values: {1}".format(url, values))
+        return self._req_body(url, values, "POST", content_type)
+
+    def delete(self, url, values, content_type="application/json"):
+        """ Do a DELETE, decode the result JSON and return it. """
+        logging.debug("DELETE request with url: {0}, values: {1}".format(url, values))
+        return self._req_body(url, values, "DELETE", content_type)
+
+    def req_file(self, url, values, method, body, content_type):
+        """ Do an HTTP request with arguments in the URL, and file data as the body. """
+        url += "?" + self._encode(values)
+        headers = [("Content-Type", content_type)]
+        logging.debug("File request with url: {0}, values: {1}, method: {2}, headers: {3}, body: {4}".format(url, values, method, headers, value_truncate(body)))
+        return self._req(method, url, body = body, headers = headers)
+
+
+    def _req(self, method, url, body = None, raw = False, headers = []):
+        """ HTTP request. Uses the global cookie jar. """
+        logging.debug("HTTP Request of url: {0}, method: {1}, raw: {2}, headers: {3}, body: {4}".format(url, method, raw, headers, value_truncate(body)))
+        return_d = Deferred()
+
+        def do_req():
+            req = urllib2.Request(url, body)
+            for header in headers:
+                req.add_header(header[0], header[1])
+            req.get_method = lambda: method
+            response = self.opener.open(req)
+            the_page = response.read()
+
+            logging.debug("HTTP Request: response headers: {0}".format(response.info().headers))
+            if raw:
+                logging.debug("HTTP Request, returning raw results")
+                return the_page
+            else:
+                logging.debug("HTTP Request, raw results: {0}".format(value_truncate(the_page)))
+                status = json.loads(the_page)
+                logging.debug("HTTP Request, returning JSON decoded results: {0}".format(status))
+                return status
+
+        threads.deferToThread(lambda empty: do_req(), None).addCallbacks(return_d.callback, return_d.errback)
+        return return_d
+
+    def _encode(self, values):
+        """ Encode some values, either a dict or a list of tuples. """
+        logging.debug("Encode called with values: {0}".format(values))
+
+        # encode values separately because values may be a list of tuples
+        params = urllib.urlencode(self.params)
+
+        if values is None or len(values) == 0:
+            logging.debug("Encode is returning basic params: {0}".format(params))
+            return params
+
+        encoded = params + "&" + urllib.urlencode(values)
+        logging.debug("Encode is returning encoded values: {0}".format(encoded))
+        return encoded
+
+    def _req_body(self, url, values, method, content_type):
+        """ Do an HTTP request with arguments in the body (POST/PUT/DELETE etc), using the specified method.
+        """
+        headers = [("Content-Type", content_type)]
+        logging.debug("Body request with url: {0}, values: {1}, method: {2}, headers: {3}".format(url, values, method, headers))
+        return self._req(method, url, body = self._encode(values), headers = headers)
+
+
+class IndxClientAuth:
+    """ Authenticate to INDX servers, and get tokens. """
+
+    def __init__(self, address, appid, client = None):
+        self.address = address
+        self.appid = appid
+
+        self.params = {"app": self.appid}
+
+        self.is_authed = False
+
+        """ Ensure self.server always ends in a / """
+        if self.address[-1:] != "/":
+            self.address += "/"
+
+        if client is None:
+            self.client = IndxHTTPClient(self.params)
+        else:
+            self.client = client
+
+    # Logging Functions
+
+    def _log(self, loglevel, message):
+        """ Write a log message including the server and box information. """
+        logger = logging.getLogger("indxclientauth")
+        return logger.log(loglevel, u"%s\t%s", self.address, message)
+    
+    def _debug(self, message):
+        return self._log(logging.DEBUG, message)
+
+    def _error(self, message):
+        return self._log(logging.ERROR, message)
+
+    # Authentication Functions
+
+    def get_token(self, boxid):
+        """ Get a token for this box. """
+        return_d = Deferred()
+
+        try:
+            if not self.is_authed:
+                return_d.errback(Failure(Exception("Must authenticate before getting token.")))
+                return return_d
+
+            url = "{0}auth/get_token".format(self.address)
+            values = {"box": boxid, "app": self.appid}
+
+            self._debug("Getting token")
+
+            def responded_cb(status):
+                if status['code'] != 200:
+                    errmsg = "Getting a token failed"
+                    self._error(errmsg)
+                    raise Exception(errmsg)
+
+                self._debug("Getting a token was successful: {0}".format(status['token']))
+                return_d.callback(status['token'])
+
+            self.client.post(url, values).addCallbacks(responded_cb, return_d.errback)
+
+        except Exception as e:
+            return_d.errback(Failure(e))
+
+        return return_d
+
+    def auth_plain(self, username, password):
+        """ Plain authentication. """
+        return_d = Deferred()
+        try:
+            self.is_authed = False
+
+            url = "{0}auth/login".format(self.address)
+            values = {"username": username, "password": password}
+
+            self._debug("Calling auth_plain")     
+
+            # TODO change client.post etc to be async using twisted web clients
+            def responded_cb(status):
+                if status['code'] != 200:
+                    errmsg = "Authentication failed"
+                    self._error(errmsg)
+                    raise Exception(errmsg)
+
+                self._debug("Authentication successful")
+                self.is_authed = True
+                return_d.callback(status)
+            
+            self.client.post(url, values).addCallbacks(responded_cb, return_d.errback)
+
+        except Exception as e:
+            return_d.errback(Failure(e))
+
+        return return_d
+
+
+    def auth_keys(self, private_key, key_hash):
+        """ Key based authentication, similar to RFC4252. """
+        return_d = Deferred()
+        try:
+            SSH_MSG_USERAUTH_REQUEST = "50"
+            method = "publickey"
+            algo = "SHA512"
+
+            self.is_authed = False
+
+            def session_id_cb(sessionid):
+                ordered_signature_text = '{0}\t{1}\t"{2}"\t{3}\t{4}'.format(SSH_MSG_USERAUTH_REQUEST, sessionid, method, algo, key_hash)
+                signature = self.rsa_sign(private_key, ordered_signature_text)
+
+                url = "{0}auth/login_keys".format(self.address)
+                values = {"signature": signature, "key_hash": key_hash, "algo": algo, "method": method}
+
+                self._debug("Calling auth_keys")
+
+                def responded_cb(status):
+                    if status['code'] != 200:
+                        errmsg = "Authentication failed"
+                        self._error(errmsg)
+                        raise Exception(errmsg)
+
+                    self._debug("Authentication successful")
+                    self.is_authed = True
+                    return_d.callback(status)
+                
+                # TODO change client.post etc to be async using twisted web clients
+                self.client.post(url, values).addCallbacks(responded_cb, return_d.errback)
+
+            self.get_session_identifier().addCallbacks(session_id_cb, return_d.errback)
+
+        except Exception as e:
+            return_d.errback(Failure(e))
+
+        return return_d
+
+    # PKI functions from indx.crypto (copied to remove the depency on INDX.)
+    def rsa_sign(self, private_key, plaintext):
+        """ Hash and sign a plaintext using a private key. Verify using rsa_verify with the public key. """
+        hsh = self.sha512_hash(plaintext)
+        PRNG = Crypto.Random.OSRNG.posix.new().read
+        return private_key.sign(hsh, PRNG)
+
+    def sha512_hash(self, src):
+        h = Crypto.Hash.SHA512.new()
+        h.update(src)
+        return h.hexdigest()
 

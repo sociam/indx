@@ -9,6 +9,7 @@
   "author": "emax",
   "license": "BSD",
   "dependencies": {
+    "optimist":"",
     "angular":"",
     "underscore": "~1.5.2",
     "jquery":"~1.8.2",

@@ -50,6 +50,12 @@ import Crypto.Random.OSRNG.posix
 import Crypto.PublicKey.RSA
 import Crypto.Hash.SHA512
 
+def sha512_hash(src):
+    h = Crypto.Hash.SHA512.new()
+    h.update(src)
+    return h.hexdigest()
+
+
 # Use a key size of 3072, recommended from http://en.wikipedia.org/wiki/Key_size / http://www.emc.com/emc-plus/rsa-labs/standards-initiatives/key-size.htm
 def generate_rsa_keypair(size):
     """ Generate a new public and private key pair (strings) of specified size. """
@@ -62,9 +68,7 @@ def generate_rsa_keypair(size):
     private_key = key.exportKey()
 
     # generate a SHA512 hash of the public key to identify it
-    h = Crypto.Hash.SHA512.new()
-    h.update(public_key)
-    public_hash = h.hexdigest()
+    public_hash = sha512_hash(public_key)
 
     return {"public": public_key, "private": private_key, "public-hash": public_hash}
 
@@ -80,5 +84,14 @@ def rsa_decrypt(key, ciphertext):
     """ Use a private key (RSA object loaded using the load_key function above) to decrypt a message into the original string. """
     return key.decrypt(base64.decodestring(ciphertext))
 
+def rsa_sign(private_key, plaintext):
+    """ Hash and sign a plaintext using a private key. Verify using rsa_verify with the public key. """
+    hsh = sha512_hash(plaintext)
+    PRNG = Crypto.Random.OSRNG.posix.new().read
+    return private_key.sign(hsh, PRNG)
 
+def rsa_verify(public_key, plaintext, signature):
+    """ Hash and and verify a plain text using a public key. """
+    hsh = sha512_hash(plaintext)
+    return public_key.verify(hsh, signature) == True # convert from 0/1 to False/True
 

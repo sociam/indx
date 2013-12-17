@@ -23,7 +23,7 @@ import json
 from indx.connectionpool import IndxConnectionPool
 from txpostgres import txpostgres
 from hashing_passwords import make_hash, check_hash
-from indx.crypto import encrypt, decrypt, rsa_encrypt, rsa_decrypt
+from indx.crypto import encrypt, rsa_encrypt, rsa_decrypt
 from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
 from indx.user import IndxUser
@@ -257,7 +257,7 @@ class IndxDatabase:
         return return_d
 
 
-    def create_database_users(self, db_name):
+    def create_database_and_users(self, conn_newdb, db_name, creation_queries):
         """ Create new database users for a specific database, one with read-write access, and one with read access.
         """
         return_d = Deferred()
@@ -276,35 +276,38 @@ class IndxDatabase:
             "GRANT ALL PRIVILEGES ON DATABASE %s TO %s" % (db_name, rw_user),
         ]
 
-        def connected(conn):
+        def connected(conn_indx):
             if len(queries) < 1:
 
-                # queries to be run by INDX user on new DB
-                queries_db = [
-                    "GRANT SELECT ON ALL TABLES IN SCHEMA public TO %s" % (ro_user),
-                    "REASSIGN OWNED BY %s TO %s" % (self.db_user, rw_user),
-                ]
+                def connected_rw_user_cb(conn_rw_user):
 
-                def connected_db(conn_db):
-                
-                    if len(queries_db) < 1:
-                        return_d.callback((rw_user, rw_user_pass, ro_user, ro_user_pass))
-                        return
-                    
-                    query_db = queries_db.pop(0)
-                    d_db = conn_db.runOperation(query_db)
-                    d_db.addCallbacks(lambda nothing: connected_db(conn_db), return_d.errback)
-                    return
+                    def created_cb(empty):
 
-                connect(db_name, self.db_user, self.db_pass).addCallbacks(connected_db, return_d.errback)
-                return
+                        queries_db = [
+                            "GRANT SELECT ON ALL TABLES IN SCHEMA public TO %s" % (ro_user),
+                        ]
 
-            query = queries.pop(0)
-            d = conn.runOperation(query)
-            d.addCallbacks(lambda nothing: connected(conn), return_d.errback)
-            return
+                        def inner_queries_cb(empty):
+                            if len(queries_db) < 1:
 
-        # get connection to INDX database from POOL
+                                return_d.callback((rw_user, rw_user_pass, ro_user, ro_user_pass))
+                            else: 
+                                query_db = queries_db.pop(0)
+                                d_db = conn_rw_user.runOperation(query_db)
+                                d_db.addCallbacks(inner_queries_cb, return_d.errback)
+
+                        inner_queries_cb(None)
+
+                    # run database schema/view/function creation queries as the rw_user
+                    conn_rw_user.runOperation(creation_queries).addCallbacks(created_cb, return_d.errback)
+
+                connect(db_name, rw_user, rw_user_pass).addCallbacks(connected_rw_user_cb, return_d.errback)
+            else:
+                query = queries.pop(0)
+                d = conn_indx.runOperation(query)
+                d.addCallbacks(lambda nothing: connected(conn_indx), return_d.errback)
+
+        #c get connection to INDX database from POOL
         self.connect_indx_db().addCallbacks(connected, return_d.errback)
         return return_d
 
@@ -447,49 +450,44 @@ class IndxDatabase:
                         fh_objsql.close()
                         queries += " " + objsql # concat operations together and run once below
 
-                    def operations_cb(empty):
-                        logging.debug("indx_pg2 create_box, operations_cb")
+                    def created_cb(user_details):
+                        logging.debug("indx_pg2 create_box, created_cb")
+                        rw_user, rw_user_pass, ro_user, ro_user_pass = user_details
 
-                        def created_cb(user_details):
-                            logging.debug("indx_pg2 create_box, created_cb")
-                            rw_user, rw_user_pass, ro_user, ro_user_pass = user_details
+                        def got_keys_cb(keys):
+                            logging.debug("indx_pg2 create_box, got_keys_cb")
 
-                            def got_keys_cb(keys):
-                                logging.debug("indx_pg2 create_box, got_keys_cb")
+                            # assign ownership now to db_owner
+                            rw_pw_encrypted = rsa_encrypt(keys['public'], rw_user_pass)
+                            ro_pw_encrypted = rsa_encrypt(keys['public'], ro_user_pass)
 
-                                # assign ownership now to db_owner
-                                rw_pw_encrypted = rsa_encrypt(keys['public'], rw_user_pass)
-                                ro_pw_encrypted = rsa_encrypt(keys['public'], ro_user_pass)
+                            def indx_db(conn_indx):
+                                logging.debug("indx_pg2 create_box, indx_db")
+                                d_q = conn_indx.runOperation("INSERT INTO tbl_keychain (user_id, db_name, db_user, db_user_type, db_password_encrypted) VALUES ((SELECT id_user FROM tbl_users WHERE username = %s), %s, %s, %s, %s), ((SELECT id_user FROM tbl_users WHERE username = %s), %s, %s, %s, %s)", [db_owner, db_name, rw_user, 'rw', rw_pw_encrypted, db_owner, db_name, ro_user, 'ro', ro_pw_encrypted])
 
-                                def indx_db(conn_indx):
-                                    logging.debug("indx_pg2 create_box, indx_db")
-                                    d_q = conn_indx.runOperation("INSERT INTO tbl_keychain (user_id, db_name, db_user, db_user_type, db_password_encrypted) VALUES ((SELECT id_user FROM tbl_users WHERE username = %s), %s, %s, %s, %s), ((SELECT id_user FROM tbl_users WHERE username = %s), %s, %s, %s, %s)", [db_owner, db_name, rw_user, 'rw', rw_pw_encrypted, db_owner, db_name, ro_user, 'ro', ro_pw_encrypted])
+                                def inserted(empty):
+                                    logging.debug("indx_pg2 create_box, inserted, next ACL")
 
-                                    def inserted(empty):
-                                        logging.debug("indx_pg2 create_box, inserted, next ACL")
+                                    acl_q = conn_indx.runOperation("INSERT INTO tbl_acl (database_name, user_id, acl_read, acl_write, acl_owner, acl_control) VALUES (%s, (SELECT id_user FROM tbl_users WHERE username = %s), %s, %s, %s, %s)", [box_name, db_owner, True, True, True, True])
 
-                                        acl_q = conn_indx.runOperation("INSERT INTO tbl_acl (database_name, user_id, acl_read, acl_write, acl_owner, acl_control) VALUES (%s, (SELECT id_user FROM tbl_users WHERE username = %s), %s, %s, %s, %s)", [box_name, db_owner, True, True, True, True])
+                                    def inserted_acl(empty):
+                                        logging.debug("indx_pg2 create_box, inserted_acl - create_box finished")
+                                        return_d.callback(True)
 
-                                        def inserted_acl(empty):
-                                            logging.debug("indx_pg2 create_box, inserted_acl - create_box finished")
-                                            return_d.callback(True)
+                                    acl_q.addCallbacks(inserted_acl, return_d.errback)
 
-                                        acl_q.addCallbacks(inserted_acl, return_d.errback)
+                                d_q.addCallbacks(inserted, return_d.errback)
 
-                                    d_q.addCallbacks(inserted, return_d.errback)
+                            # connect to INDX db to add new DB accounts to keychain
+                            self.connect_indx_db().addCallbacks(indx_db, return_d.errback)
 
-                                # connect to INDX db to add new DB accounts to keychain
-                                self.connect_indx_db().addCallbacks(indx_db, return_d.errback)
+                        user = IndxUser(self, db_owner)
+                        user.get_keys().addCallbacks(got_keys_cb, return_d.errback)
+                        
+                    d = self.create_database_and_users(conn_newdb, db_name, queries)
+                    d.addCallbacks(created_cb, return_d.errback)
 
-                            user = IndxUser(self, db_owner)
-                            user.get_keys().addCallbacks(got_keys_cb, return_d.errback)
-                            
-                        d = self.create_database_users(db_name)
-                        d.addCallbacks(created_cb, return_d.errback)
-
-                    conn_newdb.runOperation(queries).addCallbacks(operations_cb, return_d.errback)
-
-                connect(db_name, self.db_user, self.db_pass).addCallbacks(connected_newdb, return_d.errback)  ### XXX finish
+                connect(db_name, self.db_user, self.db_pass).addCallbacks(connected_newdb, return_d.errback)
             
             d = conn.runOperation("CREATE DATABASE %s WITH ENCODING='UTF8' OWNER=%s CONNECTION LIMIT=-1" % (db_name, self.db_user))
             d.addCallbacks(created, return_d.errback)

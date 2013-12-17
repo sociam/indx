@@ -114,6 +114,35 @@ class BoxHandler(BaseHandler):
         token.get_store().addCallbacks(store_cb, err_cb)
 
 
+    def link_remote_box(self, request):
+        """ Link a remote box with this box. """
+        token = self.get_token(request)
+        if not token:
+            return self.return_forbidden(request)
+        BoxHandler.log(logging.DEBUG, "BoxHandler link_remote_box", extra = {"request": request, "token": token})
+
+        def err_cb(failure):
+            failure.trap(Exception)
+            BoxHandler.log(logging.ERROR, "BoxHandler link_remote_box err_cb: {0}".format(failure), extra = {"request": request, "token": token})
+            return self.return_internal_error(request)
+
+        remote_address = self.get_arg(request, "remote_address")
+        remote_box = self.get_arg(request, "remote_box")
+        remote_token = self.get_arg(request, "remote_token")
+
+        if remote_address is None or remote_box is None or remote_token is None:
+            BoxHandler.log(logging.ERROR, "BoxHandler link_remote_box: remote_address, remote_box or remote_token was missing.", extra = {"request": request, "token": token})
+            return self.remote_bad_request(request, "remote_address, remote_box or remote_token was missing.")
+
+        def synced_cb(indxsync):
+            def linked_cb(empty):
+                self.return_created(request)
+
+            indxsync.link_remote_box(remote_address, remote_box, remote_token).addCallbacks(linked_cb, err_cb)
+
+        self.webserver.sync_box(self.boxid).addCallbacks(synced_cb, err_cb)
+       
+
     def generate_new_key(self, request):
         """ Generate a new key and store it in the keystore. Return the public and public-hash parts of the key. """
         token = self.get_token(request)
@@ -130,7 +159,7 @@ class BoxHandler(BaseHandler):
             self.return_created(request, {"data": {"public": local_keys['public'], "public-hash": local_keys['public-hash']}})
 
         local_keys = generate_rsa_keypair(3072)
-        self.webserver.keystore.put(local_keys).addCallbacks(created_cb, err_cb) # store in the local keystore
+        self.webserver.keystore.put(local_keys, token.username).addCallbacks(created_cb, err_cb) # store in the local keystore
 
 
     def get_acls(self, request):
@@ -522,16 +551,16 @@ BoxHandler.subhandlers = [
         'accept':['*/*'],
         'content-type':'application/json'
         },
-#    {
-#        "prefix": "link_remote_box",
-#        'methods': ['POST'],
-#        'require_auth': False,
-#        'require_token': True,
-#        'require_acl': ['control'],
-#        'handler': BoxHandler.link_remote_box,
-#        'accept':['application/json'],
-#        'content-type':'application/json'
-#        },
+    {
+        "prefix": "link_remote_box",
+        'methods': ['GET'],
+        'require_auth': False,
+        'require_token': True,
+        'require_acl': ['control'],
+        'handler': BoxHandler.link_remote_box,
+        'accept':['application/json'],
+        'content-type':'application/json'
+        },
     {
         "prefix": "generate_new_key",
         'methods': ['GET'],

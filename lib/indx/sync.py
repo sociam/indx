@@ -21,7 +21,7 @@ from indx.crypto import generate_rsa_keypair
 from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
 from indx.objectstore_types import Literal
-from indxclient import IndxClient
+from indxclient import IndxClient, IndxClientAuth
 
 NS_ROOT_BOX = u"http://indx.ecs.soton.ac.uk/ontology/root-box/#"
 
@@ -139,12 +139,12 @@ class IndxSync:
         self.root_store.unlisten(self.observer)
 
 
-    def link_remote_box(self, remote_server, remote_box, remote_user, remote_pass):
+    def link_remote_box(self, remote_address, remote_box, remote_token):
         """ Link a remote box with this local box (either a root box, or just a non-root synced box).
 
             Requires the credentials of the remote box, and will exchange keys using these credentials, store public keys of each box in the synced boxes, and then not require the credentials again in future to sync.
         """
-        logging.debug("IndxSync link_remote_box, local: {0}, to remote: {1} @ {2}".format(self.root_store.boxid, remote_server, remote_box))
+        logging.debug("IndxSync link_remote_box, local: {0}, to remote: {1} @ {2}".format(self.root_store.boxid, remote_address, remote_box))
         return_d = Deferred()
 
         local_keys = generate_rsa_keypair(3072)
@@ -174,7 +174,7 @@ class IndxSync:
                 },
                 {   "@id": "box-{0}".format(remote_key_uid),
                     "type": [ {"@value": "http://indx.ecs.soton.ac.uk/ontology/root-box/#box"} ],
-                    "server-url": [ {"@value": remote_server } ],
+                    "server-url": [ {"@value": remote_address } ],
                     "box": [ {"@value": remote_box} ],
                     "key": [ {"@id": remote_keys['public-hash']}], # links to the key objs below
                 },
@@ -206,7 +206,7 @@ class IndxSync:
             # add the local key to the local store
             self.keystore.put(local_keys).addCallbacks(local_added_cb, return_d.errback) # store in the local keystore
 
-        client = IndxClient(remote_server, remote_box, remote_user, remote_pass, "INDXSync Server Module")
+        client = IndxClient(remote_address, remote_box, "INDXSync Server Module", token = remote_token)
         client.generate_new_key().addCallbacks(new_remote_key_cb, return_d.errback)
         return return_d
 
@@ -236,7 +236,7 @@ class IndxSync:
 
                         #if box.get("keys") is None:
                         #    # no keys - need to generate
-                            
+
 
         return_d.callback(True)
 

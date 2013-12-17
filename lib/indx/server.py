@@ -23,6 +23,8 @@ from twisted.web.resource import ForbiddenResource
 from twisted.web.static import File
 from twisted.internet import reactor, ssl
 from twisted.internet.defer import Deferred
+from twisted.python.failure import Failure
+from twisted.web.server import Session
 
 import indx.webserver.handlers as handlers
 from indx.webserver.handlers.box import BoxHandler
@@ -196,28 +198,35 @@ class WebServer:
         reactor.callWhenRunning(d.callback, "INDX HTTP startup") #@UndefinedVariable
         reactor.addSystemEventTrigger("during", "shutdown", lambda *x: self.shutdown()) #@UndefinedVariable
 
-    def sync_box(self, root_box, username):
-        """ Start syncing the named box for that username. """
-        logging.debug("WebServer, sync_box for root_box {0} and username {1}".format(root_box, username))
+    def sync_box(self, root_box):
+        """ Start syncing the named box. """
+        logging.debug("WebServer, sync_box for root_box {0}".format(root_box))
+        return_d = Deferred()
 
         if root_box in self.syncs:
-            logging.error("sync_box: Two users have the same root box ({0}), error.".format(root_box))
-            return
+            logging.error("sync_box: returning from cache")
+            indxsync = self.syncs[root_box]
+            return_d.callback(indxsync)
+        else:
+            def err_cb(failure):
+                logging.error("WebServer, sync_box error getting token: {0} {1}".format(failure, failure.value))
+                # FIXME do something with the error?
+                return_d.errback(failure)
 
-        def err_cb(failure):
-            logging.error("WebServer, sync_box error getting token: {0} {1}".format(failure, failure.value))
-            # FIXME do something with the error?
+            self.syncs[root_box] = None # reserve the slot
 
-        self.syncs[root_box] = None # reserve the slot
+            def store_cb(root_store):
+                indxsync = IndxSync(root_store, self.database, self.server_url, self.keystore)
+                self.syncs[root_box] = indxsync
+                return_d.callback(indxsync)
 
-        def store_cb(root_store):
-            self.syncs[root_box] = IndxSync(root_store, self.database, self.server_url, self.keystore)
+            # assign ourselves a new token to access the root box using the @indx user
+            # this only works because the "create_root_box" function gave this user read permission
+            # this doesn't work in the general case.
+            token = self.tokens.new("@indx","",root_box,"IndxSync","/","::1")
+            token.get_store().addCallbacks(store_cb, err_cb)
 
-        # assign ourselves a new token to access the root box using the @indx user
-        # this only works because the "create_root_box" function gave this user read permission
-        # this doesn't work in the general case.
-        token = self.tokens.new("@indx","",root_box,"IndxSync","/","::1")
-        token.get_store().addCallbacks(store_cb, err_cb)
+        return return_d
 
     def start_syncing(self):
         """ Start IndxSyncing root boxes. (after indx is up and running) """
@@ -234,7 +243,7 @@ class WebServer:
             for row in rows:
                 username, root_box = row
                 logging.debug("WebServer start_syncing user: {0}, root box: {1}".format(username, root_box))
-                reactor.callInThread(lambda empty: self.sync_box(root_box, username), None)
+                reactor.callInThread(lambda empty: self.sync_box(root_box), None)
 
         self.database.get_root_boxes().addCallbacks(root_boxes_cb, err_cb)
 
@@ -246,6 +255,11 @@ class WebServer:
     
     def start(self):        
         factory = WebSocketSite(self.root)
+
+        class LongSession(Session):
+                sessionTimeout = 60 * 60 * 6 # = 6 hours (value is in seconds - default is 15 minutes)
+
+        factory.sessionFactory = LongSession
 
         ## WebSockets is a Handler that is created for each request, so we add it differently here:
         factory.webserver = self;
