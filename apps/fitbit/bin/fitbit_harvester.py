@@ -475,7 +475,7 @@ class FitbitHarvester:
         return points_d
 
     def safe_update(self, indx, obj) :
-        self.logger.debug("Updating object {0} at box version {1}".format(obj, self.box_version))
+        self.logger.debug("Updating objects at box version {0}".format(self.box_version))
         update_d = Deferred()
 
         def update_cb(resp):
@@ -493,7 +493,7 @@ class FitbitHarvester:
                 update_d.errback(resp)
 
         def exception_cb(e, obj=obj, indx=indx):
-            self.logger.error("EXCEPTION ? {0}".format(e))
+            self.logger.error("Exception in safe update: {0}".format(e))
             if isinstance(e.value, urllib2.HTTPError): # handle a version incorrect error, and update the version
                 if e.value.code == 409: # 409 Obsolete
                     response = e.value.read()
