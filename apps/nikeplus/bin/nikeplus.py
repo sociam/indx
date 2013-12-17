@@ -91,6 +91,7 @@ class NikePlus:
                 raise LoginError(header["errorCodes"])
         else:
             self.logger("Couldn't get token.")
+            return None
 
     def get_activities(self, start_date, end_date, offset = 1):
         """ Get the list of activity IDs for this user. """
