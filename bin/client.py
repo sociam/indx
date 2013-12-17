@@ -117,7 +117,7 @@ class CLIClient:
         def do_call():
             f(*args, **kwargs).addCallbacks(lambda status: return_d.callback(self.parse_status(name, status)), return_d.errback)
 
-        if not self.token and IndxClient.requires_token(f):
+        if not self.token:
             def token_cb(token):
                 if not self.indx:
                     self.indx = IndxClient(self.args['server'], self.args['box'], self.appid, token = token, client = self.client)

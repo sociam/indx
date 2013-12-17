@@ -176,7 +176,6 @@ class IndxClient:
             'get_file',
             'list_files',
             'link_remote_box',
-            'delete_box',
         ]
         return call.func_name in requires
 
