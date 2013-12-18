@@ -65,8 +65,8 @@ class TwitterService:
         return_d = Deferred()
 
         def authed_cb(): 
-            logging.info("in service_tweets - Authed Callback")
-            logging.info("in service_tweets - get_indx authclient Auth status: {0}".format(authclient.is_authed))
+            logging.debug("in service_tweets - Authed Callback")
+            logging.debug("in service_tweets - get_indx authclient Auth status: {0}".format(authclient.is_authed))
         
             def token_cb(token):
                 self.indx_con = IndxClient(self.credentials['address'], self.credentials['box'], appid, token = token, client = authclient.client)
@@ -75,10 +75,10 @@ class TwitterService:
             authclient.get_token(self.credentials['box']).addCallbacks(token_cb, return_d.errback)
          
         def authed_cb_fail(re): 
-            logging.info("in service tweets - get_indx/authed_cb failed for reason {0}".format(re))
+            logging.debug("in service tweets - get_indx/authed_cb failed for reason {0}".format(re))
             return_d.errback   
 
-        logging.info("in service_tweets - get_indx")    
+        logging.debug("in service_tweets - get_indx")    
         authclient = IndxClientAuth(self.credentials['address'], appid)
         authclient.auth_plain(self.credentials['username'], self.credentials['password']).addCallbacks(lambda response: authed_cb(), authed_cb_fail)
 
@@ -90,34 +90,34 @@ class TwitterService:
         sys.exit()
    
 
-    def run_main_services(self):
-        #now get the tweets
-        #main_services_d = Deferred()
-        try:            
-            #now get the stream for a while...
-            words_to_search = self.get_search_criteria()
+    # def run_main_services(self):
+    #     #now get the tweets
+    #     #main_services_d = Deferred()
+    #     try:            
+    #         #now get the stream for a while...
+    #         words_to_search = self.get_search_criteria()
 
-            #while(stream_active):
-            def stream_cb(re):
-                logging.debug("stream_cb harvest async worked {0}".format(re))
-                self.get_tweets(words_to_search).addCallbacks(stream_cb, stream_cb_fail)
+    #         #while(stream_active):
+    #         def stream_cb(re):
+    #             logging.debug("stream_cb harvest async worked {0}".format(re))
+    #             self.get_tweets(words_to_search).addCallbacks(stream_cb, stream_cb_fail)
 
-            def stream_cb_fail(re):
-                logging.error("stream_cb harvest async failed {0}".format(re))
+    #         def stream_cb_fail(re):
+    #             logging.error("stream_cb harvest async failed {0}".format(re))
                         
-            self.get_tweets(words_to_search).addCallbacks(stream_cb, stream_cb_fail)
-            #the stream probably crashed out - Not my fault by silly twitter...
-            #if this is the case, it's a good time harvest the user again, then restart the stream!
-            #self.run_additional_services()
-            #self.run_main_services()
-        except:
-            logging.debug('Service Tweets - Could not run main service due to error: {0}'.format(sys.exc_info()))
+    #         self.get_tweets(words_to_search).addCallbacks(stream_cb, stream_cb_fail)
+    #         #the stream probably crashed out - Not my fault by silly twitter...
+    #         #if this is the case, it's a good time harvest the user again, then restart the stream!
+    #         #self.run_additional_services()
+    #         #self.run_main_services()
+    #     except:
+    #         logging.debug('Service Tweets - Could not run main service due to error: {0}'.format(sys.exc_info()))
 
-        #return main_services_d
+    #     #return main_services_d
 
-    def run_additional_services(self):
-        #see if other harvesters needed (indx con needed to sumbit data)
-        self.load_additional_harvesters(self.twitter_add_info, self)
+    # def run_additional_services(self):
+    #     #see if other harvesters needed (indx con needed to sumbit data)
+    #     self.load_additional_harvesters(self.twitter_add_info, self)
 
 
 #this checks and inserts both the network and status objects into indx
@@ -133,7 +133,7 @@ class TwitterService:
                 #threading.Timer(15, self.run_timeline_harvest, args=(service,)).start()
 
                 def status_cb(re):
-                    logging.info("status_cb harvest async worked {0}".format(re))
+                    logging.debug("status_cb harvest async worked {0}".format(re))
 
                     #check that the insert has finished..
                     if re:
@@ -145,7 +145,7 @@ class TwitterService:
                                 logging.debug("Adding Twitter Network Harvester")
 
                                 def network_cb(re):
-                                    logging.info("network_cb harvest async worked {0}".format(re))
+                                    logging.debug("network_cb harvest async worked {0}".format(re))
                                     harvesters_d.callback(True)
 
                                 def network_cb_fail(re):
@@ -161,7 +161,7 @@ class TwitterService:
 
                 def status_cb_fail(re):
                     logging.error("status_cb harvest async failed {0}".format(re))
-                    harvesters_d.errback 
+                    #harvesters_d.errback 
 
                 #ASYNC CALL!
                 self.run_timeline_harvest(service).addCallbacks(status_cb, status_cb_fail)
@@ -190,21 +190,21 @@ class TwitterService:
         self.stream = Stream(self.auth, l)
         try:
             if len(words_to_track) > 0:
-                logging.info('Twitter Service - Stream Open and Storing Tweets')
+                logging.debug('Twitter Service - Stream Open and Storing Tweets')
 
                 self.stream.filter(track=words_to_track) #.addCallbacks(stream_cb, stream_d.errback)
 
                 if not self.stream.running:
                     
                     def update_cb(re):
-                        logging.info("updated INDX with tweets, result from Update was: {0}".format(re))
+                        logging.debug("updated INDX with tweets, result from Update was: {0}".format(re))
                         self.batch = []
 
                         #now we need to add the users list...
                         def update_users_cb(re):
-                            logging.info("updated INDX with tweet_users, result from Update was: {0}".format(re))
+                            logging.debug("updated INDX with tweet_users, result from Update was: {0}".format(re))
                             self.batch_users = []
-                            logging.info('Service Tweets - INDX stored streamed tweets, now harvesting stream again')
+                            logging.debug('Service Tweets - INDX stored streamed tweets, now harvesting stream again')
                             #self.get_tweets(words_to_track)
                             stream_d.callback(True)
 
@@ -212,15 +212,15 @@ class TwitterService:
                             logging.error("timeline harvest async failed {0}".format(re))
                             stream_d.errback
                         
-                        logging.info("Trying to Insert new batch of Users with a batch size of: {0}".format(len(self.batch_users)))
+                        logging.debug("Trying to Insert new batch of Users with a batch size of: {0}".format(len(self.batch_users)))
                         self.insert_object_to_indx(self, self.batch_users).addCallbacks(update_users_cb, update_users_cb_fail)
                     
 
                     def update_cb_fail(re):
                         logging.error("timeline harvest async failed {0}".format(re))
-                        stream_d.errback
+                        #stream_d.errback
 
-                    logging.info("Trying to Insert new batch of Tweets with a batch size of: {0}".format(len(self.batch)))                    
+                    logging.debug("Trying to Insert new batch of Tweets with a batch size of: {0}".format(len(self.batch)))                    
                     self.insert_object_to_indx(self, self.batch).addCallbacks(update_cb, update_cb_fail)
 
         except:
@@ -269,7 +269,7 @@ class TwitterService:
         timeline_harvest_cb = Deferred()
 
         try:
-            #logging.info('Getting Users Twitter Timeline since the last Id of {0}'.format(service.since_id))
+            #logging.debug('Getting Users Twitter Timeline since the last Id of {0}'.format(service.since_id))
             self.api = tweepy.API(service.auth)
             try:
                 if service.since_id > 0:
@@ -299,7 +299,7 @@ class TwitterService:
             #now append the results
 
                 def update_cb(re):
-                    logging.info("timeline harvest async worked {0}".format(re))
+                    logging.debug("timeline harvest async worked {0}".format(re))
                     timeline_harvest_cb.callback(True)
 
                 def update_cb_fail(re):
@@ -347,7 +347,7 @@ class TwitterService:
                 logging.error("Error updating INDX: {0}".format(e.value))
                 update_d.errback(e.value)
         
-        logging.info("in service_tweets - Trying to insert into indx...Current diff version: {0} and objects (len) given {1}".format(service.version, len(obj)))
+        logging.debug("in service_tweets - Trying to insert into indx...Current diff version: {0} and objects (len) given {1}".format(service.version, len(obj)))
         service.indx_con.update(service.version, obj).addCallbacks(update_cb, exception_cb)
         
         return update_d
@@ -382,9 +382,9 @@ class INDXListener(StreamListener):
             #logging.debug("{0}, {1}".format(type(tweet), tweet))
             if not tweet.get('text'):
                 # TODO: log these for provenance?                
-                #logging.info("Skipping informational message: '{0}'".format(tweet_data.encode("utf-8")))
+                #logging.debug("Skipping informational message: '{0}'".format(tweet_data.encode("utf-8")))
                 return
-            #logging.info("Adding tweet: '{0}'".format(tweet['text'].encode("utf-8")))            
+            #logging.debug("Adding tweet: '{0}'".format(tweet['text'].encode("utf-8")))            
             try:
                 tweet_indx = {}
                 tweet_indx['@id'] = unicode(tweet['id'])
@@ -420,14 +420,14 @@ class INDXListener(StreamListener):
             if len(self.service.batch) > 1000:
                 #data_d = Deferred()
                 #data_d.callback(True)
-                logging.info('Service Tweets - Disconnecting Twitter Stream to do update')
+                logging.debug('Service Tweets - Disconnecting Twitter Stream to do update')
                 self.service.stream.disconnect()
         
             #need to give time to reset the stream...    
-            if self.service.tweet_count > 10000:
+            if self.service.tweet_count > 1000:
                 self.service.tweet_count = 0
                 self.service.stream.disconnect()
-                logging.info('Service Tweets - Disconnecting Twitter Stream, total tweets harvsted since boot {0}'.format(self.service.tweet_count_total))
+                logging.debug('Service Tweets - Disconnecting Twitter Stream, total tweets harvsted since boot {0}'.format(self.service.tweet_count_total))
                 
         
         except Exception as e:
@@ -453,11 +453,11 @@ class INDXListener(StreamListener):
         insert_d = Deferred()
 
         def insert_cb(re):
-            logging.info("twitter service - insert_tweets batch insert worked {0}".format(re))
+            logging.debug("twitter service - insert_tweets batch insert worked {0}".format(re))
             insert_d.callback(False)
 
         def insert_cb_fail(re):
-            logging.info("twitter service - insert_tweets batch async failed {0}".format(re))
+            logging.debug("twitter service - insert_tweets batch async failed {0}".format(re))
             insert_d.errback
 
         self.service.insert_object_to_indx(self.service, obj).addCallbacks(insert_cb, insert_cb_fail)

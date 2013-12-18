@@ -18,6 +18,7 @@
 
 import argparse, ast, logging, getpass, sys, urllib2, json, sys, tweepy, datetime, time, threading
 from datetime import datetime
+from datetime import timedelta
 from threading import Timer, Thread
 from tweepy.streaming import StreamListener
 from tweepy import OAuthHandler
@@ -107,6 +108,8 @@ class TwitterServiceController:
 
         twitter_service = TwitterService(self.credentials, self.configs, self.twitter_add_info)
         #twitter_service_two = TwitterService(self.credentials, self.configs, self.twitter_add_info)
+        timestamp_first_run = datetime.now()
+
 
         #load the main services
         #twitter_service.run_main_services()
@@ -122,33 +125,22 @@ class TwitterServiceController:
             def additional_cb(res):
 
                 def get_tweets_cb(resu):
-                    logging.info("Stream reset, now time to start it up again...")
-                    twitter_service.get_tweets(twitter_service.get_search_criteria()).addCallbacks(get_tweets_cb, logging.error("error in get_tweets"))
+                    #check if indx is about to expire
+                    timestamp_current = datetime.now()
+                    timestamp_first_run_minus_five_hours = timestamp_current - timedelta(hours=5)
+                    if timestamp_first_run_minus_five_hours > timestamp_first_run:
+                        logging.info("Time has come to reset the INDX client!")
+                        twitter_service.get_indx().addCallbacks(indx_cb, lambda failure: logging.error("Twitter Service Controller error logging into INDX: {0}".format(failure)))
+                    elif twitter_service.tweet_count == 0:
+                        logging.info("Stream reset to give time to reharvest the status and friends list...")
+                        twitter_service.load_additional_harvesters(twitter_service.twitter_add_info, twitter_service).addCallbacks(additional_cb, lambda failure: logging.error("Additional Callback Error"))
+                    else:
+                        logging.info("Stream reset to store objects into INDX, now time to start it up again...")
+                        twitter_service.get_tweets(twitter_service.get_search_criteria()).addCallbacks(get_tweets_cb, lambda failure: logging.error("error in get_tweets"))
 
-                twitter_service.get_tweets(twitter_service.get_search_criteria()).addCallbacks(get_tweets_cb, logging.error("error in get_tweets"))
+                twitter_service.get_tweets(twitter_service.get_search_criteria()).addCallbacks(get_tweets_cb, lambda failure: logging.error("error in get_tweets"))
 
-
-                #twitter_service.run_main_services()
-
-            twitter_service.load_additional_harvesters(twitter_service.twitter_add_info, twitter_service).addCallbacks(additional_cb, logging.error("Additional Callback Error"))
-            #twitter_service.run_additional_services().addCallbacks(additional_cb, logging.error("Additional Callback Error"))
-                
-                #if not first_run:
-
-                    #def get_tweets_cb(res):
-                        #logging.info("Stream reset, now time to start it up again...")
-                        #twitter_service.get_tweets(twitter_service.get_search_criteria()).addCallbacks(get_tweets_cb, logging.error("error in get_tweets"))
-
-                    #twitter_service.get_tweets(twitter_service.get_search_criteria()).addCallbacks(get_tweets_cb, logging.error("error in get_tweets"))
-                    #twitter_service.run_main_services()
-
-                #logging.debug("setting up Reactor loop...")
-                #reactor.callLater(10.0, loop_harvester);
-
-            
-            #loop_harvester() 
-
-            #first_run = False
+            twitter_service.load_additional_harvesters(twitter_service.twitter_add_info, twitter_service).addCallbacks(additional_cb, lambda failure: logging.error("Additional Callback Error"))
 
         twitter_service.get_indx().addCallbacks(indx_cb, lambda failure: logging.error("Twitter Service Controller error logging into INDX: {0}".format(failure)))
         reactor.run()
