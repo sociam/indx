@@ -417,14 +417,14 @@ class INDXListener(StreamListener):
             except:
                 print sys.exc_info()
 
-            if len(self.service.batch) > 25:
+            if len(self.service.batch) > 1000:
                 #data_d = Deferred()
                 #data_d.callback(True)
                 logging.info('Service Tweets - Disconnecting Twitter Stream to do update')
                 self.service.stream.disconnect()
         
             #need to give time to reset the stream...    
-            if self.service.tweet_count > 100:
+            if self.service.tweet_count > 10000:
                 self.service.tweet_count = 0
                 self.service.stream.disconnect()
                 logging.info('Service Tweets - Disconnecting Twitter Stream, total tweets harvsted since boot {0}'.format(self.service.tweet_count_total))
