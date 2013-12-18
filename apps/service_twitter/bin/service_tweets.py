@@ -194,33 +194,27 @@ class TwitterService:
 
                 self.stream.filter(track=words_to_track) #.addCallbacks(stream_cb, stream_d.errback)
 
-                # def stream_cb(res):
-                #     logging.info("Trying to Insert new batch of Tweets with a batch size of: {0}".format(len(self.service.batch)))                    
-                #     logging.info("waiting to update, recieved the callback from on_data of: {0}".format(res))   
-
                 if not self.stream.running:
+                    
                     def update_cb(re):
                         logging.info("updated INDX with tweets, result from Update was: {0}".format(re))
                         self.batch = []
-                        #need to check that the disconnect isnt because we are checking for additional harvesters...
-                        if self.tweet_count == 0:
 
-                            def add_cb(res):
-                                stream_d.callback(True)
-
-                            def add_cb_fail(res):
-                                logging.error("Callback error - additional_harvester after stream disconnect fail")
-                                stream_d.callback(True)    
-                            
-                            self.load_additional_harvesters(self.twitter_add_info, self).addCallbacks(add_cb, add_cb_fail)
-                        
-                        else:
-                        #now restart the stream...                        
-                        #logging.debug('Service Tweets - Stream reached 100 tweets, now harvesting additional services again')
-                        #self.run_additional_services()
+                        #now we need to add the users list...
+                        def update_users_cb(re):
+                            logging.info("updated INDX with tweet_users, result from Update was: {0}".format(re))
+                            self.batch_users = []
                             logging.info('Service Tweets - INDX stored streamed tweets, now harvesting stream again')
-                        #self.get_tweets(words_to_track)
+                            #self.get_tweets(words_to_track)
                             stream_d.callback(True)
+
+                        def update_users_cb_fail(re):
+                            logging.error("timeline harvest async failed {0}".format(re))
+                            stream_d.errback
+                        
+                        logging.info("Trying to Insert new batch of Users with a batch size of: {0}".format(len(self.batch_users)))
+                        self.insert_object_to_indx(self, self.batch_users).addCallbacks(update_users_cb, update_users_cb_fail)
+                    
 
                     def update_cb_fail(re):
                         logging.error("timeline harvest async failed {0}".format(re))
@@ -229,14 +223,6 @@ class TwitterService:
                     logging.info("Trying to Insert new batch of Tweets with a batch size of: {0}".format(len(self.batch)))                    
                     self.insert_object_to_indx(self, self.batch).addCallbacks(update_cb, update_cb_fail)
 
-
-                #logging.info('Twitter Service - Stream Result {0}'.format(result))
-                #recursive,
-                # if not self.stream.running:
-                #     logging.debug('Service Tweets - Stream reached 100 tweets, now harvesting additional services again')
-                #     self.run_additional_services()
-                #     logging.debug('Service Tweets - Additional services harvsted, now harvesting stream again')
-                #     self.get_tweets(words_to_track)
         except:
             logging.error('Service Tweets - error, Twitter Stream encountered an error {0}'.format(sys.exc_info()))
 
@@ -432,71 +418,17 @@ class INDXListener(StreamListener):
                 print sys.exc_info()
 
             if len(self.service.batch) > 25:
-
-
                 #data_d = Deferred()
                 #data_d.callback(True)
                 logging.info('Service Tweets - Disconnecting Twitter Stream to do update')
                 self.service.stream.disconnect()
-                #return False
-
-                # logging.info("Trying to Insert new batch of Tweets with a batch size of: {0}".format(len(self.service.batch)))
-
-                # wait = True
-                
-                # logging.info("waiting to update")   
-                # #self.insert_tweets(self.service.batch)
-
-                # #batch_d = Deferred()
-
-                # def update_cb(re):
-                #     logging.info("updated INDX with tweets, result {0}".format(re))
-                #     batch_d = re 
-                #     self.service.batch = []
-                #     wait = False
-
-                # def update_cb_fail(re):
-                #     logging.error("timeline harvest async failed {0}".format(re))
-                #     wait = False
-                #     #batch_d = re
-
-
-                # self.insert_tweets(self.service.batch).addCallbacks(update_cb, update_cb_fail)
-                #time.sleep(5)
-                #self.service.insert_object_to_indx(self.service, self.service.batch).addCallbacks(update_cb, update_cb_fail)
-                #self.service.batch = []
-
-                # wait_cnt = 0
-
-                #while():
-                    #wait_cnt += 1
-
-                # logging.info("The wait is finally over! Well in {0} ticks".format(wait_cnt))
-
-                # def update_cb(re):
-                #     logging.debug("batch async worked {0}".format(re))
-
-                # def update_cb_fail(re):
-                #     logging.error("batch async failed {0}".format(re))
-
-                # self.insert_tweets(self.service).addCallbacks(update_cb, update_cb_fail).addCallbacks(update_cb, update_cb_fail)
-                # #self.service.indx_con.update(self.service.version, self.service.batch).addCallbacks(stream_update_tweets_cb, exception_tweets_cb)
-                # # self.service.version = response['data']['@version'] # update the version
-                # # logging.debug('inserted batch of tweets {0}'.format(self.service.batch))
-                #self.service.batch = []
-                # time.sleep(2)
-
-            #if len(self.service.batch_users) > 25:
-                #self.service.indx_con.update(self.service.version, self.service.batch_users).addCallbacks(stream_update_users_cb, exception_users_cb)
-                # self.service.version = response['data']['@version'] # update the version
-                # logging.debug('inserted batch of users {0}'.format(self.service.batch_users))
-                # self.service.batch_users = []
+        
             #need to give time to reset the stream...    
             if self.service.tweet_count > 100:
                 self.service.tweet_count = 0
                 self.service.stream.disconnect()
                 logging.info('Service Tweets - Disconnecting Twitter Stream, total tweets harvsted since boot {0}'.format(self.service.tweet_count_total))
-                #
+                
         
         except Exception as e:
             logging.error("Service Tweets - on_data error {0}".format(e))
