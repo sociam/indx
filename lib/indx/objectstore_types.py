@@ -16,6 +16,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import logging
 import json
+from twisted.internet.defer import Deferred
 
 # TODO turn this into an indx.js-type ORM? subscribe to box and keep the graph and resources/literals up to date
 
@@ -81,6 +82,16 @@ class Graph:
             if len(obj.model.keys()) > 1: # length 1 means only "@id" i.e. just hanging off the end of a triple, so dont put as a root obj
                 obj_out[id] = obj.to_json()
         return obj_out
+
+    def expand_depth(self, depth, conn):
+        """ Expand the depth of the graph to a minimum of 'depth', using the database connection 'conn' to request more objects as required. """
+        return_d = Deferred()
+
+        logging.debug("Objectstore Types, Graph, expand depth to depth '{0}'".format(depth))
+        return_d.callback(True) # TODO implement
+
+        return return_d
+
 
     def __hash__(self):
         return hash(Graph) ^ hash(self.objects_by_id)

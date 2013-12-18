@@ -216,7 +216,7 @@ class ObjectStoreAsync:
             self.conns['raw_conn']().addCallbacks(raw_conn_cb, err_cb)
 
 
-    def query(self, q, predicate_filter = None, render_json = True):
+    def query(self, q, predicate_filter = None, render_json = True, depth = 3):
         """ Perform a query and return results.
         
             q -- Query of objects to search for
@@ -226,17 +226,22 @@ class ObjectStoreAsync:
 
         query = ObjectStoreQuery()
         sql, params = query.to_sql(q, predicate_filter = predicate_filter)
-
-        def results(rows):
-            graph = Graph.from_rows(rows)
-            if render_json:
-                objs_out = graph.to_json()
-                result_d.callback(objs_out)
-            else:
-                result_d.callback(graph)
  
         def conn_cb(conn):
             logging.debug("Objectstore query, conn_cb")
+
+            def results(rows):
+                graph = Graph.from_rows(rows)
+
+                def expanded_cb(empty):
+                    if render_json:
+                        objs_out = graph.to_json()
+                        result_d.callback(objs_out)
+                    else:
+                        result_d.callback(graph)
+
+                graph.expand_depth(depth, conn).addCallbacks(expanded_cb, result_d.errback)
+
             conn.runQuery(sql, params).addCallbacks(results, result_d.errback)
         
         self.conns['conn']().addCallbacks(conn_cb, result_d.errback)

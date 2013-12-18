@@ -205,8 +205,8 @@ class CLIClient:
              e.g., query="{ '@id': 2983 }"
              or query="{ 'firstname': 'dan' }"           
         """
-        logging.debug("Querying server '{0}' in box '{1}'".format(self.args['server'], self.args['box']))
-        return self.indx.query(self.args['query'])
+        logging.debug("Querying server '{0}' in box '{1}' with depth '{2}'".format(self.args['server'], self.args['box'], self.args['depth']))
+        return self.indx.query(self.args['query'], depth = self.args['depth'])
 
 
     def diff(self):
@@ -316,6 +316,7 @@ if __name__ == "__main__":
     parser.add_argument('action', metavar='ACTION', type=str, nargs=1, choices=client.actions.keys(), help='Run a named action, one of: '+", ".join(client.actions.keys()))
     parser.add_argument('--box', action="store", type=str, help='Name of the Box (for actions that required it)')
     parser.add_argument('--query', action="store", type=str, help='Query string (for actions that required it)')
+    parser.add_argument('--depth', action="store", default="3", type=int, help='Depth of returned answer, how deep in the object hierarchy to return (e.g. for query)')
     parser.add_argument('--data', action="store", type=argparse.FileType('r'), help="Data file (e.g., JSON to import)")
     parser.add_argument('--version', action="store", help="Current version of the box (or 0 if the box is empty)")
     parser.add_argument('--from', action="store", help="From version (e.g., for 'diff')")

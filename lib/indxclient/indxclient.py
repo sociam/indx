@@ -287,15 +287,20 @@ class IndxClient:
         return self.client.get(self.base, id_tuples)
 
     @require_token
-    def query(self, query):
+    def query(self, query, depth = None):
         """ Query a box with a filtering query
 
             query -- The query to send, as a dict, e.g. {"@id": 2983} or {"firstname": "dan"}
+            depth -- How deep into the object graph/hierarchy to return full objects
         """
         self._debug("Called API: query with query: {0}".format(query))
 
+        params = {'q': query}
+        if depth is not None:
+            params['depth'] = depth
+
         url = "{0}/query".format(self.base)
-        return self.client.get(url, {'q': query})
+        return self.client.get(url, params)
 
     @require_token
     def set_acl(self, acl, target_username):
