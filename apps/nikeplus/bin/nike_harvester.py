@@ -4,6 +4,7 @@ import keyring, keyring.util.platform_
 from keyring.backends.pyfs import PlaintextKeyring
 from indxclient import IndxClient, IndxClientAuth
 from twisted.internet.defer import Deferred
+from twisted.internet import reactor, threads
 import oauth2 as oauth
 from time import sleep
 from datetime import date, datetime, timedelta, time
@@ -25,7 +26,7 @@ class NikeHarvester:
         data_root = keyring.util.platform_.data_root()
         if not os.path.exists(data_root):
             os.mkdir(data_root)
-        keyring.set_keyring(PlaintextKeyring())!!
+        keyring.set_keyring(PlaintextKeyring())
 
         self.parser = argparse.ArgumentParser(prog="run")
         self.parser.add_argument('--config', help="Set config (input requires JSON) and exit.")
@@ -134,10 +135,10 @@ class NikeHarvester:
             self.nike.login(self.config_nike_user, self.config_nike_pass)
             self.logger.debug("Logged in with username {0} and password {1}".format(self.config_nike_user, self.config_nike_pass))
             token = self.nike.get_token()
-            if token not None:
+            if token :
                 self.logger.debug("Got token {0}".format(token))
                 return True
-            else:
+            else :
                 return False
         except Exception as exc: 
             self.logger.error("Could not authorise to nike, error: {0}".format(exc))
@@ -253,9 +254,31 @@ class NikeHarvester:
             self.logger.debug("Getting data for {0}".format(day.isoformat()))
             process_d = Deferred()
 
+            activities = self.nikeplus.get_day_activities(day.strftime("%Y-%m-%d"))
+            if len(activities) == 0 :
+                # no data for the day, day not synced?
+                self.logger("no data for activities")
+            elif len(activities) == 1 :
+                # best case, just take the start date and count from there .. 
+                self.logger("good data for activities")
+            elif len(activities) == 2 :
+                # timezone mess! sort this out!
+                self.logger("timezones!")
+
+            process_d.callback(activities)
+
+
+            # for activity_container in activities:
+            #     for activity in activity_container:
+            #         activity_id = activity['activityId']
+            #         logging.debug("activity id: {0}".format(activity_id))
+            #         detail = nikeplus.get_activity_detail(activity_id)
+            #         logging.debug("activity_details: {0}".format(pprint.pformat(detail)))
+            #         detail['@id'] = "nikeplus-activity-detail-{0}".format(activity_id)
+            #         update(detail)
+
             # # processing steps
             # steps = self.download_steps(day)
-
             # zeros = False
             # zeros = self.check_all_zero(steps)
             # if zeros :
@@ -267,26 +290,11 @@ class NikeHarvester:
 
             # steps_points = self.prepare_points(steps, day_points, day, self.steps_ts_id, "http://sociam.org/ontology/health/StepCount")
 
-            # # processing calories
-            # calories = self.download_calories(day)
-            # calories_points = self.prepare_points(calories, day_points, day, self.calories_ts_id, "http://sociam.org/ontology/health/CaloriesBurned")
- 
-            # # processing distance
-            # distance = self.download_distance(day)
-            # distance_points = self.prepare_points(distance, day_points, day, self.distance_ts_id, "http://sociam.org/ontology/health/Distance")
-
-            # # processing floors
-            # floors = self.download_floors(day)
-            # floors_points = self.prepare_points(floors, day_points, day, self.floors_ts_id, "http://sociam.org/ontology/health/FloorsClimbed")
-
-            # # processing elevation
-            # elevation = self.download_elevation(day)
-            # elevation_points = self.prepare_points(elevation, day_points, day, self.elevation_ts_id, "http://sociam.org/ontology/health/Elevation")
                 
-            self.safe_update(indx, steps_points).addCallbacks(
-                lambda x: self.safe_update(indx, calories_points), process_d.errback).addCallbacks(
-                lambda x: self.safe_update(indx, distance_points), process_d.errback).addCallbacks(
-                lambda x: self.safe_update(indx, fuel_points), process_d.errback).addCallbacks(process_d.callback, process_d.errback)
+            # self.safe_update(indx, steps_points).addCallbacks(
+            #     lambda x: self.safe_update(indx, calories_points), process_d.errback).addCallbacks(
+            #     lambda x: self.safe_update(indx, distance_points), process_d.errback).addCallbacks(
+            #     lambda x: self.safe_update(indx, fuel_points), process_d.errback).addCallbacks(process_d.callback, process_d.errback)
             return process_d
 
 if __name__ == '__main__':
