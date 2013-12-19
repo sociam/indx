@@ -1,5 +1,7 @@
 <div class="indx-boxlist-box">
 	<div class="name">{{ box.id }}</div>
 	<div class="count">{{ obj_count }}</div>
+    <button class="boxactionicon deleteicon" href="deleteBox()" ng-click="deleteBox()"><img ng-src="img/edit-delete.png" /></button>
+    <img ng-src="img/edit-clear.png" class="boxactionicon emptyicon" ng-click="emptyBox()" />
 	<svg class="canvas"></svg>
 </div>

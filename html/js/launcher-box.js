@@ -16,6 +16,12 @@ angular.module('launcher')
 					// console.log('obj add ', result, typeof(result));
 					sa(function() { $scope.obj_count++; });
 				});
+				$scope.deleteBox = function() {
+					console.log("Or maybe attempting to delete box ", $scope.box);
+				};
+				$scope.emptyBox = function() {
+					console.log("Or maybe attempting to empty box ", $scope.box);
+				};
 			}
 		};
 	});
