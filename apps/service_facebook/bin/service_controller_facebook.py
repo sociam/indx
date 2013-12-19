@@ -92,7 +92,7 @@ class FacebookServiceController:
 
             def harvest_all_cb(re):
                 logging.info("harvested all Facebook data sources, now attempting to wait for an hour")
-                reactor.callLater(3600.0, self.load_service_instance);
+                reactor.callLater(3600.0, self.load_service_instance)
 
             facebook_service.harvest_all().addCallbacks(harvest_all_cb, lambda failure: logging.error("Facebook Service Controller - Callback Failure: Harvest All"))
 
