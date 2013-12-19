@@ -1,7 +1,9 @@
 <div class="indx-boxlist-box">
 	<div class="name">{{ box.id }}</div>
 	<div class="count">{{ obj_count }}</div>
-    <button class="boxactionicon deleteicon" href="deleteBox()" ng-click="deleteBox()"><img ng-src="img/edit-delete.png" /></button>
-    <img ng-src="img/edit-clear.png" class="boxactionicon emptyicon" ng-click="emptyBox()" />
+	<div class="btn boxactionicon deleteicon" ng-click="deleteBox()"><span class="glyphicon"><img ng-src="img/edit-delete.png" /></span></div>
+	<div class="btn boxactionicon emptyicon" ng-click="emptyBox()"><span class="glyphicon"><img ng-src="img/edit-clear.png" /></span></div>
+    <!-- <img ng-src="img/edit-delete.png" class="boxactionicon deleteicon" href="deleteBox()" ng-click="deleteBox()" /> -->
+    <!-- <img ng-src="img/edit-clear.png" class="boxactionicon emptyicon" ng-click="emptyBox()" /> -->
 	<svg class="canvas"></svg>
 </div>
