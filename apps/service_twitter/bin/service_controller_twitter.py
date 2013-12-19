@@ -70,38 +70,6 @@ class TwitterServiceController:
             return (credentials, configs, twitter_add_info)       
 
 
-    # def load_service_instance(self):
-
-    #     twitter_service = TwitterService(self.credentials, self.configs, self.twitter_add_info)
-    #     #twitter_service_two = TwitterService(self.credentials, self.configs, self.twitter_add_info)
-
-    #     #load the main services
-    #     #twitter_service.run_main_services()
-
-    #     def indx_cb(empty):
-            
-    #         #first_run = True
-    #         logging.info("Service Controller Twitter - Running Twitter Service!")
-    #         #def loop_harvester():
-    #             #print "running harvester"
-        
-    #         def service_instance_cb(re):
-    #             logging.debug("service_instance_cb harvest async worked {0}".format(re))
-
-    #         def service_instance_cb_fail(re):
-    #             logging.error("service_instance_cb harvest async failed {0}".format(re))
-
-            
-    #         twitter_service.run_main_services() #.addCallbacks(service_instance_cb, service_instance_cb_fail)
-    #         #     #logging.debug("setting up Reactor loop...")
-    #         #     #reactor.callLater(15.0, loop_harvester);
-
-    #         #loop_harvester() 
-
-    #         #first_run = False
-
-    #     logging.info("Service Controller Twitter - running get_indx")
-    #     twitter_service.get_indx().addCallbacks(indx_cb, lambda failure: logging.error("Twitter Service Controller error logging into INDX: {0}".format(failure)))
 
     
     def load_service_instance(self):
@@ -122,20 +90,22 @@ class TwitterServiceController:
             #def loop_harvester():
                 #print "running harvester"
                 
-            def additional_cb(res):
+            def additional_cb(res, twitter_service=twitter_service):
 
-                def get_tweets_cb(resu):
+                def get_tweets_cb(resum, twitter_service=twitter_service):
                     #check if indx is about to expire
                     timestamp_current = datetime.now()
                     timestamp_first_run_minus_five_hours = timestamp_current - timedelta(hours=5)
+                    
                     if timestamp_first_run_minus_five_hours > timestamp_first_run:
                         logging.info("Time has come to reset the INDX client!")
                         twitter_service.get_indx().addCallbacks(indx_cb, lambda failure: logging.error("Twitter Service Controller error logging into INDX: {0}".format(failure)))
-                    elif twitter_service.tweet_count == 0:
-                        logging.info("Stream reset to give time to reharvest the status and friends list...")
-                        twitter_service.load_additional_harvesters(twitter_service.twitter_add_info, twitter_service).addCallbacks(additional_cb, lambda failure: logging.error("Additional Callback Error"))
+                    
+                    # elif twitter_service.tweet_count == 0:
+                    #     logging.info("Stream reset to give time to reharvest the status and friends list...")
+                    #     twitter_service.load_additional_harvesters(twitter_service.twitter_add_info, twitter_service).addCallbacks(additional_cb, lambda failure: logging.error("Additional Callback Error"))
                     else:
-                        logging.info("Stream reset to store objects into INDX, now time to start it up again...")
+                        logging.info("Stream reset to store objects into INDX, Total Tweets collected {0} now time to start it up again...".format(twitter_service.tweet_count))
                         twitter_service.get_tweets(twitter_service.get_search_criteria()).addCallbacks(get_tweets_cb, lambda failure: logging.error("error in get_tweets"))
 
                 twitter_service.get_tweets(twitter_service.get_search_criteria()).addCallbacks(get_tweets_cb, lambda failure: logging.error("error in get_tweets"))

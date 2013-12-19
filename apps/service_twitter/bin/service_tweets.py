@@ -90,36 +90,6 @@ class TwitterService:
         sys.exit()
    
 
-    # def run_main_services(self):
-    #     #now get the tweets
-    #     #main_services_d = Deferred()
-    #     try:            
-    #         #now get the stream for a while...
-    #         words_to_search = self.get_search_criteria()
-
-    #         #while(stream_active):
-    #         def stream_cb(re):
-    #             logging.debug("stream_cb harvest async worked {0}".format(re))
-    #             self.get_tweets(words_to_search).addCallbacks(stream_cb, stream_cb_fail)
-
-    #         def stream_cb_fail(re):
-    #             logging.error("stream_cb harvest async failed {0}".format(re))
-                        
-    #         self.get_tweets(words_to_search).addCallbacks(stream_cb, stream_cb_fail)
-    #         #the stream probably crashed out - Not my fault by silly twitter...
-    #         #if this is the case, it's a good time harvest the user again, then restart the stream!
-    #         #self.run_additional_services()
-    #         #self.run_main_services()
-    #     except:
-    #         logging.debug('Service Tweets - Could not run main service due to error: {0}'.format(sys.exc_info()))
-
-    #     #return main_services_d
-
-    # def run_additional_services(self):
-    #     #see if other harvesters needed (indx con needed to sumbit data)
-    #     self.load_additional_harvesters(self.twitter_add_info, self)
-
-
 #this checks and inserts both the network and status objects into indx
     def load_additional_harvesters(self, additional_params, service):
         harvesters_d = Deferred()
@@ -320,7 +290,7 @@ class TwitterService:
 
         def update_cb(resp):
             service.version = resp['data']['@version']
-            logging.info("Succesfully Updated INDX with Objects in update_cb, new diff version of {0}".format(service.version))
+            logging.debug("Succesfully Updated INDX with Objects in update_cb, new diff version of {0}".format(service.version))
             #logging.debug("Inserted Object into INDX: ".format(resp))
             update_d.callback(True)
             #return update_d
@@ -423,11 +393,11 @@ class INDXListener(StreamListener):
                 logging.debug('Service Tweets - Disconnecting Twitter Stream to do update')
                 self.service.stream.disconnect()
         
-            #need to give time to reset the stream...    
-            if self.service.tweet_count > 1000:
-                self.service.tweet_count = 0
-                self.service.stream.disconnect()
-                logging.debug('Service Tweets - Disconnecting Twitter Stream, total tweets harvsted since boot {0}'.format(self.service.tweet_count_total))
+            # #need to give time to reset the stream...    
+            # if self.service.tweet_count > 150:
+            #     self.service.tweet_count = 0
+            #     self.service.stream.disconnect()
+            #     logging.debug('Service Tweets - Disconnecting Twitter Stream, total tweets harvsted since boot {0}'.format(self.service.tweet_count_total))
                 
         
         except Exception as e:

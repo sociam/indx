@@ -89,17 +89,12 @@ class FacebookServiceController:
         facebook_service = FacebookService(self.config)
 
         def indx_cb(empty):
-            def loop_harvester():
-                facebook_service.harvest_facebook_profile()
-                facebook_service.harvest_facebook_statuses()
-                facebook_service.harvest_facebook_friends()
-                #update every hour
-                reactor.callLater(3600.0, loop_harvester);
 
-            #check if the token hasnt expired, if not, let's go!
-            if(facebook_service.is_token_active()):
-                logging.info("Service Controller Facebook - Running Facebook Service!")
-                loop_harvester() 
+            def harvest_all_cb(re):
+                logging.info("harvested all Facebook data sources, now attempting to wait for an hour")
+                reactor.callLater(3600.0, self.load_service_instance);
+
+            facebook_service.harvest_all().addCallbacks(harvest_all_cb, lambda failure: logging.error("Facebook Service Controller - Callback Failure: Harvest All"))
 
         facebook_service.get_indx().addCallbacks(indx_cb, lambda failure: logging.error("Facebook Service Controller error logging into INDX: {0}".format(failure)))
         reactor.run()
