@@ -86,12 +86,17 @@ class Graph:
     def expand_depth(self, depth, conn):
         """ Expand the depth of the graph to a minimum of 'depth', using the database connection 'conn' to request more objects as required. """
         return_d = Deferred()
-
         logging.debug("Objectstore Types, Graph, expand depth to depth '{0}'".format(depth))
+
+        # TODO integrate better way to save root nodes
+
+#        for id, obj in self.objects().items():
+#            if len(obj.model.keys()) > 1: # length 1 means only "@id" i.e. just hanging off the end of a triple, so dont put as a root obj
+#                pass
+
         return_d.callback(True) # TODO implement
 
         return return_d
-
 
     def __hash__(self):
         return hash(Graph) ^ hash(self.objects_by_id)
