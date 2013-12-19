@@ -35,23 +35,31 @@ class NikeHarvester:
 
         self.nike = NikePlus()
 
-        self.version = 0
+        self.box_version = 0
 
         self.harvester_id = "nikeplus_harvester"
-        self.steps_ts_id = "nikeplus_steps_ts"
-        self.calories_ts_id = "nikeplus_calories_ts"
-        self.distance_ts_id = "nikeplus_distance_ts"
         self.fuel_ts_id = "nikeplus_fuel_ts"
+        self.calories_ts_id = "nikeplus_calories_ts"
+        self.steps_ts_id = "nikeplus_steps_ts"
+        self.stars_ts_id = "nikeplus_stars_ts"
+        self.ts_ids_by_type = {'FUEL':self.fuel_ts_id, 'CALORIES':self.calories_ts_id, 'STEPS':self.steps_ts_id, 'STARS':self.stars_ts_id }
         self.ts_count = 0
         self.ts_error = None
 
+        self.rdf_types = {
+            'FUEL':'http://sociam.org/ontology/health/NikeFuel',
+            'CALORIES':'http://sociam.org/ontology/health/CaloriesBurned',
+            'STEPS':'http://sociam.org/ontology/health/StepCount',
+            'STARS':'http://sociam.org/ontology/health/Intensity'
+        }
+
         self.zeros = self.today()
-        self.old_zeros = self.today()
+        self.new_zeros = self.today()
         self.retrieved = self.today()
         self.config_box = None
         self.config_indx_user = None
         self.config_indx_pass = None
-        self.config_max_date = datetime(2013, 9, 1)
+        self.config_max_date = datetime(2013, 10, 1)
 
     def set_config(self, args):
         stored_config_harvester = keyring.get_password("INDX", "INDX_Nike_Harvester")
@@ -207,7 +215,7 @@ class NikeHarvester:
 
             self.find_create(indx, self.steps_ts_id, {"http://www.w3.org/2000/01/rdf-schema#label":"Nike+ Steps Time Series", "http://www.w3.org/1999/02/22-rdf-syntax-ns#type":"http://purl.org/linked-data/cube#Dataset"}).addCallbacks(
                 lambda x: self.find_create(indx, self.calories_ts_id, {"http://www.w3.org/2000/01/rdf-schema#label":"Nike+ Calories Time Series", "http://www.w3.org/1999/02/22-rdf-syntax-ns#type":"http://purl.org/linked-data/cube#Dataset"}), prep_d.errback).addCallbacks(
-                lambda x: self.find_create(indx, self.distance_ts_id, {"http://www.w3.org/2000/01/rdf-schema#label":"Nike+ Distance Time Series", "http://www.w3.org/1999/02/22-rdf-syntax-ns#type":"http://purl.org/linked-data/cube#Dataset"}), prep_d.errback).addCallbacks(
+                lambda x: self.find_create(indx, self.stars_ts_id, {"http://www.w3.org/2000/01/rdf-schema#label":"Nike+ Stars Time Series", "http://www.w3.org/1999/02/22-rdf-syntax-ns#type":"http://purl.org/linked-data/cube#Dataset"}), prep_d.errback).addCallbacks(
                 lambda x: self.find_create(indx, self.fuel_ts_id, {"http://www.w3.org/2000/01/rdf-schema#label":"Nike+ Fuel Time Series", "http://www.w3.org/1999/02/22-rdf-syntax-ns#type":"http://purl.org/linked-data/cube#Dataset"}), prep_d.errback).addCallbacks(
                 lambda x: self.find_create(indx, self.harvester_id, {"http://www.w3.org/2000/01/rdf-schema#label":"INDX Nike+ Harvester extra info"}), prep_d.errback).addCallbacks(objects_cb, prep_d.errback)   
             return prep_d
@@ -235,15 +243,15 @@ class NikeHarvester:
             if day < self.config_max_date :
                 self.logger.debug("Finished harvesting round. Saving harvester data .. ")
                 harvester["retrieved_to"] = self.retrieved.isoformat()
-                harvester["zeros_from"] = self.zeros.isoformat()
+                harvester["zeros_from"] = self.new_zeros.isoformat()
                 self.safe_update(indx, harvester).addCallbacks(harvest_d.callback, harvest_d.errback)
             else:
                 prev_day = day + timedelta(days=-1)
                 next_day = day + timedelta(days=+1)
-                if self.retrieved <= day and next_day < self.zeros_old :
+                if self.retrieved <= day and next_day < self.zeros :
                     self.step_day(None, prev_day, indx, harvester)
                 else: 
-                    self.get_day_points(indx, day).addCallbacks(step_day, harvest_d.errback, callbackArgs=[next_day, indx])
+                    self.get_day_points(indx, day).addCallbacks(step_day, harvest_d.errback, callbackArgs=[prev_day, indx])
 
         self.logger.debug("Retrieved to : {0}, Zeros from : {1}".format(self.retrieved.isoformat(), self.zeros.isoformat()))
         step_day(None, self.yesterday(), indx)
@@ -254,48 +262,129 @@ class NikeHarvester:
             self.logger.debug("Getting data for {0}".format(day.isoformat()))
             process_d = Deferred()
 
-            activities = self.nikeplus.get_day_activities(day.strftime("%Y-%m-%d"))
+            activities = self.nike.get_day_activities(day.strftime("%Y-%m-%d"))
+            next_day = day + timedelta(days=+1)
+            points = []
             if len(activities) == 0 :
-                # no data for the day, day not synced?
-                self.logger("no data for activities")
-            elif len(activities) == 1 :
+                self.logger.debug("No data for activities, nothing saved to indx.")
+                if next_day == self.new_zeros :
+                    self.new_zeros = day
+            else :
                 # best case, just take the start date and count from there .. 
-                self.logger("good data for activities")
-            elif len(activities) == 2 :
-                # timezone mess! sort this out!
-                self.logger("timezones!")
+                self.logger.debug("Single activity. Getting details.")
+                activity_id = activities[0]['activityId']
+                self.logger.debug("Got activity id: {0}".format(activity_id))
+                activity = self.nike.get_activity_detail(activity_id)
+                self.logger.debug("Got activity details: {0}".format(activity))
+                points = self.prepare_points(activity)
 
-            process_d.callback(activities)
+            if next_day == self.retrieved :
+                self.retrieved = day
 
+            if len(points) > 0 :
+                self.safe_update(indx, points).addCallbacks(process_d.callback, process_d.errback)
+            else :
+                process_d.callback(0)
 
-            # for activity_container in activities:
-            #     for activity in activity_container:
-            #         activity_id = activity['activityId']
-            #         logging.debug("activity id: {0}".format(activity_id))
-            #         detail = nikeplus.get_activity_detail(activity_id)
-            #         logging.debug("activity_details: {0}".format(pprint.pformat(detail)))
-            #         detail['@id'] = "nikeplus-activity-detail-{0}".format(activity_id)
-            #         update(detail)
-
-            # # processing steps
-            # steps = self.download_steps(day)
-            # zeros = False
-            # zeros = self.check_all_zero(steps)
-            # if zeros :
-            #     self.logger.debug("Step data points are all 0. ")
-            #     if self.config_zeros_from > day:
-            #         self.config_zeros_from = day
-            # else :
-            #     self.config_zeros_from = self.today()
-
-            # steps_points = self.prepare_points(steps, day_points, day, self.steps_ts_id, "http://sociam.org/ontology/health/StepCount")
-
-                
-            # self.safe_update(indx, steps_points).addCallbacks(
-            #     lambda x: self.safe_update(indx, calories_points), process_d.errback).addCallbacks(
-            #     lambda x: self.safe_update(indx, distance_points), process_d.errback).addCallbacks(
-            #     lambda x: self.safe_update(indx, fuel_points), process_d.errback).addCallbacks(process_d.callback, process_d.errback)
             return process_d
+
+    def prepare_points(self, activity):
+        self.logger.debug("Started creating data points.")
+        data_points = []
+        metrics = activity['metrics']
+        start = datetime.strptime(activity['startTime'],"%Y-%m-%dT%H:%M:%SZ")
+        for metric in metrics :
+            values = metric['values']
+            mtype = metric['metricType']
+            minute = 0
+            for value in values :
+                interval_start = start + timedelta(minutes=minute) 
+                interval_end = interval_start+timedelta(minutes=1) 
+                data_point = {  "@id": "nikeplus_dp_{0}".format(uuid.uuid4()), 
+                                    "start": interval_start.isoformat(),
+                                    "end": interval_end.isoformat(),
+                                    "value": value,
+                                    "timeseries": { "@id": self.ts_ids_by_type[mtype] }, 
+                                    "http://www.w3.org/1999/02/22-rdf-syntax-ns#type": { "@id": self.rdf_types[mtype] } }
+                data_points.append(data_point)
+                # self.logger.debug("Created data point ({0}): {1}".format(minute, data_point))
+                minute = minute+1
+        self.logger.debug("Finished creating data points.")
+        return data_points
+
+    def safe_update(self, indx, obj) :
+        self.logger.debug("Updating object {0} at box version {1}".format(obj, self.box_version))
+        update_d = Deferred()
+
+        def update_cb(resp):
+            self.logger.debug("safe_update: received response: {0}".format(resp))
+            if resp and "code" in resp and "data" in resp:
+                if resp["code"] == 201 or resp["code"] == 200:
+                    self.box_version = resp["data"]["@version"]
+                    self.logger.debug("Updated objects! new box version: {0}".format(self.box_version))
+                    update_d.callback(self.box_version)
+                else:
+                    self.logger.debug("Received unknown response code {0}".format(resp))
+                    update_d.errback(resp)
+            else:
+                self.logger.debug("Received unknown or no response {0}".format(resp))
+                update_d.errback(resp)
+
+        def exception_cb(e, obj=obj, indx=indx):
+            self.logger.error("EXCEPTION ? {0}".format(e))
+            if isinstance(e.value, urllib2.HTTPError): # handle a version incorrect error, and update the version
+                if e.value.code == 409: # 409 Obsolete
+                    response = e.value.read()
+                    json_response = json.loads(response)
+                    self.box_version = json_response['@version']
+                    # self.safe_update(indx, obj).addCallbacks(reupdate_cb, update_d.errback) # try updating again now the version is correct
+                    indx.update(self.box_version, obj).addCallbacks(update_cb, exception_cb)
+                else:
+                    self.logger.error("HTTPError updating INDX: {0}".format(e.value))
+                    update_d.errback(e.value)
+            else:
+                self.logger.error("Error updating INDX: {0}".format(e.value))
+                update_d.errback(e.value)
+
+        indx.update(self.box_version, obj).addCallbacks(update_cb, exception_cb)
+        return update_d
+
+    def find_by_id(self, indx, oid) :
+        self.logger.debug("Searching object by id {0}".format(oid))
+        find_d = Deferred()
+
+        def find_cb(resp):
+            self.logger.debug("find_by_id: received response: {0}".format(resp))
+            if resp and "code" in resp and resp["code"] == 200 and "data" in resp:
+                resp_data = resp["data"]
+                if oid in resp_data:
+                    self.logger.debug("Object {0} found!".format(oid))
+                    find_d.callback(resp_data[oid])
+                else:
+                    self.logger.debug("Object {0} not found!".format(oid))
+                    find_d.callback(None)
+            else:
+                self.logger.debug("Response code is not 200! respose: {0}".format(resp))
+                find_d.errback(resp) # put a useful error here!
+        
+        indx.query(json.dumps({"@id": oid})).addCallbacks(find_cb, find_d.errback)
+        return find_d
+
+    def find_create(self, indx, oid, attrs={}):
+        self.logger.debug("Searching for id: {0} and attrs: {1}".format(oid, attrs))
+        create_d = Deferred()
+
+        def find_cb(obj):
+
+            if obj is None:
+                self.logger.debug("Object {0} not found! Creating it.".format(oid))
+                attrs.update({"@id":oid})
+                self.safe_update(indx, attrs).addCallbacks(lambda x: create_d.callback(attrs), create_d.errback) 
+            else:
+                create_d.callback(obj)
+        
+        self.find_by_id(indx, oid).addCallbacks(find_cb, create_d.errback)
+        return create_d
 
 if __name__ == '__main__':
     harvester = NikeHarvester()
