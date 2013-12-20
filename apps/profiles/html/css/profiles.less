@@ -1,0 +1,63 @@
+@font-face {
+  font-family: 'OpenSansLight';
+  src: url('/fonts/OpenSans-Light.ttf');
+}
+* {
+	font-family:"OpenSansLight";
+	box-sizing:border-box;
+}
+.leftmain {
+	border-right:1px solid #eee;
+	ol {
+		list-style-type:none;
+		margin:0px;
+		li {
+			margin:2px;
+			padding:2px;
+		}
+	}
+}
+.rightmain {
+	position:relative;
+	padding-right:50px;
+	h1,h2,h3,h4 { 
+		margin:2px 0px 8px 0px;
+	}
+	.bottom {
+		bottom:20px;
+	}
+	height:100%;
+}
+.adduser {
+	cursor:pointer;
+}
+.card {
+	position:relative;
+	* { vertical-align:top; }
+	.name{ 
+		font-size:24pt; margin:0px 0px 0px 0px; padding:0px; 
+		line-height:98%; 
+		display:inline-block; 
+	}
+	.id {
+		font-size:8pt; margin: 0px 0px 0px 0px; 
+	}
+	.type {
+		font-size:10pt; 
+		margin:0px 0px 0px 12px; 
+		padding:8px 0px 0px 0px;
+		display:inline-block;
+	}
+	.pic {
+		max-width:80px;
+		display:block;
+		position:absolute;
+		right:5px;
+		top:5px;
+		border:1px solid #eee;
+		border-radius:50px;
+	}
+}
+.select {
+	background-color:#eee;
+}

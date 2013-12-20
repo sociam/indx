@@ -1,0 +1,59 @@
+<html>
+  <head>
+	<link href="/css/bootstrap.css" rel="stylesheet">
+	<link href="/css/angular-ui.css" rel="stylesheet">
+	<link rel="stylesheet/less" type="text/css" href="/components/toolbar/toolbar.less">
+	<link rel="stylesheet/less" type="text/css" href="css/profiles.less">
+	<title>Profiles</title>
+  </head>
+  <body ng-app="indx-profiles" ng-controller="main" ng-cloak>
+	    <toolbar box-var='selectedBox' username-var='selectedUser'></toolbar>
+		<div class="main row" ng-show="selectedUser">
+			<!-- user selector -->
+			<div class="leftmain col-sm-4">
+				<ol>
+					<li class='user' ng-repeat="u in users" ng-click="selectUser(u)" ng-class="{select:isSelected(u)}">
+						{{ u.peek('name') }}
+					</li>
+					<li class='newuserinput' ng-show='creating'>
+						<form ng-submit="createUser(_new_username)">
+							<input type="text" ng-model='_new_username'><div ng-click='creating = false;_new_username="";' ng-click="glyphicon glyphicon-remove"></div>
+						</form>
+					</li>
+					<li class="adduser" ng-click="creating=true"> + </li>
+				</ol>
+			</div>
+			<!-- main panel --> 
+			<div class="rightmain col-sm-8">
+				<div>
+					<div class='card'>
+						<div class='name'>{{ user.peek('name') }}</div>
+						<div class='type'>( {{ user.peek('type') }} user ) </div>
+						<div class='id'>{{ user.id }}</div>
+						<img class="pic" ng-src="{{ user.peek('img') || defaultpic }}"></img>
+					</div>
+
+					<div class="bottom">
+						<div class="btn btn-danger" ng-click='deleteUser'>delete user</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="main" ng-show="!selectedUser">
+			<h2>Please log in.</h2>
+		</div>
+  </body>
+  <script src="/js/vendor/lesscss.min.js" type="text/javascript"></script>  
+  <script src="/js/vendor/jquery.min.js" type="text/javascript"></script>
+  <script src="/js/vendor/underscore.min.js" type="text/javascript"></script>
+  <script src="/js/vendor/backbone.min.js" type="text/javascript"></script>
+  <script src="/js/vendor/bootstrap.min.js" type="text/javascript"></script>
+  <!-- angular --> 
+  <script src="/js/vendor/angular.min.js" type="text/javascript"></script>
+  <script src="/js/vendor/angular-ui.js" type="text/javascript"></script>
+  <!-- indx --> 
+  <script src="/js/indx.js" type="text/javascript"></script>
+  <script src="/js/indx-utils.js" type="text/javascript"></script>
+  <script src="/components/toolbar/toolbar.js" type="text/javascript"></script>
+  <script src="js/profiles.js" type="text/javascript"></script>  
+</html>
