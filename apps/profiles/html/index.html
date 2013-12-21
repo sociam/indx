@@ -53,7 +53,7 @@
 						<div class="acls" ng-show="boxaclsloaded">
 							<table>
 								<tr class="acltitles"><td></td><td class="acl">owns</td><td class="acl">read</td><td class="acl">write</td><td class="acl">control</td></tr>
-								<tr ng-repeat='(boxid,acls) in boxacls'><td class='boxname'>{{ boxid }}</td>
+								<tr ng-repeat='(boxid,acls) in boxacls'><td class='boxname'>{{ boxid }} <img src="/img/hypercube-lt.png"></td>
 									<td ng-class="{acl:true, highlight:acls[user.id].owner,glyphicon:true,'glyphicon-ok':acls[user.id].owner,'glyphicon-ban-circle':!acls[user.id].owner}"></td>
 									<td ng-class="{acl:true, highlight:acls[user.id].read,glyphicon:true,'glyphicon-ok':acls[user.id].read,'glyphicon-ban-circle':!acls[user.id].read}"></td>
 									<td ng-class="{acl:true, highlight:acls[user.id].write,glyphicon:true,'glyphicon-ok':acls[user.id].write,'glyphicon-ban-circle':!acls[user.id].write}"></td>
