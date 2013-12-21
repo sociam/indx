@@ -51,14 +51,27 @@ angular.module('indx-profiles',['indx']).controller('main',
 			if (changes.length) { user.save(); }
 			$scope.staged = staged.filter(function(x) { return !x.deleted; });
 		};
-		$scope.createNewProp = function(propname) {
-			console.log('scope staged', $scope.staged);
-			if (propname.trim().length && $scope.staged && $scope.staged.filter(function(x) { return x.name === propname; }).length === 0) {
+		$scope.openNewProp = function() { 
+			console.log('focusnewporp');
+			$scope.newpropkey = '';
+			setTimeout(function() { $('.keyname').focus(); }, 100);
+		};
+		$scope.createNewProp = function(propname, staged) {
+			console.log('createNewProp', propname,staged);
+			if (propname.trim().length && $scope.staged) {
+				var matching_keys = $scope.staged.filter(function(x) { return x.name.trim() === propname.trim(); });
 				sa(function() { 
-					$scope.staged.push({
+					var match = {};
+					if (matching_keys.length) {
+						match = matching_keys[0];
+					} else {
+					 	$scope.staged.push(match);
+					}
+					_(match).extend({
 						name:propname,
 						value:'',
-						original:''
+						original:'',
+						deleted:false
 					});
 					delete $scope.newpropkey;
 				});
