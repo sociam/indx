@@ -76,13 +76,14 @@ angular.module('indx-profiles',['indx']).controller('main',
 
 		var get_acls = function() {
 			$scope.boxacls = {};
+			window.boxacls = $scope.boxacls;
 			store.getBoxList().then(function(boxids) {
 				u.when(boxids.map(function(boxid) {	return store.getBox(boxid);	}))
 					.then(function(boxes) {
 						boxes.map(function(box) {
 							box.getACL().then(function(acls) {
 								sa(function() {	
-									console.log($scope.boxacls);
+									$scope.boxaclsloaded = true;
 									$scope.boxacls[box.id] = acls;	
 								});
 							});
