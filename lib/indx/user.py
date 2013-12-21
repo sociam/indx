@@ -136,7 +136,7 @@ class IndxUser:
         def connected_cb(conn):
             logging.debug("IndxUser, get_user_info, connected_cb")
 
-            query = "SELECT username_type, user_metadata_json, username FROM tbl_users WHERE username = %s"
+            query = "SELECT username_type, user_metadata_json, username, root_box FROM tbl_users WHERE username = %s"
             params = [self.username]
 
             def query_cb(conn, rows):
@@ -145,10 +145,13 @@ class IndxUser:
                 if len(rows) < 1:
                     return_d.callback(None) # no user info available
                 else:
+                    typ, user_metadata, username, root_box = rows[0]
+                    user_info = {"type": typ, "user_metadata": user_metadata or '{}', "username": username, "root_box": root_box}
+
                     if decode_json:
-                        return_d.callback({"type": rows[0][0], "user_metadata": json.loads(rows[0][1] or '{}'), "username": rows[0][2]})
-                    else:
-                        return_d.callback({"type": rows[0][0], "user_metadata": rows[0][1] or '{}', "username": rows[0][2]})
+                        user_info['user_metadata'] = json.loads(user_info['user_metadata'])
+
+                    return_d.callback(user_info)
 
             conn.runQuery(query, params).addCallbacks(lambda rows: query_cb(conn, rows), return_d.errback)
 
