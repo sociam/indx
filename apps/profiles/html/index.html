@@ -10,7 +10,7 @@
 	    <toolbar box-var='selectedBox' username-var='selectedUser'></toolbar>
 		<div class="main row" ng-show="selectedUser">
 			<!-- user selector -->
-			<div class="leftmain col-sm-4">
+			<div class="leftmain col-sm-2">
 				<ol>
 					<li class='user' ng-repeat="u in users" ng-click="selectUser(u)" ng-class="{select:isSelected(u)}">
 						{{ u.peek('name') }}
@@ -24,16 +24,17 @@
 				</ol>
 			</div>
 			<!-- main panel --> 
-			<div class="rightmain col-sm-8">
+			<div class="rightmain col-sm-10">
 				<div>
 					<div class='card'>
 						<div class='name'>{{ user.peek('name') }}</div>
 						<div class='id' ng-show="{{ user.peek('type') }} ">{{ user.id }}</div>
 						<img class="pic" ng-src="{{ user.peek('img') || defaultpic }}"></img>
 						<ul class='propval'>
-							<li ng-repeat='prop in staged' data-original-property='{{prop.name}}'>
+							<li ng-repeat='prop in staged' data-original-property='{{prop.name}}' ng-show='!prop.deleted'>
 								<label>{{prop.name}}</label>
 								<input type='text' class='val' ng-model='prop.value'></input>
+								<div class="delete glyphicon glyphicon-remove" ng-click="prop.deleted=true"></div>
 							</li>
 							<li class="newprop" ng-show="newpropkey!==undefined">
 								<form ng-submit="createNewProp(newpropkey,staged)">
@@ -45,7 +46,7 @@
 							<div class="btn btn-default" ng-click="newpropkey=''">+</div>
 							<div class="btn btn-default" ng-click="saveChanged(user, staged)" ng-disabled="!changedProps(staged)"
 							data-dirty="{{changedProps(staged)}"}>Save changes</div>
-							<div class="btn btn-danger" ng-click='deleteUser'>delete user</div>
+							<!--<div class="btn btn-danger" ng-click='deleteUser'>delete user</div>-->
 						</div>
 					</div>
 				</div>

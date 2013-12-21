@@ -31,12 +31,16 @@ angular.module('indx-profiles',['indx']).controller('main',
 		};
 		// 
 		$scope.changedProps = function(staged) { 
-			var result = staged && staged.filter(function(x) { return x.original !== x.value; }).length;	
+			var result = staged && staged.filter(function(x) { return x.original !== x.value || x.deleted; }).length;	
 			return result;
 		};
 		$scope.saveChanged = function(user,staged) {
 			console.log('savechanged >> ', staged);
 			var changes = staged.map(function(prop) {
+				if (prop.deleted) { 
+					user.unset(prop.name);
+					return true;	
+				}
 				if (prop.value !== prop.original) {
 					user.set(prop.name,prop.value);
 					console.log('setting ', prop.name, prop.value);
@@ -45,6 +49,7 @@ angular.module('indx-profiles',['indx']).controller('main',
 				}
 			});
 			if (changes.length) { user.save(); }
+			$scope.staged = staged.filter(function(x) { return !x.deleted; });
 		};
 		$scope.createNewProp = function(propname) {
 			console.log('scope staged', $scope.staged);
