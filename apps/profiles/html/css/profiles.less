@@ -13,12 +13,11 @@
 		margin:0px;
 		li {
 			margin:2px;
-			padding:2px;
+			padding:7px;
 		}
 	}
 }
 .rightmain {
-	position:relative;
 	padding-right:50px;
 	h1,h2,h3,h4 { 
 		margin:2px 0px 8px 0px;
@@ -33,8 +32,10 @@
 }
 .card {
 	position:relative;
+	max-width:640px;
+	min-height:320px;
 	* { vertical-align:top; }
-	.name{ 
+	.name { 
 		font-size:24pt; margin:0px 0px 0px 0px; padding:0px; 
 		line-height:98%; 
 		display:inline-block; 
@@ -49,13 +50,54 @@
 		display:inline-block;
 	}
 	.pic {
-		max-width:80px;
+		max-width:64px;
 		display:block;
 		position:absolute;
 		right:5px;
 		top:5px;
 		border:1px solid #eee;
 		border-radius:50px;
+	}
+	.propval {
+		list-style-type:none;
+		margin:12px 0px 12px 0px;
+		padding-left:0px;
+		background-color: #fff;
+		border-width: 1px;
+		border-color: #ddd;
+		border-radius: 4px 4px 0 0;
+		box-shadow: none;
+		label, .newprop input {
+			top: 15px;
+			left: 15px;
+			font-size: 12px;
+			font-weight: bold;
+			color: #bb8;
+			text-transform: uppercase;
+			letter-spacing: 1px;
+			&:after {
+				content:"-"
+			}
+		}
+		.newprop input { 
+			width:100px;
+			border-bottom:1px solid #bb9 !important;
+			&:focus {
+				border-bottom:1px solid #bb8 !important;
+			}
+		}
+		input {
+			color:#888;
+			font-weight:400;
+			outline: 0; 
+			font-size:80%;
+			border:none !important;
+			&:focus {
+				border-bottom:1px solid #222 !important;
+			}
+			border-bottom:1px solid #eee !important;
+			width:260px;
+		}	
 	}
 }
 .select {
