@@ -32,9 +32,11 @@
 						<img class="pic" ng-src="{{ user.peek('img') || defaultpic }}"></img>
 						<ul class='propval'>
 							<li ng-repeat='prop in staged' data-original-property='{{prop.name}}' ng-show='!prop.deleted'>
-								<label>{{prop.name}}</label>
-								<input type='text' class='val' ng-model='prop.value'></input>
-								<div class="delete glyphicon glyphicon-remove" ng-click="prop.deleted=true"></div>
+								<form ng-submit='blurFocus()'>
+									<label>{{prop.name}}</label>
+									<input type='text' class='val' ng-model='prop.value'></input>
+									<div class="delete glyphicon glyphicon-remove" ng-click="prop.deleted=true"></div>
+								</form>
 							</li>
 							<li class="newprop" ng-show="newpropkey!==undefined">
 								<form ng-submit="createNewProp(newpropkey,staged)">
@@ -47,6 +49,17 @@
 							<div class="btn btn-default" ng-click="saveChanged(user, staged)" ng-disabled="!changedProps(staged)"
 							data-dirty="{{changedProps(staged)}"}>Save changes</div>
 							<!--<div class="btn btn-danger" ng-click='deleteUser'>delete user</div>-->
+						</div>
+						<div class="acls">
+							<table>
+								<tr><td>box</td><td class="acl">owns</td><td class="acl">read</td><td class="acl">write</td><td class="acl">control</td></tr>
+								<tr ng-repeat='(boxid,acls) in boxacls'><td>{{ boxid }}</td>
+									<td ng-class="{acl:true, highlight:acls[user.id].owner,glyphicon:true,'glyphicon-ok':acls[user.id].owner,'glyphicon-ban-circle':!acls[user.id].owner}"></td>
+									<td ng-class="{acl:true, highlight:acls[user.id].read,glyphicon:true,'glyphicon-ok':acls[user.id].read,'glyphicon-ban-circle':!acls[user.id].read}"></td>
+									<td ng-class="{acl:true, highlight:acls[user.id].write,glyphicon:true,'glyphicon-ok':acls[user.id].write,'glyphicon-ban-circle':!acls[user.id].write}"></td>
+									<td ng-class="{acl:true, highlight:acls[user.id].controller,glyphicon:true,'glyphicon-ok':acls[user.id].controller,'glyphicon-ban-circle':!acls[user.id].controller}"></td>
+								</tr>
+							</table>
 						</div>
 					</div>
 				</div>

@@ -29,7 +29,7 @@ angular.module('indx-profiles',['indx']).controller('main',
 				$scope.selectUser(users[0]);
 			});
 		};
-		// 
+		$scope.blurFocus = function() { setTimeout(function() { $('input:focus').blur(); }, 10);		};
 		$scope.changedProps = function(staged) { 
 			var result = staged && staged.filter(function(x) { return x.original !== x.value || x.deleted; }).length;	
 			return result;
@@ -73,6 +73,26 @@ angular.module('indx-profiles',['indx']).controller('main',
 				$scope.user = u;
 			});
 		};
+
+		var get_acls = function() {
+			$scope.boxacls = {};
+			store.getBoxList().then(function(boxids) {
+				u.when(boxids.map(function(boxid) {	return store.getBox(boxid);	}))
+					.then(function(boxes) {
+						boxes.map(function(box) {
+							box.getACL().then(function(acls) {
+								sa(function() {	
+									console.log($scope.boxacls);
+									$scope.boxacls[box.id] = acls;	
+								});
+							});
+						});
+					});
+				});
+		};
+
+		console.log(get_acls());
+
 		store.getBoxList().then(function(boxids) { 
 			boxids.sort();
 			store.getBox(boxids[0]).then(function(box) { 

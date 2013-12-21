@@ -58,6 +58,28 @@
 		border:1px solid #eee;
 		border-radius:50px;
 	}
+	.acls {
+		margin:24px 0 24px 0;
+		border:1px solid #eee;
+		padding:15px;
+		* { font-size:11pt; }
+		.highlight {
+			background-color:#afa;
+		}
+		td { 
+			min-width:100px;
+			&.acl { 
+				min-width:50px !important;
+			}
+			border-left: 1px solid #eee;
+			border-right: 1px solid #eee; 
+			&:first-child {
+				border-left:1px solid #fff;
+			}
+			text-align:left; 
+			padding:4px !important;
+		}
+	}
 	.propval {
 		list-style-type:none;
 		margin:12px 0px 12px 0px;
@@ -70,7 +92,7 @@
 		label, .newprop input {
 			top: 15px;
 			left: 15px;
-			font-size: 12px;
+			font-size: 12pt;
 			font-weight: bold;
 			color: #bb8;
 			text-transform: uppercase;
@@ -90,7 +112,7 @@
 			color:#888;
 			font-weight:400;
 			outline: 0; 
-			font-size:80%;
+			font-size:95%;
 			border:none !important;
 			&:focus {
 				border-bottom:1px solid #222 !important;
