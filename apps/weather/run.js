@@ -9,11 +9,25 @@ var nodeindx = require('../../lib/services/nodejs/nodeindx'),
 	nodeservice = require('./nodeservice');
 
 var WeatherService = Object.create(nodeservice.NodeService, {
-	run: { // ecmascript 5, don't be confused!
+	run: { 
+		value: function(store) {
+			// run continuously
+			var this_ = this, config = this.load_config();
+			this.store = store;
+			console.debug('Will fetch every ', config.sleep || 60000, 'ms');
+			var fetch = function() { 
+				console.debug('Fetching weather ');
+				this_.get_weather(store);
+			};
+			fetch();
+			setInterval(fetch, config.sleep || 60000);
+		}
+	},
+	get_weather: { // ecmascript 5, don't be confused!
 		value: function(store) {
 			var this_ = this;
 			this.load_config().then(function(config) {
-				this_.debug('config! ', config, typeof config, JSON.parse(config));
+				// this_.debug('config! ', config, typeof config, JSON.parse(config));
 				config = JSON.parse(config);
 				if (!config || !_(config).keys()) {
 					this_.debug(' no configuration set, aborting '); 
@@ -27,8 +41,8 @@ var WeatherService = Object.create(nodeservice.NodeService, {
 						var lat = locs[0][0], lon = locs[0][1];
 						jQuery.get('http://api.openweathermap.org/data/2.5/weather?' + jQuery.param({lat:lat,lon:lon,units:'metric', format:'json'}))
 							.then(function(json) { 
-								this_.debug('Fetched and unpacked weather >> ', json);
-								var weatherid = 'weather-report-'+json.id;
+								this_.debug('Fetched and unpacked weather >> - id:', json.id, ' - dt ', json.dt);
+								var weatherid = 'weather-report-'+json.id+'-'+json.dt;
 								u.when([
 									this_._unpack(json,box),
 									box.getObj(weatherid)
@@ -58,7 +72,10 @@ var WeatherService = Object.create(nodeservice.NodeService, {
 			w.clouds = c.clouds.all;
 			w.location = c.name;
 			w.country = c.sys.country;
+			w.source = 'openweathermap.org';
+			w.type = 'weather-report';
 			w.time = c.dt;
+			w.when = new Date(c.dt*1000);
 			w.wid = c.id;
 			w.code = c.code;
 			if (c.weather) { 

@@ -596,16 +596,22 @@ class IndxDatabase:
         return return_d
 
 
-    def get_root_boxes(self):
+    def get_root_boxes(self, username = None):
         """ Get a list of the root boxes for each user. """
         logging.debug('indx_pg2 get_root_boxes')
         return_d = Deferred()
 
         def connected(conn):
             logging.debug("indx_pg2.get_root_boxes : connected")
-            d = conn.runQuery("SELECT DISTINCT username, root_box FROM tbl_users WHERE root_box IS NOT NULL")
+            query = "SELECT DISTINCT username, root_box FROM tbl_users WHERE root_box IS NOT NULL"
+            params = []
+
+            if username is not None:
+                query += " AND username = %s"
+                params.append(username)
+
+            d = conn.runQuery(query, params)
             d.addCallbacks(return_d.callback, return_d.errback)
-            return
 
         self.connect_indx_db().addCallbacks(connected, return_d.errback)
         return return_d

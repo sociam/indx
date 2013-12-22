@@ -298,8 +298,9 @@ class WebServer:
         """ Add a single INDX to the server. """
         parent.putChild(name, BoxHandler(self, name)) # e.g. /indx
 
-    def run(self):
+    def run(self, reactor_start = True):
         """ Run the server. """
-        reactor.run() #@UndefinedVariable
+        if reactor_start:
+            reactor.run() #@UndefinedVariable
 
 

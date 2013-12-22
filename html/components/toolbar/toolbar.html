@@ -16,9 +16,13 @@
                                 <label>{{ user.name }}</label><div class='usericon' ng-bind-html-unsafe="usericon"></div>
                         </button>
                         <div ng-show="isLoggedIn()"  class="btn-group box-selector">
-                                <button type="button" class="btn btn-default dropdown-toggle selected-box" ng-bind-html-unsafe="(box || 'select a box') + ' &nbsp; ' + caret" data-toggle="dropdown"></button>  
+                                <div type="button" 
+                                    class="btn btn-default dropdown-toggle selected-box"  
+                                    data-toggle="dropdown">{{ box || 'select a box' }}
+                                    &nbsp <span class="caret"></span>
+                                </div>
                                 <ul class="dropdown-menu boxlist" role='menu'>
-                                        <li ng-repeat="boxid in boxlist" ng-click="cbBoxSelected(boxid)" >{{ boxid }}</li>
+                                    <li ng-repeat="boxid in boxlist" ng-click="cbBoxSelected(boxid)" >{{ boxid }}</li>
                                 </ul>
                         </div>
                 </div> <!-- navbar-inner -->

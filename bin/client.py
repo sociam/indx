@@ -21,7 +21,6 @@ import logging
 import pprint
 import json
 import cjson
-import sys
 from indxclient import IndxClient, IndxClientAuth
 from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
@@ -52,8 +51,10 @@ class CLIClient:
                       'generate_new_key': {'f': self.generate_new_key, 'args': ['box']},
                       'create_root_box': {'f': self.create_root_box, 'args': ['box']},
                       'link_remote_box': {'f': self.link_remote_box, 'args': ['box', 'remote_token', 'remote_box', 'remote_address']},
+                      'generate_token': {'f': self.generate_token, 'args': ['box']},
                      }
 
+        self.token = None
         self.appid = appid
         self.indx = None
 
@@ -82,6 +83,28 @@ class CLIClient:
         if not self.args['allowempty'] and len(not_set) > 0:
             raise Exception("The following values cannot be empty for this action: {0}".format(", ".join(not_set)))
 
+    def auth_and_get_token(self, get_token):
+        """ Authenticate, get a token and call it back to the deferred. """
+        return_d = Deferred()
+
+        def authed_cb(): 
+            def token_cb(token):
+                if token is not None:
+                    self.token = token
+                    return_d.callback(token)
+                else:
+                    return_d.callback(None)
+
+            if get_token:
+                authclient.get_token(self.args['box']).addCallbacks(token_cb, return_d.errback)
+            else:
+                token_cb(None)
+            
+        authclient = IndxClientAuth(self.args['server'], self.appid)
+        self.client = authclient.client
+        authclient.auth_plain(self.args['username'], self.args['password']).addCallbacks(lambda response: authed_cb(), return_d.errback)
+
+        return return_d
 
     def call_action(self, name, *args, **kwargs):
         """ Calls an action by name. """
@@ -91,20 +114,18 @@ class CLIClient:
         f = action['f']
         self.check_args(action['args'])
 
-        if not self.indx:
+        def do_call():
+            f(*args, **kwargs).addCallbacks(lambda status: return_d.callback(self.parse_status(name, status)), return_d.errback)
 
-            def authed_cb(): 
-                def token_cb(token):
-                    self.indx = IndxClient(self.args['server'], self.args['box'], self.appid, token = token, client = authclient.client)
-                    f(*args, **kwargs).addCallbacks(lambda status: return_d.callback(self.parse_status(name, status)), return_d.errback)
+        if not self.token and IndxClient.requires_token(f):
+            def token_cb(token):
+                if not self.indx:
+                    self.indx = IndxClient(self.args['server'], self.args['box'], self.appid, token = token, client = self.client)
+                do_call()
 
-                if not IndxClient.requires_token(f):
-                    token_cb(None)
-                else:
-                    authclient.get_token(self.args['box']).addCallbacks(token_cb, return_d.errback)
-                
-            authclient = IndxClientAuth(self.args['server'], self.appid)
-            authclient.auth_plain(self.args['username'], self.args['password']).addCallbacks(lambda response: authed_cb(), return_d.errback)
+            self.auth_and_get_token(IndxClient.requires_token(f)).addCallbacks(token_cb, return_d.errback)
+        else:
+            do_call()
             
         return return_d
 
@@ -274,6 +295,15 @@ class CLIClient:
         """ Link a remote box with a local box. """
         logging.debug("Calling link_remote_box on remote_address '{0}', remote_box '{1}', remote_token '{2}'".format(self.args['remote_address'], self.args['remote_box'], self.args['remote_token']))
         return self.indx.link_remote_box(self.args['remote_address'], self.args['remote_box'], self.args['remote_token'])
+
+    def generate_token(self):
+        """ Generate a token for this box, and print it. """
+        logging.debug("Calling generate_token on box {0}.".format(self.args['box']))
+        return_d = Deferred()
+        def token_cb(token):
+            return_d.callback({"code": 200, "data": token})
+        self.auth_and_get_token(True).addCallbacks(token_cb, return_d.errback)
+        return return_d
 
 
 if __name__ == "__main__":

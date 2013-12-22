@@ -121,8 +121,12 @@ angular
 				sa(function() { 
 					$scope.runstate = r.running ? 'Running' : 'Stopped';  
 				});
-			}).fail(function(r) {
-				sa(function() { $scope.runstate = 'Unknown'; });
+			}).fail(function(r) { sa(function() { $scope.runstate = 'Unknown'; }); });
+			s._ajax('GET', 'apps/weather/api/get_stderr').then(function(data) {
+				var messages = data && data.messages && data.messages.join('<br>').replace(/\n/g,' ');
+				sa(function() { console.log('got stdout ', data && data.messages.length); $scope.stdout = messages || ''; });
+			}).fail(function(err) {
+				console.error('error getitng stdout ', err);
 			});
 		}, 6000);
 	});
