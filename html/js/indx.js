@@ -1091,6 +1091,9 @@ angular
 				u.debug('creating ', boxid);
 				return c.save().pipe(function() { return this_.getBox(boxid); });
 			},
+			createUser : function(username,password) {
+				return this._ajax('POST', 'admin/create_user', { username: username, password: password });
+			},
 			/// Called by apps to see if we are currently authenticated; this is the preferred
 			/// method to do so over login()/loginOpenID(), which potentially destroys/resets cookies.
 			/// Instead, this method interrogates the server, which implicitly passes cookies if we have them
