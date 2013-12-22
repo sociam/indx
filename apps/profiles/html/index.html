@@ -68,22 +68,24 @@
 		<div class="newuserdialog modal fade" ng-controller="NewUserDialog">
 			<div class="modal-dialog">
 				<div class="modal-content">
-					<div class="modal-header">
-						<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-						<h4 class="modal-title">Create a new INDX user</h4>
-					</div>
-					<div class="modal-body">
-						<form ng-submit="newuser(username,password)">
-							<label>username:</label><input type="text" ng-model="username">
-							<label>password:</label><input type="password" ng-model="password">
-						</form>
-						<div class="error">{{error}}</div>
-					</div>
-					<div class="modal-footer">
-						<img class='loading-spinner' src="/css/loading.gif" ng-show='loading'>
-						<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-						<button type="button" class="btn btn-primary" ng-click="newuser(username,password)" ng-disabled="loading">Ok</button>
-					</div>
+					<form ng-submit="newuser(username,password)">
+						<div class="modal-header">
+							<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+							<h4 class="modal-title">Create a new INDX user</h4>
+						</div>
+						<div class="modal-body">
+							<table>
+								<tr><td><label>username:</label></td><td><input type="text" ng-model="username"></td></tr>
+								<tr><td><label>password:</label></td><td><input type="password" ng-model="password"></td></tr>
+							</table>
+							<div class="error">{{error}}</div>
+						</div>
+						<div class="modal-footer">
+							<img class='loading-spinner' src="/css/loading.gif" ng-show='loading'>
+							<button type='button' class="btn btn-default" data-dismiss="modal">Cancel</button>
+							<button type='submit' class="btn btn-primary" ng-click="newuser(username,password)" ng-disabled="loading">Create user</button>
+						</div>
+					</form>
 				</div><!-- /.modal-content -->
 			</div><!-- /.modal-dialog -->
 		</div><!-- /.modal -->		
