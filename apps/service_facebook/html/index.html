@@ -37,6 +37,7 @@
 			ng-show="app.user && app.box && (app.user['@id'] !== selectedUser.id)"
 			ng-click="fbAsyncInit()">Authorise Facebook to have access to interact with {{ app.user.name}} INDX account</div> -->
 			<div id="fb-root"></div>
+			<!--<fb:login-button scope="read_stream,read_mailbox,read_friendlists,publish_stream" ></fb:login-button> -->
 			<table class='params'>
 				 <tr><td>Facebook Authorised Status: </td><td> {{ facebook_auth_status }}. </td></tr>
 				 <tr><td>Expires in: </td><td> {{ facebook_access_token_expire_time }} seconds. </td></tr>

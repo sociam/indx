@@ -174,21 +174,29 @@ class FacebookService:
         harvest_status_d = Deferred()
         logging.debug('Facebook Service - Getting users Facebook Statuses')
         graph = facebook.GraphAPI(self.facebook_access_token_long)
-        statuses = graph.get_connections("me", "statuses")
-        statuses = statuses['data']
-        current_timestamp = str(datetime.datetime.now())
-        uniq_id = "facebook_statuses_at_"+current_timestamp
-        object_to_insert = {"@id":uniq_id, "app_object": app_id, "timestamp": current_timestamp, "facebook_statuses": statuses}
+        profile = graph.get_object("me")
+        if len(profile)>1:
+            #print "got Profile so should be able to get status"
+            facebook_id = str(profile['id'])
+            query = facebook_id+"/permissions"
 
-        #now need to perform the asnc
-        def insert_cb(re):
-            logging.debug("Facebook Service - Found Statuses, Added To INDX {0} statuses".format(len(statuses)))
-            harvest_status_d.callback(True)
+            statuses =  graph.get_object(query) # graph.get_connections(facebook_id, "statuses")
+            #time.sleep(5)
+            print statuses
+            statuses = statuses['data']
+            current_timestamp = str(datetime.datetime.now())
+            uniq_id = "facebook_statuses_at_"+current_timestamp
+            object_to_insert = {"@id":uniq_id, "app_object": app_id, "timestamp": current_timestamp, "facebook_statuses": statuses}
 
-        def insert_cb_fail(re):
-            harvest_status_d.errback
+            #now need to perform the asnc
+            def insert_cb(re):
+                logging.info("Facebook Service - Found Statuses, Added To INDX {0} statuses".format(len(statuses)))
+                harvest_status_d.callback(True)
 
-        self.insert_object_to_indx(self,object_to_insert).addCallbacks(insert_cb, insert_cb_fail)
+            def insert_cb_fail(re):
+                harvest_status_d.errback
+
+            self.insert_object_to_indx(self,object_to_insert).addCallbacks(insert_cb, insert_cb_fail)
         return harvest_status_d
 
 
@@ -199,8 +207,8 @@ class FacebookService:
         graph = facebook.GraphAPI(self.facebook_access_token_long)
         #profile = graph.get_object("me")
         #rint profile
-        friends = graph.get_connections("me", "friends")
-        friends = friends['data']
+        friends_all = graph.get_connections("me", "friends")
+        friends = friends_all['data']
         #print friends
         #friend_list = [friend['id'] for friend in friends['data']]
         current_timestamp = str(datetime.datetime.now())
