@@ -1,4 +1,4 @@
-
+  	
 // test
 var nodeindx = require('../../lib/services/nodejs/nodeindx'),
     u = nodeindx.utils,
@@ -6,7 +6,7 @@ var nodeindx = require('../../lib/services/nodejs/nodeindx'),
 	jQuery = require('jquery'),
 	path = require('path'),
 	simpleweather = require('./jquery.simpleWeather').load(jQuery),
-	nodeservice = require('./nodeservice');
+	nodeservice = require('../../lib/services/nodejs/service');
 
 var WeatherService = Object.create(nodeservice.NodeService, {
 	run: { 
@@ -93,5 +93,5 @@ var WeatherService = Object.create(nodeservice.NodeService, {
 
 if (require.main === module) { 
 	var ws = Object.create(WeatherService);
-	ws.init();
+	ws.init(path.dirname(module.filename));
 }
