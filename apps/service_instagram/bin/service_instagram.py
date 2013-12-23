@@ -16,12 +16,22 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import bottle
+from bottle import route, post, run, request
 import argparse, ast, logging, getpass, sys, urllib2, json, sys, datetime, time, threading
 from datetime import datetime
 from threading import Timer
-from indxclient import IndxClient
+#from indxclient import IndxClient
+from instagram import client, subscriptions
+from instagram.client import InstagramAPI
+
+bottle.debug(True)
+
 
 appid = "instagram_service"
+client_id = "e118fb9760de432cb97df38babede8d9"
+client_secret = "adec102932e44bb89511a6c33518225c"
+
 
 class instagramService:
 
@@ -71,14 +81,6 @@ class instagramService:
         except:
             logging.debug('Service Tweets - Could not run main service due to error: {0}'.format(sys.exc_info()))
 
-    def run_additional_services(self):
-        #see if other harvesters needed (indx con needed to sumbit data)
-
-
-    def run_timeline_harvest(self, service):
-
-        #first check 
-    
     def insert_object_to_indx(self, service, obj):
      
         try:
@@ -103,3 +105,47 @@ class instagramService:
                 logging.error("Error updating INDX: {0}".format(e))
 
 
+def get_popular_media():
+    api = InstagramAPI(client_id=client_id, client_secret=client_secret, redirect_uri="http://localhost:8515")
+    popular_media = api.media_popular(count=20)
+    for media in popular_media:
+        print media.images['standard_resolution'].url
+
+
+#get_popular_media()
+
+
+def find_user():
+    api = InstagramAPI(access_token="211184138.e118fb9.4887b8a8c27e4ff9be93b554dba17960")
+    data = api.user_search("raminetinati", count=20)
+    print data
+
+
+def find_followers():
+    api = InstagramAPI(access_token="211184138.e118fb9.4887b8a8c27e4ff9be93b554dba17960")
+    followed_by = api.user_followed_by(211184138)
+    print followed_by
+
+
+find_user()
+find_followers()
+
+
+def subscribe_to_objects_by_tag():
+
+    def process_tag_update(update):
+        print update
+    
+
+    api = InstagramAPI(client_id=client_id, client_secret=client_secret, redirect_uri="http://localhost:8515")
+    reactor = subscriptions.SubscriptionsReactor()
+    reactor.register_callback(subscriptions.SubscriptionType.TAG, process_tag_update)
+    api.create_subscription(object='tag', object_id='christmas', aspect='media', callback_url='http://localhost:8515/')
+
+
+
+
+
+#subscribe_to_objects_by_tag()
+
+#run(host='localhost', port=8211, reloader=True)
