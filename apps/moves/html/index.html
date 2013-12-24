@@ -33,7 +33,13 @@
 		<table class='params'>
 
 		    <tr><td>Client ID </td><td><input type="text" ng-model="clientid"></input></tr>
-		    <tr><td>Authorisation Code (obtained automatically from Moves):</td><td class="authcode"><div ng-show="authcode" class='clearauthcode btn btn-default glyphicon glyphicon-remove-circle' ng-click="clearAuthCode()"></div><pre ng-show="authcode">{{ authcode }}</div></td></tr>
+		    <tr><td>Authorisation Code (obtained automatically from Moves):</td>
+		    	<td class="authcode">
+		    		<div ng-show="authcode">
+		    			<pre>{{ authcode }}</pre><div class='clear btn btn-default glyphicon glyphicon-remove-circle' ng-click="clearAuthCode()"></div>
+		    		</div>
+	    		</td>
+    		</tr>
 		    <tr><td>Frequency (sleep milliseconds): </td><td><input type="text" name="sleep" ng-model="sleep"></input></td></tr>
 	    </table>
 		<table class='security'>
