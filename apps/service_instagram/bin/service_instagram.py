@@ -29,8 +29,6 @@ bottle.debug(True)
 
 
 appid = "instagram_service"
-client_id = "e118fb9760de432cb97df38babede8d9"
-client_secret = "adec102932e44bb89511a6c33518225c"
 
 
 class instagramService:
@@ -127,8 +125,8 @@ def find_followers():
     print followed_by
 
 
-find_user()
-find_followers()
+#find_user()
+#find_followers()
 
 
 def subscribe_to_objects_by_tag():

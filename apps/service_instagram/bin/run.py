@@ -20,7 +20,8 @@ import logging.config
 import keyring
 import keyring.util.platform_
 from keyring.backends.pyfs import PlaintextKeyring
-from service_controller_instagram import TwitterServiceController
+from service_controller_instagram import instagramServiceController
+
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -44,10 +45,23 @@ def init():
 def run(args):
     #print "RECEIVED RUN ARGS OF:"+str(args)
     if args['config']:
-        print(keyring.util.platform_.data_root())
+        #print(keyring.util.platform_.data_root())
+        #print args['config']
         config = json.loads(args['config'])
-        logging.debug("received config: {0}".format(config))
-        keyring.set_password("INDX", "INDX_Instagram_App", json.dumps(config))
+        #see if this is a config to get access token code
+        #print len(config)
+        if "access_token_url" in config:
+            #print "Got the Access Token Config"
+            service_controler = instagramServiceController(config)
+            access_token_url = service_controler.get_access_token()
+            config = {}
+            config['access_token_url'] = access_token_url        
+            #Now save the short 
+            logging.debug("received short access token config for saving: {0}".format(config))
+            keyring.set_password("INDX", "INDX_Instagram_App", json.dumps(config))
+        else:
+            logging.debug("received config for saving: {0}".format(config))
+            keyring.set_password("INDX", "INDX_Instagram_App", json.dumps(config))
     elif args['get_config']:
         print get_config(args)
     else:
@@ -67,7 +81,7 @@ def run(args):
         logging.debug("In instagram Run - With new config file {0}".format(config))
         #test run with configs
         #instagram_service = TwitterService(config)
-        service_controler = TwitterServiceController(config)
+        service_controler = instagramServiceController(config)
         service_controler.load_service_instance()
         time.sleep(2)
 
@@ -79,7 +93,13 @@ def get_config(args):
     #print "Getting config from keychain..."
     stored_config = keyring.get_password("INDX", "INDX_Instagram_App")
     #print "stored config----------"+str(stored_config)
-    stored_config = json.loads(stored_config)
+    #config = ast.literal_eval(stored_config)
+    try:
+        stored_config = json.dumps(stored_config)
+        stored_config = ast.literal_eval(stored_config)
+    except:
+        #empty config, probably not set...
+        stored_config = {'empty': True}
     #stored_config = ast.literal_eval(stored_config)
     logging.debug("Twitter Run.py - get_configs stored instagram config {0}".format(stored_config))
     return stored_config

@@ -11,11 +11,60 @@ angular
 			sa(function() { $scope.status = s; });
 		};
 
+
+		var _get_instagram_access_token = function() {
+			console.info('trying to run _get_instagram_access_token')
+			s._ajax('POST', $scope.access_token_url).then(function(x) { 
+				//var config = JSON.parse(x);
+				console.info('Success in _get_instagram_access_token, got config of', x)
+				// simple stuff
+				sa(function() { 
+					_($scope).extend({ 
+						access_token:x,
+					});
+				});
+				//$scope.facebook_auth_status = "Long Token Authorised"
+				//var date = new Date();
+				//$scope.timestamp = date.toISOString();
+				//console.info('Set new expiry time set: ', config.facebook_access_token_expire_time);
+				//console.info('Set net token type: ', $scope.facebook_auth_status);
+				//console.info('Timestamp of new token: ', $scope.timestamp);
+				//_get_instagram_access_token()
+			}).fail(function(err) { 
+				console.error('could not get config ', err); 	
+			});
+		};
+
+
+		var _get_instagram_url_from_service = function() {
+			console.info('trying to run _get_facebook_token_config_from_service')
+			s._ajax('GET', 'apps/service_instagram/api/get_config').then(function(x) { 
+				var config = JSON.parse(x.config);
+				console.info('Success in _get_instagram_url_from_service, got config of', config)
+				// simple stuff
+				sa(function() { 
+					_($scope).extend({ 
+						access_token_url:config.access_token_url,
+					});
+				});
+				//$scope.facebook_auth_status = "Long Token Authorised"
+				var date = new Date();
+				$scope.timestamp = date.toISOString();
+				//console.info('Set new expiry time set: ', config.facebook_access_token_expire_time);
+				//console.info('Set net token type: ', $scope.facebook_auth_status);
+				console.info('Timestamp of new token: ', $scope.timestamp);
+				window.open($scope.access_token_url, '_blank', 'location=yes,height=570,width=520,scrollbars=yes,status=yes');
+				//_get_instagram_access_token()
+			}).fail(function(err) { 
+				console.error('could not get config ', err); 	
+			});
+		};
+
 		var _get_config_from_service = function() {
 			s._ajax('GET', 'apps/service_instagram/api/get_config').then(function(x) { 
-				console.info('Twitter service got config from server: ',x)
+				console.info('Twitter service got config from server: ',x.config);
 				var config = JSON.parse(x.config);
-				console.info('Success in _get_config_from_service, got config of', config)
+				console.info('Success in _get_config_from_service, got config of', config);
 
 				// simple stuff
 				sa(function() { 
@@ -83,6 +132,23 @@ angular
 			});
 			return u.when([dul, dbl]);
 		};
+
+		$scope.InstagramLogin = function(){
+			token_config = {'access_token_url:': ""}
+			console.info('i got a request to get Instagram Access Token ', token_config);
+			s._ajax('GET', 'apps/service_instagram/api/set_config', { 	config: JSON.stringify(token_config) }).then(function(x) { 
+				console.info('trying to get the new config file, attempting to run new method');
+				status('configuration chage committed');
+				window.retval = x;
+				_get_instagram_url_from_service();
+			}).fail(function(e) {
+				console.error(e);
+				status('error committing change ' + e.toString());
+			});
+
+
+		};
+
 		$scope.grantACL = function(user,box) {
 			console.log('grantacl -- ', user, box);
 			s.getBox(box).then(function(b) { 

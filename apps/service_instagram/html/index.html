@@ -32,19 +32,15 @@
 			<div ng-show="granted" class="granted"> {{ granted_status }} </div>
 		</td></tr>
 		</table>
-		<h4>In order to get these credentials, please visit <a href="https://dev.instagram.com/user/login?" target="_blank"> here</a> and create a instagram Application</h4>
-		<table class='params'>
-		    <tr><td>Consumer Key :</td><td><input type="text" name="consumer_key" ng-model="consumer_key"></input></td></tr>
-		    <tr><td>Consumer Secret : </td><td><input type="text" name="consumer_secret" ng-model="consumer_secret"></input></td></tr>
-		    <tr><td>Access Token : </td><td><input type="text" name="access_token" ng-model="access_token"></input></td></tr>
-		    <tr><td>Access Token Secret : </td><td><input type="text" name="access_token_secret" ng-model="access_token_secret"></input></td></tr>
-	    </table>
+		<h4>Authenticate With Instagram</h4>
+		<table class='auth_tab'>
+			<tr><td> <button ng-click="InstagramLogin()">Authorise Instagram</button></td></tr> 
+		</table>
 	    <h4>In order to search, please enter your instagram handle and some search terms (seperated by commas)!</h4>
 		<table class='search_params'>
-		    <tr><td>instagram Username :</td><td><input type="text" name="instagram_username" ng-model="instagram_username"></input></td></tr>
-		    <tr><td>instagram Search Words : </td><td><input type="text" name="instagram_search_words" ng-model="instagram_search_words"></input></td></tr>
-		    <tr><td>Harvest instagram Timeline: </td><td> <input type="checkbox" ng-model="instagram_status" ng-true-value="True" ng-false-value="False"></input></td></tr>
-		    <tr><td>Harvest instagram Network: </td><td> <input type="checkbox" ng-model="instagram_network" ng-true-value="True" ng-false-value="False"></input></td></tr>
+		    <tr><td>instagram Username:</td><td><input type="text" name="instagram_username" ng-model="instagram_username"></input></td></tr>
+		    <tr><td>instagram Search Words: </td><td><input type="text" name="instagram_search_words" ng-model="instagram_search_words"></input></td></tr>
+		    <tr><td>Harvest instagram user Feed: </td><td> <input type="checkbox" ng-model="instagram_status" ng-true-value="True" ng-false-value="False"></input></td></tr>
 	    </table>
 	    <div class='submits'>
 		    <div class="btn btn-default" ng-click="setConfig({consumer_key:consumer_key, consumer_secret:consumer_secret, access_token:access_token, access_token_secret:access_token_secret, box:app.box, user:app.user['@id'], password:app.password, instagram_username:instagram_username, instagram_search_words:instagram_search_words, instagram_status:instagram_status, instagram_network:instagram_network})">Set config</div>
