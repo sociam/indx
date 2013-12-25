@@ -163,14 +163,26 @@ angular
 		setInterval(function() { 
 			s._ajax('GET','apps/moves/api/is_running').then(function(r) { 
 				sa(function() { 
-					$scope.runstate = r.running ? 'Running' : 'Stopped';  
+					var newrunstate = r.running ? 'Running' : 'Stopped';
+					if (newrunstate !== $scope.runstate) {
+						status(r.running ? 'moves started!' : 'moves terminated');
+					}
+					$scope.runstate = newrunstate;
 				});
 			}).fail(function(r) { sa(function() { $scope.runstate = 'Unknown'; }); });
 			s._ajax('GET', 'apps/moves/api/get_stderr').then(function(data) {
 				var messages = data && data.messages && data.messages.join('<br>').replace(/\n/g,' ');
-				sa(function() { console.log('got stdout ', data && data.messages.length); $scope.stdout = messages || ''; });
-			}).fail(function(err) {
-				console.error('error getitng stdout ', err);
-			});
+				sa(function() { 
+					console.log('got stdout ', data && data.messages.length); 
+					$scope.stderr = messages || ''; 
+				});
+			}).fail(function(err) {	console.error('error getitng stderr ', err); });
+			s._ajax('GET', 'apps/moves/api/get_stdout').then(function(data) {
+				var messages = data && data.messages && data.messages.join('<br>').replace(/\n/g,' ');
+				sa(function() { 
+					console.log('got stdout ', data && data.messages.length); 
+					$scope.stdout = messages || ''; 
+				});
+			}).fail(function(err) {	console.error('error w/ stdout ', err); });
 		}, 6000);
 	});

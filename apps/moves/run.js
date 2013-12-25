@@ -13,6 +13,7 @@ var MovesService = Object.create(nodeservice.NodeService, {
         value: function(store) {
             // run continuously
             var this_ = this, config = this.load_config();
+            this.debug('hello i am moves');
         }
     },
     get_moves: { // ecmascript 5, don't be confused!

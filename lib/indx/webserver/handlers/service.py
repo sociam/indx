@@ -147,11 +147,13 @@ class ServiceHandler(BaseHandler):
             #print "in service.py - set config"
             # invoke external process to set their configs
             logging.debug("set_config -- getting config from request")        
-            config = self.get_arg(request, "config")
-            logging.debug("set_config config arg {0}".format(config))
+            jsonconfig = self.get_arg(request, "config")
+            logging.debug("set_config config arg {0}".format(jsonconfig))
             ## load the manifest 
             manifest = self._load_manifest()
-            jsonconfig = json.dumps(config)
+            # jsonconfig = json.dumps(config)
+            logging.debug("set_config jsonconfig arg {0}".format(jsonconfig))
+
             # somewhere inside this we have put {0} wildcard so we wanna substitute that
             # with the actual config obj
             expanded = [x.format(jsonconfig) for x in manifest['set_config']]
