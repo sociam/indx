@@ -32,7 +32,7 @@ logging.basicConfig(level=logging.INFO)
 
 client_id = "e118fb9760de432cb97df38babede8d9"
 client_secret = "adec102932e44bb89511a6c33518225c"
-redirect_uri = "http://localhost:8211"
+redirect_uri = "http://localhost:8211/"
 
 
 class instagramServiceController:
@@ -114,4 +114,6 @@ class instagramServiceController:
     def get_access_token(self):
         api = InstagramAPI(client_id=self.client_id, client_secret=self.client_secret, redirect_uri=self.redirect_uri)
         redirect_uri = api.get_authorize_login_url(scope = self.scope)
+        # if(redirect_uri):
+        #     response = urllib2.urlopen(redirect_uri).read()
         return redirect_uri

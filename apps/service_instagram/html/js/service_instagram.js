@@ -1,5 +1,14 @@
 angular
 	.module('service_instagram', ['ui','indx'])
+	.run(function ($rootScope) {
+	    window.igAsyncInit = function () {
+	    IG.init({
+    		client_id: "e118fb9760de432cb97df38babede8d9",
+    		check_status: true, // check and load active session
+    		cookie: true // persist a session via cookie
+		}); 
+	    };
+	})
 	.controller('ConfigPage', function($scope, client, utils) {
 		var s = client.store, sa = function(f) { utils.safeApply($scope, f); };
 		window.store = client.store;
@@ -12,27 +21,19 @@ angular
 		};
 
 
-		var _get_instagram_access_token = function() {
-			console.info('trying to run _get_instagram_access_token')
-			s._ajax('POST', $scope.access_token_url).then(function(x) { 
-				//var config = JSON.parse(x);
-				console.info('Success in _get_instagram_access_token, got config of', x)
-				// simple stuff
-				sa(function() { 
-					_($scope).extend({ 
-						access_token:x,
-					});
-				});
-				//$scope.facebook_auth_status = "Long Token Authorised"
-				//var date = new Date();
-				//$scope.timestamp = date.toISOString();
-				//console.info('Set new expiry time set: ', config.facebook_access_token_expire_time);
-				//console.info('Set net token type: ', $scope.facebook_auth_status);
-				//console.info('Timestamp of new token: ', $scope.timestamp);
-				//_get_instagram_access_token()
-			}).fail(function(err) { 
-				console.error('could not get config ', err); 	
-			});
+		$scope.get_instagram_access_token = function() {
+			console.info('trying to run _get_instagram_access_token');
+			var tokenWindow = window;
+			tokenWindow.open($scope.access_token_url, '_blank', 'location=yes,height=570,width=520,scrollbars=yes,status=yes');
+			tokenWindow.onchange = function(){ myUnloadEvent(); }
+			var myUnloadEvent = function() {
+    			console.info('You can have Ur Logic Here ,');
+			}
+			// var listener = function() {
+  	// 			//tokenWindowURL = tokenWindow.document.URL
+  	// 			console.info('New Window Has been Clicked');
+			// };
+			// tokenWindow.addEventListener("onload", listener, false);
 		};
 
 
@@ -45,6 +46,7 @@ angular
 				sa(function() { 
 					_($scope).extend({ 
 						access_token_url:config.access_token_url,
+						get_access_token_flag:true 
 					});
 				});
 				//$scope.facebook_auth_status = "Long Token Authorised"
@@ -53,8 +55,15 @@ angular
 				//console.info('Set new expiry time set: ', config.facebook_access_token_expire_time);
 				//console.info('Set net token type: ', $scope.facebook_auth_status);
 				console.info('Timestamp of new token: ', $scope.timestamp);
-				window.open($scope.access_token_url, '_blank', 'location=yes,height=570,width=520,scrollbars=yes,status=yes');
+				//window.open($scope.access_token_url, '_blank', 'location=yes,height=570,width=520,scrollbars=yes,status=yes');	
 				//_get_instagram_access_token()
+				//get_instagram_access_token()
+				// IG.login(function (response) {
+				//     if (response.session) {
+				//         // user is logged in
+				//     }
+				// }, {scope: ['comments', 'likes']});
+
 			}).fail(function(err) { 
 				console.error('could not get config ', err); 	
 			});
