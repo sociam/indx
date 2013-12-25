@@ -128,7 +128,7 @@ class ServiceHandler(BaseHandler):
             manifest = self._load_manifest()
             result = subprocess.check_output(manifest['get_config'],cwd=self.get_app_cwd())
             #print "service.py - getConfig Manifest returned: "+str(result)
-            logging.debug(' get config result {0} '.format(result))
+            logging.debug(' get config result {0} {1}'.format(result))
             #result = json.loads(result)
             logging.debug(' get json config result {0} '.format(result))
             return self.return_ok(request,data={'config':result})
