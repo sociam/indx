@@ -128,7 +128,7 @@ class ServiceHandler(BaseHandler):
             manifest = self._load_manifest()
             result = subprocess.check_output(manifest['get_config'],cwd=self.get_app_cwd())
             #print "service.py - getConfig Manifest returned: "+str(result)
-            logging.debug(' get config result {0} '.format(result))
+            logging.debug(' get config result {0} {1}'.format(result))
             #result = json.loads(result)
             logging.debug(' get json config result {0} '.format(result))
             return self.return_ok(request,data={'config':result})
@@ -147,11 +147,13 @@ class ServiceHandler(BaseHandler):
             #print "in service.py - set config"
             # invoke external process to set their configs
             logging.debug("set_config -- getting config from request")        
-            config = self.get_arg(request, "config")
-            logging.debug("set_config config arg {0}".format(config))
+            jsonconfig = self.get_arg(request, "config")
+            logging.debug("set_config config arg {0}".format(jsonconfig))
             ## load the manifest 
             manifest = self._load_manifest()
-            jsonconfig = json.dumps(config)
+            # jsonconfig = json.dumps(config)
+            logging.debug("set_config jsonconfig arg {0}".format(jsonconfig))
+
             # somewhere inside this we have put {0} wildcard so we wanna substitute that
             # with the actual config obj
             expanded = [x.format(jsonconfig) for x in manifest['set_config']]

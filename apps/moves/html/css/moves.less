@@ -1,0 +1,93 @@
+
+
+@font-face { 
+  font-family: "Lato"; 
+  src: url('/fonts/Lato/Lato-Regular.ttf'); 
+}
+@font-face
+{
+font-family: "Lato-Light";
+src: url('/fonts/Lato/Lato-Light.ttf'),
+}
+* {
+   box-sizing:border-box;
+}
+div.main {
+  font-family:'Lato', 'helvetica neue', 'helvetica';
+  font-weight:200;
+}
+h1, h2, h3, h4 {
+  font-weight:100 !important;
+  text-align:left;
+}
+
+.loadingspinner {
+  width:25px !important;
+}
+
+
+.authcode {
+  position:relative;
+  div.pre {
+    background:#eee;
+    font-family:monospace !important;
+    position:absolute; 
+    padding:12px;
+    font-size:10pt;
+    font-weight:bold;
+    top:0px; 
+    border-radius:5px;
+    width:auto;
+    right:10px;
+    bottom:0px; 
+    left:0px;
+  }
+  .clear {
+    position:absolute;
+    right:20px;
+    width:12px;
+    top:4px;
+    margin:0px;
+  }
+}
+
+div.main {
+  padding:20px;
+  max-width:840px;
+  margin-left:auto;
+  margin-right:auto;
+  td { 
+    padding:12px 12px 12px 0px;
+    &:first-child {
+      width:200px;
+      padding-right:20px;       
+    }
+    * { width:100%; }
+  }
+  .security, .params, .submits {
+    width:100%;
+  }
+  .submits {
+    padding:12px;
+    div { 
+      display:inline-block;
+      vertical-align:middle;
+      margin-right:12px;
+    }
+  }
+  .granted {
+    padding:12px;
+    background-color:#aaffaa;
+    color:black;
+  } 
+  .stdout, .stderr {
+    width:100%;
+    max-height:100px;
+    border:1px solid #eee;
+    overflow-y:scroll;
+    padding:0px;
+  }
+  .stderr { 
+    color:#b99;
+  }
+}

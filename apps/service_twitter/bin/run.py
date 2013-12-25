@@ -49,7 +49,7 @@ def run(args):
         logging.debug("received config: {0}".format(config))
         keyring.set_password("INDX", "INDX_Twitter_App", json.dumps(config))
     elif args['get_config']:
-        print get_config(args)
+        print json.dumps(get_config(args))
     else:
         # print(keyring.util.platform_.data_root())
         config = keyring.get_password("INDX", "INDX_Twitter_App")
