@@ -14,7 +14,7 @@ angular
 		var _get_config_from_service = function() {
 			s._ajax('GET', 'apps/service_twitter/api/get_config').then(function(x) { 
 				console.info('Twitter service got config from server: ',x)
-				var config = JSON.parse(x.config);
+				var config = x.config //JSON.parse(x.config);
 				console.info('Success in _get_config_from_service, got config of', config)
 
 				// simple stuff

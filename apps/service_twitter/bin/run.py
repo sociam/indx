@@ -49,7 +49,7 @@ def run(args):
         logging.debug("received config: {0}".format(config))
         keyring.set_password("INDX", "INDX_Twitter_App", json.dumps(config))
     elif args['get_config']:
-        print json.dumps(get_config(args))
+        print json.dumps(get_config(args)) #get_config(args) #
     else:
         # print(keyring.util.platform_.data_root())
         config = keyring.get_password("INDX", "INDX_Twitter_App")
@@ -79,8 +79,8 @@ def get_config(args):
     #print "Getting config from keychain..."
     stored_config = keyring.get_password("INDX", "INDX_Twitter_App")
     #print "stored config----------"+str(stored_config)
-    stored_config = json.loads(stored_config)
-    #stored_config = ast.literal_eval(stored_config)
+    #stored_config = json.loads(stored_config)
+    stored_config = ast.literal_eval(stored_config)
     logging.debug("Twitter Run.py - get_configs stored twitter config {0}".format(stored_config))
     return stored_config
 
