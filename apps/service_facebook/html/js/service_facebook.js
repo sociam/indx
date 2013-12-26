@@ -40,7 +40,7 @@ angular
 		var _get_facebook_token_config_from_service = function() {
 			console.info('trying to run _get_facebook_token_config_from_service')
 			s._ajax('GET', 'apps/service_facebook/api/get_config').then(function(x) { 
-				var config = JSON.parse(x.config);
+				var config = x.config;
 				console.info('Success in get_facebook_token_config_from_service, got config of', config)
 				// simple stuff
 				sa(function() { 
@@ -64,7 +64,7 @@ angular
 		var _get_config_from_service = function() {
 			console.info('trying to run _get_config_from_service')
 			s._ajax('GET', 'apps/service_facebook/api/get_config').then(function(x) { 
-				var config = JSON.parse(x.config);
+				var config = x.config;
 				console.info('Success in _get_config_from_service, got config of', config)
 				// simple stuff
 				sa(function() { 

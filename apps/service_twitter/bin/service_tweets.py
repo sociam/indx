@@ -111,7 +111,7 @@ class TwitterService:
                         try:
                             is_get_network = additional_params['twitter_network']
                             if "True" in str(is_get_network):
-                                #print "GETTING NETWORK"
+                                print "GETTING NETWORK"
                                 logging.debug("Adding Twitter Network Harvester")
 
                                 def network_cb(re):
