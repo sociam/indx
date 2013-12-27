@@ -1,14 +1,5 @@
 angular
 	.module('service_instagram', ['ui','indx'])
-	.run(function ($rootScope) {
-	    window.igAsyncInit = function () {
-	    IG.init({
-    		client_id: "e118fb9760de432cb97df38babede8d9",
-    		check_status: true, // check and load active session
-    		cookie: true // persist a session via cookie
-		}); 
-	    };
-	})
 	.controller('ConfigPage', function($scope, client, utils) {
 		var s = client.store, sa = function(f) { utils.safeApply($scope, f); };
 		window.store = client.store;
@@ -23,24 +14,26 @@ angular
 
 		$scope.get_instagram_access_token = function() {
 			console.info('trying to run _get_instagram_access_token');
-			var tokenWindow = window;
-			tokenWindow.open($scope.access_token_url, '_blank', 'location=yes,height=570,width=520,scrollbars=yes,status=yes');
-			tokenWindow.onchange = function(){ myUnloadEvent(); }
-			var myUnloadEvent = function() {
-    			console.info('You can have Ur Logic Here ,');
-			}
-			// var listener = function() {
-  	// 			//tokenWindowURL = tokenWindow.document.URL
-  	// 			console.info('New Window Has been Clicked');
-			// };
-			// tokenWindow.addEventListener("onload", listener, false);
+			var mywin = window.open($scope.access_token_url, '_blank', 'location=yes,height=570,width=520,scrollbars=yes,status=yes');
+
+			// var tokenWindow = window;
+			// tokenWindow.open($scope.access_token_url, '_blank', 'location=yes,height=570,width=520,scrollbars=yes,status=yes');
+			// tokenWindow.onchange = function(){ myUnloadEvent(); }
+			// var myUnloadEvent = function() {
+   //  			console.info('You can have Ur Logic Here ,');
+			// }
+			var listener = function() {
+  				//tokenWindowURL = tokenWindow.document.URL
+  				console.info('New Window Has been Clicked');
+			};
+			mywin.addEventListener("onload", listener, false);
 		};
 
 
 		var _get_instagram_url_from_service = function() {
 			console.info('trying to run _get_facebook_token_config_from_service')
 			s._ajax('GET', 'apps/service_instagram/api/get_config').then(function(x) { 
-				var config = JSON.parse(x.config);
+				var config = x.config;
 				console.info('Success in _get_instagram_url_from_service, got config of', config)
 				// simple stuff
 				sa(function() { 
@@ -72,7 +65,7 @@ angular
 		var _get_config_from_service = function() {
 			s._ajax('GET', 'apps/service_instagram/api/get_config').then(function(x) { 
 				console.info('Twitter service got config from server: ',x.config);
-				var config = JSON.parse(x.config);
+				var config = x.config;
 				console.info('Success in _get_config_from_service, got config of', config);
 
 				// simple stuff

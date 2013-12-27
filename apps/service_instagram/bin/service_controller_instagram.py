@@ -39,7 +39,9 @@ class instagramServiceController:
 
     def __init__(self, config):
         #test if only looking for access_token....
+        print "in instagram service controller:: "+str(config)
         if "access_token_url" in config:
+            print "in instagram service controller:: "+str(config)
             self.client_id = client_id
             self.client_secret = client_secret
             self.redirect_uri = redirect_uri

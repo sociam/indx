@@ -50,8 +50,8 @@ def run(args):
         config = json.loads(args['config'])
         #see if this is a config to get access token code
         #print len(config)
-        if "access_token_url" in config:
-            #print "Got the Access Token Config"
+        if 'access_token_url' in config:
+            print "Got the Access Token Config"
             service_controler = instagramServiceController(config)
             access_token_url = service_controler.get_access_token()
             config = {}
@@ -60,17 +60,18 @@ def run(args):
             logging.debug("received short access token config for saving: {0}".format(config))
             keyring.set_password("INDX", "INDX_Instagram_App", json.dumps(config))
         else:
+            print "Got the Main Access Token Config"
             logging.debug("received config for saving: {0}".format(config))
             keyring.set_password("INDX", "INDX_Instagram_App", json.dumps(config))
     elif args['get_config']:
-        print get_config(args)
+        print json.dumps(get_config(args))
     else:
         # print(keyring.util.platform_.data_root())
         config = keyring.get_password("INDX", "INDX_Instagram_App")
         logging.debug("running the app with: {0}".format(config))
-        #config = json.dumps(config)
+        config = json.loads(config)
         #config = config.replace("\\\"","'")
-        config = ast.literal_eval(ast.literal_eval(config))
+        #config = ast.literal_eval(ast.literal_eval(config))
         address = args['server']
         config['address'] = address
         #config = json.loads(config)
@@ -95,7 +96,7 @@ def get_config(args):
     #print "stored config----------"+str(stored_config)
     #config = ast.literal_eval(stored_config)
     try:
-        stored_config = json.dumps(stored_config)
+        #stored_config = json.dumps(stored_config)
         stored_config = ast.literal_eval(stored_config)
     except:
         #empty config, probably not set...
