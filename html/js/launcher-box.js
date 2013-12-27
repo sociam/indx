@@ -11,16 +11,27 @@ angular.module('launcher')
 			scope: { box:"=box" },
 			controller: function($scope, client, backbone, utils) {
 				var u = utils, sa = function(f) { utils.safeApply($scope,f); };
-				$scope.obj_count = $scope.box ? $scope.box.getObjIDs().length : 0;
+				$scope.obj_ids = $scope.box ? $scope.box.getObjIDs() : [];
+				$scope.obj_count = $scope.obj_ids.length;
 				$scope.box.on('obj-add', function(result) { 
 					// console.log('obj add ', result, typeof(result));
 					sa(function() { $scope.obj_count++; });
 				});
+				$scope.box.on('obj-remove', function(result) { 
+					sa(function() { $scope.obj_count--; });
+				});
 				$scope.deleteBox = function() {
-					console.log("Or maybe attempting to delete box ", $scope.box);
+					console.log("Attempting to delete box ", $scope.box);
+					$scope.box.deleteBox($scope.box.getID());
 				};
 				$scope.emptyBox = function() {
-					console.log("Or maybe attempting to empty box ", $scope.box);
+					console.log("Attempting to empty box ", $scope.box);
+					$scope.box._doDelete($scope.obj_ids).then(function() {
+						sa(function() { 
+							$scope.obj_ids = $scope.box ? $scope.box.getObjIDs() : [];
+							$scope.obj_count = $scope.obj_ids.length;
+						});
+					});
 				};
 			}
 		};
