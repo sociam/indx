@@ -9,21 +9,51 @@
 font-family: "Lato-Light";
 src: url('/fonts/Lato/Lato-Light.ttf'),
 }
-div.main * {
+* {
+   box-sizing:border-box;
+}
+div.main {
   font-family:'Lato', 'helvetica neue', 'helvetica';
   font-weight:200;
-  box-sizing:border-box;
 }
 h1, h2, h3, h4 {
   font-weight:100 !important;
   text-align:left;
 }
 
+.loadingspinner {
+  width:25px !important;
+}
 
+
+.authcode {
+  position:relative;
+  div.pre {
+    background:#eee;
+    font-family:monospace !important;
+    position:absolute; 
+    padding:12px;
+    font-size:10pt;
+    font-weight:bold;
+    top:0px; 
+    border-radius:5px;
+    width:auto;
+    right:10px;
+    bottom:0px; 
+    left:0px;
+  }
+  .clear {
+    position:absolute;
+    right:20px;
+    width:12px;
+    top:4px;
+    margin:0px;
+  }
+}
 
 div.main {
   padding:20px;
-  max-width:500px;
+  max-width:840px;
   margin-left:auto;
   margin-right:auto;
   td { 
@@ -36,7 +66,6 @@ div.main {
   }
   .security, .params, .submits {
     width:100%;
-    border-top:1px solid #eef;
   }
   .submits {
     padding:12px;
@@ -51,11 +80,14 @@ div.main {
     background-color:#aaffaa;
     color:black;
   } 
-  .output {
+  .stdout, .stderr {
     width:100%;
     max-height:100px;
     border:1px solid #eee;
     overflow-y:scroll;
     padding:0px;
+  }
+  .stderr { 
+    color:#b99;
   }
 }

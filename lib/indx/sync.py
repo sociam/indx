@@ -33,12 +33,12 @@ class IndxSync:
     # (i.e. where the following are the in the list of values of the property "type")
     TYPES = [
         NS_ROOT_BOX + u"box",
+        NS_ROOT_BOX + u"link",
+        NS_ROOT_BOX + u"key",
         NS_ROOT_BOX + u"server",
-        NS_ROOT_BOX + u"sync-network",
         NS_ROOT_BOX + u"user",
         NS_ROOT_BOX + u"payload",
         NS_ROOT_BOX + u"message",
-        NS_ROOT_BOX + u"key",
     ]
 
     def __init__(self, root_store, database, url, keystore):
@@ -139,7 +139,7 @@ class IndxSync:
         self.root_store.unlisten(self.observer)
 
 
-    def link_remote_box(self, remote_address, remote_box, remote_token):
+    def link_remote_box(self, local_user, remote_address, remote_box, remote_token):
         """ Link a remote box with this local box (either a root box, or just a non-root synced box).
 
             Requires the credentials of the remote box, and will exchange keys using these credentials, store public keys of each box in the synced boxes, and then not require the credentials again in future to sync.
@@ -161,7 +161,7 @@ class IndxSync:
             # objects get updated to local box, and then synced across to the other boxes once the syncing starts
             new_objs = [
                 {   "@id": "link-{0}".format(link_uid),
-                    "type": [ {"@value": "http://indx.ecs.soton.ac.uk/ontology/root-box/#sync-network"} ],
+                    "type": [ {"@value": "http://indx.ecs.soton.ac.uk/ontology/root-box/#link"} ],
                     "boxes": [ {"@id": "box-{0}".format(local_key_uid)}, # links to the objs below
                                {"@id": "box-{0}".format(remote_key_uid)}, # links to the objs below
                              ],
@@ -204,7 +204,7 @@ class IndxSync:
                 self.root_store._get_latest_ver().addCallbacks(ver_cb, return_d.errback)
 
             # add the local key to the local store
-            self.keystore.put(local_keys).addCallbacks(local_added_cb, return_d.errback) # store in the local keystore
+            self.keystore.put(local_keys, local_user).addCallbacks(local_added_cb, return_d.errback) # store in the local keystore
 
         client = IndxClient(remote_address, remote_box, "INDXSync Server Module", token = remote_token)
         client.generate_new_key().addCallbacks(new_remote_key_cb, return_d.errback)

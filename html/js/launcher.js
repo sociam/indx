@@ -1,5 +1,5 @@
 (function() {
-	angular.module('launcher', ['indx'])
+	angular.module('launcher', ['indx','ngRoute'])
 		.config(['$routeProvider', function($routeProvider) {
 			$routeProvider
 			.when('/', {templateUrl: 'templates/root.html', controller:"Root", requireslogin:false})
@@ -29,20 +29,6 @@
 				} catch(e) { console.error(e); }
 			}).fail(function(err) { console.error(err); });
 		} catch(e) { console.error(e); }
-	}).directive('user',function() {
-		return {
-			restrict:'E',
-			templateUrl:'templates/user.html',
-			scope:{user:"=model"},
-			replace:true
-		};
-	}).directive('userselect',function() {
-		return {
-			restrict:'E',
-			templateUrl:'templates/userselect.html',
-			scope:{users:"=model"},
-			replace:true
-		};
 	}).controller('Login',function($scope, $location, client, backbone, utils) {
 		$scope.isLocalUser = function(u) { return u && (u.type == 'local_owner' || u.type == 'local'); };
 		$scope.isOpenIDUser = function(u) { return u.type == 'openid'; };
@@ -245,6 +231,23 @@
 		};
 	});
 })();
+
+// this directive moved to toolbar.js
+// .directive('user',function() {
+// 		return {
+// 			restrict:'E',
+// 			templateUrl:'templates/user.html',
+// 			scope:{ user: "=model" },
+// 			replace:true
+// 		};
+// 	}).directive('userselect',function() {
+// 		return {
+// 			restrict:'E',
+// 			templateUrl:'templates/userselect.html',
+// 			scope:{users:"=model"},
+// 			replace:true
+// 		};
+// 	})
 // .directive('boxeslist',function() {
 // 		return {
 // 			restrict: 'E',

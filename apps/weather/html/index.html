@@ -40,6 +40,8 @@
 	    <div class='submits'>
 		    <div class="btn btn-default" ng-click="setConfig({latlngs:latlngs,sleep:sleep,box:app.box,user:app.user['@id'],password:app.password})">Set config</div>
 		    <div class="status">{{ status }}</div>
+		    <div class="output" ng-bind-html-unsafe="stdout"></div>
+   		    <div class="output">{{ stderr }}</div>
 		</div>
 	</div>	
 	<div ng-show="!(selectedUser && selectedBox)" class="main">
