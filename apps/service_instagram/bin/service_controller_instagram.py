@@ -20,7 +20,7 @@ import argparse, ast, logging, getpass, sys, urllib2, json, sys, datetime, time,
 from threading import Timer, Thread
 from indxclient import IndxClient
 from service_instagram import instagramService
-from twisted.internet.defer import Deferred as D
+from twisted.internet.defer import Deferred
 from twisted.internet import task
 from twisted.internet import reactor
 from twisted.python import log
@@ -78,7 +78,28 @@ class instagramServiceController:
 
         print "loading server instance"
         instagram_service = instagramService(self.config)
-        instagram_service.run_main_services()
+
+        def indx_cb(empty):          
+            
+            #first_run = True
+
+            logging.info("Service Controller Instagram - Running Instagram Service!")
+            #def loop_harvester():
+                #print "running harvester"
+                
+            def main_services_cb(res):
+                if res:
+                    print "Instagram Harvester Completed, now waiting an hour..."
+                else:
+                    print "Instagram harvester Failed, waiting an hour to try again..."
+
+            instagram_service.run_main_services().addCallbacks(main_services_cb, lambda failure: logging.error("Additional Callback Error"))
+
+        instagram_service.get_indx().addCallbacks(indx_cb, lambda failure: logging.error("Instagram Service Controller error logging into INDX: {0}".format(failure)))
+        
+        #reactor.run()
+
+        # instagram_service.run_main_services()
 
         # #instagram_service_two = instagramService(self.credentials, self.configs, self.instagram_add_info)
 
@@ -107,7 +128,7 @@ class instagramServiceController:
 
         # loop_harvester() 
         # first_run = False
-        # reactor.run()
+        reactor.run()
 
 
     def get_access_token_url(self):

@@ -113,7 +113,7 @@ angular
 						instagram_username:config.instagram_username,
 						instagram_search_words:config.instagram_search_words,
 						instagram_userfeed:config.instagram_userfeed,
-						instagram_user_id:config.instagram_user_id,
+						instagram_user_id:config.instagram_user_id,	
 						start:config.start,
 						instagram_auth_status:config.instagram_auth_status, 
 						access_token:config.access_token,
