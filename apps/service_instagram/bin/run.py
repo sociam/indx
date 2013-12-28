@@ -49,18 +49,32 @@ def run(args):
         #print args['config']
         config = json.loads(args['config'])
         #see if this is a config to get access token code
+        #print "Got a config of: "+str(config)
         #print len(config)
-        if 'access_token_url' in config:
-            print "Got the Access Token Config"
-            service_controler = instagramServiceController(config)
-            access_token_url = service_controler.get_access_token()
+        if 'access_token_code' in args['config']:
+            print "Got the Access Token code Config"
+            service_controler = instagramServiceController(args['config'])
+            access_token_config = service_controler.get_access_token_from_code()
+            #access_token_config = json.loads(str(access_token_config))
+            config = {}
+            config['access_token'] = access_token_config['access_token']
+            config['access_token_timestamp'] = access_token_config['access_token_timestamp']
+            config['instagram_auth_status'] = 'true'
+
+            logging.debug("received access token and confirm. for saving: {0}".format(config))
+            keyring.set_password("INDX", "INDX_Instagram_App", json.dumps(config))
+            print "Set the Access Token"+str(config)
+        elif 'access_token_url' in args['config']:
+            #print "Got the Access Token Config"
+            service_controler = instagramServiceController(args['config'])
+            access_token_url = service_controler.get_access_token_url()
             config = {}
             config['access_token_url'] = access_token_url        
             #Now save the short 
             logging.debug("received short access token config for saving: {0}".format(config))
             keyring.set_password("INDX", "INDX_Instagram_App", json.dumps(config))
         else:
-            print "Got the Main Access Token Config"
+            #print "Got the Main Access Token Config"
             logging.debug("received config for saving: {0}".format(config))
             keyring.set_password("INDX", "INDX_Instagram_App", json.dumps(config))
     elif args['get_config']:
@@ -99,6 +113,7 @@ def get_config(args):
         #stored_config = json.dumps(stored_config)
         stored_config = ast.literal_eval(stored_config)
     except:
+        print "error in get_config run: "+str(sys.exc_info()[0])
         #empty config, probably not set...
         stored_config = {'empty': True}
     #stored_config = ast.literal_eval(stored_config)

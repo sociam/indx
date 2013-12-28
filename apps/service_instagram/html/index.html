@@ -34,13 +34,17 @@
 		</table>
 		<h4>Authenticate With Instagram</h4>
 		<table class='auth_tab'>
+			<tr ng-show="get_access_token_flag"><td>Access Token Code:</td><td><input type="text" name="access_token_code" ng-model="access_token_code"></input></td></tr>
 			<tr><td> <button ng-show="!get_access_token_flag" ng-click="InstagramLogin()">Get Instagram Token</button></td></tr>
 			<tr><td>
 			<div class="btn btn-access_token"> 
 			<button ng-show="get_access_token_flag"
-			ng-click="get_instagram_access_token()">Instagram Login</button></div> 
+			ng-click="set_instagram_access_token_from_code({access_token_code:access_token_code})">Verify Token</button></div> 
 			</td></tr>
+			<tr><td>Instagram Authorised Status: </td><td> {{ instagram_auth_status }}. </td></tr>
+			<tr><td> Token set on: </td><td> {{ access_token_timestamp }}</td></tr>
 		</table>
+
 	    <h4>In order to search, please enter your instagram handle and some search terms (seperated by commas)!</h4>
 		<table class='search_params'>
 		    <tr><td>instagram Username:</td><td><input type="text" name="instagram_username" ng-model="instagram_username"></input></td></tr>

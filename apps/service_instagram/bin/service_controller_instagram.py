@@ -17,7 +17,6 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import argparse, ast, logging, getpass, sys, urllib2, json, sys, datetime, time, threading
-from datetime import datetime
 from threading import Timer, Thread
 from indxclient import IndxClient
 from service_instagram import instagramService
@@ -40,7 +39,13 @@ class instagramServiceController:
     def __init__(self, config):
         #test if only looking for access_token....
         print "in instagram service controller:: "+str(config)
-        if "access_token_url" in config:
+        if 'access_token_code' in config:
+            config_json = json.loads(config)
+            self.access_token_code = config_json['access_token_code']
+            self.client_id = client_id
+            self.client_secret = client_secret
+            self.redirect_uri = redirect_uri
+        elif 'access_token_url' in config:
             print "in instagram service controller:: "+str(config)
             self.client_id = client_id
             self.client_secret = client_secret
@@ -113,9 +118,20 @@ class instagramServiceController:
         reactor.run()
 
 
-    def get_access_token(self):
+    def get_access_token_url(self):
         api = InstagramAPI(client_id=self.client_id, client_secret=self.client_secret, redirect_uri=self.redirect_uri)
         redirect_uri = api.get_authorize_login_url(scope = self.scope)
         # if(redirect_uri):
         #     response = urllib2.urlopen(redirect_uri).read()
         return redirect_uri
+
+
+    def get_access_token_from_code(self):
+        api = InstagramAPI(client_id=self.client_id, client_secret=self.client_secret, redirect_uri=self.redirect_uri)
+        access_token = api.exchange_code_for_access_token(self.access_token_code)
+        #print "got an access token: "+str(access_token[0])
+        access_token_timestamp = str(datetime.datetime.now())
+        config = {'access_token':access_token[0], 'access_token_timestamp':access_token_timestamp, 'instagram_auth_status':True}
+        # if(redirect_uri):
+        #     response = urllib2.urlopen(redirect_uri).read()
+        return config

@@ -12,21 +12,55 @@ angular
 		};
 
 
-		$scope.get_instagram_access_token = function() {
+		var get_instagram_access_token_from_code = function(access_token_code) {
+			console.info('trying to run get_instagram_access_token_from_code');
+			s._ajax('GET', 'apps/service_instagram/api/get_config').then(function(x) { 
+					var config = x.config;
+					console.info('Success in _get_instagram_url_from_service, got config of', config)
+					// simple stuff
+					sa(function() { 
+						_($scope).extend({
+							instagram_auth_status:config.instagram_auth_status, 
+							access_token:config.access_token,
+							access_token_timestamp:config.access_token_timestamp 
+						});
+					});
+			}).fail(function(err) { 
+				console.error('could not get config ', err); 	
+			});
+		};
+
+		$scope.set_instagram_access_token_from_code = function(access_token_code) {
+			console.info('trying to run set_instagram_access_token_from_code');
+		console.info('i got a request to set Instagram Access Token code ', access_token_code);
+			s._ajax('GET', 'apps/service_instagram/api/set_config', { 	config: JSON.stringify(access_token_code) }).then(function(x) { 
+				console.info('trying to get the new config file, attempting to run new method');
+				status('configuration chage committed');
+				window.retval = x;
+				get_instagram_access_token_from_code()
+			}).fail(function(e) {
+				console.error(e);
+				status('error committing change ' + e.toString());
+			});
+		};
+
+
+		var get_instagram_access_token = function(access_token) {
 			console.info('trying to run _get_instagram_access_token');
-			var mywin = window.open($scope.access_token_url, '_blank', 'location=yes,height=570,width=520,scrollbars=yes,status=yes');
+			var mywin = window.open(access_token, '_blank', 'location=yes,height=570,width=520,scrollbars=yes,status=yes');
+			//var ele = mywin.getElementsByName('allow');
 
 			// var tokenWindow = window;
 			// tokenWindow.open($scope.access_token_url, '_blank', 'location=yes,height=570,width=520,scrollbars=yes,status=yes');
-			// tokenWindow.onchange = function(){ myUnloadEvent(); }
+			// mywin.onload = function(){ myUnloadEvent(); }
 			// var myUnloadEvent = function() {
    //  			console.info('You can have Ur Logic Here ,');
 			// }
-			var listener = function() {
-  				//tokenWindowURL = tokenWindow.document.URL
-  				console.info('New Window Has been Clicked');
-			};
-			mywin.addEventListener("onload", listener, false);
+			// ele.addEventListener("click", listener, false);
+			// var listener = function() {
+  	// 			//tokenWindowURL = tokenWindow.document.URL
+  	// 			console.info('New Window Has been Clicked');
+			// };
 		};
 
 
@@ -50,7 +84,7 @@ angular
 				console.info('Timestamp of new token: ', $scope.timestamp);
 				//window.open($scope.access_token_url, '_blank', 'location=yes,height=570,width=520,scrollbars=yes,status=yes');	
 				//_get_instagram_access_token()
-				//get_instagram_access_token()
+				get_instagram_access_token(config.access_token_url)
 				// IG.login(function (response) {
 				//     if (response.session) {
 				//         // user is logged in
@@ -84,6 +118,9 @@ angular
 						instagram_status:config.instagram_status,
 						instagram_network:config.instagram_network,
 						start:config.start,
+						instagram_auth_status:config.instagram_auth_status, 
+						access_token:config.access_token,
+						access_token_timestamp:config.access_token_timestamp,
 						step:config.step
 					});
 				});
