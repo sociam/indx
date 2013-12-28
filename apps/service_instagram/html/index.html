@@ -47,12 +47,12 @@
 
 	    <h4>In order to search, please enter your instagram handle and some search terms (seperated by commas)!</h4>
 		<table class='search_params'>
-		    <tr><td>instagram Username:</td><td><input type="text" name="instagram_username" ng-model="instagram_username"></input></td></tr>
-		    <tr><td>instagram Search Words: </td><td><input type="text" name="instagram_search_words" ng-model="instagram_search_words"></input></td></tr>
-		    <tr><td>Harvest instagram user Feed: </td><td> <input type="checkbox" ng-model="instagram_status" ng-true-value="True" ng-false-value="False"></input></td></tr>
+			<tr><td>Instagram Username: </td><td> {{ instagram_username }}</td></tr>
+		    <tr><td>Instagram Search Words: </td><td><input type="text" name="instagram_search_words" ng-model="instagram_search_words"></input></td></tr>
+		    <tr><td>Harvest instagram user feed: </td><td> <input type="checkbox" ng-model="instagram_userfeed" ng-true-value="True" ng-false-value="False"></input></td></tr>
 	    </table>
 	    <div class='submits'>
-		    <div class="btn btn-default" ng-click="setConfig({consumer_key:consumer_key, consumer_secret:consumer_secret, access_token:access_token, access_token_secret:access_token_secret, box:app.box, user:app.user['@id'], password:app.password, instagram_username:instagram_username, instagram_search_words:instagram_search_words, instagram_status:instagram_status, instagram_network:instagram_network})">Set config</div>
+		    <div class="btn btn-default" ng-click="setConfig({access_token:access_token, access_token_timestamp:access_token_timestamp, box:app.box, user:app.user['@id'], password:app.password, instagram_username:instagram_username, instagram_search_words:instagram_search_words, instagram_auth_status:instagram_auth_status, instagram_userfeed:instagram_userfeed, instagram_user_id:instagram_user_id})">Set config</div>
 		    <div class="status">{{ status }}</div>
 		</div>
 	</div>	

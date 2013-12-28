@@ -20,7 +20,8 @@ angular
 					// simple stuff
 					sa(function() { 
 						_($scope).extend({
-							instagram_auth_status:config.instagram_auth_status, 
+							instagram_auth_status:config.instagram_auth_status,
+							instagram_user_id:config.instagram_user_id, 
 							access_token:config.access_token,
 							access_token_timestamp:config.access_token_timestamp 
 						});
@@ -109,19 +110,14 @@ angular
 							box : config.box,
 							password: config.password,
 						},
-						consumer_key:config.consumer_key,
-						consumer_secret:config.consumer_secret,
-						access_token:config.access_token,
-						access_token_secret:config.access_token_secret,
 						instagram_username:config.instagram_username,
 						instagram_search_words:config.instagram_search_words,
-						instagram_status:config.instagram_status,
-						instagram_network:config.instagram_network,
+						instagram_userfeed:config.instagram_userfeed,
+						instagram_user_id:config.instagram_user_id,
 						start:config.start,
 						instagram_auth_status:config.instagram_auth_status, 
 						access_token:config.access_token,
 						access_token_timestamp:config.access_token_timestamp,
-						step:config.step
 					});
 				});
 				

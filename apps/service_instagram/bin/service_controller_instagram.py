@@ -29,6 +29,7 @@ from instagram.client import InstagramAPI
    
 logging.basicConfig(level=logging.INFO)
 
+app_id = "instagram_service"
 client_id = "e118fb9760de432cb97df38babede8d9"
 client_secret = "adec102932e44bb89511a6c33518225c"
 redirect_uri = "http://localhost:8211/"
@@ -39,7 +40,11 @@ class instagramServiceController:
     def __init__(self, config):
         #test if only looking for access_token....
         print "in instagram service controller:: "+str(config)
-        if 'access_token_code' in config:
+        if 'instagram_auth_status' in config:
+            config_json = json.loads(config)
+            self.load_parameters(config_json)
+            #print "Attempting to run: "+str(config_json)
+        elif 'access_token_code' in config:
             config_json = json.loads(config)
             self.access_token_code = config_json['access_token_code']
             self.client_id = client_id
@@ -59,63 +64,50 @@ class instagramServiceController:
 
     #load and managed parameters
     def load_parameters(self, config):
-        credentials = {}
-        configs = {}
-        instagram_add_info = {}
-        try:
-            logging.debug("instagram Service - loading Credentials....")
-            #config = json.dumps(config)
-            #config = config.replace("\"","'")
-            #config = ast.literal_eval(config)
-            #for k,v in config.iteritems():
-                #print k,v
-            credentials = {"address": config['address'], "box": config['box'], "username": config['user'], "password": config['password']} 
-            configs = {"consumer_key": config['consumer_key'], "consumer_secret": config['consumer_secret'], "access_token": config['access_token'], 
-            "access_token_secret": config['access_token_secret'], "instagram_username": config['instagram_username'], "instagram_search_words": config['instagram_search_words']}
-            try:
-                instagram_add_info = {"instagram_status":config['instagram_status'], "instagram_network":config['instagram_network']}
-            except:
-                instagram_add_info = {}
-
-            return (credentials, configs, instagram_add_info)
-        except:
-            logging.error("COULD NOT START instagram APP - NO/INCORRECT CREDENTIALS "+str(sys.exc_info()))
-            return (credentials, configs, instagram_add_info)       
-
+        self.config = config
+        self.config['app_id'] = app_id
+        # self.access_token = config.access_token
+        # self.access_token_timestamp = config.access_token_timestamp    
+        # self.instagram_username = config.instagram_username
+        # self.instagram_search_words = config.instagram_search_words
+        # self.instagram_userfeed = config.instagram_userfeed
+        # self.instagram_auth_status = config.instagram_auth_status
+        # print "parameters loaded"
 
     def load_service_instance(self):
 
-        instagram_service = instagramService(self.credentials, self.configs, self.instagram_add_info)
-        #instagram_service_two = instagramService(self.credentials, self.configs, self.instagram_add_info)
+        print "loading server instance"
+        instagram_service = instagramService(self.config)
+        instagram_service.run_main_services()
 
-        #load the main services
-        #instagram_service.run_main_services()
+        # #instagram_service_two = instagramService(self.credentials, self.configs, self.instagram_add_info)
 
-        def called(result):
-            logging.info('Service Controller instagram - Retreiving Stream')
+        # #load the main services
+        # #instagram_service.run_main_services()
+
+        # def called(result):
+        #     logging.info('Service Controller instagram - Retreiving Stream')
 
 
-        def command_die(reason):
-            logging.error('Service Controller instagram - Retreiving Stream Failed, error is {0}'.format(reason))
+        # def command_die(reason):
+        #     logging.error('Service Controller instagram - Retreiving Stream Failed, error is {0}'.format(reason))
 
         
-        first_run = True
+        # first_run = True
 
-        logging.info("Service Controller instagram - Running instagram Service!")
+        # logging.info("Service Controller instagram - Running instagram Service!")
 
-        def loop_harvester():
-            #print "running harvester"
-            instagram_service.run_additional_services()
-            #if not first_run:
-                #instagram_service.run_main_services()
-            logging.debug("setting up Reactor loop...")
-            reactor.callLater(10.0, instagram_service.run_main_services());
+        # def loop_harvester():
+        #     #print "running harvester"
+        #     instagram_service.run_additional_services()
+        #     #if not first_run:
+        #         #instagram_service.run_main_services()
+        #     logging.debug("setting up Reactor loop...")
+        #     reactor.callLater(10.0, instagram_service.run_main_services());
 
-        loop_harvester() 
-
-        first_run = False
-
-        reactor.run()
+        # loop_harvester() 
+        # first_run = False
+        # reactor.run()
 
 
     def get_access_token_url(self):
@@ -131,7 +123,10 @@ class instagramServiceController:
         access_token = api.exchange_code_for_access_token(self.access_token_code)
         #print "got an access token: "+str(access_token[0])
         access_token_timestamp = str(datetime.datetime.now())
-        config = {'access_token':access_token[0], 'access_token_timestamp':access_token_timestamp, 'instagram_auth_status':True}
+        instagram_username = access_token[1]['username']
+        instagram_user_id = access_token[1]['id']
+        #print instagram_username
+        config = {'access_token':access_token[0], 'access_token_timestamp':access_token_timestamp, 'instagram_auth_status':'True', 'instagram_username':instagram_username, 'instagram_user_id':instagram_user_id}
         # if(redirect_uri):
         #     response = urllib2.urlopen(redirect_uri).read()
         return config

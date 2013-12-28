@@ -52,18 +52,17 @@ def run(args):
         #print "Got a config of: "+str(config)
         #print len(config)
         if 'access_token_code' in args['config']:
-            print "Got the Access Token code Config"
+            #print "Got the Access Token code Config"
             service_controler = instagramServiceController(args['config'])
             access_token_config = service_controler.get_access_token_from_code()
             #access_token_config = json.loads(str(access_token_config))
-            config = {}
-            config['access_token'] = access_token_config['access_token']
-            config['access_token_timestamp'] = access_token_config['access_token_timestamp']
-            config['instagram_auth_status'] = 'true'
-
+            # config = {}
+            # config['access_token'] = access_token_config['access_token']
+            # config['access_token_timestamp'] = access_token_config['access_token_timestamp']
+            # config['instagram_auth_status'] = 'true'
             logging.debug("received access token and confirm. for saving: {0}".format(config))
-            keyring.set_password("INDX", "INDX_Instagram_App", json.dumps(config))
-            print "Set the Access Token"+str(config)
+            keyring.set_password("INDX", "INDX_Instagram_App", json.dumps(access_token_config))
+            #print "Set the Access Token"+str(config)
         elif 'access_token_url' in args['config']:
             #print "Got the Access Token Config"
             service_controler = instagramServiceController(args['config'])
@@ -84,19 +83,11 @@ def run(args):
         config = keyring.get_password("INDX", "INDX_Instagram_App")
         logging.debug("running the app with: {0}".format(config))
         config = json.loads(config)
-        #config = config.replace("\\\"","'")
-        #config = ast.literal_eval(ast.literal_eval(config))
         address = args['server']
         config['address'] = address
-        #config = json.loads(config)
-        #logging.info("In instagram Run - With new config file JSON {0}".format(config))
-        #to_add = {}
-        #to_add = {"address": address}
-        #config_new = (config, to_add)
         logging.debug("In instagram Run - With new config file {0}".format(config))
-        #test run with configs
         #instagram_service = TwitterService(config)
-        service_controler = instagramServiceController(config)
+        service_controler = instagramServiceController(json.dumps(config))
         service_controler.load_service_instance()
         time.sleep(2)
 
