@@ -50,13 +50,28 @@ class instagramService:
         main_services_d = Deferred()
         try:
             print "running instagram main services"
-            self.find_followers(self.config['instagram_user_id'])
-            self.get_authenticated_user_feed()
-            self.get_popular_media()
-            self.subscribe_to_objects_by_tag(self.config['instagram_search_words'])
+
+            def find_followers_cb(res):
+
+                def find_friends_cb(res):
+
+                    def get_authen_user_feed_cb(res):
+
+                        def get_popular_media_cb(res):
+
+                            main_services_d.callback(True)                        
+
+                        self.get_popular_media().addCallbacks(get_popular_media_cb, lambda failure: logging.error("Update Error {0}".format(failure)))
+
+                    self.get_authenticated_user_feed().addCallbacks(get_authen_user_feed_cb, lambda failure: logging.error("Update Error {0}".format(failure)))
+            
+                self.find_friends(self.config['instagram_user_id']).addCallbacks(find_friends_cb, lambda failure: logging.error("Update Error{0}".format(failure)))
+
+            self.find_followers(self.config['instagram_user_id']).addCallbacks(find_followers_cb, lambda failure: logging.error("Update Error{0}".format(failure)))
+            #self.subscribe_to_objects_by_tag(self.config['instagram_search_words'])
         except:
             logging.debug('Service Instagram - Could not run main service due to error: {0}'.format(sys.exc_info()))
-        main_services_d.callback(True)
+
         return main_services_d
 
     def get_indx(self):
@@ -84,58 +99,112 @@ class instagramService:
         return return_d
 
 
-    def insert_object_to_indx(self, service, obj):
-     
-        try:
-            if len(obj)>0:
-                response = service.indx_con.update(service.version, obj)
-                logging.debug("Inserted Object into INDX: ".format(response))
-        except Exception as e:
-            if isinstance(e, urllib2.HTTPError): # handle a version incorrect error, and update the version
-                if e.code == 409: # 409 Obsolete
-                    response = e.read()
-                    json_response = json.loads(response)
-                    service.version = json_response['@version']
-                    logging.debug('INDX insert error in instagram Service Object: '+str(response))
-                    try:
-                        response = service.indx_con.update(service.version, obj)
-                        logging.debug('instagram Service - Successfully added Objects into Box')
-                    except:
-                        logging.error('instagram Service, error on insert {0}'.format(response))
-                else:
-                    logging.error('instagram Service Unknow error: {0}'.format(e.read()))
-            else:
-                logging.error("Error updating INDX: {0}".format(e))
-
-
     def get_authenticated_user_feed(self):
+        auth_d = Deferred()
         print "Getting Auth User's feed"
         user_feed = self.api.user_media_feed()
-        for feed in user_feed:
-            print feed
+
+        current_timestamp = str(datetime.now())
+        uniq_id = "user_feed_at_"+current_timestamp
+        user_feed_objs = {"@id":uniq_id, "app_object": appid, "timestamp":current_timestamp, "user_feed": user_feed}
+        # print user_feed_objs
+
+        def update_cb(re):
+            logging.debug("network harvest async worked {0}".format(re))
+            auth_d.callback(True)
+
+        def update_cb_fail(re):
+            logging.error("network harvest async failed {0}".format(re))
+            auth_d.errback
+
+        self.insert_object_to_indx(user_feed_objs).addCallbacks(update_cb, update_cb_fail)
+        
+        return auth_d
+        # for feed in user_feed:
+        #     print feed
 
     def get_searched_media(self, search_terms):
         print "getting searched media for terms: "+str(search_terms)
         returned_results, page_num = self.api.tag_search(search_terms, 20)
-        for result in returned_results:
-            print result
+        return returned_results
+        # for result in returned_results:
+        #     print result
 
     def get_popular_media(self):
+        pop_d = Deferred()
         print "getting popular media"
         popular_media = self.api.media_popular(count=20)
-        for media in popular_media:
-            print media.images['standard_resolution'].url
+
+        current_timestamp = str(datetime.now())
+        uniq_id = "popular_media_at_"+current_timestamp
+        popular_media_objs = {"@id":uniq_id, "app_object": appid, "timestamp":current_timestamp, "popular_media": popular_media}
+        # print popular_media_objs
+
+        def update_cb(re):
+            logging.debug("network harvest async worked {0}".format(re))
+            pop_d.callback(True)
+
+        def update_cb_fail(re):
+            logging.error("network harvest async failed {0}".format(re))
+            pop_d.errback
+
+        self.insert_object_to_indx(popular_media_objs).addCallbacks(update_cb, update_cb_fail)
+
+        return pop_d
+
 
     def find_user(self, username):
         data = self.api.user_search(username, count=20)
         print data
 
     def find_followers(self, userid):
+        follower_d = Deferred()
         print "getting followers of user: "+str(userid)
         followed_by = self.api.user_followed_by(userid)
-        print followed_by
 
+        current_timestamp = str(datetime.now())
+        uniq_id = "followers_at_"+current_timestamp
+        followed_by_objs = {"@id":uniq_id, "app_object": appid, "timestamp":current_timestamp, "followed_by_list": followed_by}
+        # print followed_by_objs
+        #for friend in friends_list:
+            #print friend
+        #now append the results
+        def update_cb(re):
+            logging.debug("network harvest async worked {0}".format(re))
+            follower_d.callback(True)
 
+        def update_cb_fail(re):
+            logging.error("network harvest async failed {0}".format(re))
+            follower_d.errback
+
+        self.insert_object_to_indx(followed_by_objs).addCallbacks(update_cb, update_cb_fail)
+        
+        return follower_d
+        # print followed_by
+
+    def find_friends(self, userid):
+        friends_d = Deferred()
+        print "getting friends of user: "+str(userid)
+        friends_by_list = self.api.user_follows(userid)
+        current_timestamp = str(datetime.now())
+        uniq_id = "friends_at_"+current_timestamp
+        friends_by_objs = {"@id":uniq_id, "app_object": appid, "timestamp":current_timestamp, "friends_by_list": friends_by_list}
+        # print friends_by_objs
+        #for friend in friends_list:
+            #print friend
+        #now append the results
+        def update_cb(re):
+            logging.debug("network harvest async worked {0}".format(re))
+            friends_d.callback(True)
+
+        def update_cb_fail(re):
+            logging.error("network harvest async failed {0}".format(re))
+            friends_d.errback
+
+        self.insert_object_to_indx(friends_by_objs).addCallbacks(update_cb, update_cb_fail)
+        
+        return friends_d
+        # print followed_by
 
     def subscribe_to_objects_by_tag(self,search_terms):
 
@@ -148,7 +217,43 @@ class instagramService:
 
 
 
+    def insert_object_to_indx(self, obj):
 
+        update_d = Deferred()
+
+        def update_cb(resp):
+            self.version = resp['data']['@version']
+            logging.debug("Succesfully Updated INDX with Objects in update_cb, new diff version of {0}".format(self.version))
+            #logging.debug("Inserted Object into INDX: ".format(resp))
+            update_d.callback(True)
+            #return update_d
+            #time.sleep(2)
+
+        def exception_cb(e, service=self, obj=obj):
+            logging.debug("Exception Inserting into INDX, probably wrong version given")
+            if isinstance(e.value, urllib2.HTTPError): # handle a version incorrect error, and update the version
+                if e.value.code == 409: # 409 Obsolete
+                    response = e.value.read()
+                    json_response = json.loads(response)
+                    service.version = json_response['@version']
+                    logging.debug('INDX insert error in Twitter Service Object: '+str(response))
+                    try:
+                        service.indx_con.update(service.version, obj).addCallbacks(update_cb, exception_cb)
+                        #logging.debug('Twitter Service - Successfully added Objects into Box')
+                    except:
+                        logging.error('Twitter Service, error on insert {0}'.format(response))
+                        update_d.errback(e.value)
+                else:
+                    logging.error('Twitter Service Unknow error: {0}'.format(e.value.read()))
+                    update_d.errback(e.value)
+            else:
+                logging.error("Error updating INDX: {0}".format(e.value))
+                update_d.errback(e.value)
+        
+        logging.debug("in service_tweets - Trying to insert into indx...Current diff version: {0} and objects (len) given {1}".format(self.version, len(obj)))
+        self.indx_con.update(self.version, obj).addCallbacks(update_cb, exception_cb)
+        
+        return update_d
 
 #subscribe_to_objects_by_tag()
 
