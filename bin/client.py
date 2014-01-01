@@ -206,7 +206,7 @@ class CLIClient:
              or query="{ 'firstname': 'dan' }"           
         """
         logging.debug("Querying server '{0}' in box '{1}' with depth '{2}'".format(self.args['server'], self.args['box'], self.args['depth']))
-        return self.indx.query(self.args['query'], depth = self.args['depth'])
+        return self.indx.query(self.args['query'], depth = int(self.args['depth']))
 
 
     def diff(self):

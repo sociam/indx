@@ -252,7 +252,7 @@ class BoxHandler(BaseHandler):
         token = self.get_token(request)
         if not token:
             return self.return_forbidden(request)
-        depth = self.get_arg(request, "depth")
+        depth = int(self.get_arg(request, "depth"))
 
         def err_cb(failure):
             failure.trap(Exception)

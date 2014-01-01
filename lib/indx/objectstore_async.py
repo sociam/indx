@@ -230,19 +230,21 @@ class ObjectStoreAsync:
         def conn_cb(conn):
             logging.debug("Objectstore query, conn_cb")
 
-            def results(rows):
+            def results_cb(rows):
+                logging.debug("Objectstore query, results_cb")
                 graph = Graph.from_rows(rows)
 
                 def expanded_cb(empty):
+                    logging.debug("Objectstore query, expanded_cb")
                     if render_json:
                         objs_out = graph.to_json()
                         result_d.callback(objs_out)
                     else:
                         result_d.callback(graph)
 
-                graph.expand_depth(depth, conn).addCallbacks(expanded_cb, result_d.errback)
+                graph.expand_depth(depth, self).addCallbacks(expanded_cb, result_d.errback)
 
-            conn.runQuery(sql, params).addCallbacks(results, result_d.errback)
+            conn.runQuery(sql, params).addCallbacks(results_cb, result_d.errback)
         
         self.conns['conn']().addCallbacks(conn_cb, result_d.errback)
 

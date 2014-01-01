@@ -1,0 +1,36 @@
+[
+    {
+      "@id": "obj1",
+      "depth": [1],
+      "child": [
+        {
+            "depth": [2],
+            "child": [
+                {
+                    "depth": [3],
+                    "child": [
+                        {
+                            "depth": [4],
+                            "child": [
+                                {
+                                    "depth": [5],
+                                    "child": [
+                                        {
+                                            "depth": [6],
+                                            "child": [
+                                                {
+                                                    "depth": [7]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+      ]
+    }
+]
