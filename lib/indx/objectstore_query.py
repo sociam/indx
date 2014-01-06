@@ -22,10 +22,10 @@ class ObjectStoreQuery:
 
     exact_types = [types.IntType, types.LongType, types.BooleanType, types.FloatType, types.StringType, types.UnicodeType]
     operator_map = {
-        "gt": ">",
-        "lt": "<",
-        "ge": ">=",
-        "le": "<="
+        "$gt": ">",
+        "$lt": "<",
+        "$ge": ">=",
+        "$le": "<="
     }
     logical_map = {
         "$or": "OR",
@@ -97,7 +97,7 @@ class ObjectStoreQuery:
                 # when the value is a dict, then we check to see what it means
                 # looks like this:
                 # 
-                # {"number": {"ge": 5} }   - means number >= 5
+                # {"number": {"$ge": 5} }   - means number >= 5
 
                 acted = False # track to see if we did anything, raise an exception if we didnt
 
