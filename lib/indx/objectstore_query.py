@@ -102,14 +102,19 @@ class ObjectStoreQuery:
                 acted = False # track to see if we did anything, raise an exception if we didnt
 
                 # looks for an operator in the map, ignores keys we don't know
-                for operator in self.operator_map:
+                for operator, sub_val in self.operator_map.items():
                     if operator in val:
-                        subval = val[operator]
-                        wheres.extend(self.do_join(predicate, subval, operator = self.operator_map[operator]))
+                        wheres.extend(self.do_join(predicate, sub_val, operator = self.operator_map[operator]))
                         acted = True
+                        break
 
+                # if there was an operator, then we use it, otherwise we do submatches on them as keys
                 if not acted:
-                    raise InvalidObjectQueryException("No valid operator in val: {0}".format(val))
+                    sub_wheres = []
+                    for sub_item in val:
+                        sub_wheres.extend(self.process_predicates(sub_item))
+                    
+                    wheres.append(" AND ".join(sub_wheres))
 
             else:
                 raise InvalidObjectQueryException("Invalid type of val: {0}".format(val))
@@ -147,6 +152,9 @@ class ObjectStoreQuery:
         sql = "SELECT DISTINCT {0} FROM wb_v_latest_triples {1}".format(", ".join(selects), " ".join(self.joins))
         if len(wheres) > 0:
             sql += " WHERE {0}".format(" AND ".join(wheres))
+
+        logging.debug("ObjectStoreQuery to_sql, sql: {0}, params: {1}".format(sql, self.params))
+
         return (sql, self.params)
 
 class InvalidObjectQueryException(Exception):

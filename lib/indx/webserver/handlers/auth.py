@@ -76,10 +76,7 @@ class AuthHandler(BaseHandler):
         def fail():
             logging.debug("Login request fail, origin: {0}".format(self.get_origin(request)))
             wbSession = self.get_session(request)
-            wbSession.setAuthenticated(False)
-            wbSession.setUser(None)
-            wbSession.setUserType(None)
-            wbSession.setPassword(None)            
+            wbSession.reset()
             self.return_unauthorized(request)
 
         self.database.auth(user,pwd).addCallback(lambda loggedin: win() if loggedin else fail())
@@ -91,10 +88,7 @@ class AuthHandler(BaseHandler):
         def fail():
             logging.debug("Login request fail, origin: {0}".format(self.get_origin(request)))
             wbSession = self.get_session(request)
-            wbSession.setAuthenticated(False)
-            wbSession.setUser(None)
-            wbSession.setUserType(None)
-            wbSession.setPassword(None)            
+            wbSession.reset()
             return self.return_unauthorized(request)
 
         SSH_MSG_USERAUTH_REQUEST = "50"
@@ -111,6 +105,7 @@ class AuthHandler(BaseHandler):
         keystore_results = self.webserver.keystore.get(key_hash)
         key = keystore_results['key']
         user = keystore_results['user']
+        box = keystore_results['box']
 
         sessionid = request.getSession().uid
 
@@ -127,6 +122,7 @@ class AuthHandler(BaseHandler):
         wbSession.setUser(user)
         wbSession.setUserType("auth")
         wbSession.setPassword("")
+        wbSession.limit_boxes = [box] # only allow access to this box
         self.return_ok(request)
 
 
@@ -134,10 +130,7 @@ class AuthHandler(BaseHandler):
         """ User logged out (GET, POST) """
         logging.debug("Logout request, origin: {0}".format(self.get_origin(request)))
         wbSession = self.get_session(request)
-        wbSession.setAuthenticated(False)
-        wbSession.setUser(None)
-        wbSession.setUserType(None)
-        wbSession.setPassword(None)        
+        wbSession.reset()
         self.return_ok(request)
 
     def auth_whoami(self, request):
@@ -174,6 +167,11 @@ class AuthHandler(BaseHandler):
 
         wbSession = self.get_session(request)
         if not wbSession.is_authenticated:
+            return self.return_unauthorized(request)
+
+        # if this auth session is limited to a list of boxes, then only allow getting a token to them. 
+        limit_boxes = wbSession.limit_boxes
+        if limit_boxes is not None and boxid not in limit_boxes:
             return self.return_unauthorized(request)
 
         username = wbSession.username

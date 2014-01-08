@@ -195,6 +195,14 @@ class Resource:
 
         self.model[property].append(value)
 
+    def getOne(self, property):
+        """ Get the first value of a property. If it does not exist, returns None. """
+        values = self.get(property)
+        if values is None:
+            return None
+        else:
+            return values[0]
+    
     def get(self, property):
         """ Get the values of a property. If it does not exist, returns None. """
 

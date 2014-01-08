@@ -23,18 +23,23 @@ class ISession(Interface):
     password = Attribute("Password of the authenticated user.")    
     openid_session = Attribute("OpenID Session")
     openid_redirect = Attribute("OpenID Redirect URL")
+    limit_boxes = Attribute("Limit Auth to Boxes")
 
 class INDXSession(object):
     """ Stored per user session to record if the user is authenticated etc. """
     implements(ISession)
 
     def __init__(self, session, webserver):
+        self.reset()
+
+    def reset(self):
         self.is_authenticated = False
         self.username = None
         self.password = None
         self.usertype = None
         self.openid_session = {}
         self.openid_redirect = None
+        self.limit_boxes = None
 
     def setAuthenticated(self, val):
         self.is_authenticated = val

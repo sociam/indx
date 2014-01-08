@@ -17,6 +17,7 @@
 import logging
 import json
 import uuid
+import copy
 from indx.crypto import generate_rsa_keypair
 from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
@@ -40,6 +41,8 @@ class IndxSync:
         NS_ROOT_BOX + u"payload",
         NS_ROOT_BOX + u"message",
     ]
+
+    APPID = "INDXSync Client Model"
 
     def __init__(self, root_store, database, url, keystore):
         """ Initialise with the root box and connection to the INDX db.
@@ -181,10 +184,12 @@ class IndxSync:
                 {   "@id": local_keys['public-hash'],
                     "type": [ {"@value": "http://indx.ecs.soton.ac.uk/ontology/root-box/#key"} ],
                     "public-key": [ {"@value": local_keys['public']} ], # share the full public keys everywhere (private keys only in respective server's keystores)
+                    "public-hash": [ {"@value": local_keys['public-hash']} ], # share the full public keys everywhere (private keys only in respective server's keystores)
                 },
                 {   "@id": remote_keys['public-hash'],
                     "type": [ {"@value": "http://indx.ecs.soton.ac.uk/ontology/root-box/#key"} ],
                     "public-key": [ {"@value": remote_keys['public']} ], # share the full public keys everywhere
+                    "public-hash": [ {"@value": remote_keys['public-hash']} ], # share the full public keys everywhere
                 },
             ]
 
@@ -204,9 +209,9 @@ class IndxSync:
                 self.root_store._get_latest_ver().addCallbacks(ver_cb, return_d.errback)
 
             # add the local key to the local store
-            self.keystore.put(local_keys, local_user).addCallbacks(local_added_cb, return_d.errback) # store in the local keystore
+            self.keystore.put(local_keys, local_user, self.root_store.boxid).addCallbacks(local_added_cb, return_d.errback) # store in the local keystore
 
-        client = IndxClient(remote_address, remote_box, "INDXSync Server Module", token = remote_token)
+        client = IndxClient(remote_address, remote_box, self.APPID, token = remote_token)
         client.generate_new_key().addCallbacks(new_remote_key_cb, return_d.errback)
         return return_d
 
@@ -216,31 +221,59 @@ class IndxSync:
         logging.debug("IndxSync sync_boxes")
         return_d = Deferred()
 
-        for user in self.model[NS_ROOT_BOX + u"user"]:
-            userid = user.id
-            logging.debug("IndxSync sync_boxes user: {0}".format(userid))
-            servers = user.get("server")
-            for server in servers:
-                url = server.get("url")
-                if url is None:
-                    continue
-                url = url[0].value
-                logging.debug("IndxSync sync_boxes, server URL for userid {0}: {1}".format(userid, url))
-                for box in server.get("box"):
-                    name = box.get("name")
-                    if name is None:
-                        continue
-                    name = name[0].value
-                    if box.get("root-box") is not None:
-                        logging.debug("IndxSync sync_boxes user {0}, server {1}, box {2} is root box".format(userid, url, name))
+        all_models = copy.copy(self.models)
 
-                        #if box.get("keys") is None:
-                        #    # no keys - need to generate
+        def next_model(empty):
+            logging.debug("IndxSync sync_boxes next_model")
 
+            if len(all_models) < 1:
+                return_d.callback(True)
+                return
 
-        return_d.callback(True)
+            model = all_models.pop(0)
 
+            # get up-to-date required information from the synced box
+            remote_server_url = None
+            remote_box = None
+            local_key_hash = None
+
+            for box in model.get(NS_ROOT_BOX + u"boxes"):
+                boxid = box.get("box")
+                if boxid != self.root_store.boxid:
+                    # remote box
+                    remote_server_url = box.getOne("server-url")
+                    remote_box = box.getOne("box")
+                else:
+                    # local box
+                    local_key = box.getOne("key")
+                    local_key_hash = local_key.getOne("public-hash")
+
+            local_key = self.keystore.get(local_key_hash)
+            
+            # start sync 
+            clientauth = IndxClientAuth(remote_server_url, self.APPID)
+
+            def authed_cb(empty):
+                logging.debug("IndxSync sync_boxes authed_cb")
+
+                def token_cb(remote_token):
+                    logging.debug("IndxSync sync_boxes token_cb")
+                    client = IndxClient(remote_server_url, remote_box, self.APPID, client = clientauth.client, token = remote_token)
+                    
+                    # compare local version to previous, and update one of them, or both
+
+                clientauth.get_token(remote_box).addCallbacks(token_cb, return_d.errback)
+
+            clientauth.auth_keys(local_key['private'], local_key_hash).addCallbacks(authed_cb, return_d.errback)
+
+        next_model(None)
         return return_d
+
+    def get_last_version(self, remote_server_url, remote_box):
+        """ Get the last version seen (consumed) of a remote box. """
+        query = {
+            "link": "foo",
+        }
 
 
     def update_model_query(self, initial_query = False):
@@ -251,13 +284,6 @@ class IndxSync:
         logging.debug("IndxSync update_model_query on box {0}".format(self.root_store.boxid))
         result_d = Deferred()
 
-        # query for all objects of the types in our list of interesting types
-        type_queries = []
-        for typ in self.TYPES:
-            type_queries.append({"type": typ})
-
-        q_objs = {"$or": type_queries}
-
         def objs_cb(graph):
             logging.debug("IndxSync update_model_query, objs_cb, graph: {0}".format(graph))
             
@@ -265,22 +291,24 @@ class IndxSync:
                 # populate the watched_objs list
                 self.watched_objs = graph.objects().keys()
 
-            # reset model, index by type URI
-            self.model = {
-            }
-            for typ in self.TYPES: self.model[typ] = []
+            self.models = []
 
-            for id, obj in graph.objects().items():
-                vals = obj.get("type")
-                if vals:
-                    for typ in self.TYPES:
-                        for val in vals:
-                            if isinstance(val, Literal) and val.value == typ:
-                                self.model[typ].append(obj) 
+            for id in graph.root_object_ids:
+                link_obj = graph.get(id)
+
+                contains_box = False
+                for box_obj in link_obj.get("boxes"):
+                    if self.root_store.boxid in box_obj.get("box"):
+                        contains_box = True
+                        break
+
+                # this link object involves this boxid - put it in the models list
+                if contains_box:
+                    self.models.append(link_obj)
 
             result_d.callback(True) # for the initial call to succeed
 
-        self.root_store.query(q_objs, render_json = False).addCallbacks(objs_cb, result_d.errback)
-
+        # query for each link, and return objects 4 deep
+        self.root_store.query({"type": NS_ROOT_BOX + u"link"}, depth = 4,render_json = False).addCallbacks(objs_cb, result_d.errback)
         return result_d
 

@@ -25,12 +25,12 @@ class IndxKeystore:
     def __init__(self, db):
         self.db = db
 
-    def put(self, key, username):
+    def put(self, key, username, boxid):
         """ Store a key in the keystore. """
         return_d = Deferred()
 
-        query = "INSERT INTO tbl_keystore (public_hash, public_key, private_key, username) VALUES (%s, %s, %s, %s)"
-        params = [key['public-hash'], key['public'], key['private'], username]
+        query = "INSERT INTO tbl_keystore (public_hash, public_key, private_key, username, box) VALUES (%s, %s, %s, %s, %s)"
+        params = [key['public-hash'], key['public'], key['private'], username, boxid]
 
         self.db.runOperation(query, params).addCallbacks(return_d.callback, return_d.errback)
         return return_d
@@ -39,7 +39,7 @@ class IndxKeystore:
         """ Get a key from the store, by the hash of the public key. """
         return_d = Deferred()
 
-        query = "SELECT public_hash, public_key, private_key, username FROM tbl_keystore WHERE public_hash = %s"
+        query = "SELECT public_hash, public_key, private_key, username, box FROM tbl_keystore WHERE public_hash = %s"
         params = [public_hash]
 
         def queried_cb(rows):
@@ -47,8 +47,10 @@ class IndxKeystore:
                 return_d.callback(None) # no key, return nothing
                 return
 
-            key = {"public-hash": rows[0][0], "public": rows[0][1], "private": rows[0][2]}
-            return_d.callback({"username": rows[0][3], "key": key})
+            public_hash, public_key, private_key, username, boxid = rows[0]
+
+            key = {"public-hash": public_hash, "public": public_key, "private": private_key}
+            return_d.callback({"username": username, "box": boxid, "key": key})
         
         self.db.runQuery(query, params).addCallbacks(queried_cb, return_d.errback)
         return return_d
