@@ -64,6 +64,35 @@ class ObjectStoreQuery:
         return wheres
 
 
+# SELECT DISTINCT wb_v_latest_triples.triple_order, wb_v_latest_triples.subject, wb_v_latest_triples.predicate, wb_v_latest_triples.obj_value, wb_v_latest_triples.obj_type, wb_v_latest_triples.obj_lang, wb_v_latest_triples.obj_datatype
+# 
+# FROM wb_v_latest_triples
+# 
+# WHERE wb_v_latest_triples.subject = ALL
+#     (
+#       SELECT DISTINCT subj_2.subject FROM wb_v_latest_triples AS subj_2
+#          WHERE (subj_2.predicate = 'boxes'
+# 	        AND subj_2.obj_value = ALL
+# 	            (SELECT DISTINCT subj_1.subject FROM wb_v_latest_triples AS subj_1
+#                         WHERE (subj_1.predicate = 'box' AND subj_1.obj_value = 'box1')
+#                      INTERSECT
+#                      SELECT DISTINCT subj_1.subject FROM wb_v_latest_triples AS subj_1
+#                         WHERE (subj_1.predicate = 'box' AND subj_1.obj_value = 'box2')
+#                     )
+#                )
+#     INTERSECT SELECT DISTINCT subj_2.subject FROM wb_v_latest_triples AS subj_2
+#          WHERE (subj_2.predicate = 'boxes'
+# 	        AND subj_2.obj_value = ALL
+# 	            (SELECT DISTINCT subj_1.subject FROM wb_v_latest_triples AS subj_1
+#                         WHERE (subj_1.predicate = 'box' AND subj_1.obj_value = 'box2')
+#                         -- UNION / INTERSECT
+#                     )
+#                )  
+#     )
+# 
+
+
+
     def process_predicates(self, q):
         """ Process a query and return the query fragment (without surrounding SELECT / FROM etc) about the predicates.
             This function is recursable.
@@ -111,8 +140,9 @@ class ObjectStoreQuery:
                 # if there was an operator, then we use it, otherwise we do submatches on them as keys
                 if not acted:
                     sub_wheres = []
-                    for sub_item in val:
-                        sub_wheres.extend(self.process_predicates(sub_item))
+                    #for sub_item in val:
+                    #    sub_wheres.extend(self.process_predicates(sub_item))
+                    sub_wheres.extend(self.process_predicates(val))
                     
                     wheres.append(" AND ".join(sub_wheres))
 
