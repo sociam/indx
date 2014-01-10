@@ -24,7 +24,7 @@ from twisted.python.failure import Failure
 from indx.objectstore_types import Literal
 from indxclient import IndxClient, IndxClientAuth
 
-NS_ROOT_BOX = u"http://indx.ecs.soton.ac.uk/ontology/root-box/#"
+NS_ROOT_BOX = "http://indx.ecs.soton.ac.uk/ontology/root-box/#"
 
 class IndxSync:
     """ Handle Indx Synchronisation of data across multiple boxes/servers. """
@@ -33,13 +33,13 @@ class IndxSync:
     # if any object of these types are added/changed/deleted in a diff, then we re-run the sync queries against the box
     # (i.e. where the following are the in the list of values of the property "type")
     TYPES = [
-        NS_ROOT_BOX + u"box",
-        NS_ROOT_BOX + u"link",
-        NS_ROOT_BOX + u"key",
-        NS_ROOT_BOX + u"server",
-        NS_ROOT_BOX + u"user",
-        NS_ROOT_BOX + u"payload",
-        NS_ROOT_BOX + u"message",
+        NS_ROOT_BOX + "box",
+        NS_ROOT_BOX + "link",
+        NS_ROOT_BOX + "key",
+        NS_ROOT_BOX + "server",
+        NS_ROOT_BOX + "user",
+        NS_ROOT_BOX + "payload",
+        NS_ROOT_BOX + "message",
     ]
 
     APPID = "INDXSync Client Model"
@@ -168,6 +168,8 @@ class IndxSync:
                     "boxes": [ {"@id": "box-{0}".format(local_key_uid)}, # links to the objs below
                                {"@id": "box-{0}".format(remote_key_uid)}, # links to the objs below
                              ],
+                    "statuses": [
+                    ],
                 },
                 {   "@id": "box-{0}".format(local_key_uid),
                     "type": [ {"@value": "http://indx.ecs.soton.ac.uk/ontology/root-box/#box"} ],
@@ -230,51 +232,105 @@ class IndxSync:
                 return_d.callback(True)
                 return
 
-            model = all_models.pop(0)
+            model_id = all_models.pop(0)
 
-            # get up-to-date required information from the synced box
-            remote_server_url = None
-            remote_box = None
-            local_key_hash = None
+            def model_cb(model_graph):
+                logging.debug("IndxSync sync_boxes model_cb")
+                model = model_graph.get(model_id)
 
-            for box in model.get(NS_ROOT_BOX + u"boxes"):
-                boxid = box.get("box")
-                if boxid != self.root_store.boxid:
-                    # remote box
-                    remote_server_url = box.getOne("server-url")
-                    remote_box = box.getOne("box")
-                else:
-                    # local box
-                    local_key = box.getOne("key")
-                    local_key_hash = local_key.getOne("public-hash")
+                # get up-to-date required information from the synced box
+                remote_server_url = None
+                remote_box = None
+                local_key_hash = None
 
-            local_key = self.keystore.get(local_key_hash)
-            
-            # start sync 
-            clientauth = IndxClientAuth(remote_server_url, self.APPID)
+                # TODO use model_id to get model from root_store
 
-            def authed_cb(empty):
-                logging.debug("IndxSync sync_boxes authed_cb")
+                for box in model.get(NS_ROOT_BOX + "boxes"):
+                    boxid = box.get("box")
+                    if boxid != self.root_store.boxid:
+                        # remote box
+                        remote_server_url = box.getOne("server-url")
+                        remote_box = box.getOne("box")
+                    else:
+                        # local box
+                        local_key = box.getOne("key")
+                        local_key_hash = local_key.getOne("public-hash")
 
-                def token_cb(remote_token):
-                    logging.debug("IndxSync sync_boxes token_cb")
-                    client = IndxClient(remote_server_url, remote_box, self.APPID, client = clientauth.client, token = remote_token)
-                    
-                    # compare local version to previous, and update one of them, or both
+                local_key = self.keystore.get(local_key_hash)
+                
+                # start sync 
+                clientauth = IndxClientAuth(remote_server_url, self.APPID)
 
-                clientauth.get_token(remote_box).addCallbacks(token_cb, return_d.errback)
+                def authed_cb(empty):
+                    logging.debug("IndxSync sync_boxes authed_cb")
 
-            clientauth.auth_keys(local_key['private'], local_key_hash).addCallbacks(authed_cb, return_d.errback)
+                    def token_cb(remote_token):
+                        logging.debug("IndxSync sync_boxes token_cb")
+                        client = IndxClient(remote_server_url, remote_box, self.APPID, client = clientauth.client, token = remote_token)
+                        
+                        # compare local version to previous, and update one of them, or both
+                        self.update_to_latest_version(client, remote_server_url, remote_box).addCallbacks(next_model, return_d.errback)
+
+                    clientauth.get_token(remote_box).addCallbacks(token_cb, return_d.errback)
+
+                clientauth.auth_keys(local_key['private'], local_key_hash).addCallbacks(authed_cb, return_d.errback)
+
+            self.root_store.get_latest_objs([model_id], render_json = False).addCallbacks(model_cb, return_d.errback)
 
         next_model(None)
         return return_d
 
-    def get_last_version(self, remote_server_url, remote_box):
-        """ Get the last version seen (consumed) of a remote box. """
-        query = {
-            "link": "foo",
-        }
 
+    def update_to_latest_version(self, remote_indx_client, remote_server_url, remote_box):
+        """ Get the last version seen (consumed) of a remote box. """
+        logging.debug("IndxSync update_to_latest_version of server {0} and box {1}".format(self.remote_server_url, self.remote_box))
+
+        # updates the local box to the latest version of the remote box
+
+        result_d = Deferred()
+
+        query = { "type": self.NS_ROOT_BOX + "status",
+                  "src-boxid": remote_box,
+                  "src-server-url": remote_server_url,
+                  "dst-boxid": self.root_store.boxid,
+                  "dst-server-url": self.url,
+                  # "last-version-seen": 5
+                }
+
+        def objs_cb(graph):
+            logging.debug("IndxSync update_to_latest_version, objs_cb, graph: {0}".format(graph))
+            
+            version = 0
+            status_id = None
+            for id in graph.root_object_ids:
+                status = graph.get(id)
+                version = status.get("last-version-seen")
+                status_id = id
+                break
+
+            # TODO query remote store to find actual 'latest 'version
+            # TODO if actual version is > 'version', then do a diff query with from 'version' to 'latest'
+            # TODO apply diff
+            # TODO update the 'status' object (with @id == 'status_id', above) with the last-version-seen to be 'latest'
+
+            # TODO change internal structure to use 'commit hashes' under each version
+            # TODO when we get a list of changes, we can get a list of commit hashess for each version number
+            # TODO then we know when we are up-to-date, otherwise we will keep ping-ponging back and forth as each version number increments
+
+            
+
+        self.root_store.query(query, depth = 1, render_json = False).addCallbacks(objs_cb, result_d.errback)
+        return result_d
+
+    def link_query(self):
+        return {"type": NS_ROOT_BOX + "link",
+                "boxes":
+                    {"$and": [
+                        {"box": self.root_store.boxid,
+                         "server-url": self.url
+                        }
+                    ]}
+               }
 
     def update_model_query(self, initial_query = False):
         """ Query the root box for root box objects and update the model of the root box here.
@@ -294,21 +350,12 @@ class IndxSync:
             self.models = []
 
             for id in graph.root_object_ids:
-                link_obj = graph.get(id)
-
-                contains_box = False
-                for box_obj in link_obj.get("boxes"):
-                    if self.root_store.boxid in box_obj.get("box"):
-                        contains_box = True
-                        break
-
-                # this link object involves this boxid - put it in the models list
-                if contains_box:
-                    self.models.append(link_obj)
+                logging.debug("IndxSync update_model_query, root id: {0}".format(id))
+                self.models.append(id)
 
             result_d.callback(True) # for the initial call to succeed
 
-        # query for each link, and return objects 4 deep
-        self.root_store.query({"type": NS_ROOT_BOX + u"link"}, depth = 4,render_json = False).addCallbacks(objs_cb, result_d.errback)
+        # query for each link to this box on this server.
+        self.root_store.query(self.link_query(), depth = 0, render_json = False).addCallbacks(objs_cb, result_d.errback)
         return result_d
 
