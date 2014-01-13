@@ -88,6 +88,57 @@ class IndxDatabase:
         self.connect_indx_db().addCallbacks(connected_cb, return_d.errback)
         return return_d
 
+    def set_server_var(self, key, value, boxid = None):
+        return_d = Deferred()
+        # TODO do this in a transaction
+
+        def connected_cb(conn):
+            def existing_cb(value):
+                if value is not None:
+                    # UPDATE existing
+                    if boxid is None:
+                        query = "UPDATE tbl_indx_core SET value = %s WHERE key = %s AND boxid IS NULL"
+                        params = [value, key]
+                    else:
+                        query = "UPDATE tbl_indx_core SET value = %s WHERE key = %s AND boxid = %s"
+                        params = [value, key, boxid]
+                else:
+                    # INSERT a new value
+                    query = "INSERT INTO tbl_indx_core (key, value, boxid) VALUES (%s, %s, %s)"
+                    params [key, value, boxid]
+
+                conn.runOperation(query, params).addCallbacks(return_d.callback, return_d.errback)
+
+            self.get_server_var(key, boxid = boxid).addCallbacks(existing_cb, return_d.errback)
+
+        self.connect_indx_db().addCallbacks(connected_cb, return_d.errback)
+        return return_d
+
+
+    def get_server_var(self, key, boxid = None):
+        return_d = Deferred()
+
+        if boxid is None:
+            query = "SELECT value FROM tbl_indx_core WHERE key = %s AND boxid IS NULL"
+            params = [key]
+        else:
+            query = "SELECT value WHERE tbl_indx_core key = %s AND boxid = %s"
+            params = [key, boxid]
+
+        def connected_cb(conn):
+
+            def result_cb(rows):
+                if len(rows) < 1:
+                    return_d.callback(None)
+                else:
+                    value = rows[0][0]
+                    return_d.callback(value)
+
+            conn.runQuery(query, params).addCallbacks(result_cb, return_d.errback)
+
+        self.connect_indx_db().addCallbacks(connected_cb, return_d.errback)
+        return return_d
+
 
     def schema_upgrade(self, conn):
         """ Perform INDX schema upgrades.
