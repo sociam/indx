@@ -278,10 +278,6 @@ class IndxDatabase:
                                 queries += objsql + " "
 
                             def schema_cb(empty):
-
-                                def serverid_cb(empty):
-                                    self.get_server_id().addCallbacks(lambda success: return_d.callback(True), return_d.errback)
-
                                 self.schema_upgrade(conn_indx).addCallbacks(serverid_cb, return_d.errback)
 
                             conn_indx.runOperation(queries).addCallbacks(schema_cb, return_d.errback)
@@ -290,10 +286,10 @@ class IndxDatabase:
 
                     d2.addCallbacks(create_cb, return_d.errback)
                 else:
-                    def connect_indx(conn_indx):
+                    def connect_indx2(conn_indx):
                         self.schema_upgrade(conn_indx).addCallbacks(serverid_cb, return_d.errback)
 
-                    self.connect_indx_db().addCallbacks(connect_indx, return_d.errback)
+                    self.connect_indx_db().addCallbacks(connect_indx2, return_d.errback)
 
 
             d.addCallbacks(check_cb, return_d.errback)
