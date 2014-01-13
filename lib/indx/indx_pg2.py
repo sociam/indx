@@ -20,6 +20,7 @@ import logging
 import psycopg2
 import binascii
 import json
+import uuid
 from indx.connectionpool import IndxConnectionPool
 from txpostgres import txpostgres
 from hashing_passwords import make_hash, check_hash
@@ -89,12 +90,17 @@ class IndxDatabase:
         return return_d
 
     def set_server_var(self, key, value, boxid = None):
+        logging.debug("IndxPG2: set_server_var, key: {0}, value: {1}, boxid: {2}".format(key, value, boxid))
         return_d = Deferred()
         # TODO do this in a transaction
 
         def connected_cb(conn):
-            def existing_cb(value):
-                if value is not None:
+            logging.debug("IndxPG2: set_server_var connected_cb")
+
+            def existing_cb(prev_value):
+                logging.debug("IndxPG2: set_server_var existing_cb")
+            
+                if prev_value is not None:
                     # UPDATE existing
                     if boxid is None:
                         query = "UPDATE tbl_indx_core SET value = %s WHERE key = %s AND boxid IS NULL"
@@ -105,7 +111,7 @@ class IndxDatabase:
                 else:
                     # INSERT a new value
                     query = "INSERT INTO tbl_indx_core (key, value, boxid) VALUES (%s, %s, %s)"
-                    params [key, value, boxid]
+                    params = [key, value, boxid]
 
                 conn.runOperation(query, params).addCallbacks(return_d.callback, return_d.errback)
 
@@ -116,6 +122,7 @@ class IndxDatabase:
 
 
     def get_server_var(self, key, boxid = None):
+        logging.debug("IndxPG2: get_server_var, key: {0}, boxid: {1}".format(key, boxid))
         return_d = Deferred()
 
         if boxid is None:
@@ -126,8 +133,11 @@ class IndxDatabase:
             params = [key, boxid]
 
         def connected_cb(conn):
+            logging.debug("IndxPG2: get_server_var connected_cb")
 
             def result_cb(rows):
+                logging.debug("IndxPG2: get_server_var result_cb")
+
                 if len(rows) < 1:
                     return_d.callback(None)
                 else:
@@ -219,13 +229,37 @@ class IndxDatabase:
         conn.runQuery("select exists(select * from information_schema.tables where table_name=%s)", ["tbl_indx_core"]).addCallbacks(table_cb, return_d.errback)
         return return_d
 
+    def get_server_id(self):
+        logging.debug("IndxPG2: get_server_id")
+        return_d = Deferred()
+
+        def serverid_cb(server_id):
+            logging.debug("IndxPG2: get_server_id, existing id is: {0}".format(server_id))
+            if server_id is not None:
+                # already set
+                return_d.callback(server_id)
+                return
+
+            logging.debug("IndxPG2: get_server_id, generating new id, is: {0}".format(server_id))
+            server_id = "{}".format(uuid.uuid1())
+            self.set_server_var("server_id", server_id).addCallbacks(lambda done: return_d.callback(server_id), return_d.errback)
+
+        self.get_server_var("server_id").addCallbacks(serverid_cb, return_d.errback)
+        return return_d
+
 
     def check_indx_db(self):
         """ Check the INDX db exists, and create if it doesn't. """
+        logging.debug("IndxPG2: check_indx_db")
         return_d = Deferred()
 
         def connected_cb(conn):
             d = conn.runQuery("SELECT 1 from pg_database WHERE datname='{0}'".format(self.db_name))
+
+            def serverid_cb(empty):
+                # post-schema upgrade
+                self.get_server_id().addCallbacks(lambda success: return_d.callback(True), return_d.errback)
+
 
             def check_cb(rows):
                 if len(rows) == 0:
@@ -244,7 +278,11 @@ class IndxDatabase:
                                 queries += objsql + " "
 
                             def schema_cb(empty):
-                                self.schema_upgrade(conn_indx).addCallbacks(lambda success: return_d.callback(True), return_d.errback)
+
+                                def serverid_cb(empty):
+                                    self.get_server_id().addCallbacks(lambda success: return_d.callback(True), return_d.errback)
+
+                                self.schema_upgrade(conn_indx).addCallbacks(serverid_cb, return_d.errback)
 
                             conn_indx.runOperation(queries).addCallbacks(schema_cb, return_d.errback)
 
@@ -253,7 +291,7 @@ class IndxDatabase:
                     d2.addCallbacks(create_cb, return_d.errback)
                 else:
                     def connect_indx(conn_indx):
-                        self.schema_upgrade(conn_indx).addCallbacks(lambda success: return_d.callback(True), return_d.errback)
+                        self.schema_upgrade(conn_indx).addCallbacks(serverid_cb, return_d.errback)
 
                     self.connect_indx_db().addCallbacks(connect_indx, return_d.errback)
 
