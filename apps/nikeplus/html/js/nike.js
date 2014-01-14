@@ -1,5 +1,5 @@
 angular
-    .module('FitbitHarvester', ['ui','indx'])
+    .module('NikeHarvester', ['ui','indx'])
     .controller('ConfigPage', function($scope, client, utils) {
         var u = utils, s = client.store, sa = function(f) { utils.safeApply($scope, f); };
         window.$s = $scope;
@@ -34,22 +34,24 @@ angular
         };
 
         var getConfigFromService = function() {
-            s._ajax('GET', 'apps/fitbit/api/get_config').then(function(x) { 
+            s._ajax('GET', 'apps/nikeplus/api/get_config').then(function(x) { 
                 console.log(x.config);
                 // var config = x.config;
                 var config = JSON.parse(x.config);
-                if (config.fitbit) {
-                    if (config.fitbit.token) {
+                if (config.nike) {
+                    if (config.nike.error) {
                         sa(function() { 
                             _($scope).extend({ 
-                                token: config.fitbit.token
+                                nikeerror: config.nike.error,
+                                nikeuser: config.nike.user
                             });
-                        });
-                    } else if (config.fitbit.url) {
+                        });                        
+                    } else if (config.nike.token) {
                         sa(function() { 
                             _($scope).extend({ 
-                                url: config.fitbit.url,
-                                req_token: config.fitbit.req_token
+                                nikeuser: config.nike.user,
+                                nikepassword: config.nike.password,
+                                token: config.nike.token
                             });
                         });
                     }
@@ -59,7 +61,6 @@ angular
                         _($scope).extend({ 
                             password: config.harvester.password,
                             box: config.harvester.box, 
-                            start: config.harvester.start, 
                             overwrite: config.harvester.overwrite
                         });
                     });
@@ -69,13 +70,13 @@ angular
                             console.log('match ', match[0]);
                             window.match = match[0];
                             sa(function() { 
-                                $scope.user = match[0]; 
-                                $scope.checkACL(match[0],config.harvester.box); 
+                                $scope.user = match[0];
+                                $scope.checkACL(match[0],config.harvester.box);
                             });
                         }
                     }
                 }
-                console.log($scope);
+                console.log("the current scope ", $scope);
             }).fail(function(err) { 
                 console.error('could not get config ', err);    
             });
@@ -98,7 +99,6 @@ angular
                 // get the boxes
             s.getBoxList().then(function(boxes) { 
                 sa(function() { $scope.boxes = boxes; });
-                console.log('boxes >> ', boxes);
                 dbl.resolve();
             }).fail(function(e) {
                 sa(function() { $scope.status = 'error getting box list'; });
@@ -141,7 +141,7 @@ angular
         };
         $scope.setConfig = function(config) { 
             console.info('i got a config ', config);
-            s._ajax('GET', 'apps/fitbit/api/set_config', { config: JSON.stringify(config) }).then(function(x) { 
+            s._ajax('GET', 'apps/nikeplus/api/set_config', { config: JSON.stringify(config) }).then(function(x) { 
                 console.log('success ', x);
                 status('configuration chage committed');
                 window.retval = x;
@@ -151,19 +151,26 @@ angular
             });
         };
 
+        $scope.testLogin = function(nikeconfig) {
+            $scope.setConfig(nikeconfig);
+            delete $scope.nikeerror;
+            getConfigFromService();
+        }
+
         $scope.doStart = function() {
-            s._ajax('GET', 'apps/fitbit/api/start').then(function(x) { 
+            s._ajax('GET', 'apps/nikeplus/api/start').then(function(x) { 
                 console.info('App doStart result: ', x); 
                 status('Start command successful'); 
             }).fail(function(x) { status(' Error ' + x.toString()); });
         };
         $scope.doStop = function() {
-            s._ajax('GET', 'apps/fitbit/api/stop')
+            console.log('App doStop');
+            s._ajax('GET', 'apps/nikeplus/api/stop')
             .then(function(x) { console.info('App Stop result (): ', x); status('Stop command successful'); })
             .fail(function(x) { status(' Error ' + x.toString()); });
         };
         setInterval(function() { 
-            s._ajax('GET','apps/fitbit/api/is_running').then(function(r) { 
+            s._ajax('GET','apps/nikeplus/api/is_running').then(function(r) { 
                 sa(function() { 
                     $scope.runstate = r.running ? 'Running' : 'Stopped';  
                 });
@@ -196,5 +203,6 @@ angular
                 }
             }
         });
+
     });
 

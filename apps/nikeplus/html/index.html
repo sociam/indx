@@ -3,13 +3,13 @@
     <link href="/css/bootstrap.css" rel="stylesheet">
     <link href="/css/angular-ui.css" rel="stylesheet">
     <link rel="stylesheet/less" type="text/css" href="/components/toolbar/toolbar.less">
-    <link rel="stylesheet/less" type="text/css" href="css/fitbit.less">
-    <title>Fitbit Harvester - Configuration</title>
+    <link rel="stylesheet/less" type="text/css" href="css/nike.less">
+    <title>Nike+ Harvester - Configuration</title>
   </head>
-  <body ng-app="FitbitHarvester" ng-controller="ConfigPage" ng-cloak>
+  <body ng-app="NikeHarvester" ng-controller="ConfigPage" ng-cloak>
     <toolbar box-var='selectedBox' username-var='selectedUser'></toolbar>
     <div class="main" ng-show="selectedUser">
-      <h2>INDX Fitbit Harvester Service</h2>
+      <h2>INDX Nike+ Harvester Service</h2>
       <h3>Service status - {{ runstate }} </h3>
       <table>
         <tr>
@@ -18,16 +18,32 @@
           <td><div class="btn btn-danger" ng-click="doStop()">Stop</div></td> 
         </tr>
       </table>
-      <h3>Fitbit.com service authentication</h3>
-      <div ng-show="token">
-        <div class='auth'>Harvester service is authenticated with Fitbit.com</div>
+      <h3>Nike.com service authentication</h3>
+      <div ng-show="nikeuser && nikepassword">
+        <p>Harvester service has the following credentials set.</p>
       </div>
-      <div ng-show="!token && url">
-        <p>Harvester service is not authenticated with Fitbit and cannot access your data.<br/> 
-        Please <a target="_blank" ng-href="{{url}}">click here</a> to log in to Fitbit and authorize the INDX Fitbit Harvester service.</p>
-        <p>Once you have authorized the app, please copy and paste the PIN in the box:
-        <input type="text" name="pin" ng-model="pin"></input></p>
+      <div ng-show="!nikeuser || ! nikepassword">
+        <p>Harvester service does not have any credentials set and cannot access your data.</p> 
       </div>
+      <table class='auth'>
+        <tr>
+          <td>Nike+ user</td>
+          <td><input type="text" ng-model="nikeuser" /></td>
+        </tr>
+        <tr>
+          <td>Nike+ password</td>
+          <td><input type="password" ng-model='nikepassword' /></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>
+            <div class="btn btn-danger" ng-show="nikeerror" ng-click=""> {{ nikeerror }} </div>
+            <div class="btn btn-warning" ng-show="nikeuser && nikepassword && !token" 
+            ng-click="testLogin({nike:{user:nikeuser,password:nikepassword}})">Test login</div>
+            <div class="btn btn-success" ng-show="token && nikeuser && nikepassword" > Login successful </div>
+          </td>
+        </tr>
+      </table>
       <h3>INDX service access</h3>
       <table class='security'>
         <tr>
@@ -54,33 +70,17 @@
       </table>
       <h3>Service parameters</h3>
       <table class='params'>
-        <tr><td>Start date:</td><td><input type="text" placeholder="YYYY-mm-dd" name="start" ng-model="start"></input></td></tr>
+        <!-- <tr><td>Start date:</td><td><input type="text" placeholder="YYYY-mm-dd" name="start" ng-model="start"></input></td></tr> -->
         <tr><td>Overwrite existing? </td><td><input type="checkbox" ng-model="overwrite" checked='overwrite' /></td></tr>
       </table>
       <div class='submits'>
-        <div class="btn btn-default" ng-click="setConfig({harvester:{start:start,box:box,user:user['@id'],password:password,overwrite:overwrite},fitbit:{pin:pin,token:token,req_token:req_token}})">Configure</div>
+        <div class="btn btn-default" ng-click="setConfig({harvester:{box:box,user:user['@id'],password:password,overwrite:overwrite},nike:{user:nikeuser,password:nikepassword}})">Configure</div>
         <div class="status">{{ status }}</div>
       </div>
     </div>
     <div ng-show="!selectedUser">
-      <p>Login to INDX to configure your Fitbit Harvester Service.</p>
+      <p>Login to INDX to configure your Nike+ Harvester Service.</p>
     </div>
-
-
-                <!-- <div class="row" id="step-div">
-                    <div class="span12">
-                        <p id="step-text">The first step is to authorise INDX to access your Fitbit data.</p>
-                        <p id="step-authurl">Please <a id="step-authurl-a" target="_blank">click here</a> to log in to Fitbit and authorize the Fitbit Connector app.</p>
-                        <p id="step-pin">Once you have authorized the app, please copy and paste the PIN in the box:<br/>
-                        <input type="text" name="pin" id="pin"></input></p>
-                        <p id="step-btn-pin" ng-class="{authoriseAppPin:true}" ng-click="authoriseAppPin()"><input type="button" value="Set PIN"/></p>
-                        <p id="step-btn-download" ng-class="{startDownload:true}" ng-click="startDownload()"><input type="button" value="Download data"/></p>
-                        <p id="step-load"><img src="img/load.gif" /></p>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>  -->
 
     <script src="/js/vendor/lesscss.min.js" type="text/javascript"></script>  
     <script src="/js/vendor/jquery.min.js" type="text/javascript"></script> 
@@ -94,7 +94,7 @@
     <script src="/js/indx.js" type="text/javascript"></script>
     <script src="/js/indx-utils.js" type="text/javascript"></script>
     <script src="/components/toolbar/toolbar.js" type="text/javascript"></script>
-    <script src="js/fitbit.js"></script>
+    <script src="js/nike.js"></script>
 
     </body>
 </html>
