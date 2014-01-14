@@ -174,6 +174,7 @@ class ObjectSetDiff:
     def compare(self, cur):
         """ Compare the two sets of objects, prepare SQL queries to INSERT the diff into the database. """
         result_d = Deferred()
+
         self.reset_queries()
 
         if self.objs1 is None or self.objs2 is None:

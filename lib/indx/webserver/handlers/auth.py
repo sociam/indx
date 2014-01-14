@@ -185,7 +185,7 @@ class AuthHandler(BaseHandler):
             db_user, db_pass = acct
 
             def check_app_perms(acct):
-                token = self.webserver.tokens.new(username,password,boxid,appid,origin,request.getClientIP())
+                token = self.webserver.tokens.new(username,password,boxid,appid,origin,request.getClientIP(),self.webserver.server_id)
                 return self.return_ok(request, {"token":token.id})
 
             # create a connection pool

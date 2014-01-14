@@ -24,6 +24,7 @@ from twisted.python.failure import Failure
 from indx.objectstore_query import ObjectStoreQuery
 from indx.object_diff import ObjectSetDiff
 from indx.objectstore_types import Graph, Literal, Resource
+from indx.object_commit import ObjectCommit
 
 RAW_LISTENERS = {} # one connection per box to listen to updates
 
@@ -31,7 +32,7 @@ class ObjectStoreAsync:
     """ Stores objects in a database, handling import, export and versioning.
     """
 
-    def __init__(self, conns, username, boxid, appid, clientip):
+    def __init__(self, conns, username, boxid, appid, clientip, server_id):
         """
         """
         self.conns = conns
@@ -42,6 +43,7 @@ class ObjectStoreAsync:
 
         self.loggerClass = logging
         self.loggerExtra = {}
+        self.server_id = server_id
 
         self.schema_upgrade()
 
@@ -151,7 +153,7 @@ class ObjectStoreAsync:
         self.log(logging.ERROR, message)
 
 
-    def _notify(self, cur, version):
+    def _notify(self, cur, version, commits = None):
         """ Notify listeners (in postgres) of a new version (called after update/delete has completed). """
         self.debug("ObjectStoreAsync _notify, version: {0}".format(version))
         result_d = Deferred()
@@ -164,9 +166,17 @@ class ObjectStoreAsync:
         def new_ver_done(success):
             self._curexec(cur, "SELECT * FROM wb_version_finished(%s)", [version]).addCallbacks(result_d.callback, err_cb)
 
-        self._curexec(cur,
-                "INSERT INTO wb_versions (version, updated, username, appid, clientip) VALUES (%s, CURRENT_TIMESTAMP, %s, %s, %s)",
-                [version, self.username, self.appid, self.clientip]).addCallbacks(new_ver_done, err_cb)
+        def add_version(empty):
+            self._curexec(cur,
+                    "INSERT INTO wb_versions (version, updated, username, appid, clientip, commits) VALUES (%s, CURRENT_TIMESTAMP, %s, %s, %s, %s)",
+                    [version, self.username, self.appid, self.clientip, commits]).addCallbacks(new_ver_done, err_cb)
+
+        if commits is None:
+            commit = ObjectCommit(self.server_id, version)
+            commits = [commit.commit_id]
+            commit.save(cur).addCallbacks(add_version, result_d.errback)
+        else:
+            add_version(None)
 
         return result_d
 

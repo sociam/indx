@@ -71,10 +71,11 @@ class WebServer:
             logging.debug("WebServer auth_cb, can_auth: {0}".format(can_auth))
             if can_auth:
 
-                def checked_db_ok():
+                def checked_db_ok(server_id):
+                    self.server_id = server_id # Gets the Server ID from the database
                     self.check_users().addCallbacks(lambda checked: self.server_setup(), err_cb)
 
-                self.database.check_indx_db().addCallbacks(lambda checked: checked_db_ok(), err_cb) # check indx DB exists, otherwise create it - then setup the server
+                self.database.check_indx_db().addCallbacks(checked_db_ok, err_cb) # check indx DB exists, otherwise create it - then setup the server
             else:
                 print "Authentication failed, check username and password are correct."
                 reactor.stop()
@@ -223,7 +224,7 @@ class WebServer:
             # assign ourselves a new token to access the root box using the @indx user
             # this only works because the "create_root_box" function gave this user read permission
             # this doesn't work in the general case.
-            token = self.tokens.new("@indx","",root_box,"IndxSync","/","::1")
+            token = self.tokens.new("@indx","",root_box,"IndxSync","/","::1", self.server_id)
             token.get_store().addCallbacks(store_cb, err_cb)
 
         return return_d

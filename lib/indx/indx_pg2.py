@@ -249,7 +249,10 @@ class IndxDatabase:
 
 
     def check_indx_db(self):
-        """ Check the INDX db exists, and create if it doesn't. """
+        """ Check the INDX db exists, and create if it doesn't.
+        
+            Returns the server ID to the callback of the deferred.
+        """
         logging.debug("IndxPG2: check_indx_db")
         return_d = Deferred()
 
@@ -258,7 +261,7 @@ class IndxDatabase:
 
             def serverid_cb(empty):
                 # post-schema upgrade
-                self.get_server_id().addCallbacks(lambda success: return_d.callback(True), return_d.errback)
+                self.get_server_id().addCallbacks(lambda server_id: return_d.callback(server_id), return_d.errback)
 
 
             def check_cb(rows):
