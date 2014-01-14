@@ -313,10 +313,8 @@ class IndxSync:
             # TODO apply diff
             # TODO update the 'status' object (with @id == 'status_id', above) with the last-version-seen to be 'latest'
 
-            # TODO change internal structure to use 'commit hashes' under each version
-            # TODO when we get a list of changes, we can get a list of commit hashess for each version number
-            # TODO then we know when we are up-to-date, otherwise we will keep ping-ponging back and forth as each version number increments
-
+            # TODO request the commits with the diff, and add them to the new version
+            # TODO first check if the commits aren't already in the database, if they are, then don't add them to this version
             
 
         self.root_store.query(query, depth = 1, render_json = False).addCallbacks(objs_cb, result_d.errback)
