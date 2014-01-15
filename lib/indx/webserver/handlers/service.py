@@ -128,8 +128,9 @@ class ServiceHandler(BaseHandler):
             manifest = self._load_manifest()
             result = subprocess.check_output(manifest['get_config'],cwd=self.get_app_cwd())
             #print "service.py - getConfig Manifest returned: "+str(result)
-            logging.debug(' get config result {0} {1}'.format(result))
-            #result = json.loads(result)
+            #logging.debug(' get config result {0} {1}'.format(result))
+            result = json.loads(result)
+            #print "service.py - getConfig json: "+str(result)
             logging.debug(' get json config result {0} '.format(result))
             return self.return_ok(request,data={'config':result})
         except :
@@ -170,11 +171,13 @@ class ServiceHandler(BaseHandler):
         return self.pipe is not None and self.pipe.poll() is None
 
     def start(self):
+        print "service.py - Start called"
         if self.is_running(): self.stop()
         manifest = self._load_manifest()
         command = [x.format(self.webserver.server_url) for x in manifest['run']]
+        print command
         self._set_up_output_buffers()
-        self.pipe = subprocess.Popen(command,cwd=self.get_app_cwd(),stderr=self.errpipe_out,stdout=self.stdoutpipe_out)
+        self.pipe = subprocess.Popen(command,cwd=self.get_app_cwd())#,stderr=self.errpipe_out,stdout=self.stdoutpipe_out)
         return self.is_running()
 
     def _dequeue_stderr(self):
