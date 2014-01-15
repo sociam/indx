@@ -48,7 +48,7 @@ def run(args):
     if args['config']:
         #print(keyring.util.platform_.data_root())
         config = json.loads(args['config'])
-        config = ast.literal_eval(config)
+        #config = ast.literal_eval(config)
         token_type = config['facebook_auth_status']
 
         if "Short" in token_type:
@@ -69,7 +69,7 @@ def run(args):
             logging.debug('Full config added to keyring: {0}'.format(config))
     elif args['get_config']:
         # TODO output the stored config (for passing ti back to the server)
-        print get_config(args);
+        print json.dumps(get_config(args));
     else:
         # print(keyring.util.platform_.data_root())
         config = keyring.get_password("INDX", "INDX_Facebook_App")
@@ -92,8 +92,8 @@ def run(args):
 def get_config(args):
     #print "Getting config from keychain..."
     stored_config = keyring.get_password("INDX", "INDX_Facebook_App")
-    if "box" in stored_config:
-        stored_config = json.dumps(stored_config)
+    #if "box" in stored_config:
+        #stored_config = json.dumps(stored_config)
     stored_config = ast.literal_eval(stored_config)
     return stored_config
 

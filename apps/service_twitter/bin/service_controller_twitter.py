@@ -18,6 +18,7 @@
 
 import argparse, ast, logging, getpass, sys, urllib2, json, sys, tweepy, datetime, time, threading
 from datetime import datetime
+from datetime import timedelta
 from threading import Timer, Thread
 from tweepy.streaming import StreamListener
 from tweepy import OAuthHandler
@@ -25,10 +26,11 @@ from tweepy import Stream
 from tweepy import API
 from tweepy import Status
 from service_tweets import TwitterService
-from twisted.internet.defer import Deferred as D
 from twisted.internet import task
 from twisted.internet import reactor
 from twisted.python import log
+from twisted.internet.defer import Deferred
+
 
 
     
@@ -68,38 +70,47 @@ class TwitterServiceController:
             return (credentials, configs, twitter_add_info)       
 
 
+
+    
     def load_service_instance(self):
 
         twitter_service = TwitterService(self.credentials, self.configs, self.twitter_add_info)
         #twitter_service_two = TwitterService(self.credentials, self.configs, self.twitter_add_info)
+        timestamp_first_run = datetime.now()
+
 
         #load the main services
         #twitter_service.run_main_services()
 
-        def indx_cb(empty):
-
-            def called(result):
-                logging.info('Service Controller Twitter - Retreiving Stream')
-
-
-            def command_die(reason):
-                logging.error('Service Controller Twitter - Retreiving Stream Failed, error is {0}'.format(reason))
-
+        def indx_cb(empty):          
             
-            first_run = True
+            #first_run = True
+
             logging.info("Service Controller Twitter - Running Twitter Service!")
-            def loop_harvester():
+            #def loop_harvester():
                 #print "running harvester"
-                twitter_service.run_additional_services()
-                if not first_run:
-                    twitter_service.run_main_services()
-                logging.debug("setting up Reactor loop...")
-                reactor.callLater(15.0, loop_harvester);
+                
+            def additional_cb(res, twitter_service=twitter_service):
 
-            loop_harvester() 
+                def get_tweets_cb(resum, twitter_service=twitter_service):
+                    #check if indx is about to expire
+                    timestamp_current = datetime.now()
+                    timestamp_first_run_minus_five_hours = timestamp_current - timedelta(hours=5)
+                    
+                    if timestamp_first_run_minus_five_hours > timestamp_first_run:
+                        logging.info("Time has come to reset the INDX client!")
+                        twitter_service.get_indx().addCallbacks(indx_cb, lambda failure: logging.error("Twitter Service Controller error logging into INDX: {0}".format(failure)))
+                    
+                    # elif twitter_service.tweet_count == 0:
+                    #     logging.info("Stream reset to give time to reharvest the status and friends list...")
+                    #     twitter_service.load_additional_harvesters(twitter_service.twitter_add_info, twitter_service).addCallbacks(additional_cb, lambda failure: logging.error("Additional Callback Error"))
+                    else:
+                        logging.info("Stream reset to store objects into INDX, Total Tweets collected {0} now time to start it up again...".format(twitter_service.tweet_count))
+                        twitter_service.get_tweets(twitter_service.get_search_criteria()).addCallbacks(get_tweets_cb, lambda failure: logging.error("error in get_tweets"))
 
-            first_run = False
+                twitter_service.get_tweets(twitter_service.get_search_criteria()).addCallbacks(get_tweets_cb, lambda failure: logging.error("error in get_tweets"))
+
+            twitter_service.load_additional_harvesters(twitter_service.twitter_add_info, twitter_service).addCallbacks(additional_cb, lambda failure: logging.error("Additional Callback Error"))
 
         twitter_service.get_indx().addCallbacks(indx_cb, lambda failure: logging.error("Twitter Service Controller error logging into INDX: {0}".format(failure)))
         reactor.run()
-
