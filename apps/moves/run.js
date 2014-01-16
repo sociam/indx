@@ -6,40 +6,54 @@ var nodeindx = require('../../lib/services/nodejs/nodeindx'),
     _ = require('underscore')
     jQuery = require('jquery'),
     path = require('path'),
-    http = require('http');
+    https = require('https');
 
 var MovesService = Object.create(nodeservice.NodeService, {
     run: { 
         value: function(store) {
             // run continuously
             var this_ = this;
+            this_.store = store;
+
             this.load_config().then(function(config) { 
                 this_.config = config;
                 this_.debug('hello i am moves', config);
+
+                var doinit = function() {
+                    console.log('doinit() -- ', config);
+                    this_._init(store).then(function(box, diary) {
+                        this_.box = box;
+                        this_.diary = diary;
+                        this_._update();
+                     }).fail(function(er) { 
+                        console.error('Error in _init ', er); 
+                        process.exit(-1); 
+                    });
+                };
 
                 if (config.authcode) {
                     // can only be used once
                     var code = config.authcode;
                     this_.debug('Getting access token from authcode > ', code);
-                    var cont = function() {
+                    var cont = function(authtokens) {
+                        delete config.authcode;
+                        console.error('positive cont ');
+                        _(config).extend(authtokens);
+                        this_.save_config(config).then(doinit).fail(function() { 
+                            console.error('error saving authtokens ', config); 
+                            process.exit(-1);
+                        });
+                    };
+                    this_.getAccessToken().then(cont).fail(function(err) { 
+                        console.error('error getting authtokens', err);
                         this_.debug('deleting authcode >> done.');
                         delete config.authcode;
-                        return this_.save_config(config);
-                    };
-                    this_.getAccessToken().then(cont).fail(function() { 
-                        console.error('error getting it '); 
-                        cont().then(function() { process.exit(-1); });
+                        this_.save_config(config).then(function() { process.exit(-1); });
                     });
+                } else if (config.access_token) {
+                    console.log('we have an access code, boyzz - init');
+                    doinit();
                 }
-                this_._init(store).then(function(box, diary) {
-                    this_.box = box;
-                    this_.diary = diary;
-                    this_.store = store;
-                    // setInterval(function() { this_._update(); }, config.sleep);
-                    this_._update();
-                }).fail(function(x) { 
-                    console.error("error in _init:: ", x);
-                });
             }).fail(function(x) { 
                 console.error("error load config :: ", x);
                 process.exit(-1);                
@@ -64,33 +78,48 @@ var MovesService = Object.create(nodeservice.NodeService, {
                 grant_type: 'authorization_code',
                 code:this_.config.authcode,
                 client_id:this_.config.clientid,
-                client_secret:this_.config.clientsecret
-                // redirect_uri:[this_.store._getBaseURL(), "apps", "moves", "moves_redirect.html"].join('/')
+                client_secret:this_.config.clientsecret,
+                redirect_uri:[this_.store._getBaseURL(), "apps", "moves", "moves_redirect.html"].join('/')
             };
-            console.log(params);
+            console.log('REDIRECT >>> ', params.redirect_uri);
+            console.log("CODE >> ", params.code);
             var url = base_url +"?"+jQuery.param(params);
-            console.log('url >> ', url, params);
+            // console.log('url >> ', url, params);
+
+            var partial = '/oauth/v1/access_token'+"?"+jQuery.param(params);
+            console.log('partial >> ', partial);
 
             var post_options = {
               host: 'api.moves-app.com',
               port: '443',
-              path: '/oauth/v1/access_token'+"?"+jQuery.param(params),
+              path: partial,
               method: 'POST',
               headers: {
                   'Content-Type': 'application/x-www-form-urlencoded',
                   'Content-Length': 0
               }
             };
+            var chunks = '', error;
             // Set up the request
-            var post_req = http.request(post_options, function(res) {
+            var post_req = https.request(post_options, function(res) {
               res.setEncoding('utf8');
               res.on('data', function (chunk) {
                   console.log('POST Response: ' + chunk);
+                  chunks += chunk;
               });
               res.on('error', function(error) {
-                  console.log('POST Error Response: ' + chunk);
+                  error = true;
+                  console.log('POST Error Response: ' + error);
+                  d.reject(error);
+              });
+              res.on('end', function() { 
+                if (!error) {
+                   console.log('end!!', chunks);
+                   d.resolve(JSON.parse(chunks));
+                }
               });
             });
+            post_req.end();
 
             // jQuery.post(url).then(function(response) {
             //     console.log('YAY GOT AUTHENTICATION CODE >> ', response);
