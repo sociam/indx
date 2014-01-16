@@ -946,6 +946,39 @@ class ObjectStoreAsync:
 #        except Exception as e:
 #            self.error("_log_connections: could not check state of connections: {0}".format(e))
 
+    def _vers_without_commits(self, from_version, to_version, commits):
+        """ Return the versions, in the range given, that do not contain any of the commits listen. """
+        result_d = Deferred()
+
+        query = "SELECT version, commits FROM wb_versions WHERE version >= %s AND version <= %s"
+        params = [from_version, to_version]
+
+        def conn_cb(conn):
+
+            def vers_cb(rows):
+
+                # TODO optimise this by doing it in postgresql
+                versions_to_get = []
+                for row in rows:
+                    version, version_commits = row
+
+                    all_in = True
+                    for version_commit in version_commits:
+                        if version_commit not in commits:
+                            all_in = False
+                            break
+
+                    if not all_in:
+                        versions_to_get.append(version)
+
+                result_d.callback(versions_to_get)
+
+            conn.runQuery(query, params).addCallbacks(vers_cb, result_d.errback)
+
+        self.conns['conn']().addCallbacks(conn_cb, result_d.errback)
+
+        return result_d
+
 
     def get_commits_in_versions(self, versions, cur=None):
         result_d = Deferred()

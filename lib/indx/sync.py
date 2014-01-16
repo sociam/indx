@@ -322,14 +322,31 @@ class IndxSync:
                 def diff_cb(diff_resp):
                     # if actual version is > 'version', then do a diff query with from 'version' to 'latest'
                     diff = diff_resp['data']
-                    # TODO request the commits with the diff, and add them to the new version
+                    
+                    # request the commits with the diff, and add them to the new version
+                    commits = diff['commits']
 
-                    # TODO apply diff
+                    # TODO in future optimise this by only applying the commits we haven't got (needs a database refactor)
+                    # TODO change it so that we do:
+                    #      1. query for version/commits pairs within a range
+                    #      2. check commits against what we know already, and request the diffs of the versions we don't have the commits for
+                    #      3. apply only those
+
+                    # check if we have all of these commits already
+                    def vers_get_cb(vers_without_commits):
+                        if len(vers_without_commits) < 1:
+                            # already all applied
+                            result_d.callback(True)
+                            return
+
+                        # TODO apply diff
+
+                        
+                        
+                        # TODO update the 'status' object (with @id == 'status_id', above) with the last-version-seen to be 'latest'
 
 
-                    # TODO update the 'status' object (with @id == 'status_id', above) with the last-version-seen to be 'latest'
-
-                    # TODO first check if the commits aren't already in the database, if they are, then don't add them to this version
+                    self.root_store._vers_without_commits(version, remote_latest_version, commits).addCallbacks(vers_get_cb, result_d.errback)
 
                 remote_indx_client.diff("diff", version).addCallbacks(diff_cb, result_d.errback) # NB: remote_latest_version is optional and implied.
                 
