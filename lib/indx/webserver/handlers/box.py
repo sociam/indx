@@ -90,7 +90,7 @@ class BoxHandler(BaseHandler):
             # to_version is optional, if unspecified, the latest version is used.
             # to_version = None is acceptable
             to_version = self.get_arg(request, "to_version")
-            if "to_version" is not None:
+            if to_version is not None:
                 try:
                     to_version = int(to_version)
                 except Exception as ee:
@@ -398,6 +398,26 @@ class BoxHandler(BaseHandler):
 
         token.get_store().addCallbacks(store_cb, err_cb)
 
+    def get_version(self, request):
+        BoxHandler.log(logging.DEBUG, "BoxHandler get_version")
+
+        token = self.get_token(request)
+        if not token:
+            return self.return_forbidden(request)
+
+        def err_cb(failure):
+            failure.trap(Exception)
+            BoxHandler.log(logging.ERROR, "BoxHandler get_version err_cb: {0}".format(failure), extra = {"request": request, "token": token})
+            return self.return_internal_error(request)
+
+        def store_cb(store):
+            store.setLoggerClass(BoxHandler, extra = {"token": token, "request": request})
+            BoxHandler.log(logging.DEBUG, "BoxHandler get_version", extra = {"request": request, "token": token})
+
+            store._get_latest_ver().addCallbacks(lambda version: self.return_ok(request, {"data": version}), err_cb)
+
+        token.get_store().addCallbacks(store_cb, err_cb)
+
 
     def do_GET(self,request):
         BoxHandler.log(logging.DEBUG, "BoxHandler do_GET >>>>>>>>>>>>>>>>>>>>")
@@ -572,6 +592,16 @@ BoxHandler.subhandlers = [
         'require_token': True,
         'require_acl': ['control'],
         'handler': BoxHandler.generate_new_key,
+        'accept':['application/json'],
+        'content-type':'application/json'
+        },
+    {
+        "prefix": "get_version",
+        'methods': ['GET'],
+        'require_auth': False,
+        'require_token': True,
+        'require_acl': ['read'],
+        'handler': BoxHandler.get_version,
         'accept':['application/json'],
         'content-type':'application/json'
         },

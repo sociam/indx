@@ -304,18 +304,36 @@ class IndxSync:
             status_id = None
             for id in graph.root_object_ids:
                 status = graph.get(id)
-                version = status.get("last-version-seen")
+                version = int(status.get("last-version-seen"))
                 status_id = id
                 break
 
-            # TODO query remote store to find actual 'latest 'version
-            # TODO if actual version is > 'version', then do a diff query with from 'version' to 'latest'
-            # TODO apply diff
-            # TODO update the 'status' object (with @id == 'status_id', above) with the last-version-seen to be 'latest'
+            # TODO lock and perform this in a transaction
 
-            # TODO request the commits with the diff, and add them to the new version
-            # TODO first check if the commits aren't already in the database, if they are, then don't add them to this version
-            
+            def version_cb(response):
+                # query remote store to find actual 'latest 'version
+                remote_latest_version = int(response['data'])
+                
+                if not (remote_latest_version > version):
+                    # already up to date
+                    result_d.callback(True)
+                    return
+
+                def diff_cb(diff_resp):
+                    # if actual version is > 'version', then do a diff query with from 'version' to 'latest'
+                    diff = diff_resp['data']
+                    # TODO request the commits with the diff, and add them to the new version
+
+                    # TODO apply diff
+
+
+                    # TODO update the 'status' object (with @id == 'status_id', above) with the last-version-seen to be 'latest'
+
+                    # TODO first check if the commits aren't already in the database, if they are, then don't add them to this version
+
+                remote_indx_client.diff("diff", version).addCallbacks(diff_cb, result_d.errback) # NB: remote_latest_version is optional and implied.
+                
+            remote_indx_client.get_version().addCallbacks(version_cb, result_d.errback)
 
         self.root_store.query(query, depth = 1, render_json = False).addCallbacks(objs_cb, result_d.errback)
         return result_d

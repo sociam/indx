@@ -744,29 +744,34 @@ class ObjectStoreAsync:
             result_d.errback(failure)
             return
 
-        def diff_cb(to_version_used, combined_diff, latest_ver):
+        def diff_cb(to_version_used, combined_diff, latest_ver, commits):
             # handles return_objs = "diff"
             self.debug("ObjectStore diff, diff_cb, rows: {0}".format(combined_diff))
-            result_d.callback({"data": combined_diff, "@to_version": to_version_used, "@from_version": from_version, "@latest_version": latest_ver})
+            result_d.callback({"data": combined_diff, "@to_version": to_version_used, "@from_version": from_version, "@latest_version": latest_ver, "@commits": commits})
 
-        def ids_cb(to_version_used, combined_diff, latest_ver):
+        def ids_cb(to_version_used, combined_diff, latest_ver, commits):
             # handles return_objs = "ids"
             self.debug("ObjectStore diff, ids_cb, rows: {0}".format(combined_diff))
-            result_d.callback({"data": self.diff_to_ids(combined_diff), "@to_version": to_version_used, "@from_version": from_version, "@latest_version": latest_ver})
+            result_d.callback({"data": self.diff_to_ids(combined_diff), "@to_version": to_version_used, "@from_version": from_version, "@latest_version": latest_ver, "@commits": commits})
 
         def got_versions(to_version_used, latest_ver):
             self.debug("ObjectStore diff, got_versions, to_version_used: {0}, latest_ver".format(to_version_used, latest_ver))
-            # first callback once we have the to_version
-            if return_objs == "diff":
-                self._get_diff_combined(from_version, to_version_used).addCallbacks(lambda combined_diff: diff_cb(to_version_used, combined_diff, latest_ver), err_cb)
-            elif return_objs == "objects": 
-                # TODO implement
-                result_d.callback(None)
-            elif return_objs == "ids":
-                self._get_diff_combined(from_version, to_version_used).addCallbacks(lambda combined_diff: ids_cb(to_version_used, combined_diff, latest_ver), err_cb)
-            else:
-                result_d.errback(Failure(Exception("Did not specify valid value of return_objs.")))
-            return
+
+            def commits_cb(commits):
+
+                # first callback once we have the to_version
+                if return_objs == "diff":
+                    self._get_diff_combined(from_version, to_version_used).addCallbacks(lambda combined_diff: diff_cb(to_version_used, combined_diff, latest_ver, commits), err_cb)
+                elif return_objs == "objects": 
+                    # TODO implement
+                    result_d.callback(None)
+                elif return_objs == "ids":
+                    self._get_diff_combined(from_version, to_version_used).addCallbacks(lambda combined_diff: ids_cb(to_version_used, combined_diff, latest_ver, commits), err_cb)
+                else:
+                    result_d.errback(Failure(Exception("Did not specify valid value of return_objs.")))
+            
+            self.get_commits_in_versions(range(from_version + 1, to_version_used + 1)).addCallbacks(commits_cb, result_d.errback)
+
 
         self.debug("diff to version: {0} type({1})".format(to_version, type(to_version)))
 
@@ -940,6 +945,41 @@ class ObjectStoreAsync:
 #                self.debug("_log_connections: connection {0}/{1}: {2}".format(count, size, vars(connection)))
 #        except Exception as e:
 #            self.error("_log_connections: could not check state of connections: {0}".format(e))
+
+
+    def get_commits_in_versions(self, versions, cur=None):
+        result_d = Deferred()
+        self.debug("Objectstore get_commits_in_version, cur: {0}".format(cur))
+
+        query = "SELECT version, commits FROM wb_versions WHERE version = ANY(%s)"
+        params = [versions]
+
+        def ver_cb(rows):
+            all_commits = []
+            for row in rows:
+                version, commits = row
+                all_commits.extend(commits)
+
+            result_d.callback(all_commits)
+
+
+        if cur is None:
+            def conn_cb(conn):
+                logging.debug("Objectstore get_commits_in_versions, conn_cb")
+                conn.runQuery(query, params).addCallbacks(ver_cb, result_d.errback)
+            
+            self.conns['conn']().addCallbacks(conn_cb, result_d.errback)
+        else:
+
+            def exec_cb(cur):
+                self.debug("Objectstore get_commits_in_versions exec_cb, cur: {0}".format(cur))
+                rows = cur.fetchall()
+                ver_cb(rows)
+
+            self._curexec(cur, query, params).addCallbacks(exec_cb, result_d.errback)
+
+        return result_d
+
 
 
     def _get_latest_ver(self, cur=None):

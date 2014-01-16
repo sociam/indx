@@ -176,6 +176,7 @@ class IndxClient:
             'get_file',
             'list_files',
             'link_remote_box',
+            'get_version',
         ]
         return call.func_name in requires
 
@@ -269,6 +270,13 @@ class IndxClient:
         return self.client.delete(self.base, values)
 
     @require_token
+    def get_version(self):
+        """ Get the latest version number. """
+        self._debug("Called API: get_version")
+
+        url = "{0}/get_version".format(self.base)
+        return self.client.get(url)
+
     def get_latest(self):
         """ Get the latest version of every object in this box. """
         self._debug("Called API: get_latest")
