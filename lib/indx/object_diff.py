@@ -1,7 +1,7 @@
-#    Copyright (C) 2011-2013 University of Southampton
-#    Copyright (C) 2011-2013 Daniel Alexander Smith
-#    Copyright (C) 2011-2013 Max Van Kleek
-#    Copyright (C) 2011-2013 Nigel R. Shadbolt
+#    Copyright (C) 2011-2014 University of Southampton
+#    Copyright (C) 2011-2014 Daniel Alexander Smith
+#    Copyright (C) 2011-2014 Max Van Kleek
+#    Copyright (C) 2011-2014 Nigel R. Shadbolt
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Affero General Public License, version 3,
@@ -138,37 +138,6 @@ class ObjectSetDiff:
 
         self.gen_queries(['diff'], cur, max_params = 0).addCallbacks(diff_cb, result_d.errback)
 
-#        queries = collections.deque(self.gen_queries(['diff'], max_params = 0))
-#        queries.extend(self.apply_diffs_to_latest())
-#        queries.extend(self.gen_queries(['latest','subjects'], max_params = 0))
-#
-#        if len(queries) > 0:
-#            logging.debug("ObjectSetDiff run_queries, queries: {0}".format(pprint.pformat(queries[0])))
-#        else:
-#            logging.debug("ObjectSetDiff run_queries, queries: [empty]")
-#
-#
-#        def exec_queries():
-#            logging.debug("ObjectSetDiff exec_queries, len(queries): {0}".format(len(queries)))
-#            if len(queries) < 1:
-#                logging.debug("ObjectSetDiff exec_queries callback sent")
-#                result_d.callback(None)
-#                return
-#
-#            def ran_cb(result):
-#                # TODO check value
-#                logging.debug("ObjectSetDiff run_queries, ran_cb, result: {0}".format(ran_cb))
-#                exec_queries()
-#
-#            def err_cb(failure):
-#                result_d.errback(failure)
-#
-#            query, params = queries.popleft()
-#            logging.debug("ObjectSetDiff run_queries, query: {0}, params: {1}".format(query,params))
-#            cur.execute(query, params).addCallbacks(ran_cb, err_cb)
-#
-#        exec_queries()
-
         return result_d
 
     def compare(self, cur):
@@ -290,16 +259,6 @@ class ObjectSetDiff:
         return
 
 
-#         params = []
-#         query_arr = []
-#         for subj in self.queries['subjects']:
-#             params.append(subj)
-#             query_arr.append("%s")
-#         query_array = "ARRAY[{0}]".format(",".join(query_arr))
-#         query = "SELECT * FROM wb_multi_subject_add({0})".format(query_array)
-# 
-#         return (query, params)
-
     def apply_diffs_to_latest(self, cur):
         """ Make the queries used to INSERT/DELETE from the wb_latest_vers table. """
         
@@ -329,21 +288,13 @@ class ObjectSetDiff:
                 thetype, value, language, datatype = None, None, None, None
 
             # then add new
-#            queries.append(("SELECT * FROM wb_add_triple_to_latest(%s, %s, %s, %s, %s, %s)", [subject, predicate, value, thetype, language, datatype]))
             order += 1
             self.queries['latest']['values'].append("(wb_get_triple_id(%s, %s, %s, %s, %s, %s), %s)")
             self.queries['latest']['params'].extend([subject, predicate, value, thetype, language, datatype, order])
 
         for row in self.queries['latest_diffs']['add_subject']:
             subject, predicate, sub_obj, object_order = row
-#            queries.append(("SELECT * FROM wb_add_triple_to_latest(%s, %s, %s, %s, %s, %s)", [subject, None, None, None, None, None]))
-#            order += 1
 
-            # FIXME XXX just do an insert check into wb_latest_subjects
-##            self.queries['latest']['values'].append("(wb_get_triple_id(%s, NULL, NULL, NULL, NULL, NULL), %s)")
-##            self.queries['latest']['params'].extend([subject, order])
-#            queries.append(("INSERT INTO wb_latest_subjects (id_subject) SELECT wb_get_string_id(%s) WHERE NOT EXISTS (SELECT id_subject FROM wb_latest_subjects WHERE id_subject = wb_get_string_id(%s))", [subject, subject]))
-            #self.queries['subjects'].append(subject)
             for subj in self.queries['subjects']['params']:
                 if subj[0] != subject:
                     self.queries['subjects']['values'].append("(wb_get_string_id(%s))")
@@ -351,7 +302,6 @@ class ObjectSetDiff:
 
         for row in self.queries['latest_diffs']['add_predicate']:
             subject, predicate, sub_obj, object_order = row
-#            queries.append(("SELECT * FROM wb_add_triple_to_latest(%s, %s, %s, %s, %s, %s)", [subject, predicate, None, None, None, None]))
             order += 1
             self.queries['latest']['values'].append("(wb_get_triple_id(%s, %s, NULL, NULL, NULL, NULL), %s)")
             self.queries['latest']['params'].extend([subject, predicate, order])
@@ -369,11 +319,8 @@ class ObjectSetDiff:
                 self.queries['latest']['values'].append("(wb_get_triple_id(%s, %s, NULL, NULL, NULL, NULL), %s)")
                 self.queries['latest']['params'].extend([subject, predicate, order])
 
-            #queries.append(("SELECT * FROM wb_add_triple_to_latest(%s, %s, %s, %s, %s, %s)", [subject, predicate, value, thetype, language, datatype]))
-
         # returns the deferred
         return self.gen_queries(['latest','subjects'], cur) # render queries periodically
-#        return queries
 
 
     def obj_to_obj_tuple(self, sub_obj):
@@ -401,48 +348,4 @@ class ObjectSetDiff:
             datatype = sub_obj["@type"]
 
         return (thetype, value, language, datatype)
-
-
-#    def get_string_ids(self, strings):
-#        """ Get the DB id of a string. """
-#        logging.debug("ObjectSetDiff get_string_ids, strings: {0}".format(string))
-#        result_d = Deferred()
-#
-#        def results(rows):
-#            logging.debug("ObjectSetDiff get_string_ids, result, rows: {0}".format(rows))
-#            try:
-#                result_d.callback(rows[0])
-#            except Exception as e:
-#                logging.error("ObjectSetDiff get_string_ids, result, exception: {0}".format(e))
-#                result_d.errback(Failure(e))
-#
-#        def err_cb(failure):
-#            logging.error("ObjectSetDiff get_string_ids, err_cb, failure: {0}".format(failure))
-#            result_d.errback(failure)
-#            return
-#
-#        self.conn.runQuery("SELECT " + ("wb_get_string_id(%s), " * len(strings))[:-2], strings).addCallbacks(results, err_cb)
-#        return result_d
-#
-#    def get_object_id(self, obj_type, obj_value, obj_lang, obj_datatype):
-#        """ Get the DB id of an object. """
-#        logging.debug("ObjectSetDiff get_string_id, obj_type: {0}, obj_value: {1}, obj_lang: {2}, obj_datatype: {3}".format(
-#            obj_type, obj_value, obj_lang, obj_datatype))
-#        result_d = Deferred()
-#
-#        def results(rows):
-#            logging.debug("ObjectSetDiff get_object_id, result, rows: {0}".format(rows))
-#            try:
-#                result_d.callback(rows[0][0])
-#            except Exception as e:
-#                logging.error("ObjectSetDiff get_object_id, result, exception: {0}".format(e))
-#                result_d.errback(Failure(e))
-#
-#        def err_cb(failure):
-#            logging.error("ObjectSetDiff get_object_id, err_cb, failure: {0}".format(failure))
-#            result_d.errback(failure)
-#            return
-#
-#        self.conn.runQuery("SELECT wb_get_object_id(%s,%s,%s,%s)", [obj_type, obj_value, obj_lang, obj_datatype]).addCallbacks(results, err_cb)
-#        return result_d
 
