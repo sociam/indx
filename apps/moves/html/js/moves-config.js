@@ -47,6 +47,7 @@ angular
 				user:$scope.app.user && $scope.app.user['@id'],
 				password:$scope.app.password,
 				clientid:$scope.clientid,
+				clientsecret:$scope.clientsecret,
 				authcode:$scope.authcode
 			});
 		};
@@ -68,10 +69,12 @@ angular
 			});
 		};
 
+
+		// getting and setting from server ==================================================
 		// @get_config
-		var _get_config_from_service = function() {
+		var getConfig = function() {
 			s._ajax('GET', 'apps/moves/api/get_config').then(function(x) { 
-				console.log('config >> ', x);
+				console.info(' got config >> ', x);
 				var config = x.config;
 				// simple stuff
 				sa(function() { 
@@ -81,6 +84,7 @@ angular
 							password: config.password,
 						},
 						clientid:config.clientid,
+						clientsecret:config.clientsecret,
 						authcode:config.authcode,
 						sleep:config.sleep || 60000
 					});
@@ -95,6 +99,19 @@ angular
 				}
 			}).fail(function(err) { console.error('could not get config ', err); });
 		};
+		// @setConfig
+		$scope.setConfig = function(config) { 
+			console.info('xmitting config to server >> ', config);
+			s._ajax('GET', 'apps/moves/api/set_config', { config: JSON.stringify(config) }).then(function(x) { 
+				status('configuration chage committed');
+				window.retval = x;
+			}).fail(function(e) {
+				console.error(e);
+				status('error committing change ' + e.toString());
+			});
+		};
+
+
 		var load_box = function(bid) { 
 			var dul = u.deferred(), dbl = u.deferred();
 			s.getBox(bid).then(function(box) {
@@ -143,20 +160,9 @@ angular
 				.then(function(x) { console.info('App Stop result (): ', x); status('Stop command successful'); })
 				.fail(function(x) { status(' Error ' + x.toString()); });
 		};
-		// @setConfig
-		$scope.setConfig = function(config) { 
-			console.info('i got a config ', config);
-			s._ajax('GET', 'apps/moves/api/set_config', { config: JSON.stringify(config) }).then(function(x) { 
-				status('configuration chage committed');
-				window.retval = x;
-			}).fail(function(e) {
-				console.error(e);
-				status('error committing change ' + e.toString());
-			});
-		};
 		$scope.$watch('selectedUser + selectedBox', function() { 
 			if ($scope.selectedBox) {
-				load_box($scope.selectedBox).then(function() {  _get_config_from_service();	});
+				load_box($scope.selectedBox).then(function() {  getConfig();	});
 			}
 		});
 		setInterval(function() { 
