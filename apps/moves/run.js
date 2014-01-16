@@ -5,78 +5,124 @@ var nodeindx = require('../../lib/services/nodejs/nodeindx'),
     u = nodeindx.utils,
     _ = require('underscore')
     jQuery = require('jquery'),
-    path = require('path');
+    path = require('path'),
+    http = require('http');
 
 var MovesService = Object.create(nodeservice.NodeService, {
     run: { 
         value: function(store) {
             // run continuously
-            var this_ = this, config = this.load_config();
-            this.debug('hello i am moves');
-            this._init(store).then(function(config, box, diary) {
-                this_.box = box;
-                this_.diary = diary;
+            var this_ = this;
+            this.load_config().then(function(config) { 
                 this_.config = config;
-                this_.store = store;
-                // setInterval(function() { this_._update(); }, config.sleep);
-                this_._update();
+                this_.debug('hello i am moves', config);
+
+                if (config.authcode) {
+                    // can only be used once
+                    var code = config.authcode;
+                    this_.debug('Getting access token from authcode > ', code);
+                    var cont = function() {
+                        this_.debug('deleting authcode >> done.');
+                        delete config.authcode;
+                        return this_.save_config(config);
+                    };
+                    this_.getAccessToken().then(cont).fail(function() { 
+                        console.error('error getting it '); 
+                        cont().then(function() { process.exit(-1); });
+                    });
+                }
+                this_._init(store).then(function(box, diary) {
+                    this_.box = box;
+                    this_.diary = diary;
+                    this_.store = store;
+                    // setInterval(function() { this_._update(); }, config.sleep);
+                    this_._update();
+                }).fail(function(x) { 
+                    console.error("error in _init:: ", x);
+                });
+            }).fail(function(x) { 
+                console.error("error load config :: ", x);
+                process.exit(-1);                
             });
         }
     },
     _update: {
         value:function(box,diary){
-            if (!this.tokenset) {
-                this.getAccessToken().then(function(tokenset) {
-                    console.log('yup got token ', tokenset);
-                    this_.tokenset = tokenset;
-                });
-            }
+            // if (!this.tokenset) {
+            //     this.getAccessToken().then(function(tokenset) {
+            //         console.log('yup got token ', tokenset);
+            //         this_.tokenset = tokenset;
+            //     });
+            // }
         }
     },
     getAccessToken: {
         value:function() {            
             var d = u.deferred(), this_ = this;
-            var base_url = 'https://api.moves-app.com/oauth/v1/access_token';           
+            var base_url = 'https://api.moves-app.com/oauth/v1/access_token';
             var params = {
                 grant_type: 'authorization_code',
-                code:encodeURIComponent(this_.config.authcode),
-                client_id:encodeURIComponent(this_.config.clientid),
-                client_secret:encodeURIComponent(this_.config.clientsecret),
-                redirect_uri:encodeURIComponent([this_.store._getBaseURL(), "apps", "moves", "moves_redirect.html"].join('/'))
+                code:this_.config.authcode,
+                client_id:this_.config.clientid,
+                client_secret:this_.config.clientsecret
+                // redirect_uri:[this_.store._getBaseURL(), "apps", "moves", "moves_redirect.html"].join('/')
             };
-            var url = base_url+"?"+jQuery.param(params);
-            console.log('url >> ', url);
-            jQuery.ajax({
-                type:'POST', 
-                url:url
-            }).then(function(response) {
-                console.log('response >> ', response);
-                d.resolve(response);
-            }).fail(function(err) {
-                console.error('error>> ', err, err.statusCode());
+            console.log(params);
+            var url = base_url +"?"+jQuery.param(params);
+            console.log('url >> ', url, params);
 
-            })
+            var post_options = {
+              host: 'api.moves-app.com',
+              port: '443',
+              path: '/oauth/v1/access_token'+"?"+jQuery.param(params),
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/x-www-form-urlencoded',
+                  'Content-Length': 0
+              }
+            };
+            // Set up the request
+            var post_req = http.request(post_options, function(res) {
+              res.setEncoding('utf8');
+              res.on('data', function (chunk) {
+                  console.log('POST Response: ' + chunk);
+              });
+              res.on('error', function(error) {
+                  console.log('POST Error Response: ' + chunk);
+              });
+            });
+
+            // jQuery.post(url).then(function(response) {
+            //     console.log('YAY GOT AUTHENTICATION CODE >> ', response);
+            //     _(this_.config).extend(response);
+            //     this_.save(this_.config);
+            //     console.log('saved config >> ', this_.config);
+            //     d.resolve(response);
+            // }).fail(function(err) {
+            //     console.error('error >> ', err, err.statusCode());
+            //     d.reject(err);
+            // })
             return d.promise();
         }
     },
     _init: { // ecmascript 5, don't be confused!
         value: function(store) {
-            var this_ = this, config, d = u.deferred();
-            this.load_config().then(function(config_) {
-                this_.debug('config! ', config_)
-                config = config_;
-                if (!config || !_(config).keys()) {  
-                    this_.debug(' no configuration set, aborting ');  return;  
+            var this_ = this, config = this.config, d = u.deferred();
+            if (!config || !_(config).keys()) {  
+                this_.debug(' no configuration set, aborting ');  
+                d.reject();
+                process.exit(-1);
+                return;
+            }
+            var boxid = config.box;
+            store.getBox(boxid).then(function(box) {
+                // get moves diary
+                box.getObj('moves-diary').then(function(obj) { 
+                    d.resolve(box,obj); 
+                }).fail(function() { 
                     d.reject();
-                }
-                var boxid = config.box;
-                store.getBox(boxid).then(function(box) {
-                    // get moves diary
-                    box.getObj('moves-diary').then(function(obj) { d.resolve(config,box,obj); }).fail(function() { 
-                        d.reject();
-                    });
-                }).fail(function(err) { this_.debug('error getting box ', err); }); 
-            }).fail(function(err) { console.error('error loading config', err); });
+                });
+            }).fail(function(err) { this_.debug('error getting box ', err); }); 
             return d.promise();
         }
     },
