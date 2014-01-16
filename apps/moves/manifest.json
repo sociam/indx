@@ -8,7 +8,6 @@
 	"run":["node", "run.js", "--indxhost", "{0}"],
 	"set_config":["node", "run.js", "--setconfig", "{0}"],
 	"get_config":["node", "run.js", "--getconfig"],
-	"configpanel":"html/index.html",
 	"author": [
 		{
 			"name": "eMax",

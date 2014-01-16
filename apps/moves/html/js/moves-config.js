@@ -50,14 +50,12 @@ angular
 				authcode:$scope.authcode
 			});
 		};
-
 		$scope.clearAuthCode = function() {
 			sa(function() { 
 				$scope.authcode = '';
 				setConfigFromScope();
 			});
 		};
-
 		$scope.getAuthCode = function() {
 			open_moves_authorise($scope.clientid).then(function(code) { 
 				sa(function() {
@@ -73,7 +71,8 @@ angular
 		// @get_config
 		var _get_config_from_service = function() {
 			s._ajax('GET', 'apps/moves/api/get_config').then(function(x) { 
-				var config = JSON.parse(x.config);
+				console.log('config >> ', x);
+				var config = x.config;
 				// simple stuff
 				sa(function() { 
 					_($scope).extend({ 
