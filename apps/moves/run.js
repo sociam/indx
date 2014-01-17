@@ -84,53 +84,48 @@ var MovesService = Object.create(nodeservice.NodeService, {
             console.log('REDIRECT >>> ', params.redirect_uri);
             console.log("CODE >> ", params.code);
             var url = base_url +"?"+jQuery.param(params);
-            // console.log('url >> ', url, params);
 
-            var partial = '/oauth/v1/access_token'+"?"+jQuery.param(params);
-            console.log('partial >> ', partial);
+            // var partial = '/oauth/v1/access_token'+"?"+jQuery.param(params);
+            // console.log('partial >> ', partial);
+            // var post_options = {
+            //   host: 'api.moves-app.com',
+            //   port: '443',
+            //   path: partial,
+            //   method: 'POST',
+            //   headers: {
+            //       'Content-Type': 'application/x-www-form-urlencoded',
+            //       'Content-Length': 0
+            //   }
+            // };
+            // var chunks = '', error;
+            // var post_req = https.request(post_options, function(res) {
+            //   res.setEncoding('utf8');
+            //   res.on('data', function (chunk) {
+            //       console.log('POST Response: ' + chunk);
+            //       chunks += chunk;
+            //   });
+            //   res.on('error', function(error) {
+            //       error = true;
+            //       console.log('POST Error Response: ' + error);
+            //       d.reject(error);
+            //   });
+            //   res.on('end', function() { 
+            //     if (!error) {
+            //        console.log('end!!', chunks);
+            //        d.resolve(JSON.parse(chunks));
+            //     }
+            //   });
+            // });
+            // post_req.end();
 
-            var post_options = {
-              host: 'api.moves-app.com',
-              port: '443',
-              path: partial,
-              method: 'POST',
-              headers: {
-                  'Content-Type': 'application/x-www-form-urlencoded',
-                  'Content-Length': 0
-              }
-            };
-            var chunks = '', error;
-            // Set up the request
-            var post_req = https.request(post_options, function(res) {
-              res.setEncoding('utf8');
-              res.on('data', function (chunk) {
-                  console.log('POST Response: ' + chunk);
-                  chunks += chunk;
-              });
-              res.on('error', function(error) {
-                  error = true;
-                  console.log('POST Error Response: ' + error);
-                  d.reject(error);
-              });
-              res.on('end', function() { 
-                if (!error) {
-                   console.log('end!!', chunks);
-                   d.resolve(JSON.parse(chunks));
-                }
-              });
+            jQuery.post(url).then(function(result) {
+                console.log('success >> ', result, typeof result);
+                d.resolve(result);
+            }).fail(function(bail) { 
+                console.error('error >> ', bail);
+                d.reject(bail);
             });
-            post_req.end();
 
-            // jQuery.post(url).then(function(response) {
-            //     console.log('YAY GOT AUTHENTICATION CODE >> ', response);
-            //     _(this_.config).extend(response);
-            //     this_.save(this_.config);
-            //     console.log('saved config >> ', this_.config);
-            //     d.resolve(response);
-            // }).fail(function(err) {
-            //     console.error('error >> ', err, err.statusCode());
-            //     d.reject(err);
-            // })
             return d.promise();
         }
     },

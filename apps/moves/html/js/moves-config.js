@@ -39,22 +39,10 @@ angular
 			return d.promise();
 		};
 
-		$scope.setConfigFromScope = function() {
-			$scope.setConfig({
-				latlngs:$scope.latlngs,
-				sleep:$scope.sleep,
-				box:$scope.app.box,
-				user:$scope.app.user && $scope.app.user['@id'],
-				password:$scope.app.password,
-				clientid:$scope.clientid,
-				clientsecret:$scope.clientsecret,
-				authcode:$scope.authcode
-			});
-		};
 		$scope.clearAuthCode = function() {
 			sa(function() { 
-				$scope.authcode = '';
-				setConfigFromScope();
+				delete $scope.authcode;
+				$scope.setConfig($scope.config);
 			});
 		};
 		$scope.getAuthCode = function() {
@@ -68,8 +56,6 @@ angular
 				status('Error getting auth code from Moves - ' + err.message);
 			});
 		};
-
-
 		// getting and setting from server ==================================================
 		// @get_config
 		var getConfig = function() {
@@ -77,31 +63,29 @@ angular
 				console.info(' got config >> ', x);
 				var config = x.config;
 				// simple stuff
-				sa(function() { 
-					_($scope).extend({ 
-						app: { 
-							box : config.box,
-							password: config.password,
-						},
-						clientid:config.clientid,
-						clientsecret:config.clientsecret,
-						authcode:config.authcode,
-						sleep:config.sleep || 60000
-					});
-				});
 				// restore the user
 				if (config.user && $scope.users) { 
 					var match = $scope.users.filter(function(u) { return u['@id'] === config.user; });
 					if (match.length) {
 						window.match = match[0];
-						sa(function() { $scope.app.user = match[0]; });
+						config.user = match[0]; 
 					}
 				}
+				sa(function() { $scope.config = config;	});				
 			}).fail(function(err) { console.error('could not get config ', err); });
 		};
 		// @setConfig
 		$scope.setConfig = function(config) { 
 			console.info('xmitting config to server >> ', config);
+			var c = _(config).clone();
+
+			// strip out objects (user object namely)
+			_(config).map(function(v,k) {
+				if (_(v).isObject() && v['@id']) { 
+					console.log('v object > ', v);
+					config[k] = v['@id'];
+				}
+			});
 			s._ajax('GET', 'apps/moves/api/set_config', { config: JSON.stringify(config) }).then(function(x) { 
 				status('configuration chage committed');
 				window.retval = x;
@@ -110,6 +94,20 @@ angular
 				status('error committing change ' + e.toString());
 			});
 		};
+
+		// $scope.setConfigFromScope = function() {
+		// 	$scope.setConfig({
+		// 		latlngs:$scope.latlngs,
+		// 		sleep:$scope.sleep,
+		// 		box:$scope.app.box,
+		// 		user:$scope.app.user && $scope.app.user['@id'],
+		// 		password:$scope.app.password,
+		// 		clientid:$scope.clientid,
+		// 		clientsecret:$scope.clientsecret,
+		// 		authcode:$scope.authcode
+		// 	});
+		// };
+
 
 
 		var load_box = function(bid) { 
