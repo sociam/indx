@@ -22,14 +22,14 @@
 		</table>
 	</div>
 	<div class="row">
-		<div class="btn btn-default" ng-show="config.access_token && config.user && config.password && config.box" ng-click="showConfig = !showConfig"> Reconfigure <div class="glyphicon glyphicon-cog"></div></div>
+		<div class="btn btn-default" ng-show="!(config.access_token && config.user && config.password && config.box)" ng-click="showConfig = !showConfig"> Reconfigure <div class="glyphicon glyphicon-cog"></div></div>
 	</div>
 	<div class="row">
 	<div class="span12">
 		<table ng-show="!(config.authcode && config.user && config.password && config.box) || showConfig">
 			<tr><td colspan="2"><h4>set up moves: </h4></td></tr>
 			<tr>
-				<td colspan"2">Register with Moves</td><td><a href="https://dev.moves-config.com/apps" class="btn btn-default" target="_blank">Create an app with moves-config.com</a></td>
+				<td colspan"2">Register with Moves</td><td><a href="https://dev.moves-app.com/apps" class="btn btn-default" target="_blank">Create an app with moves-app.com</a></td>
 			</tr>
 			<tr>
 				<td>On that page, <br> set your app's <strong>redirect URL</strong> to: </td><td><code> {{ redirect_url }} </code> </td>

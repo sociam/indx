@@ -46,11 +46,11 @@ angular
 			});
 		};
 		$scope.getAuthCode = function() {
-			open_moves_authorise($scope.clientid).then(function(code) { 
+			open_moves_authorise($scope.config.clientid).then(function(code) { 
 				sa(function() {
 					status("Successfully got auth code " + code + " from moves, saving.");
 					$scope.authcode = code;
-					$scope.setConfigFromScope();
+					$scope.setConfig($scope.config);
 				});
 			}).fail(function(err) { 
 				status('Error getting auth code from Moves - ' + err.message);
@@ -78,7 +78,6 @@ angular
 		$scope.setConfig = function(config) { 
 			console.info('xmitting config to server >> ', config);
 			var c = _(config).clone();
-
 			// strip out objects (user object namely)
 			_(config).map(function(v,k) {
 				if (_(v).isObject() && v['@id']) { 
@@ -88,28 +87,15 @@ angular
 			});
 			s._ajax('GET', 'apps/moves/api/set_config', { config: JSON.stringify(config) }).then(function(x) { 
 				status('configuration chage committed');
-				window.retval = x;
+				if ($scope.isRunning()) { 
+					status('Restarting service with new config ----------.');
+					$scope.doStop().then(function() { $scope.doStart(); });
+				}
 			}).fail(function(e) {
 				console.error(e);
 				status('error committing change ' + e.toString());
 			});
 		};
-
-		// $scope.setConfigFromScope = function() {
-		// 	$scope.setConfig({
-		// 		latlngs:$scope.latlngs,
-		// 		sleep:$scope.sleep,
-		// 		box:$scope.app.box,
-		// 		user:$scope.app.user && $scope.app.user['@id'],
-		// 		password:$scope.app.password,
-		// 		clientid:$scope.clientid,
-		// 		clientsecret:$scope.clientsecret,
-		// 		authcode:$scope.authcode
-		// 	});
-		// };
-
-
-
 		var load_box = function(bid) { 
 			var dul = u.deferred(), dbl = u.deferred();
 			s.getBox(bid).then(function(box) {
@@ -147,22 +133,36 @@ angular
 			});
 		};
 		$scope.doStart = function() {
+			var d = u.deferred();
 			s._ajax('GET', 'apps/moves/api/start').then(function(x) { 
 				console.info('App doStart result: ', x); 
 				status('Start command successful'); 
-			}).fail(function(x) { status(' Error ' + x.toString()); });
+				d.resolve();
+			}).fail(function(x) { 
+				status(' Error ' + x.toString()); 
+				d.reject();
+			});
+			return d.promise();
 		};
 		$scope.doStop = function() {
-			console.log('App doStop');
+			var d = u.deferred();
 			s._ajax('GET', 'apps/moves/api/stop')
-				.then(function(x) { console.info('App Stop result (): ', x); status('Stop command successful'); })
-				.fail(function(x) { status(' Error ' + x.toString()); });
+				.then(function(x) { 
+					console.info('App Stop result (): ', x); 
+					status('Stop command successful'); 
+					d.resolve(); 
+				}).fail(function(x) { 
+					status(' Error ' + x.toString()); 
+					d.reject(); 
+				});
+			return d.promise();
 		};
 		$scope.$watch('selectedUser + selectedBox', function() { 
 			if ($scope.selectedBox) {
 				load_box($scope.selectedBox).then(function() {  getConfig();	});
 			}
 		});
+		$scope.isRunning = function() { return $scope.runstate == 'Running'; };
 		setInterval(function() { 
 			s._ajax('GET','apps/moves/api/is_running').then(function(r) { 
 				sa(function() { 
