@@ -17,10 +17,9 @@ angular
 			var popup = window.open(url, 'indx_moves_popup', 'width=790,height=500');
 			var d = u.deferred();
 			window._moves_continuation = function(response) {
-				console.info("moves continuation >> ", response);
 				var getparam = function(pname) { return u.getParameterByName(pname, '?'+response); };
 				var code = getparam('code');
-				console.log('got code -- ', code);
+				console.info('NEW AUTH CODE >>> ', code);
 				d.resolve(code);
 			};
 			var intPopupChecker = setInterval(function() {
@@ -49,7 +48,7 @@ angular
 			open_moves_authorise($scope.config.clientid).then(function(code) { 
 				sa(function() {
 					status("Successfully got auth code " + code + " from moves, saving.");
-					$scope.authcode = code;
+					$scope.config.authcode = code;
 					$scope.setConfig($scope.config);
 				});
 			}).fail(function(err) { 
