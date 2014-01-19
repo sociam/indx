@@ -6,7 +6,8 @@ var nodeindx = require('../../lib/services/nodejs/nodeindx'),
     _ = require('underscore')
     jQuery = require('jquery'),
     path = require('path'),
-    https = require('https');
+    https = require('https'),
+    output = nodeservice.output;
 
 var MovesService = Object.create(nodeservice.NodeService, {
     run: { 
@@ -99,10 +100,10 @@ var MovesService = Object.create(nodeservice.NodeService, {
             var d = u.deferred(), this_ = this;
             var base_url = 'https://api.moves-app.com/oauth/v1/tokeninfo';
             var params = {
-                tokeninfo:this_.config.access_token,
+                access_token:this_.config.access_token,
             };
             var url = base_url +"?"+jQuery.param(params);
-            jQuery.post(url).then(function(result) {
+            jQuery.get(url).then(function(result) {
                 // token is valid
                 console.info('token valid >> ', result);
                 d.resolve(result);
@@ -128,8 +129,8 @@ var MovesService = Object.create(nodeservice.NodeService, {
             jQuery.post(url).then(function(result) {
                 // token is valid
                 console.info('refresh ok, clobbering >> ', result, typeof result);
-                _(config).extend(result);
-                this_.save_config(config).then(function() {
+                _(this_.config).extend(result);
+                this_.save_config(this_.config).then(function() {
                    d.resolve(result); 
                 }).fail(function() { 
                     d.reject();
@@ -171,9 +172,30 @@ var MovesService = Object.create(nodeservice.NodeService, {
     }
 });
 
-if (require.main === module) { 
+var instantiate = function(indxhost) { 
+    var d = u.deferred();
     var ws = Object.create(MovesService);
-    // needs to know where we are so that it can find our filename
-    ws.init(path.dirname(module.filename));
+    ws.init(path.dirname(module.filename)).then(function() { 
+        if (indxhost){ ws.setHost(indxhost); }
+        d.resolve(ws);
+    }).fail(function(bail) {
+        output({event:"error", message:bail.message || bail.toString()});
+        process.exit(1);
+        d.reject();
+    });
+    return d.promise();
 }
+
+module.exports = {
+    MovesService: MovesService,
+    instantiate: instantiate
+};
+
+if (require.main === module) { 
+    // needs to know where we are so that it can find our filename
+    instantiate().then(function(moves) {
+        moves.check_args();
+    });
+}
+
 
