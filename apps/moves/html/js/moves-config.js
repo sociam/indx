@@ -162,6 +162,7 @@ angular
 			}
 		});
 		$scope.isRunning = function() { return $scope.runstate == 'Running'; };
+		var last_stderr_n, last_stdout_n;
 		setInterval(function() { 
 			s._ajax('GET','apps/moves/api/is_running').then(function(r) { 
 				sa(function() { 
@@ -172,14 +173,16 @@ angular
 					$scope.runstate = newrunstate;
 				});
 			}).fail(function(r) { sa(function() { $scope.runstate = 'Unknown'; }); });
-			s._ajax('GET', 'apps/moves/api/get_stderr').then(function(data) {
-				var messages = data && data.messages && data.messages.join('<br>').replace(/\n/g,' ');
-				sa(function() { 
-					console.log('got stdout ', data && data.messages.length); 
-					$scope.stderr = messages || ''; 
-				});
-			}).fail(function(err) {	console.error('error getitng stderr ', err); });
-			s._ajax('GET', 'apps/moves/api/get_stdout').then(function(data) {
+			s._ajax('GET', 'apps/moves/api/get_stderr' + (last_stderr_n ? '?offset='+last_stderr_n : '')).then(function(data) {
+					last_stderr_n += data && data.messages && data.messages.length || 0;
+					var messages = data && data.messages && data.messages.join('<br>').replace(/\n/g,' ');
+					sa(function() { 
+						console.log('got stdout ', data && data.messages.length); 
+						$scope.stderr = messages || ''; 
+					});
+			}).fail(function(err) {	console.error('error getting stderr ', err); });
+			s._ajax('GET', 'apps/moves/api/get_stdout' + (last_stdout_n ? '?offset='+last_stdout_n : '')).then(function(data) {
+				last_stdout_n += data && data.messages && data.messages.length || 0;
 				var messages = data && data.messages && data.messages.join('<br>').replace(/\n/g,' ');
 				sa(function() { 
 					console.log('got stdout ', data && data.messages.length); 

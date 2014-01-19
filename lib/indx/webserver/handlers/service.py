@@ -191,12 +191,12 @@ class ServiceHandler(BaseHandler):
 
     def get_stderr_log(self,request):
         self._dequeue_stderr()
-        from_id = self.get_arg(request, "start")
+        from_id = self.get_arg(request, "offset") and int(self.get_arg(request,"offset"))
         if not from_id: from_id = 0
         return self.return_ok(request,data={'messages':self.err_output[from_id:]})
     def get_stdout_log(self,request):
         self._dequeue_stdout()
-        from_id = self.get_arg(request, "start")
+        from_id = self.get_arg(request, "offset") and int(self.get_arg(request,"offset"))
         if not from_id: from_id = 0
         return self.return_ok(request,data={'messages':self.std_output[from_id:]})
 

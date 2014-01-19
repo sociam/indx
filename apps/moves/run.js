@@ -94,6 +94,55 @@ var MovesService = Object.create(nodeservice.NodeService, {
             return d.promise();
         }
     },
+    checkAccessToken: {
+        value:function() {            
+            var d = u.deferred(), this_ = this;
+            var base_url = 'https://api.moves-app.com/oauth/v1/tokeninfo';
+            var params = {
+                tokeninfo:this_.config.access_token,
+            };
+            var url = base_url +"?"+jQuery.param(params);
+            jQuery.post(url).then(function(result) {
+                // token is valid
+                console.info('token valid >> ', result);
+                d.resolve(result);
+            }).fail(function(bail) { 
+                // token isn't valid anymore
+                console.error('error >> ', bail);
+                d.reject(bail);
+            });
+            return d.promise();
+        }
+    },
+    refreshToken: {
+        value:function() {            
+            var d = u.deferred(), this_ = this;
+            var base_url = 'https://api.moves-app.com/oauth/v1/access_token';
+            var params = {
+                grant_type: 'refresh_token',
+                refresh_token:this_.config.refresh_token,
+                client_id:this_.config.clientid,
+                client_secret:this_.config.clientsecret
+            };
+            var url = base_url +"?"+jQuery.param(params);
+            jQuery.post(url).then(function(result) {
+                // token is valid
+                console.info('refresh ok, clobbering >> ', result, typeof result);
+                _(config).extend(result);
+                this_.save_config(config).then(function() {
+                   d.resolve(result); 
+                }).fail(function() { 
+                    d.reject();
+                });
+            }).fail(function(bail) { 
+                // token isn't valid anymore
+                console.error('error >> ', bail);
+                d.reject(bail);
+            });
+            return d.promise();
+        }
+    },
+
     _init: { // ecmascript 5, don't be confused!
         value: function(store) {
             var this_ = this, config = this.config, d = u.deferred();
