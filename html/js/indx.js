@@ -1,7 +1,5 @@
 /*global $,_,document,window,console,escape,Backbone,exports,WebSocket */
 /*jslint vars:true, todo:true */
-
-
 ///  @title indx.js
 ///  @author Daniel Alexander Smith
 ///  @author Max Van Kleek

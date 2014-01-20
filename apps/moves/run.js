@@ -7,58 +7,49 @@ var nodeindx = require('../../lib/services/nodejs/nodeindx'),
     jQuery = require('jquery'),
     path = require('path'),
     https = require('https'),
-    output = nodeservice.output;
+    output = nodeservice.output,
+    angular = require('angular'),
+    entities = nodeindx.injector.get('entities');
 
 var MovesService = Object.create(nodeservice.NodeService, {
     run: { 
+        // master run 
         value: function(store) {
             // run continuously
             var this_ = this;
-            this_.store = store;
+            this.store = store;
 
-            this.load_config().then(function(config) { 
-                this_.config = config;
-                this_.debug('hello i am moves', config);
+            var doinit = function() {
+                console.log('doinit() -- ', config);
+                this_._loadBox().then(function() { this_._update(); }).fail(function(er) { 
+                    console.error('Error in _init ', er); 
+                    process.exit(-1); 
+                });
+            };
 
-                var doinit = function() {
-                    console.log('doinit() -- ', config);
-                    this_._init(store).then(function(box, diary) {
-                        this_.box = box;
-                        this_.diary = diary;
-                        this_._update();
-                     }).fail(function(er) { 
-                        console.error('Error in _init ', er); 
-                        process.exit(-1); 
+            // checkauthcode
+            if (config.authcode) {
+                // can only be used once, so that means we need to get it
+                var code = config.authcode;
+                this_.debug('Getting access token from authcode > ', code);
+                this_.getAccessToken().then(function(authtokens) {
+                    delete config.authcode;
+                    console.error('positive cont ');
+                    _(config).extend(authtokens);
+                    this_.save_config(config).then(doinit).fail(function() { 
+                        console.error('error saving authtokens ', config); 
+                        process.exit(-1);
                     });
-                };
-
-                if (config.authcode) {
-                    // can only be used once
-                    var code = config.authcode;
-                    this_.debug('Getting access token from authcode > ', code);
-                    var cont = function(authtokens) {
-                        delete config.authcode;
-                        console.error('positive cont ');
-                        _(config).extend(authtokens);
-                        this_.save_config(config).then(doinit).fail(function() { 
-                            console.error('error saving authtokens ', config); 
-                            process.exit(-1);
-                        });
-                    };
-                    this_.getAccessToken().then(cont).fail(function(err) { 
-                        console.error('error getting authtokens', err);
-                        this_.debug('deleting authcode >> done.');
-                        delete config.authcode;
-                        this_.save_config(config).then(function() { process.exit(-1); });
-                    });
-                } else if (config.access_token) {
-                    console.log('we have an access code, boyzz - init');
-                    doinit();
-                }
-            }).fail(function(x) { 
-                console.error("error load config :: ", x);
-                process.exit(-1);                
-            });
+                }).fail(function(err) { 
+                    console.error('error getting authtokens', err);
+                    this_.debug('deleting authcode >> done.');
+                    delete config.authcode;
+                    this_.save_config(config).then(function() { process.exit(-1); });
+                });
+            } else if (config.access_token) {
+                console.log('we have an access code, boyzz - init');
+                doinit();
+            }
         }
     },
     _update: {
@@ -143,10 +134,44 @@ var MovesService = Object.create(nodeservice.NodeService, {
             return d.promise();
         }
     },
-
-    _init: { // ecmascript 5, don't be confused!
-        value: function(store) {
-            var this_ = this, config = this.config, d = u.deferred();
+    getProfile: {
+        value:function() {
+            var d = u.deferred(), this_ = this;     
+            this.assert(this.config.access_token, "No auth code", "authorization code");
+            var base_url = 'https://api.moves-app.com/api/v1/user/profile?'+jQuery.param({access_token:this.config.access_token});
+            console.log('url ', base_url);
+            jQuery.ajax({type:'GET', url: base_url}).then(function(result) {
+                console.log('profile info >> ', result);
+                entities.toObj(result).then(function(pdatm) { 
+                    this_.diary.set("profile",[pdatm]);
+                    u.when([this_.diary.save(), pdatm.save()]).then(d.resolve).fail(d.reject);
+                });
+            }).fail(function(bail) { 
+                // token isn't valid anymore
+                console.error('ERROR getProfile >> ', bail);
+                d.reject(bail);
+            });
+            return d.promise();
+        }
+    },
+    _merge_into_diary:function(key, data) {
+        var d = u.deferred(), this_ = this;
+        var fail = function(err) { d.reject(err); };
+        var cont = function() {
+            this_.assert(this_.diary, "no diary loaded", "internal error");
+            entities.toObj(data).then(function(pdatm) { 
+                this_.diary.set(key,[pdatm]);
+                u.when([this_.diary.save(), pdatm.save()]).then(d.resolve).fail(d.reject);
+            });
+        };
+        if (!this.diary) {
+            this._loadBox().then(function() { cont(); }).fail(fail); 
+        } else {  cont();   }
+        return d.promise();
+    },
+    _loadBox: { // ecmascript 5, don't be confused!
+        value: function() {
+            var this_ = this, config = this.config, d = u.deferred(), store = this.store;
             if (!config || !_(config).keys()) {  
                 this_.debug(' no configuration set, aborting ');  
                 d.reject();
@@ -155,8 +180,10 @@ var MovesService = Object.create(nodeservice.NodeService, {
             }
             var boxid = config.box;
             store.getBox(boxid).then(function(box) {
-                // get moves diary
+              // get moves diary
+                this_.box = box;
                 box.getObj('moves-diary').then(function(obj) { 
+                    this_.diary = diary;
                     d.resolve(box,obj); 
                 }).fail(function() { 
                     d.reject();
@@ -188,10 +215,14 @@ var instantiate = function(indxhost) {
 
 module.exports = {
     MovesService: MovesService,
-    instantiate: instantiate
+    instantiate: instantiate,
+    entities:entities
 };
 
 if (require.main === module) { 
+    var entities = injector.get('entities');
+    console.log('entities >> ', entities);
+
     // needs to know where we are so that it can find our filename
     instantiate().then(function(moves) {
         moves.check_args();
