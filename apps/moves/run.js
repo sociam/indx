@@ -196,7 +196,7 @@ var MovesService = Object.create(nodeservice.NodeService, {
         // and transforms this into a series of MovesObservations
         value:function(from_date, to_date) {
             // 
-            this.assert( daysBetween(from_date, to_date) < 8, "Only accepts date ranges 7 days wide.");
+            this.assert(daysBetween(from_date, to_date) < 8, "Only accepts date ranges 7 days wide.");
             this.assert(this.config.access_token, "No auth code", "authorization code");
             this.assert(this.diary, "No diary loaded");
             this.assert(this.diary.get('userId'), "No diary loaded");
@@ -212,7 +212,9 @@ var MovesService = Object.create(nodeservice.NodeService, {
                 storyline.map(function(day) {
                     var date = day.date;
                     day.segments.map(function(segment) {
-                        var segment_id = segment.type
+                        if (segment.type == 'place') {
+
+                        }
                     });
                 });
             }).fail(function(bail) {   d.reject(bail);   });
