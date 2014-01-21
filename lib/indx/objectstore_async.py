@@ -518,6 +518,221 @@ class ObjectStoreAsync:
         self.conns['conn']().addCallbacks(conn_cb, result_d.errback)
         return result_d
 
+
+
+    def apply_diff(self, diff):
+        """ Apply a JSON-type diff to the database, appending to the wb_vers_diff table and modifying the wb_latest_vers table. """
+        result_d = Deferred()
+
+        # TODO perform in transaction (lock tables also)
+
+        def interaction_cb(cur):
+
+            def ver_cb(cur_version):
+                new_version = cur_version + 1
+
+                queries = {
+                    "subjects": {
+                        "values": [],
+                        "params": [],
+                        "query_prefix": "INSERT INTO wb_latest_subjects (id_subject) VALUES "
+                    },
+                    "diff": {
+                        "values": [],
+                        "params": [],
+                        "query_prefix": "INSERT INTO wb_vers_diffs (version, diff_type, subject, predicate, object, object_order) VALUES "
+                    },
+                    "prelatest": { # queries that are to be run immediately before latest. i.e., DELETE FROM before new INSERT INTO are run when replacing objects
+                        "queries": [], # just bare queries, no prefixing/rendering
+                    },
+                    "latest": {
+                        "values": [],
+                        "params": [],
+                        "query_prefix": "INSERT INTO wb_latest_vers (triple, triple_order) VALUES "
+                    },
+    #                "latest_diffs": {
+    #                    "add_predicate": [],
+    #                    "remove_predicate": [],
+    #                    "add_subject": [],
+    #                    "add_triple": [],
+    #                    "remove_subject": [],
+    #                    "replace_objects": [],
+    #                },
+                }
+
+                def obj_to_tuples(val):
+                    if "@id" in val:
+                        value = val['@id']
+                        thetype = 'resource'
+                        language = ''
+                        datatype = ''
+                    else:
+                        value = val['@value']
+                        thetype = 'literal'
+                        language = val['@language']
+                        datatype = val['@type']
+
+                    return value, thetype, language, datatype
+
+
+                def add_obj(uri, obj):
+                    order = 0 # TODO move this somewhere else?
+
+                    queries['subjects']['values'].append("(wb_get_string_id(%s))")
+                    queries['subjects']['params'].extend([uri])
+
+                    for pred, values in obj.items():
+                        for val in values:
+                            order += 1 
+                            value, thetype, language, datatype = obj_to_tuples(val)
+
+                            # change 'latest' table
+                            queries['latest']['values'].append("(wb_get_triple_id(%s, %s, %s, %s, %s, %s), %s)")
+                            queries['latest']['params'].extend([uri, pred, value, thetype, language, datatype, order])
+                            
+                            # append to 'diff' table
+
+                            # add_subject
+                            queries['diff']['values'].append("(%s, %s, wb_get_string_id(%s), wb_get_string_id(%s), NULL, NULL)")
+                            queries['diff']['params'].extend([new_version, 'add_subject', uri, pred])            
+
+                            # add_predicate
+                            queries['diff']['values'].append("(%s, %s, wb_get_string_id(%s), wb_get_string_id(%s), NULL, NULL)")
+                            queries['diff']['params'].extend([new_version, 'add_predicate', uri, pred])            
+
+                            # add_triple
+                            queries['diff']['values'].append("(%s, %s, wb_get_string_id(%s), wb_get_string_id(%s), wb_get_object_id(%s, %s, %s, %s), %s)")
+                            queries['diff']['params'].extend([new_version, 'add_triple', uri, pred, thetype, value, language, datatype, order])            
+
+
+                if 'deleted' in diff:
+                    urilist = diff['deleted']
+                    queries['prelatest']['queries'].append(("DELETE FROM wb_latest_vers USING wb_triples, wb_strings AS subjects WHERE subjects.id_string = wb_triples.subject AND wb_latest_vers.triple = wb_triples.id_triple AND subjects.string = ANY(%s)", [urilist]))
+
+                    for uri in urilist:
+                        queries['diff']['values'].append("(%s, %s, wb_get_string_id(%s), wb_get_string_id(%s), NULL, NULL)")
+                        queries['diff']['params'].extend([new_version, 'remove_subject', uri, None])
+
+
+                if 'added' in diff:
+                    for uri, obj in diff['added'].items():
+                        obj = obj['added'] # all objects are under the key 'added'
+                        add_obj(uri, obj)
+
+
+                if 'changed' in diff:
+                    for uri, changes in diff['changed'].items():
+                        if 'added' in changes:
+                            add_obj(uri, changes['added'])
+                            
+                        if 'deleted' in changes:
+                            # remove_predicate
+                            for pred, vals in changes['deleted'].items():
+                                queries['diff']['values'].append("(%s, %s, wb_get_string_id(%s), wb_get_string_id(%s), NULL, NULL)")
+                                queries['diff']['params'].extend([new_version, 'remove_predicate', uri, pred])
+                                
+
+                        if 'replaced' in changes:
+                            # remove_predicate
+                            for pred, vals in changes['deleted'].items():
+                                queries['diff']['values'].append("(%s, %s, wb_get_string_id(%s), wb_get_string_id(%s), NULL, NULL)")
+                                queries['diff']['params'].extend([new_version, 'remove_predicate', uri, pred])
+
+                            # add_predicate
+                            for pred, vals in changes['deleted'].items():
+                                queries['diff']['values'].append("(%s, %s, wb_get_string_id(%s), wb_get_string_id(%s), NULL, NULL)")
+                                queries['diff']['params'].extend([new_version, 'add_predicate', uri, pred])
+
+                            # add_triple
+                            for pred, vals in changes['deleted'].items():
+                                order = 0
+                                for val in vals:
+                                    order += 1
+                                    value, thetype, language, datatype = obj_to_tuples(val)
+                                    queries['diff']['values'].append("(%s, %s, wb_get_string_id(%s), wb_get_string_id(%s), wb_get_object_id(%s, %s, %s, %s), %s)")
+                                    queries['diff']['params'].extend([new_version, 'add_triple', uri, pred, thetype, value, language, datatype, order])            
+               
+
+                # TODO replace_objects never used, check this is ok?
+
+                # do queries
+                def gen_queries(keys, cur, max_params = None):
+                    """ Check if the number of parameters in the queries is above the MAX_PARAMS_PER_QUERY, and if so, render that query and reset it. """
+                    result2_d = Deferred()
+
+                    if max_params is None:
+                        #max_params = self.MAX_PARAMS_PER_QUERY
+                        max_params = 1
+
+                    def run_next(empty):
+
+                        if len(keys) < 1:
+                            result2_d.callback(True)
+                        else:
+                            quer = keys.pop(0)
+
+                            # max_params == 0 override is required because if quer is 'latest' and has no params, 'prelatest' might still have queries
+                            if len(queries[quer]['params']) > max_params or max_params == 0:
+
+                                logging.debug("ObjectStore apply_diff gen_queries, queries for {0}, queries are: {1}".format(quer, queries['prelatest']['queries']))
+
+                                querylist = []
+                            
+                                # do prelatest before latest, only when latest has hit max_params
+                                if quer == 'latest':
+                                    querylist.extend(queries['prelatest']['queries'])
+                                    queries['prelatest']['queries'] = [] # empty the list of queries
+
+                                if len(queries[quer]['values']) > 0:
+                                    query = queries[quer]['query_prefix'] + ", ".join(queries[quer]['values'])
+                                    params = queries[quer]['params']
+
+                                    querylist.append( (query, params) ) # querylist is tuples of (query, params)
+
+                                    queries[quer]['values'] = []
+                                    queries[quer]['params'] = []
+
+                                def run_querylist(empty):
+
+                                    if len(querylist) < 1:
+                                        run_next(None)
+                                    else:
+                                        qp_pair = querylist.pop(0)
+                                        query, params = qp_pair
+
+                                        logging.debug("ObjectStore apply_diff, run_querylist running: query: {0}, params: {1}".format(query,params))
+                                        cur.execute(query, params).addCallbacks(run_querylist, result2_d.errback)
+
+                                run_querylist(None)
+                            else:
+                                run_next(None)
+
+                    run_next(None)
+
+                    return result2_d
+
+
+                def diff_cb(results):
+
+                    def latest_cb(results):
+                        result_d.callback(new_version)
+
+                    gen_queries(['latest', 'subjects'], cur, max_params = 0).addCallbacks(latest_cb, result_d.errback)
+
+                gen_queries(['diff'], cur, max_params = 0).addCallbacks(diff_cb, result_d.errback)
+
+    
+            self._get_latest_ver(cur).addCallbacks(ver_cb, result_d.errback)
+
+        def iconn_cb(conn):
+            logging.debug("Objectstore apply_diff, iconn_cb")
+            conn.runInteraction(interaction_cb).addCallbacks(result_d.callback, result_d.errback)
+        
+        self.conns['conn']().addCallbacks(iconn_cb, result_d.errback)
+        return result_d
+
+
+
     def _db_diff_to_diff(self, diff_rows):
         """ Translate database rows to JSON diff changes. """
         self.debug("ObjectStore _db_diff_to_diff, diff_rows: {0}".format(diff_rows))

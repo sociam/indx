@@ -339,13 +339,25 @@ class IndxSync:
                             result_d.callback(True)
                             return
 
-                        # TODO apply diff
+                        def applied_diff_cb(new_version):
+                            # update the 'status' object (with @id == 'status_id', above) with the last-version-seen to be 'remote_latest_version'
 
+                            status_id = status_id or uuid.uuid1()
+
+                            status_obj = {"@id": status_id,
+                                          "last-version-seen": remote_latest_version, # the update
+                                          "type": self.NS_ROOT_BOX + "status",
+                                          "src-boxid": remote_box,
+                                          "src-server-url": remote_server_url,
+                                          "dst-boxid": self.root_store.boxid,
+                                          "dst-server-url": self.url,
+                                         }
+
+                            self.root_store.update([status_obj], new_version).addCallbacks(result_d.callback, result_d.errback)
+
+                        # apply diff
+                        self.root_store.apply_diff(diff).addCallbacks(applied_diff_cb, result_d.errback)
                         
-                        
-                        # TODO update the 'status' object (with @id == 'status_id', above) with the last-version-seen to be 'latest'
-
-
                     self.root_store._vers_without_commits(version, remote_latest_version, commits).addCallbacks(vers_get_cb, result_d.errback)
 
                 remote_indx_client.diff("diff", version).addCallbacks(diff_cb, result_d.errback) # NB: remote_latest_version is optional and implied.
