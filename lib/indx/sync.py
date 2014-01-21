@@ -161,9 +161,11 @@ class IndxSync:
             local_key_uid = uuid.uuid1()
             remote_key_uid = uuid.uuid1()
 
+            link_uri = "link-{0}".format(link_uid)
+
             # objects get updated to local box, and then synced across to the other boxes once the syncing starts
             new_objs = [
-                {   "@id": "link-{0}".format(link_uid),
+                {   "@id": link_uri,
                     "type": [ {"@value": "http://indx.ecs.soton.ac.uk/ontology/root-box/#link"} ],
                     "boxes": [ {"@id": "box-{0}".format(local_key_uid)}, # links to the objs below
                                {"@id": "box-{0}".format(remote_key_uid)}, # links to the objs below
@@ -203,8 +205,8 @@ class IndxSync:
                     # add new objects to local store
 
                     def added_cb(response):
-                        # TODO start connecting using the new key
-                        pass
+                        # start syncing/connecting using the new key
+                        self.sync_boxes([link_uri]).addCallbacks(return_d.callback, return_d.errback)
 
                     self.root_store.update(new_objs, ver).addCallbacks(added_cb, return_d.errback)
 
@@ -218,12 +220,13 @@ class IndxSync:
         return return_d
 
 
-    def sync_boxes(self):
+    def sync_boxes(self, all_models = None):
         """ Synchronise boxes based on the internal model stored in this object. """
         logging.debug("IndxSync sync_boxes")
         return_d = Deferred()
 
-        all_models = copy.copy(self.models)
+        if all_models is None:
+            all_models = copy.copy(self.models)
 
         def next_model(empty):
             logging.debug("IndxSync sync_boxes next_model")
@@ -235,7 +238,7 @@ class IndxSync:
             model_id = all_models.pop(0)
 
             def model_cb(model_graph):
-                logging.debug("IndxSync sync_boxes model_cb")
+                logging.debug("IndxSync sync_boxes model_cb, model_graph: {0}".format(model_graph.to_json()))
                 model = model_graph.get(model_id)
 
                 # get up-to-date required information from the synced box
@@ -243,9 +246,7 @@ class IndxSync:
                 remote_box = None
                 local_key_hash = None
 
-                # TODO use model_id to get model from root_store
-
-                for box in model.get(NS_ROOT_BOX + "boxes"):
+                for box in model.get("boxes"):
                     boxid = box.get("box")
                     if boxid != self.root_store.boxid:
                         # remote box
