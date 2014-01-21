@@ -70,6 +70,7 @@ angular
 						config.user = match[0]; 
 					}
 				}
+				config.about_user = $scope.selectedUser["@id"];
 				sa(function() { $scope.config = config;	});				
 			}).fail(function(err) { console.error('could not get config ', err); });
 		};
@@ -78,13 +79,11 @@ angular
 			console.info('xmitting config to server >> ', config);
 			var c = _(config).clone();
 			// strip out objects (user object namely)
-			_(config).map(function(v,k) {
-				if (_(v).isObject() && v['@id']) { 
-					console.log('v object > ', v);
-					config[k] = v['@id'];
-				}
+			c.about_user = $scope.selectedUser["@id"];
+			_(c).map(function(v,k) {
+				if (_(v).isObject() && v['@id']) { 	c[k] = v['@id'];	}
 			});
-			s._ajax('GET', 'apps/moves/api/set_config', { config: JSON.stringify(config) }).then(function(x) { 
+			s._ajax('GET', 'apps/moves/api/set_config', { config: JSON.stringify(c) }).then(function(x) { 
 				status('configuration chage committed');
 				if ($scope.isRunning()) { 
 					status('Restarting service with new config ----------.');
