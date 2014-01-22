@@ -200,7 +200,7 @@ var MovesService = Object.create(nodeservice.NodeService, {
             this.assert(this.config.access_token, "No auth code", "authorization code");
             this.assert(this.diary, "No diary loaded");
             this.assert(this.diary.get('userId'), "No diary loaded");
-            var uid = this.diary.get('userId')[0];
+            var whom = this.whom;
             var from_m = toMovesDate(from_date), to_m = toMovesDate(to_date);
             var base_url = 'https://api.moves-app.com/api/v1/user/storyline/daily?'
                 + jQuery.param({from:from_m, to: to_m, access_token: this.config.access_token });
@@ -213,7 +213,7 @@ var MovesService = Object.create(nodeservice.NodeService, {
                     var date = day.date;
                     day.segments.map(function(segment) {
                         if (segment.type == 'place') {
-
+                            
                         }
                     });
                 });
