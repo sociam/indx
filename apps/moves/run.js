@@ -218,22 +218,103 @@ var MovesService = Object.create(nodeservice.NodeService, {
             return d.promise();
         }
     },
+
+    /*  Places:
+            id (optional): a unique identifier (per-user, 64 bit unsigned) of the place
+            name (optional): name for the place
+            type: one of:
+                unknown: the place has not been identified
+                home: the place is labeled as home
+                school: the place is labeled as school
+                work: the place is labeled as work
+                user: the place has been manually named
+                foursquare: the place has been identified from foursquare
+            foursquareId (optional): foursquare venue id if applicable
+            location: JSON object with:
+                lat: latitude coordinate as number
+                lon: longitude coordinate as number
+    */
+    _makePlace: {
+        value:function(place) {
+            var dr = u.deferred();
+            entities.locations.getByLatLng(this_.box, place.location.lat, place.location.lon).then(function(matching_locs) { 
+                if (matching_locs && matching_locs.length) {  dr.resolve(matching_locs[0]); } else {
+                    entities.locations.make(this_.box, place.name, place.location.lat, place.location.lon, 
+                        { 
+                            moves_id: place.id,
+                            foursquare_id: place.foursquare_id
+                        }).then(function(model_loc) { 
+                            // save it before it gets lost
+                            if (place.type == 'home') { model_loc.set({home_of: this_.whom}); }
+                            if (place.type == 'work') { model_loc.set({work_of: this_.whom}); }
+                            if (place.type == 'user') { model_loc.set({manually_labeled:true}); }
+                            if (place.type == 'school') { model_loc.set({school_of: this_.whom}); }                            
+                            model_loc.save().then(function() { dr.resolve(model_loc);   }).fail(dr.reject);
+                    }).fail(dr.reject);
+                }
+            });
+            return dr.promise();
+        }
+    },
+    _makeTrackPointPlace: {
+        value:function(trackPoint) {
+            var dr = u.deferred();
+            entities.locations.getByLatLng(this_.box, trackPoint.lat, trackPoint.lon).then(function(matching_locs) { 
+                if (matching_locs && matching_locs.length) {  dr.resolve(matching_locs[0]); } else {
+                    entities.locations.make(this_.box, undefined, trackPoint.lat, trackPoint.lon).then(function(model_loc) { 
+                        // save it before it gets lost
+                        model_loc.save().then(function() { dr.resolve(model_loc);  }).fail(dr.reject);
+                    }).fail(dr.reject);
+                }
+            });
+            return dr.promise();
+        }
+    },
+    /* 
+        Activity:
+        activity: activity type, one of “wlk” (walking),“cyc” (cycling),“run” (running) or “trp” (transport)
+        startTime: start time of the activity in yyyyMMdd’T’HHmmssZ format
+        endTime: end time of the activity in yyyyMMdd’T’HHmmssZ format
+        duration: duration of the activity in seconds
+        distance: distance for the activity in meters
+        steps (optional): step count for the activity (if applicable)
+        calories (optional): calories burn for the activity in kcal (if applicable), on top of the idle burn. Available if user has at least once enabled calories
+        trackPoints (optional): JSON array of track points for the activity when requested with each track point having:
+            lat: latitude coordinate
+            lon: longitude coordinate
+            time: timestamp in yyyyMMdd’T’HHmmssZ format
+    */
+    _makeActivity: {
+        // 
+        value: function() {
+            var dr = u.deferred();
+            entities.locations.getByLatLng(this_.box, trackPoint.lat, trackPoint.lon).then(function(matching_locs) { 
+                if (matching_locs && matching_locs.length) {  dr.resolve(matching_locs[0]); } else {
+                    entities.locations.make(this_.box, undefined, trackPoint.lat, trackPoint.lon).then(function(model_loc) { 
+                        // save it before it gets lost
+                        model_loc.save().then(function() { dr.resolve(model_loc);  }).fail(dr.reject);
+                    }).fail(dr.reject);
+                }
+            });
+            return dr.promise();
+        }
+    },
     _saveSegment:{
         value:function(segment) {
-            var whom = this.whom;
-
+            var whom = this.whom, this_ = this;
             if (segment.place) {
+                this._makePlace(segment.place[0])
+
+
                 // got some places to hook up: find all corresponding locations
-                u.when(segment.place.map(function(place) { 
-                    var dr = u.deferred();
-                    entities.makeLocation({ moves_id : place.id, location_type: place.type, lat: place.latitude, lon: place.lon }).then(function(placemodel) { 
-                        dr.resolve([place, placemodel]); 
-                    });
+                }).then(function(places) {
+                    var place = (places && places.length && places[0]) || undefined;
+                    var from_t = fromMovesDate(segment.startTime), end_t = fromMovesDate(segment.endTime);
+                    entities.activities.makeStay(this_.whom, place, from_t, end_t, 
+                });
             })).then(function(places) {
 
             });
-        }
-
         }
     },
     _loadBox: { // ecmascript 5, don't be confused!

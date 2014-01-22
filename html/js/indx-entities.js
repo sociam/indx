@@ -50,21 +50,16 @@
 					getAll: function(box, extras) { 
 						return search(box, _(extras).chain().clone().extend({type:"Location"}).value()); 
 					},
-					getByLatLng: function(box) { 
+					getByLatLng: function(box, lat, lng) { 
 						return this.getAll(box, { coords:[{lat: lat, lng: lng }] });
 					},
-					getByMovesID: function(movesid) {
+					getByMovesID: function(box, movesid) {
 						return this.getAll(box, { coords:[{moves_id: movesid}] });
 					},
 					getByName:function(box, name) {
-						var d = u.deferred();
-						u.when(this.getAll(box, { names: [name] }), this.getAll(box, {name:name})).then(function(x,y) {
-							var results = _.uniq( ([] || x).concat(y) );
-							d.resolve(results);
-						}).fail(d.reject);
-						return d.promise();
+						return this.getAll(box, { name: name });
 					},
-					make:function(box, id, names, location_type, otherprops) {
+					make:function(box, name, aliases, location_type, latitude, longitude, otherprops) {
 						var d = u.deferred(), args = _(arguments).toArray();
 						var argnames = [undefined, undefined, 'names', 'location_type'];
 							zipped = u.zip(argnames, args).filter(function(x) { return x[0]; }),
@@ -102,7 +97,7 @@
 						box.getObj(id).then(function(model) { 
 							model.set({
 								type:'activity',
-								'activity':'stay',
+								activity:'stay',
 								who: who,
 								where: where,
 								tstart: from_t,
