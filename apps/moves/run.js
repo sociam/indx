@@ -211,14 +211,29 @@ var MovesService = Object.create(nodeservice.NodeService, {
                 // timeline 
                 storyline.map(function(day) {
                     var date = day.date;
-                    day.segments.map(function(segment) {
-                        if (segment.type == 'place') {
-                            
-                        }
-                    });
+                    var dsegs = day.segments.map(function(segment) { return this_._saveSegment(segment); });
+                    u.when(dsegs).then(d.resolve).fail(d.reject);
                 });
-            }).fail(function(bail) {   d.reject(bail);   });
+            });
             return d.promise();
+        }
+    },
+    _saveSegment:{
+        value:function(segment) {
+            var whom = this.whom;
+
+            if (segment.place) {
+                // got some places to hook up: find all corresponding locations
+                u.when(segment.place.map(function(place) { 
+                    var dr = u.deferred();
+                    entities.makeLocation({ moves_id : place.id, location_type: place.type, lat: place.latitude, lon: place.lon }).then(function(placemodel) { 
+                        dr.resolve([place, placemodel]); 
+                    });
+            })).then(function(places) {
+
+            });
+        }
+
         }
     },
     _loadBox: { // ecmascript 5, don't be confused!
