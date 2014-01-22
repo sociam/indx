@@ -95,19 +95,34 @@
 						});
 						return d.promise();
 					},
-					stay:function(whom, where, from_t, to_t) {
-
+					makeStay:function(who, where, from_t, to_t, while_other_activities) {
+						// mandatory: who, where from, to
+						// optional : while_other_activities
+						var id = ['stay-activity', who.id, where.id, from_t.valueOf(), to_t.valueOf()].join('-'), d = u.deferred();
+						box.getObj(id).then(function(model) { 
+							model.set({
+								type:'activity',
+								'activity':'stay',
+								who: who,
+								where: where,
+								tstart: from_t,
+								tend:end_t,
+								"while": while_other_activities ? while_other_activities : undefined
+							});
+							d.resolve(model);
+						}).fail(d.reject);
+						return d.promise();
 					},
-					walk:function(whom, from_t, to_t, from_where, to_where, along, steps, fuel, calories) {
+					makeWalk:function(whom, from_t, to_t, from_where, to_where, at_where, along, steps, fuel, calories) {
 						// where - optional Location 
 					},
-					cycle:function(whom, from_t, to_t, from_where, to_where, along, steps, fuel, calories)	{
+					makeCycle:function(whom, from_t, to_t, from_where, to_where, along, steps, fuel, calories)	{
 
 					},
-					run:function(whom, from_t, to_t, from_where, to_where, along, steps, fuel, calories)	{
+					makeRun:function(whom, from_t, to_t, from_where, to_where, along, steps, fuel, calories)	{
 
 					},
-					read:function(whom, from_t, to_t, resource) {
+					makeRead:function(whom, from_t, to_t, resource) {
 
 					}
 				},
