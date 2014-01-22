@@ -59,7 +59,7 @@ class NikeHarvester:
         self.config_box = None
         self.config_indx_user = None
         self.config_indx_pass = None
-        self.config_max_date = datetime(2013, 10, 1)
+        self.config_max_date = datetime(2013, 7, 1)
 
     def set_config(self, args):
         stored_config_harvester = keyring.get_password("INDX", "INDX_Nike_Harvester")
