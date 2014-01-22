@@ -239,42 +239,52 @@ class IndxSync:
 
             def model_cb(model_graph):
                 logging.debug("IndxSync sync_boxes model_cb, model_graph: {0}".format(model_graph.to_json()))
-                model = model_graph.get(model_id)
 
-                # get up-to-date required information from the synced box
-                remote_server_url = None
-                remote_box = None
-                local_key_hash = None
+                def expanded_cb(empty):
+                    logging.debug("IndxSync sync_boxes expanded_cb, model_graph: {0}".format(model_graph.to_json()))
+                    model = model_graph.get(model_id)
 
-                for box in model.get("boxes"):
-                    boxid = box.get("box")
-                    if boxid != self.root_store.boxid:
-                        # remote box
-                        remote_server_url = box.getOne("server-url")
-                        remote_box = box.getOne("box")
-                    else:
-                        # local box
-                        local_key = box.getOne("key")
-                        local_key_hash = local_key.getOne("public-hash")
+                    # get up-to-date required information from the synced box
+                    remote_server_url = None
+                    remote_box = None
+                    local_key_hash = None
 
-                local_key = self.keystore.get(local_key_hash)
-                
-                # start sync 
-                clientauth = IndxClientAuth(remote_server_url, self.APPID)
+                    for box_obj in model.get("boxes"):
+                        box = model_graph.get(box_obj.id) # XXX this is a workaround to a bug in the types code - we shouldn't have to re-get the object
+                        logging.debug("IndxSync sync_boxes model_cb: box {0}".format(box.to_json()))
 
-                def authed_cb(empty):
-                    logging.debug("IndxSync sync_boxes authed_cb")
+                        if box.getOne("box").value != self.root_store.boxid:
+                            logging.debug("IndxSync sync_boxes model_cb: remote box")
+                            # remote box
+                            remote_server_url = box.getOne("server-url").value
+                            remote_box = box.getOne("box").value
+                        else:
+                            logging.debug("IndxSync sync_boxes model_cb: local box")
+                            # local box
+                            local_key_obj = model_graph.get(box.getOne("key").id) # XXX this is a workaround to a bug in the types code - we shouldn't have to re-get the object
 
-                    def token_cb(remote_token):
-                        logging.debug("IndxSync sync_boxes token_cb")
-                        client = IndxClient(remote_server_url, remote_box, self.APPID, client = clientauth.client, token = remote_token)
-                        
-                        # compare local version to previous, and update one of them, or both
-                        self.update_to_latest_version(client, remote_server_url, remote_box).addCallbacks(next_model, return_d.errback)
+                            local_key_hash = local_key_obj.getOne("public-hash").value
 
-                    clientauth.get_token(remote_box).addCallbacks(token_cb, return_d.errback)
+                    local_key = self.keystore.get(local_key_hash)
+                    
+                    # start sync 
+                    clientauth = IndxClientAuth(remote_server_url, self.APPID)
 
-                clientauth.auth_keys(local_key['private'], local_key_hash).addCallbacks(authed_cb, return_d.errback)
+                    def authed_cb(empty):
+                        logging.debug("IndxSync sync_boxes authed_cb")
+
+                        def token_cb(remote_token):
+                            logging.debug("IndxSync sync_boxes token_cb")
+                            client = IndxClient(remote_server_url, remote_box, self.APPID, client = clientauth.client, token = remote_token)
+                            
+                            # compare local version to previous, and update one of them, or both
+                            self.update_to_latest_version(client, remote_server_url, remote_box).addCallbacks(next_model, return_d.errback)
+
+                        clientauth.get_token(remote_box).addCallbacks(token_cb, return_d.errback)
+
+                    clientauth.auth_keys(local_key['private'], local_key_hash).addCallbacks(authed_cb, return_d.errback)
+
+                model_graph.expand_depth(3, self.root_store).addCallbacks(expanded_cb, return_d.errback)
 
             self.root_store.get_latest_objs([model_id], render_json = False).addCallbacks(model_cb, return_d.errback)
 
