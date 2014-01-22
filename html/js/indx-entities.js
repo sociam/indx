@@ -53,6 +53,9 @@
 					getByLatLng: function(box) { 
 						return this.getAll(box, { coords:[{lat: lat, lng: lng }] });
 					},
+					getByMovesID: function(movesid) {
+						return this.getAll(box, { coords:[{moves_id: movesid}] });
+					},
 					getByName:function(box, name) {
 						var d = u.deferred();
 						u.when(this.getAll(box, { names: [name] }), this.getAll(box, {name:name})).then(function(x,y) {
@@ -91,6 +94,21 @@
 							model.save().then(function() { d.resolve(model); }).fail(d.reject);
 						});
 						return d.promise();
+					},
+					stay:function(whom, where, from_t, to_t) {
+
+					},
+					walk:function(whom, from_t, to_t, from_where, to_where, along, steps, fuel, calories) {
+						// where - optional Location 
+					},
+					cycle:function(whom, from_t, to_t, from_where, to_where, along, steps, fuel, calories)	{
+
+					},
+					run:function(whom, from_t, to_t, from_where, to_where, along, steps, fuel, calories)	{
+
+					},
+					read:function(whom, from_t, to_t, resource) {
+
 					}
 				},
 				people:{
