@@ -45,10 +45,10 @@ class Graph:
             logging.debug("ObjectStore_Types from_rows, row: {0}".format(row))
             (triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype) = row
 
-            resource = graph.get(subject)
+            resource = graph.get(subject, root=True)
 
             if obj_type == "resource":
-                obj = graph.get(obj_value) # maintain links to existing Resource in graph
+                obj = graph.get(obj_value, root=False) # maintain links to existing Resource in graph
             else:
                 obj = Graph.value_from_row(obj_value, obj_type, obj_lang, obj_datatype)
             resource.add(predicate, obj)
@@ -60,18 +60,19 @@ class Graph:
         self.objects_by_id = {}
         self.root_object_ids = []
 
-    def add(self, resource):
+    def add(self, resource, root=True):
         """ Add a new resource object into the graph. """
         if not isinstance(resource, Resource):
             raise Exception("resource must be a Resource")
         self.objects_by_id[resource.id] = resource
-        self.root_object_ids.append(resource.id)
+        if root:
+            self.root_object_ids.append(resource.id)
 
-    def get(self, id):
+    def get(self, id, root=False):
         """ Get an object by ID, or create a new one if it doesn't exist. """
         if id not in self.objects_by_id:
             resource = Resource(id)
-            self.add(resource)
+            self.add(resource, root=root)
         return self.objects_by_id[id]
 
     def objects(self):

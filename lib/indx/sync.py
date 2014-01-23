@@ -243,7 +243,7 @@ class IndxSync:
 
     def sync_boxes(self, all_models = None):
         """ Synchronise boxes based on the internal model stored in this object. """
-        logging.debug("IndxSync sync_boxes")
+        logging.debug("IndxSync sync_boxes, all_models: {0}".format(all_models))
         return_d = Deferred()
 
         if all_models is None:
@@ -257,6 +257,7 @@ class IndxSync:
                 return
 
             model_id = all_models.pop(0)
+            logging.debug("IndxSync sync_boxes next_model model_id: {0}")
 
             def model_cb(model_graph):
                 logging.debug("IndxSync sync_boxes model_cb, model_graph: {0}".format(model_graph.to_json()))
