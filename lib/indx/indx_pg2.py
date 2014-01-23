@@ -643,7 +643,16 @@ class IndxDatabase:
             d = conn.runOperation("DROP DATABASE {0}".format(db_name))
 
             def dropped_cb(val):
-                self.remove_database_users(db_name).addCallbacks(lambda done: return_d.callback(True), return_d.errback)
+
+                def users_cb(empty):
+
+                    def conn_indx_cb(conn_indx):
+
+                        conn_indx.runOperation("DELETE FROM tbl_indx_core WHERE boxid = %s", [box_name]).addCallbacks(lambda empty: return_d.callback(True), return_d.errback)
+
+                    self.connect_indx_db().addCallbacks(conn_indx_cb, return_d.errback)
+
+                self.remove_database_users(db_name).addCallbacks(users_cb, return_d.errback)
 
             d.addCallbacks(dropped_cb, return_d.errback)
 
