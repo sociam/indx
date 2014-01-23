@@ -331,12 +331,13 @@ class IndxClient:
         return self.client.get(url)
 
     @require_token
-    def generate_new_key(self):
-        """ Generate new key and store it in the keystore. Return the public and public-hash parts. (Not the private part.)  """
+    def generate_new_key(self, local_key):
+        """ Generate new key and store it in the keystore, send our public (not private) key to the remote server. Return the public and public-hash parts. (Not the private part.)  """
         self._debug("Called API: generate_new_key")
 
         url = "{0}/generate_new_key".format(self.base)
-        return self.client.get(url)
+        values = {"public": local_key['public'], "public-hash": local_key['public-hash']} # don't send private to anyone ever
+        return self.client.get(url, values)
 
     @require_token
     def diff(self, return_objs, from_version, to_version = None):
@@ -426,7 +427,7 @@ class IndxHTTPClient:
         self.cj = cookielib.LWPCookieJar()
         self.opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(self.cj))
 
-    def get_session_identifier(self):
+    def get_session_identifier(self, address):
         """ Get the identifier for the INDX session (initiates a session if necessary). """
         return_d = Deferred()
 
@@ -450,7 +451,7 @@ class IndxHTTPClient:
                     return_d.errback(Failure(Exception("No session ID was available ")))
 
             # do a request to start a session and get a cookie
-            self.get("{0}auth/whoami".format(self.address)).addCallbacks(whoami_cb, return_d.errback)
+            self.get("{0}auth/whoami".format(address)).addCallbacks(whoami_cb, return_d.errback)
         return return_d
 
 
@@ -659,7 +660,7 @@ class IndxClientAuth:
                 # TODO change client.post etc to be async using twisted web clients
                 self.client.post(url, values).addCallbacks(responded_cb, return_d.errback)
 
-            self.get_session_identifier().addCallbacks(session_id_cb, return_d.errback)
+            self.client.get_session_identifier(self.address).addCallbacks(session_id_cb, return_d.errback)
 
         except Exception as e:
             return_d.errback(Failure(e))
@@ -671,7 +672,8 @@ class IndxClientAuth:
         """ Hash and sign a plaintext using a private key. Verify using rsa_verify with the public key. """
         hsh = self.sha512_hash(plaintext)
         PRNG = Crypto.Random.OSRNG.posix.new().read
-        return private_key.sign(hsh, PRNG)
+        signature = private_key.sign(hsh, PRNG)
+        return signature[0]
 
     def sha512_hash(self, src):
         h = Crypto.Hash.SHA512.new()

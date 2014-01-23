@@ -102,28 +102,38 @@ class AuthHandler(BaseHandler):
             logging.error("auth_keys error, signature, key, algo or method is None, returning unauthorized")
             return fail()
 
-        keystore_results = self.webserver.keystore.get(key_hash)
-        key = keystore_results['key']
-        user = keystore_results['user']
-        box = keystore_results['box']
-
-        sessionid = request.getSession().uid
-
-        ordered_signature_text = '{0}\t{1}\t"{2}"\t{3}\t{4}'.format(SSH_MSG_USERAUTH_REQUEST, sessionid, method, algo, key_hash)
-        verified = rsa_verify(key['public'], ordered_signature_text, signature)
-        
-        if not verified:
-            logging.error("auth_keys error, signature does not verify, returning unauthorized")
+        try:
+            signature = long(signature)
+        except Exception as e:
+            logging.error("auth_keys error, signature was not a valid Long, returning unauthorized")
             return fail()
-        
-        logging.debug("Login request auth_keys for {0}, origin: {1}".format(user, request.getHeader("Origin")))
-        wbSession = self.get_session(request)
-        wbSession.setAuthenticated(True)
-        wbSession.setUser(user)
-        wbSession.setUserType("auth")
-        wbSession.setPassword("")
-        wbSession.limit_boxes = [box] # only allow access to this box
-        self.return_ok(request)
+
+
+        def keystore_cb(keystore_results):
+
+            key = keystore_results['key']
+            user = keystore_results['username']
+            box = keystore_results['box']
+
+            sessionid = request.getSession().uid
+
+            ordered_signature_text = '{0}\t{1}\t"{2}"\t{3}\t{4}'.format(SSH_MSG_USERAUTH_REQUEST, sessionid, method, algo, key_hash)
+            verified = rsa_verify(key['public'], ordered_signature_text, signature)
+            
+            if not verified:
+                logging.error("auth_keys error, signature does not verify, returning unauthorized")
+                return fail()
+            
+            logging.debug("Login request auth_keys for {0}, origin: {1}".format(user, request.getHeader("Origin")))
+            wbSession = self.get_session(request)
+            wbSession.setAuthenticated(True)
+            wbSession.setUser(user)
+            wbSession.setUserType("auth")
+            wbSession.setPassword("")
+            wbSession.limit_boxes = [box] # only allow access to this box
+            self.return_ok(request)
+
+        self.webserver.keystore.get(key_hash).addCallbacks(keystore_cb, fail)
 
 
     def auth_logout(self, request):

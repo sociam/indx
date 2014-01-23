@@ -216,7 +216,7 @@ class IndxSync:
             self.keystore.put(local_keys, local_user, self.root_store.boxid).addCallbacks(local_added_cb, return_d.errback) # store in the local keystore
 
         client = IndxClient(remote_address, remote_box, self.APPID, token = remote_token)
-        client.generate_new_key().addCallbacks(new_remote_key_cb, return_d.errback)
+        client.generate_new_key(local_keys).addCallbacks(new_remote_key_cb, return_d.errback)
         return return_d
 
 
@@ -265,24 +265,27 @@ class IndxSync:
 
                             local_key_hash = local_key_obj.getOne("public-hash").value
 
-                    local_key = self.keystore.get(local_key_hash)
+                    def keystore_cb(local_key):
+                        # start sync 
+                        clientauth = IndxClientAuth(remote_server_url, self.APPID)
+
+                        def authed_cb(empty):
+                            logging.debug("IndxSync sync_boxes authed_cb")
+
+                            def token_cb(remote_token):
+                                logging.debug("IndxSync sync_boxes token_cb")
+                                client = IndxClient(remote_server_url, remote_box, self.APPID, client = clientauth.client, token = remote_token)
+                                
+                                # compare local version to previous, and update one of them, or both
+                                self.update_to_latest_version(client, remote_server_url, remote_box).addCallbacks(next_model, return_d.errback)
+
+                            clientauth.get_token(remote_box).addCallbacks(token_cb, return_d.errback)
+
+                        clientauth.auth_keys(local_key['key']['private'], local_key_hash).addCallbacks(authed_cb, return_d.errback)
+
+
+                    self.keystore.get(local_key_hash).addCallbacks(keystore_cb, return_d.errback)
                     
-                    # start sync 
-                    clientauth = IndxClientAuth(remote_server_url, self.APPID)
-
-                    def authed_cb(empty):
-                        logging.debug("IndxSync sync_boxes authed_cb")
-
-                        def token_cb(remote_token):
-                            logging.debug("IndxSync sync_boxes token_cb")
-                            client = IndxClient(remote_server_url, remote_box, self.APPID, client = clientauth.client, token = remote_token)
-                            
-                            # compare local version to previous, and update one of them, or both
-                            self.update_to_latest_version(client, remote_server_url, remote_box).addCallbacks(next_model, return_d.errback)
-
-                        clientauth.get_token(remote_box).addCallbacks(token_cb, return_d.errback)
-
-                    clientauth.auth_keys(local_key['private'], local_key_hash).addCallbacks(authed_cb, return_d.errback)
 
                 model_graph.expand_depth(3, self.root_store).addCallbacks(expanded_cb, return_d.errback)
 
@@ -294,13 +297,13 @@ class IndxSync:
 
     def update_to_latest_version(self, remote_indx_client, remote_server_url, remote_box):
         """ Get the last version seen (consumed) of a remote box. """
-        logging.debug("IndxSync update_to_latest_version of server {0} and box {1}".format(self.remote_server_url, self.remote_box))
+        logging.debug("IndxSync update_to_latest_version of server {0} and box {1}".format(remote_server_url, remote_box))
 
         # updates the local box to the latest version of the remote box
 
         result_d = Deferred()
 
-        query = { "type": self.NS_ROOT_BOX + "status",
+        query = { "type": NS_ROOT_BOX + "status",
                   "src-boxid": remote_box,
                   "src-server-url": remote_server_url,
                   "dst-boxid": self.root_store.boxid,
@@ -357,7 +360,7 @@ class IndxSync:
 
                             status_obj = {"@id": status_id,
                                           "last-version-seen": remote_latest_version, # the update
-                                          "type": self.NS_ROOT_BOX + "status",
+                                          "type": NS_ROOT_BOX + "status",
                                           "src-boxid": remote_box,
                                           "src-server-url": remote_server_url,
                                           "dst-boxid": self.root_store.boxid,

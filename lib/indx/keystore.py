@@ -18,6 +18,7 @@
 import logging
 from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
+from indx.crypto import load_key
 
 class IndxKeystore:
     """ Stores keys (public/private/public-hash triple) in a database table and permits access. """
@@ -49,7 +50,11 @@ class IndxKeystore:
 
             public_hash, public_key, private_key, username, boxid = rows[0]
 
-            key = {"public-hash": public_hash, "public": public_key, "private": private_key}
+            if private_key is None or private_key == '':
+                key = {"public-hash": public_hash, "public": load_key(public_key), "private": ""}
+            else:
+                key = {"public-hash": public_hash, "public": load_key(public_key), "private": load_key(private_key)}
+
             return_d.callback({"username": username, "box": boxid, "key": key})
         
         self.db.runQuery(query, params).addCallbacks(queried_cb, return_d.errback)

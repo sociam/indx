@@ -16,6 +16,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging, json, cjson
+import traceback
 from indx.webserver.handlers.base import BaseHandler
 from indx.objectstore_async import IncorrectPreviousVersionException, FileNotFoundException
 from indx.user import IndxUser
@@ -154,16 +155,29 @@ class BoxHandler(BaseHandler):
             return self.return_forbidden(request)
         BoxHandler.log(logging.DEBUG, "BoxHandler generate_new_key", extra = {"request": request, "token": token})
 
+        remote_public = self.get_arg(request, "public")
+        remote_hash = self.get_arg(request, "public-hash")
+
+        if remote_public is None or remote_hash is None:
+            BoxHandler.log(logging.ERROR, "BoxHandler generate_new_key: public or public-hash was missing.", extra = {"request": request, "token": token})
+            return self.remote_bad_request(request, "public or public-hash was missing.")
+
         def err_cb(failure):
             failure.trap(Exception)
             BoxHandler.log(logging.ERROR, "BoxHandler generate_new_key err_cb: {0}".format(failure), extra = {"request": request, "token": token})
             return self.return_internal_error(request)
+            
+        local_keys = generate_rsa_keypair(3072)
 
         def created_cb(empty):
             self.return_created(request, {"data": {"public": local_keys['public'], "public-hash": local_keys['public-hash']}})
 
-        local_keys = generate_rsa_keypair(3072)
-        self.webserver.keystore.put(local_keys, token.username, token.boxid).addCallbacks(created_cb, err_cb) # store in the local keystore
+        def new_key_added_cb(empty):
+            self.webserver.keystore.put(local_keys, token.username, token.boxid).addCallbacks(created_cb, err_cb) # store in the local keystore
+
+        remote_keys = {"public": remote_public, "public-hash": remote_hash, "private": ""}
+        self.webserver.keystore.put(remote_keys, token.username, token.boxid).addCallbacks(new_key_added_cb, err_cb)
+
 
 
     def get_acls(self, request):
