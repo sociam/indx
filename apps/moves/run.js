@@ -335,7 +335,7 @@ var MovesService = Object.create(nodeservice.NodeService, {
             jQuery.when(u.when(dact), dpl).then(function(activities, place) { 
                 console.log('activities > ', activities);
                 var saved_acts = activities.map(function(a) { 
-                    if (place) { a.set({where: place}); }
+                    if (place) { a.set({where: place, diary:this_.diary}); }
                     return a.save();
                 });
                 if (segment.type === 'move') {
@@ -345,6 +345,7 @@ var MovesService = Object.create(nodeservice.NodeService, {
                     // this is a stay. 
                     var from_t = fromMovesDate(segment.startTime), to_t = fromMovesDate(segment.endTime);
                     entities.activities.make1(this_box, 'stay', this_.whom, from_t, to_t ).then(function(am) {
+                        am.set({diary:this_.diary});
                         u.when(am.save(), save_acts).then(ds.resolve).fail(ds.reject);
                     }).fail(ds.reject);
                 }
