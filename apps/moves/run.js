@@ -4,6 +4,7 @@
  *   (c) 2014 - Max Van Kleek, University of Southampton 
  * 
  *  This is an INDX service that grabs data from moves app: https://dev.moves-app.com/
+ *  Complies with INDX Entity Semantics 1.0 for People, Places, and Activities
  */
 
 var nodeindx = require('../../lib/services/nodejs/nodeindx'),
@@ -17,6 +18,8 @@ var nodeindx = require('../../lib/services/nodejs/nodeindx'),
     angular = require('angular'),
     injector = nodeindx.injector,
     entities = injector.get('entities');
+
+var SEVEN_DAYS_USEC =  6*24*60*60*1000; // + 23*59*59*1000;
 
 var toMovesDate = function(date) {
     u.assert(date instanceof Date, "Must be a Date");
@@ -41,41 +44,85 @@ var daysBetween = function(date1, date2) {
 var MovesService = Object.create(nodeservice.NodeService, {
     run: { 
         // master run 
-        value: function(store) {
-            // run continuously
-            var this_ = this;
-            this.store = store;
-            var doinit = function() {
-                // console.log('doinit() -- ', config);
-                this_._loadBox().then(function() { this_._update(); }).fail(function(er) { 
-                    console.error('Error in _init ', er); 
-                    process.exit(-1); 
-                });
+        value: function() {
+            var this_ = this, config = this.config, store = this.store;
+            
+            var dac = config.authcode ? this.__updateAccessTokens() : u.dresolve();
+            var dlb = this._loadBox();
+            var quit = function(bail) { this_.__exit(bail); };
+
+            jQuery.when(dac, dlb).then(function() {
+                // lets get our profile _once_
+                this_.getProfile().then(function() { 
+                    this_.__continueGrabbing().then(function() {
+                        console.info(" continue grabbing is DONE >>>>> ");
+                        // update once. then update every 5 minutes
+                    }).fail(quit);
+                    // console.log('chilling for 5 mins');
+                    // setInterval(function() { 
+                    //     // todo : do soemthing with refreshing token here.
+                    //     this_.__continueGrabbing().then(function() { }).fail(quit);
+                    // },5*60*1000);
+                }).fail(quit)
+            }).fail(quit);
+        }
+    },
+    __continueGrabbing:{
+        value:function() { 
+            var config = this.config, this_ = this, diary = this.diary, d = u.deferred();
+            var refreshToken = function() { this_.refreshToken().then(grab).fail(d.reject); };
+            var updateLGD = function(d) { 
+                this_.diary.set({lastGrabbedDate:d});
+                this_.diary.save();
             };
 
-            // checkauthcode
-            if (config.authcode) {
-                // can only be used once, so that means we need to get it
-                var code = config.authcode;
-                this_.debug('Getting access token from authcode > ', code);
-                this_.getAccessToken().then(function(authtokens) {
-                    delete config.authcode;
-                    console.error('positive cont ');
-                    _(config).extend(authtokens);
-                    this_.save_config(config).then(doinit).fail(function() { 
-                        console.error('error saving authtokens ', config); 
-                        process.exit(-1);
-                    });
-                }).fail(function(err) { 
-                    console.error('error getting authtokens', err);
-                    this_.debug('deleting authcode >> done.');
-                    delete config.authcode;
-                    this_.save_config(config).then(function() { process.exit(-1); });
-                });
-            } else if (config.access_token) {
-                // console.log('we have an access code, boyzz - init');
-                doinit();
-            }
+            var grab = function() { 
+                var lastGrabbedDate = diary.peek('lastGrabbedDate') || diary.peek('firstDate');
+                var today = new Date();
+                if (today.valueOf() - lastGrabbedDate.valueOf() < SEVEN_DAYS_USEC) {
+                    // just bloody update once.
+                    return this_.getTimeline( lastGrabbedDate, today ).then(function() {
+                        updateLGD(today);
+                        d.resolve();
+                    }).fail(d.reject);
+                } 
+
+                // catch up mode! update all the bloody time.
+                var endDate = new Date(lastGrabbedDate.valueOf() + SEVEN_DAYS_USEC);
+                console.log("setting start-endDate to >> ", lastGrabbedDate, endDate);
+                this_.getTimeline(lastGrabbedDate,endDate).then(function() { 
+                    updateLGD(endDate);
+                    setTimeout(function() { this_.__continueGrabbing().then(d.resolve).fail(d.reject); }, 1000);
+                }).fail(d.reject);
+            };
+            // first of all check tokens
+            this.checkAccessToken().then(grab).fail(refreshToken);
+            return d.promise();
+        }
+    },
+    __exit:{
+        value:function(err)  {
+            // error has occurred
+            console.error(err);
+            process.exit(-1);
+        }
+    },
+    __updateAccessTokens:{
+        value:function() {
+            var config = this.config, this_ = this, code = config.authcode, d = u.deferred();
+            this_.debug('Getting access token from authcode > ', code);
+            this_.getAccessToken().then(function(authtokens) {
+                this_.assert(authtokens.access_token, "No access token received");
+                delete config.authcode;
+                _(config).extend(authtokens);
+                this_.save_config(config).then(d.resolve).fail(d.reject);
+            }).fail(function(err) { 
+                console.error('error getting authtokens', err);
+                this_.debug('deleting authcode >> done.');
+                delete config.authcode;
+                this_.save_config(config).then(d.reject); 
+            });
+            return d.promise();
         }
     },
     _update: {
@@ -209,8 +256,7 @@ var MovesService = Object.create(nodeservice.NodeService, {
         //         },
         // and transforms this into a series of MovesObservations
         value:function(from_date, to_date) {
-
-            // 
+            console.log("getTimeline() >>>>> from ", from_date, " to date ", to_date);
             this.assert(daysBetween(from_date, to_date) < 8, "Only accepts date ranges 7 days wide.");
             this.assert(this.config.access_token, "No auth code", "authorization code");
             this.assert(this.diary, "No diary loaded");
@@ -357,7 +403,6 @@ var MovesService = Object.create(nodeservice.NodeService, {
             if (!config || !_(config).keys()) {  
                 this_.debug(' no configuration set, aborting ');  
                 d.reject();
-                process.exit(-1);
                 return;
             }
             var boxid = config.box;
@@ -401,12 +446,11 @@ module.exports = {
     entities:entities,
     testRun: function(host) {
         var d = u.deferred();
-        instantiate(host).then(function(g) { 
-            g.login().then(function(store) { 
-                g.store = store; 
-                g._loadBox().then(function() { 
+        instantiate(host).then(function(svc) { 
+            svc.login().then(function() { 
+                svc._loadBox().then(function() { 
                     console.log('done loading!! ')
-                    d.resolve(g);
+                    d.resolve(svc);
                 }).fail(d.reject);
             }).fail(d.reject);
         });
