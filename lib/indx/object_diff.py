@@ -325,6 +325,8 @@ class ObjectSetDiff:
 
     def obj_to_obj_tuple(self, sub_obj):
         """ Return a tuple of (type, value, language, datatype) used in SQL queries. """
+        logging.debug("ObjectSetDiff: obj_to_obj, sub_obj: {0}".format(sub_obj))
+
         if type(sub_obj) != type({}):
             if type(sub_obj) != type(u"") and type(sub_obj) != type(""):
                 sub_obj = unicode(sub_obj)
@@ -338,6 +340,8 @@ class ObjectSetDiff:
         elif "@id" in sub_obj:
             thetype = "resource"
             value = sub_obj["@id"]
+        else:
+            raise Exception("Invalid data, object needs to have '@id' or '@value' value: {0}".format(sub_obj))
 
         language = ''
         if "@language" in sub_obj:

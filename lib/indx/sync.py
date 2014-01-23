@@ -160,38 +160,55 @@ class IndxSync:
             link_uid = uuid.uuid1()
             local_key_uid = uuid.uuid1()
             remote_key_uid = uuid.uuid1()
+            status1_uid = uuid.uuid1()
+            status2_uid = uuid.uuid1()
 
             link_uri = "link-{0}".format(link_uid)
+            status1_uri = "status-{0}".format(status1_uid)
+            status2_uri = "status-{0}".format(status2_uid)
 
             # objects get updated to local box, and then synced across to the other boxes once the syncing starts
             new_objs = [
                 {   "@id": link_uri,
-                    "type": [ {"@value": "http://indx.ecs.soton.ac.uk/ontology/root-box/#link"} ],
+                    "type": [ {"@value": NS_ROOT_BOX + "link"} ],
                     "boxes": [ {"@id": "box-{0}".format(local_key_uid)}, # links to the objs below
                                {"@id": "box-{0}".format(remote_key_uid)}, # links to the objs below
                              ],
-                    "statuses": [
-                    ],
+                    "statuses": [ {"@id": status1_uri}, {"@id": status2_uri} ],
+                },
+                { "@id": status1_uri,
+                  "type": [ {"@value": NS_ROOT_BOX + "status"} ],
+                  "src-boxid": [ {"@value": remote_box} ],
+                  "src-server-url": [ {"@value": remote_address} ],
+                  "dst-boxid": [ {"@value": self.root_store.boxid} ],
+                  "dst-server-url": [ {"@value": self.url} ],
+                },
+                { "@id": status2_uri,
+                  "type": [ {"@value": NS_ROOT_BOX + "status"} ],
+                  "dst-boxid": [ {"@value": remote_box} ],
+                  "dst-server-url": [ {"@value": remote_address} ],
+                  "src-boxid": [ {"@value": self.root_store.boxid} ],
+                  "src-server-url": [ {"@value": self.url} ],
                 },
                 {   "@id": "box-{0}".format(local_key_uid),
-                    "type": [ {"@value": "http://indx.ecs.soton.ac.uk/ontology/root-box/#box"} ],
+                    "type": [ {"@value": NS_ROOT_BOX + "box"} ],
                     "server-url": [ {"@value": self.url } ],
                     "box": [ {"@value": self.root_store.boxid} ],
                     "key": [ {"@id": local_keys['public-hash']}], # links to the key objs below
                 },
                 {   "@id": "box-{0}".format(remote_key_uid),
-                    "type": [ {"@value": "http://indx.ecs.soton.ac.uk/ontology/root-box/#box"} ],
+                    "type": [ {"@value": NS_ROOT_BOX + "box"} ],
                     "server-url": [ {"@value": remote_address } ],
                     "box": [ {"@value": remote_box} ],
                     "key": [ {"@id": remote_keys['public-hash']}], # links to the key objs below
                 },
                 {   "@id": local_keys['public-hash'],
-                    "type": [ {"@value": "http://indx.ecs.soton.ac.uk/ontology/root-box/#key"} ],
+                    "type": [ {"@value": NS_ROOT_BOX + "key"} ],
                     "public-key": [ {"@value": local_keys['public']} ], # share the full public keys everywhere (private keys only in respective server's keystores)
                     "public-hash": [ {"@value": local_keys['public-hash']} ], # share the full public keys everywhere (private keys only in respective server's keystores)
                 },
                 {   "@id": remote_keys['public-hash'],
-                    "type": [ {"@value": "http://indx.ecs.soton.ac.uk/ontology/root-box/#key"} ],
+                    "type": [ {"@value": NS_ROOT_BOX + "key"} ],
                     "public-key": [ {"@value": remote_keys['public']} ], # share the full public keys everywhere
                     "public-hash": [ {"@value": remote_keys['public-hash']} ], # share the full public keys everywhere
                 },
@@ -205,8 +222,12 @@ class IndxSync:
                     # add new objects to local store
 
                     def added_cb(response):
-                        # start syncing/connecting using the new key
-                        self.sync_boxes([link_uri]).addCallbacks(return_d.callback, return_d.errback)
+
+                        def added_indx_cb(empty):
+                            # start syncing/connecting using the new key
+                            self.sync_boxes([link_uri]).addCallbacks(return_d.callback, return_d.errback)
+
+                        self.database.save_linked_box(self.root_store.boxid).addCallbacks(added_indx_cb, return_d.errback)
 
                     self.root_store.update(new_objs, ver).addCallbacks(added_cb, return_d.errback)
 
@@ -253,17 +274,17 @@ class IndxSync:
                         box = model_graph.get(box_obj.id) # XXX this is a workaround to a bug in the types code - we shouldn't have to re-get the object
                         logging.debug("IndxSync sync_boxes model_cb: box {0}".format(box.to_json()))
 
-                        if box.getOne("box").value != self.root_store.boxid:
+                        if box.getOneValue("box") != self.root_store.boxid:
                             logging.debug("IndxSync sync_boxes model_cb: remote box")
                             # remote box
-                            remote_server_url = box.getOne("server-url").value
-                            remote_box = box.getOne("box").value
+                            remote_server_url = box.getOneValue("server-url")
+                            remote_box = box.getOneValue("box")
                         else:
                             logging.debug("IndxSync sync_boxes model_cb: local box")
                             # local box
                             local_key_obj = model_graph.get(box.getOne("key").id) # XXX this is a workaround to a bug in the types code - we shouldn't have to re-get the object
 
-                            local_key_hash = local_key_obj.getOne("public-hash").value
+                            local_key_hash = local_key_obj.getOneValue("public-hash")
 
                     def keystore_cb(local_key):
                         # start sync 
@@ -318,9 +339,12 @@ class IndxSync:
             status_id = None
             for id in graph.root_object_ids:
                 status = graph.get(id)
-                version = int(status.get("last-version-seen"))
                 status_id = id
+                version = int(status.getOneValue("last-version-seen") or "0")
                 break
+
+            if status_id is None:
+                status_id = uuid.uuid1()
 
             # TODO lock and perform this in a transaction
 
@@ -338,7 +362,7 @@ class IndxSync:
                     diff = diff_resp['data']
                     
                     # request the commits with the diff, and add them to the new version
-                    commits = diff['commits']
+                    commits = diff_resp['@commits']
 
                     # TODO in future optimise this by only applying the commits we haven't got (needs a database refactor)
                     # TODO change it so that we do:
@@ -353,26 +377,28 @@ class IndxSync:
                             result_d.callback(True)
                             return
 
-                        def applied_diff_cb(new_version):
+                        def applied_diff_cb(resp):
                             # update the 'status' object (with @id == 'status_id', above) with the last-version-seen to be 'remote_latest_version'
+                            new_version = resp['@version']
 
-                            status_id = status_id or uuid.uuid1()
-
-                            status_obj = {"@id": status_id,
-                                          "last-version-seen": remote_latest_version, # the update
-                                          "type": NS_ROOT_BOX + "status",
-                                          "src-boxid": remote_box,
-                                          "src-server-url": remote_server_url,
-                                          "dst-boxid": self.root_store.boxid,
-                                          "dst-server-url": self.url,
+                            status_obj = { "@id": status_id,
+                                           "last-version-seen": [ {"@value": remote_latest_version} ], # the update
+                                           "type": [ {"@value": NS_ROOT_BOX + "status"} ],
+                                           "src-boxid": [ {"@value": remote_box} ],
+                                           "src-server-url": [ {"@value": remote_server_url} ],
+                                           "dst-boxid": [ {"@value": self.root_store.boxid} ],
+                                           "dst-server-url": [ {"@value": self.url} ],
                                          }
 
-                            self.root_store.update([status_obj], new_version).addCallbacks(result_d.callback, result_d.errback)
+                            def status_cb(empty):
+                                self.root_store.store_commits(commits).addCallbacks(result_d.callback, result_d.errback)
+
+                            self.root_store.update([status_obj], new_version).addCallbacks(status_cb, result_d.errback)
 
                         # apply diff
-                        self.root_store.apply_diff(diff).addCallbacks(applied_diff_cb, result_d.errback)
+                        self.root_store.apply_diff(diff, commits.keys()).addCallbacks(applied_diff_cb, result_d.errback)
                         
-                    self.root_store._vers_without_commits(version, remote_latest_version, commits).addCallbacks(vers_get_cb, result_d.errback)
+                    self.root_store._vers_without_commits(version, remote_latest_version, commits.keys()).addCallbacks(vers_get_cb, result_d.errback)
 
                 remote_indx_client.diff("diff", version).addCallbacks(diff_cb, result_d.errback) # NB: remote_latest_version is optional and implied.
                 

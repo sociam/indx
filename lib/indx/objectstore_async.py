@@ -18,6 +18,7 @@
 import logging
 import os
 import json
+import copy
 from twisted.internet.defer import Deferred
 from twisted.internet import threads
 from twisted.python.failure import Failure
@@ -252,7 +253,10 @@ class ObjectStoreAsync:
                     else:
                         result_d.callback(graph)
 
-                graph.expand_depth(depth, self).addCallbacks(expanded_cb, result_d.errback)
+                if depth > 0:
+                    graph.expand_depth(depth, self).addCallbacks(expanded_cb, result_d.errback)
+                else:
+                    expanded_cb(None)
 
             conn.runQuery(sql, params).addCallbacks(results_cb, result_d.errback)
         
@@ -520,15 +524,19 @@ class ObjectStoreAsync:
 
 
 
-    def apply_diff(self, diff):
+    def apply_diff(self, diff, commit_ids):
         """ Apply a JSON-type diff to the database, appending to the wb_vers_diff table and modifying the wb_latest_vers table. """
+        logging.debug("Objectstore apply_diff, apply_diff")
         result_d = Deferred()
 
         # TODO perform in transaction (lock tables also)
 
         def interaction_cb(cur):
+            logging.debug("Objectstore apply_diff, interaction_cb")
+            iresult_d = Deferred()
 
             def ver_cb(cur_version):
+                logging.debug("Objectstore apply_diff, ver_cb")
                 new_version = cur_version + 1
 
                 queries = {
@@ -561,6 +569,7 @@ class ObjectStoreAsync:
                 }
 
                 def obj_to_tuples(val):
+                    logging.debug("Objectstore apply_diff, obj_to_tuples")
                     if "@id" in val:
                         value = val['@id']
                         thetype = 'resource'
@@ -576,6 +585,7 @@ class ObjectStoreAsync:
 
 
                 def add_obj(uri, obj):
+                    logging.debug("Objectstore apply_diff, add_obj")
                     order = 0 # TODO move this somewhere else?
 
                     queries['subjects']['values'].append("(wb_get_string_id(%s))")
@@ -658,6 +668,7 @@ class ObjectStoreAsync:
                 # do queries
                 def gen_queries(keys, cur, max_params = None):
                     """ Check if the number of parameters in the queries is above the MAX_PARAMS_PER_QUERY, and if so, render that query and reset it. """
+                    logging.debug("Objectstore apply_diff, gen_queries")
                     result2_d = Deferred()
 
                     if max_params is None:
@@ -665,7 +676,7 @@ class ObjectStoreAsync:
                         max_params = 1
 
                     def run_next(empty):
-
+                        logging.debug("Objectstore apply_diff, run_next")
                         if len(keys) < 1:
                             result2_d.callback(True)
                         else:
@@ -673,9 +684,7 @@ class ObjectStoreAsync:
 
                             # max_params == 0 override is required because if quer is 'latest' and has no params, 'prelatest' might still have queries
                             if len(queries[quer]['params']) > max_params or max_params == 0:
-
                                 logging.debug("ObjectStore apply_diff gen_queries, queries for {0}, queries are: {1}".format(quer, queries['prelatest']['queries']))
-
                                 querylist = []
                             
                                 # do prelatest before latest, only when latest has hit max_params
@@ -708,21 +717,21 @@ class ObjectStoreAsync:
                                 run_next(None)
 
                     run_next(None)
-
                     return result2_d
 
+                def diff_cb(empty):
+                    logging.debug("Objectstore apply_diff, diff_cb")
 
-                def diff_cb(results):
+                    def latest_cb(empty):
+                        logging.debug("Objectstore apply_diff, latest_cb")
+                        self._notify(cur, new_version, commits = commit_ids).addCallbacks(lambda _: iresult_d.callback({"@version": new_version}), iresult_d.errback)
 
-                    def latest_cb(results):
-                        result_d.callback(new_version)
+                    gen_queries(['latest', 'subjects'], cur, max_params = 0).addCallbacks(latest_cb, iresult_d.errback)
 
-                    gen_queries(['latest', 'subjects'], cur, max_params = 0).addCallbacks(latest_cb, result_d.errback)
-
-                gen_queries(['diff'], cur, max_params = 0).addCallbacks(diff_cb, result_d.errback)
-
-    
-            self._get_latest_ver(cur).addCallbacks(ver_cb, result_d.errback)
+                gen_queries(['diff'], cur, max_params = 0).addCallbacks(diff_cb, iresult_d.errback)
+ 
+            self._get_latest_ver(cur).addCallbacks(ver_cb, iresult_d.errback)
+            return iresult_d
 
         def iconn_cb(conn):
             logging.debug("Objectstore apply_diff, iconn_cb")
@@ -1195,6 +1204,40 @@ class ObjectStoreAsync:
         return result_d
 
 
+    def store_commits(self, commits):
+        """ Store commits in the commits table unless they are already there. """
+        result_d = Deferred()
+
+        the_commits = copy.copy(commits)
+
+        def connected(conn):
+
+            def loop(empty):
+                if len(the_commits) < 1:
+                    result_d.callback(True)
+                    return
+
+                commit_id, commit = the_commits.popitem()
+                query = "SELECT EXISTS(SELECT commit_hash FROM ix_commits WHERE commit_hash = %s) AS EXISTENZ"
+           
+                def checked_cb(rows):
+                    exists = rows[0][0]
+                    if exists:
+                        return loop(None)
+
+                    ins_query = "INSERT INTO ix_commits (commit_hash, date, server_id, original_version, commit_log) VALUES (%s, %s, %s, %s, %s)"
+                    ins_params = [commit['commit_hash'], commit['date'], commit['server_id'], commit['original_version'], commit['commit_log']]
+
+                    conn.runOperation(ins_query, ins_params).addCallbacks(loop, result_d.errback)
+                    
+                conn.runQuery(query, [commit_id]).addCallbacks(checked_cb, result_d.errback)
+
+            loop(None)
+
+        self.conns['conn']().addCallbacks(connected, result_d.errback)
+        return result_d
+
+
     def get_commits_in_versions(self, versions, cur=None):
         result_d = Deferred()
         self.debug("Objectstore get_commits_in_version, cur: {0}".format(cur))
@@ -1208,7 +1251,32 @@ class ObjectStoreAsync:
                 version, commits = row
                 all_commits.extend(commits)
 
-            result_d.callback(all_commits)
+            query2 = "SELECT commit_hash, date, server_id, original_version, commit_log FROM ix_commits WHERE commit_hash = ANY(%s)"
+            params2 = [all_commits]
+
+            def commits_cb(rows):
+                commit_data = {}
+                for row in rows:
+                    commit_hash, date, server_id, original_version, commit_log = row
+                    commit_data[commit_hash] = {"commit_hash": commit_hash, "date": date, "server_id": server_id, "original_version": original_version, "commit_log": commit_log}
+
+                result_d.callback(commit_data)
+
+
+            if cur is None:
+                def conn_cb(conn):
+                    logging.debug("Objectstore get_commits_in_versions, ver_cb")
+                    conn.runQuery(query2, params2).addCallbacks(commits_cb, result_d.errback)
+                
+                self.conns['conn']().addCallbacks(conn_cb, result_d.errback)
+            else:
+
+                def exec_cb2(cur):
+                    self.debug("Objectstore get_commits_in_versions exec_cb2, cur: {0}".format(cur))
+                    rows = cur.fetchall()
+                    commits_cb(rows)
+
+                self._curexec(cur, query2, params2).addCallbacks(exec_cb2, result_d.errback)
 
 
         if cur is None:
@@ -1429,7 +1497,6 @@ class ObjectStoreAsync:
 
                 def check_cb(value):
                     self.debug("Objectstore check_cb, value: {0}".format(value))
-                    pass
 
                 d = threads.deferToThread(do_check)
                 d.addCallbacks(check_cb, ver_err_cb)

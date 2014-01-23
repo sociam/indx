@@ -693,6 +693,50 @@ class IndxDatabase:
         return return_d
 
 
+
+    def get_linked_boxes(self):
+        """ Get a list of linked boxes. """
+        logging.debug("idnx_pg2 get_linked_boxes")
+        return_d = Deferred()
+
+        def connected(conn):
+            logging.debug("indx_pg2.get_linked_boxes : connected")
+            query = "SELECT DISTINCT boxid FROM tbl_indx_core WHERE key = %s AND value IS NOT NULL"
+            params = ['is_a_linked_box']
+
+            d = conn.runQuery(query, params)
+            d.addCallbacks(return_d.callback, return_d.errback)
+
+        self.connect_indx_db().addCallbacks(connected, return_d.errback)
+        return return_d
+
+    def save_linked_box(self, boxid):
+        """ Save the fact that this box is now linked. """
+
+        logging.debug("idnx_pg2 save_linked_boxes")
+        return_d = Deferred()
+
+        def connected(conn):
+            logging.debug("indx_pg2.save_linked_boxes : connected")
+            query = "SELECT DISTINCT boxid FROM tbl_indx_core WHERE key = %s AND value IS NOT NULL AND boxid = %s"
+            params = ['is_a_linked_box', boxid]
+
+            d = conn.runQuery(query, params)
+            
+            def check_cb(rows):
+                if len(rows) > 0: 
+                    return_d.callback(True)
+                    return # already in the db
+
+                conn.runOperation("INSERT INTO tbl_indx_core (key, value, boxid) VALUES (%s, %s, %s)", ['is_a_linked_box', True, boxid]).addCallbacks(return_d.callback, return_d.errback)
+
+            d.addCallbacks(check_cb, return_d.errback)
+
+        self.connect_indx_db().addCallbacks(connected, return_d.errback)
+        return return_d
+
+
+
     def get_root_boxes(self, username = None):
         """ Get a list of the root boxes for each user. """
         logging.debug('indx_pg2 get_root_boxes')

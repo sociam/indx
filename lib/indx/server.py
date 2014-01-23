@@ -239,14 +239,14 @@ class WebServer:
             logging.error("WebServer, start_syncing error getting root boxes: {0} {1}".format(failure, failure.value))
             # FIXME do something with the error?
 
-        def root_boxes_cb(rows):
-            logging.debug("WebServer start_syncing root_boxes_cb")
+        def linked_boxes_cb(rows):
+            logging.debug("WebServer start_syncing linked_boxes_cb")
             for row in rows:
-                username, root_box = row
-                logging.debug("WebServer start_syncing user: {0}, root box: {1}".format(username, root_box))
-                reactor.callInThread(lambda empty: self.sync_box(root_box), None)
+                linked_box = row[0]
+                logging.debug("WebServer start_syncing linked box: {0}".format(linked_box))
+                reactor.callInThread(lambda empty: self.sync_box(linked_box), None)
 
-        self.database.get_root_boxes().addCallbacks(root_boxes_cb, err_cb)
+        self.database.get_linked_boxes().addCallbacks(linked_boxes_cb, err_cb)
 
 
     def shutdown(self):

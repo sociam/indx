@@ -150,7 +150,10 @@ class Graph:
                 logging.debug("Objectstore Types, Graph, object not being expanded.")
                 expanded(None)
 
-        loop(None)
+        if depth >= 0:
+            loop(None)
+        else:
+            return_d.callback(True)
 
         return return_d
 
@@ -194,6 +197,13 @@ class Resource:
             self.model[property] = []
 
         self.model[property].append(value)
+
+    def getOneValue(self, property):
+        """ Get the first value of a property and return its value. If it does not exist, return None."""
+        val = self.getOne(property)
+        if val is None:
+            return None
+        return val.value
 
     def getOne(self, property):
         """ Get the first value of a property. If it does not exist, returns None. """
