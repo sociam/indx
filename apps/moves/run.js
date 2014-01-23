@@ -20,10 +20,10 @@ var nodeindx = require('../../lib/services/nodejs/nodeindx'),
 
 var toMovesDate = function(date) {
     u.assert(date instanceof Date, "Must be a Date");
-    var yy = date.getFullYear(), mm = date.getMonth(), dd = date.getDate();
+    var yy = date.getFullYear(), mm = date.getMonth() + 1, dd = date.getDate();
     var s = ''+yy;
-    s = s + mm < 10 ? '0'+mm : mm;
-    s = s + dd < 10 ? '0'+dd : dd;
+    s = s + (mm < 10 ? '0'+mm : mm);
+    s = s + (dd < 10 ? '0'+dd : dd);
     return s;
 };
 var fromMovesDate = function(m_date) {
@@ -45,7 +45,6 @@ var MovesService = Object.create(nodeservice.NodeService, {
             // run continuously
             var this_ = this;
             this.store = store;
-
             var doinit = function() {
                 // console.log('doinit() -- ', config);
                 this_._loadBox().then(function() { this_._update(); }).fail(function(er) { 
@@ -168,10 +167,18 @@ var MovesService = Object.create(nodeservice.NodeService, {
             var base_url = 'https://api.moves-app.com/api/v1/user/profile?'+jQuery.param({access_token:this.config.access_token});
             // console.error('getProfile() url >> ', base_url);
             jQuery.ajax({type:'GET', url: base_url}).then(function(result) {
-                // console.log('profile info >> ', result);
+                console.log('profile info >> ', result, 'object: ', _(result).isObject(), 'array : ', _(result).isArray());
                 this_.whom.set({moves_id: result.userId});
-                this_.diary.set(result);
-                u.when([ this_.diary.save(), this_.whom.save() ]).then(d.resolve).fail(d.reject);
+                this_.diary.set({
+                    timezone: result.profile.currentTimeZone && result.profile.currentTimeZone.id,
+                    tzoffset : result.profile.currentTimeZone && result.profile.currentTimeZone.offset,
+                    firstDate : fromMovesDate(result.profile.firstDate)
+                });
+                delete result.profile.currentTimeZone;
+                delete result.profile.firstDate;
+                this_.diary.set(result.profile);
+                console.log('diary >> ', this_.diary.attributes);
+                u.when([ this_.diary.save(), this_.whom.save() ]).then(d.resolve).fail(d.reject);                    
             }).fail(function(bail) { 
                 // token isn't valid anymore
                 console.error('ERROR getProfile >> ', bail);
@@ -200,6 +207,7 @@ var MovesService = Object.create(nodeservice.NodeService, {
         //         },
         // and transforms this into a series of MovesObservations
         value:function(from_date, to_date) {
+
             // 
             this.assert(daysBetween(from_date, to_date) < 8, "Only accepts date ranges 7 days wide.");
             this.assert(this.config.access_token, "No auth code", "authorization code");
@@ -216,10 +224,10 @@ var MovesService = Object.create(nodeservice.NodeService, {
                 // timeline 
                 storyline.map(function(day) {
                     var date = day.date;
-                    var dsegs = day.segments.map(function(segment) { return this_._saveSegment(segment); });
+                    var dsegs = day.segments ? day.segments.map(function(segment) { return this_._saveSegment(segment); }) : [];
                     u.when(dsegs).then(d.resolve).fail(d.reject);
                 });
-            });
+            }).fail(d.reject);
             return d.promise();
         }
     },
@@ -241,7 +249,7 @@ var MovesService = Object.create(nodeservice.NodeService, {
                     lon: longitude coordinate as number
         */        
         value:function(place) {
-            var dr = u.deferred();
+            var dr = u.deferred(), this_ = this;
             entities.locations.getByLatLng(this_.box, place.location.lat, place.location.lon).then(function(matching_locs) { 
                 if (matching_locs && matching_locs.length) {  dr.resolve(matching_locs[0]); } else {
                     entities.locations.make(this_.box, place.name, place.location.lat, place.location.lon, 
@@ -263,7 +271,7 @@ var MovesService = Object.create(nodeservice.NodeService, {
     },
     _makeTrackPointPlace: {
         value:function(trackPoint) {
-            var dr = u.deferred();
+            var dr = u.deferred(), this_ = this;
             entities.locations.getByLatLng(this_.box, trackPoint.lat, trackPoint.lon).then(function(matching_locs) { 
                 if (matching_locs && matching_locs.length) {  dr.resolve(matching_locs[0]); } else {
                     entities.locations.make(this_.box, undefined, trackPoint.lat, trackPoint.lon).then(function(model_loc) { 
@@ -293,14 +301,17 @@ var MovesService = Object.create(nodeservice.NodeService, {
         value: function(activity) {
             var da = u.deferred(), this_ = this;
             var activities = { 'wlk' : 'walking', 'cyc' : 'cycling', 'run': 'running', 'trp':'transport'};
-            u.when(activity.trackPoints.map(function(tP) { return this_._makeTrackPointPlace(tP); })).then(function(trackObjects)  {
+            u.when(activity.trackPoints && activity.trackPoints.map(function(tP) { return this_._makeTrackPointPlace(tP); }) || u.dresolve()).then(function(trackObjects)  {
                 entities.activities.make1(this_.box, activities[activity.activity],
+                    this_.whom,
                     fromMovesDate(activity.startTime),
                     fromMovesDate(activity.endTime),
                     activity.distance,
                     activity.steps,
                     activities.calories,
-                    trackObjects).then(function(activity_model) { activity_model.save().then(da.resolve).fail(da.reject); });
+                    trackObjects).then(function(activity_model) { 
+                        activity_model.save().then(function() { da.resolve(activity_model); }).fail(da.reject); 
+                    });
             }).fail(da.reject);
             return da.promise();
         }
@@ -316,23 +327,24 @@ var MovesService = Object.create(nodeservice.NodeService, {
             activities (optional): JSON array of activities for the segment
         */
         value:function(segment) {
-            var whom = this.whom, this_ = this, vargs = [this._makePlace(segment.place[0])], ds = u.deferred();;
+            var whom = this.whom, this_ = this, ds = u.deferred();;
             var get_acts = function(acts){  return acts.map(function(activity) { return this_._makeActivity(activity); }); };
             var dact = segment.activities ? get_acts(segment.activities) : u.dresolve();
-            var dpl = segment.place ? this_._makePlace(pl) : u.dresolve();
+            var dpl = segment.place ? this_._makePlace(segment.place) : u.dresolve();
 
-            $.when(dact, dpl).then(function(activities, place) { 
-                var saved_acts = u.when(activities.map(function(a) { 
+            jQuery.when(u.when(dact), dpl).then(function(activities, place) { 
+                console.log('activities > ', activities);
+                var saved_acts = activities.map(function(a) { 
                     if (place) { a.set({where: place}); }
-                    return a.save(); 
+                    return a.save();
                 });
                 if (segment.type === 'move') {
                     // then our subactivities are self-describing
-                    save_acts.then(ds.resolve).fail(ds.reject);
+                    saved_acts.then(ds.resolve).fail(ds.reject);
                 } else {
                     // this is a stay. 
                     var from_t = fromMovesDate(segment.startTime), to_t = fromMovesDate(segment.endTime);
-                    entities.activities.make1(this_box, 'stay', from_t, to_t ).then(function(am) {
+                    entities.activities.make1(this_box, 'stay', this_.whom, from_t, to_t ).then(function(am) {
                         u.when(am.save(), save_acts).then(ds.resolve).fail(ds.reject);
                     }).fail(ds.reject);
                 }
@@ -354,10 +366,10 @@ var MovesService = Object.create(nodeservice.NodeService, {
               // get moves diary
                 this_.box = box;
                 var objds = [box.getObj('moves-diary'), box.getObj(config.about_user)];
-                u.when(objds).then(function(diaryobj, meobj) { 
-                    this_.diary = diaryobj;
-                    this_.whom = meobj;
-                    d.resolve(box,diaryobj,meobj); 
+                u.when(objds).then(function(diaryobj) { 
+                    this_.diary = diaryobj[0];
+                    this_.whom = diaryobj[1];
+                    d.resolve(box,this_.diary, this_.whom); 
                 }).fail(function(bail) {  d.reject(bail); });
             }).fail(function(err) { this_.debug('error getting box ', err); }); 
             return d.promise();
@@ -387,9 +399,21 @@ var instantiate = function(indxhost) {
 module.exports = {
     MovesService: MovesService,
     instantiate: instantiate,
-    entities:entities
+    entities:entities,
+    testRun: function(host) {
+        var d = u.deferred();
+        instantiate(host).then(function(g) { 
+            g.login().then(function(store) { 
+                g.store = store; 
+                g._loadBox().then(function() { 
+                    console.log('done loading!! ')
+                    d.resolve(g);
+                }).fail(d.reject);
+            }).fail(d.reject);
+        });
+        return d.promise();
+    }
 };
-
 if (require.main === module) { 
     var entities = injector.get('entities');
   

@@ -76,11 +76,13 @@
 					getAll:function(box, extras) {
 						return search(box, _(extras).chain().clone().extend({type:"Activity"}));
 					},
-					make1:function(box, activity_type, from_t, to_t, distance, steps, calories, waypoints) {
+					make1:function(box, activity_type, whom, from_t, to_t, distance, steps, calories, waypoints) {
 						var d = u.deferred(), args = _(arguments).toArray();
+						var id = ['activity', whom && whom.id || "unknown-person", activity_type || 'unknown-type', from_t.valueOf().toString(), to_t.valueOf().toString()].join('-');
 						var argnames = [undefined, 'activity', 'tstart', 'tend', 'distance', 'steps', "calories", "waypoints"];
 							zipped = u.zip(argnames, args).filter(function(x) { return x[0]; }),
 							argset = u.dict(zipped);
+						console.log('activities.make. setting >> ', argset);
 						box.getObj(id).then(function(model) { 
 							model.set(argset);
 							model.save().then(function() { d.resolve(model); }).fail(d.reject);
