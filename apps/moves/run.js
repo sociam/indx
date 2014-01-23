@@ -1,4 +1,4 @@
-    
+
 /**
  *  Moves Service for INDX ---
  *   (c) 2014 - Max Van Kleek, University of Southampton 
@@ -170,6 +170,8 @@ var MovesService = Object.create(nodeservice.NodeService, {
                 console.log('profile info >> ', result, 'object: ', _(result).isObject(), 'array : ', _(result).isArray());
                 this_.whom.set({moves_id: result.userId});
                 this_.diary.set({
+                    whom:this_.whom,
+                    userId: result.userId,  
                     timezone: result.profile.currentTimeZone && result.profile.currentTimeZone.id,
                     tzoffset : result.profile.currentTimeZone && result.profile.currentTimeZone.offset,
                     firstDate : fromMovesDate(result.profile.firstDate)
@@ -212,7 +214,7 @@ var MovesService = Object.create(nodeservice.NodeService, {
             this.assert(daysBetween(from_date, to_date) < 8, "Only accepts date ranges 7 days wide.");
             this.assert(this.config.access_token, "No auth code", "authorization code");
             this.assert(this.diary, "No diary loaded");
-            this.assert(this.diary.get('userId'), "No diary loaded");
+            this.assert(this.diary.get('userId'), "No userid specifie");
             var d = u.deferred(), this_ = this;
             var whom = this.whom;
             var from_m = toMovesDate(from_date), to_m = toMovesDate(to_date);
@@ -252,11 +254,8 @@ var MovesService = Object.create(nodeservice.NodeService, {
             var dr = u.deferred(), this_ = this;
             entities.locations.getByLatLng(this_.box, place.location.lat, place.location.lon).then(function(matching_locs) { 
                 if (matching_locs && matching_locs.length) {  dr.resolve(matching_locs[0]); } else {
-                    entities.locations.make(this_.box, place.name, place.location.lat, place.location.lon, 
-                        { 
-                            moves_id: place.id,
-                            foursquare_id: place.foursquare_id
-                        }).then(function(model_loc) { 
+                    entities.locations.make(this_.box, place.name, place.type, place.location.lat, place.location.lon, place.id,
+                        { foursquare_id: place.foursquare_id }).then(function(model_loc) { 
                             // save it before it gets lost
                             if (place.type == 'home') { model_loc.set({home_of: this_.whom}); }
                             if (place.type == 'work') { model_loc.set({work_of: this_.whom}); }
@@ -274,7 +273,7 @@ var MovesService = Object.create(nodeservice.NodeService, {
             var dr = u.deferred(), this_ = this;
             entities.locations.getByLatLng(this_.box, trackPoint.lat, trackPoint.lon).then(function(matching_locs) { 
                 if (matching_locs && matching_locs.length) {  dr.resolve(matching_locs[0]); } else {
-                    entities.locations.make(this_.box, undefined, trackPoint.lat, trackPoint.lon).then(function(model_loc) { 
+                    entities.locations.make(this_.box, undefined, undefined, trackPoint.lat, trackPoint.lon).then(function(model_loc) { 
                         // save it before it gets lost
                         model_loc.save().then(function() { dr.resolve(model_loc);  }).fail(dr.reject);
                     }).fail(dr.reject);
@@ -333,20 +332,19 @@ var MovesService = Object.create(nodeservice.NodeService, {
             var dpl = segment.place ? this_._makePlace(segment.place) : u.dresolve();
 
             jQuery.when(u.when(dact), dpl).then(function(activities, place) { 
-                console.log('activities > ', activities);
-                var saved_acts = activities.map(function(a) { 
+                var saved_acts = u.when(activities.map(function(a) { 
                     if (place) { a.set({where: place, diary:this_.diary}); }
                     return a.save();
-                });
+                }));
                 if (segment.type === 'move') {
                     // then our subactivities are self-describing
                     saved_acts.then(ds.resolve).fail(ds.reject);
                 } else {
                     // this is a stay. 
                     var from_t = fromMovesDate(segment.startTime), to_t = fromMovesDate(segment.endTime);
-                    entities.activities.make1(this_box, 'stay', this_.whom, from_t, to_t ).then(function(am) {
+                    entities.activities.make1(this_.box, 'stay', this_.whom, from_t, to_t ).then(function(am) {
                         am.set({diary:this_.diary});
-                        u.when(am.save(), save_acts).then(ds.resolve).fail(ds.reject);
+                        u.when(am.save(), saved_acts).then(ds.resolve).fail(ds.reject);
                     }).fail(ds.reject);
                 }
             });

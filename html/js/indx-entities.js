@@ -51,22 +51,24 @@
 						return search(box, _(extras).chain().clone().extend({type:"Location"}).value()); 
 					},
 					getByLatLng: function(box, lat, lng) { 
-						return this.getAll(box, { coords:[{lat: lat, lng: lng }] });
+						return this.getAll(box, { latitude: lat, longitude: lng } );
 					},
 					getByMovesID: function(box, movesid) {
-						return this.getAll(box, { coords:[{moves_id: movesid}] });
+						return this.getAll(box, { moves_id: movesid });
 					},
 					getByName:function(box, name) {
 						return this.getAll(box, { name: name });
 					},
-					make:function(box, name, aliases, location_type, latitude, longitude, otherprops) {
+					make:function(box, name, location_type, latitude, longitude, moves_id, otherprops) {
 						var d = u.deferred(), args = _(arguments).toArray();
-						var argnames = [undefined, undefined, 'names', 'location_type'];
+						var argnames = [undefined, undefined, 'location_type', 'latitude', 'longitude', 'moves_id'];
 							zipped = u.zip(argnames, args).filter(function(x) { return x[0]; }),
 							argset = u.dict(zipped);
+						var id = ['location', name || "", location_type || '' , moves_id ? moves_id : '', latitude.toString(), longitude.toString() ].join('-');
 						box.getObj(id).then(function(model) { 
 							model.set(argset);
 							if (otherprops && _(otherprops).isObject()) { model.set(otherprops) };
+							model.set({type:'location'});
 							model.save().then(function() { d.resolve(model); }).fail(d.reject);
 						});
 						return d.promise();
@@ -78,13 +80,14 @@
 					},
 					make1:function(box, activity_type, whom, from_t, to_t, distance, steps, calories, waypoints) {
 						var d = u.deferred(), args = _(arguments).toArray();
-						var id = ['activity', whom && whom.id || "unknown-person", activity_type || 'unknown-type', from_t.valueOf().toString(), to_t.valueOf().toString()].join('-');
+						var id = ['activity', whom && whom.id || "", activity_type || '', from_t.valueOf().toString(), to_t.valueOf().toString()].join('-');
 						var argnames = [undefined, 'activity', 'tstart', 'tend', 'distance', 'steps', "calories", "waypoints"];
 							zipped = u.zip(argnames, args).filter(function(x) { return x[0]; }),
 							argset = u.dict(zipped);
 						console.log('activities.make. setting >> ', argset);
 						box.getObj(id).then(function(model) { 
 							model.set(argset);
+							model.set({type:'activity'});
 							model.save().then(function() { d.resolve(model); }).fail(d.reject);
 						});
 						return d.promise();
@@ -113,6 +116,7 @@
 							argset = u.dict(zipped);
 						box.getObj(id).then(function(model) { 
 							model.set(argset);
+							mode.set({type:'person'});
 							if (names) { model.set({name:names[0]}); }
 							if (otherprops && _(otherprops).isObject()) { model.set(otherprops) };
 							model.save().then(function() { d.resolve(model); }).fail(d.reject);
