@@ -1,5 +1,11 @@
     
-// test
+/**
+ *  Moves Service for INDX ---
+ *   (c) 2014 - Max Van Kleek, University of Southampton 
+ * 
+ *  This is an INDX service that grabs data from moves app: https://dev.moves-app.com/
+ */
+
 var nodeindx = require('../../lib/services/nodejs/nodeindx'),
     nodeservice = require('../../lib/services/nodejs/service'),
     u = nodeindx.utils,
@@ -27,7 +33,6 @@ var fromMovesDate = function(m_date) {
     var newtime = [hour,min, sec].join(':');
     return new Date(newtime + " " + newdate);
 };
-
 var daysBetween = function(date1, date2) {
     var diff = Math.abs(date2.valueOf() - date1.valueOf());
     return diff/(1000*60*60*24);
@@ -200,13 +205,13 @@ var MovesService = Object.create(nodeservice.NodeService, {
             this.assert(this.config.access_token, "No auth code", "authorization code");
             this.assert(this.diary, "No diary loaded");
             this.assert(this.diary.get('userId'), "No diary loaded");
+            var d = u.deferred(), this_ = this;
             var whom = this.whom;
             var from_m = toMovesDate(from_date), to_m = toMovesDate(to_date);
             var base_url = 'https://api.moves-app.com/api/v1/user/storyline/daily?'
                 + jQuery.param({from:from_m, to: to_m, access_token: this.config.access_token });
 
             console.info("url >> ", base_url);
-            var d = u.deferred(), this_ = this;
             jQuery.ajax({type:'GET', url: base_url}).then(function(storyline) {
                 // timeline 
                 storyline.map(function(day) {
@@ -219,22 +224,22 @@ var MovesService = Object.create(nodeservice.NodeService, {
         }
     },
 
-    /*  Places:
-            id (optional): a unique identifier (per-user, 64 bit unsigned) of the place
-            name (optional): name for the place
-            type: one of:
-                unknown: the place has not been identified
-                home: the place is labeled as home
-                school: the place is labeled as school
-                work: the place is labeled as work
-                user: the place has been manually named
-                foursquare: the place has been identified from foursquare
-            foursquareId (optional): foursquare venue id if applicable
-            location: JSON object with:
-                lat: latitude coordinate as number
-                lon: longitude coordinate as number
-    */
     _makePlace: {
+        /*  Places:
+                id (optional): a unique identifier (per-user, 64 bit unsigned) of the place
+                name (optional): name for the place
+                type: one of:
+                    unknown: the place has not been identified
+                    home: the place is labeled as home
+                    school: the place is labeled as school
+                    work: the place is labeled as work
+                    user: the place has been manually named
+                    foursquare: the place has been identified from foursquare
+                foursquareId (optional): foursquare venue id if applicable
+                location: JSON object with:
+                    lat: latitude coordinate as number
+                    lon: longitude coordinate as number
+        */        
         value:function(place) {
             var dr = u.deferred();
             entities.locations.getByLatLng(this_.box, place.location.lat, place.location.lon).then(function(matching_locs) { 
@@ -270,51 +275,69 @@ var MovesService = Object.create(nodeservice.NodeService, {
             return dr.promise();
         }
     },
-    /* 
-        Activity:
-        activity: activity type, one of “wlk” (walking),“cyc” (cycling),“run” (running) or “trp” (transport)
-        startTime: start time of the activity in yyyyMMdd’T’HHmmssZ format
-        endTime: end time of the activity in yyyyMMdd’T’HHmmssZ format
-        duration: duration of the activity in seconds
-        distance: distance for the activity in meters
-        steps (optional): step count for the activity (if applicable)
-        calories (optional): calories burn for the activity in kcal (if applicable), on top of the idle burn. Available if user has at least once enabled calories
-        trackPoints (optional): JSON array of track points for the activity when requested with each track point having:
-            lat: latitude coordinate
-            lon: longitude coordinate
-            time: timestamp in yyyyMMdd’T’HHmmssZ format
-    */
     _makeActivity: {
-        // 
-        value: function() {
-            var dr = u.deferred();
-            entities.locations.getByLatLng(this_.box, trackPoint.lat, trackPoint.lon).then(function(matching_locs) { 
-                if (matching_locs && matching_locs.length) {  dr.resolve(matching_locs[0]); } else {
-                    entities.locations.make(this_.box, undefined, trackPoint.lat, trackPoint.lon).then(function(model_loc) { 
-                        // save it before it gets lost
-                        model_loc.save().then(function() { dr.resolve(model_loc);  }).fail(dr.reject);
-                    }).fail(dr.reject);
-                }
-            });
-            return dr.promise();
+        /* 
+            Activity:
+            activity: activity type, one of “wlk” (walking),“cyc” (cycling),“run” (running) or “trp” (transport)
+            startTime: start time of the activity in yyyyMMdd’T’HHmmssZ format
+            endTime: end time of the activity in yyyyMMdd’T’HHmmssZ format
+            duration: duration of the activity in seconds
+            distance: distance for the activity in meters
+            steps (optional): step count for the activity (if applicable)
+            calories (optional): calories burn for the activity in kcal (if applicable), on top of the idle burn. Available if user has at least once enabled calories
+            trackPoints (optional): JSON array of track points for the activity when requested with each track point having:
+                lat: latitude coordinate
+                lon: longitude coordinate
+                time: timestamp in yyyyMMdd’T’HHmmssZ format
+        */
+        value: function(activity) {
+            var da = u.deferred(), this_ = this;
+            var activities = { 'wlk' : 'walking', 'cyc' : 'cycling', 'run': 'running', 'trp':'transport'};
+            u.when(activity.trackPoints.map(function(tP) { return this_._makeTrackPointPlace(tP); })).then(function(trackObjects)  {
+                entities.activities.make1(this_.box, activities[activity.activity],
+                    fromMovesDate(activity.startTime),
+                    fromMovesDate(activity.endTime),
+                    activity.distance,
+                    activity.steps,
+                    activities.calories,
+                    trackObjects).then(function(activity_model) { activity_model.save().then(da.resolve).fail(da.reject); });
+            }).fail(da.reject);
+            return da.promise();
         }
     },
     _saveSegment:{
+        /*
+            Segment::
+
+            type: “move” or “place”
+            startTime: segment start time in yyyyMMdd’T’HHmmssZ format
+            endTime: segment end time in yyyyMMdd’T’HHmmssZ format
+            place (optional): a JSON object with info about the place
+            activities (optional): JSON array of activities for the segment
+        */
         value:function(segment) {
-            var whom = this.whom, this_ = this;
-            if (segment.place) {
-                this._makePlace(segment.place[0])
+            var whom = this.whom, this_ = this, vargs = [this._makePlace(segment.place[0])], ds = u.deferred();;
+            var get_acts = function(acts){  return acts.map(function(activity) { return this_._makeActivity(activity); }); };
+            var dact = segment.activities ? get_acts(segment.activities) : u.dresolve();
+            var dpl = segment.place ? this_._makePlace(pl) : u.dresolve();
 
-
-                // got some places to hook up: find all corresponding locations
-                }).then(function(places) {
-                    var place = (places && places.length && places[0]) || undefined;
-                    var from_t = fromMovesDate(segment.startTime), end_t = fromMovesDate(segment.endTime);
-                    entities.activities.makeStay(this_.whom, place, from_t, end_t, 
+            $.when(dact, dpl).then(function(activities, place) { 
+                var saved_acts = u.when(activities.map(function(a) { 
+                    if (place) { a.set({where: place}); }
+                    return a.save(); 
                 });
-            })).then(function(places) {
-
+                if (segment.type === 'move') {
+                    // then our subactivities are self-describing
+                    save_acts.then(ds.resolve).fail(ds.reject);
+                } else {
+                    // this is a stay. 
+                    var from_t = fromMovesDate(segment.startTime), to_t = fromMovesDate(segment.endTime);
+                    entities.activities.make1(this_box, 'stay', from_t, to_t ).then(function(am) {
+                        u.when(am.save(), save_acts).then(ds.resolve).fail(ds.reject);
+                    }).fail(ds.reject);
+                }
             });
+            return ds.promise();
         }
     },
     _loadBox: { // ecmascript 5, don't be confused!

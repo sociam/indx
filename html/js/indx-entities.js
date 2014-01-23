@@ -66,7 +66,6 @@
 							argset = u.dict(zipped);
 						box.getObj(id).then(function(model) { 
 							model.set(argset);
-							if (names) { model.set({name:names[0]}); }
 							if (otherprops && _(otherprops).isObject()) { model.set(otherprops) };
 							model.save().then(function() { d.resolve(model); }).fail(d.reject);
 						});
@@ -77,48 +76,16 @@
 					getAll:function(box, extras) {
 						return search(box, _(extras).chain().clone().extend({type:"Activity"}));
 					},
-					make:function(box, id, name, domain_type) {
+					make1:function(box, activity_type, from_t, to_t, distance, steps, calories, waypoints) {
 						var d = u.deferred(), args = _(arguments).toArray();
-						var argnames = [undefined, undefined, 'names', 'email', 'twitter_id', 'facebook_id', "linkedin_id"];
+						var argnames = [undefined, 'activity', 'tstart', 'tend', 'distance', 'steps', "calories", "waypoints"];
 							zipped = u.zip(argnames, args).filter(function(x) { return x[0]; }),
 							argset = u.dict(zipped);
 						box.getObj(id).then(function(model) { 
 							model.set(argset);
-							if (names) { model.set({name:names[0]}); }
-							if (otherprops && _(otherprops).isObject()) { model.set(otherprops) };
 							model.save().then(function() { d.resolve(model); }).fail(d.reject);
 						});
 						return d.promise();
-					},
-					makeStay:function(who, where, from_t, to_t, while_other_activities) {
-						// mandatory: who, where from, to
-						// optional : while_other_activities
-						var id = ['stay-activity', who.id, where.id, from_t.valueOf(), to_t.valueOf()].join('-'), d = u.deferred();
-						box.getObj(id).then(function(model) { 
-							model.set({
-								type:'activity',
-								activity:'stay',
-								who: who,
-								where: where,
-								tstart: from_t,
-								tend:end_t,
-								"while": while_other_activities ? while_other_activities : undefined
-							});
-							d.resolve(model);
-						}).fail(d.reject);
-						return d.promise();
-					},
-					makeWalk:function(whom, from_t, to_t, from_where, to_where, at_where, along, steps, fuel, calories) {
-						// where - optional Location 
-					},
-					makeCycle:function(whom, from_t, to_t, from_where, to_where, along, steps, fuel, calories)	{
-
-					},
-					makeRun:function(whom, from_t, to_t, from_where, to_where, along, steps, fuel, calories)	{
-
-					},
-					makeRead:function(whom, from_t, to_t, resource) {
-
 					}
 				},
 				people:{
