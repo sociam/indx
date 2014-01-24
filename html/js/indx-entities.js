@@ -1,4 +1,4 @@
-/* jshint undef: true */
+/* jshint undef: true, strict:false, trailing:false, unused:false */
 /* global Backbone, angular, jQuery, _ */
 
 /*
@@ -9,7 +9,7 @@
 (function() {
 	angular
 		.module('indx')
-		.factory("entities", function(client, utils) { 
+		.factory("entities", function(client, utils) {
 			var u = utils;
 
 			var to_obj = function(box, obj) {

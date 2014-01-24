@@ -146,7 +146,7 @@
         };
     })
     // main controller
-    .controller('background', function($scope, watcher, geowatcher, client, utils) {
+    .controller('background', function($scope, watcher, geowatcher, client, utils, entities) {
         // background page
         window.utils = utils;
         var winstance = watcher.init(), n_logged = 0, geoinstance = geowatcher.init();
