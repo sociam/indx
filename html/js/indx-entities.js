@@ -81,7 +81,7 @@
 					make1:function(box, activity_type, whom, from_t, to_t, distance, steps, calories, waypoints) {
 						var d = u.deferred(), args = _(arguments).toArray();
 						var id = ['activity', whom && whom.id || "", activity_type || '', from_t.valueOf().toString(), to_t.valueOf().toString()].join('-');
-						var argnames = [undefined, 'activity', 'tstart', 'tend', 'distance', 'steps', "calories", "waypoints"];
+						var argnames = [undefined, 'activity', 'whom', 'tstart', 'tend', 'distance', 'steps', "calories", "waypoints"];
 							zipped = u.zip(argnames, args).filter(function(x) { return x[0]; }),
 							argset = u.dict(zipped);
 						console.log('activities.make. setting >> ', argset);
