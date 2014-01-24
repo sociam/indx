@@ -30,6 +30,7 @@ import Crypto.Hash.SHA512
 from twisted.internet import reactor, threads
 from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
+from autobahn.twisted.websocket import connectWS, WebSocketClientFactory, WebSocketClientProtocol
 
 # Decorator function to ensure that the IndxClient object has a token when the function requires one
 def require_token(function):
@@ -415,6 +416,61 @@ class IndxClient:
 
         url = "{0}/link_remote_box".format(self.base)
         return self.client.get(url, {'remote_address': remote_address, 'remote_box': remote_box, 'remote_token': remote_token})
+
+    @require_token
+    def listen(self, observer):
+        """ Listen to this box using a websocket. Call the observer when there's an update. """
+
+        address = self.address
+        if address[0:6] == "https:":
+            address = "wss" + address[5:]
+        elif address[0:5] == "http:":
+            address = "ws" + address[4:]
+        else:
+            raise Exception("IndxClient: Unknown scheme to URL: {0}".format(address))
+
+        wsclient = IndxWebSocketClient(address, self.token, observer)
+
+
+class IndxWebSocketClient:
+    def __init__(self, address, token, observer):
+        self.address = address
+        self.token = token
+        self.indx_observer = observer
+
+        logging.debug("IndxWebSocketClient opening to {0}".format(self.address))
+
+        class IndxClientProtocol(WebSocketClientProtocol):
+
+            def onMessage(payload, isBinary):
+                try:
+                    data = cjson.decode(payload)
+                    self.on_response(data)
+                except Exception as e:
+                    logging.error("IndxWebSocketClient can't decode JSON, ignoring message: {0}".format(payload))
+
+
+            def onOpen():
+                msg = {"action": "auth", "token": token}
+                self.on_response = self.respond_to_auth
+                self.sendMessage(cjson.encode(msg))
+
+            # manage state by setting a response function each time
+            def send_to_observer(data):
+                self.indx_observer(data)
+
+            def respond_to_auth(data):
+                if data['success']:
+                    self.on_response = self.send_to_observer
+                    msg = {"action": "diff", "operation": "start"}
+                    self.sendMessage(cjson.encode(msg))
+                else:
+                    logging.error("IndxWebSocketClient WebSocket auth failure.")
+
+
+        self.factory = WebSocketClientFactory(self.address)
+        self.factory.protocol = IndxClientProtocol
+        connectWS(self.factory)
 
 
 class IndxHTTPClient:

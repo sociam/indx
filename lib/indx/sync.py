@@ -64,58 +64,58 @@ class IndxSync:
         self.watched_objs = []
 
         # internal model of the root store
-        self.model = {
+        self.models = {
         }
 
-        def observer(diff):
-            """ Root box callback function returning an update. """
-            logging.debug("IndxSync observer, notify: {0}".format(diff))
-
-            def err_cb(failure):
-                failure.trap(Exception)
-                logging.error("IndxSync observer error from diff: {0}".format(failure))
-
-            logging.debug("IndxSync observer diff: {0}".format(diff))
-
-            try:
-                diff = diff['data']
-                for obj in self.watched_objs:
-                    if obj in diff['added'] or obj in diff['deleted'] or obj in diff['changed']:
-                        logging.debug("IndxSync observer, ID '{0}' in watched objs found in the diff".format(obj))
-                        raise Exception("break")
-
-                for id, obj in diff['added'].items():
-                    if "type" in obj:
-                        for val in obj['type']:
-                            if val["@value"] in self.TYPES:
-                                logging.debug("IndxSync observer, type '{0}' in TYPES found in the diff".format(val["@value"]))
-                                raise Exception("break")
-                            
-
-                for verb in diff['changed']:
-                    for id, obj in diff['changed'][id]:
-                        if "type" in obj:
-                            for val in obj['type']:
-                                if val["@value"] in self.TYPES:
-                                    logging.debug("IndxSync observer, type '{0}' in TYPES found in the diff".format(val["@value"]))
-                                    raise Exception("break")
-
-            # breaking out of the loops, and then calling the query at the same time
-            except Exception as e:
-                # id was in watched items, or a diff object was added/changed with a type in the TYPES object
-
-                def updated_cb(response):
-                    # model updated, do a sync now
-                    logging.debug("IndxSync observer updated_cb")
-                    self.sync_boxes().addCallbacks(lambda foo: logging.debug("IndxSync observer updated_cb (post model-update) sync complete"), err_cb)
-
-                self.update_model_query().addCallbacks(lambda response: updated_cb, err_cb) # TODO use the callbacks here? (doesn't return anything)
-            else:
-                # only when the box doesn't need to be updated
-                # only sync this box, don't update the model first
-                self.sync_boxes().addCallbacks(lambda foo: logging.debug("IndxSync observer (no model-update) sync complete"), err_cb)
-
-        self.observer = observer
+#        def observer(diff):
+#            """ Root box callback function returning an update. """
+#            logging.debug("IndxSync observer, notify: {0}".format(diff))
+#
+#            def err_cb(failure):
+#                failure.trap(Exception)
+#                logging.error("IndxSync observer error from diff: {0}".format(failure))
+#
+#            logging.debug("IndxSync observer diff: {0}".format(diff))
+#
+#            try:
+#                diff = diff['data']
+#                for obj in self.watched_objs:
+#                    if obj in diff['added'] or obj in diff['deleted'] or obj in diff['changed']:
+#                        logging.debug("IndxSync observer, ID '{0}' in watched objs found in the diff".format(obj))
+#                        raise Exception("break")
+#
+#                for id, obj in diff['added'].items():
+#                    if "type" in obj:
+#                        for val in obj['type']:
+#                            if val["@value"] in self.TYPES:
+#                                logging.debug("IndxSync observer, type '{0}' in TYPES found in the diff".format(val["@value"]))
+#                                raise Exception("break")
+#                            
+#
+#                for verb in diff['changed']:
+#                    for id, obj in diff['changed'][id]:
+#                        if "type" in obj:
+#                            for val in obj['type']:
+#                                if val["@value"] in self.TYPES:
+#                                    logging.debug("IndxSync observer, type '{0}' in TYPES found in the diff".format(val["@value"]))
+#                                    raise Exception("break")
+#
+#            # breaking out of the loops, and then calling the query at the same time
+#            except Exception as e:
+#                # id was in watched items, or a diff object was added/changed with a type in the TYPES object
+#
+#                def updated_cb(response):
+#                    # model updated, do a sync now
+#                    logging.debug("IndxSync observer updated_cb")
+#                    self.sync_boxes().addCallbacks(lambda foo: logging.debug("IndxSync observer updated_cb (post model-update) sync complete"), err_cb)
+#
+#                self.update_model_query().addCallbacks(lambda response: updated_cb, err_cb) # TODO use the callbacks here? (doesn't return anything)
+#            else:
+#                # only when the box doesn't need to be updated
+#                # only sync this box, don't update the model first
+#                self.sync_boxes().addCallbacks(lambda foo: logging.debug("IndxSync observer (no model-update) sync complete"), err_cb)
+#
+#        self.observer = observer
 
         def err_cb(failure):
             failure.trap()
@@ -126,11 +126,12 @@ class IndxSync:
         def query_cb(results):
             logging.debug("IndxSync __init__ query_cb, results: {0}".format(results))
             # initial query finished, start listening to changes to the root box
-            logging.debug("IndxSync query_cb, model: {0}".format(self.model))
+            logging.debug("IndxSync query_cb, model: {0}".format(self.models))
 
             def sync_cb(empty):
                 logging.debug("IndxSync __init__ sync_cb")
-                root_store.listen(observer)
+                # TODO anythign here? no need to listen to our own box..
+                #root_store.listen(observer)
 
             self.sync_boxes().addCallbacks(sync_cb, err_cb)
 
@@ -139,7 +140,7 @@ class IndxSync:
 
     def destroy(self):
         """ Destroy this sync instance. Stops listening on the database, for example. """
-        self.root_store.unlisten(self.observer)
+#        self.root_store.unlisten(self.observer)
 
 
     def link_remote_box(self, local_user, remote_address, remote_box, remote_token):
@@ -298,8 +299,16 @@ class IndxSync:
                                 logging.debug("IndxSync sync_boxes token_cb")
                                 client = IndxClient(remote_server_url, remote_box, self.APPID, client = clientauth.client, token = remote_token)
                                 
+                                def updated_cb(empty):
+
+                                    def observer(data):
+                                        logging.debug("OMGOMGOMG WEBSOCKETS: {0},{1}".format(data))
+
+                                    client.listen(observer)
+                                    next_model(None)
+
                                 # compare local version to previous, and update one of them, or both
-                                self.update_to_latest_version(client, remote_server_url, remote_box).addCallbacks(next_model, return_d.errback)
+                                self.update_to_latest_version(client, remote_server_url, remote_box).addCallbacks(updated_cb, return_d.errback)
 
                             clientauth.get_token(remote_box).addCallbacks(token_cb, return_d.errback)
 
