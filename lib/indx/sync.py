@@ -302,9 +302,10 @@ class IndxSync:
                                 def updated_cb(empty):
 
                                     def observer(data):
-                                        logging.debug("OMGOMGOMG WEBSOCKETS: {0},{1}".format(data))
+                                        diff = data['data']
+                                        logging.debug("OMGOMGOMG WEBSOCKETS: {0}".format(diff))
 
-                                    client.listen(observer)
+                                    client.listen_diff(observer)
                                     next_model(None)
 
                                 # compare local version to previous, and update one of them, or both

@@ -24,6 +24,7 @@ import uuid
 import pprint
 import cjson
 import base64
+import traceback
 import Crypto.Random.OSRNG.posix
 import Crypto.PublicKey.RSA
 import Crypto.Hash.SHA512
@@ -418,10 +419,11 @@ class IndxClient:
         return self.client.get(url, {'remote_address': remote_address, 'remote_box': remote_box, 'remote_token': remote_token})
 
     @require_token
-    def listen(self, observer):
+    def listen_diff(self, observer):
         """ Listen to this box using a websocket. Call the observer when there's an update. """
 
-        address = self.address
+        address = self.address + "ws"
+
         if address[0:6] == "https:":
             address = "wss" + address[5:]
         elif address[0:5] == "http:":
@@ -436,30 +438,33 @@ class IndxWebSocketClient:
     def __init__(self, address, token, observer):
         self.address = address
         self.token = token
-        self.indx_observer = observer
+        indx_observer = observer
 
         logging.debug("IndxWebSocketClient opening to {0}".format(self.address))
 
         class IndxClientProtocol(WebSocketClientProtocol):
 
-            def onMessage(payload, isBinary):
+            def onMessage(self, payload, isBinary):
                 try:
+                    logging.debug("IndxClientProtocol onMessage payload type {0}, payload {1}".format(type(payload), payload))
                     data = cjson.decode(payload)
                     self.on_response(data)
                 except Exception as e:
+                    logging.error("IndxWebSocketClient Exception: {0}".format(e))
+                    logging.error(traceback.format_exc())
                     logging.error("IndxWebSocketClient can't decode JSON, ignoring message: {0}".format(payload))
 
 
-            def onOpen():
+            def onOpen(self):
                 msg = {"action": "auth", "token": token}
                 self.on_response = self.respond_to_auth
                 self.sendMessage(cjson.encode(msg))
 
             # manage state by setting a response function each time
-            def send_to_observer(data):
-                self.indx_observer(data)
+            def send_to_observer(self, data):
+                indx_observer(data)
 
-            def respond_to_auth(data):
+            def respond_to_auth(self, data):
                 if data['success']:
                     self.on_response = self.send_to_observer
                     msg = {"action": "diff", "operation": "start"}
