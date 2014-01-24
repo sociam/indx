@@ -237,17 +237,24 @@ class Resource:
         
             value_id_list -- List of IDs of resources already rendered, used inside to_json() calls internally to prevent infinite cycles (leave blank when called externally).
         """
-        if len(value_id_list) > 256:
-            logging.debug("ObjectStore_Types Resource, to_json id: {0}, value_id_list (first 256 out of {2}): {1}".format(self.id, value_id_list[:256], len(value_id_list)))
-        else:
-            logging.debug("ObjectStore_Types Resource, to_json id: {0}, value_id_list: {1}".format(self.id, value_id_list))
+        try:
+            if len(value_id_list) > 256:
+                logging.debug("ObjectStore_Types Resource, to_json id: {0}, value_id_list (first 256 out of {2}): {1}".format(self.id, value_id_list[:256], len(value_id_list)))
+            else:
+                logging.debug("ObjectStore_Types Resource, to_json id: {0}, value_id_list: {1}".format(self.id, value_id_list))
+        except Exception as e:
+            logging.debug("ObjectStore_Types Resource, to_json, debug1")
 
         model = {}
         value_id_list_cpy = [row[:] for row in value_id_list]
         value_id_list_cpy.append(self.id) # prevent this id from being rendered by its children/descendents
 
         for property, values in self.model.items():
-            logging.debug("ObjectStore_Types Resource, to_json, id: {0}, property: {1}, values: {2}".format(self.id, property, values))
+            try:
+                logging.debug("ObjectStore_Types Resource, to_json, id: {0}, property: {1}, values: {2}".format(self.id, property, values))
+            except Exception as e:
+                logging.debug("ObjectStore_Types Resource, to_json, debug2")
+
             if property == "@id": # special case
                 model[property] = values
             else:
