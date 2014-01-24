@@ -446,7 +446,7 @@ class IndxWebSocketClient:
 
             def onMessage(self, payload, isBinary):
                 try:
-                    logging.debug("IndxClientProtocol onMessage payload type {0}, payload {1}".format(type(payload), payload))
+                    logging.debug("IndxClientProtocol onMessage, payload {0}".format(payload))
                     data = cjson.decode(payload)
                     self.on_response(data)
                 except Exception as e:

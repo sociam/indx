@@ -303,7 +303,13 @@ class IndxSync:
 
                                     def observer(data):
                                         diff = data['data']
-                                        logging.debug("OMGOMGOMG WEBSOCKETS: {0}".format(diff))
+
+                                        def done_cb(empty):
+                                            logging.debug("IndxSync updating from a websocket done.")
+                                        def err_cb(failure):
+                                            logging.error("IndxSync updating from a websocket error: {0}".format(failure))
+
+                                        self.update_to_latest_version(client, remote_server_url, remote_box, diff_in = diff).addCallbacks(done_cb, err_cb)
 
                                     client.listen_diff(observer)
                                     next_model(None)
@@ -327,7 +333,7 @@ class IndxSync:
         return return_d
 
 
-    def update_to_latest_version(self, remote_indx_client, remote_server_url, remote_box):
+    def update_to_latest_version(self, remote_indx_client, remote_server_url, remote_box, diff_in = None):
         """ Get the last version seen (consumed) of a remote box. """
         logging.debug("IndxSync update_to_latest_version of server {0} and box {1}".format(remote_server_url, remote_box))
 
@@ -411,7 +417,10 @@ class IndxSync:
                         
                     self.root_store._vers_without_commits(version, remote_latest_version, commits.keys()).addCallbacks(vers_get_cb, result_d.errback)
 
-                remote_indx_client.diff("diff", version).addCallbacks(diff_cb, result_d.errback) # NB: remote_latest_version is optional and implied.
+                if diff_in is None:
+                    remote_indx_client.diff("diff", version).addCallbacks(diff_cb, result_d.errback) # NB: remote_latest_version is optional and implied.
+                else:
+                    diff_cb(diff_in)
                 
             remote_indx_client.get_version().addCallbacks(version_cb, result_d.errback)
 
