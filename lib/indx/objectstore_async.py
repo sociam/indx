@@ -581,17 +581,17 @@ class ObjectStoreAsync:
 
                         if 'replaced' in changes:
                             # remove_predicate
-                            for pred, vals in changes['deleted'].items():
+                            for pred, vals in changes['replaced'].items():
                                 queries['diff']['values'].append("(%s, %s, wb_get_string_id(%s), wb_get_string_id(%s), NULL, NULL)")
                                 queries['diff']['params'].extend([new_version, 'remove_predicate', uri, pred])
 
                             # add_predicate
-                            for pred, vals in changes['deleted'].items():
+                            for pred, vals in changes['replaced'].items():
                                 queries['diff']['values'].append("(%s, %s, wb_get_string_id(%s), wb_get_string_id(%s), NULL, NULL)")
                                 queries['diff']['params'].extend([new_version, 'add_predicate', uri, pred])
 
                             # add_triple
-                            for pred, vals in changes['deleted'].items():
+                            for pred, vals in changes['replaced'].items():
                                 order = 0
                                 for val in vals:
                                     order += 1
