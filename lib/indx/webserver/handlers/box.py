@@ -16,6 +16,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging, json, cjson
+import traceback
 from indx.webserver.handlers.base import BaseHandler
 from indx.objectstore_async import IncorrectPreviousVersionException, FileNotFoundException
 from indx.user import IndxUser
@@ -90,7 +91,7 @@ class BoxHandler(BaseHandler):
             # to_version is optional, if unspecified, the latest version is used.
             # to_version = None is acceptable
             to_version = self.get_arg(request, "to_version")
-            if "to_version" is not None:
+            if to_version is not None:
                 try:
                     to_version = int(to_version)
                 except Exception as ee:
@@ -154,16 +155,29 @@ class BoxHandler(BaseHandler):
             return self.return_forbidden(request)
         BoxHandler.log(logging.DEBUG, "BoxHandler generate_new_key", extra = {"request": request, "token": token})
 
+        remote_public = self.get_arg(request, "public")
+        remote_hash = self.get_arg(request, "public-hash")
+
+        if remote_public is None or remote_hash is None:
+            BoxHandler.log(logging.ERROR, "BoxHandler generate_new_key: public or public-hash was missing.", extra = {"request": request, "token": token})
+            return self.remote_bad_request(request, "public or public-hash was missing.")
+
         def err_cb(failure):
             failure.trap(Exception)
             BoxHandler.log(logging.ERROR, "BoxHandler generate_new_key err_cb: {0}".format(failure), extra = {"request": request, "token": token})
             return self.return_internal_error(request)
+            
+        local_keys = generate_rsa_keypair(3072)
 
         def created_cb(empty):
             self.return_created(request, {"data": {"public": local_keys['public'], "public-hash": local_keys['public-hash']}})
 
-        local_keys = generate_rsa_keypair(3072)
-        self.webserver.keystore.put(local_keys, token.username).addCallbacks(created_cb, err_cb) # store in the local keystore
+        def new_key_added_cb(empty):
+            self.webserver.keystore.put(local_keys, token.username, token.boxid).addCallbacks(created_cb, err_cb) # store in the local keystore
+
+        remote_keys = {"public": remote_public, "public-hash": remote_hash, "private": ""}
+        self.webserver.keystore.put(remote_keys, token.username, token.boxid).addCallbacks(new_key_added_cb, err_cb)
+
 
 
     def get_acls(self, request):
@@ -252,6 +266,7 @@ class BoxHandler(BaseHandler):
         token = self.get_token(request)
         if not token:
             return self.return_forbidden(request)
+        depth = int(self.get_arg(request, "depth"))
 
         def err_cb(failure):
             failure.trap(Exception)
@@ -287,14 +302,13 @@ class BoxHandler(BaseHandler):
                     BoxHandler.log(logging.DEBUG, "BoxHandler Exception trying to add to query.", extra = {"request": request, "token": token})
                     return self.return_internal_error(request)
 
-                store.query(q, predicate_filter = predicate_list).addCallbacks(lambda results: self.return_ok(request, {"data": results}), # callback
+                store.query(q, predicate_filter = predicate_list, depth = depth).addCallbacks(lambda results: self.return_ok(request, {"data": results}), # callback
                         handle_add_error) # errback
             except Exception as e:
                 BoxHandler.log(logging.ERROR, "Exception in box.query: {0}".format(e), extra = {"request": request, "token": token})
                 return self.return_internal_error(request)
 
         token.get_store().addCallbacks(store_cb, err_cb)
-
 
     
     def files(self, request):
@@ -395,6 +409,26 @@ class BoxHandler(BaseHandler):
                 BoxHandler.log(logging.DEBUG, "BoxHandler files UNKNOWN request", extra = {"request": request, "token": token})
                 pass #FIXME finish
                 return self.return_bad_request(request)
+
+        token.get_store().addCallbacks(store_cb, err_cb)
+
+    def get_version(self, request):
+        BoxHandler.log(logging.DEBUG, "BoxHandler get_version")
+
+        token = self.get_token(request)
+        if not token:
+            return self.return_forbidden(request)
+
+        def err_cb(failure):
+            failure.trap(Exception)
+            BoxHandler.log(logging.ERROR, "BoxHandler get_version err_cb: {0}".format(failure), extra = {"request": request, "token": token})
+            return self.return_internal_error(request)
+
+        def store_cb(store):
+            store.setLoggerClass(BoxHandler, extra = {"token": token, "request": request})
+            BoxHandler.log(logging.DEBUG, "BoxHandler get_version", extra = {"request": request, "token": token})
+
+            store._get_latest_ver().addCallbacks(lambda version: self.return_ok(request, {"data": version}), err_cb)
 
         token.get_store().addCallbacks(store_cb, err_cb)
 
@@ -572,6 +606,16 @@ BoxHandler.subhandlers = [
         'require_token': True,
         'require_acl': ['control'],
         'handler': BoxHandler.generate_new_key,
+        'accept':['application/json'],
+        'content-type':'application/json'
+        },
+    {
+        "prefix": "get_version",
+        'methods': ['GET'],
+        'require_auth': False,
+        'require_token': True,
+        'require_acl': ['read'],
+        'handler': BoxHandler.get_version,
         'accept':['application/json'],
         'content-type':'application/json'
         },

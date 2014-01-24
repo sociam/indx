@@ -18,12 +18,14 @@
 import logging
 import os
 import json
+import copy
 from twisted.internet.defer import Deferred
 from twisted.internet import threads
 from twisted.python.failure import Failure
 from indx.objectstore_query import ObjectStoreQuery
 from indx.object_diff import ObjectSetDiff
 from indx.objectstore_types import Graph, Literal, Resource
+from indx.object_commit import ObjectCommit
 
 RAW_LISTENERS = {} # one connection per box to listen to updates
 
@@ -31,7 +33,7 @@ class ObjectStoreAsync:
     """ Stores objects in a database, handling import, export and versioning.
     """
 
-    def __init__(self, conns, username, boxid, appid, clientip):
+    def __init__(self, conns, username, boxid, appid, clientip, server_id):
         """
         """
         self.conns = conns
@@ -42,6 +44,7 @@ class ObjectStoreAsync:
 
         self.loggerClass = logging
         self.loggerExtra = {}
+        self.server_id = server_id
 
         self.schema_upgrade()
 
@@ -151,7 +154,7 @@ class ObjectStoreAsync:
         self.log(logging.ERROR, message)
 
 
-    def _notify(self, cur, version):
+    def _notify(self, cur, version, commits = None):
         """ Notify listeners (in postgres) of a new version (called after update/delete has completed). """
         self.debug("ObjectStoreAsync _notify, version: {0}".format(version))
         result_d = Deferred()
@@ -164,20 +167,19 @@ class ObjectStoreAsync:
         def new_ver_done(success):
             self._curexec(cur, "SELECT * FROM wb_version_finished(%s)", [version]).addCallbacks(result_d.callback, err_cb)
 
-        self._curexec(cur,
-                "INSERT INTO wb_versions (version, updated, username, appid, clientip) VALUES (%s, CURRENT_TIMESTAMP, %s, %s, %s)",
-                [version, self.username, self.appid, self.clientip]).addCallbacks(new_ver_done, err_cb)
+        def add_version(empty):
+            self._curexec(cur,
+                    "INSERT INTO wb_versions (version, updated, username, appid, clientip, commits) VALUES (%s, CURRENT_TIMESTAMP, %s, %s, %s, %s)",
+                    [version, self.username, self.appid, self.clientip, commits]).addCallbacks(new_ver_done, err_cb)
+
+        if commits is None:
+            commit = ObjectCommit(self.server_id, version)
+            commits = [commit.commit_id]
+            commit.save(cur).addCallbacks(add_version, result_d.errback)
+        else:
+            add_version(None)
 
         return result_d
-
-
-#    def autocommit(self, value):
-#        """ Set autocommit on/off, for speeding up large INSERTs. """
-#        if self.conn.autocommit is False and value is True:
-#            # if we were in a transaction and now are not, then commit first
-#            self.conn.commit()
-#
-#        self.conn.autocommit = value
 
     def unlisten(self, observer):
         """ Stop listening to updates to the box by this observer. """
@@ -216,7 +218,7 @@ class ObjectStoreAsync:
             self.conns['raw_conn']().addCallbacks(raw_conn_cb, err_cb)
 
 
-    def query(self, q, predicate_filter = None, render_json = True):
+    def query(self, q, predicate_filter = None, render_json = True, depth = 3):
         """ Perform a query and return results.
         
             q -- Query of objects to search for
@@ -226,68 +228,32 @@ class ObjectStoreAsync:
 
         query = ObjectStoreQuery()
         sql, params = query.to_sql(q, predicate_filter = predicate_filter)
-
-        def results(rows):
-            graph = Graph.from_rows(rows)
-            if render_json:
-                objs_out = graph.to_json()
-                result_d.callback(objs_out)
-            else:
-                result_d.callback(graph)
  
         def conn_cb(conn):
             logging.debug("Objectstore query, conn_cb")
-            conn.runQuery(sql, params).addCallbacks(results, result_d.errback)
+
+            def results_cb(rows):
+                logging.debug("Objectstore query, results_cb")
+                graph = Graph.from_rows(rows)
+
+                def expanded_cb(empty):
+                    logging.debug("Objectstore query, expanded_cb")
+                    if render_json:
+                        objs_out = graph.to_json()
+                        result_d.callback(objs_out)
+                    else:
+                        result_d.callback(graph)
+
+                if depth > 0:
+                    graph.expand_depth(depth, self).addCallbacks(expanded_cb, result_d.errback)
+                else:
+                    expanded_cb(None)
+
+            conn.runQuery(sql, params).addCallbacks(results_cb, result_d.errback)
         
         self.conns['conn']().addCallbacks(conn_cb, result_d.errback)
 
         return result_d
-
-
-#    def value_to_json(self, obj_value, obj_type, obj_lang, obj_datatype):
-#        """ Serialise a single value into the result format. """
-#        if obj_type == "resource":
-#            obj_key = "@id"
-#        elif obj_type == "literal":
-#            obj_key = "@value"
-#        else:
-#            raise Exception("Unknown object type from database {0}".format(obj_type)) # TODO create a custom exception to throw
-#
-#        obj_struct = {}
-#        obj_struct[obj_key] = obj_value
-#
-#        if obj_lang is not None:
-#            obj_struct["@language"] = obj_lang
-#
-#        if obj_datatype is not None:
-#            obj_struct["@type"] = obj_datatype
-#
-#        return obj_struct
-#
-#
-#    def rows_to_json(self, rows):
-#        """ Serialise results from database view as JSON-LD
-#
-#            rows - The object(s) to serialise.
-#        """
-#        obj_out = {}
-#        for row in rows:
-#            (triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype) = row
-#
-#            if subject not in obj_out:
-#                obj_out[subject] = {}
-#
-#            if predicate not in obj_out[subject]:
-#                obj_out[subject][predicate] = []
-#
-#            obj_struct = self.value_to_json(obj_value, obj_type, obj_lang, obj_datatype)
-#            obj_out[subject][predicate].append(obj_struct)
-#
-#            # add @id key to the object
-#            obj_out[subject]['@id'] = subject
-#
-#        return obj_out
-
 
     def get_latest_objs(self, object_ids, cur = None, render_json = True):
         """ Get the latest version of objects in the box, as expanded JSON-LD notation.
@@ -501,9 +467,247 @@ class ObjectStoreAsync:
         self.conns['conn']().addCallbacks(conn_cb, result_d.errback)
         return result_d
 
+
+
+    def apply_diff(self, diff, commit_ids):
+        """ Apply a JSON-type diff to the database, appending to the wb_vers_diff table and modifying the wb_latest_vers table. """
+        logging.debug("Objectstore apply_diff, apply_diff")
+        result_d = Deferred()
+
+        # TODO perform in transaction (lock tables also)
+
+        def interaction_cb(cur):
+            logging.debug("Objectstore apply_diff, interaction_cb")
+            iresult_d = Deferred()
+
+            def ver_cb(cur_version):
+                logging.debug("Objectstore apply_diff, ver_cb")
+                new_version = cur_version + 1
+
+                queries = {
+                    "subjects": {
+                        "values": [],
+                        "params": [],
+                        "query_prefix": "INSERT INTO wb_latest_subjects (id_subject) VALUES "
+                    },
+                    "diff": {
+                        "values": [],
+                        "params": [],
+                        "query_prefix": "INSERT INTO wb_vers_diffs (version, diff_type, subject, predicate, object, object_order) VALUES "
+                    },
+                    "prelatest": { # queries that are to be run immediately before latest. i.e., DELETE FROM before new INSERT INTO are run when replacing objects
+                        "queries": [], # just bare queries, no prefixing/rendering
+                    },
+                    "latest": {
+                        "values": [],
+                        "params": [],
+                        "query_prefix": "INSERT INTO wb_latest_vers (triple, triple_order) VALUES "
+                    },
+                }
+
+                def obj_to_tuples(val):
+                    logging.debug("Objectstore apply_diff, obj_to_tuples")
+                    if "@id" in val:
+                        value = val['@id']
+                        thetype = 'resource'
+                        language = ''
+                        datatype = ''
+                    else:
+                        value = val['@value']
+                        thetype = 'literal'
+                        language = val['@language']
+                        datatype = val['@type']
+
+                    return value, thetype, language, datatype
+
+
+                def add_obj(uri, obj):
+                    logging.debug("Objectstore apply_diff, add_obj")
+                    order = 0 # TODO move this somewhere else?
+
+                    queries['subjects']['values'].append("(wb_get_string_id(%s))")
+                    queries['subjects']['params'].extend([uri])
+
+                    for pred, values in obj.items():
+                        for val in values:
+                            order += 1 
+                            value, thetype, language, datatype = obj_to_tuples(val)
+
+                            # change 'latest' table
+                            queries['latest']['values'].append("(wb_get_triple_id(%s, %s, %s, %s, %s, %s), %s)")
+                            queries['latest']['params'].extend([uri, pred, value, thetype, language, datatype, order])
+                            
+                            # append to 'diff' table
+
+                            # add_subject
+                            queries['diff']['values'].append("(%s, %s, wb_get_string_id(%s), wb_get_string_id(%s), NULL, NULL)")
+                            queries['diff']['params'].extend([new_version, 'add_subject', uri, pred])            
+
+                            # add_predicate
+                            queries['diff']['values'].append("(%s, %s, wb_get_string_id(%s), wb_get_string_id(%s), NULL, NULL)")
+                            queries['diff']['params'].extend([new_version, 'add_predicate', uri, pred])            
+
+                            # add_triple
+                            queries['diff']['values'].append("(%s, %s, wb_get_string_id(%s), wb_get_string_id(%s), wb_get_object_id(%s, %s, %s, %s), %s)")
+                            queries['diff']['params'].extend([new_version, 'add_triple', uri, pred, thetype, value, language, datatype, order])            
+
+
+                if 'deleted' in diff:
+                    urilist = diff['deleted']
+                    queries['prelatest']['queries'].append(("DELETE FROM wb_latest_vers USING wb_triples, wb_strings AS subjects WHERE subjects.id_string = wb_triples.subject AND wb_latest_vers.triple = wb_triples.id_triple AND subjects.string = ANY(%s)", [urilist]))
+
+                    for uri in urilist:
+                        queries['diff']['values'].append("(%s, %s, wb_get_string_id(%s), wb_get_string_id(%s), NULL, NULL)")
+                        queries['diff']['params'].extend([new_version, 'remove_subject', uri, None])
+
+
+                if 'added' in diff:
+                    for uri, obj in diff['added'].items():
+                        obj = obj['added'] # all objects are under the key 'added'
+                        add_obj(uri, obj)
+
+
+                if 'changed' in diff:
+                    for uri, changes in diff['changed'].items():
+                        if 'added' in changes:
+                            add_obj(uri, changes['added'])
+                            
+                        if 'deleted' in changes:
+                            # remove_predicate
+                            for pred, vals in changes['deleted'].items():
+                                queries['diff']['values'].append("(%s, %s, wb_get_string_id(%s), wb_get_string_id(%s), NULL, NULL)")
+                                queries['diff']['params'].extend([new_version, 'remove_predicate', uri, pred])
+                                
+
+                        if 'replaced' in changes:
+                            # remove_predicate
+                            for pred, vals in changes['deleted'].items():
+                                queries['diff']['values'].append("(%s, %s, wb_get_string_id(%s), wb_get_string_id(%s), NULL, NULL)")
+                                queries['diff']['params'].extend([new_version, 'remove_predicate', uri, pred])
+
+                            # add_predicate
+                            for pred, vals in changes['deleted'].items():
+                                queries['diff']['values'].append("(%s, %s, wb_get_string_id(%s), wb_get_string_id(%s), NULL, NULL)")
+                                queries['diff']['params'].extend([new_version, 'add_predicate', uri, pred])
+
+                            # add_triple
+                            for pred, vals in changes['deleted'].items():
+                                order = 0
+                                for val in vals:
+                                    order += 1
+                                    value, thetype, language, datatype = obj_to_tuples(val)
+                                    queries['diff']['values'].append("(%s, %s, wb_get_string_id(%s), wb_get_string_id(%s), wb_get_object_id(%s, %s, %s, %s), %s)")
+                                    queries['diff']['params'].extend([new_version, 'add_triple', uri, pred, thetype, value, language, datatype, order])            
+               
+
+                # TODO replace_objects never used, check this is ok?
+
+                # do queries
+                def gen_queries(keys, cur, max_params = None):
+                    """ Check if the number of parameters in the queries is above the MAX_PARAMS_PER_QUERY, and if so, render that query and reset it. """
+                    logging.debug("Objectstore apply_diff, gen_queries")
+                    result2_d = Deferred()
+
+                    if max_params is None:
+                        #max_params = self.MAX_PARAMS_PER_QUERY
+                        max_params = 1
+
+                    def run_next(empty):
+                        logging.debug("Objectstore apply_diff, run_next")
+                        if len(keys) < 1:
+                            result2_d.callback(True)
+                        else:
+                            quer = keys.pop(0)
+
+                            # max_params == 0 override is required because if quer is 'latest' and has no params, 'prelatest' might still have queries
+                            if len(queries[quer]['params']) > max_params or max_params == 0:
+                                logging.debug("ObjectStore apply_diff gen_queries, queries for {0}, queries are: {1}".format(quer, queries['prelatest']['queries']))
+                                querylist = []
+                            
+                                # do prelatest before latest, only when latest has hit max_params
+                                if quer == 'latest':
+                                    querylist.extend(queries['prelatest']['queries'])
+                                    queries['prelatest']['queries'] = [] # empty the list of queries
+
+                                if len(queries[quer]['values']) > 0:
+                                    query = queries[quer]['query_prefix'] + ", ".join(queries[quer]['values'])
+                                    params = queries[quer]['params']
+
+                                    querylist.append( (query, params) ) # querylist is tuples of (query, params)
+
+                                    queries[quer]['values'] = []
+                                    queries[quer]['params'] = []
+
+                                def run_querylist(empty):
+
+                                    if len(querylist) < 1:
+                                        run_next(None)
+                                    else:
+                                        qp_pair = querylist.pop(0)
+                                        query, params = qp_pair
+
+                                        logging.debug("ObjectStore apply_diff, run_querylist running: query: {0}, params: {1}".format(query,params))
+                                        cur.execute(query, params).addCallbacks(run_querylist, result2_d.errback)
+
+                                run_querylist(None)
+                            else:
+                                run_next(None)
+
+                    run_next(None)
+                    return result2_d
+
+                def diff_cb(empty):
+                    logging.debug("Objectstore apply_diff, diff_cb")
+
+                    def latest_cb(empty):
+                        logging.debug("Objectstore apply_diff, latest_cb")
+                        self._notify(cur, new_version, commits = commit_ids).addCallbacks(lambda _: iresult_d.callback({"@version": new_version}), iresult_d.errback)
+
+                    gen_queries(['latest', 'subjects'], cur, max_params = 0).addCallbacks(latest_cb, iresult_d.errback)
+
+                gen_queries(['diff'], cur, max_params = 0).addCallbacks(diff_cb, iresult_d.errback)
+ 
+            self._get_latest_ver(cur).addCallbacks(ver_cb, iresult_d.errback)
+            return iresult_d
+
+        def iconn_cb(conn):
+            logging.debug("Objectstore apply_diff, iconn_cb")
+            conn.runInteraction(interaction_cb).addCallbacks(result_d.callback, result_d.errback)
+        
+        self.conns['conn']().addCallbacks(iconn_cb, result_d.errback)
+        return result_d
+
+    def order_diff_rows(self, diff_rows):
+        """ Re-order the diff_rows so that add_predicate etc comes before add_triple. """
+
+        diff_type_index = 1 # of the sql row result
+
+        new_diff_rows = []
+
+        order = [
+            "remove_predicate",
+            "remove_subject",
+            "replace_objects",
+            "add_subject",
+            "add_predicate",
+            "add_triple",
+        ]
+
+        by_type = {}
+        map(lambda typ: by_type.update({typ: []}), order) # init the object
+        map(lambda x: by_type[x[diff_type_index]].append(x), diff_rows) # add the diff_rows, indx by type
+
+        for orde in order:
+            new_diff_rows.extend(by_type[orde])
+        
+        return new_diff_rows
+
+
     def _db_diff_to_diff(self, diff_rows):
         """ Translate database rows to JSON diff changes. """
         self.debug("ObjectStore _db_diff_to_diff, diff_rows: {0}".format(diff_rows))
+
+        diff_rows = self.order_diff_rows(diff_rows)
 
         diff = {"changed": {}, "added": {}, "deleted": []}
         for row in diff_rows:
@@ -560,7 +764,9 @@ class ObjectStoreAsync:
                 if predicate not in diff[subkey][subject]["added"]:
                     diff[subkey][subject]["added"][predicate] = []
                 obj = Graph.value_from_row(obj_value, obj_type, obj_lang, obj_datatype) # TODO check this renders resources correctly
-                diff[subkey][subject]["added"][predicate].append(obj.to_json())
+                obj_json = obj.to_json()
+                logging.debug("ObjectStore _db_diff_to_diff, obj_json: {0}".format(obj_json))
+                diff[subkey][subject]["added"][predicate].append(obj_json)
 
             else:
                 raise Exception("Unknown diff type from database")
@@ -585,6 +791,7 @@ class ObjectStoreAsync:
             diff = {"changed": {}, "added": {}, "deleted": []}
             for version in version_list:
                 new_diff = self._db_diff_to_diff(diffs[version])
+                logging.debug("ObjectStore _get_diff_combined new_diff: {0}".format(new_diff))
                 diff = self.diff_on_diff(diff, new_diff)
             result_d.callback(diff)
 
@@ -654,17 +861,6 @@ class ObjectStoreAsync:
                         del existing_diff[subkey][uri]["deleted"]
                         existing_diff[subkey][uri]["replaced"] = next_ver_diff['changed'][uri]['replaced']
 
-                    #if "added" in existing_diff['changed'][uri]:
-                    #    # if they are added, then add to that, instead of creating a new "changed" entry
-                    #    existing_diff['changed'][uri]["added"].update( next_ver_diff['changed'][uri]['replaced'] )
-
-#                    if "replaced" in existing_diff['changed'][uri]:
-#
-#                    if "deleted" in existing_diff['changed'][uri]:
-#                        # remove reference to deleted, and instead replace it all
-#                        del existing_diff['changed'][uri]['deleted']
-#                        existing_diff['changed'][uri]["replaced"] = next_ver_diff['changed'][uri]['replaced']
-
                 elif uri in existing_diff['deleted']:
                     subkey = "deleted"
                     del existing_diff['deleted'][uri]
@@ -678,13 +874,6 @@ class ObjectStoreAsync:
                     # uri not in existing diff
                     existing_diff['changed'][uri] = {}
                     existing_diff['changed'][uri]['replaced'] = next_ver_diff['changed'][uri]['replaced']
-#
-#
-#                    if uri not in existing_diff['changed']:
-#                        existing_diff['changed'][uri] = {}
-#                    if "replaced" not in existing_diff['changed'][uri]:
-#                        existing_diff['changed'][uri]['replaced'] = {}
-#                    existing_diff['changed'][uri]['replaced'].update( next_ver_diff['changed'][uri]['replaced'] )
 
             if "deleted" in next_ver_diff['changed'][uri]:
                 # deleted in the new diff, remove all 'added' and 'replaced' in existing diff
@@ -727,29 +916,34 @@ class ObjectStoreAsync:
             result_d.errback(failure)
             return
 
-        def diff_cb(to_version_used, combined_diff, latest_ver):
+        def diff_cb(to_version_used, combined_diff, latest_ver, commits):
             # handles return_objs = "diff"
             self.debug("ObjectStore diff, diff_cb, rows: {0}".format(combined_diff))
-            result_d.callback({"data": combined_diff, "@to_version": to_version_used, "@from_version": from_version, "@latest_version": latest_ver})
+            result_d.callback({"data": combined_diff, "@to_version": to_version_used, "@from_version": from_version, "@latest_version": latest_ver, "@commits": commits})
 
-        def ids_cb(to_version_used, combined_diff, latest_ver):
+        def ids_cb(to_version_used, combined_diff, latest_ver, commits):
             # handles return_objs = "ids"
             self.debug("ObjectStore diff, ids_cb, rows: {0}".format(combined_diff))
-            result_d.callback({"data": self.diff_to_ids(combined_diff), "@to_version": to_version_used, "@from_version": from_version, "@latest_version": latest_ver})
+            result_d.callback({"data": self.diff_to_ids(combined_diff), "@to_version": to_version_used, "@from_version": from_version, "@latest_version": latest_ver, "@commits": commits})
 
         def got_versions(to_version_used, latest_ver):
             self.debug("ObjectStore diff, got_versions, to_version_used: {0}, latest_ver".format(to_version_used, latest_ver))
-            # first callback once we have the to_version
-            if return_objs == "diff":
-                self._get_diff_combined(from_version, to_version_used).addCallbacks(lambda combined_diff: diff_cb(to_version_used, combined_diff, latest_ver), err_cb)
-            elif return_objs == "objects": 
-                # TODO implement
-                result_d.callback(None)
-            elif return_objs == "ids":
-                self._get_diff_combined(from_version, to_version_used).addCallbacks(lambda combined_diff: ids_cb(to_version_used, combined_diff, latest_ver), err_cb)
-            else:
-                result_d.errback(Failure(Exception("Did not specify valid value of return_objs.")))
-            return
+
+            def commits_cb(commits):
+
+                # first callback once we have the to_version
+                if return_objs == "diff":
+                    self._get_diff_combined(from_version, to_version_used).addCallbacks(lambda combined_diff: diff_cb(to_version_used, combined_diff, latest_ver, commits), err_cb)
+                elif return_objs == "objects": 
+                    # TODO implement
+                    result_d.callback(None)
+                elif return_objs == "ids":
+                    self._get_diff_combined(from_version, to_version_used).addCallbacks(lambda combined_diff: ids_cb(to_version_used, combined_diff, latest_ver, commits), err_cb)
+                else:
+                    result_d.errback(Failure(Exception("Did not specify valid value of return_objs.")))
+            
+            self.get_commits_in_versions(range(from_version + 1, to_version_used + 1)).addCallbacks(commits_cb, result_d.errback)
+
 
         self.debug("diff to version: {0} type({1})".format(to_version, type(to_version)))
 
@@ -765,140 +959,6 @@ class ObjectStoreAsync:
 
         return result_d
 
-## 
-##         def diff_cb(rows, to_version_used):
-##             # callback used if we queried for diff of changed objects
-##             self.debug("diff diff_cb: rows={0}".format(rows))
-## 
-##             changes = {}
-## 
-##             # triples in the "from" version have been deleted, triples in the "to" version have been added
-##             translation = {"from": "deleted", "to": "added"}
-## 
-##             for row in rows:
-##                 # version is either "from" or "to"
-##                 version, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype = row
-##                 version = version[0] # must be either 'from' or 'to', is an array because we have to
-##                 key = translation[version]
-##                 if subject not in changes:
-##                     changes[subject] = {}
-##                 if key not in changes[subject]:
-##                     changes[subject][key] = {}
-##                 if predicate not in changes[subject][key]:
-##                     changes[subject][key][predicate] = []
-## 
-##                 changes[subject][key][predicate].append(self.value_to_json(obj_value, obj_type, obj_lang, obj_datatype)) 
-## 
-##             def diff_ids_cb(data):
-##                 self.debug("diff diff_cb - diff_ids_cb: data={0}".format(data))
-## 
-##                 # return full objects that have been added
-##                 added_objs = {}
-##                 for item_id in changes.keys():
-##                     if item_id in data['added']:
-##                         added_objs[item_id] = changes.pop(item_id)['added'] # items that have been added will have the "to_version" of the full object under 'added'
-## 
-##                 # do not return the "deleted" changes for deleted objects
-##                 for item_id in changes.keys():
-##                     if item_id in data['deleted']:
-##                         changes.pop(item_id) # remove
-## 
-##                 obj_out = {"changed": changes, "added": added_objs, "deleted": data['deleted']}
-##                 result_d.callback({"data": obj_out, "@latest_version": data['latest_version'], "@from_version": data['from_version'], "@to_version": data['to_version']})
-##                 return
-## 
-##             # grab the latest version number also
-##             get_ids_diff(from_version, to_version_used).addCallbacks(diff_ids_cb, err_cb)
-##             return
-## 
-##         def objs_cb(rows, to_version_used):
-##             # callback used if we queried for full objects
-##             self.debug("diff objs_cb: rows={0}".format(rows))
-##             obj_out = self.rows_to_json(rows)
-## 
-##             def ver_cb(version):
-##                 self.debug("diff objs_cb - ver_cb: {0}".format(version))
-##                 obj_out["@version"] = to_version_used
-##                 result_d.callback({"data": obj_out, "@latest_version": version, "@from_version": from_version, "@to_version": to_version_used})
-##                 return
-## 
-##             # grab the latest version number also
-##             self._get_latest_ver().addCallbacks(ver_cb, err_cb)
-##             return
-## 
-##         def ids_cb(data):
-##             # callback used if we queried for the ids of changed objects only
-##             result_d.callback({"all_ids": data['all'], "added_ids": data['added'], "deleted_ids": data['deleted'], "changed_ids": data['changed'], "@latest_version": data['latest_version'], "@from_version": data['from_version'], "@to_version": data['to_version']})
-##             return
-## 
-##     
-##         def get_ids_diff(from_ver, to_ver):
-##             self.debug("diff get_ids_diff: from_ver: {0}, to_ver: {1}".format(from_ver, to_ver))
-##             get_ids_result_d = Deferred()
-## 
-##             def get_ids_query_cb(rows):
-##                 self.debug("diff get_ids_query_cb: rows: {0}".format(rows))
-##                 diff_id_list = map(lambda row: row[0], rows)
-## 
-##                 def ids_vers_cb(id_lists):
-##                     self.debug("diff ids_vers_cb: id_lists: {0}".format(id_lists))
-##                     from_ids = id_lists['from']
-##                     to_ids = id_lists['to']
-## 
-##                     def ver_cb(latest_version):
-##                         self.debug("diff ver_cb: version: {0}".format(latest_version))
-## 
-##                         changed_id_list, added_id_list, deleted_id_list = [], [], []
-## 
-##                         for item in diff_id_list:
-##                             if item in from_ids and item in to_ids:
-##                                 changed_id_list.append(item)
-##                             elif item in from_ids and item not in to_ids:
-##                                 deleted_id_list.append(item)
-##                             elif item not in from_ids and item in to_ids:
-##                                 added_id_list.append(item)
-## 
-##                         get_ids_result_d.callback({"all": diff_id_list, "added": added_id_list, "deleted": deleted_id_list, "changed": changed_id_list, "latest_version": latest_version, "from_version": from_ver, "to_version": to_ver})
-##                         return
-## 
-##                     # grab the latest version number also
-##                     self._get_latest_ver().addCallbacks(ver_cb, err_cb)
-##                     return
-## 
-##                 self._ids_in_versions({"from": from_ver, "to": to_ver}).addCallbacks(ids_vers_cb, err_cb)
-##                 return
-## 
-##             query = "SELECT wb_diff(%s, %s)"
-##             self.conn.runQuery(query, [from_ver, to_ver]).addCallbacks(get_ids_query_cb, err_cb)
-##             return get_ids_result_d
-## 
-##         def got_versions(to_version_used):
-##             # first callback once we have the to_version
-##             if return_objs == "diff":
-##                 query = "SELECT * FROM wb_diff_changed(%s, %s)" # order is implicit, defined by the view, so no need to override it here
-##                 self.conn.runQuery(query, [from_version, to_version_used]).addCallbacks(lambda rows: diff_cb(rows, to_version_used), err_cb)
-##             elif return_objs == "objects": 
-##                 query = "SELECT triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_all_triples WHERE subject = ANY(SELECT wb_diff(%s, %s)) AND version = %s" # order is implicit, defined by the view, so no need to override it here
-##                 self.conn.runQuery(query, [from_version, to_version_used, to_version_used]).addCallbacks(lambda rows: objs_cb(rows, to_version_used), err_cb)
-##             elif return_objs == "ids":
-##                 get_ids_diff(from_version, to_version_used).addCallbacks(ids_cb, err_cb)
-##             else:
-##                 result_d.errback(Failure(Exception("Did not specify valid value of return_objs.")))
-##             return
-## 
-##         self.debug("diff to version: {0} type({1})".format(to_version, type(to_version)))
-## 
-##         if to_version is None:
-##             # if to_version is None, we get the latest version first
-##             self.debug("diff to version is None, so getting latest.")
-##             self._get_latest_ver().addCallbacks(got_versions, err_cb)
-##         else:
-##             # else just call got_versions immediately
-##             self.debug("diff to version not None, so using version {0}.".format(to_version))
-##             got_versions(to_version)
-##         return result_d
-        
-
     def delete(self, id_list, specified_prev_version):
         """ Create a new version of the database, excluding those objects in the id list.
 
@@ -911,18 +971,132 @@ class ObjectStoreAsync:
         # delegate the whole operation to update
         return self.update([], specified_prev_version, delete_ids=id_list)
 
+    def _vers_without_commits(self, from_version, to_version, commits):
+        """ Return the versions, in the range given, that do not contain any of the commits listen. """
+        result_d = Deferred()
 
-#    def _log_connections(self):
-#        """ Log the state of the connection pool (for debugging disconnections). """
-#        try:
-#            self.debug("_log_connections: State of connection pool")
-#            size = range(len(self.conn.connections))
-#            count = 0
-#            for connection in self.conn.connections:
-#                count += 1
-#                self.debug("_log_connections: connection {0}/{1}: {2}".format(count, size, vars(connection)))
-#        except Exception as e:
-#            self.error("_log_connections: could not check state of connections: {0}".format(e))
+        query = "SELECT version, commits FROM wb_versions WHERE version >= %s AND version <= %s"
+        params = [from_version, to_version]
+
+        def conn_cb(conn):
+
+            def vers_cb(rows):
+
+                # TODO optimise this by doing it in postgresql
+                versions_to_get = []
+                for row in rows:
+                    version, version_commits = row
+
+                    all_in = True
+                    for version_commit in version_commits:
+                        if version_commit not in commits:
+                            all_in = False
+                            break
+
+                    if not all_in:
+                        versions_to_get.append(version)
+
+                result_d.callback(versions_to_get)
+
+            conn.runQuery(query, params).addCallbacks(vers_cb, result_d.errback)
+
+        self.conns['conn']().addCallbacks(conn_cb, result_d.errback)
+
+        return result_d
+
+
+    def store_commits(self, commits):
+        """ Store commits in the commits table unless they are already there. """
+        result_d = Deferred()
+
+        the_commits = copy.copy(commits)
+
+        def connected(conn):
+
+            def loop(empty):
+                if len(the_commits) < 1:
+                    result_d.callback(True)
+                    return
+
+                commit_id, commit = the_commits.popitem()
+                query = "SELECT EXISTS(SELECT commit_hash FROM ix_commits WHERE commit_hash = %s) AS EXISTENZ"
+           
+                def checked_cb(rows):
+                    exists = rows[0][0]
+                    if exists:
+                        return loop(None)
+
+                    ins_query = "INSERT INTO ix_commits (commit_hash, date, server_id, original_version, commit_log) VALUES (%s, %s, %s, %s, %s)"
+                    ins_params = [commit['commit_hash'], commit['date'], commit['server_id'], commit['original_version'], commit['commit_log']]
+
+                    conn.runOperation(ins_query, ins_params).addCallbacks(loop, result_d.errback)
+                    
+                conn.runQuery(query, [commit_id]).addCallbacks(checked_cb, result_d.errback)
+
+            loop(None)
+
+        self.conns['conn']().addCallbacks(connected, result_d.errback)
+        return result_d
+
+
+    def get_commits_in_versions(self, versions, cur=None):
+        result_d = Deferred()
+        self.debug("Objectstore get_commits_in_version, cur: {0}".format(cur))
+
+        query = "SELECT version, commits FROM wb_versions WHERE version = ANY(%s)"
+        params = [versions]
+
+        def ver_cb(rows):
+            all_commits = []
+            for row in rows:
+                version, commits = row
+                all_commits.extend(commits)
+
+            query2 = "SELECT commit_hash, date, server_id, original_version, commit_log FROM ix_commits WHERE commit_hash = ANY(%s)"
+            params2 = [all_commits]
+
+            def commits_cb(rows):
+                commit_data = {}
+                for row in rows:
+                    commit_hash, date, server_id, original_version, commit_log = row
+                    commit_data[commit_hash] = {"commit_hash": commit_hash, "date": date, "server_id": server_id, "original_version": original_version, "commit_log": commit_log}
+
+                result_d.callback(commit_data)
+
+
+            if cur is None:
+                def conn_cb(conn):
+                    logging.debug("Objectstore get_commits_in_versions, ver_cb")
+                    conn.runQuery(query2, params2).addCallbacks(commits_cb, result_d.errback)
+                
+                self.conns['conn']().addCallbacks(conn_cb, result_d.errback)
+            else:
+
+                def exec_cb2(cur):
+                    self.debug("Objectstore get_commits_in_versions exec_cb2, cur: {0}".format(cur))
+                    rows = cur.fetchall()
+                    commits_cb(rows)
+
+                self._curexec(cur, query2, params2).addCallbacks(exec_cb2, result_d.errback)
+
+
+        if cur is None:
+            def conn_cb(conn):
+                logging.debug("Objectstore get_commits_in_versions, conn_cb")
+                conn.runQuery(query, params).addCallbacks(ver_cb, result_d.errback)
+            
+            self.conns['conn']().addCallbacks(conn_cb, result_d.errback)
+        else:
+
+            def exec_cb(cur):
+                self.debug("Objectstore get_commits_in_versions exec_cb, cur: {0}".format(cur))
+                rows = cur.fetchall()
+                ver_cb(rows)
+
+            self._curexec(cur, query, params).addCallbacks(exec_cb, result_d.errback)
+
+        return result_d
+
 
 
     def _get_latest_ver(self, cur=None):
@@ -1124,7 +1298,6 @@ class ObjectStoreAsync:
 
                 def check_cb(value):
                     self.debug("Objectstore check_cb, value: {0}".format(value))
-                    pass
 
                 d = threads.deferToThread(do_check)
                 d.addCallbacks(check_cb, ver_err_cb)

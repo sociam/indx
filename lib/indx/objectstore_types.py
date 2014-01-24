@@ -16,6 +16,8 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import logging
 import json
+import copy
+from twisted.internet.defer import Deferred
 
 # TODO turn this into an indx.js-type ORM? subscribe to box and keep the graph and resources/literals up to date
 
@@ -43,10 +45,10 @@ class Graph:
             logging.debug("ObjectStore_Types from_rows, row: {0}".format(row))
             (triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype) = row
 
-            resource = graph.get(subject)
+            resource = graph.get(subject, root=True)
 
             if obj_type == "resource":
-                obj = graph.get(obj_value) # maintain links to existing Resource in graph
+                obj = graph.get(obj_value, root=False) # maintain links to existing Resource in graph
             else:
                 obj = Graph.value_from_row(obj_value, obj_type, obj_lang, obj_datatype)
             resource.add(predicate, obj)
@@ -56,18 +58,21 @@ class Graph:
 
     def __init__(self):
         self.objects_by_id = {}
+        self.root_object_ids = []
 
-    def add(self, resource):
+    def add(self, resource, root=True):
         """ Add a new resource object into the graph. """
         if not isinstance(resource, Resource):
             raise Exception("resource must be a Resource")
         self.objects_by_id[resource.id] = resource
+        if root:
+            self.root_object_ids.append(resource.id)
 
-    def get(self, id):
+    def get(self, id, root=False):
         """ Get an object by ID, or create a new one if it doesn't exist. """
         if id not in self.objects_by_id:
             resource = Resource(id)
-            self.add(resource)
+            self.add(resource, root=root)
         return self.objects_by_id[id]
 
     def objects(self):
@@ -77,10 +82,81 @@ class Graph:
     def to_json(self):
         """ Get the list of object in the JSON format. """
         obj_out = {}
-        for id, obj in self.objects().items():
-            if len(obj.model.keys()) > 1: # length 1 means only "@id" i.e. just hanging off the end of a triple, so dont put as a root obj
-                obj_out[id] = obj.to_json()
+        for id in self.root_object_ids:
+            obj_out[id] = self.objects_by_id[id].to_json()
         return obj_out
+
+    def replace_resource(self, id, resource):
+        self.objects_by_id[id] = resource
+
+    def expand_depth(self, depth, store, objs = None):
+        """ Expand the depth of the graph to a minimum of 'depth', using the database connection 'conn' to request more objects as required. """
+        return_d = Deferred()
+        logging.debug("Objectstore Types, Graph, expand depth to depth '{0}'".format(depth))
+
+        if objs is None:
+            objs = copy.copy(self.root_object_ids)
+
+        logging.debug("Objectstore Types, Graph, object at this depth: {0}".format(objs))
+
+
+        def loop(empty):
+            logging.debug("Objectstore Types, Graph, loop")
+
+            if len(objs) == 0:
+                logging.debug("Objectstore Types, Graph, sending callback.")
+                return_d.callback(True)
+                return
+
+            id = objs.pop(0)
+            obj = self.get(id)
+
+            logging.debug("Objectstore Types, Graph, loop to object: {0}".format(id))
+
+            def expanded(expanded_graph):
+                logging.debug("Objectstore Types, Graph, expanded")
+
+                subobjs = []
+
+                if expanded_graph is not None:
+                    logging.debug("Objectstore Types, Graph, replacing expanded object: {0}".format(id))
+                    resource = expanded_graph.get(id)
+                    self.replace_resource(id, resource)
+                    subobjs.append(resource)
+                else:
+                    resource = obj
+
+                subdepth = depth - 1
+                if subdepth > 0:
+                    logging.debug("Objectstore Types, Graph, expanded, props: {0}".format(resource.props()))
+                    for prop in resource.props():
+                        # traverse depth of objects
+                        logging.debug("Objectstore Types, Graph, expanded, val: {0}".format(resource.get(prop)))
+                        for val in resource.get(prop):
+                            if isinstance(val, Resource):
+                                subobjs.append(val)
+                
+                logging.debug("Objectstore Types, Graph, expanded, subobjs: {0}".format(subobjs))
+
+                if len(subobjs) > 0:
+                    self.expand_depth(subdepth, store, map(lambda x: x.id, subobjs)).addCallbacks(loop, return_d.errback)
+                else:
+                    loop(None)
+
+            if obj.is_stub():
+                # expand this object
+                logging.debug("Objectstore Types, Graph, expanding object: {0}".format(id))
+                store.get_latest_objs([id], render_json = False).addCallbacks(expanded, return_d.errback)
+            else:
+                logging.debug("Objectstore Types, Graph, object not being expanded.")
+                expanded(None)
+
+        if depth >= 0:
+            loop(None)
+        else:
+            return_d.callback(True)
+
+        return return_d
 
     def __hash__(self):
         return hash(Graph) ^ hash(self.objects_by_id)
@@ -123,6 +199,21 @@ class Resource:
 
         self.model[property].append(value)
 
+    def getOneValue(self, property):
+        """ Get the first value of a property and return its value. If it does not exist, return None."""
+        val = self.getOne(property)
+        if val is None:
+            return None
+        return val.value
+
+    def getOne(self, property):
+        """ Get the first value of a property. If it does not exist, returns None. """
+        values = self.get(property)
+        if values is None:
+            return None
+        else:
+            return values[0]
+    
     def get(self, property):
         """ Get the values of a property. If it does not exist, returns None. """
 
@@ -130,6 +221,15 @@ class Resource:
             return self.model[property]
         else:
             return None
+
+    def props(self):
+        """ Get a list of properties of this resource. """
+        properties = self.model.keys()
+        properties.remove("@id")
+        return properties
+
+    def is_stub(self):
+        return len(self.model.keys()) == 1
 
 
     def to_json(self, value_id_list = []):

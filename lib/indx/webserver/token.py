@@ -29,7 +29,7 @@ class Token:
         An objectstore_async is also kept in the token.
     """
 
-    def __init__(self, db, username, password, boxid, appid, origin, clientip):
+    def __init__(self, db, username, password, boxid, appid, origin, clientip, server_id):
         self.db = db
         self.username = username
         self.password = password
@@ -39,6 +39,7 @@ class Token:
         self.id = str(uuid.uuid1())
         self.clientip = clientip
         self.connections = []
+        self.server_id = server_id
         self.best_acct = None
 
     def close_all(self):
@@ -92,7 +93,7 @@ class Token:
                 return return_d
 
             conns = {"conn": get_conn, "sync_conn": get_sync, "raw_conn": get_raw, "indx_conn": get_indx_conn}
-            store = ObjectStoreAsync(conns, self.username, self.boxid, self.appid, self.clientip)
+            store = ObjectStoreAsync(conns, self.username, self.boxid, self.appid, self.clientip, self.server_id)
             result_d.callback(store)
 
 
@@ -141,9 +142,9 @@ class TokenKeeper:
         self.tokens[token.id] = token
         return token
 
-    def new(self,username,password,boxid,appid,origin,clientip):
+    def new(self,username,password,boxid,appid,origin,clientip, server_id):
         logging.debug("Token Keeper - new token for: {0} to {1}".format(username, boxid))
-        token = Token(self.db,username,password,boxid,appid,origin,clientip)
+        token = Token(self.db,username,password,boxid,appid,origin,clientip, server_id)
         self.add(token)
         return token
 

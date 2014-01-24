@@ -21,7 +21,7 @@
         "first-version": "20131126-FIX_DIFF_VIEW",
         "versions": {
             "20131126-FIX_DIFF_VIEW": {
-                "next-version": "",
+                "next-version": "20140113-ADD_COMMITS",
                 "sql": [
                     "CREATE OR REPLACE VIEW wb_v_diffs AS ",
                     " SELECT wb_vers_diffs.version, wb_vers_diffs.diff_type, ",
@@ -34,6 +34,25 @@
                     "   LEFT JOIN wb_strings j_predicate ON j_predicate.id_string = wb_vers_diffs.predicate",
                     "   LEFT JOIN wb_strings j_object ON j_object.id_string = wb_objects.obj_value",
                     "  ORDER BY wb_vers_diffs.version, wb_vers_diffs.diff_type, j_subject.string, j_predicate.string, wb_vers_diffs.object_order, j_object.string, wb_objects.obj_type, wb_objects.obj_lang, wb_objects.obj_datatype;"
+                ]
+            },
+            "20140113-ADD_COMMITS": {
+                "next-version": "",
+                "sql": [
+                    "CREATE TABLE ix_commits",
+                    "(",
+                    "  commit_hash text NOT NULL,",
+                    "  date text NOT NULL,",
+                    "  server_id text NOT NULL,",
+                    "  original_version integer NOT NULL,",
+                    "  commit_log text NOT NULL,",
+                    "  CONSTRAINT pk_commit_hash PRIMARY KEY (commit_hash)",
+                    ")",
+                    "WITH (",
+                    "  OIDS=FALSE",
+                    ");",
+                    "",
+                    "ALTER TABLE wb_versions ADD COLUMN commits text[] NULL;"
                 ]
             }
         }
@@ -119,9 +138,15 @@
                 ]
             },
             "20131205-ADD_USERNAME_TO_KEYSTORE": {
-                "next-version": "",
+                "next-version": "20140103-ADD_BOX_TO_KEYSTORE",
                 "sql": [
                     "ALTER TABLE tbl_keystore ADD COLUMN username text NULL;"
+                ]
+            },
+            "20140103-ADD_BOX_TO_KEYSTORE": {
+                "next-version": "",
+                "sql": [
+                    "ALTER TABLE tbl_keystore ADD COLUMN box text NULL;"
                 ]
             }
         }

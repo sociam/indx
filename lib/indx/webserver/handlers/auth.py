@@ -76,10 +76,7 @@ class AuthHandler(BaseHandler):
         def fail():
             logging.debug("Login request fail, origin: {0}".format(self.get_origin(request)))
             wbSession = self.get_session(request)
-            wbSession.setAuthenticated(False)
-            wbSession.setUser(None)
-            wbSession.setUserType(None)
-            wbSession.setPassword(None)            
+            wbSession.reset()
             self.return_unauthorized(request)
 
         self.database.auth(user,pwd).addCallback(lambda loggedin: win() if loggedin else fail())
@@ -91,10 +88,7 @@ class AuthHandler(BaseHandler):
         def fail():
             logging.debug("Login request fail, origin: {0}".format(self.get_origin(request)))
             wbSession = self.get_session(request)
-            wbSession.setAuthenticated(False)
-            wbSession.setUser(None)
-            wbSession.setUserType(None)
-            wbSession.setPassword(None)            
+            wbSession.reset()
             return self.return_unauthorized(request)
 
         SSH_MSG_USERAUTH_REQUEST = "50"
@@ -108,36 +102,45 @@ class AuthHandler(BaseHandler):
             logging.error("auth_keys error, signature, key, algo or method is None, returning unauthorized")
             return fail()
 
-        keystore_results = self.webserver.keystore.get(key_hash)
-        key = keystore_results['key']
-        user = keystore_results['user']
-
-        sessionid = request.getSession().uid
-
-        ordered_signature_text = '{0}\t{1}\t"{2}"\t{3}\t{4}'.format(SSH_MSG_USERAUTH_REQUEST, sessionid, method, algo, key_hash)
-        verified = rsa_verify(key['public'], ordered_signature_text, signature)
-        
-        if not verified:
-            logging.error("auth_keys error, signature does not verify, returning unauthorized")
+        try:
+            signature = long(signature)
+        except Exception as e:
+            logging.error("auth_keys error, signature was not a valid Long, returning unauthorized")
             return fail()
-        
-        logging.debug("Login request auth_keys for {0}, origin: {1}".format(user, request.getHeader("Origin")))
-        wbSession = self.get_session(request)
-        wbSession.setAuthenticated(True)
-        wbSession.setUser(user)
-        wbSession.setUserType("auth")
-        wbSession.setPassword("")
-        self.return_ok(request)
+
+
+        def keystore_cb(keystore_results):
+
+            key = keystore_results['key']
+            user = keystore_results['username']
+            box = keystore_results['box']
+
+            sessionid = request.getSession().uid
+
+            ordered_signature_text = '{0}\t{1}\t"{2}"\t{3}\t{4}'.format(SSH_MSG_USERAUTH_REQUEST, sessionid, method, algo, key_hash)
+            verified = rsa_verify(key['public'], ordered_signature_text, signature)
+            
+            if not verified:
+                logging.error("auth_keys error, signature does not verify, returning unauthorized")
+                return fail()
+            
+            logging.debug("Login request auth_keys for {0}, origin: {1}".format(user, request.getHeader("Origin")))
+            wbSession = self.get_session(request)
+            wbSession.setAuthenticated(True)
+            wbSession.setUser(user)
+            wbSession.setUserType("auth")
+            wbSession.setPassword("")
+            wbSession.limit_boxes = [box] # only allow access to this box
+            self.return_ok(request)
+
+        self.webserver.keystore.get(key_hash).addCallbacks(keystore_cb, fail)
 
 
     def auth_logout(self, request):
         """ User logged out (GET, POST) """
         logging.debug("Logout request, origin: {0}".format(self.get_origin(request)))
         wbSession = self.get_session(request)
-        wbSession.setAuthenticated(False)
-        wbSession.setUser(None)
-        wbSession.setUserType(None)
-        wbSession.setPassword(None)        
+        wbSession.reset()
         self.return_ok(request)
 
     def auth_whoami(self, request):
@@ -176,6 +179,11 @@ class AuthHandler(BaseHandler):
         if not wbSession.is_authenticated:
             return self.return_unauthorized(request)
 
+        # if this auth session is limited to a list of boxes, then only allow getting a token to them. 
+        limit_boxes = wbSession.limit_boxes
+        if limit_boxes is not None and boxid not in limit_boxes:
+            return self.return_unauthorized(request)
+
         username = wbSession.username
         password = wbSession.password
         origin = self.get_origin(request)
@@ -187,7 +195,7 @@ class AuthHandler(BaseHandler):
             db_user, db_pass = acct
 
             def check_app_perms(acct):
-                token = self.webserver.tokens.new(username,password,boxid,appid,origin,request.getClientIP())
+                token = self.webserver.tokens.new(username,password,boxid,appid,origin,request.getClientIP(),self.webserver.server_id)
                 return self.return_ok(request, {"token":token.id})
 
             # create a connection pool
@@ -458,5 +466,4 @@ AuthHandler.subhandlers = [
         'accept':['application/json']                
      }    
 ]
-
 
