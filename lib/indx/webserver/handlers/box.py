@@ -266,7 +266,10 @@ class BoxHandler(BaseHandler):
         token = self.get_token(request)
         if not token:
             return self.return_forbidden(request)
-        depth = int(self.get_arg(request, "depth"))
+ 
+        depth = self.get_arg(request, "depth", default = None)
+        if depth is not None:
+            depth = int(depth)
 
         def err_cb(failure):
             failure.trap(Exception)
@@ -302,7 +305,10 @@ class BoxHandler(BaseHandler):
                     BoxHandler.log(logging.DEBUG, "BoxHandler Exception trying to add to query.", extra = {"request": request, "token": token})
                     return self.return_internal_error(request)
 
-                store.query(q, predicate_filter = predicate_list, depth = depth).addCallbacks(lambda results: self.return_ok(request, {"data": results}), # callback
+                if depth is None:
+                    store.query(q, predicate_filter = predicate_list).addCallbacks(lambda results: self.return_ok(request, {"data": results}), # callback
+                else:
+                    store.query(q, predicate_filter = predicate_list, depth = depth).addCallbacks(lambda results: self.return_ok(request, {"data": results}), # callback
                         handle_add_error) # errback
             except Exception as e:
                 BoxHandler.log(logging.ERROR, "Exception in box.query: {0}".format(e), extra = {"request": request, "token": token})
