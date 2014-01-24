@@ -307,6 +307,7 @@ class BoxHandler(BaseHandler):
 
                 if depth is None:
                     store.query(q, predicate_filter = predicate_list).addCallbacks(lambda results: self.return_ok(request, {"data": results}), # callback
+                        handle_add_error) # errback
                 else:
                     store.query(q, predicate_filter = predicate_list, depth = depth).addCallbacks(lambda results: self.return_ok(request, {"data": results}), # callback
                         handle_add_error) # errback
