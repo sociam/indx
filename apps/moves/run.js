@@ -1,3 +1,5 @@
+/* jshint undef: true, strict:false, trailing:false, unused:false */
+/* global require, exports, console, process, module */
 
 /**
  *  Moves Service for INDX ---
@@ -10,7 +12,7 @@
 var nodeindx = require('../../lib/services/nodejs/nodeindx'),
     nodeservice = require('../../lib/services/nodejs/service'),
     u = nodeindx.utils,
-    _ = require('underscore')
+    _ = require('underscore'),
     jQuery = require('jquery'),
     path = require('path'),
     https = require('https'),
@@ -22,7 +24,7 @@ var nodeindx = require('../../lib/services/nodejs/nodeindx'),
 var SEVEN_DAYS_USEC =  6*24*60*60*1000; // + 23*59*59*1000;
 
 var toMovesDate = function(date) {
-    u.assert(date instanceof Date, "Must be a Date");
+    u.assert(date instanceof Date, 'Must be a Date');
     var yy = date.getFullYear(), mm = date.getMonth() + 1, dd = date.getDate();
     var s = ''+yy;
     s = s + (mm < 10 ? '0'+mm : mm);
@@ -34,7 +36,7 @@ var fromMovesDate = function(m_date) {
     var hour = m_date.slice(9,11), min = m_date.slice(11,13), sec = m_date.slice(13,15);
     var newdate = [year, m, d].join('/');
     var newtime = [hour,min, sec].join(':');
-    return new Date(newtime + " " + newdate);
+    return new Date(newtime + ' ' + newdate);
 };
 var daysBetween = function(date1, date2) {
     var diff = Math.abs(date2.valueOf() - date1.valueOf());
@@ -55,7 +57,7 @@ var MovesService = Object.create(nodeservice.NodeService, {
                 // lets get our profile _once_
                 this_.getProfile().then(function() { 
                     this_.__continueGrabbing().then(function() {
-                        console.info(" continue grabbing is DONE >>>>> ");
+                        console.info(' continue grabbing is DONE >>>>> ');
                         // update once. then update every 5 minutes
                     }).fail(quit);
                     // console.log('chilling for 5 mins');
@@ -63,7 +65,7 @@ var MovesService = Object.create(nodeservice.NodeService, {
                     //     // todo : do soemthing with refreshing token here.
                     //     this_.__continueGrabbing().then(function() { }).fail(quit);
                     // },5*60*1000);
-                }).fail(quit)
+                }).fail(quit);
             }).fail(quit);
         }
     },
@@ -89,7 +91,7 @@ var MovesService = Object.create(nodeservice.NodeService, {
 
                 // catch up mode! update all the bloody time.
                 var endDate = new Date(lastGrabbedDate.valueOf() + SEVEN_DAYS_USEC);
-                console.log("setting start-endDate to >> ", lastGrabbedDate, endDate);
+                console.log('setting start-endDate to >> ', lastGrabbedDate, endDate);
                 this_.getTimeline(lastGrabbedDate,endDate).then(function() { 
                     updateLGD(endDate);
                     setTimeout(function() { this_.__continueGrabbing().then(d.resolve).fail(d.reject); }, 1000);
@@ -112,7 +114,7 @@ var MovesService = Object.create(nodeservice.NodeService, {
             var config = this.config, this_ = this, code = config.authcode, d = u.deferred();
             this_.debug('Getting access token from authcode > ', code);
             this_.getAccessToken().then(function(authtokens) {
-                this_.assert(authtokens.access_token, "No access token received");
+                this_.assert(authtokens.access_token, 'No access token received');
                 delete config.authcode;
                 _(config).extend(authtokens);
                 this_.save_config(config).then(d.resolve).fail(d.reject);
@@ -144,11 +146,11 @@ var MovesService = Object.create(nodeservice.NodeService, {
                 code:this_.config.authcode,
                 client_id:this_.config.clientid,
                 client_secret:this_.config.clientsecret,
-                redirect_uri:[this_.store._getBaseURL(), "apps", "moves", "moves_redirect.html"].join('/')
+                redirect_uri:[this_.store._getBaseURL(), 'apps', 'moves', 'moves_redirect.html'].join('/')
             };
             // console.log('REDIRECT >>> ', params.redirect_uri);
-            // console.log("CODE >> ", params.code);
-            var url = base_url +"?"+jQuery.param(params);
+            // console.log('CODE >> ', params.code);
+            var url = base_url +'?'+jQuery.param(params);
             jQuery.post(url).then(function(result) {
                 console.log('success >> ', result, typeof result);
                 d.resolve(result);
@@ -166,7 +168,7 @@ var MovesService = Object.create(nodeservice.NodeService, {
             var params = {
                 access_token:this_.config.access_token,
             };
-            var url = base_url +"?"+jQuery.param(params);
+            var url = base_url +'?'+jQuery.param(params);
             jQuery.get(url).then(function(result) {
                 // token is valid
                 console.info('token valid >> ', result);
@@ -189,7 +191,7 @@ var MovesService = Object.create(nodeservice.NodeService, {
                 client_id:this_.config.clientid,
                 client_secret:this_.config.clientsecret
             };
-            var url = base_url +"?"+jQuery.param(params);
+            var url = base_url +'?'+jQuery.param(params);
             jQuery.post(url).then(function(result) {
                 // token is valid
                 console.info('refresh ok, clobbering >> ', result, typeof result);
@@ -210,7 +212,7 @@ var MovesService = Object.create(nodeservice.NodeService, {
     getProfile: {
         value:function() {
             var d = u.deferred(), this_ = this;     
-            this.assert(this.config.access_token, "No auth code", "authorization code");
+            this.assert(this.config.access_token, 'No auth code', 'authorization code');
             var base_url = 'https://api.moves-app.com/api/v1/user/profile?'+jQuery.param({access_token:this.config.access_token});
             // console.error('getProfile() url >> ', base_url);
             jQuery.ajax({type:'GET', url: base_url}).then(function(result) {
@@ -239,35 +241,35 @@ var MovesService = Object.create(nodeservice.NodeService, {
     getTimeline:{
         // gets the storyline, which looks like: 
         // [{
-        //     "date": "20121212",
-        //     "segments": [
+        //     'date': '20121212',
+        //     'segments': [
         //         {
-        //             "type": "place",
-        //             "startTime": "20121212T000000Z",
-        //             "endTime": "20121212T071430Z",
-        //             "place": {
-        //                 "id": 1,
-        //                 "type": "unknown",
-        //                 "location": {
-        //                     "lat": 55.55555,
-        //                     "lon": 33.33333
+        //             'type': 'place',
+        //             'startTime': '20121212T000000Z',
+        //             'endTime': '20121212T071430Z',
+        //             'place': {
+        //                 'id': 1,
+        //                 'type': 'unknown',
+        //                 'location': {
+        //                     'lat': 55.55555,
+        //                     'lon': 33.33333
         //                 }
         //             }
         //         },
         // and transforms this into a series of MovesObservations
         value:function(from_date, to_date) {
-            console.log("getTimeline() >>>>> from ", from_date, " to date ", to_date);
-            this.assert(daysBetween(from_date, to_date) < 8, "Only accepts date ranges 7 days wide.");
-            this.assert(this.config.access_token, "No auth code", "authorization code");
-            this.assert(this.diary, "No diary loaded");
-            this.assert(this.diary.get('userId'), "No userid specifie");
+            console.log('getTimeline() >>>>> from ', from_date, ' to date ', to_date);
+            this.assert(daysBetween(from_date, to_date) < 8, 'Only accepts date ranges 7 days wide.');
+            this.assert(this.config.access_token, 'No auth code', 'authorization code');
+            this.assert(this.diary, 'No diary loaded');
+            this.assert(this.diary.get('userId'), 'No userid specifie');
             var d = u.deferred(), this_ = this;
             var whom = this.whom;
             var from_m = toMovesDate(from_date), to_m = toMovesDate(to_date);
-            var base_url = 'https://api.moves-app.com/api/v1/user/storyline/daily?'
-                + jQuery.param({from:from_m, to: to_m, access_token: this.config.access_token });
+            var base_url = 'https://api.moves-app.com/api/v1/user/storyline/daily?' + 
+                jQuery.param({from:from_m, to: to_m, access_token: this.config.access_token });
 
-            console.info("url >> ", base_url);
+            console.info('url >> ', base_url);
             jQuery.ajax({type:'GET', url: base_url}).then(function(storyline) {
                 // timeline 
                 storyline.map(function(day) {
@@ -372,7 +374,7 @@ var MovesService = Object.create(nodeservice.NodeService, {
             activities (optional): JSON array of activities for the segment
         */
         value:function(segment) {
-            var whom = this.whom, this_ = this, ds = u.deferred();;
+            var whom = this.whom, this_ = this, ds = u.deferred();
             var get_acts = function(acts){  return acts.map(function(activity) { return this_._makeActivity(activity); }); };
             var dact = segment.activities ? get_acts(segment.activities) : u.dresolve();
             var dpl = segment.place ? this_._makePlace(segment.place) : u.dresolve();
@@ -418,11 +420,6 @@ var MovesService = Object.create(nodeservice.NodeService, {
             }).fail(function(err) { this_.debug('error getting box ', err); }); 
             return d.promise();
         }
-    },
-    _unpack: {
-        value: function(c, box) {
-            return d.promise();
-        }
     }
 });
 
@@ -433,12 +430,12 @@ var instantiate = function(indxhost) {
         if (indxhost){ ws.setHost(indxhost); }
         d.resolve(ws);
     }).fail(function(bail) {
-        output({event:"error", message:bail.message || bail.toString()});
+        output({event:'error', message:bail.message || bail.toString()});
         process.exit(1);
         d.reject();
     });
     return d.promise();
-}
+};
 
 module.exports = {
     MovesService: MovesService,
@@ -449,7 +446,7 @@ module.exports = {
         instantiate(host).then(function(svc) { 
             svc.login().then(function() { 
                 svc._loadBox().then(function() { 
-                    console.log('done loading!! ')
+                    console.log('done loading!! ');
                     d.resolve(svc);
                 }).fail(d.reject);
             }).fail(d.reject);
