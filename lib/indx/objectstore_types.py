@@ -100,20 +100,24 @@ class Graph:
         logging.debug("Objectstore Types, Graph, object at this depth: {0}".format(objs))
 
 
-        def loop(empty):
+        def loop(id):
+            loop_d = Deferred()
+
             logging.debug("Objectstore Types, Graph, loop")
 
-            if len(objs) == 0:
-                logging.debug("Objectstore Types, Graph, sending callback.")
-                return_d.callback(True)
-                return
+#            if len(objs) == 0:
+#                logging.debug("Objectstore Types, Graph, sending callback.")
+#                return_d.callback(True)
+#                return
 
-            id = objs.pop(0)
+#            id = objs.pop(0)
             obj = self.get(id)
 
             logging.debug("Objectstore Types, Graph, loop to object: {0}".format(id))
 
             def expanded(expanded_graph):
+                expanded_d = Deferred()
+
                 logging.debug("Objectstore Types, Graph, expanded")
 
                 subobjs = []
@@ -139,9 +143,13 @@ class Graph:
                 logging.debug("Objectstore Types, Graph, expanded, subobjs: {0}".format(subobjs))
 
                 if len(subobjs) > 0:
-                    self.expand_depth(subdepth, store, map(lambda x: x.id, subobjs)).addCallbacks(loop, return_d.errback)
+                    self.expand_depth(subdepth, store, map(lambda x: x.id, subobjs)).addCallbacks(lambda empty: expanded_d.callback(True), return_d.errback)
                 else:
-                    loop(None)
+                    expanded_d.callback(True)
+                    #loop(None)
+
+                return expanded_d
+
 
             if obj.is_stub():
                 # expand this object
@@ -149,10 +157,15 @@ class Graph:
                 store.get_latest_objs([id], render_json = False).addCallbacks(expanded, return_d.errback)
             else:
                 logging.debug("Objectstore Types, Graph, object not being expanded.")
-                expanded(None)
+                loop_d.addCallback(expanded(None))
+#                expanded(None)
+
+            return loop_d
 
         if depth >= 0:
-            loop(None)
+            for obj in objs:
+                return_d.addCallbacks(loop(obj), return_d.errback)
+#            loop(None)
         else:
             return_d.callback(True)
 
@@ -246,7 +259,7 @@ class Resource:
             logging.debug("ObjectStore_Types Resource, to_json, debug1")
 
         model = {}
-        value_id_list_cpy = [row[:] for row in value_id_list]
+        value_id_list_cpy = copy.copy(value_id_list)
         value_id_list_cpy.append(self.id) # prevent this id from being rendered by its children/descendents
 
         for property, values in self.model.items():
