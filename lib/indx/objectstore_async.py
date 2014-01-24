@@ -677,11 +677,37 @@ class ObjectStoreAsync:
         self.conns['conn']().addCallbacks(iconn_cb, result_d.errback)
         return result_d
 
+    def order_diff_rows(self, diff_rows):
+        """ Re-order the diff_rows so that add_predicate etc comes before add_triple. """
+
+        diff_type_index = 1 # of the sql row result
+
+        new_diff_rows = []
+
+        order = [
+            "remove_predicate",
+            "remove_subject",
+            "replace_objects",
+            "add_subject",
+            "add_predicate",
+            "add_triple",
+        ]
+
+        by_type = {}
+        map(lambda typ: by_type.update({typ: []}), order) # init the object
+        map(lambda x: by_type[x[diff_type_index]].append(x), diff_rows) # add the diff_rows, indx by type
+
+        for orde in order:
+            new_diff_rows.extend(by_type[orde])
+        
+        return new_diff_rows
 
 
     def _db_diff_to_diff(self, diff_rows):
         """ Translate database rows to JSON diff changes. """
         self.debug("ObjectStore _db_diff_to_diff, diff_rows: {0}".format(diff_rows))
+
+        diff_rows = self.order_diff_rows(diff_rows)
 
         diff = {"changed": {}, "added": {}, "deleted": []}
         for row in diff_rows:
@@ -738,7 +764,9 @@ class ObjectStoreAsync:
                 if predicate not in diff[subkey][subject]["added"]:
                     diff[subkey][subject]["added"][predicate] = []
                 obj = Graph.value_from_row(obj_value, obj_type, obj_lang, obj_datatype) # TODO check this renders resources correctly
-                diff[subkey][subject]["added"][predicate].append(obj.to_json())
+                obj_json = obj.to_json()
+                logging.debug("ObjectStore _db_diff_to_diff, obj_json: {0}".format(obj_json))
+                diff[subkey][subject]["added"][predicate].append(obj_json)
 
             else:
                 raise Exception("Unknown diff type from database")
@@ -763,6 +791,7 @@ class ObjectStoreAsync:
             diff = {"changed": {}, "added": {}, "deleted": []}
             for version in version_list:
                 new_diff = self._db_diff_to_diff(diffs[version])
+                logging.debug("ObjectStore _get_diff_combined new_diff: {0}".format(new_diff))
                 diff = self.diff_on_diff(diff, new_diff)
             result_d.callback(diff)
 
