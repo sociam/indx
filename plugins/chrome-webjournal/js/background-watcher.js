@@ -188,19 +188,24 @@
             },
             make_record:function(tstart, tend, url, title, tabinfo) {
                 // console.log('make record >> ', options, options.location);
-                var geowatcher = $injector.get('geowatcher');
-                return entities.activities.make1(this.box, 
-                    'browse',
-                    this.whom,
-                    tstart,
-                    tend,
-                    undefined, undefined, undefined,
-                    geowatcher.watcher && geowatcher.watcher.get('current_position'), 
-                    _({ 
-                        what: url,
-                        title: title
-                    }).extend(tabinfo)
-                );
+                var geowatcher = $injector.get('geowatcher'), d = u.deferred(), this_ = this;
+                this.getDoc(url,title,tabinfo).then(function(docmodel) { 
+                    entities.activities.make1(this_.box, 
+                      'browse',
+                      this.whom, tstart, tend,
+                      undefined, undefined, undefined,
+                      geowatcher.watcher && geowatcher.watcher.get('current_position'), 
+                      { what: docmodel }).then(d.resolve).fail(d.reject);
+                }).fail(d.reject);
+                return d.promise();
+            },
+            getDoc:function(url,title,tabinfo) {
+                var d = u.deferred(), this_ = this;
+                entities.documents.getWebPage(this.box, url).then(function(results) {
+                    if (results && results.length) { return d.resolve(results[0]);  }
+                    return entities.documents.makeWebPage(this_.box, url, title, tabinfo);
+                }).fail(d.reject);
+                return d.promise();
             },
             _record_updated:function() {
                 // console.log('record updated ... box ', this.box, current_record);

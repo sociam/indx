@@ -1,5 +1,5 @@
 /* jshint undef: true, strict:false, trailing:false, unused:false */
-/* global Backbone, angular, jQuery, _ */
+/* global Backbone, angular, jQuery, _, console */
 
 /*
   This is the entity manager class which consists of utility functions
@@ -45,7 +45,7 @@
 					window._objs = objs;
 					var hits = objs.filter(function(obj) { 
 						var results = _(properties).map(function(v,k) {
-							console.info(obj.id, ".peek(",k,") => ", obj.peek(k), obj.attributes && obj.attributes[k], obj.attributes, " == ", v);
+							console.info(obj.id, '.peek(',k,') => ', obj.peek(k), obj.attributes && obj.attributes[k], obj.attributes, ' == ', v);
 							return obj && (obj.peek(k) == v || (obj.get(k) && (obj.get(k).indexOf(v) >= 0)));
 						});
 						return results.reduce(function(x,y) { return x && y; }, true);
@@ -83,7 +83,7 @@
 							kbyD.sort(function(a,b) { return dist[a] - dist[b]; });
 							console.log('kbyD > ', kbyD);
 							var hits = kbyD.filter(function(k) { return dist[k] < LATLNG_THRESH; }).map(function(k) { return resD[k]; });
-							console.info("hits >> ", hits);
+							console.info('hits >> ', hits);
 							d.resolve(hits);
 						});
 						return d.promise();
@@ -104,7 +104,7 @@
 							model.set(argset);
 							if (otherprops && _(otherprops).isObject()) { model.set(otherprops); }
 							model.set({'type':'location'});
-							console.log("SAVING LOCATION >>>>>>>>>>>>>>> ", model);
+							console.log('SAVING LOCATION >>>>>>>>>>>>>>> ', model);
 							model.save().then(function() { d.resolve(model); }).fail(d.reject);
 						});
 						return d.promise();
@@ -160,9 +160,23 @@
 					}
 				},
 				documents:{
-					getWebPage:function(box, extras) {
-						return search(box, _(extras).chain().clone().extend({type:'Tweet'}));
-					},	
+					getWebPage:function(box, url) {
+						return search(box, url ? { url: url, type:'web-page' } : { type: 'web-page' });
+					},
+					makeWebPage:function(box, url, title, otherprops) {
+						var d = u.deferred(), args = _(arguments).toArray();
+						var id = url;
+						var argnames = [undefined, 'url', 'title'],
+							zipped = u.zip(argnames, args).filter(function(x) { return x[0]; }),
+							argset = u.dict(zipped);
+						box.getObj(id).then(function(model) { 
+							model.set(argset);
+							model.set({type:'web-page'});
+							if (otherprops && _(otherprops).isObject()) { model.set(otherprops); }
+							model.save().then(function() { d.resolve(model); }).fail(d.reject);
+						});
+						return d.promise();
+					},
 					getTweet:undefined,
 					getInstagram:undefined,
 					getFBMessage:undefined,
