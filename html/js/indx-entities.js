@@ -1,4 +1,4 @@
-/* jshint undef: true, strict:false, trailing:false, unused:false */
+	/* jshint undef: true, strict:false, trailing:false, unused:false */
 /* global Backbone, angular, jQuery, _ */
 
 /*
@@ -42,10 +42,10 @@
 			var slowQuery = function(box, properties) {
 				var d = u.deferred(), results = [];
 				box.getObj(box.getObjIDs()).then(function(objs) {
+					window._objs = objs;
 					var hits = objs.filter(function(obj) { 
-						// console.log(" obj >> ", obj, obj.peek);
 						var results = _(properties).map(function(v,k) {
-							return obj && (obj.peek(k) == v || (obj.get(k) && obj.get(k).indexOf(v) >= 0));
+							return obj && (obj.peek(k) == v || (obj.get(k) && (obj.get(k).indexOf(v) >= 0)));
 						});
 						return results.reduce(function(x,y) { return x && y; }, true);
 					});
@@ -64,7 +64,7 @@
 				toObj:to_obj,
 				locations: {
 					getAll: function(box, extras) {
-						return search(box, _(extras).chain().clone().extend({type:'Location'}).value());
+						return search(box, _(extras).chain().clone().extend({type:'location'}).value());
 					},
 					getByLatLng: function(box, lat, lng) {
 						return this.getAll(box, { latitude: lat, longitude: lng } );

@@ -12,7 +12,7 @@
     var err = function(error) { console.error(error); };
     var position_options = { enableHighAccuracy:true, timeout: Infinity, maximumAge: Infinity  };
 
-    var app = angular.module('webjournal').factory('geowatcher', function(utils,client,entities,pluginUtils) {
+    var app = angular.module('webjournal').factory('geowatcher', function(utils,client,entities,watcher,pluginUtils) {
         // plugin that watches for geo changes
         var u = utils, pu = pluginUtils;
         var GeoWatcher = Backbone.Model.extend({
@@ -21,10 +21,10 @@
                 var this_ = this, err = function(e) { this_.trigger('error', e); };
                 this.on('change:current_activity', function() {
                     var pos = this_.get('current_activity');
-                    console.info('current activity (position) changed >> ', pos && pos.peek('waypoints') && pos.peek('waypoints').attributes);
+                    // console.info('current activity (position) changed >> ', pos && pos.peek('waypoints') && pos.peek('waypoints').attributes);
                 });
                 this.on('change:store', function(s) {
-                    console.info('geo::change::store '); 
+                    // console.info('geo::change::store '); 
                     this_._load_box().then(function() { this_._init_navigator(); }).fail(function(bail) { err('load box failed'); });
                     this_.unset('box');
                     this_.unset('journal');
@@ -33,10 +33,21 @@
             },
             _init_navigator:function() {
                 var this_ = this;
+
                 if (!this._watching) {
-                    navigator.geolocation.watchPosition(function(pos) { this_._handle_geo(pos); }, err, position_options);
-                    navigator.geolocation.getCurrentPosition(function(pos) {  this_._handle_geo(pos); }, err, position_options);
+                    navigator.geolocation.watchPosition(function(pos) { 
+                        console.info('watchPosition got a position ~~~~~~~~~~~~~~~~~~~~~~~~~ ', pos);
+                        this_._handle_geo(pos); 
+                    }, err, position_options);
+                    // navigator.geolocation.getCurrentPosition(function(pos) {  
+                    //     // console.error('getCurrentPosition ~~~~~~~~~~~~~~~~~~~~~~~~~ ', pos);
+                    //     this_._handle_geo(pos); 
+                    // }, err, position_options);
                     this._watching = true;
+                    if (watcher.watcher) { 
+                        console.log('REGISTERING WATCHER ... ');
+                        watcher.watcher.on('user-action', function() { this_._updateEveryMin(); });
+                    }
                 }
             },
             _load_box:function() {
@@ -66,36 +77,50 @@
                 }
                 return d.promise();
             },
+            _updateEveryMin:function() {
+                // triggers on user actions, updates our location in case of static ness
+                if (!this._lastUpdate || (new Date().valueOf()) - this._lastUpdate > 5000) {
+                    // console.log('MANUAL UPDATE ---');
+                    this.update();
+                    this._lastUpdate = new Date().valueOf();
+                }
+            },
             update:function() { 
                 // manual 
                 if (this._last_raw) { this._handle_geo(this._last_raw); }
             },
             _handle_geo:function(raw_pos) {
                 // debug >> 
-                console.log('_geochange', raw_pos);
+
                 var d = u.deferred(), this_ = this;
                 var crds = raw_pos.coords, curpos = this.get('current_activity') && this.get('current_activity').peek('waypoints'), box = this.get('box'), whom = this.get('whom'), now = new Date();
                 this._last_raw = raw_pos; // we keep this around for manual 'update' requests
+
+
                 if (this._fetching_geo) { 
                     // we are already fetching so let's just replace -- we'll come bac to this
-                    this._fetching_supercede = raw_pos; 
+                    this._fetching_supercede = raw_pos;
+                    // console.info("SECOND COMING > setting _fetching_supercede with ", raw_pos);
                     return;
                 }
-                if ( !curpos || (Math.abs(crds.latitude - curpos.peek('latitude')) > THRESHOLD || Math.abs(crds.latitude - curpos.peek('longitude')) > THRESHOLD) )  {
+                console.log('curpos > ', curpos, ' - crds: ', crds, this.get('current_activity') && this.get('current_activity').attributes );
+
+                if ( !curpos || (Math.abs(crds.latitude - curpos.peek('latitude')) > THRESHOLD || Math.abs(crds.longitude - curpos.peek('longitude')) > THRESHOLD) )  {
                     // graduate cur_pos
                     this.unset('current_activity');
                     this._fetching_geo = true;
                     this._getLocation(raw_pos.coords.latitude,raw_pos.coords.longitude).then(function(mpos) { 
-                        console.log("GOT LOCATION >> ", mpos);
                         delete this_._fetching_geo;
                         if (this_._fetching_supercede) {
+                            // console.info('UHM >> fetching supercede >>>>> ');
                             // if we got an update position let's fill in those
                             var ncords = this_._fetching_supercede;
                             delete this_._fetching_supercede;
                             return this_._handle_geo(ncords);
                         }
+                        // console.log("NEW ACTIVITY >>>>>>> ");
                         entities.activities.make1(box, 'stay', whom, now, now, undefined, undefined, undefined, mpos).then(function(actm) {
-                            console.log('setting current activity >> ', actm, actm.peek);
+                            // console.log('setting current activity >> ', actm);
                             this_.set('current_activity', actm);
                             actm.save().then(d.resolve).fail(d.reject);
                         }).fail(d.reject);
@@ -104,6 +129,7 @@
                     });
                     return;
                 } else if (curpos) {
+                    console.log("UPDATING ACTIVITY in place >>>>>>> ");
                     // just update the activyt
                     var curact = this.get('current_activity');
                     curact.set({tend:now});
