@@ -1,7 +1,7 @@
 /* jshint undef: true, strict:false, trailing:false, unused:false */
 /* global Backbone, angular, jQuery, _, console */
 
-(function() { 
+(function () {
     var GEO_JOURNAL_ID = localStorage.indx_geojournal_id || 'indx-chrome-geolocation';
     var GEO_OBJ_TYPE = localStorage.indx_webjournal_type || 'geolocated';
 
@@ -19,7 +19,8 @@
             defaults: { enabled:true },
             initialize:function(attributes) {
                 var this_ = this, err = function(e) { this_.trigger('error', e); };
-                this.on('change:current_activity', function(pos) {
+                this.on('change:current_activity', function() {
+                    var pos = this_.get('current_activity');
                     console.info('current activity (position) changed >> ', pos && pos.peek('waypoints') && pos.peek('waypoints').attributes);
                 });
                 this.on('change:store', function(s) {
@@ -85,6 +86,7 @@
                     this.unset('current_activity');
                     this._fetching_geo = true;
                     this._getLocation(raw_pos.coords.latitude,raw_pos.coords.longitude).then(function(mpos) { 
+                        console.log("GOT LOCATION >> ", mpos);
                         delete this_._fetching_geo;
                         if (this_._fetching_supercede) {
                             // if we got an update position let's fill in those
@@ -93,48 +95,55 @@
                             return this_._handle_geo(ncords);
                         }
                         entities.activities.make1(box, 'stay', whom, now, now, undefined, undefined, undefined, mpos).then(function(actm) {
+                            console.log('setting current activity >> ', actm, actm.peek);
                             this_.set('current_activity', actm);
                             actm.save().then(d.resolve).fail(d.reject);
-                        });
+                        }).fail(d.reject);
+                    }).fail(function(err) { 
+                        console.error(' failed getting location ', err);
                     });
                     return;
                 } else if (curpos) {
                     // just update the activyt
-                    this.get('current_activity').set({tend:now});
-                    this.get('current_activity').save().then(d.resolve).fail(d.reject);
+                    var curact = this.get('current_activity');
+                    curact.set({tend:now});
+                    curact.save().then(d.resolve).fail(d.reject);
                 }
                 return d.promise();
             },
             _getLocation: function(lat, lon){
+                console.log('_getlocation --------- ', lat, lon);
                 var d = u.deferred(), box = this.get('box');
                 entities.locations.getByLatLng(box, lat, lon).then(function(existing) {
-                    var ddone = existing && existing.length ? u.dresolve(existing[0]) : entities.locations.make(box,undefined,lat,lon);
+                    console.log('getLocation result >> existing loc ? ', existing && existing[0]);
+                    var ddone = existing && existing.length ? u.dresolve(existing[0]) : entities.locations.make(box,undefined,'chrome-inferred',lat,lon);
                     ddone.then(function(mloc) { d.resolve(mloc); }).fail(d.reject);
-                });
+                }).fail(d.reject);
                 return d.promise();
             }
         });
 
-    return {
-        init:function(store) {
-            if (!this.watcher) { 
-                this.watcher = new GeoWatcher({store:store});
+        return {
+            init:function(store) {
+                if (!this.watcher) { 
+                    this.watcher = new GeoWatcher({store:store});
+                }
+                return this.watcher;
+            },
+            set_store:function(store) { 
+                if (this.watcher) { this.watcher.set({store:store}); }
+            },
+            set_enabled:function(enabled) {
+                if (this.watcher) { this.watcher.set('enabled', enabled); }
+                return false;
+            },
+            get_enabled:function() {
+                if (this.watcher) { return this.watcher.get('enabled'); }
+                return false;
+            },
+            update:function() { 
+                if (this.watcher) { return this.watcher.update(); }
             }
-            return this.watcher;
-        },
-        set_store:function(store) { 
-            if (this.watcher) { this.watcher.set({store:store}); }
-        },
-        set_enabled:function(enabled) {
-            if (this.watcher) { this.watcher.set('enabled', enabled); }
-            return false;
-        },
-        get_enabled:function() {
-            if (this.watcher) { return this.watcher.get('enabled'); }
-            return false;
-        },
-        update:function() { 
-            if (this.watcher) { return this.watcher.update(); }
-        }
-    };
+        };
+   });
 })();

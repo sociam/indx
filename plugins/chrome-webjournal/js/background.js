@@ -1,3 +1,5 @@
+/* jshint undef: true, strict:false, trailing:false, unused:false */
+/* global Backbone, angular, jQuery, _, chrome, console */
 
 (function() {
     var server;
@@ -6,14 +8,14 @@
 
     var setErrorBadge = function(errtext) {
         chrome.browserAction.setBadgeText({text:''+errtext});
-        chrome.browserAction.setBadgeBackgroundColor({color:"#ff0000"});
+        chrome.browserAction.setBadgeBackgroundColor({color:'#ff0000'});
     };
     var clearBadge = function() {
         chrome.browserAction.setBadgeText({text:''});
     };
     var setOKBadge = function(s) {
         chrome.browserAction.setBadgeText({text:s.toString()});
-        chrome.browserAction.setBadgeBackgroundColor({color:"#00ffff"});
+        chrome.browserAction.setBadgeBackgroundColor({color:'#00ffff'});
     };
     var duration_secs = function(d) { return (d.get('end')[0].valueOf() - d.get('start')[0].valueOf()) / 1000.0;  };
     var getBoxName = function() { return localStorage.indx_box || 'lifelog'; };
@@ -27,7 +29,7 @@
         var d = utils.deferred();
         server.checkLogin().then(function(response) {
             if (response.is_authenticated) { 
-                setOKBadge(":)");
+                setOKBadge(':)');
                 return d.resolve(server, response);  
             }
             d.reject('not logged in');
@@ -42,7 +44,7 @@
         }).config(function($sceProvider) {
             // Completely disable SCE - options iframe interference
             $sceProvider.enabled(false);
-        }).factory('plugin-utils', function() { 
+        }).factory('pluginUtils', function() { 
             return {
                 setErrorBadge:setErrorBadge,
                 setOKBadge:setOKBadge,
@@ -61,8 +63,8 @@
             $scope.date = function(d) { return new Date().toLocaleTimeString().slice(0,-3);  };
             $scope.duration = function(d) {
                 var secs = duration_secs(d);
-                if (secs < 60) {  return secs.toFixed(2) + "s"; }  
-                return (secs/60.0).toFixed(2) + "m";
+                if (secs < 60) {  return secs.toFixed(2) + 's'; }  
+                return (secs/60.0).toFixed(2) + 'm';
             };        
             $scope.label = function(d) { 
                 var maxlen = 150;
@@ -131,7 +133,7 @@
                 connect(client,utils).then(function(server, result) {
                     console.log('success connecting to new server >> telling watcher');
                     get_watcher().set_store(server);
-                }).fail(function() {
+                }).fail(function(e) {
                     sa(function() { $scope.status = 'error connecting ' + e.toString(); });
                     console.error('error connecting to new ');
                 });
@@ -158,8 +160,9 @@
         var initStore = function(store) {
             console.info('connect successful >> ', store);
             window.s = store;
+            console.log('geoinstance >> ', geoinstance);
             winstance.set_store(store);
-            geoinstance.set_store(store);
+            geoinstance.set({store:store});
             winstance.setError();
             store.on('disconnect', function() {
                 displayFail('disconnected from indx');

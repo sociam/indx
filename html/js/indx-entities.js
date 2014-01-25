@@ -9,14 +9,14 @@
 (function() {
 	angular
 		.module('indx')
-		.factory("entities", function(client, utils) {
+		.factory('entities', function(client, utils) {
 			var u = utils;
 
 			var to_obj = function(box, obj) {
 				var d = u.deferred();
 				if (obj instanceof client.Obj) { return u.dresolve(obj); }
 				if (!_.isObject(obj)) { return u.dresolve(obj); }
-				var uid = obj["@id"] || obj.id || u.guid();
+				var uid = obj['@id'] || obj.id || u.guid();
 
 				box.getObj(uid).then(function(model) {
 					var ds = _(obj).map(function(v,k) {
@@ -34,21 +34,37 @@
 						}
 						return dk.promise();
 					});
-					u.when(ds).then(function() { d.resolve(model); })
-					.fail(function() { 	d.reject("error setting properties"); });
+					u.when(ds).then(function() { d.resolve(model); }).fail(function() { d.reject('error setting properties'); });
 				});
 				return d.promise();
 			};
 
+			var slowQuery = function(box, properties) {
+				var d = u.deferred(), results = [];
+				box.getObj(box.getObjIDs()).then(function(objs) {
+					var hits = objs.filter(function(obj) { 
+						// console.log(" obj >> ", obj, obj.peek);
+						var results = _(properties).map(function(v,k) {
+							return obj && (obj.peek(k) == v || (obj.get(k) && obj.get(k).indexOf(v) >= 0));
+						});
+						return results.reduce(function(x,y) { return x && y; }, true);
+					});
+					d.resolve(hits);
+				}).fail(d.reject);
+				return d.promise();
+			};
+
 			var search = function(box, properties) {
-				return box.query(properties);
+				// query is broken :( so going to manually rig it.
+				return slowQuery(box,properties);
+				// return box.query(properties);
 			};
 
 			return {
 				toObj:to_obj,
 				locations: {
 					getAll: function(box, extras) {
-						return search(box, _(extras).chain().clone().extend({type:"Location"}).value());
+						return search(box, _(extras).chain().clone().extend({type:'Location'}).value());
 					},
 					getByLatLng: function(box, lat, lng) {
 						return this.getAll(box, { latitude: lat, longitude: lng } );
@@ -76,12 +92,12 @@
 				},
 				activities:{
 					getAll:function(box, extras) {
-						return search(box, _(extras).chain().clone().extend({type:"Activity"}));
+						return search(box, _(extras).chain().clone().extend({type:'Activity'}));
 					},
 					make1:function(box, activity_type, whom, from_t, to_t, distance, steps, calories, waypoints) {
 						var d = u.deferred(), args = _(arguments).toArray();
-						var id = ['activity', whom && whom.id || "", activity_type || '', from_t.valueOf().toString(), to_t.valueOf().toString()].join('-');
-						var argnames = [undefined, 'activity', 'whom', 'tstart', 'tend', 'distance', 'steps', "calories", "waypoints"],
+						var id = ['activity', whom && whom.id || '', activity_type || '', from_t.valueOf().toString(), to_t.valueOf().toString()].join('-');
+						var argnames = [undefined, 'activity', 'whom', 'tstart', 'tend', 'distance', 'steps', 'calories', 'waypoints'],
 							zipped = u.zip(argnames, args).filter(function(x) { return x[0]; }),
 							argset = u.dict(zipped);
 						box.getObj(id).then(function(model) { 
@@ -94,7 +110,7 @@
 				},
 				people:{
 					getAll:function(box, extras) {
-						return search(box, _(extras).chain().clone().extend({type:"Person"}));
+						return search(box, _(extras).chain().clone().extend({type:'Person'}));
 					},
 					getByName:function(box, name) {
 						var d = u.deferred();
@@ -110,7 +126,7 @@
 					getByEmail:function(box, name) { return this.getAll(box, { email:[name] }); },
 					make:function(box, id, givenname, surname, other_names, emails, twitter, facebook_url, linkedin_url, otherprops) {
 						var d = u.deferred(), args = _(arguments).toArray();
-						var argnames = [undefined, undefined, 'given_name', 'surname', 'name', 'email', 'twitter_id', 'facebook_id', "linkedin_id"],
+						var argnames = [undefined, undefined, 'given_name', 'surname', 'name', 'email', 'twitter_id', 'facebook_id', 'linkedin_id'],
 							zipped = u.zip(argnames, args).filter(function(x) { return x[0]; }),
 							argset = u.dict(zipped);
 						box.getObj(id).then(function(model) { 
@@ -124,7 +140,7 @@
 				},
 				documents:{
 					getWebPage:function(box, extras) {
-						return search(box, _(extras).chain().clone().extend({type:"Tweet"}));
+						return search(box, _(extras).chain().clone().extend({type:'Tweet'}));
 					},	
 					getTweet:undefined,
 					getInstagram:undefined,

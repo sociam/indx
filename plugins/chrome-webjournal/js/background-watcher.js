@@ -211,32 +211,33 @@
                 }
             }
         });
-    return {
-        init:function(store) {
-            if (!this.watcher) { 
-                this.watcher = new WindowWatcher({store:store});
+        return {
+            init:function(store) {
+                if (!this.watcher) { 
+                    this.watcher = new WindowWatcher({store:store});
+                }
+                return this.watcher;
+            },
+            set_store:function(store) { 
+                if (this.watcher) { 
+                    this.watcher.set('store', store); 
+                }
+            },
+            set_enabled:function(enabled) {
+                if (this.watcher) { this.watcher.set('enabled', enabled); }
+                return false;
+            },
+            get_enabled:function() {
+                if (this.watcher) { return this.watcher.get('enabled'); }
+                return false;
+            },
+            set_polling:function(polling) {
+                if (polling) { 
+                    this.watcher.start_polling();
+                } else {
+                   this.watcher.end_polling();
+                }
             }
-            return this.watcher;
-        },
-        set_store:function(store) { 
-            if (this.watcher) { 
-                this.watcher.set('store', store); 
-            }
-        },
-        set_enabled:function(enabled) {
-            if (this.watcher) { this.watcher.set('enabled', enabled); }
-            return false;
-        },
-        get_enabled:function() {
-            if (this.watcher) { return this.watcher.get('enabled'); }
-            return false;
-        },
-        set_polling:function(polling) {
-            if (polling) { 
-                this.watcher.start_polling();
-            } else {
-               this.watcher.end_polling();
-            }
-        }
-    };
+        };
+    });
 })();
