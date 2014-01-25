@@ -17,7 +17,7 @@
         chrome.browserAction.setBadgeText({text:s.toString()});
         chrome.browserAction.setBadgeBackgroundColor({color:'#00ffff'});
     };
-    var duration_secs = function(d) { return (d.get('end')[0].valueOf() - d.get('start')[0].valueOf()) / 1000.0;  };
+    var duration_secs = function(d) { return (d.peek('tend') && d.peek(tend).valueOf() - d.peek('tstart') && d.peek('tstart').valueOf()) / 1000.0;  };
     var getBoxName = function() { return localStorage.indx_box || 'lifelog'; };
 
     var connect = function(client,utils) {

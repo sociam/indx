@@ -5,27 +5,28 @@
     var OBJ_TYPE = localStorage.indx_webjournal_type || 'web-page-view';
     var OBJ_ID = localStorage.indx_webjournal_id || 'my-web-journal';
 
-    var app = angular.module('webjournal').factory('watcher', function(utils, client, entities, pluginUtils) {
+    var app = angular.module('webjournal').factory('watcher', function(utils, client, entities, pluginUtils, $injector) {
         var u = utils, pu = pluginUtils;
         // window watcher
         var WindowWatcher = Backbone.Model.extend({
             defaults: { enabled:true },
             initialize:function(attributes) {
-                console.log('initialise watcher --');
                 var this_ = this;
-                this.bind('user-action', function() {  if (this_.get('enabled')) { this_.handle_action.apply(this_, arguments); }  });
-
+                this.bind('user-action', function() {  
+                    // if (this_.get('enabled')) { 
+                        this_.handle_action.apply(this_, arguments); 
+                    // }  
+                });
                 // window created
                 // created new window, which has grabbed focus
                 chrome.windows.onCreated.addListener(function(w) {
                     if (w && w.id) {
-                        console.log('on created >> ', w);
+                        // console.log('window created >> ', w);
                         chrome.tabs.getSelected(w.id, function(tab) { this_.trigger('user-action', { url: tab.url, title: tab.title, favicon:tab.favIconUrl, tabid: tab.id, windowid:w.id });  });
                     }
                 });
                 // removed window, meaning focus lost
                 chrome.windows.onRemoved.addListener(function(window) { this_.trigger('user-action', undefined); });
-
                 // window focus changed
                 chrome.windows.onFocusChanged.addListener(function(w) {
                     if (w >= 0) {
@@ -51,15 +52,17 @@
                 this._init_history();
                 // todo: start it up on current focused window.
                 //  ---------------------------------------
-
                 this.on('connection-error', function(e) {  
                     pu.setErrorBadge(':(');
                     console.error('connection-error', e);
                     this_._attempt_reconnect();
                     // ignore.
                 });
+
+                window.watcher = this;
             },
             _attempt_reconnect:function() {
+                // very suspicious about this >_< .. TODO look at 
                 var this_ = this;
                 if (this_.box && !this_._timeout) { 
                     console.info('Attempting to refresh tokens ... ');
@@ -94,21 +97,21 @@
                 });
             },
             _get_history:function() { return this._history || [];  },
-            start_polling:function(interval) {
-                var this_ = this;
-                this.stop_polling();
-                this_.poll = setInterval(function() {
-                    if (this_.current_record !== undefined) {
-                        this_.change(this_.current_record.location);
-                    }
-                }, 1000);
-            },
-            stop_polling:function() {
-                if (this.poll) {
-                    clearInterval(this.poll);
-                    delete this.poll;
-                }
-            },
+            // start_polling:function(interval) {
+            //     var this_ = this;
+            //     this.stop_polling();
+            //     this_.poll = setInterval(function() {
+            //         if (this_.current_record !== undefined) {
+            //             this_.change(this_.current_record.location);
+            //         }
+            //     }, 1000);
+            // },
+            // stop_polling:function() {
+            //     if (this.poll) {
+            //         clearInterval(this.poll);
+            //         delete this.poll;
+            //     }
+            // },
             _load_box:function() {
                 var bid = pu.getBoxName(), store = this.get('store'), d = u.deferred(), this_ = this;
                 console.log('load box !! ', bid);
@@ -136,6 +139,7 @@
             getError: function() {  return this.get('error'); },
             setError: function(e) { this.set('error',e); this.trigger('error-update'); },
             set_store:function(store) {
+                var this_ = this;
                 console.log('set store > ', store, this.bid);
                 this.set({store:store});
                 if (!store) { 
@@ -144,42 +148,48 @@
                     return;
                 }
                 // store is defined
-                this._load_box();
+                this._load_box().fail(function(bail) { this_.trigger('connection-error', bail); });
             },
             handle_action:function(tabinfo) {
-                var url = tabinfo && tabinfo.url, title = tabinfo && tabinfo.title;
+                var url = tabinfo && tabinfo.url, title = tabinfo && tabinfo.title, this_ = this;
                 if (tabinfo.favicon) { console.log('FAVICON ', tabinfo.favicon); }
-                var this_ = this;
                 setTimeout(function() { 
                     var now = new Date();
-                    if (this_.current_record !== undefined) {
-                        this_.current_record.end = now;
-                        this_._record_updated(this_.current_record);
-                        if (url === this_.current_record.location) { 
-                            _(this_.current_record).extend(tabinfo);
-                            // we're done
-                            // console.info('just updated, returning');
-                            return;
-                        } else {
-                            // different now
-                            // console.log('new record!');
-                            delete this_.current_record;
-                            // this_.trigger('new-record', this_.current_record);
+                    if (this_.current_record !== undefined && url == this_.current_record.peek('what')) {
+                        console.info('updating existing >>>>>>>>>>> ');
+                        this_.current_record.set({tend:now});
+                        this_.current_record.set(tabinfo);
+                        this_._record_updated(this_.current_record).fail(function(bail) { 
+                            console.error('error on save >> ', bail);
+                            this_.trigger('connection-error', bail);
+                        });
+                    } else {
+                        // different now
+                        console.info('new record!');
+                        if (this_.current_record) {
+                            // finalise last one
+                            this_.current_record.set({tend:now});
+                            console.info('last record had ', this_.current_record.peek('tend') - this_.current_record.peek('tstart'));
+                            this_._record_updated(this_.current_record).fail(function(bail) { 
+                                console.error('error on save >> ', bail);
+                                this_.trigger('connection-error', bail);
+                            });
                         }
-                    }
-                    // go on to create a new record
-                    if (url !== undefined) {
-                        this_.current_record = this_.make_record(now, now, url, title, tabinfo).then(function(record) {
-                            this_.current_record = recprd;
+                        delete this_.current_record;
+                        this_.make_record(now, now, url, title, tabinfo).then(function(record) {
+                            this_.current_record = record;
+                            this_.trigger('new-record', record);
                         }).fail(function(x) { 
-                            console.error(' error creating record -- ');
+                            console.error(' error on _make_record >> ', x);
+                            this_.trigger('connection-error', x);
                         });
                     }
                 });
             },
             make_record:function(tstart, tend, url, title, tabinfo) {
                 // console.log('make record >> ', options, options.location);
-                return entities.activities.make(this.box, 
+                var geowatcher = $injector.get('geowatcher');
+                return entities.activities.make1(this.box, 
                     'browse',
                     this.whom,
                     tstart,
@@ -198,9 +208,7 @@
                 var this_ = this, box = this.box, store = this.get('store'), journal = this.get('journal'), 
                     current_record = this.current_record;
 
-                if (current_record) { 
-                    current_record.save();
-                } 
+                if (current_record) { return current_record.save(); } 
                 return u.dresolve();
 
                 // var signalerror = function(e) {  
@@ -256,14 +264,14 @@
             get_enabled:function() {
                 if (this.watcher) { return this.watcher.get('enabled'); }
                 return false;
-            },
-            set_polling:function(polling) {
-                if (polling) { 
-                    this.watcher.start_polling();
-                } else {
-                   this.watcher.end_polling();
-                }
             }
+            // set_polling:function(polling) {
+            //     if (polling) { 
+            //         this.watcher.start_polling();
+            //     } else {
+            //        this.watcher.end_polling();
+            //     }
+            // }
         };
     });
 })();
