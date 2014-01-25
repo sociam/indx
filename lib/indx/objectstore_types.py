@@ -99,20 +99,22 @@ class Graph:
 
         logging.debug("Objectstore Types, Graph, object at this depth: {0}".format(objs))
 
+        def next_obj():
+            if len(objs) == 0:
+                logging.debug("Objectstore Types, Graph, sending callback.")
+                return None
+            else:
+                id = objs.pop(0)
+                return id
 
         def loop(id):
-            loop_d = Deferred()
-
             logging.debug("Objectstore Types, Graph, loop")
 
-#            if len(objs) == 0:
-#                logging.debug("Objectstore Types, Graph, sending callback.")
-#                return_d.callback(True)
-#                return
+            if id is None:
+                return_d.callback(True)
+                return
 
-#            id = objs.pop(0)
             obj = self.get(id)
-
             logging.debug("Objectstore Types, Graph, loop to object: {0}".format(id))
 
             def expanded(expanded_graph):
@@ -157,14 +159,28 @@ class Graph:
                 store.get_latest_objs([id], render_json = False).addCallbacks(expanded, return_d.errback)
             else:
                 logging.debug("Objectstore Types, Graph, object not being expanded.")
-                loop_d.addCallback(expanded(None))
 #                expanded(None)
 
-            return loop_d
+            return next_obj()
 
         if depth >= 0:
-            for obj in objs:
-                return_d.addCallbacks(loop(obj), return_d.errback)
+            d = Deferred()
+            
+            first_obj = next_obj()
+ 
+            def process_list(obj):
+                if obj is None:
+                    return_d.callback(True)
+                    return
+                else:
+                    d.addCallback(loop)
+                    d.addCallback(process_list)
+                    return obj
+
+            d.addCallback(process_list)
+            d.callback(first_obj)
+
+#            return_d.callback(True) # for outside
 #            loop(None)
         else:
             return_d.callback(True)
