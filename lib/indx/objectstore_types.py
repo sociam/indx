@@ -99,20 +99,23 @@ class Graph:
 
         logging.debug("Objectstore Types, Graph, object at this depth: {0}".format(objs))
 
+        def next_obj():
+            if len(objs) == 0:
+                logging.debug("Objectstore Types, Graph, sending callback.")
+                return None
+            else:
+                id = objs.pop(0)
+                return id
 
         def loop(id):
+            logging.debug("Objectstore Types, Graph, loop")
             loop_d = Deferred()
 
-            logging.debug("Objectstore Types, Graph, loop")
+            if id is None:
+                return_d.callback(True)
+                return
 
-#            if len(objs) == 0:
-#                logging.debug("Objectstore Types, Graph, sending callback.")
-#                return_d.callback(True)
-#                return
-
-#            id = objs.pop(0)
             obj = self.get(id)
-
             logging.debug("Objectstore Types, Graph, loop to object: {0}".format(id))
 
             def expanded(expanded_graph):
@@ -146,7 +149,6 @@ class Graph:
                     self.expand_depth(subdepth, store, map(lambda x: x.id, subobjs)).addCallbacks(lambda empty: expanded_d.callback(True), return_d.errback)
                 else:
                     expanded_d.callback(True)
-                    #loop(None)
 
                 return expanded_d
 
@@ -154,20 +156,31 @@ class Graph:
             if obj.is_stub():
                 # expand this object
                 logging.debug("Objectstore Types, Graph, expanding object: {0}".format(id))
-                store.get_latest_objs([id], render_json = False).addCallbacks(expanded, return_d.errback)
+                store.get_latest_objs([id], render_json = False).addCallbacks(lambda empty: loop_d.callback(next_obj()), return_d.errback)
             else:
                 logging.debug("Objectstore Types, Graph, object not being expanded.")
-                loop_d.addCallback(expanded(None))
-#                expanded(None)
+                loop_d.callback(next_obj())
 
             return loop_d
 
         if depth >= 0:
-            for obj in objs:
-                return_d.addCallbacks(loop(obj), return_d.errback)
-#            loop(None)
+            d = Deferred() # this deferred will call the 'loop' function for us
+            first_obj = next_obj() # get the first object from the list
+ 
+            def process_list(obj):
+                if obj is None:
+                    return_d.callback(True) # if the list if empty, end the function
+                    return
+                else:
+                    d.addCallback(loop) # run the loop on this object, loop calls next_obj() to the next callback
+                    d.addCallback(process_list) # when loop finishes, the deferred will call process_list, with the next object from above
+                    return obj
+
+            d.addCallback(process_list) # make the deferred call the process_list function first
+            d.callback(first_obj) # pass the first_obj to the process_list function
+
         else:
-            return_d.callback(True)
+            return_d.callback(True) # don't do anything if depth is zero, end immediately
 
         return return_d
 
