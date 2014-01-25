@@ -15,9 +15,9 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging, uuid
+import logging
+import uuid
 import indx.indx_pg2 as database
-import indx.objectstore_async
 from indx.objectstore_async import ObjectStoreAsync
 from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
@@ -127,7 +127,6 @@ class TokenKeeper:
         for box, token in self.tokens.items():
             logging.debug("Closing database connections in box {0}".format(box))
             
-
     def get(self, tid):
         """ Used to get a token by the BaseHandler, and whenever a
             handler needs to token (usually because it wants to access
@@ -136,7 +135,28 @@ class TokenKeeper:
             tid -- The ID of the Token to get, it must have already been
                 created, usually by the get_token call to the AuthHandler.
         """
-        return self.tokens.get(tid)
+        return_d = Deferred()
+
+        if self.tokens.get(tid) is not None:
+            # already in cache, return existing
+            return_d.callback(self.tokens.get(tid))
+            return return_d
+
+        # otherwise check the db
+        def token_cb(token_tuple):
+            if token_tuple is None:
+                return_d.callback(None)
+                return
+
+            username, password, boxid, appid, origin, clientip, server_id = token_tuple
+            token = Token(self.db, username, password, boxid, appid, origin, clientip, server_id)
+
+            self.add(token)
+            return_d.callback(token)
+            return
+
+        self.db.get_token(tid).addCallbacks(token_cb, return_d.errback)
+        return return_d
 
     def add(self,token):
         self.tokens[token.id] = token
@@ -144,8 +164,15 @@ class TokenKeeper:
 
     def new(self,username,password,boxid,appid,origin,clientip, server_id):
         logging.debug("Token Keeper - new token for: {0} to {1}".format(username, boxid))
+        return_d = Deferred()
+
         token = Token(self.db,username,password,boxid,appid,origin,clientip, server_id)
         self.add(token)
-        return token
+
+        def saved_cb(empty):
+            return_d.callback(token)
+
+        self.db.save_token(token).addCallbacks(saved_cb, return_d.errback)
+        return return_d
 
 

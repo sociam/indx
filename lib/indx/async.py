@@ -30,21 +30,27 @@ class IndxAsync:
     def receive(self, frame):
         """ Send data here when it is received from the real transport. """
         try:
+            def err_cb(failure):
+                logging.error("WebSocketsHandler receive, err_cb: {0}".format(failure))
+                
             data = json.loads(frame)
             if data['action'] == "auth":
-                try:
-                    token = self.tokens.get(data['token'])
-                    if token is None:
+
+                def token_cb(token):
+                    try:    
+                        if token is None:
+                            self.send401()
+                            return
+                        logging.debug("WebSocketsHandler Auth by Token {0} successful.".format(data['token']))
+                        self.token = token
+                        self.send200()
+                        return
+                    except Exception as e:
+                        logging.error("WebSocketsHandler frameReceived, token error: {0}".format(e))
                         self.send401()
                         return
-                    logging.debug("WebSocketsHandler Auth by Token {0} successful.".format(data['token']))
-                    self.token = token
-                    self.send200()
-                    return
-                except Exception as e:
-                    logging.error("WebSocketsHandler frameReceived, token error: {0}".format(e))
-                    self.send401()
-                    return
+
+                self.tokens.get(data['token']).addCallbacks(token_cb, err_cb)
             elif data['action'] == "diff":
                 # turn on/off diff listening
                 if data['operation'] == "start":

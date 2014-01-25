@@ -124,39 +124,52 @@ class BaseHandler(Resource):
             req_acl = subhandler['require_acl']
             logging.debug("BaseHandler _matches_acl_requirements got req_acl: {0}".format(req_acl))
 
-            username = self.get_token(request).username
-#            wbSession = self.get_session(request)
-            user = IndxUser(self.database, username)
+            def token_cb(token):
+                username = token.username
+    #            wbSession = self.get_session(request)
+                user = IndxUser(self.database, username)
 
-            force_get = False
-            if force_get in subhandler:
-                force_get = subhandler['force_get']
+                force_get = False
+                if force_get in subhandler:
+                    force_get = subhandler['force_get']
 
-            def acl_cb(acl):
-                logging.debug("BaseHandler _matches_acl_requirements got acl: {0}".format(acl))
-                permissions = acl['acl']
+                def acl_cb(acl):
+                    logging.debug("BaseHandler _matches_acl_requirements got acl: {0}".format(acl))
+                    permissions = acl['acl']
 
-                for key in req_acl:
-                    if key not in permissions: # key (e.g. "read", "write", "admin") must be in the user's acl, otherwise Fail
-                        return_d.callback(False)
-                        return return_d
+                    for key in req_acl:
+                        if key not in permissions: # key (e.g. "read", "write", "admin") must be in the user's acl, otherwise Fail
+                            return_d.callback(False)
+                            return return_d
 
-                    if not permissions[key]: # if the key isn't True, then fail
-                        return_d.callback(False)
-                        return return_d
-                
-                # no failures, pass.
-                return_d.callback(True)
-                return return_d
+                        if not permissions[key]: # if the key isn't True, then fail
+                            return_d.callback(False)
+                            return return_d
+                    
+                    # no failures, pass.
+                    return_d.callback(True)
+                    return return_d
 
-            user.get_acl(self.get_request_box(request, force_get = force_get)).addCallbacks(acl_cb, return_d.errback)
+                user.get_acl(self.get_request_box(request, force_get = force_get)).addCallbacks(acl_cb, return_d.errback)
+
+            self.get_token(request).addCallbacks(token_cb, return_d.errback)
 
         return return_d
 
 
     def get_token(self, request, force_get=False):
+        return_d = Deferred()
+
         tid = self.get_arg(request,'token', force_get = force_get)
-        return self.webserver.tokens.get(tid) if tid else None
+        if tid is None:
+            return_d.callback(None)
+            return return_d
+
+        def token_cb(token):
+            return_d.callback(token) # can callback None, but that's OK.
+
+        self.webserver.tokens.get(tid).addCallbacks(token_cb, return_d.errback)
+        return return_d
 
     def get_origin(self,request):
         return request.getHeader('origin')
@@ -173,15 +186,22 @@ class BaseHandler(Resource):
         return self.get_arg(request,'app', force_get=force_get)
 
     # revision to protocol
-    def _matches_token_requirements(self, request, subhandler):
+    def _matches_token_requirements(self, request, subhandler, token_true, token_false):
         if not subhandler['require_token']: return True
         if 'force_get' in subhandler:
             force_get = subhandler['force_get']
         else:
             force_get = False
+
+        if force_get:
+            token = token_true
+        else:
+            token = token_false
+
         logging.debug("_matches_token_requirements, force_get: {0}".format(force_get))
 
-        token,boxid,appid = self.get_token(request, force_get=force_get), self.get_request_box(request, force_get=force_get), self.get_request_app(request, force_get=force_get)
+        # token,boxid,appid = self.get_token(request, force_get=force_get), self.get_request_box(request, force_get=force_get), self.get_request_app(request, force_get=force_get)
+        boxid,appid = self.get_request_box(request, force_get=force_get), self.get_request_app(request, force_get=force_get)
 
         logging.debug("_matches_token_requirements, token: {0}, boxid: {1}, appid: {2}".format(token, boxid, appid))
 
@@ -204,42 +224,64 @@ class BaseHandler(Resource):
         """ Twisted resource handler."""
         logging.debug("Calling base render() - " + '/'.join(request.path.split("/")) + " " + repr( self.__class__)  + ' _ subhandlers::' + repr(len(self.subhandlers)))
         try:
+            def err_cb(failure):
+                logging.error("BaseHandler render(), error: {0}".format(failure))
+
             self.set_cors_headers(request)
             matching_handlers = filter(lambda h: self._matches_request(request,h), self.subhandlers)
             logging.debug('Matching handlers %d' % len(matching_handlers))
             matching_handlers.sort(key=lambda h: self._get_best_content_type_match_score(request,h),reverse=True)
             matching_auth_hs = filter(lambda h: self._matches_auth_requirements(request,h), matching_handlers)
             logging.debug('Post-auth matching handlers: {0}'.format(matching_auth_hs))
-            matching_token_hs = filter(lambda h: self._matches_token_requirements(request,h), matching_auth_hs)
-            logging.debug('Post-token matching handlers %d' % len(matching_token_hs))
 
-            matching_acl_hs = []
-            def acl_cb(acl, h):
+            # TODO re implement so that we don't request a token twice pre-emptively
+            def token_true_cb(token_true):
+                def token_false_cb(token_false):
 
-                if acl is not None:
-                    # process acl
-                    if acl:
-                        matching_acl_hs.append(h)
+                    matching_token_hs = filter(lambda h: self._matches_token_requirements(request,h, token_true, token_false), matching_auth_hs)
+                    logging.debug('Post-token matching handlers %d' % len(matching_token_hs))
 
-                if len(matching_token_hs) > 0:
-                    h2 = matching_token_hs.pop(0)
-                    self._matches_acl_requirements(request, h2).addCallbacks(lambda acl2: acl_cb(acl2, h2), lambda failure: self.return_internal_error(request))
-                else:
-                    # processed them all, run post-filter
-                    logging.debug('Post-acl matching handlers %d' % len(matching_acl_hs))
-                    if len(matching_acl_hs) > 0:
-                        subhandler = matching_acl_hs[0]
-                        logging.debug('Using handler %s' % self.__class__.__name__ + " " + matching_acl_hs[0]["prefix"])
-                        if subhandler['content-type']:
-                            request.setHeader('Content-Type', subhandler['content-type'])
-                        subhandler['handler'](self,request)
-                        return
-                    else:
-                        logging.debug('Returning not found ')
-                        return self.return_not_found(request)
-                    
-            acl_cb(None, None)
-#            matching_acl_hs = filter(lambda h: self._matches_acl_requirements(request,h), matching_token_hs)
+                    matching_acl_hs = []
+                    def acl_cb(acl, h):
+
+                        if acl is not None:
+                            # process acl
+                            if acl:
+                                matching_acl_hs.append(h)
+
+                        if len(matching_token_hs) > 0:
+                            h2 = matching_token_hs.pop(0)
+                            self._matches_acl_requirements(request, h2).addCallbacks(lambda acl2: acl_cb(acl2, h2), lambda failure: self.return_internal_error(request))
+                        else:
+                            # processed them all, run post-filter
+                            logging.debug('Post-acl matching handlers %d' % len(matching_acl_hs))
+                            if len(matching_acl_hs) > 0:
+                                subhandler = matching_acl_hs[0]
+                                logging.debug('Using handler %s' % self.__class__.__name__ + " " + matching_acl_hs[0]["prefix"])
+                                if subhandler['content-type']:
+                                    request.setHeader('Content-Type', subhandler['content-type'])
+
+                                if 'force_get' in subhandler:
+                                    force_get = subhandler['force_get']
+                                else:
+                                    force_get = False
+
+                                if force_get:
+                                    token = token_true
+                                else:
+                                    token = token_false
+
+                                subhandler['handler'](self, request, token)
+                                return
+                            else:
+                                logging.debug('Returning not found ')
+                                return self.return_not_found(request)
+                            
+                    acl_cb(None, None)
+    #            matching_acl_hs = filter(lambda h: self._matches_acl_requirements(request,h), matching_token_hs)
+
+                self.get_token(request, force_get = False).addCallbacks(token_false_cb, err_cb)
+            self.get_token(request, force_get = True).addCallbacks(token_true_cb, err_cb)
             return NOT_DONE_YET
         except ResponseOverride as roe:
             self._respond(request,roe.status,roe.reason)

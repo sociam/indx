@@ -144,9 +144,36 @@
                 ]
             },
             "20140103-ADD_BOX_TO_KEYSTORE": {
-                "next-version": "",
+                "next-version": "20140125-ADD_TOKEN_TABLE",
                 "sql": [
                     "ALTER TABLE tbl_keystore ADD COLUMN box text NULL;"
+                ]
+            },
+            "20140125-ADD_TOKEN_TABLE": {
+                "next-version": "20140125-ADD_CREATED_TO_TOKEN",
+                "sql": [
+                    "CREATE TABLE tbl_tokens",
+                    "(",
+                    "  id_token serial NOT NULL,",
+                    "  token_id text NOT NULL,",
+                    "  username text NOT NULL,",
+                    "  password_encrypted text NOT NULL,",
+                    "  boxid text NOT NULL,",
+                    "  appid text NOT NULL,",
+                    "  origin text NOT NULL,",
+                    "  clientip text NOT NULL,",
+                    "  server_id text NOT NULL,",
+                    "  CONSTRAINT pk_id_token PRIMARY KEY (id_token)",
+                    ")",
+                    "WITH (",
+                    "    OIDS=FALSE",
+                    ");"
+                ]
+            },
+            "20140125-ADD_CREATED_TO_TOKEN": {
+                "next-version": "",
+                "sql": [
+                    "ALTER TABLE tbl_tokens ADD COLUMN created timestamp NOT NULL;"
                 ]
             }
         }
