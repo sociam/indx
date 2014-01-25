@@ -45,6 +45,7 @@
 					window._objs = objs;
 					var hits = objs.filter(function(obj) { 
 						var results = _(properties).map(function(v,k) {
+							console.info(obj.id, ".peek(",k,") => ", obj.peek(k), obj.attributes && obj.attributes[k], obj.attributes, " == ", v);
 							return obj && (obj.peek(k) == v || (obj.get(k) && (obj.get(k).indexOf(v) >= 0)));
 						});
 						return results.reduce(function(x,y) { return x && y; }, true);
@@ -60,14 +61,32 @@
 				// return box.query(properties);
 			};
 
+			var LATLNG_THRESH = 0.05;
+
 			return {
 				toObj:to_obj,
 				locations: {
 					getAll: function(box, extras) {
-						return search(box, _(extras).chain().clone().extend({type:'location'}).value());
+						return search(box, _(extras || {}).chain().clone().extend({'type':'location'}).value());
 					},
 					getByLatLng: function(box, lat, lng) {
-						return this.getAll(box, { latitude: lat, longitude: lng } );
+						var d = u.deferred();						
+						this.getAll(box).then(function(results) { 
+							console.log('results >> ', results);
+							var dist = {}, resD = {};
+							results.map(function(result) {
+								if (!(result.peek('latitude') && result.peek('longitude') )) { return; }
+								dist[result.id] = Math.sqrt(Math.pow(result.peek('latitude') - lat,2) + Math.pow(result.peek('longitude') - lng, 2));
+								resD[result.id] = result;
+							});
+							var kbyD = _(dist).keys();
+							kbyD.sort(function(a,b) { return dist[a] - dist[b]; });
+							console.log('kbyD > ', kbyD);
+							var hits = kbyD.filter(function(k) { return dist[k] < LATLNG_THRESH; }).map(function(k) { return resD[k]; });
+							console.info("hits >> ", hits);
+							d.resolve(hits);
+						});
+						return d.promise();
 					},
 					getByMovesID: function(box, movesid) {
 						return this.getAll(box, { moves_id: movesid });
@@ -80,11 +99,12 @@
 						var argnames = [undefined, undefined, 'location_type', 'latitude', 'longitude', 'moves_id'],
 							zipped = u.zip(argnames, args).filter(function(x) { return x[0]; }),
 							argset = u.dict(zipped);
-						var id = ['location', name || '', location_type && location_type !== 'unknown' ? location_type : '' , moves_id ? moves_id : '', latitude.toString(), longitude.toString() ].join('-');
+						var id = 'location-'+u.guid(); // ['location', name || '', location_type && location_type !== 'unknown' ? location_type : '' , moves_id ? moves_id : '', latitude.toString(), longitude.toString() ].join('-');
 						box.getObj(id).then(function(model) {
 							model.set(argset);
 							if (otherprops && _(otherprops).isObject()) { model.set(otherprops); }
-							model.set({type:'location'});
+							model.set({'type':'location'});
+							console.log("SAVING LOCATION >>>>>>>>>>>>>>> ", model);
 							model.save().then(function() { d.resolve(model); }).fail(d.reject);
 						});
 						return d.promise();
