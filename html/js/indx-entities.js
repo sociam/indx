@@ -57,8 +57,8 @@
 
 			var search = function(box, properties) {
 				// query is broken :( so going to manually rig it.
-				return slowQuery(box,properties);
-				// return box.query(properties);
+				//return slowQuery(box,properties);
+				return box.query(properties);
 			};
 
 			var LATLNG_THRESH = 0.05;
