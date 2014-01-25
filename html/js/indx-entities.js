@@ -1,4 +1,4 @@
-	/* jshint undef: true, strict:false, trailing:false, unused:false */
+/* jshint undef: true, strict:false, trailing:false, unused:false */
 /* global Backbone, angular, jQuery, _ */
 
 /*
@@ -114,7 +114,7 @@
 					getAll:function(box, extras) {
 						return search(box, _(extras).chain().clone().extend({type:'Activity'}));
 					},
-					make1:function(box, activity_type, whom, from_t, to_t, distance, steps, calories, waypoints) {
+					make1:function(box, activity_type, whom, from_t, to_t, distance, steps, calories, waypoints, otherprops) {
 						var d = u.deferred(), args = _(arguments).toArray();
 						var id = ['activity', whom && whom.id || '', activity_type || '', from_t.valueOf().toString(), to_t.valueOf().toString()].join('-');
 						var argnames = [undefined, 'activity', 'whom', 'tstart', 'tend', 'distance', 'steps', 'calories', 'waypoints'],
@@ -123,6 +123,7 @@
 						box.getObj(id).then(function(model) { 
 							model.set(argset);
 							model.set({type:'activity'});
+							model.set(otherprops);
 							model.save().then(function() { d.resolve(model); }).fail(d.reject);
 						});
 						return d.promise();

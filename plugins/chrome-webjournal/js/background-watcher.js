@@ -5,7 +5,7 @@
     var OBJ_TYPE = localStorage.indx_webjournal_type || 'web-page-view';
     var OBJ_ID = localStorage.indx_webjournal_id || 'my-web-journal';
 
-    var app = angular.module('webjournal').factory('watcher', function(utils, client, pluginUtils) {
+    var app = angular.module('webjournal').factory('watcher', function(utils, client, entities, pluginUtils) {
         var u = utils, pu = pluginUtils;
         // window watcher
         var WindowWatcher = Backbone.Model.extend({
@@ -13,7 +13,6 @@
             initialize:function(attributes) {
                 console.log('initialise watcher --');
                 var this_ = this;
-                this.data = [];
                 this.bind('user-action', function() {  if (this_.get('enabled')) { this_.handle_action.apply(this_, arguments); }  });
 
                 // window created
@@ -115,12 +114,18 @@
                 console.log('load box !! ', bid);
                 if (bid && store) {
                     store.getBox(bid).then(function(box) { 
+                        var dbox = u.deferred(), dwho = u.deferred();
                         this_.box = box;
                         box.getObj(OBJ_ID).then(function(obj) {
                             obj.save(); // make sure journal exists.
                             this_.set('journal', obj);
-                            d.resolve(box); 
+                            dbox.resolve(box); 
                         }).fail(d.reject); 
+                        box.getObj(store.get('username')).then(function(userobj) {
+                            this_.whom = userobj;
+                            dwho.resolve(userobj);
+                        });                        
+                        jQuery.when(dbox, dwho).then(d.resolve).fail(d.reject);
                     }).fail(d.reject);
                 } else { 
                     if (!bid) { return d.reject('no box specified'); } 
@@ -164,51 +169,72 @@
                     }
                     // go on to create a new record
                     if (url !== undefined) {
-                        this_.current_record = this_.make_record(_({start: now, end:now, to: url, location: url, title:title}).extend(tabinfo));
-                        this_.data.push(this_.current_record);
-                        this_._record_updated(this_.current_record);
+                        this_.current_record = this_.make_record(now, now, url, title, tabinfo).then(function(record) {
+                            this_.current_record = recprd;
+                        }).fail(function(x) { 
+                            console.error(' error creating record -- ');
+                        });
                     }
                 });
             },
-            make_record:function(options) {
+            make_record:function(tstart, tend, url, title, tabinfo) {
                 // console.log('make record >> ', options, options.location);
-                return _({}).extend(options, {id:utils.guid(), type:OBJ_TYPE});
+                return entities.activities.make(this.box, 
+                    'browse',
+                    this.whom,
+                    tstart,
+                    tend,
+                    undefined, undefined, undefined,
+                    geowatcher.watcher && geowatcher.watcher.get('current_position'), 
+                    _({ 
+                        what: url,
+                        title: title
+                    }).extend(tabinfo)
+                );
             },
-            _record_updated:function(current_record) {
+            _record_updated:function() {
                 // console.log('record updated ... box ', this.box, current_record);
-                var this_ = this, box = this.box, store = this.get('store'), journal = this.get('journal'), data = this.data.concat([current_record]);
-                var signalerror = function(e) {  
-                    this_.trigger('connection-error', e);   
-                };
-                if (store && box && journal && data.length > 0) {
-                    var _rec_map = {};
-                    var ids = data.map(function(rec) { 
-                        var id = 'webjournal-log-'+rec.id;
-                        _rec_map[id] = rec;
-                        return id;
-                    });
-                    ids = utils.uniqstr(ids);
-                    box.getObj(ids).then(function(rec_objs) {
-                        rec_objs.map(function(rec_obj) {
-                            var src = _({}).extend(_rec_map[rec_obj.id], {collection:journal});
-                            delete src.id;
-                            rec_obj.set(src);
-                            rec_obj.save().fail(function(error) { 
-                                // might be obsolete
-                                // todo: do something more sensible
-                                if (error.status === 409) { 
-                                    console.error('got obsolete call .. '); 
-                                    return setTimeout(function() { rec_obj.save().fail(signalerror); }, 1000); 
-                                }
-                                console.error('saving error :: some other error ', error);
-                                signalerror(error);
-                            });
-                        });
-                        this_.trigger('new-entries', rec_objs);
-                    }).fail(signalerror); 
-                    //  journal.save().fail(signalerror);
-                    this.data = this.data.slice(data.length);
-                }
+
+                var this_ = this, box = this.box, store = this.get('store'), journal = this.get('journal'), 
+                    current_record = this.current_record;
+
+                if (current_record) { 
+                    current_record.save();
+                } 
+                return u.dresolve();
+
+                // var signalerror = function(e) {  
+                //     this_.trigger('connection-error', e);   
+                // };
+                // if (store && box && journal && data.length > 0) {
+                //     var _rec_map = {};
+                //     var ids = data.map(function(rec) { 
+                //         var id = 'webjournal-log-'+rec.id;
+                //         _rec_map[id] = rec;
+                //         return id;
+                //     });
+                //     ids = utils.uniqstr(ids);
+                //     box.getObj(ids).then(function(rec_objs) {
+                //         rec_objs.map(function(rec_obj) {
+                //             var src = _({}).extend(_rec_map[rec_obj.id], {collection:journal});
+                //             delete src.id;
+                //             rec_obj.set(src);
+                //             rec_obj.save().fail(function(error) { 
+                //                 // might be obsolete
+                //                 // todo: do something more sensible
+                //                 if (error.status === 409) { 
+                //                     console.error('got obsolete call .. '); 
+                //                     return setTimeout(function() { rec_obj.save().fail(signalerror); }, 1000); 
+                //                 }
+                //                 console.error('saving error :: some other error ', error);
+                //                 signalerror(error);
+                //             });
+                //         });
+                //         this_.trigger('new-entries', rec_objs);
+                //     }).fail(signalerror); 
+                //     //  journal.save().fail(signalerror);
+                //     this.data = this.data.slice(data.length);
+                // }
             }
         });
         return {
