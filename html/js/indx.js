@@ -200,6 +200,8 @@ angular
 			},
 			_isFetched: function() { return this._fetched || false; },
 			_setFetched : function() { this._fetched = true; },
+			/// @return {String} - ID of this object
+			/// returns the id of this object
 			getID:function() { return this.id;	},
 			_valueToArray:function(k,v) {
 				if (k === '@id') { return v; }
@@ -207,6 +209,44 @@ angular
 					return [v];
 				}
 				return v;
+			},
+			/// @arg {String} p - Property to fetch
+			/// @return {value || undefined} - Returns this.get('property')[0] if the property exists
+			/// returns the id of this object			
+			getFirst:function(p) { return this.get(p,[])[0]; },
+			peek: function(p) { return this.get(p,[])[0]; },
+			// @arg {String} p - Property to push on to
+			// @arg {value} v - Value to push onto end of p
+			// Pushes v onto array of p if exists otherwise creates new array
+			push:function(p,v) { 
+				var ov = this.get(p);
+				if (ov !== undefined) {
+					ov.push(v);
+					return this.trigger('change:'+p,ov);
+				}
+				this.set(p,[v]);
+			},
+			// @arg {String} p - Property to push on to
+			// @arg {value} v - Value to push onto end of p
+			// Pops last element off of property p
+			pop:function(p) { 
+				var result = this.get(p,[]).pop();
+				this.trigger('change:'+p,this.get(p));
+				return result;
+			},
+			extend:function(p,arr) {
+				u.assert(_.isArray(arr), "array needs to be an array");
+				return this.set(p, this.get(p, []).concat(arr));
+			},
+			length:function(p) {
+				return this.get(p,[]).length;
+			},
+			indexOf:function(p,v) {
+				return this.get(p, []).indexOf(v);
+			},
+			// gets or returns default v
+			get:function(p,defaultv) { 
+				return Backbone.Model.prototype.get.apply(this,[p]) || defaultv;		
 			},
 			_allValuesToArrays:function(o) {
 				if (!_(o).isObject()) { utils.error(' not an object', o); return o; }
@@ -1050,6 +1090,9 @@ angular
 				var c = this._create(boxid), this_ = this;
 				u.debug('creating ', boxid);
 				return c.save().pipe(function() { return this_.getBox(boxid); });
+			},
+			createUser : function(username,password) {
+				return this._ajax('POST', 'admin/create_user', { username: username, password: password });
 			},
 			/// Called by apps to see if we are currently authenticated; this is the preferred
 			/// method to do so over login()/loginOpenID(), which potentially destroys/resets cookies.

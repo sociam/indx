@@ -1,0 +1,17 @@
+{
+	"name": "profile manager",
+	"version": 0.1,
+	"type":["app"],
+	"description": "profile manager",
+	"on_boot": 0,
+	"configpanel":"html/index.html",
+	"icons": { 
+		"128": "img/person_icon.png"
+	},
+	"author": [
+		{
+			"name": "eMax",
+			"email":"max@hip.cat"
+		}
+	]
+}

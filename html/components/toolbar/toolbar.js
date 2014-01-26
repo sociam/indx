@@ -8,12 +8,13 @@ angular
 			templateUrl:'/components/toolbar/toolbar.html',
 			link:function($scope, $element) {
 				$scope.el = $element;
-				$element.find('.login-dialog').on('shown.bs.modal', function() {
-					$element.find('.login-username').focus();
-				});
-				$element.find('.logout-dialog').on('shown.bs.modal', function() { 
-					$element.find('.logout-ok').focus();
-				});
+				// not doing anything
+				// $element.find('.login-dialog').on('shown.bs.modal', function() {
+				// 	$element.find('.login-username').focus();
+				// });
+				// $element.find('.logout-dialog').on('shown.bs.modal', function() { 
+				// 	$element.find('.logout-ok').focus();
+				// });
 			},
 			scope: { box:"=boxVar", user:"=usernameVar" },
 			controller: function($scope, client, backbone, utils) {
@@ -39,6 +40,7 @@ angular
 					delete localStorage["indx__lastUsedBox::" + document.location.toString()];
 				};
 				var setLastUsedBox = function(bid) {
+					// console.log('setting lsat used box ', bid);
 					localStorage["indx__lastUsedBox::" + document.location.toString()] = bid;
 				};
 				
@@ -115,9 +117,11 @@ angular
 					var this_ = this, d = u.deferred();
 					$scope.incrLoading();
 					getStore().getBoxList().then(function(boxlist) {
-						apply(function() {
+						sa(function() {
 							$scope.boxlist = boxlist.concat("create new box");
+							console.log('last used box ', getLastUsedBox(), $scope.box, $scope.boxlist.length );
 							if ($scope.box === undefined && $scope.boxlist.length > 1 && getLastUsedBox()) {
+
 								if ($scope.boxlist.indexOf( getLastUsedBox() ) >= 0) {
 									$scope.cbBoxSelected(getLastUsedBox());
 								} else {
@@ -195,6 +199,7 @@ angular
 					});
 				};		
 				$scope.cbBoxSelected = function(bid) {
+					console.log('cb box selected ', bid);
 					if (bid === $scope.boxlist[$scope.boxlist.length-1]) {
 						//console.log("create new box selected ");
 						$scope.cbNewBoxClicked(); // TODO get newBid from user

@@ -126,22 +126,26 @@ class BoxHandler(BaseHandler):
             BoxHandler.log(logging.ERROR, "BoxHandler link_remote_box err_cb: {0}".format(failure), extra = {"request": request, "token": token})
             return self.return_internal_error(request)
 
-        remote_address = self.get_arg(request, "remote_address")
-        remote_box = self.get_arg(request, "remote_box")
-        remote_token = self.get_arg(request, "remote_token")
+        def setacl_cb(empty):
+            remote_address = self.get_arg(request, "remote_address")
+            remote_box = self.get_arg(request, "remote_box")
+            remote_token = self.get_arg(request, "remote_token")
 
-        if remote_address is None or remote_box is None or remote_token is None:
-            BoxHandler.log(logging.ERROR, "BoxHandler link_remote_box: remote_address, remote_box or remote_token was missing.", extra = {"request": request, "token": token})
-            return self.remote_bad_request(request, "remote_address, remote_box or remote_token was missing.")
+            if remote_address is None or remote_box is None or remote_token is None:
+                BoxHandler.log(logging.ERROR, "BoxHandler link_remote_box: remote_address, remote_box or remote_token was missing.", extra = {"request": request, "token": token})
+                return self.remote_bad_request(request, "remote_address, remote_box or remote_token was missing.")
 
-        def synced_cb(indxsync):
-            def linked_cb(empty):
-                self.return_created(request)
+            def synced_cb(indxsync):
+                def linked_cb(empty):
+                    self.return_created(request)
 
-            indxsync.link_remote_box(remote_address, remote_box, remote_token).addCallbacks(linked_cb, err_cb)
+                indxsync.link_remote_box(token.username, remote_address, remote_box, remote_token).addCallbacks(linked_cb, err_cb)
 
-        self.webserver.sync_box(self.boxid).addCallbacks(synced_cb, err_cb)
-       
+            self.webserver.sync_box(token.boxid).addCallbacks(synced_cb, err_cb)
+      
+        # give read-write access to the @indx user so that the webserver can connect with the user being present
+        user = IndxUser(self.database, token.username)
+        user.set_acl(token.boxid, "@indx", {"read": True, "write": True, "control": False, "owner": False}).addCallbacks(setacl_cb, lambda failure: self.return_internal_error(request))
 
     def generate_new_key(self, request):
         """ Generate a new key and store it in the keystore. Return the public and public-hash parts of the key. """

@@ -399,7 +399,7 @@ class IndxClient:
         """ Link a remote box with a local box. """
         self._debug("Called API: link_remote_box, on remote_address '{0}', remote_box '{1}', remote_token '{2}'".format(remote_address, remote_box, remote_token))
 
-        url = "{0}/query".format(self.base)
+        url = "{0}/link_remote_box".format(self.base)
         return self.client.get(url, {'remote_address': remote_address, 'remote_box': remote_box, 'remote_token': remote_token})
 
 

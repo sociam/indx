@@ -40,7 +40,7 @@ angular
 		var _get_facebook_token_config_from_service = function() {
 			console.info('trying to run _get_facebook_token_config_from_service')
 			s._ajax('GET', 'apps/service_facebook/api/get_config').then(function(x) { 
-				var config = JSON.parse(x.config);
+				var config = x.config;
 				console.info('Success in get_facebook_token_config_from_service, got config of', config)
 				// simple stuff
 				sa(function() { 
@@ -64,7 +64,7 @@ angular
 		var _get_config_from_service = function() {
 			console.info('trying to run _get_config_from_service')
 			s._ajax('GET', 'apps/service_facebook/api/get_config').then(function(x) { 
-				var config = JSON.parse(x.config);
+				var config = x.config;
 				console.info('Success in _get_config_from_service, got config of', config)
 				// simple stuff
 				sa(function() { 
@@ -154,6 +154,20 @@ angular
 	                    };break;
 	                    //need to get an extended token
                     case 'not_authorized':
+                        FB.login(function (response) {
+                            if (response.authResponse) {
+								console.info('i am connected to facebook fully (after an unknown)', response);
+								$scope.facebook_auth_status = "Short Token Authorized"
+								if($scope.setFacebookTokenDetails(response)){
+			                    	if($scope.setConfig($scope.config)){
+			                    		console.info('Trying to get long token now recieved and added short token config');
+			                    		_get_facebook_token_config_from_service();
+			                    	};
+			                    };
+                            } else {
+                                $rootScope.$broadcast('fb_login_failed');
+                            }
+                        },{scope: 'read_stream,read_mailbox,read_friendlists,publish_stream'})
                     case 'unknown':
                         FB.login(function (response) {
                             if (response.authResponse) {
@@ -168,7 +182,7 @@ angular
                             } else {
                                 $rootScope.$broadcast('fb_login_failed');
                             }
-                        }); break;
+                        },{scope: 'read_stream,read_mailbox,read_friendlists,publish_stream'});
                     default:
                         FB.login(function (response) {
                             if (response.authResponse) {
@@ -176,7 +190,7 @@ angular
                             } else {
 								console.info('login failed');
                             }
-                        });
+                        },{scope: 'read_stream,read_mailbox,read_friendlists,publish_stream'});
 	                
 	            };
 	     };
