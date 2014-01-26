@@ -6,11 +6,13 @@
 	</ul>
 
 <div class="tab-pane" ng-if="pane === 'overview'">
-	<img ng-src="{{ manifest.get('icons')['128'] }}" class="icon">
-	<h1>{{ manifest.get('name') }}</h1>
-	<p class="description">
-		{{ manifest.get('description') }}
-	</p>
+	<div class="header">
+		<img ng-src="{{ manifest.get('icons')['128'] }}" class="icon">
+		<h1>{{ manifest.get('name') }}</h1>
+		<p class="description">
+			{{ manifest.get('description') }}
+		</p>
+	</div>
 	<table class="table">
 		<tbody>
 			<tr><th>ID</th><td>{{ manifest.id }}</td></tr>
