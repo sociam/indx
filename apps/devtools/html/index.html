@@ -11,15 +11,9 @@
   </head>
   <body ng-app="devtools" ng-cloak>
     <toolbar box-var='selectedBox' username-var='selectedUser'></toolbar>
-	<nav class="navbar navbar-default navbar-static-top nav-mini" role="navigation">
-		<div class="navbar-header">
-			<a class="navbar-brand" href="#">Developer Tools</a>
-		</div>
-		<ul class="nav navbar-nav">
-			<li class="active"><a href="#">Applications</a></li>
-			<li><a href="#">Running tests</a></li>
-		</ul>
-	</nav>
+	<ol class="breadcrumb" ng-if="breadcrumbs.length > 1">
+		<li ng-repeat="breadcrumb in breadcrumbs"><a href="{{ breadcrumb.url }}">{{ breadcrumb.name }}</a></li>
+	</ol>
 	<div ng-view ng-if="selectedUser && selectedBox"></div>
 	<div ng-show="!selectedUser">
 		<h2> please log in  </h2>

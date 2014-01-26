@@ -1,0 +1,13 @@
+<div class="side-col">
+	<h2>Running tests</h2>
+</div>
+<div class="main-col">
+	<div class="manifest-list">
+		<h2>Core</h2>
+		<ul><li ng-repeat="manifest in manifests.core" ng-include="'partials/manifest-listing.html'"></li></ul>
+	</div>
+	<div class="manifest-list">
+		<h2>Applications</h2>
+		<ul><li ng-repeat="manifest in manifests.apps" ng-include="'partials/manifest-listing.html'"></li></ul>
+	</div>
+</div>

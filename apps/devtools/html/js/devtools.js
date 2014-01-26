@@ -5,7 +5,7 @@ angular
 		'use strict';
 
 		$routeProvider
-			.when('/', { templateUrl: 'partials/root.html', controller: 'RootCtrl' })
+			.when('/', { templateUrl: 'partials/dashboard.html', controller: 'DashboardCtrl' })
 			.when('/manifest/:id', { templateUrl: 'partials/manifest.html', controller: 'ManifestCtrl' })
 			.when('/manifest/:id/:section', { templateUrl: 'partials/manifest.html', controller: 'ManifestCtrl' })
 			.otherwise({ redirectTo: '/' });
@@ -17,6 +17,14 @@ angular
 			box,
 			testrunner;
 
+		var testModes = {
+			failed: 'Some tests have failed',
+			passed: 'All tests passed',
+			notrun: 'Tests have not yet been run',
+			running: 'Tests are currently running',
+			none: 'No tests have been provided'
+		};
+
 		var Test = Backbone.Model.extend({
 			initialize: function (attributes, options) {
 				var that = this;
@@ -25,6 +33,13 @@ angular
 					console.log('changed', that.toJSON())
 					that.haveBeenRun = that.get('have_been_run');
 					that.isStarted = that.get('started');
+					that.mode = 
+						that.isAvailable && !that.isRunning ?
+							(that.haveBeenRun ?
+								(that.results.failures > 0 ? 'failed' : 'passed') :
+								'notrun') :
+							that.isRunning ? 'running' : 'none'
+					that.modeDescription = testModes[that.mode];
 					//that.getResults();
 				});
 				this.trigger('change');
@@ -193,17 +208,29 @@ angular
 			}
 		});
 
+		var documentationModes = {
+			'building': 'Documentation is currently being built',
+			'built': 'Documentation is available',
+			'notbuilt': 'Documentation needs to be built',
+			'none': 'Not documentation has been provided'
+		};
+
 		var DocumentationModel = Backbone.Model.extend({
 			initialize: function (attrs, options) {
 				var that = this;
 				this.manifest = options.manifest;
 				this.on('change', function () {
 					that.isBuilt = that.get('built');
+					that.mode = 
+						that.isAvailable ? 
+							(	that.isBuilding ? 'building' :
+								that.isBuilt ? 'built' : 'notbuilt' ) : 'none'
+					that.modeDescription = documentationModes[that.mode];
 				});
 				var raw = this.manifest.get('documentation');
-				this.set(raw);
 				this.isAvailable = !!raw;
 				this.docUrl = this.get('url');
+				this.set(raw, { silent: true }).trigger('change');
 			},
 			build: function () {
 				var that = this;
@@ -342,18 +369,18 @@ angular
 		window.store = client.store;
 
 		window.manifests = manifests;
+		$rootScope.breadcrumbs = [{ name: 'Dashboard', url: '#' }]
 
 		return {
 			manifests: manifests
 		};
 	})
-	.controller('RootCtrl', function ($scope, manifestsService) {
+	.controller('DashboardCtrl', function ($rootScope, $scope, manifestsService) {
 		'use strict';
 
-		_.extend($scope, {
-			manifests: manifestsService.manifests
-		});
-	}).controller('ManifestCtrl', function ($scope, $location, manifestsService, $routeParams) {
+		$scope.manifests = manifestsService.manifests
+		$rootScope.breadcrumbs = [$rootScope.breadcrumbs[0]]
+	}).controller('ManifestCtrl', function ($rootScope, $scope, $location, manifestsService, $routeParams) {
 		'use strict';
 
 		var ready = $.Deferred();
@@ -379,5 +406,6 @@ angular
 
 			$scope.manifest = manifest;
 			$scope.pane = pane;
+			$rootScope.breadcrumbs = [$rootScope.breadcrumbs[0], { name: manifest.get('name'), url: '#/manifest/' + $routeParams.id }]
 		});
 	});

@@ -1,14 +1,13 @@
-<div class="header">
-	<img ng-src="{{ manifest.get('icons')['128'] }}" class="icon">
-	<h1>{{ manifest.get('name') }}</h1>
+
 	<ul class="nav nav-tabs">
 		<li ng-class="{ active: pane === 'overview' }"><a href="#manifest/{{ manifest.id }}">Overview</a></li>
 		<li ng-class="{ active: pane === 'documentation' }"><a href="#manifest/{{ manifest.id }}/documentation">Documentation</a></li>
 		<li ng-class="{ active: pane === 'tests' }"><a href="#manifest/{{ manifest.id }}/tests">Tests</a></li>
 	</ul>
-</div>
 
 <div class="tab-pane" ng-if="pane === 'overview'">
+	<img ng-src="{{ manifest.get('icons')['128'] }}" class="icon">
+	<h1>{{ manifest.get('name') }}</h1>
 	<p class="description">
 		{{ manifest.get('description') }}
 	</p>
