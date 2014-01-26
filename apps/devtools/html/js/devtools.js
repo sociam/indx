@@ -1,6 +1,6 @@
 /* global $, console, angular, Backbone, _ */
 angular
-	.module('devtools', ['ui','indx'])
+	.module('devtools', ['ngRoute', 'ui','indx'])
 	.config(['$routeProvider', function ($routeProvider) {
 		'use strict';
 
