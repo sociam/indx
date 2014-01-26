@@ -1,6 +1,6 @@
 <td>
 	<a href="#manifest/{{ manifest.id }}/">
-		<span ng-bind-html-unsafe="manifest.icon"></span>
+		<img ng-src="{{ manifest.icon }}" class="icon">
 		{{ manifest.get('name') }}
 	</a>
 </td>

@@ -233,25 +233,12 @@ angular
 			defaults: {
 				icons: {
 					'128': '/apps/devtools/icons/default.png',
-					'font-awesome': { 'class': 'fa fa-cog', 'background': '#aaa', 'color': '#eee' }
 				}
 			},
 			initialize: function () {
 				this.documentation = new DocumentationModel(undefined, { manifest: this });
 				this.tests = new Tests(this.get('tests'), { manifest: this });
-				this.icon = '';
-				if (this.get('icons')) {
-					if (this.get('icons')['font-awesome']) {
-						var fa = this.get('icons')['font-awesome'];
-						this.icon = $('<i class="app-icon"></i>')
-							.addClass(fa['class'])
-							.css(fa)
-							.wrap('<p>').parent().html();
-					} else if (this.get('icons')['128']) {
-						var src = this.get('icons')['128'];
-						this.icon = '<img src="' + src + '" class="icon">';
-					}
-				}
+				this.icon = this.get('icons')['128'];
 			}
 		});
 
