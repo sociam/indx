@@ -1,0 +1,15 @@
+{
+	"name": "wellbeing observatory",
+	"version": 0.1,
+	"type":["app"],
+	"description": "Wellbeing Observatory",
+	"icons": { 
+		"128": "imgs/icon.png"
+	},
+	"author": [
+		{
+			"name": "eMax",
+			"email":"max@hip.cat"
+		}
+	]
+}
