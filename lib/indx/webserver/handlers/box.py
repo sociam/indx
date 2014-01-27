@@ -48,15 +48,14 @@ class BoxHandler(BaseHandler):
         BoxHandler.log(logging.DEBUG, message, extra)
 
 
-    def options(self, request):
+    def options(self, request, token):
         BoxHandler.log(logging.DEBUG, "BoxHandler OPTIONS request.", extra = {"request": request})
         self.return_ok(request)
 
 
-    def diff(self, request):
+    def diff(self, request, token):
         """ Return the objects (or ids of objects) that have changes between two versions of the objectstore.
         """
-        token = self.get_token(request)
         if not token:
             BoxHandler.log(logging.DEBUG, "BoxHandler diff request (token not valid), args are: {0}".format(request.args), extra = {"request": request})
             return self.return_forbidden(request)
@@ -115,9 +114,8 @@ class BoxHandler(BaseHandler):
         token.get_store().addCallbacks(store_cb, err_cb)
 
 
-    def link_remote_box(self, request):
+    def link_remote_box(self, request, token):
         """ Link a remote box with this box. """
-        token = self.get_token(request)
         if not token:
             return self.return_forbidden(request)
         BoxHandler.log(logging.DEBUG, "BoxHandler link_remote_box", extra = {"request": request, "token": token})
@@ -148,9 +146,8 @@ class BoxHandler(BaseHandler):
         user = IndxUser(self.database, token.username)
         user.set_acl(token.boxid, "@indx", {"read": True, "write": True, "control": False, "owner": False}).addCallbacks(setacl_cb, lambda failure: self.return_internal_error(request))
 
-    def generate_new_key(self, request):
+    def generate_new_key(self, request, token):
         """ Generate a new key and store it in the keystore. Return the public and public-hash parts of the key. """
-        token = self.get_token(request)
         if not token:
             return self.return_forbidden(request)
         BoxHandler.log(logging.DEBUG, "BoxHandler generate_new_key", extra = {"request": request, "token": token})
@@ -180,12 +177,11 @@ class BoxHandler(BaseHandler):
 
 
 
-    def get_acls(self, request):
+    def get_acls(self, request, token):
         """ Get all of the ACLs for this box.
 
             You must have 'control' permission to be able to do this.
         """
-        token = self.get_token(request)
         if not token:
             return self.return_forbidden(request)
         BoxHandler.log(logging.DEBUG, "BoxHandler get_acls", extra = {"request": request, "token": token})
@@ -202,7 +198,7 @@ class BoxHandler(BaseHandler):
 
 
 
-    def set_acl(self, request):
+    def set_acl(self, request, token):
         """ Set an ACL for this box.
 
             RULES (these are in box.py and in user.py)
@@ -214,7 +210,6 @@ class BoxHandler(BaseHandler):
             If the user has owner permissions, it doesn't matter if they dont have "control" permissions, they can change anything.
             Only the user that created the box has owner permissions.
         """
-        token = self.get_token(request)
         if not token:
             return self.return_forbidden(request)
         BoxHandler.log(logging.DEBUG, "BoxHandler set_acl", extra = {"request": request, "token": token})
@@ -239,10 +234,9 @@ class BoxHandler(BaseHandler):
         user.set_acl(token.boxid, req_username, req_acl).addCallbacks(lambda empty: self.return_ok(request), err_cb)
 
 
-    def get_object_ids(self, request):
+    def get_object_ids(self, request, token):
         """ Get a list of object IDs in this box.
         """
-        token = self.get_token(request)
         if not token:
             return self.return_forbidden(request)
         BoxHandler.log(logging.DEBUG, "BoxHandler get_object_ids", extra = {"request": request, "token": token})
@@ -260,10 +254,9 @@ class BoxHandler(BaseHandler):
         token.get_store().addCallbacks(store_cb, err_cb)
 
 
-    def query(self, request):
+    def query(self, request, token):
         """ Perform a query against the box, and return matching objects.
         """
-        token = self.get_token(request)
         if not token:
             return self.return_forbidden(request)
  
@@ -318,7 +311,7 @@ class BoxHandler(BaseHandler):
         token.get_store().addCallbacks(store_cb, err_cb)
 
     
-    def files(self, request):
+    def files(self, request, token):
         """ Handler for queries like /box/files?id=notes.txt&version=2
 
             Handles GET, PUT and DELETE of files.
@@ -326,7 +319,6 @@ class BoxHandler(BaseHandler):
 
             request -- Twisted request object.
         """
-        token = self.get_token(request, force_get=True)
         if not token:
             return self.return_forbidden(request)
 
@@ -419,10 +411,9 @@ class BoxHandler(BaseHandler):
 
         token.get_store().addCallbacks(store_cb, err_cb)
 
-    def get_version(self, request):
+    def get_version(self, request, token):
         BoxHandler.log(logging.DEBUG, "BoxHandler get_version")
 
-        token = self.get_token(request)
         if not token:
             return self.return_forbidden(request)
 
@@ -440,10 +431,9 @@ class BoxHandler(BaseHandler):
         token.get_store().addCallbacks(store_cb, err_cb)
 
 
-    def do_GET(self,request):
+    def do_GET(self,request,token):
         BoxHandler.log(logging.DEBUG, "BoxHandler do_GET >>>>>>>>>>>>>>>>>>>>")
 
-        token = self.get_token(request)
         if not token:
             return self.return_forbidden(request)
 
@@ -472,8 +462,7 @@ class BoxHandler(BaseHandler):
         token.get_store().addCallbacks(store_cb, err_cb)
    
 
-    def do_PUT(self,request):
-        token = self.get_token(request)
+    def do_PUT(self,request, token):
         if not token:
             return self.return_forbidden(request)
 
@@ -523,7 +512,7 @@ class BoxHandler(BaseHandler):
         token.get_store().addCallbacks(store_cb, err_cb)
 
 
-    def do_DELETE(self,request):
+    def do_DELETE(self,request,token):
         """ Handle DELETE calls. Requires a JSON array of object IDs in the body as the 'data' argument:
             e.g.,
 
@@ -535,7 +524,6 @@ class BoxHandler(BaseHandler):
         """
 
         # get validated token
-        token = self.get_token(request)
         if not token:
             return self.return_forbidden(request)
 
@@ -583,6 +571,8 @@ class BoxHandler(BaseHandler):
 
         token.get_store().addCallbacks(store_cb, err_cb)
 
+    def box_return_ok(self,request,token):
+        return self.return_ok(request)
 
 BoxHandler.subhandlers = [
     {
@@ -714,7 +704,7 @@ BoxHandler.subhandlers = [
         'require_auth': False,
         'require_token': False,
         'require_acl': [],
-        'handler': BaseHandler.return_ok,
+        'handler': BoxHandler.box_return_ok,
         'content-type':'text/plain', # optional
         'accept':['application/json']                
         }

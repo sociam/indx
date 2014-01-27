@@ -19,9 +19,9 @@ import json, string, random
 
 """ Script to generate JSON files for testing importing/updating. """
 
-objects = 5000
-properties = 10
-values = 3
+objects = 200
+properties = 5
+values = 1
 
 def str_gen(size=16, chars=string.ascii_uppercase + string.digits):
     return ''.join(random.choice(chars) for x in range(size))

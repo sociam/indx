@@ -224,8 +224,10 @@ class WebServer:
             # assign ourselves a new token to access the root box using the @indx user
             # this only works because the "create_root_box" function gave this user read permission
             # this doesn't work in the general case.
-            token = self.tokens.new("@indx","",root_box,"IndxSync","/","::1", self.server_id)
-            token.get_store().addCallbacks(store_cb, err_cb)
+            def token_cb(token):
+                token.get_store().addCallbacks(store_cb, err_cb)
+
+            self.tokens.new("@indx","",root_box,"IndxSync","/","::1", self.server_id).addCallbacks(token_cb, return_d.errback)
 
         return return_d
 

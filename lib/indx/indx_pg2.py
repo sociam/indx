@@ -24,7 +24,7 @@ import uuid
 from indx.connectionpool import IndxConnectionPool
 from txpostgres import txpostgres
 from hashing_passwords import make_hash, check_hash
-from indx.crypto import encrypt, rsa_encrypt, rsa_decrypt
+from indx.crypto import encrypt, decrypt, rsa_encrypt, rsa_decrypt
 from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
 from indx.user import IndxUser
@@ -581,6 +581,60 @@ class IndxDatabase:
             d.addCallbacks(created, return_d.errback)
 
         connect(POSTGRES_DB, self.db_user, self.db_pass).addCallbacks(connected, return_d.errback)
+        return return_d
+
+    def save_token(self, token):
+        """ Save a token into the db. """
+        return_d = Deferred()
+
+        password_encrypted = encrypt(token.password, self.db_pass)
+        def conn_cb(conn):
+
+            query = "INSERT INTO tbl_tokens (token_id, username, password_encrypted, boxid, appid, origin, clientip, server_id, created) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, now())"
+            params = [token.id, token.username, password_encrypted, token.boxid, token.appid, token.origin or '', token.clientip, token.server_id]
+
+            conn.runOperation(query, params).addCallbacks(lambda empty: return_d.callback(True), return_d.errback)
+
+        self.connect_indx_db().addCallbacks(conn_cb, return_d.errback)
+        return return_d
+
+    def get_token(self, tid):
+        """ Get a token by its ID. Return a deferred, callback with the token, or with None if invalid/expired. """
+        return_d = Deferred()
+
+        # TODO get/save tokens in transactions
+
+        TOKEN_MAX_DAYS = 7
+
+        def conn_cb(conn):
+            # token expired maths is done at server side
+            query = "SELECT token_id, username, password_encrypted, boxid, appid, origin, clientip, server_id, (date_part('epoch', age(created, now()))::integer) + date_part('epoch', interval '{0} days')::integer AS expired FROM tbl_tokens WHERE token_id = %s".format(TOKEN_MAX_DAYS)
+            params = [tid]
+
+            def query_cb(rows):
+                if len(rows) < 1:
+                    return_d.callback(None)
+                    return
+
+                row = rows[0]
+                token_id, username, password_encrypted, boxid, appid, origin, clientip, server_id, expired = row
+
+                if expired < 0:
+                    # token is expired, delete it and return None
+                    query = "DELETE FROM tbl_tokens WHERE token_id = %s"
+                    params = [tid]
+
+                    conn.runOperation(query, params).addCallbacks(lambda empty: return_d.callback(None), return_d.errback)
+                    return
+
+                # decrypt password
+                password = decrypt(password_encrypted, self.db_pass)
+                token = (username, password, boxid, appid, origin, clientip, server_id)
+                return_d.callback(token)
+
+            conn.runQuery(query, params).addCallbacks(query_cb, return_d.errback)
+        
+        self.connect_indx_db().addCallbacks(conn_cb, return_d.errback)
         return return_d
 
 

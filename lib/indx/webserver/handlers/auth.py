@@ -48,7 +48,7 @@ class AuthHandler(BaseHandler):
     ]
 
     # authentication
-    def auth_login(self, request):
+    def auth_login(self, request, token):
         """ User logged in (POST) """
         logging.debug('auth login: request, {0}'.format(request));
 
@@ -81,7 +81,7 @@ class AuthHandler(BaseHandler):
 
         self.database.auth(user,pwd).addCallback(lambda loggedin: win() if loggedin else fail())
 
-    def auth_keys(self, request):
+    def auth_keys(self, request, token):
         """ Log in using pre-shared keys. (POST) """
         logging.debug('auth_keys, request: {0}'.format(request));
 
@@ -136,14 +136,14 @@ class AuthHandler(BaseHandler):
         self.webserver.keystore.get(key_hash).addCallbacks(keystore_cb, fail)
 
 
-    def auth_logout(self, request):
+    def auth_logout(self, request, token):
         """ User logged out (GET, POST) """
         logging.debug("Logout request, origin: {0}".format(self.get_origin(request)))
         wbSession = self.get_session(request)
         wbSession.reset()
         self.return_ok(request)
 
-    def auth_whoami(self, request):
+    def auth_whoami(self, request, token):
         wbSession = self.get_session(request)
         logging.debug('auth whoami ' + repr(wbSession))
 
@@ -164,7 +164,7 @@ class AuthHandler(BaseHandler):
         user.get_user_info(decode_json = False).addCallbacks(info_cb, lambda failure: self.return_internal_error(request))
 
         
-    def get_token(self,request):
+    def get_token_handler(self,request, token):
         ## 1. request contains appid & box being requested (?!)
         ## 2. check session is Authenticated, get username/password
 
@@ -195,8 +195,11 @@ class AuthHandler(BaseHandler):
             db_user, db_pass = acct
 
             def check_app_perms(acct):
-                token = self.webserver.tokens.new(username,password,boxid,appid,origin,request.getClientIP(),self.webserver.server_id)
-                return self.return_ok(request, {"token":token.id})
+                
+                def token_cb(token):
+                    return self.return_ok(request, {"token":token.id})
+
+                self.webserver.tokens.new(username,password,boxid,appid,origin,request.getClientIP(),self.webserver.server_id).addCallbacks(token_cb, lambda failure: self.return_internal_error(request))
 
             # create a connection pool
             database.connect_box(boxid,db_user,db_pass).addCallbacks(check_app_perms, lambda conn: self.return_forbidden(request))
@@ -205,7 +208,7 @@ class AuthHandler(BaseHandler):
 
     ### OpenID functions
 
-    def login_openid(self, request):
+    def login_openid(self, request, token):
         """ Verify an OpenID identity. """
         wbSession = self.get_session(request)
 
@@ -277,7 +280,7 @@ class AuthHandler(BaseHandler):
 
         return urlparse.urlunparse(url_parts)
 
-    def openid_process(self, request):
+    def openid_process(self, request, token):
         """ Process a callback from an identity provider. """
         oid_consumer = consumer.Consumer(self.get_openid_session(request), self.store)
         query = urlparse.parse_qsl(urlparse.urlparse(request.uri).query)
@@ -378,6 +381,9 @@ class AuthHandler(BaseHandler):
     def get_openid_session(self, request):
         return self.get_session(request).get_openid_session()
 
+    def auth_return_ok(self, request, token):
+        return self.return_ok(request)
+
 
 AuthHandler.subhandlers = [
     {
@@ -443,7 +449,7 @@ AuthHandler.subhandlers = [
         'methods': ['POST'],
         'require_auth': True,
         'require_token': False,
-        'handler': AuthHandler.get_token,
+        'handler': AuthHandler.get_token_handler,
         'content-type':'application/json', 
         'accept':['application/json']                
     },
@@ -452,7 +458,7 @@ AuthHandler.subhandlers = [
         'methods': ['POST', 'GET'],
         'require_auth': False,
         'require_token': False,
-        'handler': AuthHandler.return_ok, # already logged out
+        'handler': AuthHandler.auth_return_ok, # already logged out
         'content-type':'text/plain', # optional
         'accept':['application/json']                
         },
@@ -461,7 +467,7 @@ AuthHandler.subhandlers = [
         'methods': ['OPTIONS'],
         'require_auth': False,
         'require_token': False,
-        'handler': AuthHandler.return_ok, # already logged out
+        'handler': AuthHandler.auth_return_ok, # already logged out
         'content-type':'text/plain', # optional
         'accept':['application/json']                
      }    
