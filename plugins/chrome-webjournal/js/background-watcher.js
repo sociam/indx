@@ -152,37 +152,39 @@
             },
             handle_action:function(tabinfo) {
                 var url = tabinfo && tabinfo.url, title = tabinfo && tabinfo.title, this_ = this;
-                if (tabinfo.favicon) { console.log('FAVICON ', tabinfo.favicon); }
+                // if (tabinfo.favicon) { console.log('FAVICON ', tabinfo.favicon); }
                 setTimeout(function() { 
                     var now = new Date();
                     if (this_.current_record !== undefined && url == this_.current_record.peek('what')) {
-                        console.info('updating existing >>>>>>>>>>> ');
+                        // console.info('updating existing >>>>>>>>>>> ');
                         this_.current_record.set({tend:now});
                         this_.current_record.set(tabinfo);
                         this_._record_updated(this_.current_record).fail(function(bail) { 
                             console.error('error on save >> ', bail);
                             this_.trigger('connection-error', bail);
                         });
-                    } else {
+                    } else if (tabinfo) {
                         // different now
-                        console.info('new record!');
+                        // console.info('new record!');
                         if (this_.current_record) {
                             // finalise last one
                             this_.current_record.set({tend:now});
-                            console.info('last record had ', this_.current_record.peek('tend') - this_.current_record.peek('tstart'));
+                            // console.info('last record had ', this_.current_record.peek('tend') - this_.current_record.peek('tstart'));
                             this_._record_updated(this_.current_record).fail(function(bail) { 
                                 console.error('error on save >> ', bail);
                                 this_.trigger('connection-error', bail);
                             });
                         }
                         delete this_.current_record;
-                        this_.make_record(now, now, url, title, tabinfo).then(function(record) {
-                            this_.current_record = record;
-                            this_.trigger('new-record', record);
-                        }).fail(function(x) { 
-                            console.error(' error on _make_record >> ', x);
-                            this_.trigger('connection-error', x);
-                        });
+                        if (tabinfo) {
+                            this_.make_record(now, now, url, title, tabinfo).then(function(record) {
+                                this_.current_record = record;
+                                this_.trigger('new-record', record);
+                            }).fail(function(x) { 
+                                console.error(' error on _make_record >> ', x);
+                                this_.trigger('connection-error', x);
+                            });
+                        }
                     }
                 });
             },
