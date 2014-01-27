@@ -11,5 +11,4 @@ requests
 pycrypto
 oauth2
 keyring
-fs
 autobahn
