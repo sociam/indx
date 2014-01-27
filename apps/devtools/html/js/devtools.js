@@ -18,11 +18,11 @@ angular
 			testrunner;
 
 		var testModes = {
-			failed: 'Some tests have failed',
-			passed: 'All tests passed',
-			notrun: 'Tests have not yet been run',
-			running: 'Tests are currently running',
-			none: 'No tests have been provided'
+			failed: ['Tests failed', 'Some tests have failed'],
+			passed: ['Tests passed', 'All tests passed'],
+			notrun: ['Tests not run', 'Tests have not yet been run'],
+			running: ['Tests running', 'Tests are currently running'],
+			none: ['No tests', 'No tests have been provided']
 		};
 
 		var Test = Backbone.Model.extend({
@@ -209,10 +209,10 @@ angular
 		});
 
 		var documentationModes = {
-			'building': 'Documentation is currently being built',
-			'built': 'Documentation is available',
-			'notbuilt': 'Documentation needs to be built',
-			'none': 'Not documentation has been provided'
+			'building': ['Building docs', 'Documentation is currently being built'],
+			'built': ['Docs available', 'Documentation is available'],
+			'notbuilt': ['Docs not built', 'Documentation needs to be built'],
+			'none': ['No docs', 'Not documentation has been provided']
 		};
 
 		var DocumentationModel = Backbone.Model.extend({

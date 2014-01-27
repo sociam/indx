@@ -178,45 +178,71 @@ iframe {
         }
       }
 
-      img {
-        position: absolute;
-        top: 8px;
-        left: 8px;
-      }
-      .name {
-        margin-left: 50px;
-        margin-top: 8px;
-        margin-bottom: 25px;
-        color: #888;
-        font-size: 11px;
-      }
-      .meta {
-        position: absolute;
-        left: 50px;
-        bottom: 6px;
-        span {
-          margin-right: 4px;
+      .col1 {
+        img {
+          position: absolute;
+          top: 8px;
+          left: 8px;
         }
-        .version {
+        .name {
+          margin-left: 50px;
+          margin-top: 8px;
+          margin-bottom: 75px;
+          color: #888;
           font-size: 11px;
-          color: #999;
         }
-        .docs-icon {
+        .meta {
+          position: absolute;
+          left: 50px;
+          bottom: 56px;
+          .version {
+            font-size: 11px;
+            color: #999;
+          }
+        }
+      }
+      .col2 {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        border-top: 1px solid #eee;
+
+        .stamp1 {
+          border-right: 1px solid #eee;
+        }
+        .stamp1, .stamp2 {
+          display: inline-block;
+          vertical-align: top;
+          box-sizing: border-box;
+          width: 48%;
+          height: 47px;
           color: #ccc;
-          &.built { color: green; }
-          &.building { color: yellow; }
-          &.notbuilt { color: red; }
-          &.none { display: none; }
+          text-align: center;
+          padding: 8px 3px 5px;
+          .note {
+            font-size: 11px;
+            color: #ccc;
+          }
+          i {
+            display: block;
+          }
+          &.docs-icon {
+            &.built { color: green; }
+            &.building { color: yellow; }
+            &.notbuilt { color: #a94442; }
+            //&.none { display: none; }
+          }
+
+          &.tests-icon {
+            &.failed { color: red; }
+            &.passed { color: green; }
+            &.notrun { color: gold; }
+            &.running { color: yellow; }
+            //&.none { display: none; }
+          }
         }
 
-        .tests-icon {
-          color: #ccc;
-          &.failed { color: red; }
-          &.passed { color: green; }
-          &.notrun { color: gold; }
-          &.running { color: yellow; }
-          &.none { display: none; }
-        }
       }
     }
   }
