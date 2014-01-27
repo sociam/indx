@@ -277,6 +277,7 @@ angular
 				this.on('add remove reset', function () {
 					that.apps = that.where({ type: 'app' });
 					that.core = that.where({ type: 'core' });
+					that.hasFetched = true;
 				});
 			},
 			parse: function (r) {

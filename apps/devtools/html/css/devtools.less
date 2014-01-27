@@ -139,8 +139,9 @@ iframe {
 }
 .side-col {
   position: absolute;
-  right: 20px;
-  width: 280px;
+  right: 10px;
+  top: 42px;
+  width: 300px;
 }
 
 .manifest-list {
@@ -148,70 +149,74 @@ iframe {
   box-shadow: inset 0 0 4px #ccc;
   margin: 20px;
 
-  ul {
+  .message {
+    padding: 15px;
+  }
+
+  ul.icons {
     margin: 0;
     padding: 0;
-  }
-  li {
-    padding: 0;
-    width: 200px;
-    position: relative;
-    overflow: hidden;
-    box-shadow: 0px 2px #eee;
-    background: white;
-    cursor: pointer;
-    display: inline-block;
-    border: 1px solid #eee;
-    margin: 12px;
-    vertical-align: middle !important;
-    border-radius: 4px 4px;
-    &:hover {
-      border: 1px solid #ccc;
-      text-decoration: none;
-      .name {
-        color: black;
+    li {
+      padding: 0;
+      width: 200px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0px 2px #eee;
+      background: white;
+      cursor: pointer;
+      display: inline-block;
+      border: 1px solid #eee;
+      margin: 12px;
+      vertical-align: middle !important;
+      border-radius: 4px 4px;
+      &:hover {
+        border: 1px solid #ccc;
         text-decoration: none;
+        .name {
+          color: black;
+          text-decoration: none;
+        }
       }
-    }
 
-    img {
-      position: absolute;
-      top: 8px;
-      left: 8px;
-    }
-    .name {
-      margin-left: 50px;
-      margin-top: 8px;
-      margin-bottom: 25px;
-      color: #888;
-      font-size: 11px;
-    }
-    .meta {
-      position: absolute;
-      left: 50px;
-      bottom: 6px;
-      span {
-        margin-right: 4px;
+      img {
+        position: absolute;
+        top: 8px;
+        left: 8px;
       }
-      .version {
+      .name {
+        margin-left: 50px;
+        margin-top: 8px;
+        margin-bottom: 25px;
+        color: #888;
         font-size: 11px;
-        color: #999;
       }
-      .docs-icon {
-        color: #ccc;
-        &.built { color: green; }
-        &.building { color: yellow; }
-        &.notbuilt { color: red; }
-        &.none { color: #ccc; }
-      }
+      .meta {
+        position: absolute;
+        left: 50px;
+        bottom: 6px;
+        span {
+          margin-right: 4px;
+        }
+        .version {
+          font-size: 11px;
+          color: #999;
+        }
+        .docs-icon {
+          color: #ccc;
+          &.built { color: green; }
+          &.building { color: yellow; }
+          &.notbuilt { color: red; }
+          &.none { display: none; }
+        }
 
-      .tests-icon {
-        color: #ccc;
-        &.failed { color: red; }
-        &.passed { color: green; }
-        &.notrun { color: gold; }
-        &.running { color: yellow; }
-        &.none { color: #ccc; }
+        .tests-icon {
+          color: #ccc;
+          &.failed { color: red; }
+          &.passed { color: green; }
+          &.notrun { color: gold; }
+          &.running { color: yellow; }
+          &.none { display: none; }
+        }
       }
     }
   }
@@ -220,4 +225,9 @@ iframe {
 .alert {
   max-width: 600px;
   margin: 30px auto 0;
+}
+
+.loading-msg {
+  margin: 30px auto 0;
+  text-align: center;
 }

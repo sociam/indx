@@ -1,25 +1,31 @@
-<div class="side-col">
-	<div class="manifest-list">
-		<h2>Active tests</h2>
-		<div ng-if="!tests.running.length">No tests are currently active</div>
-		<div class="legend">
-			<ul>
-				<li>Test is not active</li>
-				<li>Test is active</li>
-				<li>Test is running</li>
-			</ul>
+<div ng-if="manifests.hasFetched">
+	<div class="side-col">
+		<div class="manifest-list">
+			<h2>Active tests</h2>
+			<div class="message" ng-if="!tests.running.length">No tests are currently active</div>
+			<div class="legend" ng-if="tests.running.length">
+				<ul>
+					<li>Test is not active</li>
+					<li>Test is active</li>
+					<li>Test is running</li>
+				</ul>
+			</div>
+		</div>
+	</div>
+	<div class="main-col">
+		<div class="manifest-list">
+			<h2>INDX Core</h2>
+
+			<div class="message" ng-if="!manifests.core.length">No core components</div>
+			<ul class="icons"><li ng-repeat="manifest in manifests.core" ng-include="'partials/manifest-listing.html'"></li></ul>
+		</div>
+		<div class="manifest-list">
+			<h2>Applications</h2>
+			<div class="message" ng-if="!manifests.apps.length">No apps</div>
+			<ul class="icons"><li ng-repeat="manifest in manifests.apps" ng-include="'partials/manifest-listing.html'"></li></ul>
 		</div>
 	</div>
 </div>
-<div class="main-col">
-	<div class="manifest-list">
-		<h2>INDX Core</h2>
-		<div ng-if="!manifests.core.length">No core components</div>
-		<ul><li ng-repeat="manifest in manifests.core" ng-include="'partials/manifest-listing.html'"></li></ul>
-	</div>
-	<div class="manifest-list">
-		<h2>Applications</h2>
-		<div ng-if="!manifests.apps.length">No apps</div>
-		<ul><li ng-repeat="manifest in manifests.apps" ng-include="'partials/manifest-listing.html'"></li></ul>
-	</div>
+<div class="loading-msg" ng-if="!manifests.hasFetched">
+Loading...
 </div>
