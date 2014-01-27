@@ -74,6 +74,7 @@ class ObjectStoreQuery:
         params = []
 
         def gen_subquery(pred, vals, is_subquery = False, operator = "="):
+
             self.table_counter += 1
             table = "sub_{0}".format(self.table_counter)
 
@@ -134,7 +135,9 @@ class ObjectStoreQuery:
                     if operator in val:
                         sql_operator = self.operator_map[operator]
 
-                        new_subquery, new_params = gen_subquery(predicate, val, operator = sql_operator)
+                        value = val[operator]
+
+                        new_subquery, new_params = gen_subquery(predicate, value, operator = sql_operator)
                         subqueries.append(new_subquery)
                         params.extend(new_params)
 
