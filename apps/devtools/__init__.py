@@ -92,12 +92,12 @@ class DevToolsApp(BaseHandler):
                 for i, test in enumerate(manifest['tests']):
                     path = os.path.sep.join(['apps', 'devtools', 'html', 'tests',
                         manifest['id'], str(i)])
-                    started_test = self.started_test(manifest['id'], str(i))
+                    #started_test = self.started_test(manifest['id'], str(i))
                     test['url'] = '/apps/devtools/tests/{0}/{1}/test-results.xml'.format(manifest['id'], str(i))
                     test['path'] = path
                     test['built'] = os.path.exists(path)
                     test['config'] = manifest['manifest_dir'] + os.path.sep + test['config']
-                    test['started'] = bool(started_test)
+                    #test['started'] = bool(started_test)
 
         return manifests
 
@@ -112,7 +112,7 @@ class DevToolsApp(BaseHandler):
             'config_path': manifest['manifest_dir'] + os.path.sep + config_file
         }
 
-    def list_manifests(self, request):
+    def list_manifests(self, request, some_other_param):
         """ Get a list of core components and apps
         """
         manifests = self.list_all_manifests()
@@ -126,141 +126,141 @@ class DevToolsApp(BaseHandler):
             #    del manifest['tests']['path']
         self.return_ok(request, data = { 'response': manifests })
 
-    def get_requested_manifest(self, request):
-        manifests = self.list_all_manifests()
-        if not 'manifest_id' in request.args:
-            self.return_forbidden(request)
-            return
-        manifest_id = request.args['manifest_id'][0]
+    # def get_requested_manifest(self, request):
+    #     manifests = self.list_all_manifests()
+    #     if not 'manifest_id' in request.args:
+    #         self.return_forbidden(request)
+    #         return
+    #     manifest_id = request.args['manifest_id'][0]
 
-        manifest = None
-        for _manifest in manifests:
-            if (_manifest['id'] == manifest_id):
-                manifest = _manifest
-                break
+    #     manifest = None
+    #     for _manifest in manifests:
+    #         if (_manifest['id'] == manifest_id):
+    #             manifest = _manifest
+    #             break
 
-        if not manifest:
-            self.return_internal_error(request) # 'Manifest not found'
-            return
+    #     if not manifest:
+    #         self.return_internal_error(request) # 'Manifest not found'
+    #         return
 
-        return manifest
+    #     return manifest
 
-    def build_doc(self, request):
-        """ Generate documentation from config file.
-        """
-        manifest = self.get_requested_manifest(request)
+    # def build_doc(self, request):
+    #     """ Generate documentation from config file.
+    #     """
+    #     manifest = self.get_requested_manifest(request)
 
-        logging.debug('generating doc %s' % manifest['name'])
-        config = manifest['documentation']
+    #     logging.debug('generating doc %s' % manifest['name'])
+    #     config = manifest['documentation']
 
-        try:
-            cmd_str = 'node lib/docs/build.js %s ' % config['config_path']
-            cmd_str += '--output-directory=%s ' % config['path']
-            cmd_str += '--log-stdout'
-            logging.debug('Exec %s' % cmd_str)
-            out = check_output(cmd_str, shell=True)
-        except subprocess.CalledProcessError, e:
-            logging.debug('Failed to run builder', e.output)
-            self.return_internal_error(request)
-            raise
+    #     try:
+    #         cmd_str = 'node lib/docs/build.js %s ' % config['config_path']
+    #         cmd_str += '--output-directory=%s ' % config['path']
+    #         cmd_str += '--log-stdout'
+    #         logging.debug('Exec %s' % cmd_str)
+    #         out = check_output(cmd_str, shell=True)
+    #     except subprocess.CalledProcessError, e:
+    #         logging.debug('Failed to run builder', e.output)
+    #         self.return_internal_error(request)
+    #         raise
 
-        logging.debug(out);
+    #     logging.debug(out);
 
-        config['built'] = os.path.exists(config['path']);
+    #     config['built'] = os.path.exists(config['path']);
 
-        self.return_ok(request, data = { "response": config })
-
-
-    def start_test(self, request):
-        manifest = self.get_requested_manifest(request)
-
-        if not 'id' in request.args:
-            self.return_forbidden(request)
-            return
-
-        test_id = request.args['id'][0]
-        test = manifest['tests'][int(test_id)]
-
-        if not test:
-            self.return_not_found(request)
-            return
-
-        started_test = self.started_test(manifest['id'], test_id)
-
-        if started_test: # already started
-            self.return_forbidden(request)
-
-        logging.debug('starting test %s from %s' % (test_id, manifest['name']))
-
-        cmd_str = 'node lib/tests/run.js %s %s ' % (test['type'], test['config'])
-        # cmd_str += '--reporters junit '
-        cmd_str += '--output-directory=%s ' % (test['path'])
-        cmd_str += '--log-stdout '
-        if 'params' in request.args:
-            cmd_str += '--params=\'%s\' ' % request.args['params'][0]
-        if 'singlerun' in request.args:
-            cmd_str += '--single-run'
-        logging.debug('Exec %s' % cmd_str)
-
-        def output_cb(strs):
-            logging.debug(strs);
-
-        p = self.execute(cmd_str, output_cb)
-        self.started_tests.append([manifest['id'], test_id, p])
-
-        manifest = self.get_requested_manifest(request) # refresh the manifest
-        self.return_ok(request, data = { 'response': manifest['tests'][int(test_id)] })
-
-    def started_test(self, manifest_id, test_id):
-        test = None
-        for _test in self.started_tests:
-            if _test[0] == manifest_id and _test[1] == test_id:
-                test = _test
-        return test
-
-    def stop_test(self, request):
-        manifest = self.get_requested_manifest(request)
-
-        if not 'id' in request.args:
-            self.return_forbidden(request)
-            return
-
-        test_id = request.args['id'][0]
-        test = manifest['tests'][int(test_id)]
-
-        if not test:
-            self.return_not_found(request)
-            return  
-
-        logging.debug('stopping test %s from %s' % (test_id, manifest['name']))
-
-        started_test = self.started_test(manifest['id'], test_id)
-
-        if not started_test:
-            self.return_not_found(request)
-
-        p = started_test[2]
-        #p.kill()
-        #p.wait()
-        os.kill(p.pid, signal.SIGINT) # WHY WON'T YOU DIE
-
-        self.started_tests.remove(started_test)
-
-        manifest = self.get_requested_manifest(request) # refresh the manifest
-        self.return_ok(request, data = { 'response': manifest['tests'][int(test_id)] })
+    #     self.return_ok(request, data = { "response": config })
 
 
-    def execute(self, cmd_str, output_cb):
-        def enqueue_output(out):
-            for line in iter(out.readline, b''):
-                output_cb(line.strip());
-            out.close()
+    # def start_test(self, request):
+    #     manifest = self.get_requested_manifest(request)
 
-        p = Popen([cmd_str], stdout=PIPE, stderr=PIPE, bufsize=1, shell=True)
-        t = Thread(target=enqueue_output, args=[p.stdout])
-        t.daemon = True # thread dies with program
-        t.start()
-        return p
+    #     if not 'id' in request.args:
+    #         self.return_forbidden(request)
+    #         return
+
+    #     test_id = request.args['id'][0]
+    #     test = manifest['tests'][int(test_id)]
+
+    #     if not test:
+    #         self.return_not_found(request)
+    #         return
+
+    #     started_test = self.started_test(manifest['id'], test_id)
+
+    #     if started_test: # already started
+    #         self.return_forbidden(request)
+
+    #     logging.debug('starting test %s from %s' % (test_id, manifest['name']))
+
+    #     cmd_str = 'node lib/tests/run.js %s %s ' % (test['type'], test['config'])
+    #     # cmd_str += '--reporters junit '
+    #     cmd_str += '--output-directory=%s ' % (test['path'])
+    #     cmd_str += '--log-stdout '
+    #     if 'params' in request.args:
+    #         cmd_str += '--params=\'%s\' ' % request.args['params'][0]
+    #     if 'singlerun' in request.args:
+    #         cmd_str += '--single-run'
+    #     logging.debug('Exec %s' % cmd_str)
+
+    #     def output_cb(strs):
+    #         logging.debug(strs);
+
+    #     p = self.execute(cmd_str, output_cb)
+    #     self.started_tests.append([manifest['id'], test_id, p])
+
+    #     manifest = self.get_requested_manifest(request) # refresh the manifest
+    #     self.return_ok(request, data = { 'response': manifest['tests'][int(test_id)] })
+
+    # def started_test(self, manifest_id, test_id):
+    #     test = None
+    #     for _test in self.started_tests:
+    #         if _test[0] == manifest_id and _test[1] == test_id:
+    #             test = _test
+    #     return test
+
+    # def stop_test(self, request):
+    #     manifest = self.get_requested_manifest(request)
+
+    #     if not 'id' in request.args:
+    #         self.return_forbidden(request)
+    #         return
+
+    #     test_id = request.args['id'][0]
+    #     test = manifest['tests'][int(test_id)]
+
+    #     if not test:
+    #         self.return_not_found(request)
+    #         return  
+
+    #     logging.debug('stopping test %s from %s' % (test_id, manifest['name']))
+
+    #     started_test = self.started_test(manifest['id'], test_id)
+
+    #     if not started_test:
+    #         self.return_not_found(request)
+
+    #     p = started_test[2]
+    #     #p.kill()
+    #     #p.wait()
+    #     os.kill(p.pid, signal.SIGINT) # WHY WON'T YOU DIE
+
+    #     self.started_tests.remove(started_test)
+
+    #     manifest = self.get_requested_manifest(request) # refresh the manifest
+    #     self.return_ok(request, data = { 'response': manifest['tests'][int(test_id)] })
+
+
+    # def execute(self, cmd_str, output_cb):
+    #     def enqueue_output(out):
+    #         for line in iter(out.readline, b''):
+    #             output_cb(line.strip());
+    #         out.close()
+
+    #     p = Popen([cmd_str], stdout=PIPE, stderr=PIPE, bufsize=1, shell=True)
+    #     t = Thread(target=enqueue_output, args=[p.stdout])
+    #     t.daemon = True # thread dies with program
+    #     t.start()
+    #     return p
 
 
 
@@ -275,34 +275,34 @@ DevToolsApp.subhandlers = [
         'handler': DevToolsApp.list_manifests,
         'accept':['application/json'],
         'content-type':'application/json'
-        },
-    {
-        "prefix": "devtools/api/build_doc",
-        'methods': ['POST'],
-        'require_auth': True,
-        'require_token': False,
-        'handler': DevToolsApp.build_doc,
-        'accept':['application/json'],
-        'content-type':'application/json'
-        },
-    {
-        "prefix": "devtools/api/start_test",
-        'methods': ['POST'],
-        'require_auth': True,
-        'require_token': False,
-        'handler': DevToolsApp.start_test,
-        'accept':['application/json'],
-        'content-type':'application/json'
-        },
-    {
-        "prefix": "devtools/api/stop_test",
-        'methods': ['POST'],
-        'require_auth': True,
-        'require_token': False,
-        'handler': DevToolsApp.stop_test,
-        'accept':['application/json'],
-        'content-type':'application/json'
-        }
+        }#,
+    # {
+    #     "prefix": "devtools/api/build_doc",
+    #     'methods': ['POST'],
+    #     'require_auth': True,
+    #     'require_token': False,
+    #     'handler': DevToolsApp.build_doc,
+    #     'accept':['application/json'],
+    #     'content-type':'application/json'
+    #     },
+    # {
+    #     "prefix": "devtools/api/start_test",
+    #     'methods': ['POST'],
+    #     'require_auth': True,
+    #     'require_token': False,
+    #     'handler': DevToolsApp.start_test,
+    #     'accept':['application/json'],
+    #     'content-type':'application/json'
+    #     },
+    # {
+    #     "prefix": "devtools/api/stop_test",
+    #     'methods': ['POST'],
+    #     'require_auth': True,
+    #     'require_token': False,
+    #     'handler': DevToolsApp.stop_test,
+    #     'accept':['application/json'],
+    #     'content-type':'application/json'
+    #     }
 ]
 
 
