@@ -59,8 +59,7 @@ class instagramServiceController:
             print "in instagram service controller - got the access token config"
         else:
             #First get the parameters ready for the Harvester
-            self.credentials, self.configs, self.instagram_add_info = self.load_parameters(config)
-
+            print "no config added"
 
     #load and managed parameters
     def load_parameters(self, config):
@@ -90,6 +89,7 @@ class instagramServiceController:
             def main_services_cb(res):
                 if res:
                     print "Instagram Harvester Completed, now waiting an hour..."
+                    reactor.callLater(3600.0, self.load_service_instance)
                 else:
                     print "Instagram harvester Failed, waiting an hour to try again..."
 
@@ -97,37 +97,6 @@ class instagramServiceController:
 
         instagram_service.get_indx().addCallbacks(indx_cb, lambda failure: logging.error("Instagram Service Controller error logging into INDX: {0}".format(failure)))
         
-        #reactor.run()
-
-        # instagram_service.run_main_services()
-
-        # #instagram_service_two = instagramService(self.credentials, self.configs, self.instagram_add_info)
-
-        # #load the main services
-        # #instagram_service.run_main_services()
-
-        # def called(result):
-        #     logging.info('Service Controller instagram - Retreiving Stream')
-
-
-        # def command_die(reason):
-        #     logging.error('Service Controller instagram - Retreiving Stream Failed, error is {0}'.format(reason))
-
-        
-        # first_run = True
-
-        # logging.info("Service Controller instagram - Running instagram Service!")
-
-        # def loop_harvester():
-        #     #print "running harvester"
-        #     instagram_service.run_additional_services()
-        #     #if not first_run:
-        #         #instagram_service.run_main_services()
-        #     logging.debug("setting up Reactor loop...")
-        #     reactor.callLater(10.0, instagram_service.run_main_services());
-
-        # loop_harvester() 
-        # first_run = False
         reactor.run()
 
 

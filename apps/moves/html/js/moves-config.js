@@ -17,10 +17,9 @@ angular
 			var popup = window.open(url, 'indx_moves_popup', 'width=790,height=500');
 			var d = u.deferred();
 			window._moves_continuation = function(response) {
-				console.info("moves continuation >> ", response);
 				var getparam = function(pname) { return u.getParameterByName(pname, '?'+response); };
 				var code = getparam('code');
-				console.log('got code -- ', code);
+				console.info('NEW AUTH CODE >>> ', code);
 				d.resolve(code);
 			};
 			var intPopupChecker = setInterval(function() {
@@ -39,62 +38,61 @@ angular
 			return d.promise();
 		};
 
-		$scope.setConfigFromScope = function() {
-			$scope.setConfig({
-				latlngs:$scope.latlngs,
-				sleep:$scope.sleep,
-				box:$scope.app.box,
-				user:$scope.app.user && $scope.app.user['@id'],
-				password:$scope.app.password,
-				clientid:$scope.clientid,
-				authcode:$scope.authcode
-			});
-		};
-
 		$scope.clearAuthCode = function() {
 			sa(function() { 
-				$scope.authcode = '';
-				setConfigFromScope();
+				delete $scope.authcode;
+				$scope.setConfig($scope.config);
 			});
 		};
-
 		$scope.getAuthCode = function() {
-			open_moves_authorise($scope.clientid).then(function(code) { 
+			open_moves_authorise($scope.config.clientid).then(function(code) { 
 				sa(function() {
 					status("Successfully got auth code " + code + " from moves, saving.");
-					$scope.authcode = code;
-					$scope.setConfigFromScope();
+					$scope.config.authcode = code;
+					$scope.setConfig($scope.config);
 				});
 			}).fail(function(err) { 
 				status('Error getting auth code from Moves - ' + err.message);
 			});
 		};
-
+		// getting and setting from server ==================================================
 		// @get_config
-		var _get_config_from_service = function() {
+		var getConfig = function() {
 			s._ajax('GET', 'apps/moves/api/get_config').then(function(x) { 
-				var config = JSON.parse(x.config);
+				console.info(' got config >> ', x);
+				var config = x.config;
 				// simple stuff
-				sa(function() { 
-					_($scope).extend({ 
-						app: { 
-							box : config.box,
-							password: config.password,
-						},
-						clientid:config.clientid,
-						authcode:config.authcode,
-						sleep:config.sleep || 60000
-					});
-				});
 				// restore the user
 				if (config.user && $scope.users) { 
 					var match = $scope.users.filter(function(u) { return u['@id'] === config.user; });
 					if (match.length) {
 						window.match = match[0];
-						sa(function() { $scope.app.user = match[0]; });
+						config.user = match[0]; 
 					}
 				}
+				config.about_user = $scope.selectedUser["@id"];
+				sa(function() { $scope.config = config;	});				
 			}).fail(function(err) { console.error('could not get config ', err); });
+		};
+		// @setConfig
+		$scope.setConfig = function(config) { 
+			console.info('xmitting config to server >> ', config);
+			var c = _(config).clone();
+			// strip out objects (user object namely)
+			c.about_user = $scope.selectedUser["@id"];
+			_(c).map(function(v,k) {
+				if (_(v).isObject() && v['@id']) { 	c[k] = v['@id'];	}
+			});
+			s._ajax('GET', 'apps/moves/api/set_config', { config: JSON.stringify(c) }).then(function(x) { 
+				status('configuration chage committed');
+				if ($scope.isRunning()) { 
+					status('Restarting service with new config ----------.');
+					$scope.doStop().then(function() { $scope.doStart(); });
+				}
+			}).fail(function(e) {
+				console.error(e);
+				status('error committing change ' + e.toString());
+			});
 		};
 		var load_box = function(bid) { 
 			var dul = u.deferred(), dbl = u.deferred();
@@ -133,33 +131,37 @@ angular
 			});
 		};
 		$scope.doStart = function() {
+			var d = u.deferred();
 			s._ajax('GET', 'apps/moves/api/start').then(function(x) { 
 				console.info('App doStart result: ', x); 
 				status('Start command successful'); 
-			}).fail(function(x) { status(' Error ' + x.toString()); });
+				d.resolve();
+			}).fail(function(x) { 
+				status(' Error ' + x.toString()); 
+				d.reject();
+			});
+			return d.promise();
 		};
 		$scope.doStop = function() {
-			console.log('App doStop');
+			var d = u.deferred();
 			s._ajax('GET', 'apps/moves/api/stop')
-				.then(function(x) { console.info('App Stop result (): ', x); status('Stop command successful'); })
-				.fail(function(x) { status(' Error ' + x.toString()); });
-		};
-		// @setConfig
-		$scope.setConfig = function(config) { 
-			console.info('i got a config ', config);
-			s._ajax('GET', 'apps/moves/api/set_config', { config: JSON.stringify(config) }).then(function(x) { 
-				status('configuration chage committed');
-				window.retval = x;
-			}).fail(function(e) {
-				console.error(e);
-				status('error committing change ' + e.toString());
-			});
+				.then(function(x) { 
+					console.info('App Stop result (): ', x); 
+					status('Stop command successful'); 
+					d.resolve(); 
+				}).fail(function(x) { 
+					status(' Error ' + x.toString()); 
+					d.reject(); 
+				});
+			return d.promise();
 		};
 		$scope.$watch('selectedUser + selectedBox', function() { 
 			if ($scope.selectedBox) {
-				load_box($scope.selectedBox).then(function() {  _get_config_from_service();	});
+				load_box($scope.selectedBox).then(function() {  getConfig();	});
 			}
 		});
+		$scope.isRunning = function() { return $scope.runstate == 'Running'; };
+		var last_stderr_n, last_stdout_n;
 		setInterval(function() { 
 			s._ajax('GET','apps/moves/api/is_running').then(function(r) { 
 				sa(function() { 
@@ -170,14 +172,16 @@ angular
 					$scope.runstate = newrunstate;
 				});
 			}).fail(function(r) { sa(function() { $scope.runstate = 'Unknown'; }); });
-			s._ajax('GET', 'apps/moves/api/get_stderr').then(function(data) {
-				var messages = data && data.messages && data.messages.join('<br>').replace(/\n/g,' ');
-				sa(function() { 
-					console.log('got stdout ', data && data.messages.length); 
-					$scope.stderr = messages || ''; 
-				});
-			}).fail(function(err) {	console.error('error getitng stderr ', err); });
-			s._ajax('GET', 'apps/moves/api/get_stdout').then(function(data) {
+			s._ajax('GET', 'apps/moves/api/get_stderr' + (last_stderr_n ? '?offset='+last_stderr_n : '')).then(function(data) {
+					last_stderr_n += data && data.messages && data.messages.length || 0;
+					var messages = data && data.messages && data.messages.join('<br>').replace(/\n/g,' ');
+					sa(function() { 
+						console.log('got stdout ', data && data.messages.length); 
+						$scope.stderr = messages || ''; 
+					});
+			}).fail(function(err) {	console.error('error getting stderr ', err); });
+			s._ajax('GET', 'apps/moves/api/get_stdout' + (last_stdout_n ? '?offset='+last_stdout_n : '')).then(function(data) {
+				last_stdout_n += data && data.messages && data.messages.length || 0;
 				var messages = data && data.messages && data.messages.join('<br>').replace(/\n/g,' ');
 				sa(function() { 
 					console.log('got stdout ', data && data.messages.length); 

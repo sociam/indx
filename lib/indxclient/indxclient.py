@@ -24,12 +24,14 @@ import uuid
 import pprint
 import cjson
 import base64
+import traceback
 import Crypto.Random.OSRNG.posix
 import Crypto.PublicKey.RSA
 import Crypto.Hash.SHA512
 from twisted.internet import reactor, threads
 from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
+from autobahn.twisted.websocket import connectWS, WebSocketClientFactory, WebSocketClientProtocol
 
 # Decorator function to ensure that the IndxClient object has a token when the function requires one
 def require_token(function):
@@ -176,6 +178,7 @@ class IndxClient:
             'get_file',
             'list_files',
             'link_remote_box',
+            'get_version',
         ]
         return call.func_name in requires
 
@@ -269,6 +272,13 @@ class IndxClient:
         return self.client.delete(self.base, values)
 
     @require_token
+    def get_version(self):
+        """ Get the latest version number. """
+        self._debug("Called API: get_version")
+
+        url = "{0}/get_version".format(self.base)
+        return self.client.get(url)
+
     def get_latest(self):
         """ Get the latest version of every object in this box. """
         self._debug("Called API: get_latest")
@@ -287,15 +297,20 @@ class IndxClient:
         return self.client.get(self.base, id_tuples)
 
     @require_token
-    def query(self, query):
+    def query(self, query, depth = None):
         """ Query a box with a filtering query
 
             query -- The query to send, as a dict, e.g. {"@id": 2983} or {"firstname": "dan"}
+            depth -- How deep into the object graph/hierarchy to return full objects
         """
         self._debug("Called API: query with query: {0}".format(query))
 
+        params = {'q': query}
+        if depth is not None:
+            params['depth'] = depth
+
         url = "{0}/query".format(self.base)
-        return self.client.get(url, {'q': query})
+        return self.client.get(url, params)
 
     @require_token
     def set_acl(self, acl, target_username):
@@ -318,12 +333,13 @@ class IndxClient:
         return self.client.get(url)
 
     @require_token
-    def generate_new_key(self):
-        """ Generate new key and store it in the keystore. Return the public and public-hash parts. (Not the private part.)  """
+    def generate_new_key(self, local_key):
+        """ Generate new key and store it in the keystore, send our public (not private) key to the remote server. Return the public and public-hash parts. (Not the private part.)  """
         self._debug("Called API: generate_new_key")
 
         url = "{0}/generate_new_key".format(self.base)
-        return self.client.get(url)
+        values = {"public": local_key['public'], "public-hash": local_key['public-hash']} # don't send private to anyone ever
+        return self.client.get(url, values)
 
     @require_token
     def diff(self, return_objs, from_version, to_version = None):
@@ -402,6 +418,65 @@ class IndxClient:
         url = "{0}/link_remote_box".format(self.base)
         return self.client.get(url, {'remote_address': remote_address, 'remote_box': remote_box, 'remote_token': remote_token})
 
+    @require_token
+    def listen_diff(self, observer):
+        """ Listen to this box using a websocket. Call the observer when there's an update. """
+
+        address = self.address + "ws"
+
+        if address[0:6] == "https:":
+            address = "wss" + address[5:]
+        elif address[0:5] == "http:":
+            address = "ws" + address[4:]
+        else:
+            raise Exception("IndxClient: Unknown scheme to URL: {0}".format(address))
+
+        wsclient = IndxWebSocketClient(address, self.token, observer)
+
+
+class IndxWebSocketClient:
+    def __init__(self, address, token, observer):
+        self.address = address
+        self.token = token
+        indx_observer = observer
+
+        logging.debug("IndxWebSocketClient opening to {0}".format(self.address))
+
+        class IndxClientProtocol(WebSocketClientProtocol):
+
+            def onMessage(self, payload, isBinary):
+                try:
+                    logging.debug("IndxClientProtocol onMessage, payload {0}".format(payload))
+                    data = cjson.decode(payload)
+                    self.on_response(data)
+                except Exception as e:
+                    logging.error("IndxWebSocketClient Exception: {0}".format(e))
+                    logging.error(traceback.format_exc())
+                    logging.error("IndxWebSocketClient can't decode JSON, ignoring message: {0}".format(payload))
+
+
+            def onOpen(self):
+                msg = {"action": "auth", "token": token}
+                self.on_response = self.respond_to_auth
+                self.sendMessage(cjson.encode(msg))
+
+            # manage state by setting a response function each time
+            def send_to_observer(self, data):
+                indx_observer(data)
+
+            def respond_to_auth(self, data):
+                if data['success']:
+                    self.on_response = self.send_to_observer
+                    msg = {"action": "diff", "operation": "start"}
+                    self.sendMessage(cjson.encode(msg))
+                else:
+                    logging.error("IndxWebSocketClient WebSocket auth failure.")
+
+
+        self.factory = WebSocketClientFactory(self.address)
+        self.factory.protocol = IndxClientProtocol
+        connectWS(self.factory)
+
 
 class IndxHTTPClient:
     """ An HTTP requests client with cookie jar. """
@@ -413,7 +488,7 @@ class IndxHTTPClient:
         self.cj = cookielib.LWPCookieJar()
         self.opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(self.cj))
 
-    def get_session_identifier(self):
+    def get_session_identifier(self, address):
         """ Get the identifier for the INDX session (initiates a session if necessary). """
         return_d = Deferred()
 
@@ -437,7 +512,7 @@ class IndxHTTPClient:
                     return_d.errback(Failure(Exception("No session ID was available ")))
 
             # do a request to start a session and get a cookie
-            self.get("{0}auth/whoami".format(self.address)).addCallbacks(whoami_cb, return_d.errback)
+            self.get("{0}auth/whoami".format(address)).addCallbacks(whoami_cb, return_d.errback)
         return return_d
 
 
@@ -646,7 +721,7 @@ class IndxClientAuth:
                 # TODO change client.post etc to be async using twisted web clients
                 self.client.post(url, values).addCallbacks(responded_cb, return_d.errback)
 
-            self.get_session_identifier().addCallbacks(session_id_cb, return_d.errback)
+            self.client.get_session_identifier(self.address).addCallbacks(session_id_cb, return_d.errback)
 
         except Exception as e:
             return_d.errback(Failure(e))
@@ -658,7 +733,8 @@ class IndxClientAuth:
         """ Hash and sign a plaintext using a private key. Verify using rsa_verify with the public key. """
         hsh = self.sha512_hash(plaintext)
         PRNG = Crypto.Random.OSRNG.posix.new().read
-        return private_key.sign(hsh, PRNG)
+        signature = private_key.sign(hsh, PRNG)
+        return signature[0]
 
     def sha512_hash(self, src):
         h = Crypto.Hash.SHA512.new()

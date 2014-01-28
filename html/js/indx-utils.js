@@ -13,6 +13,11 @@
                 	L.map(function(l) { o[l] = true; });
                 	return o;
                 },
+                zip:function(a1,a2) {
+                	return this.range(Math.min(a1.length,a2.length)).map(function(i) {
+                		return [a1[i],a2[i]];
+                	});
+                },
                 inherit:function(p) {
                 	// inherit() returns a newly created object that inherits properties from the
 					// prototype object p.  It uses the ECMAScript 5 function Object.create() if

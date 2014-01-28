@@ -48,7 +48,7 @@ class AuthHandler(BaseHandler):
     ]
 
     # authentication
-    def auth_login(self, request):
+    def auth_login(self, request, token):
         """ User logged in (POST) """
         logging.debug('auth login: request, {0}'.format(request));
 
@@ -76,25 +76,19 @@ class AuthHandler(BaseHandler):
         def fail():
             logging.debug("Login request fail, origin: {0}".format(self.get_origin(request)))
             wbSession = self.get_session(request)
-            wbSession.setAuthenticated(False)
-            wbSession.setUser(None)
-            wbSession.setUserType(None)
-            wbSession.setPassword(None)            
+            wbSession.reset()
             self.return_unauthorized(request)
 
         self.database.auth(user,pwd).addCallback(lambda loggedin: win() if loggedin else fail())
 
-    def auth_keys(self, request):
+    def auth_keys(self, request, token):
         """ Log in using pre-shared keys. (POST) """
         logging.debug('auth_keys, request: {0}'.format(request));
 
         def fail():
             logging.debug("Login request fail, origin: {0}".format(self.get_origin(request)))
             wbSession = self.get_session(request)
-            wbSession.setAuthenticated(False)
-            wbSession.setUser(None)
-            wbSession.setUserType(None)
-            wbSession.setPassword(None)            
+            wbSession.reset()
             return self.return_unauthorized(request)
 
         SSH_MSG_USERAUTH_REQUEST = "50"
@@ -108,39 +102,48 @@ class AuthHandler(BaseHandler):
             logging.error("auth_keys error, signature, key, algo or method is None, returning unauthorized")
             return fail()
 
-        keystore_results = self.webserver.keystore.get(key_hash)
-        key = keystore_results['key']
-        user = keystore_results['user']
-
-        sessionid = request.getSession().uid
-
-        ordered_signature_text = '{0}\t{1}\t"{2}"\t{3}\t{4}'.format(SSH_MSG_USERAUTH_REQUEST, sessionid, method, algo, key_hash)
-        verified = rsa_verify(key['public'], ordered_signature_text, signature)
-        
-        if not verified:
-            logging.error("auth_keys error, signature does not verify, returning unauthorized")
+        try:
+            signature = long(signature)
+        except Exception as e:
+            logging.error("auth_keys error, signature was not a valid Long, returning unauthorized")
             return fail()
-        
-        logging.debug("Login request auth_keys for {0}, origin: {1}".format(user, request.getHeader("Origin")))
-        wbSession = self.get_session(request)
-        wbSession.setAuthenticated(True)
-        wbSession.setUser(user)
-        wbSession.setUserType("auth")
-        wbSession.setPassword("")
-        self.return_ok(request)
 
 
-    def auth_logout(self, request):
+        def keystore_cb(keystore_results):
+
+            key = keystore_results['key']
+            user = keystore_results['username']
+            box = keystore_results['box']
+
+            sessionid = request.getSession().uid
+
+            ordered_signature_text = '{0}\t{1}\t"{2}"\t{3}\t{4}'.format(SSH_MSG_USERAUTH_REQUEST, sessionid, method, algo, key_hash)
+            verified = rsa_verify(key['public'], ordered_signature_text, signature)
+            
+            if not verified:
+                logging.error("auth_keys error, signature does not verify, returning unauthorized")
+                return fail()
+            
+            logging.debug("Login request auth_keys for {0}, origin: {1}".format(user, request.getHeader("Origin")))
+            wbSession = self.get_session(request)
+            wbSession.setAuthenticated(True)
+            wbSession.setUser(user)
+            wbSession.setUserType("auth")
+            wbSession.setPassword("")
+            wbSession.limit_boxes = [box] # only allow access to this box
+            self.return_ok(request)
+
+        self.webserver.keystore.get(key_hash).addCallbacks(keystore_cb, fail)
+
+
+    def auth_logout(self, request, token):
         """ User logged out (GET, POST) """
         logging.debug("Logout request, origin: {0}".format(self.get_origin(request)))
         wbSession = self.get_session(request)
-        wbSession.setAuthenticated(False)
-        wbSession.setUser(None)
-        wbSession.setUserType(None)
-        wbSession.setPassword(None)        
+        wbSession.reset()
         self.return_ok(request)
 
-    def auth_whoami(self, request):
+    def auth_whoami(self, request, token):
         wbSession = self.get_session(request)
         logging.debug('auth whoami ' + repr(wbSession))
 
@@ -161,7 +164,7 @@ class AuthHandler(BaseHandler):
         user.get_user_info(decode_json = False).addCallbacks(info_cb, lambda failure: self.return_internal_error(request))
 
         
-    def get_token(self,request):
+    def get_token_handler(self,request, token):
         ## 1. request contains appid & box being requested (?!)
         ## 2. check session is Authenticated, get username/password
 
@@ -176,6 +179,11 @@ class AuthHandler(BaseHandler):
         if not wbSession.is_authenticated:
             return self.return_unauthorized(request)
 
+        # if this auth session is limited to a list of boxes, then only allow getting a token to them. 
+        limit_boxes = wbSession.limit_boxes
+        if limit_boxes is not None and boxid not in limit_boxes:
+            return self.return_unauthorized(request)
+
         username = wbSession.username
         password = wbSession.password
         origin = self.get_origin(request)
@@ -187,8 +195,11 @@ class AuthHandler(BaseHandler):
             db_user, db_pass = acct
 
             def check_app_perms(acct):
-                token = self.webserver.tokens.new(username,password,boxid,appid,origin,request.getClientIP())
-                return self.return_ok(request, {"token":token.id})
+                
+                def token_cb(token):
+                    return self.return_ok(request, {"token":token.id})
+
+                self.webserver.tokens.new(username,password,boxid,appid,origin,request.getClientIP(),self.webserver.server_id).addCallbacks(token_cb, lambda failure: self.return_internal_error(request))
 
             # create a connection pool
             database.connect_box(boxid,db_user,db_pass).addCallbacks(check_app_perms, lambda conn: self.return_forbidden(request))
@@ -197,7 +208,7 @@ class AuthHandler(BaseHandler):
 
     ### OpenID functions
 
-    def login_openid(self, request):
+    def login_openid(self, request, token):
         """ Verify an OpenID identity. """
         wbSession = self.get_session(request)
 
@@ -269,7 +280,7 @@ class AuthHandler(BaseHandler):
 
         return urlparse.urlunparse(url_parts)
 
-    def openid_process(self, request):
+    def openid_process(self, request, token):
         """ Process a callback from an identity provider. """
         oid_consumer = consumer.Consumer(self.get_openid_session(request), self.store)
         query = urlparse.parse_qsl(urlparse.urlparse(request.uri).query)
@@ -370,6 +381,9 @@ class AuthHandler(BaseHandler):
     def get_openid_session(self, request):
         return self.get_session(request).get_openid_session()
 
+    def auth_return_ok(self, request, token):
+        return self.return_ok(request)
+
 
 AuthHandler.subhandlers = [
     {
@@ -435,7 +449,7 @@ AuthHandler.subhandlers = [
         'methods': ['POST'],
         'require_auth': True,
         'require_token': False,
-        'handler': AuthHandler.get_token,
+        'handler': AuthHandler.get_token_handler,
         'content-type':'application/json', 
         'accept':['application/json']                
     },
@@ -444,7 +458,7 @@ AuthHandler.subhandlers = [
         'methods': ['POST', 'GET'],
         'require_auth': False,
         'require_token': False,
-        'handler': AuthHandler.return_ok, # already logged out
+        'handler': AuthHandler.auth_return_ok, # already logged out
         'content-type':'text/plain', # optional
         'accept':['application/json']                
         },
@@ -453,10 +467,9 @@ AuthHandler.subhandlers = [
         'methods': ['OPTIONS'],
         'require_auth': False,
         'require_token': False,
-        'handler': AuthHandler.return_ok, # already logged out
+        'handler': AuthHandler.auth_return_ok, # already logged out
         'content-type':'text/plain', # optional
         'accept':['application/json']                
      }    
 ]
-
 

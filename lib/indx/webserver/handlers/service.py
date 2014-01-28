@@ -122,7 +122,7 @@ class ServiceHandler(BaseHandler):
         manifest_data.close()
         return manifest
 
-    def get_config(self, request):
+    def get_config(self, request, token):
         try:
             #print "in service.py - get config"
             manifest = self._load_manifest()
@@ -143,7 +143,7 @@ class ServiceHandler(BaseHandler):
         logging.debug('getappcwd {0}'.format(cwd))
         return cwd
         
-    def set_config(self, request): 
+    def set_config(self, request, token): 
         try:
             #print "in service.py - set config"
             # invoke external process to set their configs
@@ -189,18 +189,18 @@ class ServiceHandler(BaseHandler):
         new_lines = self.stdoutpipe_in.read()
         if new_lines: self.std_output.extend([x.strip() for x in new_lines.split('\n') if len(x.strip()) > 0])
 
-    def get_stderr_log(self,request):
+    def get_stderr_log(self,request, token):
         self._dequeue_stderr()
-        from_id = self.get_arg(request, "start")
+        from_id = self.get_arg(request, "offset") and int(self.get_arg(request,"offset"))
         if not from_id: from_id = 0
         return self.return_ok(request,data={'messages':self.err_output[from_id:]})
-    def get_stdout_log(self,request):
+    def get_stdout_log(self,request, token):
         self._dequeue_stdout()
-        from_id = self.get_arg(request, "start")
+        from_id = self.get_arg(request, "offset") and int(self.get_arg(request,"offset"))
         if not from_id: from_id = 0
         return self.return_ok(request,data={'messages':self.std_output[from_id:]})
 
-    def start_handler(self,request):
+    def start_handler(self,request, token):
         result = self.start()
         return self.return_ok(request, data={'result': result})
 
@@ -209,11 +209,11 @@ class ServiceHandler(BaseHandler):
             self.pipe.kill()
         self.pipe = None
 
-    def stop_handler(self,request):
+    def stop_handler(self,request, token):
         self.stop()
         return self.return_ok(request)
 
-    def is_running_handler(self,request):
+    def is_running_handler(self,request, token):
         return self.return_ok(request, data={'running': self.is_running()})
 
     def render(self, request):

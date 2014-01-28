@@ -71,10 +71,11 @@ class WebServer:
             logging.debug("WebServer auth_cb, can_auth: {0}".format(can_auth))
             if can_auth:
 
-                def checked_db_ok():
+                def checked_db_ok(server_id):
+                    self.server_id = server_id # Gets the Server ID from the database
                     self.check_users().addCallbacks(lambda checked: self.server_setup(), err_cb)
 
-                self.database.check_indx_db().addCallbacks(lambda checked: checked_db_ok(), err_cb) # check indx DB exists, otherwise create it - then setup the server
+                self.database.check_indx_db().addCallbacks(checked_db_ok, err_cb) # check indx DB exists, otherwise create it - then setup the server
             else:
                 print "Authentication failed, check username and password are correct."
                 reactor.stop()
@@ -223,8 +224,10 @@ class WebServer:
             # assign ourselves a new token to access the root box using the @indx user
             # this only works because the "create_root_box" function gave this user read permission
             # this doesn't work in the general case.
-            token = self.tokens.new("@indx","",root_box,"IndxSync","/","::1")
-            token.get_store().addCallbacks(store_cb, err_cb)
+            def token_cb(token):
+                token.get_store().addCallbacks(store_cb, err_cb)
+
+            self.tokens.new("@indx","",root_box,"IndxSync","/","::1", self.server_id).addCallbacks(token_cb, return_d.errback)
 
         return return_d
 
@@ -238,14 +241,14 @@ class WebServer:
             logging.error("WebServer, start_syncing error getting root boxes: {0} {1}".format(failure, failure.value))
             # FIXME do something with the error?
 
-        def root_boxes_cb(rows):
-            logging.debug("WebServer start_syncing root_boxes_cb")
+        def linked_boxes_cb(rows):
+            logging.debug("WebServer start_syncing linked_boxes_cb")
             for row in rows:
-                username, root_box = row
-                logging.debug("WebServer start_syncing user: {0}, root box: {1}".format(username, root_box))
-                reactor.callInThread(lambda empty: self.sync_box(root_box), None)
+                linked_box = row[0]
+                logging.debug("WebServer start_syncing linked box: {0}".format(linked_box))
+                reactor.callInThread(lambda empty: self.sync_box(linked_box), None)
 
-        self.database.get_root_boxes().addCallbacks(root_boxes_cb, err_cb)
+        self.database.get_linked_boxes().addCallbacks(linked_boxes_cb, err_cb)
 
 
     def shutdown(self):

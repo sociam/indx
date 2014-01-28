@@ -48,7 +48,7 @@
             <div class="btn btn-warning" 
           ng-show="user && box && (user['@id'] !== selectedUser.id) && !granted"
           ng-click="grantACL(user, box)">Authorise {{ user.name }} to have access to {{ box }}</div>
-            <div ng-show="granted" class="granted"> {{ granted_status }} </div>
+            <div class="btn btn-success" ng-show="granted_status" > {{ granted_status }} </div>
           </td>
         </tr>
       </table>
