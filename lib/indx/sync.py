@@ -133,7 +133,8 @@ class IndxSync:
                 # TODO anythign here? no need to listen to our own box..
                 #root_store.listen(observer)
 
-            self.sync_boxes().addCallbacks(sync_cb, err_cb)
+### removed, now if this is used, you haveto call it yourself.
+#            self.sync_boxes().addCallbacks(sync_cb, err_cb)
 
         self.update_model_query(initial_query = True).addCallbacks(query_cb, err_cb)
 

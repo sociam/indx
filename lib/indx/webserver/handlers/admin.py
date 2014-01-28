@@ -123,7 +123,7 @@ class AdminHandler(BaseHandler):
                     self.webserver.register_box(box_name, self.webserver.root)
 
                     def synced_cb(indxsync):
-                        self.return_created(request)
+                        indxsync.sync_boxes().addCallbacks(lambda empty: self.return_created(request), lambda failure: logging.error("AdminHandler: Error creating root box: {0}".format(failure)))
 
                     self.webserver.sync_box(box_name).addCallbacks(synced_cb, err_cb)
 

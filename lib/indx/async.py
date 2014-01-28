@@ -134,9 +134,14 @@ class IndxAsync:
         return_d = Deferred()
 
         # lookup model
-        def model_cb(model_id):
+        def model_cb(resp):
+            model_id, boxid = resp
             all_models = [model_id]
-            self.webserver.sync_boxes(all_models = all_models, websocket = self).addCallbacks(return_d.callback, return_d.errback)
+
+            def sync_cb(indxsync):
+                indxsync.sync_boxes(all_models = all_models, websocket = self).addCallbacks(return_d.callback, return_d.errback)
+
+            self.webserver.sync_box(boxid).addCallbacks(sync_cb, return_d.errback)
 
         self.get_model_by_key(public_key_hash, store).addCallbacks(model_cb, return_d.errback)
         return return_d
@@ -156,13 +161,23 @@ class IndxAsync:
                 }
        
         def query_cb(graph):
-            for obj_id in graph.objects().keys():
-                return_d.callback(obj_id)
-                return
+            modelid, boxname = None, None
+
+            for obj_id, obj in graph.root_objects().items():
+                modelid = obj_id
+
+                for box in graph.get(obj_id).get("boxes"):
+                    for key in graph.get(box.id).get("key"):
+                        public_hash = graph.get(key.id).getOneValue("public-hash")
+
+                        if public_hash != public_key_hash: # pick the box that doesn't match the key, i.e. our box
+                            boxname = graph.get(box.id).getOneValue("box")
+                            return_d.callback((modelid, boxname))
+                            return
 
             return_d.errback(Exception("Could not find a model that uses the public key hash: {0}".format(public_key_hash)))
 
-        store.query(query, render_json = False, depth = 0).addCallbacks(query_cb, return_d.errback)
+        store.query(query, render_json = False, depth = 4).addCallbacks(query_cb, return_d.errback)
         return return_d
 
         

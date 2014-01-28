@@ -135,10 +135,16 @@ class BoxHandler(BaseHandler):
                 return self.remote_bad_request(request, "remote_address, remote_box or remote_token was missing.")
 
             def synced_cb(indxsync):
-                def linked_cb(empty):
-                    self.return_created(request)
 
-                indxsync.link_remote_box(token.username, remote_address, remote_box, remote_token).addCallbacks(linked_cb, err_cb)
+                def sync_complete_cb(empty):
+
+                    def linked_cb(empty):
+
+                        self.return_created(request)
+
+                    indxsync.link_remote_box(token.username, remote_address, remote_box, remote_token).addCallbacks(linked_cb, err_cb)
+
+                indxsync.sync_boxes().addCallbacks(sync_complete_cb, err_cb)
 
             self.webserver.sync_box(token.boxid).addCallbacks(synced_cb, err_cb)
       

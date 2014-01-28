@@ -95,6 +95,12 @@ class Graph:
 
         return objs_out
 
+    def root_objects(self):
+        objs = {}
+        for id in self.root_object_ids:
+            objs[id] = self.get(id)
+        return objs
+
     def replace_resource(self, id, resource):
         self.objects_by_id[id] = resource
 

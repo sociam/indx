@@ -249,7 +249,15 @@ class WebServer:
             for row in rows:
                 linked_box = row[0]
                 logging.debug("WebServer start_syncing linked box: {0}".format(linked_box))
-                reactor.callInThread(lambda empty: self.sync_box(linked_box), None)
+
+                def sync_a_box():
+                    
+                    def sync_cb(indxsync):
+                        indxsync.sync_boxes().addCallbacks(lambda empty: logging.debug("Sucessfully called sync in webserver."), lambda failure: logging.error("Failure syncing in webserver."))
+
+                    self.sync_box(linked_box).addCallbacks(sync_cb, lambda failure: logging.error("Failure syncing in webserver."))
+
+                reactor.callInThread(lambda empty: sync_a_box(), None)
 
         self.database.get_linked_boxes().addCallbacks(linked_boxes_cb, err_cb)
 
