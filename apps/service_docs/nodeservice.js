@@ -8,6 +8,8 @@ var nodeindx = require('../../lib/services/nodejs/nodeindx'),
 	config_file = path.resolve(__dirname, '.config.json'),
 	debugfilename = path.resolve(__dirname, '.debug.log');
 
+var passwordPlaceholder = "********"; // don't send password back to client
+
 var NodeService = { 
 	init:function() {
 		this._check_args();
@@ -20,7 +22,7 @@ var NodeService = {
 			try { 
 				this.load_config().then(function(config) {
 					this_.debug('censoring password')
-					config.password = config.password ? "******" : '';
+					config.password = config.password ? passwordPlaceholder : '';
 					console.log(JSON.stringify(config));
 				});
 			} catch(e) { 
@@ -29,12 +31,19 @@ var NodeService = {
 			}
 		} else if (argv.setconfig) {
 			this.debug('set config');
-			try{ 
-				var jsonconfig = JSON.parse(argv.setconfig);
-				this.save_config(jsonconfig).then(function() { 
-					console.log(JSON.stringify({status:200,message:"ok - configuration saved"}));
-				}).fail(function(f) {
-					console.error(f);
+			try {
+				// load existing config
+				this.load_config().then(function (oldconfig) {
+					var jsonconfig = JSON.parse(argv.setconfig);
+					// replace placeholder with real password
+					if (jsonconfig.password === passwordPlaceholder) { 
+						jsonconfig.password = oldconfig.password;
+					}
+					this.save_config(jsonconfig).then(function() { 
+						console.log(JSON.stringify({status:200,message:"ok - configuration saved"}));
+					}).fail(function(f) {
+						console.error(f);
+					});
 				});
 			} catch(e) {
 				console.error("error parsing config json ", argv.set_config);
