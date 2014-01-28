@@ -27,7 +27,10 @@
 <div class="tab-pane" ng-if="pane === 'documentation'">
 	<nav class="navbar navbar-default navbar-static-top nav-mini" role="navigation">
 		<form class="navbar-form navbar-left" ng-if="manifest.documentation.isAvailable">
-			<button type="button" class="btn btn-default btn-sm" ng-click="manifest.documentation.build()">Build</button>
+
+			<button type="button" class="btn btn-default btn-sm" ng-click="manifest.documentation.startBuild()" ng-if="!manifest.documentation.isBuilding">Build</button>
+			<button type="button" class="btn btn-default btn-sm btn-danger" ng-click="manifest.documentation.stopBuild()" ng-if="manifest.documentation.isBuilding">Stop build</button>
+
 			<button type="button" class="btn btn-default btn-sm" ng-click="manifest.documentation.refresh()" ng-if="manifest.documentation.isBuilt">Refresh</button>
 			<a href="{{ manifest.documentation.get('url') }}" target="_blank" class="btn btn-default btn-sm" ng-if="manifest.documentation.isBuilt">View standalone</a>
 		</form>

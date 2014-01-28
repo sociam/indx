@@ -243,7 +243,7 @@ angular
 				this.docUrl = this.get('url');
 				this.set(raw, { silent: true }).trigger('change');
 			},
-			build: function () {
+			/*build: function () {
 				var that = this;
 				this.isBuilding = true;
 				$.post('api/build_doc?id=' + this.manifest.id)
@@ -261,6 +261,10 @@ angular
 						that.isBuilding = false;
 						u.safeApply($rootScope);
 					});
+			},*/
+			startBuild: function () {
+				var that = this;
+				this.trigger('start_build');
 			},
 			refresh: function () {
 				this.set('url', this.docUrl + '?_r' + Math.round(Math.random() * 1e6));
@@ -274,9 +278,17 @@ angular
 				}
 			},
 			initialize: function () {
+				var that = this;
 				this.documentation = new DocumentationModel(undefined, { manifest: this });
 				this.tests = new Tests(this.get('tests'), { manifest: this });
 				this.icon = this.get('icons')['128'];
+				this.documentation.on('all', function (event) {
+					if (['start_build', 'end_build'].indexOf(event) === -1) { return; }
+					//var args = Array.prototype.slice.call(arguments, 1);
+					//Backbone.Model.prototype.trigger.apply(that, args);
+					//console.log(event, args)
+					that.trigger(event, that, that.documentation);
+				});
 			}
 		});
 
@@ -313,8 +325,89 @@ angular
 
 		var manifests = new Manifests();
 
+		var pushCommand = function (obj, command) {
+			var queue = obj.get('command-queue');
+			queue.push(command);
+			obj.save('command-queue', queue);
+		};
+
+		var updateTest = function (obj, id, attributes) {
+			var dfd = $.Deferred(),
+						var testObj = _(obj.get('tests')).where(id).pop();
+
+			if (testObj) {
+				dfd.resolve();
+			} else {
+				box.getObj('testrunner-manifest_' + manifest.id + '-test_' + test.id, function (obj) {
+					obj.set(id);
+					var tests = obj.get('tests');
+					tests.push(obj);
+					obj.save('tests', tests).then(function () {
+						testObj = obj;
+						dfd = $.Deferred();
+					});
+				});
+			}
+			dfd.resolve(function () {
+				testObj.set(attributes);
+			})
+			return dfd;
+		}
+
 		var start = function () {
-			manifests.fetch().then(function () {
+			// get the root obj
+			var testrunnerObj,
+				docsbuilderObj,
+				dfd1 = box.getObj('testrunner').then(function (obj) {
+					if (!obj.has('command-queue')) { obj.set('command-queue', []); }
+					if (!obj.has('tests')) { obj.set('tests', []); }
+					testrunnerObj = obj;
+				}),
+				dfd2 = box.getObj('docsbuilder').then(function (obj) {
+					if (!obj.has('command-queue')) { obj.set('command-queue', []); }
+					if (!obj.has('docs')) { obj.set('docs', []); }
+					docsbuilderObj = obj;
+				}),
+				dfd3 = manifests.fetch();
+
+			$.when(dfd1, dfd2, dfd3).then(function () {
+				manifests.fetched = true;
+				u.safeApply($rootScope);
+
+				manifests.on('start_test', function (manifest, test) {
+					var id = { manifest_id: manifest.id, test_id: test.id };
+					updateTest(testrunnerObj, id, { state 'started' }).then(function (test) {
+						pushCommand(testrunnerObj, _.extend({ action: 'start', test: test }, id));
+					});
+				});
+				manifests.on('run_test', function (manifest, test) {
+					var id = { manifest_id: manifest.id, test_id: test.id };
+					updateTest(testrunnerObj, id, { state 'running' }).then(function (test) {
+						pushCommand(testrunnerObj, _.extend({ action: 'run', test: test }, id));
+					});
+				});
+				manifests.on('stop_test', function (manifest, test) {
+					var id = { manifest_id: manifest.id, test_id: test.id };
+					updateTest(testrunnerObj, id, { state 'stopping' }).then(function (test) {
+						pushCommand(testrunnerObj, _.extend({ action: 'stop', test: test }, id));
+					});
+				});
+				manifests.on('start_build', function (manifest, doc) {
+					var id = { manifest_id: manifest.id, doc_id: doc.id };
+					updateDoc(testrunnerObj, id, { state 'stopped' }).then(function (doc) {
+						pushCommand(testrunnerObj, _.extend({ action: 'start', doc: doc }, id));
+					});
+				});
+				manifests.on('stop_build', function (manifest, doc) {
+					var id = { manifest_id: manifest.id, doc_id: doc.id };
+					updateDoc(testrunnerObj, id, { state '?' }).then(function (doc) {
+						pushCommand(testrunnerObj, _.extend({ action: 'stop', doc: doc }, id));
+					});
+				});
+			})
+
+
+			/*.then(function () {
 				var promises = [];
 				// populate the testrunner object
 				manifests.each(function (manifest) {
@@ -347,12 +440,8 @@ angular
 						});
 						promises.push(promise);
 					});
-				});
-				$.when.apply($, promises).then(function () {
-					manifests.fetched = true;
-					u.safeApply($rootScope);
-				});
-			});
+				});*/
+			//});
 		};
 
 		var loadBox = function(bid) {
