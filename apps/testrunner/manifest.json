@@ -1,5 +1,5 @@
 {
-	"name": "Test runner",
+	"name": "Test runner service",
 	"version": 0.1,
 	"type":["service"],
 	"description": "Test runner service",
@@ -10,5 +10,15 @@
 	"get_config":["node", "run.js", "--getconfig"],
 	"icons": {
 		"128": "icon.png"
-	}
+	},
+	"author": [
+		{
+			"name": "Peter West",
+			"email": "peter.g.west@gmail.com"
+		}
+		{
+			"name": "eMax",
+			"email":"max@hip.cat"
+		}
+	],
 }
