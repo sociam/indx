@@ -52,7 +52,11 @@ var NodeService = {
 			// run!
 			this.debug('starting up >> server -- ', argv.indxhost);
 			if (argv.indxhost) {
-				nodeindx.login().then(function(store) { this_.run(store); }).fail(function() { console.error('fail logging :('); });			
+				this.load_config().then(function (config) {
+					nodeindx.login(argv.indxhost, config.username, config.password).then(function (store) {
+						this_.run(store);
+					}).fail(function() { console.error('fail logging :('); });			
+				}).fail(function () { console.error('no config'); })
 			} else {
 				console.error('no indx server specified; use --indxhost'); 
 			}

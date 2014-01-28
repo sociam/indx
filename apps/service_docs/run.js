@@ -13,8 +13,7 @@ var TestRunnerService = Object.create(nodeservice.NodeService, {
 			console.log('trying to work')
 			var this_ = this;
 			this.load_config().then(function(config) {
-				this_.debug('config! ', config, typeof config, JSON.parse(config));
-				config = JSON.parse(config);
+				this_.debug('config! ', config, typeof config, config);
 				if (!config || !_(config).keys()) {
 					this_.debug(' no configuration set, aborting '); 
 					return;
