@@ -226,7 +226,7 @@ class IndxSync:
 
                         def added_indx_cb(empty):
                             # start syncing/connecting using the new key
-                            self.sync_boxes([link_uri]).addCallbacks(return_d.callback, return_d.errback)
+                            self.sync_boxes([link_uri], include_push_all = True).addCallbacks(return_d.callback, return_d.errback)
 
                         self.database.save_linked_box(self.root_store.boxid).addCallbacks(added_indx_cb, return_d.errback)
 
@@ -242,8 +242,14 @@ class IndxSync:
         return return_d
 
 
-    def sync_boxes(self, all_models = None, websocket = None):
-        """ Synchronise boxes based on the internal model stored in this object. """
+    def sync_boxes(self, all_models = None, websocket = None, include_push_all = False):
+        """ Synchronise boxes based on the internal model stored in this object.
+        
+            all_models - A list of model IDs to synchronise. If None, do them all.
+            websocket - A websocket object to use, instead of creating a new one.
+            include_push_all - Push the current data to the remote server too? (Default don't). This is for bootstrapping a new server.
+        """
+        # TODO in future make include_push_all read the last_version_seen from the remote server statuses entry, and send from there.
         logging.debug("IndxSync sync_boxes, all_models: {0}".format(all_models))
         return_d = Deferred()
 
@@ -305,29 +311,42 @@ class IndxSync:
                                 
                                 def updated_cb(empty):
 
-                                    def observer(data):
+                                    def pushed_cb(empty):
 
-                                        if data.get('action') == 'diff' and data.get('operation') == 'update':
-                                            diff = data['data']
+                                        def observer(data):
 
-                                            def done_cb(empty):
-                                                logging.debug("IndxSync updating from a websocket done.")
-                                            def err_cb(failure):
-                                                logging.error("IndxSync updating from a websocket error: {0}".format(failure))
+                                            if data.get('action') == 'diff' and data.get('operation') == 'update':
+                                                diff = data['data']
 
-                                            self.update_to_latest_version(client, remote_server_url, remote_box, diff_in = diff).addCallbacks(done_cb, err_cb)                                  
+                                                def done_cb(empty):
+                                                    logging.debug("IndxSync updating from a websocket done.")
+                                                def err_cb(failure):
+                                                    logging.error("IndxSync updating from a websocket error: {0}".format(failure))
+
+                                                self.update_to_latest_version(client, remote_server_url, remote_box, diff_in = diff).addCallbacks(done_cb, err_cb)                                  
+                                            else:
+                                                logging.error("Sync: Unknown data message from WebSocket: {0}".format(data))
+
+                                        # auths and sets up listening for diffs, filtering them and passing them to the observer
+                                        if websocket is None:
+                                            wsclient = client.connect_ws(local_key['key']['private'], local_key_hash, observer) # open a new socket
                                         else:
-                                            logging.error("Sync: Unknown data message from WebSocket: {0}".format(data))
+                                            websocket.listen_diff(observer) # use an existing websocket
 
-                                    # auths and sets up listening for diffs, filtering them and passing them to the observer
-                                    if websocket is None:
-                                        wsclient = client.connect_ws(local_key['key']['private'], local_key_hash, observer) # open a new socket
-                                    else:
-                                        websocket.listen_diff(observer) # use an existing websocket
+                                        next_model(None)
 
-                                    next_model(None)
+                                    if not include_push_all:
+                                        pushed_cb(None)
+                                        return
+                                    
+                                    # push the whole box to the remote box
+                                    def latest_cb(graph):
+                                        def ver_cb(version):
+                                            client.update_raw(version, graph.to_flat_json()).addCallbacks(pushed_cb, return_d.errback)
 
+                                        client.get_version().addCallbacks(lambda resp: ver_cb(resp['data']), return_d.errback)
 
+                                    self.root_store.get_latest(render_json = False).addCallbacks(latest_cb, return_d.errback)
 
                                 # compare local version to previous, and update one of them, or both
                                 self.update_to_latest_version(client, remote_server_url, remote_box).addCallbacks(updated_cb, return_d.errback)
