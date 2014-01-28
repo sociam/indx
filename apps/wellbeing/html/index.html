@@ -2,58 +2,22 @@
   <head>
 	<link href="/css/bootstrap.css" rel="stylesheet">
 	<link href="/css/angular-ui.css" rel="stylesheet">
-	<!-- warning: this will leak your location to leaflet js --> 
 	<link rel="stylesheet" href="/js/vendor/leaflet/leaflet.css" />
 	<link rel="stylesheet/less" type="text/css" href="/components/toolbar/toolbar.less">
-	<link rel="stylesheet/less" type="text/css" href="css/location.less">	
-	<title>INDX GeoLocation</title>
+	<link rel="stylesheet/less" type="text/css" href="css/wellbeing.less">	
+	<title>indx :: wellbeing observatory</title>
   </head>
-  <body ng-app="sensors" ng-controller="location" ng-cloak>
-	<toolbar box-var='selectedBox' username-var='selectedUser'></toolbar>
-	<div class='main'>
-	  <div id="map" ng-show="selectedUser && selectedBox"></div>
-		  
-	  <div ng-show="selectedUser && selectedBox">
-		<div class='title'><b>INDX</b> : longitude</div>
-	  </div>
-	  
-	  <div class="container">
-		<div ng-show="!selectedUser">
-		  <h2> please log in to load your location lifelog  </h2>
-		</div>
-		<div ng-show="selectedUser && !selectedBox">
-		  <h2> please select a box  </h2>
-		</div>		
-	  </div>
-	  <div class="geolocate" ng-show="selectedUser && selectedBox">
-		<div ng-class="{btn:true, locate:true, disabled:loading}" ng-click="locate()" ng-show="selectedUser && selectedBox"><span class='glyphicon glyphicon-map-marker'></span></div>
-		<div class='latlng' ng-show="location && !error">
-		  lat:<b>{{ location.latitude | number:4 }}</b>, lon:<b>{{ location.longitude | number:2 }}</b>
-		</div>
-		<div class='latlng error' ng-show="error">
-		  {{ error }}
-		</div>		
-	  </div>
-	  <div class="history" ng-show="selectedUser && selectedBox">
-		<div>
-		  <table>
-			<tr ng-repeat="day in byDay">
-			  <td class="timelabel">
-				{{ toDateString(day.start) }}
-			  </td>
-			  <td class="locations">
-				<ol>
-				  <li ng-repeat="loc in day.locations">
-					<div class="timespan">{{ toTimeString(loc.get('start')[0]).slice(0,-2) }}-{{ toTimeString(loc.get('end')[0]) }}</div>:
-					<div class='latlng-coords' ng-mouseover="hoverHistory(loc.get('latitude')[0], loc.get('longitude')[0])">
-					  [ {{ loc.get('latitude')[0] | number:4 }}, {{ loc.get('longitude')[0] | number:4 }} ]
-					</div> 
-				  </li>
-				</ol>
-			  </td>
-		  </table>
-		</div>
-	  </div> <!-- history --> 
+  <body ng-app="wellbeing" ng-controller="main" ng-cloak>
+	<toolbar box-var='box' username-var='user'></toolbar>
+	<!-- infinite-scroll="getLoc()" infinite-scroll-distance="3" --> 
+	<div ng-show="user && box" class='diary container'>
+		<locmap ng-repeat="loc in locations" location="loc"></locmap>
+	</div>
+	<div ng-show="!user">
+		<h1>Please log in.</h1>
+	</div>
+	<div ng-show="!box">
+		<h1>Please select a box.</h1>
 	</div>
   </body>
   <script src="/js/vendor/lesscss.min.js" type="text/javascript"></script>  
@@ -64,6 +28,7 @@
   <!-- angular --> 
   <script src="/js/vendor/angular.min.js" type="text/javascript"></script>
   <script src="/js/vendor/angular-ui.js" type="text/javascript"></script>
+  <script src="/js/vendor/ng-infinite-scroll.js" type="text/javascript"></script>
 
   <!-- indx --> 
   <script src="/js/indx.js" type="text/javascript"></script>
@@ -72,5 +37,6 @@
 
   <!-- leaflet --> 
   <script src="/js/vendor/leaflet/leaflet.js"></script>
-  <script src="js/location.js" type="text/javascript"></script>  
+  <script src="js/main.js" type="text/javascript"></script>  
+
 </html>
