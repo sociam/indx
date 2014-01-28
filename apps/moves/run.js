@@ -51,7 +51,7 @@ var MovesService = Object.create(nodeservice.NodeService, {
             
             var dac = config.authcode ? this.__updateAccessTokens() : u.dresolve();
             var dlb = this._loadBox();
-            var quit = function(bail) { this_.__exit(bail); };
+            var quit = function(bail) { console.error(bail); /* this_.__exit(bail); */ };
 
             jQuery.when(dac, dlb).then(function() {
                 // lets get our profile _once_

@@ -1,0 +1,20 @@
+{
+	"name": "weather",
+	"version": 0.1,
+	"type":["service"],
+	"description": "indx weather service",
+	"on_boot": 0,
+	"configpanel":"html/index.html",
+	"run":["node", "run.js", "--indxhost", "{0}"],
+	"set_config":["node", "run.js", "--setconfig", "{0}"],
+	"get_config":["node", "run.js", "--getconfig"],
+	"icons": { 
+		"128": "img/cloud.gif"
+	},
+	"author": [
+		{
+			"name": "eMax",
+			"email":"max@hip.cat"
+		}
+	]
+}

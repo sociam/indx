@@ -1,0 +1,11 @@
+<div class="day row">
+	<div class="things locations">
+		<locmap location="loc" ng-repeat="loc in day.locations"></locmap>
+	</div>
+	<div class="things activities">
+		<div class="location" ng-repeat="act in day.activities">
+			loc.get('latitude') - loc.get('type')
+		</div>
+	</div>
+</div>
+	
