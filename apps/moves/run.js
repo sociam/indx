@@ -42,7 +42,46 @@ var daysBetween = function(date1, date2) {
     var diff = Math.abs(date2.valueOf() - date1.valueOf());
     return diff/(1000*60*60*24);
 };
-
+var save_aggressively = function(model) {
+    var d = u.deferred(), me = arguments.callee, guid = u.guid();
+    model.save().then(d.resolve).fail(function(bail) {
+        console.log(' save fail 1023890189238901322809 ', typeof bail, bail.code);
+        if (bail.code == 409) {
+            console.error('save_aggressively :: RESUMINGGGGGGGGGGGGGGGGGGGGGG SETUP > ');
+            box.on('update-from-master', function() { 
+                console.error('save_aggressively :: RESUMINGGGGGGGGGGGGGGGGGGGGGG RESUME << ');
+                box.off(undefined,undefined,guid);
+                me(model).then(d.resolve).fail(d.reject);
+            }, guid);
+        } else {
+            // other failure code
+            console.error('other failure code >> ', bail.code);
+            d.reject();
+        }
+    });
+    return d.promise();
+};
+var quit = function(bail) { console.error(bail); process.exit(-1);  };
+// var persist_thru_obsoletes = function(box, f, d) {
+//     var me = arguments.callee, guid = u.guid();
+//     f().then(d.resolve).fail(function(bail) {
+//         if (bail.code == 409) {
+//             box.on('update-from-master', function() { 
+//                 box.off(undefined,undefined,guid);
+//                 me(store, f,d);
+//             }, guid);
+//         } else {
+//             // other failure code
+//             console.error('other failure code >> ', bail.code);
+//             d.reject();
+//         }
+//     });
+// };
+// var save_aggressively = function(model) {
+//     var d = u.deferred();
+//     persist_thru_obsoletes(model.box, function() { return model.save(); },  d);
+//     return d.promise();
+// };
 var MovesService = Object.create(nodeservice.NodeService, {
     run: { 
         // master run 
@@ -51,7 +90,6 @@ var MovesService = Object.create(nodeservice.NodeService, {
             
             var dac = config.authcode ? this.__updateAccessTokens() : u.dresolve();
             var dlb = this._loadBox();
-            var quit = function(bail) { console.error(bail); /* this_.__exit(bail); */ };
 
             jQuery.when(dac, dlb).then(function() {
                 // lets get our profile _once_
@@ -73,9 +111,12 @@ var MovesService = Object.create(nodeservice.NodeService, {
         value:function() { 
             var config = this.config, this_ = this, diary = this.diary, d = u.deferred();
             var refreshToken = function() { this_.refreshToken().then(grab).fail(d.reject); };
-            var updateLGD = function(d) { 
-                this_.diary.set({lastGrabbedDate:d});
-                this_.diary.save();
+
+            var updateLGD = function(date) { 
+                var d = u.deferred();
+                this_.diary.set({lastGrabbedDate:date});
+                save_aggressively(this_.diary).then(d.resolve).fail(quit);
+                return d.promise();
             };
 
             var grab = function() { 
@@ -100,13 +141,6 @@ var MovesService = Object.create(nodeservice.NodeService, {
             // first of all check tokens
             this.checkAccessToken().then(grab).fail(refreshToken);
             return d.promise();
-        }
-    },
-    __exit:{
-        value:function(err)  {
-            // error has occurred
-            console.error(err);
-            process.exit(-1);
         }
     },
     __updateAccessTokens:{
@@ -196,11 +230,7 @@ var MovesService = Object.create(nodeservice.NodeService, {
                 // token is valid
                 console.info('refresh ok, clobbering >> ', result, typeof result);
                 _(this_.config).extend(result);
-                this_.save_config(this_.config).then(function() {
-                   d.resolve(result); 
-                }).fail(function() { 
-                    d.reject();
-                });
+                this_.save_config(this_.config).then(d.resolve).fail(d.reject);
             }).fail(function(bail) { 
                 // token isn't valid anymore
                 console.error('error >> ', bail);
@@ -229,7 +259,7 @@ var MovesService = Object.create(nodeservice.NodeService, {
                 delete result.profile.firstDate;
                 this_.diary.set(result.profile);
                 console.log('diary >> ', this_.diary.attributes);
-                u.when([ this_.diary.save(), this_.whom.save() ]).then(d.resolve).fail(d.reject);                    
+                u.when([ save_aggressively(this_.diary), save_aggressively(this_.whom) ]).then(d.resolve).fail(d.reject);                    
             }).fail(function(bail) { 
                 // token isn't valid anymore
                 console.error('ERROR getProfile >> ', bail);
@@ -309,7 +339,7 @@ var MovesService = Object.create(nodeservice.NodeService, {
                             if (place.type == 'work') { model_loc.set({work_of: this_.whom}); }
                             if (place.type == 'user') { model_loc.set({manually_labeled:true}); }
                             if (place.type == 'school') { model_loc.set({school_of: this_.whom}); }                            
-                            model_loc.save().then(function() { dr.resolve(model_loc);   }).fail(dr.reject);
+                            save_aggressively(model_loc).then(function() { dr.resolve(model_loc);   }).fail(dr.reject);
                     }).fail(dr.reject);
                 }
             });
@@ -323,7 +353,7 @@ var MovesService = Object.create(nodeservice.NodeService, {
                 if (matching_locs && matching_locs.length) {  dr.resolve(matching_locs[0]); } else {
                     entities.locations.make(this_.box, undefined, undefined, trackPoint.lat, trackPoint.lon).then(function(model_loc) { 
                         // save it before it gets lost
-                        model_loc.save().then(function() { dr.resolve(model_loc);  }).fail(dr.reject);
+                        save_aggressively(model_loc).then(function() { dr.resolve(model_loc); }).fail(dr.reject);
                     }).fail(dr.reject);
                 }
             });
@@ -357,7 +387,7 @@ var MovesService = Object.create(nodeservice.NodeService, {
                     activity.steps,
                     activities.calories,
                     trackObjects).then(function(activity_model) { 
-                        activity_model.save().then(function() { da.resolve(activity_model); }).fail(da.reject); 
+                        save_aggressively(activity_model).then(function() { da.resolve(activity_model); }).fail(da.reject); 
                     });
             }).fail(da.reject);
             return da.promise();
@@ -382,7 +412,7 @@ var MovesService = Object.create(nodeservice.NodeService, {
             jQuery.when(u.when(dact), dpl).then(function(activities, place) { 
                 var saved_acts = u.when(activities.map(function(a) { 
                     if (place) { a.set({where: place, diary:this_.diary}); }
-                    return a.save();
+                    return save_aggressively(a);
                 }));
                 if (segment.type === 'move') {
                     // then our subactivities are self-describing
@@ -392,7 +422,7 @@ var MovesService = Object.create(nodeservice.NodeService, {
                     var from_t = fromMovesDate(segment.startTime), to_t = fromMovesDate(segment.endTime);
                     entities.activities.make1(this_.box, 'stay', this_.whom, from_t, to_t ).then(function(am) {
                         am.set({diary:this_.diary});
-                        u.when(am.save(), saved_acts).then(ds.resolve).fail(ds.reject);
+                        u.when(save_aggressively(am), saved_acts).then(ds.resolve).fail(ds.reject);
                     }).fail(ds.reject);
                 }
             });

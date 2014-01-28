@@ -46,8 +46,6 @@ class ObjectStoreAsync:
         self.loggerExtra = {}
         self.server_id = server_id
 
-        self.schema_upgrade()
-
     def schema_upgrade(self):
         """ Perform INDX schema upgrades.
         
@@ -61,77 +59,89 @@ class ObjectStoreAsync:
         def indx_conn_cb(indx_conn):
             logging.debug("Objectstore schema_upgrade, indx_conn_cb")
 
-            def conn_cb(conn):
-                logging.debug("Objectstore schema_upgrade, conn_cb")
+            def interaction_cb(indx_cur, *args, **kwargs):
+                logging.debug("Objectstore schema_upgrade, interaction_cb, args: {0}, kwargs: {1}".format(args, kwargs))
+                interaction_d = Deferred()
 
-                def upgrade_from_version(next_version):
-                    """ Upgrade the schema from the specified version. """
-                    logging.debug("Objectstore schema_upgrade from next_version {0}".format(next_version))
+                def lock_cb(*args):
+                    def conn_cb(conn):
+                        logging.debug("Objectstore schema_upgrade, conn_cb")
 
-                    sql_total = []
-                    indx_sql_total = []
-                    last_version = next_version # keep track of the last applied version - this will be saved in the tbl_indx_core k/v table
-                    while next_version != "":
-                        logging.debug("Objectstore schema_upgrade adding sql from version: {0}".format(next_version))
-                        sql_total.append("\n".join(schemas['store-updates']['versions'][next_version]['sql']))
-                        last_version = next_version
-                        if 'next-version' not in schemas['store-updates']['versions'][next_version]:
-                            break
+                        def upgrade_from_version(next_version):
+                            """ Upgrade the schema from the specified version. """
+                            logging.debug("Objectstore schema_upgrade from next_version {0}".format(next_version))
 
-                        next_version = schemas['store-updates']['versions'][next_version]['next-version']
+                            sql_total = []
+                            indx_sql_total = []
+                            last_version = next_version # keep track of the last applied version - this will be saved in the tbl_indx_core k/v table
+                            while next_version != "":
+                                logging.debug("Objectstore schema_upgrade adding sql from version: {0}".format(next_version))
+                                sql_total.append("\n".join(schemas['store-updates']['versions'][next_version]['sql']))
+                                last_version = next_version
+                                if 'next-version' not in schemas['store-updates']['versions'][next_version]:
+                                    break
 
-                    logging.debug("Objectstore schema_upgrade saving last_version as {0}".format(last_version))
-                    indx_sql_total.append("DELETE FROM tbl_indx_core WHERE key = 'box_last_schema_version' AND boxid = '" + self.boxid + "';")
-                    indx_sql_total.append("INSERT INTO tbl_indx_core (key, value, boxid) VALUES ('box_last_schema_version', '" + last_version + "', '" + self.boxid + "');")
+                                next_version = schemas['store-updates']['versions'][next_version]['next-version']
 
-                    # execute queries one at a time
-                    def do_next_query(empty):
-                        if len(sql_total) < 1:
+                            logging.debug("Objectstore schema_upgrade saving last_version as {0}".format(last_version))
+                            indx_sql_total.append("DELETE FROM tbl_indx_core WHERE key = 'box_last_schema_version' AND boxid = '" + self.boxid + "';")
+                            indx_sql_total.append("INSERT INTO tbl_indx_core (key, value, boxid) VALUES ('box_last_schema_version', '" + last_version + "', '" + self.boxid + "');")
 
-                            def do_next_indx_query(empty):
-                                if len(indx_sql_total) < 1:
-                                    return_d.callback(None)
-                                    return
+                            # execute queries one at a time
+                            def do_next_query(*args, **kw):
+                                if len(sql_total) < 1:
 
-                                query = indx_sql_total.pop(0)
-                                indx_conn.runOperation(query).addCallbacks(do_next_indx_query, return_d.errback)
+                                    def do_next_indx_query(*args, **kw):
+                                        if len(indx_sql_total) < 1:
+                                            interaction_d.callback(None)
+                                            return
 
-                            do_next_indx_query(None)
-                        else:
-                            query = sql_total.pop(0)
-                            conn.runOperation(query).addCallbacks(do_next_query, return_d.errback)
+                                        query = indx_sql_total.pop(0)
+                                        self._curexec(indx_cur, query).addCallbacks(do_next_indx_query, interaction_d.errback)
 
-                    do_next_query(None)
+                                    do_next_indx_query(None)
+                                else:
+                                    query = sql_total.pop(0)
+                                    conn.runOperation(query).addCallbacks(do_next_query, interaction_d.errback)
+
+                            do_next_query(None)
 
 
-                # query from a version onwards
-                query = "SELECT value FROM tbl_indx_core WHERE key = %s AND boxid = %s"
-                params = ['box_last_schema_version', self.boxid]
+                        # query from a version onwards
+                        query = "SELECT value FROM tbl_indx_core WHERE key = %s AND boxid = %s"
+                        params = ['box_last_schema_version', self.boxid]
 
-                def version_cb(rows):
-                    if len(rows) < 1:
-                        # no previous version
-                        first_version = schemas['store-updates']['first-version']
-                        upgrade_from_version(first_version)
-                        return
-                    else:
-                        this_version = rows[0][0]
-                        if 'next-version' in schemas['store-updates']['versions'][this_version]:
-                            next_version = schemas['store-updates']['versions'][this_version]['next-version']
-                        else:
-                            return_d.callback(True)
-                            return # no next version
+                        def version_cb(*args):
+                            rows = indx_cur.fetchall()
+                            if len(rows) < 1:
+                                # no previous version
+                                first_version = schemas['store-updates']['first-version']
+                                upgrade_from_version(first_version)
+                                return
+                            else:
+                                this_version = rows[0][0]
+                                if 'next-version' in schemas['store-updates']['versions'][this_version]:
+                                    next_version = schemas['store-updates']['versions'][this_version]['next-version']
+                                else:
+                                    interaction_d.callback(True)
+                                    return # no next version
 
-                        if next_version == "":
-                            return_d.callback(True)
-                            return # no next version
+                                if next_version == "":
+                                    interaction_d.callback(True)
+                                    return # no next version
 
-                        upgrade_from_version(next_version)
-                        return
+                                upgrade_from_version(next_version)
+                                return
 
-                indx_conn.runQuery(query, params).addCallbacks(version_cb, return_d.errback)
-        
-            self.conns['conn']().addCallbacks(conn_cb, return_d.errback)
+                        self._curexec(indx_cur, query, params).addCallbacks(version_cb, interaction_d.errback)
+                
+                    self.conns['conn']().addCallbacks(conn_cb, interaction_d.errback)
+
+                self._curexec(indx_cur, "LOCK TABLE tbl_acl, tbl_indx_core, tbl_keychain, tbl_tokens, tbl_users IN EXCLUSIVE MODE").addCallbacks(lock_cb, interaction_d.errback) # lock to other writes (and write locks), but not reads
+                return interaction_d
+
+            inter_d = indx_conn.runInteraction(interaction_cb)
+            inter_d.addCallbacks(return_d.callback, return_d.errback)
         
         self.conns['indx_conn']().addCallbacks(indx_conn_cb, return_d.errback)
         return return_d
@@ -229,14 +239,14 @@ class ObjectStoreAsync:
         query = ObjectStoreQuery()
         sql, params = query.to_sql(q, predicate_filter = predicate_filter)
  
-        def conn_cb(conn):
+        def conn_cb(conn, *args, **kw):
             logging.debug("Objectstore query, conn_cb")
 
-            def results_cb(rows):
+            def results_cb(rows, *args, **kw):
                 logging.debug("Objectstore query, results_cb")
                 graph = Graph.from_rows(rows)
 
-                def expanded_cb(empty):
+                def expanded_cb(*args, **kw):
                     logging.debug("Objectstore query, expanded_cb")
                     if render_json:
                         objs_out = graph.to_json()
@@ -1199,8 +1209,6 @@ class ObjectStoreAsync:
         """
         result_d = Deferred()
         self.debug("Objectstore update, specified_prev_version: {0}".format(specified_prev_version))
-        from twisted.internet.defer import setDebugging
-        setDebugging(True)
    
         def err_cb(failure):
             self.error("Objectstore update err_cb, failure: {0}".format(failure))
