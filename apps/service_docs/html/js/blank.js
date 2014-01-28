@@ -9,26 +9,26 @@ angular
 
 		// @get_config
 		var _get_config_from_service = function() {
-			s._ajax('GET', 'apps/service_docs/api/get_config').then(function(x) { 
-				var config = JSON.parse(x.config);
+			s._ajax('GET', 'apps/service_docs/api/get_config').then(function (x) { 
+				//var config = JSON.parse(x.config);
+				var config = x.config;
 				// simple stuff
 				sa(function() { 
+					console.log(config)
 					_($scope).extend({ 
 						app: { 
 							box : config.box,
-							password: config.password,
-						},
-						latlngs:config.latlngs,
-						sleep:config.sleep || 60000
+							password: config.password
+						}
 					});
 				});
 				// restore the user
-				if (config.user && $scope.users) { 
-					var match = $scope.users.filter(function(u) { return u['@id'] === config.user; });
-					if (match.length) {
-						window.match = match[0];
-						sa(function() { $scope.app.user = match[0]; });
-					}
+				if (config.username && $scope.users) {
+					sa(function () {
+						$scope.app.user = $scope.users.filter(function (u) { 
+							return u['@id'] === config.username; 
+						}).pop();
+					})
 				}
 			}).fail(function(err) { console.error('could not get config ', err); });
 		};
