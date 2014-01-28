@@ -747,7 +747,6 @@ class IndxDatabase:
         return return_d
 
 
-
     def get_linked_boxes(self):
         """ Get a list of linked boxes. """
         logging.debug("idnx_pg2 get_linked_boxes")
@@ -778,6 +777,8 @@ class IndxDatabase:
             d = conn.runQuery(query, params)
             
             def check_cb(rows):
+                logging.debug("indx_pg2.save_linked_boxes : check_cb, rows: {0}".format(rows))
+
                 if len(rows) > 0: 
                     return_d.callback(True)
                     return # already in the db

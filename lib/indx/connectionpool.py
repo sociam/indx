@@ -53,7 +53,7 @@ class IndxConnectionPool:
 
     # Wrap query functions with auto-reconnection
     def runQuery(self, *args, **kwargs):
-        logging.debug("IndxConnectionPool runQuery")
+        logging.debug("IndxConnectionPool runQuery, args: {0}, kwargs: {1}".format(args, kwargs))
         deferred = Deferred()
         pool_deferred = self.pool.runQuery(*args, **kwargs)
         pool_deferred.addCallback(deferred.callback)
@@ -76,7 +76,7 @@ class IndxConnectionPool:
 
 
     def runOperation(self, *args, **kwargs):
-        logging.debug("IndxConnectionPool runOperation")
+        logging.debug("IndxConnectionPool runOperation, args: {0}, kwargs: {1}".format(args, kwargs))
         deferred = Deferred()
         pool_deferred = self.pool.runOperation(*args, **kwargs)
         pool_deferred.addCallback(deferred.callback)
@@ -99,7 +99,7 @@ class IndxConnectionPool:
 
 
     def runInteraction(self, *args, **kwargs):
-        logging.debug("IndxConnectionPool runInteraction")
+        logging.debug("IndxConnectionPool runInteraction, args: {0}, kwargs: {1}".format(args, kwargs))
         deferred = Deferred()
         pool_deferred = self.pool.runInteraction(*args, **kwargs)
         pool_deferred.addCallback(deferred.callback)

@@ -45,6 +45,9 @@ class WebServer:
 
         self.config = config
 
+        from twisted.internet.defer import setDebugging
+        setDebugging(True)
+
         # enable ssl (or not)
         self.ssl = config['server'].get('ssl') or False
 
@@ -229,7 +232,7 @@ class WebServer:
 
             self.tokens.new("@indx","",root_box,"IndxSync","/","::1", self.server_id).addCallbacks(token_cb, return_d.errback)
 
-        return return_d
+        return return_d 
 
     def start_syncing(self):
         """ Start IndxSyncing root boxes. (after indx is up and running) """
@@ -246,7 +249,15 @@ class WebServer:
             for row in rows:
                 linked_box = row[0]
                 logging.debug("WebServer start_syncing linked box: {0}".format(linked_box))
-                reactor.callInThread(lambda empty: self.sync_box(linked_box), None)
+
+                def sync_a_box():
+                    
+                    def sync_cb(indxsync):
+                        indxsync.sync_boxes().addCallbacks(lambda empty: logging.debug("Sucessfully called sync in webserver."), lambda failure: logging.error("Failure syncing in webserver."))
+
+                    self.sync_box(linked_box).addCallbacks(sync_cb, lambda failure: logging.error("Failure syncing in webserver."))
+
+                reactor.callInThread(lambda empty: sync_a_box(), None)
 
         self.database.get_linked_boxes().addCallbacks(linked_boxes_cb, err_cb)
 
