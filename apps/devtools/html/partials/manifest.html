@@ -44,11 +44,11 @@
 			<p class="description">No documentation has been provided.</p>
 		</div>
 		<div ng-if="manifest.documentation.isAvailable">
-			<div ng-if="!manifest.documentation.isBuilt">
-				<p ng-if="!manifest.documentation.err" class="description alert alert-info">Documentation needs to be built.</p>
-				<p ng-if="manifest.documentation.err" class="description alert alert-danger">Failed to build documentation.</p>
+			<p ng-if="manifest.documentation.err" class="description alert alert-danger">Failed to build documentation.</p>
+			<div ng-if="!manifest.documentation.isBuilt && !manifest.documentation.err">
+				<p ng-if="" class="description alert alert-info">Documentation needs to be built.</p>
 			</div>
-			<div ng-if="manifest.documentation.isBuilt">
+			<div ng-if="manifest.documentation.isBuilt && !manifest.documentation.err">
 				<iframe ng-src="{{ manifest.documentation.get('url') }}" onload="resizeIFrame(this)"></iframe>
 			</div>
 		</div>
