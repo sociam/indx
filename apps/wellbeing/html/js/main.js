@@ -19,7 +19,7 @@ angular
 			template:'<div class="locmap"></div>',
 			link:function(scope, element, attribute) {
 				var lat = scope.location.peek('latitude'), lon = scope.location.peek('longitude');
-				scope.map = L.map(element[0]).setView([lat, lon], 13);
+				scope.map = L.map(element[0]).setView([lat, lon], 18);
 
 				element.attr('data-latitude', lat);
 				element.attr('data-longitude', lon);
@@ -30,9 +30,9 @@ angular
 				}).addTo(scope.map);
 
 					// add a marker in the given location, attach some popup content to it and open the popup
-				L.marker([lat, lon]).addTo(scope.map)
-					    .bindPopup(scope.location.peek('name') ? scope.location.peek('name') : scope.location.id)
-					    .openPopup();
+				L.marker([lat, lon]).addTo(scope.map);
+					    // .bindPopup(scope.location.peek('name') ? scope.location.peek('name') : scope.location.id)
+					    // .openPopup();
 			},
 			controller:function($scope) {
 			}
