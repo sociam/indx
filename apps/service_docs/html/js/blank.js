@@ -72,21 +72,21 @@ angular
 		};
 
 		$scope.doStart = function() {
-			s._ajax('GET', 'apps/testrunner/api/start').then(function(x) { 
+			s._ajax('GET', 'apps/service_docs/api/start').then(function(x) { 
 				console.info('App doStart result: ', x); 
 				status('Start command successful'); 
 			}).fail(function(x) { status(' Error ' + x.toString()); });
 		};
 		$scope.doStop = function() {
 			console.log('App doStop');
-			s._ajax('GET', 'apps/testrunner/api/stop')
+			s._ajax('GET', 'apps/service_docs/api/stop')
 			.then(function(x) { console.info('App Stop result (): ', x); status('Stop command successful'); })
 			.fail(function(x) { status(' Error ' + x.toString()); });
 		};
 		// @setConfig
 		$scope.setConfig = function(config) { 
 			console.info('i got a config ', config);
-			s._ajax('GET', 'apps/testrunner/api/set_config', { config: JSON.stringify(config) }).then(function(x) { 
+			s._ajax('GET', 'apps/service_docs/api/set_config', { config: JSON.stringify(config) }).then(function(x) { 
 				console.log('success ', x);
 				status('configuration chage committed');
 				window.retval = x;
@@ -101,7 +101,7 @@ angular
 			}
 		});
 		setInterval(function() { 
-			s._ajax('GET','apps/testrunner/api/is_running').then(function(r) { 
+			s._ajax('GET','apps/service_docs/api/is_running').then(function(r) { 
 				sa(function() { 
 					$scope.runstate = r.running ? 'Running' : 'Stopped';  
 				});

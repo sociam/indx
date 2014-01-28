@@ -1,6 +1,6 @@
 {
 	"name": "Test runner service",
-	"version": 0.1,
+	"version": 0.3,
 	"type":["service"],
 	"description": "Test runner service",
 	"on_boot": 0,

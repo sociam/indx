@@ -2,7 +2,7 @@
 	"name": "Documentation generator service",
 	"version": 0.1,
 	"type":["service"],
-	"description": "Documentation generator service",
+	"description": "Generates documentation from JavaScript source code",
 	"on_boot": 0,
 	"configpanel":"html/index.html",
 	"run":["node", "run.js", "--indxhost", "{0}"],
@@ -20,5 +20,7 @@
 			"name": "eMax",
 			"email":"max@hip.cat"
 		}
-	]
+	],
+	"documentation": "docs-config.js",
+	"tests": [ { "config": "tests-config.js" } ]
 }

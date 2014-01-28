@@ -4,13 +4,13 @@
 	<link href="/css/angular-ui.css" rel="stylesheet">
 	<link rel="stylesheet/less" type="text/css" href="/components/toolbar/toolbar.less">
 	<link rel="stylesheet/less" type="text/css" href="css/blank.less">	
-	<title>Test Runner settings</title>
+	<title>Document generator settings</title>
   </head>
   <body ng-app="BlankApp" ng-controller="ConfigPage" ng-cloak>
 	    <toolbar box-var='selectedBox' username-var='selectedUser'></toolbar>
 		<div class="main" ng-show="selectedUser && selectedBox">
-		<h2>Test Runner</h2>
-		<h4>The test runner service allows test cases to be run in the background.</h4>
+		<h2>Document generator</h2>
+		<h4>The document generator service allows documentation to be generated in the background.</h4>
 		<table class="status">
 			<tr>
 				<td> {{ runstate }} </td>
