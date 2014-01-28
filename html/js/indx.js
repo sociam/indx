@@ -663,7 +663,7 @@ angular
 			},
 			// handles updates from websockets the server
 			_diffUpdate:function(response) {
-				console.debug("diffUpdate > ", response);
+				// console.debug("diffUpdate > ", response);
 				var d = u.deferred(), this_ = this, latestVersion = response['@to_version'],
 				addedIDs  = _(response.data.added).keys(),
 				changedIDs = _(response.data.changed).keys(),

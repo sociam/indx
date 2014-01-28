@@ -72,7 +72,6 @@
 					getByLatLng: function(box, lat, lng) {
 						var d = u.deferred();						
 						this.getAll(box).then(function(results) { 
-							console.log('results >> ', results);
 							var dist = {}, resD = {};
 							results.map(function(result) {
 								if (!(result.peek('latitude') && result.peek('longitude') )) { return; }
@@ -81,9 +80,9 @@
 							});
 							var kbyD = _(dist).keys();
 							kbyD.sort(function(a,b) { return dist[a] - dist[b]; });
-							console.log('kbyD > ', kbyD);
+							// console.log('kbyD > ', kbyD);
 							var hits = kbyD.filter(function(k) { return dist[k] < LATLNG_THRESH; }).map(function(k) { return resD[k]; });
-							console.info('hits >> ', hits);
+							// console.info('hits >> ', hits);
 							d.resolve(hits);
 						});
 						return d.promise();

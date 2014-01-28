@@ -25,9 +25,7 @@ angular
 				element.attr('data-longitude', lon);
 				element.attr('data-id', scope.location.id);
 
-				L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
-				    attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
-				}).addTo(scope.map);
+				L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', { attribution: '' }).addTo(scope.map);
 
 					// add a marker in the given location, attach some popup content to it and open the popup
 				L.marker([lat, lon]).addTo(scope.map);
@@ -43,9 +41,6 @@ angular
 		$scope.locations = [];
 		var all_locs = [];		
 		var box;
-
-
-
 		$scope.genLocs = function() {
 			console.log('genlocs >> ', $scope.locations.length, all_locs.length);
 			var i = 0; 
