@@ -45,7 +45,8 @@
 		</div>
 		<div ng-if="manifest.documentation.isAvailable">
 			<div ng-if="!manifest.documentation.isBuilt">
-				<p class="description">Documentation needs to be built.</p>
+				<p ng-if="!manifest.documentation.err" class="description alert alert-info">Documentation needs to be built.</p>
+				<p ng-if="manifest.documentation.err" class="description alert alert-danger">Failed to build documentation.</p>
 			</div>
 			<div ng-if="manifest.documentation.isBuilt">
 				<iframe ng-src="{{ manifest.documentation.get('url') }}" onload="resizeIFrame(this)"></iframe>
