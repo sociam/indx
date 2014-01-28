@@ -39,12 +39,12 @@ def run(args):
         # print(keyring.util.platform_.data_root())
         config = keyring.get_password("INDX", "INDX_Blank_App")
         logging.debug("running the app with: {0}".format(config));
-        print >>sys.stderr, "well hello there stderr"
-        print 'to stdout'
-        import random
-        for x in range(10):
-            print >>sys.stderr, "here's a number for you > {0}".format(random.randint(0,100))
-            time.sleep(2)
+        # print >>sys.stderr, "well hello there stderr"
+        # print 'to stdout'
+        # import random
+        # for x in range(10):
+        #     print >>sys.stderr, "here's a number for you > {0}".format(random.randint(0,100))
+        #     time.sleep(2)
 
     # keyring.set_password("INDX", "INDX_Blank_App", "{'password':'asdf', 'user':'laura', 'box':'blankie'}")
     # print keyring.get_password("INDX", "INDX_Blank_App")
