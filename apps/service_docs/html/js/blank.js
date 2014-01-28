@@ -9,7 +9,7 @@ angular
 
 		// @get_config
 		var _get_config_from_service = function() {
-			s._ajax('GET', 'apps/testrunner/api/get_config').then(function(x) { 
+			s._ajax('GET', 'apps/service_docs/api/get_config').then(function(x) { 
 				var config = JSON.parse(x.config);
 				// simple stuff
 				sa(function() { 

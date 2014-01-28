@@ -13,11 +13,16 @@ var NodeService = {
 		this._check_args();
 	},
 	_check_args: function() {
+		var this_ = this;
 		var argv = require('optimist').argv, this_ = this;
 		if (argv.getconfig) {
 			this.debug('get config');
 			try { 
-				this.load_config().then(function(config) {  console.log(config);	});
+				this.load_config().then(function(config) {
+					this_.debug('censoring password')
+					config.password = config.password ? "******" : '';
+					console.log(JSON.stringify(config));
+				});
 			} catch(e) { 
 				this.debug(' error loading config ' + e.toString());
 				console.log(JSON.stringify({status:500,message:"error loading config"}));
@@ -71,10 +76,18 @@ var NodeService = {
 		});
 	},
 	load_config : function() {
-		var d = u.deferred();
+		this.debug('load config file', config_file);
+		var this_ = this,
+			d = u.deferred();
 		if (fs.existsSync(config_file)) { 
+			this.debug('config file exists')
 			fs.readFile(config_file, 'utf8', function (err, data) {	
-				if (err) { d.reject(err); return; } 
+				if (err) { 
+					this_.debug('error loading file', config_file, err);
+					d.reject(err); 
+					return;
+				} 
+				this_.debug('successfully loaded config');
 				data = JSON.parse(data);
 				d.resolve(data);
 			});
@@ -89,7 +102,6 @@ var NodeService = {
 module.exports = {
 	NodeService:NodeService
 };
-
 
 if (require.main === module) { 
 	var ns = Object.create(NodeService);
