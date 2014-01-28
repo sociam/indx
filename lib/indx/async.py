@@ -19,13 +19,17 @@ import logging
 import json
 import cjson
 from twisted.internet.defer import Deferred
+import indx_pg2 as database
+from indx.crypto import auth_keys
 
 class IndxAsync:
     """ Abstracted logic for the INDX aynchronous (i.e. WebSocket) server. """
 
-    def __init__(self, send_f, webserver):
+    def __init__(self, send_f, webserver, sessionid, clientip):
         self.send_f = send_f # send messages function reference
         self.webserver = webserver
+        self.sessionid = sessionid
+        self.clientip = clientip
 
     def receive(self, frame):
         """ Send data here when it is received from the real transport. """
@@ -43,6 +47,11 @@ class IndxAsync:
                             return
                         logging.debug("WebSocketsHandler Auth by Token {0} successful.".format(data['token']))
                         self.token = token
+                        
+                        # also tell the webserver we just got a successful auth from an outside client via websocket
+                        # so it can try to connect back over this websocket.
+#                        self.webserver.
+
                         self.send200()
                         return
                     except Exception as e:
@@ -51,13 +60,59 @@ class IndxAsync:
                         return
 
                 self.tokens.get(data['token']).addCallbacks(token_cb, err_cb)
+            elif data['action'] == "get_session_id":
+                self.send200(data = {'sessionid': self.sessionid})
+            elif data['action'] == "login_keys":
+                try:
+                    signature, key_hash, algo, method, appid = data['signature'], data['key_hash'], data['algo'], data['method'], data['appid']
+                except Exception as e:
+                    logging.error("ASync login_keys error getting all parameters.")
+                    return self.send400()
+
+                def win(resp):
+                    # authenticated now - state of this isn't saved though, we get a token immediately instead
+
+                    username, boxid = resp
+                    password = "" # TODO double-check this
+                    origin = "/ws" # TODO double-check this
+                    # get token, return that
+
+                    def got_acct(acct):
+                        if acct == False:
+                            return self.send401()
+
+                        db_user, db_pass = acct
+
+                        def check_app_perms(acct):
+                            
+                            def token_cb(token):
+                                # success, send token back to user
+                                # first, try to connect back through the websocket
+                                self.webserver.connectBackToClient(key_hash).addCallbacks(lambda empty: logging.debug("ASync, success connecting back."), lambda failure: logging.error("ASync, failure connecting back: {0}".format(failure)))
+                                return self.send200(data = {"token": token.id})
+
+                            self.webserver.tokens.new(username,password,boxid,appid,origin,self.clientip,self.webserver.server_id).addCallbacks(token_cb, lambda failure: self.send500())
+
+                        # create a connection pool
+                        database.connect_box(boxid,db_user,db_pass).addCallbacks(check_app_perms, lambda conn: self.send500())
+
+                    self.webserver.database.lookup_best_acct(boxid, username, password).addCallbacks(got_acct, lambda conn: self.send401())
+
+
+                def fail(empty):
+                    self.send401()
+
+                auth_keys(self.webserver.keystore, signature, key_hash, algo, method, self.sessionid).addCallbacks(win, fail)
+
             elif data['action'] == "diff":
                 # turn on/off diff listening
                 if data['operation'] == "start":
                     self.listen_diff()
+                    self.send200()
                     return
                 elif data['operation'] == "stop":
                     #self.stop_listen()
+                    self.send200()
                     return
                 else:
                     self.send400()
@@ -70,11 +125,15 @@ class IndxAsync:
             self.send500()
             return
 
+        
     def connected(self):
         """ Call this when the connected is made through the real transport. """
         # TokenKeeper from the webserver. The "webserver" attribtue in site is added in server.py when we create the WebSocketsSite.
         self.tokens = self.webserver.tokens
         self.token = None
+
+        # send the session ID when connection works
+        self.send200(data = {'sessionid': self.sessionid})
 
     def listen_diff(self):
         def err_cb(failure):
@@ -87,7 +146,7 @@ class IndxAsync:
                 """ Receive an update from the server. """
                 logging.debug("WebSocketsHandler listen_diff observer notified: {0}".format(diff))
 
-                self.sendJSON({"action": "diff", "data": diff})
+                self.sendJSON({"action": "diff", "operation": "update", "data": diff})
 
             store.listen(observer) # no callbacks, nothing to do
 
@@ -95,6 +154,7 @@ class IndxAsync:
 
     def sendJSON(self, data):
         """ Send data as JSON to the WebSocket. """
+        logging.debug("ASync send JSON of data: {0}".format(data))
         encoded = cjson.encode(data)
         self.send_f(encoded)
 
@@ -107,7 +167,10 @@ class IndxAsync:
     def send401(self):
         self.sendJSON({"success": False, "error": "401 Unauthorized"})
 
-    def send200(self):
-        self.sendJSON({"success": True})
+    def send200(self, data = None):
+        out = {"success": True}
+        if data is not None:
+            out.update(data)
+        self.sendJSON(out)
 
 

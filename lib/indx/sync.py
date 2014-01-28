@@ -276,11 +276,15 @@ class IndxSync:
                         box = model_graph.get(box_obj.id) # XXX this is a workaround to a bug in the types code - we shouldn't have to re-get the object
                         logging.debug("IndxSync sync_boxes model_cb: box {0}".format(box.to_json()))
 
-                        if box.getOneValue("box") != self.root_store.boxid:
+                        boxid = box.getOneValue("box")
+
+                        logging.debug("IndxSync sync_boxes, box value: {0}, local boxid: {1}".format(boxid, self.root_store.boxid))
+
+                        if boxid != self.root_store.boxid:
                             logging.debug("IndxSync sync_boxes model_cb: remote box")
                             # remote box
                             remote_server_url = box.getOneValue("server-url")
-                            remote_box = box.getOneValue("box")
+                            remote_box = boxid
                         else:
                             logging.debug("IndxSync sync_boxes model_cb: local box")
                             # local box
@@ -311,7 +315,8 @@ class IndxSync:
 
                                         self.update_to_latest_version(client, remote_server_url, remote_box, diff_in = diff).addCallbacks(done_cb, err_cb)
 
-                                    client.listen_diff(observer)
+                                    # auths and sets up listening for diffs, filtering them and passing them to the observer
+                                    wsclient = client.listen_diff(observer)
                                     next_model(None)
 
                                 # compare local version to previous, and update one of them, or both
@@ -325,7 +330,7 @@ class IndxSync:
                     self.keystore.get(local_key_hash).addCallbacks(keystore_cb, return_d.errback)
                     
 
-                model_graph.expand_depth(3, self.root_store).addCallbacks(expanded_cb, return_d.errback)
+                model_graph.expand_depth(5, self.root_store).addCallbacks(expanded_cb, return_d.errback)
 
             self.root_store.get_latest_objs([model_id], render_json = False).addCallbacks(model_cb, return_d.errback)
 

@@ -431,7 +431,17 @@ class IndxClient:
         else:
             raise Exception("IndxClient: Unknown scheme to URL: {0}".format(address))
 
-        wsclient = IndxWebSocketClient(address, self.token, observer)
+        def filter(message):
+            try:
+                if message['action'] == 'diff' and message['operation'] == 'update':
+                    observer(message)
+                else:
+                    logging.debug("Receive a non diff-update message to liste_diff observer - ignoring it.")
+            except Exception as e:
+                logging.error("IndxClient listen_diff, error trying to filter incoming message: {0}".format(e))
+
+        wsclient = IndxWebSocketClient(address, self.token, filter)
+        return wsclient
 
 
 class IndxWebSocketClient:

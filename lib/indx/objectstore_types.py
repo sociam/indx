@@ -108,11 +108,11 @@ class Graph:
                 return id
 
         def loop(id):
-            logging.debug("Objectstore Types, Graph, loop")
+            logging.debug("Objectstore Types, Graph, loop, id: {0}".format(id))
             loop_d = Deferred()
 
             if id is None:
-                return_d.callback(True)
+                loop_d.callback(True)
                 return
 
             obj = self.get(id)
@@ -121,42 +121,53 @@ class Graph:
             def expanded(expanded_graph):
                 expanded_d = Deferred()
 
-                logging.debug("Objectstore Types, Graph, expanded")
+                logging.debug("Objectstore Types, Graph, expanded, graph: {0}".format(expanded_graph))
 
                 subobjs = []
 
                 if expanded_graph is not None:
                     logging.debug("Objectstore Types, Graph, replacing expanded object: {0}".format(id))
                     resource = expanded_graph.get(id)
+                    resource.set_expanded()
                     self.replace_resource(id, resource)
-                    subobjs.append(resource)
+
+                    for resource_id, resource in expanded_graph.objects().items():
+                        if resource_id not in subobjs:
+                            subobjs.append(resource_id)
                 else:
                     resource = obj
 
                 subdepth = depth - 1
                 if subdepth > 0:
-                    logging.debug("Objectstore Types, Graph, expanded, props: {0}".format(resource.props()))
-                    for prop in resource.props():
-                        # traverse depth of objects
-                        logging.debug("Objectstore Types, Graph, expanded, val: {0}".format(resource.get(prop)))
-                        for val in resource.get(prop):
-                            if isinstance(val, Resource):
-                                subobjs.append(val)
+                    for expanded_id, expanded_resource in expanded_graph.objects().items():
+                        logging.debug("Objectstore Types, Graph, expanded, props: {0}".format(expanded_resource.props()))
+                        for prop in expanded_resource.props():
+                            # traverse depth of objects
+                            logging.debug("Objectstore Types, Graph, expanded, val: {0}".format(expanded_resource.get(prop)))
+                            for val in expanded_resource.get(prop):
+                                if isinstance(val, Resource) and val.id not in subobjs:
+                                    subobjs.append(val.id)
                 
                 logging.debug("Objectstore Types, Graph, expanded, subobjs: {0}".format(subobjs))
 
                 if len(subobjs) > 0:
-                    self.expand_depth(subdepth, store, map(lambda x: x.id, subobjs)).addCallbacks(lambda empty: expanded_d.callback(True), return_d.errback)
+                    logging.debug("Objectstore Types, subobjs: {0}".format(subobjs))
+                    self.expand_depth(subdepth, store, subobjs).addCallbacks(lambda empty: expanded_d.callback(True), return_d.errback)
                 else:
                     expanded_d.callback(True)
 
                 return expanded_d
 
 
-            if obj.is_stub():
+            if not obj.expanded_already():
                 # expand this object
                 logging.debug("Objectstore Types, Graph, expanding object: {0}".format(id))
-                store.get_latest_objs([id], render_json = False).addCallbacks(lambda empty: loop_d.callback(next_obj()), return_d.errback)
+                #store.get_latest_objs([id], render_json = False).addCallbacks(lambda empty: loop_d.callback(next_obj()), return_d.errback)
+
+                def latest_cb(objs):
+                    expanded(objs).addCallbacks(lambda empty: loop_d.callback(next_obj()), return_d.errback)
+
+                store.get_latest_objs([id], render_json = False).addCallbacks(latest_cb, return_d.errback)
             else:
                 logging.debug("Objectstore Types, Graph, object not being expanded.")
                 loop_d.callback(next_obj())
@@ -209,6 +220,14 @@ class Resource:
     def __init__(self, id):
         self.id = id
         self.model = {"@id": self.id}
+        self.expanded = False
+
+    def set_expanded(self):
+        self.expanded = True
+
+    def expanded_already(self):
+        """ Has this resource been expanded already? """
+        return self.expanded
 
     def add(self, property, value):
         """ Add a value to the existing array of values. Creates the property in the model if it doesn't already exist.
@@ -263,23 +282,23 @@ class Resource:
         
             value_id_list -- List of IDs of resources already rendered, used inside to_json() calls internally to prevent infinite cycles (leave blank when called externally).
         """
-        try:
-            if len(value_id_list) > 256:
-                logging.debug("ObjectStore_Types Resource, to_json id: {0}, value_id_list (first 256 out of {2}): {1}".format(self.id, value_id_list[:256], len(value_id_list)))
-            else:
-                logging.debug("ObjectStore_Types Resource, to_json id: {0}, value_id_list: {1}".format(self.id, value_id_list))
-        except Exception as e:
-            logging.debug("ObjectStore_Types Resource, to_json, debug1")
+#        try:
+#            if len(value_id_list) > 256:
+#                logging.debug("ObjectStore_Types Resource, to_json id: {0}, value_id_list (first 256 out of {2}): {1}".format(self.id, value_id_list[:256], len(value_id_list)))
+#            else:
+#                logging.debug("ObjectStore_Types Resource, to_json id: {0}, value_id_list: {1}".format(self.id, value_id_list))
+#        except Exception as e:
+#            logging.debug("ObjectStore_Types Resource, to_json, debug1")
 
         model = {}
         value_id_list_cpy = copy.copy(value_id_list)
         value_id_list_cpy.append(self.id) # prevent this id from being rendered by its children/descendents
 
         for property, values in self.model.items():
-            try:
-                logging.debug("ObjectStore_Types Resource, to_json, id: {0}, property: {1}, values: {2}".format(self.id, property, values))
-            except Exception as e:
-                logging.debug("ObjectStore_Types Resource, to_json, debug2")
+#            try:
+#                logging.debug("ObjectStore_Types Resource, to_json, id: {0}, property: {1}, values: {2}".format(self.id, property, values))
+#            except Exception as e:
+#                logging.debug("ObjectStore_Types Resource, to_json, debug2")
 
             if property == "@id": # special case
                 model[property] = values

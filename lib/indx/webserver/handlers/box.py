@@ -152,6 +152,8 @@ class BoxHandler(BaseHandler):
             return self.return_forbidden(request)
         BoxHandler.log(logging.DEBUG, "BoxHandler generate_new_key", extra = {"request": request, "token": token})
 
+        is_linked = self.get_arg(request, "is-linked", default = False)
+
         remote_public = self.get_arg(request, "public")
         remote_hash = self.get_arg(request, "public-hash")
 
@@ -167,7 +169,13 @@ class BoxHandler(BaseHandler):
         local_keys = generate_rsa_keypair(3072)
 
         def created_cb(empty):
-            self.return_created(request, {"data": {"public": local_keys['public'], "public-hash": local_keys['public-hash']}})
+            def servervar_cb(empty):
+                self.return_created(request, {"data": {"public": local_keys['public'], "public-hash": local_keys['public-hash']}})
+
+            if is_linked:
+                self.database.save_linked_box(token.boxid).addCallbacks(servervar_cb, err_cb)
+            else:
+                servervar_cb(None)
 
         def new_key_added_cb(empty):
             self.webserver.keystore.put(local_keys, token.username, token.boxid).addCallbacks(created_cb, err_cb) # store in the local keystore

@@ -778,6 +778,8 @@ class IndxDatabase:
             d = conn.runQuery(query, params)
             
             def check_cb(rows):
+                logging.debug("indx_pg2.save_linked_boxes : check_cb, rows: {0}".format(rows))
+
                 if len(rows) > 0: 
                     return_d.callback(True)
                     return # already in the db
