@@ -212,7 +212,7 @@ angular
 			'building': ['Building docs', 'Documentation is currently being built'],
 			'built': ['Docs available', 'Documentation is available'],
 			'notbuilt': ['Docs not built', 'Documentation needs to be built'],
-			'none': ['No docs', 'Not documentation has been provided']
+			'none': ['No docs', 'No documentation has been provided']
 		};
 
 		var DocumentationModel = Backbone.Model.extend({

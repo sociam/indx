@@ -1,13 +1,16 @@
-<a href="#manifest/{{ manifest.id }}/" title="{{ manifest.get('description') }}">
-	<div class="col1">
-		<img ng-src="{{ manifest.icon }}" class="icon">
-		<div class="name">{{ manifest.get('name') }}</div>
-		<div class="meta">
-			<span class="version">{{ manifest.get('version') }}</span>
-		</div>
-	</div>
-	<div class="col2">
-		<div class="stamp1" ng-class="'docs-icon ' + manifest.documentation.mode"><i class="fa fa-book"></i> <span class="note">{{ manifest.documentation.modeDescription[0] }}</span></div>
-		<div class="stamp2" ng-class="'tests-icon ' + manifest.tests.mode"><i class="fa fa-shield"></i> <span class="note">{{ manifest.tests.modeDescription[0] }}</span></div>
+<a href="#manifest/{{ manifest.id }}/" title="{{ manifest.get('description') }}" class="col1">
+	<img ng-src="{{ manifest.icon }}" class="icon">
+	<div class="name">{{ manifest.get('name') }}</div>
+	<div class="meta">
+		<span class="version">{{ manifest.get('version') }}</span>
 	</div>
 </a>
+<div class="col2">
+	<a href="#manifest/{{ manifest.id }}/documentation" class="stamp1" ng-class="'docs-icon ' + manifest.documentation.mode" title="{{ manifest.documentation.modeDescription[1] }}">
+		<i class="fa fa-book"></i> 
+		<span class="note">{{ manifest.documentation.modeDescription[0] }}</span>
+	</a><a href="#manifest/{{ manifest.id }}/tests" class="stamp2" ng-class="'tests-icon ' + manifest.tests.mode" title="{{ manifest.tests.modeDescription[1] }}">
+		<i class="fa fa-shield"></i> 
+		<span class="note">{{ manifest.tests.modeDescription[0] }}</span>
+	</a>
+</div>
