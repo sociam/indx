@@ -61,11 +61,22 @@ var NodeService = {
 	},
 	run:function(store) {
 		// override me
-		var that = this;
+		/*var that = this;
 		store.getBoxList().then(function(boxids) { 
 			that.debug('got boxes >> ', boxids);
 			//	store.getBox(bid).then(function(box) { count_props(box); }).fail(function(err) { console.error(err); });
-		}).fail(function(err) { that.debug('error > ', err); });
+		}).fail(function(err) { that.debug('error > ', err); });*/
+		store.getBox(this.config.box).then(function (box) {
+			box.getObj('testrunner-service-store').then(function (obj) {
+				obj.on('change', function () {
+					// run
+					// stop
+					// etc
+				})
+			})
+		}).fail(function (err) {
+			that.debug(err);
+		});
 	},
 	save_config : function(config) {
 		var pretty = JSON.stringify(config, null, 4), d = u.deferred(), that = this;

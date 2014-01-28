@@ -5,7 +5,7 @@ angular
 		window.store = client.store;
 		window.$s = $scope;
 		$scope.app = {};
-		var status = function(s) {	sa(function() { $scope.status = s; });	};
+		var status = function(s) { sa(function() { $scope.status = s; }); };
 
 		// @get_config
 		var _get_config_from_service = function() {
