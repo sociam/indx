@@ -12,51 +12,48 @@ var passwordPlaceholder = "********"; // don't send password back to client
 
 var NodeService = { 
 	init:function() {
-		this._check_args();
+		var that = this;
+		this.load_config().then(function (config) {
+			that.config = config;
+			that._check_args();
+		});
 	},
 	_check_args: function() {
-		var this_ = this;
-		var argv = require('optimist').argv, this_ = this;
+		var that = this,
+			argv = require('optimist').argv;
 		if (argv.getconfig) {
 			this.debug('get config');
 			try { 
-				this.load_config().then(function(config) {
-					this_.debug('censoring password')
-					config.password = config.password ? passwordPlaceholder : '';
-					console.log(JSON.stringify(config));
-				});
+				that.debug('censoring password')
+				that.config.password = that.config.password ? passwordPlaceholder : '';
+				console.log(JSON.stringify(that.config));
 			} catch(e) { 
-				this.debug(' error loading config ' + e.toString());
+				that.debug(' error loading config ' + e.toString());
 				console.log(JSON.stringify({status:500,message:"error loading config"}));
 			}
 		} else if (argv.setconfig) {
 			this.debug('set config');
 			try {
 				// load existing config
-				this.load_config().then(function (oldconfig) {
-					var jsonconfig = JSON.parse(argv.setconfig);
-					// replace placeholder with real password
-					if (jsonconfig.password === passwordPlaceholder) { 
-						jsonconfig.password = oldconfig.password;
-					}
-					this.save_config(jsonconfig).then(function() { 
-						console.log(JSON.stringify({status:200,message:"ok - configuration saved"}));
-					}).fail(function(f) {
-						console.error(f);
-					});
+				var newconfig = JSON.parse(argv.setconfig);
+				// replace placeholder with real password
+				if (newconfig.password === passwordPlaceholder) { 
+					newconfig.password = that.config.password;
+				}
+				this.save_config(newconfig).then(function() { 
+					console.log(JSON.stringify({ status: 200, message: "ok - configuration saved" }));
+				}).fail(function(f) {
+					console.error(f);
 				});
-			} catch(e) {
+			} catch (e) {
 				console.error("error parsing config json ", argv.set_config);
 			}
-		} else {
-			// run!
+		} else { // run!
 			this.debug('starting up >> server -- ', argv.indxhost);
 			if (argv.indxhost) {
-				this.load_config().then(function (config) {
-					nodeindx.login(argv.indxhost, config.username, config.password).then(function (store) {
-						this_.run(store);
-					}).fail(function() { console.error('fail logging :('); });			
-				}).fail(function () { console.error('no config'); })
+				nodeindx.login(argv.indxhost, that.config.username, that.config.password).then(function (store) {
+					that.run(store);
+				}).fail(function() { console.error('fail logging :('); });
 			} else {
 				console.error('no indx server specified; use --indxhost'); 
 			}
@@ -64,19 +61,20 @@ var NodeService = {
 	},
 	run:function(store) {
 		// override me
-		var this_ = this;
+		var that = this;
 		store.getBoxList().then(function(boxids) { 
-			this_.debug('got boxes >> ', boxids);
+			that.debug('got boxes >> ', boxids);
 			//	store.getBox(bid).then(function(box) { count_props(box); }).fail(function(err) { console.error(err); });
-		}).fail(function(err) { this_.debug('error > ', err); });
+		}).fail(function(err) { that.debug('error > ', err); });
 	},
 	save_config : function(config) {
-		var pretty = JSON.stringify(config, null, 4), d = u.deferred(), this_ = this;
+		var pretty = JSON.stringify(config, null, 4), d = u.deferred(), that = this;
 		fs.writeFile(config_file, pretty, function(err) { 
 			if(err) { 
-				this_.debug('error saving file ', config_file); 
+				that.debug('error saving file ', config_file); 
 				return d.reject(err); 
 			} 
+			that.config = config;
 			d.resolve();
 		}); 
 		return d.promise();
@@ -90,17 +88,17 @@ var NodeService = {
 	},
 	load_config : function() {
 		this.debug('load config file', config_file);
-		var this_ = this,
+		var that = this,
 			d = u.deferred();
 		if (fs.existsSync(config_file)) { 
 			this.debug('config file exists')
 			fs.readFile(config_file, 'utf8', function (err, data) {	
 				if (err) { 
-					this_.debug('error loading file', config_file, err);
+					that.debug('error loading file', config_file, err);
 					d.reject(err); 
 					return;
 				} 
-				this_.debug('successfully loaded config');
+				that.debug('successfully loaded config');
 				data = JSON.parse(data);
 				d.resolve(data);
 			});

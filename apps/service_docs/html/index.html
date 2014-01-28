@@ -14,8 +14,8 @@
 		<table class="status">
 			<tr>
 				<td> {{ runstate }} </td>
-				<td><div class="btn btn-success" ng-click="doStart()">Start</div></td>
-				<td><div class="btn btn-danger" ng-click="doStop()">Stop</div></td> 
+				<td><div class="btn btn-success" ng-click="doStart()" ng-disabled="runstate === 'Running'">Start</div></td>
+				<td><div class="btn btn-danger" ng-click="doStop()" ng-disabled="runstate === 'Stopped'">Stop</div></td> 
 			</tr>
 		</table>
 		<table class='security'>

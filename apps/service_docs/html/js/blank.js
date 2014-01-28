@@ -74,13 +74,18 @@ angular
 		$scope.doStart = function() {
 			s._ajax('GET', 'apps/service_docs/api/start').then(function(x) { 
 				console.info('App doStart result: ', x); 
-				status('Start command successful'); 
+				status('Start command successful');
+				checkRunning(); 
 			}).fail(function(x) { status(' Error ' + x.toString()); });
 		};
 		$scope.doStop = function() {
 			console.log('App doStop');
 			s._ajax('GET', 'apps/service_docs/api/stop')
-			.then(function(x) { console.info('App Stop result (): ', x); status('Stop command successful'); })
+			.then(function(x) { 
+				console.info('App Stop result (): ', x); 
+				status('Stop command successful');
+				checkRunning();
+			})
 			.fail(function(x) { status(' Error ' + x.toString()); });
 		};
 		// @setConfig
@@ -100,7 +105,7 @@ angular
 				load_box($scope.selectedBox).then(function() {  _get_config_from_service();	});
 			}
 		});
-		setInterval(function() { 
+		var checkRunning = function () { 
 			s._ajax('GET','apps/service_docs/api/is_running').then(function(r) { 
 				sa(function() { 
 					$scope.runstate = r.running ? 'Running' : 'Stopped';  
@@ -108,5 +113,7 @@ angular
 			}).fail(function(r) {
 				sa(function() { $scope.runstate = 'Unknown'; });
 			});
-		}, 6000);
+		};
+		checkRunning();
+		setInterval(checkRunning, 6000);
 	});
