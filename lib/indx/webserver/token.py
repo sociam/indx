@@ -94,8 +94,11 @@ class Token:
 
             conns = {"conn": get_conn, "sync_conn": get_sync, "raw_conn": get_raw, "indx_conn": get_indx_conn}
             store = ObjectStoreAsync(conns, self.username, self.boxid, self.appid, self.clientip, self.server_id)
-            result_d.callback(store)
 
+            def upgrade_cb(result):
+                result_d.callback(store)
+
+            store.schema_upgrade().addCallbacks(upgrade_cb, result_d.errback)
 
         if self.best_acct is None:
             self.db.lookup_best_acct(self.boxid, self.username, self.password).addCallbacks(got_acct, result_d.errback)

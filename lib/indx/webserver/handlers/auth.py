@@ -1,7 +1,7 @@
-#    Copyright (C) 2011-2013 University of Southampton
-#    Copyright (C) 2011-2013 Daniel Alexander Smith
-#    Copyright (C) 2011-2013 Max Van Kleek
-#    Copyright (C) 2011-2013 Nigel R. Shadbolt
+#    Copyright (C) 2011-2014 University of Southampton
+#    Copyright (C) 2011-2014 Daniel Alexander Smith
+#    Copyright (C) 2011-2014 Max Van Kleek
+#    Copyright (C) 2011-2014 Nigel R. Shadbolt
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Affero General Public License, version 3,
@@ -29,7 +29,7 @@ from openid.extensions import pape, sreg, ax
 
 from indx.openid import IndxOpenID
 from indx.user import IndxUser
-from indx.crypto import rsa_verify
+from indx.crypto import rsa_verify, auth_keys
 
 OPENID_PROVIDER_NAME = "INDX OpenID Handler"
 OPENID_PROVIDER_URL = "http://indx.ecs.soton.ac.uk/"
@@ -85,14 +85,25 @@ class AuthHandler(BaseHandler):
         """ Log in using pre-shared keys. (POST) """
         logging.debug('auth_keys, request: {0}'.format(request));
 
-        def fail():
-            logging.debug("Login request fail, origin: {0}".format(self.get_origin(request)))
+        def fail(empty):
+            logging.debug("Login/keys request fail.")
             wbSession = self.get_session(request)
             wbSession.reset()
             return self.return_unauthorized(request)
 
-        SSH_MSG_USERAUTH_REQUEST = "50"
+        def win(response):
+            user, box = response
+            logging.debug("Login/keys request win.")
+            wbSession = self.get_session(request)
+            wbSession.setAuthenticated(True)
+            wbSession.setUser(user)
+            wbSession.setUserType("auth")
+            wbSession.setPassword("")
+            wbSession.limit_boxes = [box] # only allow access to this box
+            self.return_ok(request)
 
+
+        # get and verify parameters
         signature = self.get_arg(request, "signature")
         key_hash = self.get_arg(request, "key_hash")
         algo = self.get_arg(request, "algo")
@@ -108,32 +119,9 @@ class AuthHandler(BaseHandler):
             logging.error("auth_keys error, signature was not a valid Long, returning unauthorized")
             return fail()
 
+        sessionid = request.getSession().uid
 
-        def keystore_cb(keystore_results):
-
-            key = keystore_results['key']
-            user = keystore_results['username']
-            box = keystore_results['box']
-
-            sessionid = request.getSession().uid
-
-            ordered_signature_text = '{0}\t{1}\t"{2}"\t{3}\t{4}'.format(SSH_MSG_USERAUTH_REQUEST, sessionid, method, algo, key_hash)
-            verified = rsa_verify(key['public'], ordered_signature_text, signature)
-            
-            if not verified:
-                logging.error("auth_keys error, signature does not verify, returning unauthorized")
-                return fail()
-            
-            logging.debug("Login request auth_keys for {0}, origin: {1}".format(user, request.getHeader("Origin")))
-            wbSession = self.get_session(request)
-            wbSession.setAuthenticated(True)
-            wbSession.setUser(user)
-            wbSession.setUserType("auth")
-            wbSession.setPassword("")
-            wbSession.limit_boxes = [box] # only allow access to this box
-            self.return_ok(request)
-
-        self.webserver.keystore.get(key_hash).addCallbacks(keystore_cb, fail)
+        auth_keys(self.webserver.keystore, signature, key_hash, algo, method, sessionid).addCallbacks(win, fail)
 
 
     def auth_logout(self, request, token):
