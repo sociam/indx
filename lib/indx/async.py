@@ -21,6 +21,7 @@ import cjson
 from twisted.internet.defer import Deferred
 import indx_pg2 as database
 from indx.crypto import auth_keys
+import indx.sync
 
 class IndxAsync:
     """ Abstracted logic for the INDX aynchronous (i.e. WebSocket) server. """
@@ -83,18 +84,19 @@ class IndxAsync:
 
                         db_user, db_pass = acct
 
-                        def check_app_perms(acct):
-                            
-                            def token_cb(token):
+                        def token_cb(token):
+
+                            def store_cb(store):
                                 # success, send token back to user
                                 # first, try to connect back through the websocket
-                                self.webserver.connectBackToClient(key_hash).addCallbacks(lambda empty: logging.debug("ASync, success connecting back."), lambda failure: logging.error("ASync, failure connecting back: {0}".format(failure)))
+                                self.token = token
+                                self.connectBackToClient(key_hash, store).addCallbacks(lambda empty: logging.debug("ASync, success connecting back."), lambda failure: logging.error("ASync, failure connecting back: {0}".format(failure)))
                                 return self.send200(data = {"token": token.id})
 
-                            self.webserver.tokens.new(username,password,boxid,appid,origin,self.clientip,self.webserver.server_id).addCallbacks(token_cb, lambda failure: self.send500())
+                            token.get_store().addCallbacks(store_cb, lambda failure: self.send500())
 
-                        # create a connection pool
-                        database.connect_box(boxid,db_user,db_pass).addCallbacks(check_app_perms, lambda conn: self.send500())
+                        self.webserver.tokens.new(username,password,boxid,appid,origin,self.clientip,self.webserver.server_id).addCallbacks(token_cb, lambda failure: self.send500())
+
 
                     self.webserver.database.lookup_best_acct(boxid, username, password).addCallbacks(got_acct, lambda conn: self.send401())
 
@@ -124,6 +126,44 @@ class IndxAsync:
             logging.error("WebSocketsHandler frameRecevied, error: {0}".format(e))
             self.send500()
             return
+
+    def connectBackToClient(self, public_key_hash, store):
+        """ Try to connect back through this websocket to the other side. """ 
+        logging.debug("ASync connectBackToClient, using hash {0}".format(public_key_hash))
+        # look up IndxSync object by  public_key_hash
+        return_d = Deferred()
+
+        # lookup model
+        def model_cb(model_id):
+            all_models = [model_id]
+            self.webserver.sync_boxes(all_models = all_models, websocket = self).addCallbacks(return_d.callback, return_d.errback)
+
+        self.get_model_by_key(public_key_hash, store).addCallbacks(model_cb, return_d.errback)
+        return return_d
+
+    def get_model_by_key(self, public_key_hash, store):
+        """ Get the ID of a 'link' object, based on the hash of a public key it uses.
+
+            Public keys are not reused, so it will only match one.
+        """
+        return_d = Deferred()
+
+        query = {"type": indx.sync.NS_ROOT_BOX + "link",
+                 "boxes":
+                     {"key":
+                         {"public-hash": public_key_hash}
+                     }
+                }
+       
+        def query_cb(graph):
+            for obj_id in graph.objects().keys():
+                return_d.callback(obj_id)
+                return
+
+            return_d.errback(Exception("Could not find a model that uses the public key hash: {0}".format(public_key_hash)))
+
+        store.query(query, render_json = False, depth = 0).addCallbacks(query_cb, return_d.errback)
+        return return_d
 
         
     def connected(self):

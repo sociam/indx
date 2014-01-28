@@ -747,7 +747,6 @@ class IndxDatabase:
         return return_d
 
 
-
     def get_linked_boxes(self):
         """ Get a list of linked boxes. """
         logging.debug("idnx_pg2 get_linked_boxes")

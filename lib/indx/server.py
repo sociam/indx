@@ -232,13 +232,7 @@ class WebServer:
 
             self.tokens.new("@indx","",root_box,"IndxSync","/","::1", self.server_id).addCallbacks(token_cb, return_d.errback)
 
-        return return_d
-
-    def connectBackToClient(self, public_key_hash):
-        """ Try to connect back through this websocket to the other side. """ 
-        # look up IndxSync object by  public_key_hash
-        
-
+        return return_d 
 
     def start_syncing(self):
         """ Start IndxSyncing root boxes. (after indx is up and running) """

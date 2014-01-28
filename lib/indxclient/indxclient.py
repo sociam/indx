@@ -419,7 +419,7 @@ class IndxClient:
         return self.client.get(url, {'remote_address': remote_address, 'remote_box': remote_box, 'remote_token': remote_token})
 
     @require_token
-    def listen_diff(self, observer):
+    def listen_diff(self, observer, raw_observer = False):
         """ Listen to this box using a websocket. Call the observer when there's an update. """
 
         address = self.address + "ws"
@@ -432,23 +432,47 @@ class IndxClient:
             raise Exception("IndxClient: Unknown scheme to URL: {0}".format(address))
 
         def filter(message):
-            try:
-                if message['action'] == 'diff' and message['operation'] == 'update':
-                    observer(message)
-                else:
-                    logging.debug("Receive a non diff-update message to liste_diff observer - ignoring it.")
-            except Exception as e:
-                logging.error("IndxClient listen_diff, error trying to filter incoming message: {0}".format(e))
+            if raw_observer:
+                observer(message)
+            else:
+                try:
+                    if message['action'] == 'diff' and message['operation'] == 'update':
+                        observer(message)
+                    else:
+                        logging.debug("Receive a non diff-update message to liste_diff observer - ignoring it.")
+                except Exception as e:
+                    logging.error("IndxClient listen_diff, error trying to filter incoming message: {0}".format(e))
 
-        wsclient = IndxWebSocketClient(address, self.token, filter)
+        wsclient = IndxWebSocketClient(address, filter, token = self.token)
+        return wsclient
+
+    # no require token
+    def connect_ws(self, private_key, key_hash, observer):
+
+        address = self.address + "ws"
+
+        if address[0:6] == "https:":
+            address = "wss" + address[5:]
+        elif address[0:5] == "http:":
+            address = "ws" + address[4:]
+        else:
+            raise Exception("IndxClient: Unknown scheme to URL: {0}".format(address))
+
+        wsclient = IndxWebSocketClient(address, observer, keyauth = {"key_hash": key_hash, "private_key": private_key})
         return wsclient
 
 
 class IndxWebSocketClient:
-    def __init__(self, address, token, observer):
+
+    def __init__(self, address, observer, token = None, keyauth = None, appid = None):
         self.address = address
         self.token = token
+        self.keyauth = keyauth
         indx_observer = observer
+        appid = appid or "IndxWebSocketClient"
+
+        if token is None and keyauth is None:
+            raise Exception("Token or Keyauth must not be None.")
 
         logging.debug("IndxWebSocketClient opening to {0}".format(self.address))
 
@@ -458,6 +482,13 @@ class IndxWebSocketClient:
                 try:
                     logging.debug("IndxClientProtocol onMessage, payload {0}".format(payload))
                     data = cjson.decode(payload)
+                    
+                    if data.get("sessionid"):
+                        # when server starts, do keys auth
+                        self.sessionid = data.get("sessionid")
+                        if keyauth:
+                            return self.do_key_auth()
+
                     self.on_response(data)
                 except Exception as e:
                     logging.error("IndxWebSocketClient Exception: {0}".format(e))
@@ -466,9 +497,12 @@ class IndxWebSocketClient:
 
 
             def onOpen(self):
-                msg = {"action": "auth", "token": token}
-                self.on_response = self.respond_to_auth
-                self.sendMessage(cjson.encode(msg))
+                if token is not None:
+                    msg = {"action": "auth", "token": token}
+                    self.on_response = self.respond_to_auth
+                    self.sendMessage(cjson.encode(msg))
+                elif keyauth is not None:
+                    self.on_response = lambda x: logging.debug("Waiting for sessionid before we can auth.")
 
             # manage state by setting a response function each time
             def send_to_observer(self, data):
@@ -476,6 +510,9 @@ class IndxWebSocketClient:
 
             def respond_to_auth(self, data):
                 if data['success']:
+                    if data.get("token"):
+                        self.token = data.get("token")
+
                     self.on_response = self.send_to_observer
                     msg = {"action": "diff", "operation": "start"}
                     self.sendMessage(cjson.encode(msg))
@@ -483,9 +520,31 @@ class IndxWebSocketClient:
                     logging.error("IndxWebSocketClient WebSocket auth failure.")
 
 
+            def do_key_auth(self):
+                try:
+                    SSH_MSG_USERAUTH_REQUEST = "50"
+                    method = "publickey"
+                    algo = "SHA512"
+
+                    key_hash, private_key = keyauth['key_hash'], keyauth['private_key']
+
+                    ordered_signature_text = '{0}\t{1}\t"{2}"\t{3}\t{4}'.format(SSH_MSG_USERAUTH_REQUEST, self.sessionid, method, algo, key_hash)
+                    signature = rsa_sign(private_key, ordered_signature_text)
+
+                    values = {"action": "login_keys", "signature": signature, "key_hash": key_hash, "algo": algo, "method": method, "appid": appid}
+                    self.on_response = self.respond_to_auth
+                    self.sendMessage(cjson.encode(values))
+
+
+                except Exception as e:
+                    logging.error(Failure(e))
+
+
+
         self.factory = WebSocketClientFactory(self.address)
         self.factory.protocol = IndxClientProtocol
         connectWS(self.factory)
+
 
 
 class IndxHTTPClient:
@@ -711,7 +770,7 @@ class IndxClientAuth:
 
             def session_id_cb(sessionid):
                 ordered_signature_text = '{0}\t{1}\t"{2}"\t{3}\t{4}'.format(SSH_MSG_USERAUTH_REQUEST, sessionid, method, algo, key_hash)
-                signature = self.rsa_sign(private_key, ordered_signature_text)
+                signature = rsa_sign(private_key, ordered_signature_text)
 
                 url = "{0}auth/login_keys".format(self.address)
                 values = {"signature": signature, "key_hash": key_hash, "algo": algo, "method": method}
@@ -738,16 +797,16 @@ class IndxClientAuth:
 
         return return_d
 
-    # PKI functions from indx.crypto (copied to remove the depency on INDX.)
-    def rsa_sign(self, private_key, plaintext):
-        """ Hash and sign a plaintext using a private key. Verify using rsa_verify with the public key. """
-        hsh = self.sha512_hash(plaintext)
-        PRNG = Crypto.Random.OSRNG.posix.new().read
-        signature = private_key.sign(hsh, PRNG)
-        return signature[0]
+# PKI functions from indx.crypto (copied to remove the depency on INDX.)
+def rsa_sign(private_key, plaintext):
+    """ Hash and sign a plaintext using a private key. Verify using rsa_verify with the public key. """
+    hsh = sha512_hash(plaintext)
+    PRNG = Crypto.Random.OSRNG.posix.new().read
+    signature = private_key.sign(hsh, PRNG)
+    return signature[0]
 
-    def sha512_hash(self, src):
-        h = Crypto.Hash.SHA512.new()
-        h.update(src)
-        return h.hexdigest()
+def sha512_hash(src):
+    h = Crypto.Hash.SHA512.new()
+    h.update(src)
+    return h.hexdigest()
 

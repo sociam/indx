@@ -242,7 +242,7 @@ class IndxSync:
         return return_d
 
 
-    def sync_boxes(self, all_models = None):
+    def sync_boxes(self, all_models = None, websocket = None):
         """ Synchronise boxes based on the internal model stored in this object. """
         logging.debug("IndxSync sync_boxes, all_models: {0}".format(all_models))
         return_d = Deferred()
@@ -306,30 +306,38 @@ class IndxSync:
                                 def updated_cb(empty):
 
                                     def observer(data):
-                                        diff = data['data']
 
-                                        def done_cb(empty):
-                                            logging.debug("IndxSync updating from a websocket done.")
-                                        def err_cb(failure):
-                                            logging.error("IndxSync updating from a websocket error: {0}".format(failure))
+                                        if data.get('action') == 'diff' and data.get('operation') == 'update':
+                                            diff = data['data']
 
-                                        self.update_to_latest_version(client, remote_server_url, remote_box, diff_in = diff).addCallbacks(done_cb, err_cb)
+                                            def done_cb(empty):
+                                                logging.debug("IndxSync updating from a websocket done.")
+                                            def err_cb(failure):
+                                                logging.error("IndxSync updating from a websocket error: {0}".format(failure))
+
+                                            self.update_to_latest_version(client, remote_server_url, remote_box, diff_in = diff).addCallbacks(done_cb, err_cb)                                  
+                                        else:
+                                            logging.error("Sync: Unknown data message from WebSocket: {0}".format(data))
 
                                     # auths and sets up listening for diffs, filtering them and passing them to the observer
-                                    wsclient = client.listen_diff(observer)
+                                    if websocket is None:
+                                        wsclient = client.connect_ws(local_key['key']['private'], local_key_hash, observer) # open a new socket
+                                    else:
+                                        websocket.listen_diff(observer) # use an existing websocket
+
                                     next_model(None)
+
+
 
                                 # compare local version to previous, and update one of them, or both
                                 self.update_to_latest_version(client, remote_server_url, remote_box).addCallbacks(updated_cb, return_d.errback)
 
                             clientauth.get_token(remote_box).addCallbacks(token_cb, return_d.errback)
-
+ 
                         clientauth.auth_keys(local_key['key']['private'], local_key_hash).addCallbacks(authed_cb, return_d.errback)
-
 
                     self.keystore.get(local_key_hash).addCallbacks(keystore_cb, return_d.errback)
                     
-
                 model_graph.expand_depth(5, self.root_store).addCallbacks(expanded_cb, return_d.errback)
 
             self.root_store.get_latest_objs([model_id], render_json = False).addCallbacks(model_cb, return_d.errback)
