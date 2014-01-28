@@ -329,30 +329,54 @@ angular
 			var queue = obj.get('command-queue');
 			queue.push(command);
 			obj.save('command-queue', queue);
+			console.log(obj);
 		};
 
 		var updateTest = function (obj, id, attributes) {
 			var dfd = $.Deferred(),
-						var testObj = _(obj.get('tests')).where(id).pop();
+				testObj = _(obj.get('tests')).where(id).pop();
 
 			if (testObj) {
 				dfd.resolve();
 			} else {
-				box.getObj('testrunner-manifest_' + manifest.id + '-test_' + test.id, function (obj) {
+				box.getObj('testrunner-manifest#' + id.manifest_id + '-test#' + id.test_id, function (obj) {
 					obj.set(id);
 					var tests = obj.get('tests');
 					tests.push(obj);
 					obj.save('tests', tests).then(function () {
 						testObj = obj;
-						dfd = $.Deferred();
+						dfd.resolve();
 					});
 				});
 			}
 			dfd.resolve(function () {
 				testObj.set(attributes);
-			})
+			});
 			return dfd;
-		}
+		};
+
+		var updateDoc = function (obj, id, attributes) {
+			var dfd = $.Deferred(),
+				docObj = _(obj.get('docs')).where(id).pop();
+
+			if (docObj) {
+				dfd.resolve();
+			} else {
+				box.getObj('testrunner-manifest#' + id.manifest_id + '-doc#' + id.doc_id, function (obj) {
+					obj.set(id);
+					var docs = obj.get('docs');
+					docs.push(obj);
+					obj.save('docs', docs).then(function () {
+						docObj = obj;
+						dfd.resolve();
+					});
+				});
+			}
+			dfd.resolve(function () {
+				docObj.set(attributes);
+			});
+			return dfd;
+		};
 
 		var start = function () {
 			// get the root obj
@@ -376,32 +400,32 @@ angular
 
 				manifests.on('start_test', function (manifest, test) {
 					var id = { manifest_id: manifest.id, test_id: test.id };
-					updateTest(testrunnerObj, id, { state 'started' }).then(function (test) {
+					updateTest(testrunnerObj, id, { state: 'started' }).then(function (test) {
 						pushCommand(testrunnerObj, _.extend({ action: 'start', test: test }, id));
 					});
 				});
 				manifests.on('run_test', function (manifest, test) {
 					var id = { manifest_id: manifest.id, test_id: test.id };
-					updateTest(testrunnerObj, id, { state 'running' }).then(function (test) {
+					updateTest(testrunnerObj, id, { state: 'running' }).then(function (test) {
 						pushCommand(testrunnerObj, _.extend({ action: 'run', test: test }, id));
 					});
 				});
 				manifests.on('stop_test', function (manifest, test) {
 					var id = { manifest_id: manifest.id, test_id: test.id };
-					updateTest(testrunnerObj, id, { state 'stopping' }).then(function (test) {
+					updateTest(testrunnerObj, id, { state: 'stopping' }).then(function (test) {
 						pushCommand(testrunnerObj, _.extend({ action: 'stop', test: test }, id));
 					});
 				});
 				manifests.on('start_build', function (manifest, doc) {
 					var id = { manifest_id: manifest.id, doc_id: doc.id };
-					updateDoc(testrunnerObj, id, { state 'stopped' }).then(function (doc) {
-						pushCommand(testrunnerObj, _.extend({ action: 'start', doc: doc }, id));
+					updateDoc(docsbuilderObj, id, { state: 'stopped' }).then(function (doc) {
+						pushCommand(docsbuilderObj, _.extend({ action: 'start', doc: doc }, id));
 					});
 				});
 				manifests.on('stop_build', function (manifest, doc) {
 					var id = { manifest_id: manifest.id, doc_id: doc.id };
-					updateDoc(testrunnerObj, id, { state '?' }).then(function (doc) {
-						pushCommand(testrunnerObj, _.extend({ action: 'stop', doc: doc }, id));
+					updateDoc(docsbuilderObj, id, { state: '?' }).then(function (doc) {
+						pushCommand(docsbuilderObj, _.extend({ action: 'stop', doc: doc }, id));
 					});
 				});
 			})
