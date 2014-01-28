@@ -34,11 +34,10 @@ angular
 					that.haveBeenRun = that.get('have_been_run');
 					that.isStarted = that.get('started');
 					that.mode = 
-						that.isAvailable && !that.isRunning ?
+						that.isRunning ? 'running' :
 							(that.haveBeenRun ?
 								(that.results.failures > 0 ? 'failed' : 'passed') :
-								'notrun') :
-							that.isRunning ? 'running' : 'none'
+								'notrun');
 					that.modeDescription = testModes[that.mode];
 					//that.getResults();
 				});
@@ -187,7 +186,19 @@ angular
 		var Tests = Backbone.Collection.extend({
 			model: Test,
 			initialize: function (models, options) {
+				var that = this;
 				this.options = options;
+				this.on('change add reset remove', function () {
+					var mode = 'none',
+						modes = _(that.models).pluck('mode');
+					if (modes.indexOf('passed') > -1) { mode = 'passed'; }
+					if (modes.indexOf('notrun') > -1) { mode = 'notrun'; }
+					if (modes.indexOf('failed') > -1) { mode = 'failed'; }
+					if (modes.indexOf('running') > -1) { mode = 'running'; }
+					that.mode = mode;
+					that.modeDescription = testModes[that.mode];
+				});
+				this.trigger('change');
 			},
 			add: function (model, options) {
 				var that = this;
