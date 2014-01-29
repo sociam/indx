@@ -167,98 +167,102 @@ class IndxSync:
 
             remote_serverid = remote_keys['serverid']
 
-            link_uid = uuid.uuid1()
-            local_key_uid = uuid.uuid1()
-            remote_key_uid = uuid.uuid1()
-            status1_uid = uuid.uuid1()
-            status2_uid = uuid.uuid1()
+            def last_version_cb(version):
 
-            link_uri = "link-{0}".format(link_uid)
-            status1_uri = "status-{0}".format(status1_uid)
-            status2_uri = "status-{0}".format(status2_uid)
+                link_uid = uuid.uuid1()
+                local_key_uid = uuid.uuid1()
+                remote_key_uid = uuid.uuid1()
+                status1_uid = uuid.uuid1()
+                status2_uid = uuid.uuid1()
 
-            # objects get updated to local box, and then synced across to the other boxes once the syncing starts
-            new_objs = [
-                {   "@id": link_uri,
-                    "type": [ {"@value": NS_ROOT_BOX + "link"} ],
-                    "boxes": [ {"@id": "box-{0}".format(local_key_uid)}, # links to the objs below
-                               {"@id": "box-{0}".format(remote_key_uid)}, # links to the objs below
-                             ],
-                    "statuses": [ {"@id": status1_uri}, {"@id": status2_uri} ],
-                },
-                { "@id": status1_uri,
-                  "type": [ {"@value": NS_ROOT_BOX + "status"} ],
-                  "src-boxid": [ {"@value": remote_box} ],
-                  "src-server-url": [ {"@value": remote_address} ],
-                  "dst-boxid": [ {"@value": self.root_store.boxid} ],
-                  "dst-server-url": [ {"@value": self.url} ],
-                },
-                { "@id": status2_uri,
-                  "type": [ {"@value": NS_ROOT_BOX + "status"} ],
-                  "dst-boxid": [ {"@value": remote_box} ],
-                  "dst-server-url": [ {"@value": remote_address} ],
-                  "src-boxid": [ {"@value": self.root_store.boxid} ],
-                  "src-server-url": [ {"@value": self.url} ],
-                },
-                {   "@id": "box-{0}".format(local_key_uid),
-                    "type": [ {"@value": NS_ROOT_BOX + "box"} ],
-                    "server-url": [ {"@value": self.url } ],
-                    "server-id": [ {"@value": server_id } ],
-                    "box": [ {"@value": self.root_store.boxid} ],
-                    "key": [ {"@id": local_keys['public-hash']}], # links to the key objs below
-                },
-                {   "@id": "box-{0}".format(remote_key_uid),
-                    "type": [ {"@value": NS_ROOT_BOX + "box"} ],
-                    "server-url": [ {"@value": remote_address } ],
-                    "server-id": [ {"@value": remote_serverid } ],
-                    "box": [ {"@value": remote_box} ],
-                    "key": [ {"@id": remote_keys['public-hash']}], # links to the key objs below
-                },
-                {   "@id": local_keys['public-hash'],
-                    "type": [ {"@value": NS_ROOT_BOX + "key"} ],
-                    "public-key": [ {"@value": local_keys['public']} ], # share the full public keys everywhere (private keys only in respective server's keystores)
-                    "public-hash": [ {"@value": local_keys['public-hash']} ], # share the full public keys everywhere (private keys only in respective server's keystores)
-                },
-                {   "@id": remote_keys['public-hash'],
-                    "type": [ {"@value": NS_ROOT_BOX + "key"} ],
-                    "public-key": [ {"@value": remote_keys['public']} ], # share the full public keys everywhere
-                    "public-hash": [ {"@value": remote_keys['public-hash']} ], # share the full public keys everywhere
-                },
-            ]
+                link_uri = "link-{0}".format(link_uid)
+                status1_uri = "status-{0}".format(status1_uid)
+                status2_uri = "status-{0}".format(status2_uid)
+
+                # objects get updated to local box, and then synced across to the other boxes once the syncing starts
+                new_objs = [
+                    {   "@id": link_uri,
+                        "type": [ {"@value": NS_ROOT_BOX + "link"} ],
+                        "boxes": [ {"@id": "box-{0}".format(local_key_uid)}, # links to the objs below
+                                   {"@id": "box-{0}".format(remote_key_uid)}, # links to the objs below
+                                 ],
+                        "statuses": [ {"@id": status1_uri}, {"@id": status2_uri} ],
+                    },
+                    { "@id": status1_uri,
+                      "type": [ {"@value": NS_ROOT_BOX + "status"} ],
+                      "src-boxid": [ {"@value": remote_box} ],
+                      "src-server-url": [ {"@value": remote_address} ],
+                      "dst-boxid": [ {"@value": self.root_store.boxid} ],
+                      "dst-server-url": [ {"@value": self.url} ],
+                      "last-version-seen": [ {"@value": version+1} ], #we save this because we will push our whole box to it in a sec - it is incremented because the version is before we put this in :-)
+                    },
+                    { "@id": status2_uri,
+                      "type": [ {"@value": NS_ROOT_BOX + "status"} ],
+                      "dst-boxid": [ {"@value": remote_box} ],
+                      "dst-server-url": [ {"@value": remote_address} ],
+                      "src-boxid": [ {"@value": self.root_store.boxid} ],
+                      "src-server-url": [ {"@value": self.url} ],
+                    },
+                    {   "@id": "box-{0}".format(local_key_uid),
+                        "type": [ {"@value": NS_ROOT_BOX + "box"} ],
+                        "server-url": [ {"@value": self.url } ],
+                        "server-id": [ {"@value": server_id } ],
+                        "box": [ {"@value": self.root_store.boxid} ],
+                        "key": [ {"@id": local_keys['public-hash']}], # links to the key objs below
+                    },
+                    {   "@id": "box-{0}".format(remote_key_uid),
+                        "type": [ {"@value": NS_ROOT_BOX + "box"} ],
+                        "server-url": [ {"@value": remote_address } ],
+                        "server-id": [ {"@value": remote_serverid } ],
+                        "box": [ {"@value": remote_box} ],
+                        "key": [ {"@id": remote_keys['public-hash']}], # links to the key objs below
+                    },
+                    {   "@id": local_keys['public-hash'],
+                        "type": [ {"@value": NS_ROOT_BOX + "key"} ],
+                        "public-key": [ {"@value": local_keys['public']} ], # share the full public keys everywhere (private keys only in respective server's keystores)
+                        "public-hash": [ {"@value": local_keys['public-hash']} ], # share the full public keys everywhere (private keys only in respective server's keystores)
+                    },
+                    {   "@id": remote_keys['public-hash'],
+                        "type": [ {"@value": NS_ROOT_BOX + "key"} ],
+                        "public-key": [ {"@value": remote_keys['public']} ], # share the full public keys everywhere
+                        "public-hash": [ {"@value": remote_keys['public-hash']} ], # share the full public keys everywhere
+                    },
+                ]
 
 
-            def encpk_cb(empty):
+                def encpk_cb(empty):
 
-                def remote_added_cb(empty):
+                    def remote_added_cb(empty):
 
-                    def local_added_cb(empty):
-                        logging.debug("IndxSync link_remote_box, local_added_cb")
+                        def local_added_cb(empty):
+                            logging.debug("IndxSync link_remote_box, local_added_cb")
 
-                        def ver_cb(ver):
-                            logging.debug("IndxSync link_remote_box, ver_cb {0}".format(ver))
-                            # add new objects to local store
+                            def ver_cb(ver):
+                                logging.debug("IndxSync link_remote_box, ver_cb {0}".format(ver))
+                                # add new objects to local store
 
-                            def added_cb(response):
+                                def added_cb(response):
 
-                                def added_indx_cb(empty):
-                                    # start syncing/connecting using the new key
-                                    self.sync_boxes([link_uri], include_push_all = True).addCallbacks(lambda empty: return_d.callback(remote_keys['public']), return_d.errback)
+                                    def added_indx_cb(empty):
+                                        # start syncing/connecting using the new key
+                                        self.sync_boxes([link_uri], include_push_all = True).addCallbacks(lambda empty: return_d.callback(remote_keys['public']), return_d.errback)
 
-                                self.database.save_linked_box(self.root_store.boxid).addCallbacks(added_indx_cb, return_d.errback)
+                                    self.database.save_linked_box(self.root_store.boxid).addCallbacks(added_indx_cb, return_d.errback)
 
-                            self.root_store.update(new_objs, ver).addCallbacks(added_cb, return_d.errback)
+                                self.root_store.update(new_objs, ver).addCallbacks(added_cb, return_d.errback)
 
-                        self.root_store._get_latest_ver().addCallbacks(ver_cb, return_d.errback)
+                            self.root_store._get_latest_ver().addCallbacks(ver_cb, return_d.errback)
 
-                    # add the local key to the local store
-                    self.keystore.put(local_keys, local_user, self.root_store.boxid).addCallbacks(local_added_cb, return_d.errback) # store in the local keystore
+                        # add the local key to the local store
+                        self.keystore.put(local_keys, local_user, self.root_store.boxid).addCallbacks(local_added_cb, return_d.errback) # store in the local keystore
 
-                self.keystore.put({"public": remote_keys['public'], "private": "", "public-hash": remote_keys['public-hash']}, local_user, self.root_store.boxid).addCallbacks(remote_added_cb, return_d.errback)
+                    self.keystore.put({"public": remote_keys['public'], "private": "", "public-hash": remote_keys['public-hash']}, local_user, self.root_store.boxid).addCallbacks(remote_added_cb, return_d.errback)
 
-            # don't save the local encpk2 here, only give it to the remote server.
-            # save the remote encpk2
-            self.database.save_encpk2(sha512_hash(remote_encpk), remote_encpk, remote_serverid).addCallbacks(encpk_cb, return_d.errback)
+                # don't save the local encpk2 here, only give it to the remote server.
+                # save the remote encpk2
+                self.database.save_encpk2(sha512_hash(remote_encpk), remote_encpk, remote_serverid).addCallbacks(encpk_cb, return_d.errback)
 
+            self.root_store._get_latest_ver().addCallbacks(last_version_cb, return_d.errback)
 
         client = IndxClient(remote_address, remote_box, self.APPID, token = remote_token)
         client.generate_new_key(local_keys, local_encpk, server_id).addCallbacks(new_remote_key_cb, return_d.errback)
