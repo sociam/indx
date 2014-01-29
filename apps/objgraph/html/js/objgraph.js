@@ -248,13 +248,26 @@ angular
 			var color = d3.scale.category20();
 
 			var force = d3.layout.force()
-				.charge(-40)
-				.linkDistance(20)
+				.charge(-50)
+				.linkDistance(30)
 				.size([width, height]);
+
+
+			var zoom = d3.behavior.zoom()
+				.scaleExtent([1, 10])
+				.on("zoom", zoomed);
+
+			var drag = d3.behavior.drag()
+				.origin(function(d) { return d; })
+				.on("dragstart", dragstarted)
+				.on("drag", dragged)
+				.on("dragend", dragended);
 
 			var svg = d3.select("body").append("svg")
 				.attr("width", width)
-				.attr("height", height);
+				.attr("height", height)
+				.style("pointer-events", "all")
+				.call(zoom);
 
 			force
 				.nodes(graph.nodes)
@@ -272,18 +285,22 @@ angular
 
 			svg.call(tip);
 
-			var link = svg.selectAll(".link")
+
+			var container = svg.append("g");
+
+			var link = container.selectAll(".link")
 				.data(graph.links)
 				.enter().append("line")
 				.attr("class", "link")
 				.style("stroke-width", function (d) { return Math.sqrt(d.value * 2); });
 
-			var node = svg.selectAll(".node")
+			var node = container.selectAll(".node")
 				.data(graph.nodes)
 				.enter().append("circle")
 				.attr("class", "node")
-				.attr("r", 7)
+				.attr("r", 5)
 				.style("fill", function (d) { return d.group < 0 ? 'transparent' : color(d.group); })
+				.style("stroke", function (d) { return d.group < 0 ? 'transparent' : "#fff"; })
 				.call(force.drag)
 				.on('mouseover', tip.show)
 				.on('mouseout', tip.hide);
@@ -300,6 +317,24 @@ angular
 				node.attr("cx", function (d) { return d.x; })
 					.attr("cy", function (d) { return d.y; });
 			});
+
+
+function zoomed() {
+  container.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
+}
+
+function dragstarted(d) {
+  d3.event.sourceEvent.stopPropagation();
+  d3.select(this).classed("dragging", true);
+}
+
+function dragged(d) {
+  d3.select(this).attr("cx", d.x = d3.event.x).attr("cy", d.y = d3.event.y);
+}
+
+function dragended(d) {
+  d3.select(this).classed("dragging", false);
+}
 		};
 
 
