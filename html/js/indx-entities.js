@@ -141,30 +141,30 @@
 						return u.dreject('must specify all arguments: ts, tstart, tend');
 					},
 					getFitbitStepsPerMin:function(box, tstart, tend) {
-						return getByTimeseriesPointsPerMinute(box, 'fitbit_steps_ts', tstart, tend);
+						return this.getByTimeseriesPointsPerMinute(box, 'fitbit_steps_ts', tstart, tend);
 					},
 					getFitbitCaloriesPerMin:function(box, tstart, tend) {
-						return getByTimeseriesPointsPerMinute(box, 'fitbit_calories_ts', tstart, tend);
+						return this.getByTimeseriesPointsPerMinute(box, 'fitbit_calories_ts', tstart, tend);
 					},
 					getFitbitDistancePerMin:function(box, tstart, tend) {
-						return getByTimeseriesPointsPerMinute(box, 'fitbit_distance_ts', tstart, tend);
+						return this.getByTimeseriesPointsPerMinute(box, 'fitbit_distance_ts', tstart, tend);
 					},
 					getFitbitFloorsPerMin:function(box, tstart, tend) {
-						return getByTimeseriesPointsPerMinute(box, 'fitbit_floors_ts', tstart, tend);
+						return this.getByTimeseriesPointsPerMinute(box, 'fitbit_floors_ts', tstart, tend);
 					},
 					getFitbitElevationPerMin:function(box, tstart, tend) {
-						return getByTimeseriesPointsPerMinute(box, 'fitbit_elevation_ts', tstart, tend);					},
+						return this.getByTimeseriesPointsPerMinute(box, 'fitbit_elevation_ts', tstart, tend);					},
 					getNikeStepsPerMin:function(box, tstart, tend) {
-						return getByTimeseriesPointsPerMinute(box, 'nikeplus_steps_ts', tstart, tend);
+						return this.getByTimeseriesPointsPerMinute(box, 'nikeplus_steps_ts', tstart, tend);
 					},					
 					getNikeCaloriesPerMin:function(box, tstart, tend) {
-						return getByTimeseriesPointsPerMinute(box, 'nikeplus_calories_ts', tstart, tend);
+						return this.getByTimeseriesPointsPerMinute(box, 'nikeplus_calories_ts', tstart, tend);
 					},					
 					getNikeFuelPerMin:function(box, tstart, tend) {
-						return getByTimeseriesPointsPerMinute(box, 'nikeplus_fuel_ts', tstart, tend);
+						return this.getByTimeseriesPointsPerMinute(box, 'nikeplus_fuel_ts', tstart, tend);
 					},					
 					getNikeStarsPerMin:function(box, tstart, tend) {
-						return getByTimeseriesPointsPerMinute(box, 'nikeplus_stars_ts', tstart, tend);
+						return this.getByTimeseriesPointsPerMinute(box, 'nikeplus_stars_ts', tstart, tend);
 					},					
 					make1:function(box, activity_type, whom, from_t, to_t, distance, steps, calories, waypoints, otherprops) {
 						var d = u.deferred(), args = _(arguments).toArray();

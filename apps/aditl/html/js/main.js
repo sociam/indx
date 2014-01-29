@@ -55,7 +55,6 @@ angular
 				fitbit : [],
 				browsing: []
 			};
-
 			return seg;
 		};
 
@@ -76,7 +75,6 @@ angular
 			// segment the day by activity
 			entities.activities.getByActivityType(	box, dstart, dend, ['walk','run','stay','transport'] ).then(
 				function(acts) {
-					console.log('got activities > ', acts);
 					var sorted = acts.concat();
 					acts.sort(function(x,y) { return x.peek('tstart') - y.peek('tstart'); });
 					console.log('sorted >> ', acts.map(function(act) { return act.peek('tstart'); }));
@@ -84,7 +82,8 @@ angular
 
 					// filter for activities that have at least 1 waypoint
 					acts = acts.filter(function(x) { return x.peek('waypoints'); });
-					console.log('post waypoints acts >> ', acts.length);
+					console.log('got activities for day :: ', dstart, ' > ', acts.length, acts);
+
 
 					// filter out activities that are shorter than 1 minute 
 					acts = acts.filter(function(x) { return x.peek('tend') - x.peek('tstart') < 60000; });
