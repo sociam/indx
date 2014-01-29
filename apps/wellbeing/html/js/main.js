@@ -44,25 +44,15 @@ angular
 		var all_locs = [];		
 		var box;
 
-		// var genDay = function(date) { 
-		// 	return {
-		// 		date: date,
-		// 		locations: get_things(date, {type: "location"}),
-		// 		activities: get_things(date, {type:'activity'}))
-		// 	};
-		// };
 
-		// $scope.genDay = function() { 
-		// 	var last_day = $scope.days.slice($scope.days.length - 1),
-		// 		late_date = last_day && last_day.date || new Date();
 
-		// 	genDay(last_date);
-		// };
-
-		var genLocs = function() {
+		$scope.genLocs = function() {
 			console.log('genlocs >> ', $scope.locations.length, all_locs.length);
-			if ($scope.locations.length < all_locs.length) {
+			var i = 0; 
+			while (i < 6 && $scope.locations.length < all_locs.length) {
+				console.log('pushing ', all_locs[$scope.locations.length]);
 				$scope.locations.push(all_locs[$scope.locations.length]);
+				i++;
 			}
 		};
 		$scope.$watch('user + box', function() { 
@@ -73,11 +63,9 @@ angular
 				box = _box;
 				console.log('querying ----------- > ');
 				box.query({type:'location'}).then(function(things) {
-					console.log('things');
 					u.safeApply($scope, function() { 
-						console.log("I GOT THE THINGS >> ", things);
-						all_locs = things; 
-						$scope.locations = things;
+						all_locs = things.concat(); 
+						$scope.locations = things.slice(0,6);
 					});
 				}).fail(function(bail) { console.log('fail querying ', bail); });				
 				// $scope.genDay();

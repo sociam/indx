@@ -9,9 +9,8 @@
   </head>
   <body ng-app="wellbeing" ng-controller="main" ng-cloak>
 	<toolbar box-var='box' username-var='user'></toolbar>
-	<!-- infinite-scroll="getLoc()" infinite-scroll-distance="3" --> 
-	<div ng-show="user && box" class='diary container'>
-		<locmap ng-repeat="loc in locations" location="loc"></locmap>
+  <div ng-show="user && box" class='diary' infinite-scroll="genLocs()" infinite-scroll-distance="2" infinite-scroll-immediate-check="true">
+ 		<locmap ng-repeat="loc in locations" location="loc"></locmap>
 	</div>
 	<div ng-show="!user">
 		<h1>Please log in.</h1>
