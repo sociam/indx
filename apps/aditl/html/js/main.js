@@ -45,6 +45,20 @@ angular
 		var weekday=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 		var months = [ 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December' ];
 
+		var makeSegment = function(tstart, tend, segname, location) {
+			var seg = { 
+				tstart: tstart,
+				tend: tend,
+				name : segname,
+				location : location,
+				nike : [],
+				fitbit : [],
+				browsing: []
+			};
+
+			return seg;
+		};
+
 		var createDay = function(date) {
 			if (!box) return;
 
@@ -63,7 +77,24 @@ angular
 			entities.activities.getByActivityType(	box, dstart, dend, ['walk','run','stay','transport'] ).then(
 				function(acts) {
 					console.log('got activities > ', acts);
+					var sorted = acts.concat();
+					acts.sort(function(x,y) { return x.peek('tstart') - y.peek('tstart'); });
+					console.log('sorted >> ', acts.map(function(act) { return act.peek('tstart'); }));
 
+
+					// filter for activities that have at least 1 waypoint
+					acts = acts.filter(function(x) { return x.peek('waypoints'); });
+					console.log('post waypoints acts >> ', acts.length);
+
+					// filter out activities that are shorter than 1 minute 
+					acts = acts.filter(function(x) { return x.peek('tend') - x.peek('tstart') < 60000; });
+
+					// now have activities that have at least one segment and that are at least 1 minute
+					acts.map(function(act) {  
+						var newseg = makeSegment(act.peek('tstart'), act.peek('tend'), act.peek('activity'), act.peek('waypoints') );
+						console.log('made segment >> ', newseg);
+						sa(function() { day.segments.push(newseg);	});
+					});
 				}).fail(function(bail) {
 					console.error('error getting activities >> ', bail);
 				});
