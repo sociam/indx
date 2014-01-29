@@ -127,8 +127,127 @@
 						console.log('issuing query ... ', JSON.stringify(query));
 						return search(box, query);
 					},
-					getFitbitStepsPerMin:function(box, tstart, tend) {},
-					getNikeStepsPerMin:function(box, tstart, tend) {},					
+					getByTimeseriesPointsPerMinute:function(box, ts, tstart, tend) {
+						// ts in {'fitbit_steps_ts', 'fitbit_calories_ts', 'fitbit_distance_ts', 'fitbit_floors_ts', 'fitbit_elevation_ts', 'nikeplus_steps_ts', 'nikeplus_calories_ts', 'nikeplus_fuel_ts', 'nikeplus_stars_ts'}
+						if (ts && tstart && tend) {
+							var query = ( {'$and': [ 
+									{'timeseries':ts}, 
+									{'tstart':{'$ge':toQueryTime(tstart)} },
+									{'tend':{'$le':toQueryTime(tend)} }
+								] } );
+							console.log('issuing query ... ', JSON.stringify(query));
+							return search(box, query);
+						}
+						return [];
+					},
+					getFitbitStepsPerMin:function(box, tstart, tend) {
+						if (tstart && tend) {
+							var query = ( {'$and': [ 
+									{'timeseries':'fitbit_steps_ts'}, 
+									{'tstart':{'$ge':toQueryTime(tstart)} },
+									{'tend':{'$le':toQueryTime(tend)} }
+								] } );
+							console.log('issuing query ... ', JSON.stringify(query));
+							return search(box, query);
+						}
+						return [];
+					},
+					getFitbitCaloriesPerMin:function(box, tstart, tend) {
+						if (tstart && tend) {
+							var query = ( {'$and': [ 
+									{'timeseries':'fitbit_calories_ts'}, 
+									{'tstart':{'$ge':toQueryTime(tstart)} },
+									{'tend':{'$le':toQueryTime(tend)} }
+								] } );
+							console.log('issuing query ... ', JSON.stringify(query));
+							return search(box, query);
+						}
+						return [];
+					},
+					getFitbitDistancePerMin:function(box, tstart, tend) {
+						if (tstart && tend) {
+							var query = ( {'$and': [ 
+									{'timeseries':'fitbit_distance_ts'}, 
+									{'tstart':{'$ge':toQueryTime(tstart)} },
+									{'tend':{'$le':toQueryTime(tend)} }
+								] } );
+							console.log('issuing query ... ', JSON.stringify(query));
+							return search(box, query);
+						}
+						return [];
+					},
+					getFitbitFloorsPerMin:function(box, tstart, tend) {
+						if (tstart && tend) {
+							var query = ( {'$and': [ 
+									{'timeseries':'fitbit_floors_ts'}, 
+									{'tstart':{'$ge':toQueryTime(tstart)} },
+									{'tend':{'$le':toQueryTime(tend)} }
+								] } );
+							console.log('issuing query ... ', JSON.stringify(query));
+							return search(box, query);
+						}
+						return [];
+					},
+					getFitbitElevationPerMin:function(box, tstart, tend) {
+						if (tstart && tend) {
+							var query = ( {'$and': [ 
+									{'timeseries':'fitbit_elevation_ts'}, 
+									{'tstart':{'$ge':toQueryTime(tstart)} },
+									{'tend':{'$le':toQueryTime(tend)} }
+								] } );
+							console.log('issuing query ... ', JSON.stringify(query));
+							return search(box, query);
+						}
+						return [];
+					},
+					getNikeStepsPerMin:function(box, tstart, tend) {
+						if (tstart && tend) {
+							var query = ( {'$and': [ 
+									{'timeseries':'nikeplus_steps_ts'}, 
+									{'tstart':{'$ge':toQueryTime(tstart)} },
+									{'tend':{'$le':toQueryTime(tend)} }
+								] } );
+							console.log('issuing query ... ', JSON.stringify(query));
+							return search(box, query);
+						}
+						return [];
+					},					
+					getNikeCaloriesPerMin:function(box, tstart, tend) {
+						if (tstart && tend) {
+							var query = ( {'$and': [ 
+									{'timeseries':'nikeplus_calories_ts'}, 
+									{'tstart':{'$ge':toQueryTime(tstart)} },
+									{'tend':{'$le':toQueryTime(tend)} }
+								] } );
+							console.log('issuing query ... ', JSON.stringify(query));
+							return search(box, query);
+						}
+						return [];
+					},					
+					getNikeFuelPerMin:function(box, tstart, tend) {
+						if (tstart && tend) {
+							var query = ( {'$and': [ 
+									{'timeseries':'nikeplus_fuel_ts'}, 
+									{'tstart':{'$ge':toQueryTime(tstart)} },
+									{'tend':{'$le':toQueryTime(tend)} }
+								] } );
+							console.log('issuing query ... ', JSON.stringify(query));
+							return search(box, query);
+						}
+						return [];
+					},					
+					getNikeStarsPerMin:function(box, tstart, tend) {
+						if (tstart && tend) {
+							var query = ( {'$and': [ 
+									{'timeseries':'nikeplus_stars_ts'}, 
+									{'tstart':{'$ge':toQueryTime(tstart)} },
+									{'tend':{'$le':toQueryTime(tend)} }
+								] } );
+							console.log('issuing query ... ', JSON.stringify(query));
+							return search(box, query);
+						}
+						return [];
+					},					
 					make1:function(box, activity_type, whom, from_t, to_t, distance, steps, calories, waypoints, otherprops) {
 						var d = u.deferred(), args = _(arguments).toArray();
 						var id = ['activity', whom && whom.id || '', activity_type || '', from_t.valueOf().toString(), to_t.valueOf().toString()].join('-');
