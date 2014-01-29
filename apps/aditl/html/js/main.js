@@ -7,7 +7,7 @@ angular
 		return {
 			restrict:'E',
 			scope:{ day:'=' },
-			templateUrl:'/apps/wellbeing/templates/day-container.html',
+			templateUrl:'/apps/aditl/templates/day-container.html',
 			controller:function($scope) {
 
 			}
@@ -42,9 +42,21 @@ angular
 		// $scope.locations = [];
 		var box, all_locs = [];	
 
-		var weekday=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
-		var months = [ "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" ];
+		var weekday=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+		var months = [ 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December' ];
 
+		var createDay = function(date) {
+			var dstart = new Date(date.valueOf()); dstart.setHours(0,0,0,0);
+			var dend = new Date(date.valueOf()); dend.setHours(23,59,59,999);
+			console.log('dstart >> ', dstart, '-', dend);
+			return { 
+				date:date,dstart:dstart,dend:dend,
+				dow: weekday[dstart.getDay()].toLowerCase(),
+				dom:dstart.getDate(),
+				month:months[dstart.getMonth()].toLowerCase().slice(0,3),
+				things:[] 
+			};
+		};
 		$scope.generatePast = function(start_date, num_days) {
 			console.log('generatePast >> ', start_date);
 			var i = 1; 
@@ -53,13 +65,7 @@ angular
 			} 
 			while (i <= num_days) {
 				var date = new Date(start_date.valueOf() - i*24*3600*1000);
-				$scope.days.push({ 
-					date:date,
-					dow: weekday[date.getDay()].toLowerCase(),
-					dom:date.getDate(),
-					month:months[date.getMonth()].toLowerCase().slice(0,3),
-					things:[] 
-				});
+				$scope.days.push(createDay(date));
 				i++;
 			}
 		};
