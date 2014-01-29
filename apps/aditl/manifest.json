@@ -1,8 +1,8 @@
 {
-	"name": "wellbeing observatory",
+	"name": "a day in the life",
 	"version": 0.1,
 	"type":["app"],
-	"description": "Wellbeing Observatory",
+	"description": "personal activity diary",
 	"icons": { 
 		"128": "imgs/icon.png"
 	},
