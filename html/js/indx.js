@@ -1,5 +1,5 @@
-/*global $,_,document,window,console,escape,Backbone,exports,WebSocket */
-/*jslint vars:true, todo:true */
+/* jshint undef: true, strict:false, trailing:false, unused:false, -W110 */
+/*global $,_,document,window,console,escape,Backbone,exports,WebSocket,process,_NODE_AJAX,angular,jQuery */
 ///  @title indx.js
 ///  @author Daniel Alexander Smith
 ///  @author Max Van Kleek
@@ -281,9 +281,9 @@ angular
 					var val_dfds = vals.map(function(val) {
 						var vd = u.deferred();
 						// it's an object, so return that
-						if (val.hasOwnProperty("@id")) {
+						if (val.hasOwnProperty('@id')) {
 							// object
-							var oid = val["@id"];
+							var oid = val['@id'];
 							fetch_dfds[oid] = fetch_dfds[oid] ? fetch_dfds[oid].concat(vd) : [vd];
 							// this_.box.getObj(val["@id"]).then(vd.resolve).fail(vd.reject);
 						}
@@ -305,9 +305,9 @@ angular
 								fetch_dfds[o.id].map(function(dfd) { dfd.resolve(o); });
 							});
 						}).fail(function() { 
-							_(fetch_dfds).values().map(function(dfd) { 
-								console.error(' dfd >> ', dfd);
-								dfd.reject('error fetching obj'); 
+							_(fetch_dfds).values().map(function(dfds) { 
+								console.error(' dfd >> ', dfds);
+								dfds.map(function(dd) { dd.reject('error fetching obj'); });
 							});
 						});
 					}
@@ -518,7 +518,7 @@ angular
 				// try { throw new Error(''); } catch(e) { console.error(e); }
 				if (this._get_token_queue === undefined) { this._get_token_queue = []; }
 				var tq = this._get_token_queue, this_ = this, d = u.deferred();
-				tq.push(d); 				
+				tq.push(d);
 				if (tq.length === 1) { 
 					// console.debug('tq === 1, calling -------------- get_token');
 					this._ajax('POST', 'auth/get_token', { app: this.store.get('app') })
@@ -835,8 +835,8 @@ angular
 				} else {
 					// only during fetch
 					current = updatedObjIDs.slice();
-					news = [], died = [];
 					news = _(current).filter(function(fid) { return !(fid in olds); }); // difference(olds);
+					died = [];
 					// not used 
 					// console.info('warning: slow operation');
 					// died = _(_(olds).keys()).difference(current);

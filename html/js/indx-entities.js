@@ -107,7 +107,7 @@
 							model.set(argset);
 							if (otherprops && _(otherprops).isObject()) { model.set(otherprops); }
 							model.set({'type':'location'});
-							console.log('SAVING LOCATION >>>>>>>>>>>>>>> ', model);
+							// console.log('SAVING LOCATION >>>>>>>>>>>>>>> ', model);
 							model.save().then(function() { d.resolve(model); }).fail(d.reject);
 						});
 						return d.promise();

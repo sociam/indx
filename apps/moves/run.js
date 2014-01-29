@@ -353,6 +353,7 @@ var MovesService = Object.create(nodeservice.NodeService, {
     },
     _makeTrackPointPlace: {
         value:function(trackPoint) {
+            console.log('makeTrackPointPlace > ', trackPoint);
             var dr = u.deferred(), this_ = this;
             entities.locations.getByLatLng(this_.box, trackPoint.lat, trackPoint.lon).then(function(matching_locs) { 
                 if (matching_locs && matching_locs.length) {  dr.resolve(matching_locs[0]); } else {
@@ -383,14 +384,16 @@ var MovesService = Object.create(nodeservice.NodeService, {
         value: function(activity) {
             var da = u.deferred(), this_ = this;
             var activities = { 'wlk' : 'walking', 'cyc' : 'cycling', 'run': 'running', 'trp':'transport'};
-            u.when(activity.trackPoints && activity.trackPoints.map(function(tP) { return this_._makeTrackPointPlace(tP); }) || u.dresolve()).then(function(trackObjects)  {
+            var tplocations = (activity.trackPoints && activity.trackPoints.map(function(tP) { return this_._makeTrackPointPlace(tP); })) || [];
+            u.when(tplocations).then(function(trackObjects)  {
+                console.log('trackobjects >>> ', trackObjects);
                 entities.activities.make1(this_.box, activities[activity.activity],
                     this_.whom,
                     fromMovesDate(activity.startTime),
                     fromMovesDate(activity.endTime),
                     activity.distance,
                     activity.steps,
-                    activities.calories,
+                    activity.calories,
                     trackObjects).then(function(activity_model) { 
                         save_aggressively(activity_model).then(function() { da.resolve(activity_model); }).fail(da.reject); 
                     });
@@ -427,6 +430,7 @@ var MovesService = Object.create(nodeservice.NodeService, {
                     var from_t = fromMovesDate(segment.startTime), to_t = fromMovesDate(segment.endTime);
                     entities.activities.make1(this_.box, 'stay', this_.whom, from_t, to_t ).then(function(am) {
                         am.set({diary:this_.diary});
+                        am.set({waypoints:[place]});
                         u.when(save_aggressively(am), saved_acts).then(ds.resolve).fail(ds.reject);
                     }).fail(ds.reject);
                 }
