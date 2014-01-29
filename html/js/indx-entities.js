@@ -123,7 +123,7 @@
 							'$and':[ {type:'Activity'},	{'$or': activity_types.map(function(atype) { return {'activity': atype}; })} ]
 						});
 						if (tstart) { query.$and.push({'tstart': {'$ge': toQueryTime(tstart) }}); }
-						if (tend) { query.$and.push({'tend': {'$lt': toQueryTime(tend)}}); }
+						if (tend) { query.$and.push({'tstart': {'$le': toQueryTime(tend)}}); }
 						console.log('issuing query ... ', JSON.stringify(query));
 						return search(box, query);
 					},
