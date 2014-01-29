@@ -138,7 +138,7 @@
 							console.log('issuing query ... ', JSON.stringify(query));
 							return search(box, query);
 						}
-						return [];
+						return u.dreject('must specify all arguments: ts, tstart, tend');
 					},
 					getFitbitStepsPerMin:function(box, tstart, tend) {
 						if (tstart && tend) {
@@ -150,7 +150,7 @@
 							console.log('issuing query ... ', JSON.stringify(query));
 							return search(box, query);
 						}
-						return [];
+						return u.dreject('must specify all arguments: ts, tstart, tend');
 					},
 					getFitbitCaloriesPerMin:function(box, tstart, tend) {
 						if (tstart && tend) {
