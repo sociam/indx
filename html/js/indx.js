@@ -305,7 +305,10 @@ angular
 								fetch_dfds[o.id].map(function(dfd) { dfd.resolve(o); });
 							});
 						}).fail(function() { 
-							_(fetch_dfds).values().map(function(dfd) { dfd.reject('error fetching obj'); });
+							_(fetch_dfds).values().map(function(dfd) { 
+								console.error(' dfd >> ', dfd);
+								dfd.reject('error fetching obj'); 
+							});
 						});
 					}
 
@@ -614,9 +617,12 @@ angular
 						}
 						// otherwise we are getting full objects, so ...
 						d.resolve(_(results.data).map(function(dobj,id) {
-							console.debug('getting id ', id);
-							if (cache.get(id)) { console.debug('cached! ', id); return cache.get(id); }
-							console.debug('not cached! ', id);
+							// console.debug('getting id ', id);
+							if (cache.get(id)) { 
+								// console.debug('cached! ', id); 
+								return cache.get(id); 
+							}
+							// console.debug('not cached! ', id);
 							var model = this_._createModelForID(id);
 							model._deserialiseAndSet(dobj, true);
 							return model;

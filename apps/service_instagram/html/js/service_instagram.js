@@ -1,9 +1,10 @@
 angular
 	.module('service_instagram', ['ui','indx'])
 	.controller('ConfigPage', function($scope, client, utils) {
-		var s = client.store, sa = function(f) { utils.safeApply($scope, f); };
+		var u = utils, s = client.store, sa = function(f) { utils.safeApply($scope, f); };
 		window.store = client.store;
 		window.$s = $scope;
+		$scope.redirect_url = [store._getBaseURL(), "apps", "service_instagram", "redirect_target.html"].join('/');
 
 		$scope.app = {};
 
@@ -48,35 +49,26 @@ angular
 
 		var get_instagram_access_token = function(get_access_token_url) {
 			console.info('trying to run _get_instagram_access_token');
+			var redirect_url = encodeURIComponent($scope.redirect_url);
+			var clientid = 'e118fb9760de432cb97df38babede8d9';
+			var url = 'https://api.instagram.com/oauth/authorize/?client_id='+clientid+'&redirect_uri='+redirect_url+'&response_type=code';
+			var mywin = window.open(url, '_blank', 'location=yes,height=570,width=520,scrollbars=yes,status=yes');
+			var d = u.deferred();
 
 			// >> from emax 
 			// this is the method that is called by the redirect_target.html
 			// when we come back with the auth code (the popup window will close automagically.)
-			var window._get_code_continuation = function(code) {
+			window._get_code_continuation = function(code) {
 				var getparam = function(pname) { return u.getParameterByName(pname, '?'+response); };
 				var code = getparam('code');
 				console.info('NEW AUTH CODE >>> ', code);
+				d.resolve(code);
 				// DEAR RAMINE DO SOMETHING NICE WITH THE CODE HERE >> 
 				// something nice
 				// and probably save config
 			}; // << end of emax insert
+			return d.promise();
 
-			var mywin = window.open(get_access_token_url, '_blank', 'location=yes,height=570,width=520,scrollbars=yes,status=yes');
-
-			// please eliminate some of this gunk that's commented out <3 >>>>> 
-			//var ele = mywin.getElementsByName('allow');
-
-			// var tokenWindow = window;
-			// tokenWindow.open($scope.access_token_url, '_blank', 'location=yes,height=570,width=520,scrollbars=yes,status=yes');
-			// mywin.onload = function(){ myUnloadEvent(); }
-			// var myUnloadEvent = function() {
-   //  			console.info('You can have Ur Logic Here ,');
-			// }
-			// ele.addEventListener("click", listener, false);
-			// var listener = function() {
-  	// 			//tokenWindowURL = tokenWindow.document.URL
-  	// 			console.info('New Window Has been Clicked');
-			// };
 		};
 
 

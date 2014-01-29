@@ -43,13 +43,14 @@ var daysBetween = function(date1, date2) {
     return diff/(1000*60*60*24);
 };
 var save_aggressively = function(model) {
-    var d = u.deferred(), me = arguments.callee, guid = u.guid();
+    var d = u.deferred(), me = arguments.callee, guid = u.guid(), box = model.box;
     model.save().then(d.resolve).fail(function(bail) {
-        console.log(' save fail 1023890189238901322809 ', typeof bail, bail.code);
-        if (bail.code == 409) {
-            console.error('save_aggressively :: RESUMINGGGGGGGGGGGGGGGGGGGGGG SETUP > ');
+        console.log(' save fail 1023890189238901322809 ', bail.code);
+        var code = bail.code;
+        if (code == 409) {
+            // console.error('save_aggressively :: RESUMINGGGGGGGGGGGGGGGGGGGGGG SETUP > ');
             box.on('update-from-master', function() { 
-                console.error('save_aggressively :: RESUMINGGGGGGGGGGGGGGGGGGGGGG RESUME << ');
+                // console.error('save_aggressively :: RESUMINGGGGGGGGGGGGGGGGGGGGGG RESUME << ');
                 box.off(undefined,undefined,guid);
                 me(model).then(d.resolve).fail(d.reject);
             }, guid);
@@ -61,7 +62,11 @@ var save_aggressively = function(model) {
     });
     return d.promise();
 };
-var quit = function(bail) { console.error(bail); process.exit(-1);  };
+var quit = function(bail) { 
+    console.error(bail); 
+    throw new Error("ERROR ", bail);
+    // process.exit(-1);  
+};
 // var persist_thru_obsoletes = function(box, f, d) {
 //     var me = arguments.callee, guid = u.guid();
 //     f().then(d.resolve).fail(function(bail) {
