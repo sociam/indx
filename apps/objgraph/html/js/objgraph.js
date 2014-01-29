@@ -128,6 +128,7 @@ angular
 					var nodes = this.map(function (obj) {
 							return {
 								id: obj.id,
+								data: obj.attributes,
 								group: getGroupFromStructure(obj)
 							};
 						}),
@@ -140,6 +141,24 @@ angular
 								return { source: nodeA, target: nodeB, value: 1 };
 							}));
 						}, []);
+
+					// group similar looking objs
+					var groups = _.uniq(_.pluck(nodes, 'group'));
+					_.each(groups, function (group) {
+						var groupNodes = _.where(nodes, { group: group });
+						if (groupNodes.length <= 1) { return; }
+
+						var groupNode = { id: 'group-' + group, group: -1 },
+							nodeA = nodes.length;
+
+						nodes.push(groupNode);
+
+						_.each(groupNodes, function (node) {
+							var nodeB = nodes.indexOf(node);
+							console.log({ source: nodeA, target: nodeB, value: 0 })
+							links.push({ source: nodeA, target: nodeB, value: 0 });
+						});
+					});
 
 					return {
 						nodes: nodes,
@@ -229,8 +248,8 @@ angular
 			var color = d3.scale.category20();
 
 			var force = d3.layout.force()
-				.charge(-120)
-				.linkDistance(30)
+				.charge(-40)
+				.linkDistance(20)
 				.size([width, height]);
 
 			var svg = d3.select("body").append("svg")
@@ -242,19 +261,32 @@ angular
 				.links(graph.links)
 				.start();
 
+			var tip = d3.tip()
+				.attr('class', 'd3-tip')
+				.offset([-10, 0])
+				.html(function (d) {
+					return _.map(d.data, function (v, k) {
+						return "<strong>" + k + ":</strong> " + v + "";
+					}).join('<br>');
+				});
+
+			svg.call(tip);
+
 			var link = svg.selectAll(".link")
 				.data(graph.links)
 				.enter().append("line")
 				.attr("class", "link")
-				.style("stroke-width", function (d) { return Math.sqrt(d.value); });
+				.style("stroke-width", function (d) { return Math.sqrt(d.value * 2); });
 
 			var node = svg.selectAll(".node")
 				.data(graph.nodes)
 				.enter().append("circle")
 				.attr("class", "node")
-				.attr("r", 5)
-				.style("fill", function (d) { return color(d.group); })
-				.call(force.drag);
+				.attr("r", 7)
+				.style("fill", function (d) { return d.group < 0 ? 'transparent' : color(d.group); })
+				.call(force.drag)
+				.on('mouseover', tip.show)
+				.on('mouseout', tip.hide);
 
 			node.append("title")
 				.text(function (d) { return d.id; });

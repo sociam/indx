@@ -13,6 +13,11 @@
     "node_modules",
     "bower_components",
     "test",
-    "tests"
-  ]
+    "tests",
+    "html/lib"
+  ],
+  "dependencies": {
+    "d3": "~3.4.1",
+    "d3-tip": "~0.6.3"
+  }
 }
