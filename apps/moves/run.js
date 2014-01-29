@@ -47,10 +47,10 @@ var save_aggressively = function(model) {
     model.save().then(d.resolve).fail(function(bail) {
         console.log(' save fail 1023890189238901322809 ', bail.code);
         var code = bail.code;
-        if (code == 409) {
-            // console.error('save_aggressively :: RESUMINGGGGGGGGGGGGGGGGGGGGGG SETUP > ');
+        if (code == 409 || code == 500) {
+            console.error('save_aggressively :: RESUMINGGGGGGGGGGGGGGGGGGGGGG SETUP > ');
             box.on('update-from-master', function() { 
-                // console.error('save_aggressively :: RESUMINGGGGGGGGGGGGGGGGGGGGGG RESUME << ');
+                console.error('save_aggressively :: RESUMINGGGGGGGGGGGGGGGGGGGGGG RESUME << ');
                 box.off(undefined,undefined,guid);
                 me(model).then(d.resolve).fail(d.reject);
             }, guid);
@@ -137,7 +137,7 @@ var MovesService = Object.create(nodeservice.NodeService, {
 
                 // catch up mode! update all the bloody time.
                 var endDate = new Date(lastGrabbedDate.valueOf() + SEVEN_DAYS_USEC);
-                console.log('setting start-endDate to >> ', lastGrabbedDate, endDate);
+                // console.log('setting start-endDate to >> ', lastGrabbedDate, endDate);
                 this_.getTimeline(lastGrabbedDate,endDate).then(function() { 
                     updateLGD(endDate);
                     setTimeout(function() { this_.__continueGrabbing().then(d.resolve).fail(d.reject); }, 1000);
@@ -251,7 +251,7 @@ var MovesService = Object.create(nodeservice.NodeService, {
             var base_url = 'https://api.moves-app.com/api/v1/user/profile?'+jQuery.param({access_token:this.config.access_token});
             // console.error('getProfile() url >> ', base_url);
             jQuery.ajax({type:'GET', url: base_url}).then(function(result) {
-                console.log('profile info >> ', result, 'object: ', _(result).isObject(), 'array : ', _(result).isArray());
+                // console.log('profile info >> ', result, 'object: ', _(result).isObject(), 'array : ', _(result).isArray());
                 this_.whom.set({moves_id: result.userId});
                 this_.diary.set({
                     whom:this_.whom,
@@ -263,7 +263,7 @@ var MovesService = Object.create(nodeservice.NodeService, {
                 delete result.profile.currentTimeZone;
                 delete result.profile.firstDate;
                 this_.diary.set(result.profile);
-                console.log('diary >> ', this_.diary.attributes);
+                // console.log('diary >> ', this_.diary.attributes);
                 u.when([ save_aggressively(this_.diary), save_aggressively(this_.whom) ]).then(d.resolve).fail(d.reject);                    
             }).fail(function(bail) { 
                 // token isn't valid anymore
@@ -481,7 +481,7 @@ module.exports = {
         instantiate(host).then(function(svc) { 
             svc.login().then(function() { 
                 svc._loadBox().then(function() { 
-                    console.log('done loading!! ');
+                    // console.log('done loading!! ');
                     d.resolve(svc);
                 }).fail(d.reject);
             }).fail(d.reject);
