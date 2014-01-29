@@ -65,7 +65,7 @@ class IndxAsync:
                 self.send200(data = {'sessionid': self.sessionid})
             elif data['action'] == "login_keys":
                 try:
-                    signature, key_hash, algo, method, appid = data['signature'], data['key_hash'], data['algo'], data['method'], data['appid']
+                    signature, key_hash, algo, method, appid, encpk2 = data['signature'], data['key_hash'], data['algo'], data['method'], data['appid'], data['encpk2']
                 except Exception as e:
                     logging.error("ASync login_keys error getting all parameters.")
                     return self.send400()
@@ -73,8 +73,7 @@ class IndxAsync:
                 def win(resp):
                     # authenticated now - state of this isn't saved though, we get a token immediately instead
 
-                    username, boxid = resp
-                    password = "" # TODO double-check this
+                    username, password, boxid = resp
                     origin = "/ws" # TODO double-check this
                     # get token, return that
 
@@ -104,7 +103,7 @@ class IndxAsync:
                 def fail(empty):
                     self.send401()
 
-                auth_keys(self.webserver.keystore, signature, key_hash, algo, method, self.sessionid).addCallbacks(win, fail)
+                auth_keys(self.webserver.keystore, signature, key_hash, algo, method, self.sessionid, encpk2).addCallbacks(win, fail)
 
             elif data['action'] == "diff":
                 # turn on/off diff listening

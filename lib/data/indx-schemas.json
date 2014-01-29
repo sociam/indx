@@ -171,9 +171,25 @@
                 ]
             },
             "20140125-ADD_CREATED_TO_TOKEN": {
-                "next-version": "",
+                "next-version": "20140128-ADD_ENCPK_TABLE",
                 "sql": [
                     "ALTER TABLE tbl_tokens ADD COLUMN created timestamp NOT NULL;"
+                ]
+            },
+            "20140128-ADD_ENCPK_TABLE": {
+                "next-version": "",
+                "sql": [
+                    "CREATE TABLE tbl_encpk",
+                    "(",
+                    "  id_encpk serial NOT NULL,",
+                    "  hash text NOT NULL,",
+                    "  encpk text NOT NULL,",
+                    "  serverid text NOT NULL,",
+                    "  CONSTRAINT pk_id_encpk PRIMARY KEY (id_encpk)",
+                    ")",
+                    "WITH (",
+                    "    OIDS=FALSE",
+                    ");"
                 ]
             }
         }

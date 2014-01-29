@@ -333,12 +333,14 @@ class IndxClient:
         return self.client.get(url)
 
     @require_token
-    def generate_new_key(self, local_key):
+    def generate_new_key(self, local_key, encpk2, serverid):
         """ Generate new key and store it in the keystore, send our public (not private) key to the remote server. Return the public and public-hash parts. (Not the private part.)  """
         self._debug("Called API: generate_new_key")
 
         url = "{0}/generate_new_key".format(self.base)
-        values = {"public": local_key['public'], "public-hash": local_key['public-hash']} # don't send private to anyone ever
+        if not (type(encpk2) == type("") or type(encpk2) == type(u"")):
+            encpk2 = json.dumps(encpk2)
+        values = {"public": local_key['public'], "public-hash": local_key['public-hash'], "encpk2": encpk2, "serverid": serverid} # don't send private to anyone ever
         return self.client.get(url, values)
 
     @require_token
@@ -447,7 +449,7 @@ class IndxClient:
         return wsclient
 
     # no require token
-    def connect_ws(self, private_key, key_hash, observer):
+    def connect_ws(self, private_key, key_hash, observer, remote_encpk2):
 
         address = self.address + "ws"
 
@@ -458,7 +460,7 @@ class IndxClient:
         else:
             raise Exception("IndxClient: Unknown scheme to URL: {0}".format(address))
 
-        wsclient = IndxWebSocketClient(address, observer, keyauth = {"key_hash": key_hash, "private_key": private_key})
+        wsclient = IndxWebSocketClient(address, observer, keyauth = {"key_hash": key_hash, "private_key": private_key, "encpk2": remote_encpk2})
         return wsclient
 
 
@@ -526,12 +528,14 @@ class IndxWebSocketClient:
                     method = "publickey"
                     algo = "SHA512"
 
-                    key_hash, private_key = keyauth['key_hash'], keyauth['private_key']
+                    key_hash, private_key, encpk2 = keyauth['key_hash'], keyauth['private_key'], keyauth['encpk2']
+                    if not (type(encpk2) == type("") or type(encpk2) == type(u"")):
+                        encpk2 = json.dumps(encpk2)
 
                     ordered_signature_text = '{0}\t{1}\t"{2}"\t{3}\t{4}'.format(SSH_MSG_USERAUTH_REQUEST, self.sessionid, method, algo, key_hash)
                     signature = rsa_sign(private_key, ordered_signature_text)
 
-                    values = {"action": "login_keys", "signature": signature, "key_hash": key_hash, "algo": algo, "method": method, "appid": appid}
+                    values = {"action": "login_keys", "signature": signature, "key_hash": key_hash, "algo": algo, "method": method, "appid": appid, "encpk2": encpk2}
                     self.on_response = self.respond_to_auth
                     self.sendMessage(cjson.encode(values))
 
@@ -758,7 +762,7 @@ class IndxClientAuth:
         return return_d
 
 
-    def auth_keys(self, private_key, key_hash):
+    def auth_keys(self, private_key, key_hash, remote_encpk2):
         """ Key based authentication, similar to RFC4252. """
         return_d = Deferred()
         try:
@@ -768,12 +772,15 @@ class IndxClientAuth:
 
             self.is_authed = False
 
+            if not (type(remote_encpk2) == type("") or type(remote_encpk2) == type(u"")):
+                remote_encpk2 = json.dumps(remote_encpk2)
+
             def session_id_cb(sessionid):
                 ordered_signature_text = '{0}\t{1}\t"{2}"\t{3}\t{4}'.format(SSH_MSG_USERAUTH_REQUEST, sessionid, method, algo, key_hash)
                 signature = rsa_sign(private_key, ordered_signature_text)
 
                 url = "{0}auth/login_keys".format(self.address)
-                values = {"signature": signature, "key_hash": key_hash, "algo": algo, "method": method}
+                values = {"signature": signature, "key_hash": key_hash, "algo": algo, "method": method, "encpk2": remote_encpk2}
 
                 self._debug("Calling auth_keys")
 

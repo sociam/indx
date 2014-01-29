@@ -20,7 +20,7 @@ import traceback
 from indx.webserver.handlers.base import BaseHandler
 from indx.objectstore_async import IncorrectPreviousVersionException, FileNotFoundException
 from indx.user import IndxUser
-from indx.crypto import generate_rsa_keypair
+from indx.crypto import generate_rsa_keypair, rsa_encrypt, load_key, sha512_hash, make_encpk2
 
 class BoxHandler(BaseHandler):
     base_path = ''
@@ -138,11 +138,15 @@ class BoxHandler(BaseHandler):
 
                 def sync_complete_cb(empty):
 
-                    def linked_cb(empty):
+                    def linked_cb(remote_public_key):
+
+                        # encrypt the user's password using the remote public key, and store
+                        # XXX do we need this still? obsolete since enc_pk2 handled in sync
+                        #encrypted_remote_pw = rsa_encrypt(load_key(remote_public_key), token.password)
 
                         self.return_created(request)
 
-                    indxsync.link_remote_box(token.username, remote_address, remote_box, remote_token).addCallbacks(linked_cb, err_cb)
+                    indxsync.link_remote_box(token.username, token.password, remote_address, remote_box, remote_token, self.webserver.server_id).addCallbacks(linked_cb, err_cb)
 
                 indxsync.sync_boxes().addCallbacks(sync_complete_cb, err_cb)
 
@@ -162,33 +166,51 @@ class BoxHandler(BaseHandler):
 
         remote_public = self.get_arg(request, "public")
         remote_hash = self.get_arg(request, "public-hash")
+        remote_encpk2 = self.get_arg(request, "encpk2")
+        remote_serverid = self.get_arg(request, "serverid")
 
-        if remote_public is None or remote_hash is None:
-            BoxHandler.log(logging.ERROR, "BoxHandler generate_new_key: public or public-hash was missing.", extra = {"request": request, "token": token})
-            return self.remote_bad_request(request, "public or public-hash was missing.")
+        if not remote_public or not remote_hash or not remote_encpk2 or not remote_serverid:
+            BoxHandler.log(logging.ERROR, "BoxHandler generate_new_key: public, public-hash, encpk2 or serverid was missing.", extra = {"request": request, "token": token})
+            return self.remote_bad_request(request, "public, public-hash, encpk2, or serverid was missing.")
 
         def err_cb(failure):
             failure.trap(Exception)
             BoxHandler.log(logging.ERROR, "BoxHandler generate_new_key err_cb: {0}".format(failure), extra = {"request": request, "token": token})
             return self.return_internal_error(request)
+
+        if type(remote_encpk2) != type(""):
+            remote_encpk2 = json.dumps(remote_encpk2) 
+        remote_encpk2_hsh = sha512_hash(remote_encpk2)
             
         local_keys = generate_rsa_keypair(3072)
 
-        def created_cb(empty):
-            def servervar_cb(empty):
-                self.return_created(request, {"data": {"public": local_keys['public'], "public-hash": local_keys['public-hash']}})
+        def setacl_cb(empty):
 
-            if is_linked:
-                self.database.save_linked_box(token.boxid).addCallbacks(servervar_cb, err_cb)
-            else:
-                servervar_cb(None)
+            def created_cb(empty):
 
-        def new_key_added_cb(empty):
-            self.webserver.keystore.put(local_keys, token.username, token.boxid).addCallbacks(created_cb, err_cb) # store in the local keystore
+                def saved_cb(empty):
+                    def servervar_cb(empty):
 
-        remote_keys = {"public": remote_public, "public-hash": remote_hash, "private": ""}
-        self.webserver.keystore.put(remote_keys, token.username, token.boxid).addCallbacks(new_key_added_cb, err_cb)
+    #                    encpk2 = rsa_encrypt(load_key(local_keys['public']), token.password)
+                        encpk2 = make_encpk2(local_keys, token.password)
 
+                        self.return_created(request, {"data": {"public": local_keys['public'], "public-hash": local_keys['public-hash'], "encpk2": encpk2, "serverid": self.webserver.server_id}})
+
+                    if is_linked:
+                        self.database.save_linked_box(token.boxid).addCallbacks(servervar_cb, err_cb)
+                    else:
+                        servervar_cb(None)
+
+                self.database.save_encpk2(remote_encpk2_hsh, remote_encpk2, remote_serverid).addCallbacks(saved_cb, err_cb)
+
+            def new_key_added_cb(empty):
+                self.webserver.keystore.put(local_keys, token.username, token.boxid).addCallbacks(created_cb, err_cb) # store in the local keystore
+
+            remote_keys = {"public": remote_public, "public-hash": remote_hash, "private": ""}
+            self.webserver.keystore.put(remote_keys, token.username, token.boxid).addCallbacks(new_key_added_cb, err_cb)
+
+        user = IndxUser(self.database, token.username)
+        user.set_acl(token.boxid, "@indx", {"read": True, "write": True, "control": False, "owner": False}).addCallbacks(setacl_cb, lambda failure: self.return_internal_error(request))
 
 
     def get_acls(self, request, token):
