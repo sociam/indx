@@ -1,0 +1,16 @@
+{
+  "name": "browser-js-test-runner",
+  "version": "0.0.0",
+  "description": "ERROR: No README.md file found!",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": "",
+  "author": "",
+  "license": "BSD",
+  "dependencies": {
+    "q": "~0.9.7",
+    "underscore": "~1.5.2"
+  }
+}
