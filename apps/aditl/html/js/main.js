@@ -41,7 +41,7 @@ angular
 		$scope.days = [];
 		// $scope.locations = [];
 		var box, all_locs = [];	
-
+		var sa = function(fn) { return u.safeApply($scope, fn); };
 		var weekday=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 		var months = [ 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December' ];
 
@@ -63,6 +63,7 @@ angular
 			entities.activities.getByActivityType(	box, dstart, dend, ['walk','run','stay','transport'] ).then(
 				function(acts) {
 					console.log('got activities > ', acts);
+
 				}).fail(function(bail) {
 					console.error('error getting activities >> ', bail);
 				});

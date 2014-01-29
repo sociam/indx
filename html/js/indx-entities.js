@@ -127,6 +127,8 @@
 						console.log('issuing query ... ', JSON.stringify(query));
 						return search(box, query);
 					},
+					getFitbitStepsPerMin:function(box, tstart, tend) {},
+					getNikeStepsPerMin:function(box, tstart, tend) {},					
 					make1:function(box, activity_type, whom, from_t, to_t, distance, steps, calories, waypoints, otherprops) {
 						var d = u.deferred(), args = _(arguments).toArray();
 						var id = ['activity', whom && whom.id || '', activity_type || '', from_t.valueOf().toString(), to_t.valueOf().toString()].join('-');
