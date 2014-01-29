@@ -14,6 +14,7 @@
     <div ng-show="selectedUser && !selectedBox" class="alert alert-danger">Please select a box</div>
     <div ng-show="selectedUser && selectedBox">
       <h2>Showing {{ objs.length }} objects</h2>
+      <label><input type="checkbox" ng-model="options.clustering"> Cluster by similarity</label>
     </div>
   </div>
 </body>
