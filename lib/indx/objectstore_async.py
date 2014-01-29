@@ -228,7 +228,7 @@ class ObjectStoreAsync:
             self.conns['raw_conn']().addCallbacks(raw_conn_cb, err_cb)
 
 
-    def query(self, q, predicate_filter = None, render_json = True, depth = 3):
+    def query(self, q, predicate_filter = None, render_json = True, depth = 0):
         """ Perform a query and return results.
         
             q -- Query of objects to search for

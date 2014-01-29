@@ -52,7 +52,7 @@ angular
 			var redirect_url = encodeURIComponent($scope.redirect_url);
 			var clientid = 'e118fb9760de432cb97df38babede8d9';
 			var url = 'https://api.instagram.com/oauth/authorize/?client_id='+clientid+'&redirect_uri='+redirect_url+'&response_type=code';
-			var mywin = window.open(url, '_blank', 'location=yes,height=570,width=520,scrollbars=yes,status=yes');
+			var mywin = window.open(url, 'indx_instagram_popup', 'location=yes,height=570,width=520,scrollbars=yes,status=yes');
 			var d = u.deferred();
 
 			// >> from emax 
