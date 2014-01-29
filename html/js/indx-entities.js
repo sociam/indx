@@ -39,6 +39,8 @@
 				return d.promise();
 			};
 
+			var toQueryTime = function(date) {	return date.toISOString();		};
+
 			var slowQuery = function(box, properties) {
 				var d = u.deferred(), results = [];
 				box.getObj(box.getObjIDs()).then(function(objs) {
@@ -112,6 +114,16 @@
 				activities:{
 					getAll:function(box, extras) {
 						return search(box, _(extras).chain().clone().extend({type:'Activity'}));
+					},
+					getByActivityType:function(box, tstart, tend, activity_types) {
+						if (!_.isArray(activity_types)) { activity_types=[activity_types]; };
+						var query = ({
+							'$and':[ {type:'Activity'},	{'$or': activity_types.map(function(atype) { return {'activity': atype}; })} ]
+						});
+						if (tstart) { query.$and.push({'tstart': {'$ge': toQueryTime(tstart) }}); }
+						if (tend) { query.$and.push({'tend': {'$lt': toQueryTime(tend)}}); }
+						console.log('issuing query ... ', JSON.stringify(query));
+						return search(box, query);
 					},
 					make1:function(box, activity_type, whom, from_t, to_t, distance, steps, calories, waypoints, otherprops) {
 						var d = u.deferred(), args = _(arguments).toArray();

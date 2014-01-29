@@ -36,7 +36,7 @@ angular
 			controller:function($scope) {
 			}
 		};
-	}).controller('main', function($scope, client, utils) {
+	}).controller('main', function($scope, client, utils, entities) {
 		var u = utils;
 		$scope.days = [];
 		// $scope.locations = [];
@@ -46,16 +46,27 @@ angular
 		var months = [ 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December' ];
 
 		var createDay = function(date) {
+			if (!box) return;
+
 			var dstart = new Date(date.valueOf()); dstart.setHours(0,0,0,0);
 			var dend = new Date(date.valueOf()); dend.setHours(23,59,59,999);
-			console.log('dstart >> ', dstart, '-', dend);
-			return { 
+
+			var day = { 
 				date:date,dstart:dstart,dend:dend,
 				dow: weekday[dstart.getDay()].toLowerCase(),
 				dom:dstart.getDate(),
 				month:months[dstart.getMonth()].toLowerCase().slice(0,3),
-				things:[] 
+				segments:[] 
 			};
+
+			// segment the day by activity
+			entities.activities.getByActivityType(	box, dstart, dend, ['walk','run','stay']	).then(
+				function(acts) {
+					console.log('got activities > ', acts);
+				}).fail(function(bail) {
+					console.error('error getting activities >> ', bail);
+				});
+			return day;
 		};
 		$scope.generatePast = function(start_date, num_days) {
 			console.log('generatePast >> ', start_date);
@@ -65,25 +76,26 @@ angular
 			} 
 			while (i <= num_days) {
 				var date = new Date(start_date.valueOf() - i*24*3600*1000);
-				$scope.days.push(createDay(date));
+				var cd = createDay(date);
+				if (cd) { $scope.days.push(cd); }
 				i++;
 			}
 		};
 		$scope.$watch('user + box', function() { 
 			if (!$scope.user) { console.log('no user :( '); return; }
 			$scope.days = [];
-			box = client.store.getBox($scope.box).then(function(_box) { 
+			client.store.getBox($scope.box).then(function(_box) { 
 				window.box = _box;
 				box = _box;
-				box.query({type:'location'}).then(function(things) {
-					u.safeApply($scope, function() { 
-						all_locs = things.concat(); 
-						$scope.locations = things.slice(0,6);
-					});
-				}).fail(function(bail) { console.log('fail querying ', bail); });				
+				// box.query({type:'location'}).then(function(things) {
+				// 	u.safeApply($scope, function() { 
+				// 		all_locs = things.concat(); 
+				// 		$scope.locations = things.slice(0,6);
+				// 	});
+				// }).fail(function(bail) { console.log('fail querying ', bail); });				
 				// $scope.genDay();
 				u.safeApply($scope, function() { $scope.generatePast(undefined,4); });
 			}).fail(function(bail) { console.error(bail); });
 		});
-
+		window._s = $scope;
 	});
