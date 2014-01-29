@@ -229,27 +229,31 @@ class IndxSync:
 
             def encpk_cb(empty):
 
-                def local_added_cb(empty):
-                    logging.debug("IndxSync link_remote_box, local_added_cb")
+                def remote_added_cb(empty):
 
-                    def ver_cb(ver):
-                        logging.debug("IndxSync link_remote_box, ver_cb {0}".format(ver))
-                        # add new objects to local store
+                    def local_added_cb(empty):
+                        logging.debug("IndxSync link_remote_box, local_added_cb")
 
-                        def added_cb(response):
+                        def ver_cb(ver):
+                            logging.debug("IndxSync link_remote_box, ver_cb {0}".format(ver))
+                            # add new objects to local store
 
-                            def added_indx_cb(empty):
-                                # start syncing/connecting using the new key
-                                self.sync_boxes([link_uri], include_push_all = True).addCallbacks(lambda empty: return_d.callback(remote_keys['public']), return_d.errback)
+                            def added_cb(response):
 
-                            self.database.save_linked_box(self.root_store.boxid).addCallbacks(added_indx_cb, return_d.errback)
+                                def added_indx_cb(empty):
+                                    # start syncing/connecting using the new key
+                                    self.sync_boxes([link_uri], include_push_all = True).addCallbacks(lambda empty: return_d.callback(remote_keys['public']), return_d.errback)
 
-                        self.root_store.update(new_objs, ver).addCallbacks(added_cb, return_d.errback)
+                                self.database.save_linked_box(self.root_store.boxid).addCallbacks(added_indx_cb, return_d.errback)
 
-                    self.root_store._get_latest_ver().addCallbacks(ver_cb, return_d.errback)
+                            self.root_store.update(new_objs, ver).addCallbacks(added_cb, return_d.errback)
 
-                # add the local key to the local store
-                self.keystore.put(local_keys, local_user, self.root_store.boxid).addCallbacks(local_added_cb, return_d.errback) # store in the local keystore
+                        self.root_store._get_latest_ver().addCallbacks(ver_cb, return_d.errback)
+
+                    # add the local key to the local store
+                    self.keystore.put(local_keys, local_user, self.root_store.boxid).addCallbacks(local_added_cb, return_d.errback) # store in the local keystore
+
+                self.keystore.put({"public": remote_keys['public'], "private": "", "public-hash": remote_keys['public-hash']}, local_user, self.root_store.boxid).addCallbacks(remote_added_cb, return_d.errback)
 
             # don't save the local encpk2 here, only give it to the remote server.
             # save the remote encpk2
