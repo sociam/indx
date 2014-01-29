@@ -387,7 +387,7 @@ class INDXListener(StreamListener):
             except:
                 print sys.exc_info()
 
-            if len(self.service.batch) > 1000:
+            if len(self.service.batch) > 10:
                 #data_d = Deferred()
                 #data_d.callback(True)
                 logging.debug('Service Tweets - Disconnecting Twitter Stream to do update')
