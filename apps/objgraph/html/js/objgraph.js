@@ -323,7 +323,7 @@ angular
 					});
 
 				link.enter().append("line")
-					.attr("id", function (d) {return d.source + "-" + d.target;})
+					.attr("id", function (d) {return d.source + "-" + d.target; })
 					.attr("class", "link")
 					.style("stroke-width", function (d) { return Math.sqrt(d.value * 2); });;
 
