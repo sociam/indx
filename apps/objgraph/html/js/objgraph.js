@@ -10,7 +10,21 @@ angular
 		var Objs = Backbone.Collection.extend({
 				//model: TreeObj,
 				initialize: function (attributes, options) {
+					var that = this;
 					this.box = options.box
+					that.box.on('all', function (e) {
+						console.log(e, arguments)
+					})
+					this.box.on('obj-add', function (id) {
+						that.box.getObj(id).then(function (obj) {
+							that.add(obj);
+						});
+					});
+					this.box.on('obj-remove', function (id) {
+						that.box.getObj(id).then(function (obj) {
+							that.remove(obj);
+						});
+					});
 				},
 				fetch: function () {
 					var that = this,
@@ -52,6 +66,7 @@ angular
 				return this.nodes.indexOf(node);
 			},
 			add: function (obj) {
+				console.log('ADD')
 				var that = this,
 					node = {};
 				this.nodes.push(node);
@@ -67,6 +82,7 @@ angular
 					group: this.getObjGroup(obj)
 				});
 				this.updateLinks(obj);
+				this.removeFromCluster(obj);
 				if (this.clustering) {
 					this.addToCluster(obj);
 				}
@@ -78,6 +94,13 @@ angular
 				var node = this.getNode(obj.id),
 					clusterNode = this.getNode('!cluster-' + this.nodes[node].group);
 				this.createLink({ source: node, target: clusterNode, value: 0 });
+			},
+			removeFromCluster: function (obj) {
+				var node = this.getNode(obj.id),
+					clusterNode = this.getNode('!cluster-' + this.nodes[node].group),
+					link = _.where(this.links, { source: node, target: clusterNode }).pop(),
+					i = this.links.indexOf(link);
+				//this.removeLink(this.links[i]);
 			},
 			remove: function (obj) {
 				var i = this.getNode(obj.id);
@@ -145,7 +168,8 @@ angular
 				removeFromLinks = _.difference(linksFrom, updatedFromLinks);
 				createFromLinks = _.difference(updatedFromLinks, linksFrom);
 
-				_.each([].concat(removeToLinks, removeFromLinks), this.removeLink, this);
+
+				//_.each([].concat(removeToLinks, removeFromLinks), this.removeLink, this);
 				_.each([].concat(createToLinks, createFromLinks), this.createLink, this);
 
 			},
