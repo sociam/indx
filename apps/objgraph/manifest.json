@@ -1,0 +1,14 @@
+{
+	"name": "Object Graph",
+	"version": 0.1,
+	"description": "Simple object explorer",
+	"icons": {
+		"128": "icon.png"
+	},
+	"author": [
+		{
+			"name": "Peter West",
+			"email": "peter.g.west@gmail.com"
+		}
+	]
+}

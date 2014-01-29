@@ -27,5 +27,5 @@ pip install --upgrade -r requirements.txt
 
 
 # install doc and test framework dependencies
-(cd lib/docs; npm install)
-(cd lib/tests; npm install)
+#(cd lib/docs; npm install)
+#(cd lib/tests; npm install)

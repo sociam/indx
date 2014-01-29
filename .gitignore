@@ -26,3 +26,4 @@ plugins/chrome-webjournal/build
 server.crt
 server.key
 *.log
+.config.json

@@ -11,21 +11,16 @@
   </head>
   <body ng-app="devtools" ng-cloak>
     <toolbar box-var='selectedBox' username-var='selectedUser'></toolbar>
-	<nav class="navbar navbar-default navbar-static-top nav-mini" role="navigation">
-		<div class="navbar-header">
-			<a class="navbar-brand" href="#">Developer Tools</a>
-		</div>
-		<ul class="nav navbar-nav">
-			<li class="active"><a href="#">Applications</a></li>
-		</ul>
-	</nav>
-	<div ng-view></div>
-	<!-- <div ng-show="!selectedUser">
-		<h2> please log in  </h2>
+	<ol class="breadcrumb" ng-if="breadcrumbs.length > 1">
+		<li ng-repeat="breadcrumb in breadcrumbs"><a href="{{ breadcrumb.url }}">{{ breadcrumb.name }}</a></li>
+	</ol>
+	<div ng-view ng-if="selectedUser && selectedBox"></div>
+	<div ng-show="!selectedUser" class="alert alert-danger">
+		Please log in
 	</div>
-	<div ng-show="selectedUser && !selectedBox">
-		<h2> please select a box  </h2>
-	</div> -->
+	<div ng-show="selectedUser && !selectedBox" class="alert alert-danger">
+    Please select a box
+	</div>
   </body>
   <script src="/js/vendor/lesscss.min.js" type="text/javascript"></script>
   <script src="/js/vendor/jquery.min.js" type="text/javascript"></script>
@@ -34,6 +29,7 @@
   <script src="/js/vendor/bootstrap.min.js" type="text/javascript"></script>
   <!-- angular -->
   <script src="/js/vendor/angular.min.js" type="text/javascript"></script>
+  <script src="/js/vendor/angular-route.min.js" type="text/javascript"></script>
   <script src="/js/vendor/angular-ui.js" type="text/javascript"></script>
   <!-- indx -->
   <script src="/js/indx.js" type="text/javascript"></script>

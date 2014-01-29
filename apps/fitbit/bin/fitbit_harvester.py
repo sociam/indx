@@ -333,8 +333,8 @@ class FitbitHarvester:
                     interval_end = interval_start+timedelta(minutes=1) 
                     value = point["value"]
                     data_point = {  "@id": "fitbit_dp_{0}".format(uuid.uuid4()), 
-                                    "start": interval_start.isoformat(),
-                                    "end": interval_end.isoformat(),
+                                    "tstart": interval_start.isoformat(),
+                                    "tend": interval_end.isoformat(),
                                     "value": value,
                                     "timeseries": { "@id": ts_id } }
                     if rdf_type:
@@ -371,8 +371,8 @@ class FitbitHarvester:
                         data_point = {  "@id": "fitbit_dp_{0}".format(uuid.uuid4()) }
                     if data_point :
                         self.logger.debug("Making a data point for {0}".format(interval_start.isoformat()))
-                        data_point["start"] = interval_start.isoformat()
-                        data_point["end"] = interval_end.isoformat()
+                        data_point["tstart"] = interval_start.isoformat()
+                        data_point["tend"] = interval_end.isoformat()
                         data_point["value"] = value
                         data_point["timeseries"] = { "@id": ts_id } 
                         if rdf_type:
@@ -468,7 +468,7 @@ class FitbitHarvester:
             for m in range(60):
                 find_start = datetime.combine(day.date(), time(h,m,0)) 
                 self.logger.debug("Searching data points with start time: {0}".format(find_start.isoformat()))
-                deferreds.append(indx.query(json.dumps({"start":find_start.isoformat()})))
+                deferreds.append(indx.query(json.dumps({"tstart":find_start.isoformat()})))
         dl = defer.gatherResults(deferreds)
         dl.addCallbacks(found_cb, points_d.errback)
         
