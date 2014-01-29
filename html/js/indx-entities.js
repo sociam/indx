@@ -39,7 +39,9 @@
 				return d.promise();
 			};
 
-			var toQueryTime = function(date) {	return date.toISOString();		};
+			var toQueryTime = function(date) {	
+				return date.toISOString().slice(0,-5);	// chop off the .000Z or queries don't like it
+			};
 
 			var slowQuery = function(box, properties) {
 				var d = u.deferred(), results = [];

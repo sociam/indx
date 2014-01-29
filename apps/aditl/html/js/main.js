@@ -60,7 +60,7 @@ angular
 			};
 
 			// segment the day by activity
-			entities.activities.getByActivityType(	box, dstart, dend, ['walk','run','stay']	).then(
+			entities.activities.getByActivityType(	box, dstart, dend, ['walk','run','stay','transport'] ).then(
 				function(acts) {
 					console.log('got activities > ', acts);
 				}).fail(function(bail) {
