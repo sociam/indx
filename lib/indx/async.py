@@ -44,13 +44,14 @@ class IndxAsync:
             if data.get("action") == "diff" and data.get("operation") == "update":
                 # received after login_keys succeeds and we send the diff/start message
                 self.remote_observer(data)
-
+                return
 
             elif data.get('respond_to') == "login_keys":
                 # a response to our attempt to re-connect back to the client
                 logging.debug("Async got a respond to login_keys: {0}".format(data))
                 # TODO handle errors
                 self.sendJSON({"action": "diff", "operation": "start"}) 
+                return
 
             elif data['action'] == "auth":
 

@@ -164,7 +164,7 @@ class ObjectStoreAsync:
         self.log(logging.ERROR, message)
 
 
-    def _notify(self, cur, version, commits = None):
+    def _notify(self, cur, version, commits = None, propagate = True):
         """ Notify listeners (in postgres) of a new version (called after update/delete has completed). """
         self.debug("ObjectStoreAsync _notify, version: {0}".format(version))
         result_d = Deferred()
@@ -175,7 +175,10 @@ class ObjectStoreAsync:
             return
 
         def new_ver_done(success):
-            self._curexec(cur, "SELECT * FROM wb_version_finished(%s)", [version]).addCallbacks(result_d.callback, err_cb)
+            if propagate:
+                self._curexec(cur, "SELECT * FROM wb_version_finished(%s)", [version]).addCallbacks(result_d.callback, err_cb)
+            else:
+                result_d.callback(True)
 
         def add_version(empty):
             self._curexec(cur,
@@ -487,8 +490,6 @@ class ObjectStoreAsync:
         logging.debug("Objectstore apply_diff, apply_diff")
         result_d = Deferred()
 
-        # TODO perform in transaction (lock tables also)
-
         def interaction_cb(cur):
             logging.debug("Objectstore apply_diff, interaction_cb")
             iresult_d = Deferred()
@@ -678,7 +679,7 @@ class ObjectStoreAsync:
 
                             def latest_cb(empty):
                                 logging.debug("Objectstore apply_diff, latest_cb")
-                                self._notify(cur, new_version, commits = commits.keys()).addCallbacks(lambda _: iresult_d.callback({"@version": new_version}), iresult_d.errback)
+                                self._notify(cur, new_version, commits = commits.keys(), propagate = False).addCallbacks(lambda _: iresult_d.callback({"@version": new_version}), iresult_d.errback)
 
                             gen_queries(['latest', 'subjects'], cur, max_params = 0).addCallbacks(latest_cb, iresult_d.errback)
 
