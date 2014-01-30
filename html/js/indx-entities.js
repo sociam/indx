@@ -65,7 +65,7 @@
 				return box.query(properties);
 			};
 
-			var LATLNG_THRESH = 0.05;
+			var LATLNG_THRESH = 0.002;
 
 			return {
 				toObj:to_obj,
@@ -74,19 +74,26 @@
 						return search(box, _(extras || {}).chain().clone().extend({'type':'location'}).value());
 					},
 					getByLatLng: function(box, lat, lng) {
+						u.assert(box, 'box is undefined');
+						u.assert(lat, 'lat is undefined');
+						u.assert(lng, 'lng is undefined');						
 						var d = u.deferred();						
 						this.getAll(box).then(function(results) { 
 							var dist = {}, resD = {};
 							results.map(function(result) {
 								if (!(result.peek('latitude') && result.peek('longitude') )) { return; }
-								dist[result.id] = Math.sqrt(Math.pow(result.peek('latitude') - lat,2) + Math.pow(result.peek('longitude') - lng, 2));
+								dist[result.id] = Math.max( 
+									Math.abs(result.peek('latitude') - lat), 
+									Math.abs(result.peek('longitude') - lng)
+								);  // Math.sqrt( Math.pow(result.peek('latitude') - lat,2) + Math.pow(result.peek('longitude') - lng, 2) );
+								console.log(' dist > ', result.peek('latitude'), lat, result.peek('longitude'), lng, dist[result.id]);
 								resD[result.id] = result;
 							});
 							var kbyD = _(dist).keys();
 							kbyD.sort(function(a,b) { return dist[a] - dist[b]; });
 							// console.log('kbyD > ', kbyD);
 							var hits = kbyD.filter(function(k) { return dist[k] < LATLNG_THRESH; }).map(function(k) { return resD[k]; });
-							// console.info('hits >> ', hits);
+							console.info('filtered hits >> ', hits.length);
 							d.resolve(hits);
 						});
 						return d.promise();

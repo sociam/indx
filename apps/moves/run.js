@@ -22,6 +22,7 @@ var nodeindx = require('../../lib/services/nodejs/nodeindx'),
     entities = injector.get('entities');
 
 var SEVEN_DAYS_USEC =  6*24*60*60*1000; // + 23*59*59*1000;
+var TWENTY_FOUR_HOURS_USEC = 5*24*60*60*1000;
 
 var toMovesDate = function(date) {
     u.assert(date instanceof Date, 'Must be a Date');
@@ -129,7 +130,7 @@ var MovesService = Object.create(nodeservice.NodeService, {
                 var today = new Date();
                 if (today.valueOf() - lastGrabbedDate.valueOf() < SEVEN_DAYS_USEC) {
                     // just bloody update once.
-                    return this_.getTimeline( lastGrabbedDate, today ).then(function() {
+                    return this_.getTimeline( new Date(lastGrabbedDate.valueOf() - TWENTY_FOUR_HOURS_USEC) , today ).then(function() {
                         updateLGD(today);
                         d.resolve();
                     }).fail(d.reject);
@@ -335,8 +336,14 @@ var MovesService = Object.create(nodeservice.NodeService, {
         */        
         value:function(place) {
             var dr = u.deferred(), this_ = this;
+            // console.log('make place > ', place, place.location.lat, place.location.lon);
             entities.locations.getByLatLng(this_.box, place.location.lat, place.location.lon).then(function(matching_locs) { 
-                if (matching_locs && matching_locs.length) {  dr.resolve(matching_locs[0]); } else {
+                if (matching_locs && matching_locs.length) { 
+                    console.log('matching places [', place.location.lat, place.location.lon, '] >> ', matching_locs.length, 
+                            matching_locs.map(function(x) { return x.id + ' :: ' + x.peek('latitude') + ', ' + x.peek('longitude'); }));
+                    dr.resolve(matching_locs[0]); 
+                } else {
+                    console.log(' no matching places, -- ', place.location.lat, ', ', place.location.lon, ' making a new one ');
                     entities.locations.make(this_.box, place.name, place.type, place.location.lat, place.location.lon, place.id,
                         { foursquare_id: place.foursquare_id }).then(function(model_loc) { 
                             // save it before it gets lost
@@ -386,7 +393,7 @@ var MovesService = Object.create(nodeservice.NodeService, {
             var activities = { 'wlk' : 'walking', 'cyc' : 'cycling', 'run': 'running', 'trp':'transport'};
             var tplocations = (activity.trackPoints && activity.trackPoints.map(function(tP) { return this_._makeTrackPointPlace(tP); })) || [];
             u.when(tplocations).then(function(trackObjects)  {
-                console.log('trackobjects >>> ', trackObjects);
+                // console.log('trackobjects >>> ', trackObjects);
                 entities.activities.make1(this_.box, activities[activity.activity],
                     this_.whom,
                     fromMovesDate(activity.startTime),
@@ -412,6 +419,7 @@ var MovesService = Object.create(nodeservice.NodeService, {
             activities (optional): JSON array of activities for the segment
         */
         value:function(segment) {
+            console.log("saveSegment >> ", fromMovesDate(segment.startTime), fromMovesDate(segment.endTime), segment.type, segment.place);
             var whom = this.whom, this_ = this, ds = u.deferred();
             var get_acts = function(acts){  return acts.map(function(activity) { return this_._makeActivity(activity); }); };
             var dact = segment.activities ? get_acts(segment.activities) : u.dresolve();
