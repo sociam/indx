@@ -94,7 +94,23 @@ class TwitterService:
         sys.exit()
    
 
-#this checks and inserts both the network and status objects into indx
+    def iso_timestamp(self, date_st):
+        try:
+            if "+" in str(date_st):
+                #to deal with python 2.7...
+                date_st_wo_year = date_st.split(" +")[0]
+                year = date_st.split(" +")[1]
+                year = year.split(" ")[1]
+                date_st = str(date_st_wo_year)+" "+str(year)
+                date_st = datetime.strptime(date_st,'%a %b %d %H:%M:%S %Y')
+            else:
+                date_st = datetime.strptime(date_st, '%Y-%m-%d %H:%S:%M')
+            return date_st.isoformat('T')
+        except:
+            print sys.exc_info()
+            return date_st
+
+    #this checks and inserts both the network and status objects into indx
     def load_additional_harvesters(self, additional_params, service):
         harvesters_d = Deferred()
 
@@ -252,8 +268,9 @@ class TwitterService:
             friends_list = self.api.friends_ids(service.twitter_username)
             followers_list = self.api.followers_ids(service.twitter_username)
             current_timestamp = str(time.time()).split(".")[0] #str(datetime.now())
+            timestamp = datetime.now().isoformat('T')
             uniq_id = "twitter_user_network_at_"+current_timestamp
-            network_objs = {"@id":uniq_id, "app_object": appid, "twitter_username": service.twitter_username, "timestamp":iso_timestamp(current_timestamp), "friends_list": friends_list, "followers_list": followers_list}
+            network_objs = {"@id":uniq_id, "app_object": appid, "twitter_username": service.twitter_username, "timestamp": timestamp, "friends_list": friends_list, "followers_list": followers_list}
             logging.info("Found {0} Friends and {1} Followers".format(len(friends_list), len(followers_list)))
             #print friends_objs
             #for friend in friends_list:
@@ -324,18 +341,18 @@ class TwitterService:
                             text = unicode(status.text)
                             tweet_indx['tweet_text'] = text
                             tweet_indx['tweet_user_id'] = status.author.name
-                            tweet_indx['created_at'] = iso_timestamp(status.created_at)
+                            tweet_indx['created_at'] = self.iso_timestamp(str(status.created_at))
                             tweet_indx['retweet_count'] = status.retweet_count
 
                             #find anything about the tweet user (Your name might have changed, good to check..)
                             try:
                                 tweet_user = status.author
                                 twitter_user_indx = {}
-                                twitter_user_indx['@id'] = "twitter_user_id_"+unicode(tweet_user.id)
+                                twitter_user_indx['@id'] = "twitter_user_me" #+unicode(tweet_user.id)
                                 twitter_user_indx['type'] = "user"
                                 twitter_user_indx['twitter_user_id'] = unicode(tweet_user.id)
                                 twitter_user_indx['twitter_user_name'] = tweet_user.name
-                                twitter_user_indx['account_created_at'] = iso_timestamp(tweet_user.created_at)
+                                twitter_user_indx['account_created_at'] = self.iso_timestamp(str(tweet_user.created_at))
                                 twitter_user_indx['followers_count'] = tweet_user.followers_count
                                 twitter_user_indx['friends_count'] = tweet_user.friends_count
                                 twitter_user_indx['statuses_count'] = tweet_user.statuses_count
@@ -444,11 +461,7 @@ class TwitterService:
         
         return update_d
 
-    def iso_timestamp(self, date_st):
-        try:
-            return datetime.datetime.strptime(date_st, '%Y-%m-%dT%H:%S:%MZ')
-        except:
-            return date_st
+
 
 
 class INDXListener(StreamListener):
@@ -495,7 +508,7 @@ class INDXListener(StreamListener):
                     tweet_indx['tweet_lang'] = tweet['lang']
                     text = unicode(tweet['text'])
                     tweet_indx['tweet_text'] = text
-                    tweet_indx['created_at'] = iso_timestamp(tweet['created_at'])
+                    tweet_indx['created_at'] = self.iso_timestamp(str(tweet['created_at']))
                     tweet_indx['was_retweeted'] = tweet['retweeted']
                     try:
                         tweet_indx['in_reply_to_status_id'] = tweet['in_reply_to_status_id']
@@ -557,8 +570,8 @@ class INDXListener(StreamListener):
                     twitter_user_indx['type'] = "user"
                     twitter_user_indx['twitter_user_id'] = unicode(tweet_user['id'])
                     twitter_user_indx['twitter_user_name'] = tweet_user['name']
-                    twitter_user_indx['screen_name'] = tweet_user['screen_name']
-                    twitter_user_indx['account_created_at'] = iso_timestamp(tweet_user['created_at'])
+                    twitter_user_indx['screen_name'] = "@"+str(tweet_user['screen_name'])
+                    twitter_user_indx['account_created_at'] = self.iso_timestamp(str(tweet_user['created_at']))
                     twitter_user_indx['followers_count'] = tweet_user['followers_count']
                     twitter_user_indx['friends_count'] = tweet_user['friends_count']
                     twitter_user_indx['statuses_count'] = tweet_user['statuses_count']
@@ -661,6 +674,16 @@ class INDXListener(StreamListener):
 
     def iso_timestamp(self, date_st):
         try:
-            return datetime.datetime.strptime(date_st, '%Y-%m-%dT%H:%S:%MZ')
+            if "+" in str(date_st):
+                #to deal with python 2.7...
+                date_st_wo_year = date_st.split(" +")[0]
+                year = date_st.split(" +")[1]
+                year = year.split(" ")[1]
+                date_st = str(date_st_wo_year)+" "+str(year)
+                date_st = datetime.strptime(date_st,'%a %b %d %H:%M:%S %Y')
+            else:
+                date_st = datetime.strptime(date_st, '%Y-%m-%d %H:%S:%M')
+            return date_st.isoformat('T')
         except:
+            print sys.exc_info()
             return date_st
