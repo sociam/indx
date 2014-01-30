@@ -18,11 +18,10 @@
 		<div class="todos-sidebar">
 			<ul>
 				<li 	ng-repeat="list in lists" 
-						ng-click="s.selectedList = list"
+						ng-click="selectList(list)"
 						ng-class="{	selected: list === s.selectedList,
 									editing: list === s.editingList,
-									loading: list.loading }"
-						type="text/template">
+									loading: list.loading }">
 					<form ng-submit="saveList(list)">
 						<div class="title">
 							<input 	type="text" 
@@ -48,10 +47,22 @@
 		</div>
 		<div class="todos-body">
 			<ul>
-				<li ng-repeat="todo in s.selectedList.todos" type="text/template">
-					<div class="urgency urgency-{{ todo.attributes.urgency[0] }}"></div>
-					<div class="checkbox"></div>
-					<div class="title">{{ todo.attributes.title[0] }}</div>
+				<li 	ng-repeat="todo in todos"
+						ng-click="editTodo(todo)"
+						ng-class="{	editing: todo === s.editingTodo,
+									loading: todo.loading }">
+					<form ng-submit="saveTodo(todo)">
+						<div class="urgency urgency-{{ todo.attributes.urgency[0] }}"></div>
+						<div class="checkbox"></div>
+						<div class="title">
+							<input 	type="text" 
+									placeholder="My todo"
+									ng-model="todo.attributes.title[0]" 
+									ng-disabled="todo !== s.editingTodo"
+									ng-blur="(todo.attributes.title[0] === '') && cancelEditTodo()"
+									set-focus="todo === s.editingTodo">
+						</div>
+					</form>
 				</li>
 				<li ng-click="createTodo()"><div class="title text-muted">New todo</div></li>
 			</ul>

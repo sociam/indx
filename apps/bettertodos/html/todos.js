@@ -9,6 +9,7 @@ angular
 
 		var u = utils,
 			newList,
+			newTodo,
 			app,
 			box;
 
@@ -59,7 +60,21 @@ angular
 		$scope.editList = function (list) {
 			state.editingList = list;
 			list.showDropdown = false;
-		}
+		};
+
+		$scope.selectList = function (list) {
+			state.selectedList = list;
+			updateTodos();
+		};
+
+		$scope.deleteList = function (list) {
+			list.destroy().then(function () {
+				var lists = app.get('lists');
+				lists.splice(lists.indexOf(list), 1);
+				app.set('lists', lists);
+				updateLists();
+			});
+		};
 
 		$scope.cancelEditList = function () {
 			console.log('cancel')
@@ -71,15 +86,14 @@ angular
 		$scope.saveList = function (list) {
 			var dfd = $.Deferred();
 			list.loading = true;
-			console.log('SAVE', list.get('title'), list.toJSON())
 			if (list.get('title')[0] === '') {
 				dfd.reject();
 			} else {
-				list.save(list.toJSON()).then(function () {
+				list.save().then(function () {
 					console.log('SAVED', list.get('title'))
 					if (list === newList) {
 						newList = undefined;
-						app.save('lists', [list].concat(app.get('lists'))).then(function () {
+						app.save('lists', [app.get('lists')].concat([list])).then(function () {
 							dfd.resolve();
 						});
 					} else {
@@ -99,6 +113,7 @@ angular
 			console.log($scope.lists)
 			_.each($scope.lists, function (list) {
 				if (!list.has('title')) { list.set('title', ['Untitled list']) }
+				if (!list.has('todos')) { list.set('todos', []) }
 			});
 			if (newList) { $scope.lists.push(newList); }
 			$update();
@@ -113,6 +128,66 @@ angular
 			$scope.lists.forEach(function (list) {
 				//list.showDropdown = false;
 			});
+		};
+
+
+
+		// todo - check box is defined (or put in init)
+		$scope.createTodo = function () {
+			box.getObj('todo-'  + u.uuid()).then(function (todo) {
+				todo.set({ title: [''] });
+				newTodo = todo;
+				updateTodos();
+				$scope.editTodo(todo);
+			});
+		};
+
+		$scope.editTodo = function (todo) {
+			state.editingTodo = todo;
+		}
+
+		$scope.cancelEditTodo = function () {
+			delete state.editingTodo;
+			newTodo = undefined;
+			updateTodos();
+		};
+
+		$scope.saveTodo = function (todo) {
+			var dfd = $.Deferred(),
+				list = state.selectedList;
+			todo.loading = true;
+			console.log('SAVE', todo.get('title'), todo.toJSON())
+			if (todo.get('title')[0] === '') {
+				dfd.reject();
+			} else {
+				todo.save().then(function () {
+					console.log('SAVED', list.get('title'))
+					if (todo === newTodo) {
+						newTodo = undefined;
+						list.save('todos', list.get('todos').concat([todo])).then(function () {
+							dfd.resolve();
+						});
+					} else {
+						dfd.resolve();
+					}
+				});
+			}
+			dfd.then(function () {
+				delete state.editingTodo;
+				delete todo.loading;
+				updateTodos();
+			});
+		}
+
+		var updateTodos = function () {
+			var list = state.selectedList;
+			$scope.todos = [].concat(list.get('todos'));
+			console.log($scope.todos)
+			_.each($scope.todos, function (todo) {
+				if (!todo.has('title')) { todo.set('title', ['Untitled todo']) }
+			});
+			if (newTodo) { $scope.todos.push(newTodo); }
+			$update();
 		}
 
 		var state = $scope.s = {};

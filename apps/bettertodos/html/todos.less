@@ -116,12 +116,13 @@
 					top: 5px;
 					padding: 8px;
 					right: 0;
-					z-index: 50;
+					z-index: 500;
 					.dropdown-button {
 						text-align: right;
 					}
 					.dropdown-menu {
 						display: block;
+						z-index: 500;
 					}
 				}
 				 .delete {
@@ -151,6 +152,10 @@
 				line-height: 40px;
 				font-size: 22px;
 				border-bottom: 1px solid #eee;
+				&.loading {
+					background: red;
+					outline: 5px solid red;
+				}
 				.urgency {
 					position: absolute;
 					left: -1px;
@@ -168,7 +173,21 @@
 					margin: 0;
 				}
 				.title {
-					margin-left: 50px;
+					left: 0;
+					top: 0;
+					right: 0;
+					bottom: 0;
+					text-indent: 50px;
+					z-index: 0;
+					input {
+						display: block;
+						background: transparent;
+						border: 0;
+						color: inherit;
+						width: 100%;
+						text-indent: 50px;
+						height: 100%;
+					}
 				}
 			}
 		}
