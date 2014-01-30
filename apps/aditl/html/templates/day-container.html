@@ -21,7 +21,7 @@
 			<div ng-show="seg.documents" class="documents cell col-xs-3">
 				<ol>
 					<li class="document" ng-repeat="d in seg.documents">
-						<a ng-href="{{ d.peek('url') }}" target="_blank"><img ng-show="d.peek('favicon')" ng-src="{{ d.peek('favicon') }}">{{ d.peek('title') || 'unknown page' }}</a>
+						<a ng-href="{{ d.peek('url') }}" target="_blank"><img class="favicon" ng-show="d.peek('favicon')" ng-src="{{ d.peek('favicon') }}">{{ d.peek('title') || 'unknown page' }}</a>
 					</li>
 				</ol>
 			</div>
