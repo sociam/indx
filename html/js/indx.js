@@ -1046,12 +1046,6 @@ angular
 
 		var BoxCollection = Backbone.Collection.extend({ model: Box });
 
-<<<<<<< HEAD
-		// debug ---------|
-		window._stores = [];
-
-=======
->>>>>>> unstable
 		var Store =  Backbone.Model.extend({
 			defaults: {
 				server_host:DEFAULT_HOST,
