@@ -18,8 +18,11 @@ angular
 				$scope.isHigh = function(v, range) {};
 				$scope.isMedium = function(v, range) {};
 				$scope.isLow = function(v, range) {};
+				$scope.decodeThumb = function(th) { 
+					return decodeURIComponent(th);
+				};
 			}
-		};
+		}; 
 	}).directive('locmap', function() {
 		return {
 			restrict:'E',
@@ -77,7 +80,7 @@ angular
 				});
 				var docids = _(timebydoc).keys();
 				docids.sort(function(a,b) { return timebydoc[b] - timebydoc[a]; });
-				d.resolve(docids.map(function(xx) { return docsbyid[xx]; }).slice(0,10));
+				d.resolve(docids.map(function(xx) { return docsbyid[xx]; }));
 			});
 			return d.promise();
 		};
@@ -128,6 +131,9 @@ angular
 						var cstart = ca.peek('tstart');
 						if (i !== 0) {
 							var last_end = acts[i-1].peek('tend');
+							if (last_end.valueOf() > cstart.valueOf()) { 
+								cstart = new Date(last_end.valueOf())+ 1;
+							}
 							if (last_end.valueOf()-cstart.valueOf() > 60*1000) {
 								sa(function() { day.segments.push(makeSegment(last_end,cstart)); });
 							}
@@ -142,12 +148,13 @@ angular
 						});
 					});
 
-					if (dstart === todaystart && day.segments) {
-						// add one more segment to now
-						var last_end = acts[i-1].peek('tend');
-						if (last_end.valueOf()-(new Date()).valueOf() > 60*1000) {
-							day.segments.push(makeSegment(last_end,new Date()));
-						}
+					// add a segment for now
+					if (dstart.valueOf() == todaystart.valueOf() && day.segments) {
+					// 	// add one more segment to now
+					 	var last_end = acts[acts.length-1].peek('tend');
+					 	if ((new Date()).valueOf() - last_end.valueOf() > 60*1000) {
+					 		day.segments.push(makeSegment(last_end, new Date(new Date().valueOf()+60000) ));
+					 	}
 					}
 
 					// // filter for activities that have at least 1 waypoint
