@@ -10,10 +10,10 @@ angular
 			templateUrl:'/apps/aditl/templates/day-container.html',
 			controller:function($scope) {
 				var prezero = function(n) { 
-					return n < 10 ? "0"+n : n;
+					return n < 10 ? '0'+n : n;
 				};
 				$scope.simpleTime = function(d) { 
-					return prezero(d.getHours()) + ":" + prezero(d.getMinutes());
+					return prezero(d.getHours()) + ':' + prezero(d.getMinutes());
 				};
 			}
 		};
@@ -25,19 +25,25 @@ angular
 			template:'<div class="locmap"></div>',
 			link:function(scope, element, attribute) {
 
-				var lat = scope.location.peek('latitude'), lon = scope.location.peek('longitude');
+
+				var lat = scope.location && scope.location.peek('latitude'), lon = scope.location && scope.location.peek('longitude');
 				// console.log(' location >> ', scope.location, lat, lon);
 				// console.log('', JSON.stringify(scope.location.attributes));
-				scope.map = L.map(element[0]).setView([lat, lon], 18);
+				scope.map = L.map(element[0]);
 
 				element.attr('data-latitude', lat);
 				element.attr('data-longitude', lon);
-				element.attr('data-id', scope.location.id);
+				element.attr('data-id', scope.location && scope.location.id);
 
 				L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', { attribution: '' }).addTo(scope.map);
 
+				if (lat && lon) { 
+					scope.map.setView([lat, lon], 18); 
+					L.marker([lat, lon]).addTo(scope.map);
+				}
+
+
 					// add a marker in the given location, attach some popup content to it and open the popup
-				L.marker([lat, lon]).addTo(scope.map);
 					    // .bindPopup(scope.location.peek('name') ? scope.location.peek('name') : scope.location.id)
 					    // .openPopup();
 			},
@@ -84,24 +90,38 @@ angular
 			entities.activities.getByActivityType(	box, dstart, dend, ['walk','run','stay','transport'] ).then(
 				function(acts) {
 					var sorted = acts.concat();
-					acts.sort(function(x,y) { return x.peek('tstart') - y.peek('tstart'); });
-					console.log('sorted >> ', acts.map(function(act) { return act.peek('tstart'); }));
+					acts.sort(function(x,y) { return x.peek('tstart').valueOf() - y.peek('tstart').valueOf(); });
+					console.log('ACTIVITIES for day ', dstart, ' ~~ >> ', acts, acts.map(function(act) { return act.id; }));
 
+					// [act1]  [act2][act3]           [act4]
 
-					// filter for activities that have at least 1 waypoint
-					acts = acts.filter(function(x) { return x.peek('waypoints'); });
-					console.log('got activities for day :: ', dstart, ' > ', acts.length, acts);
-
-
-					// filter out activities that are shorter than 1 minute 
-					acts = acts.filter(function(x) { return x.peek('tend') - x.peek('tstart') > 60000; });
-
-					// now have activities that have at least one segment and that are at least 1 minute
-					acts.map(function(act) {  
-						var newseg = makeSegment( act.peek('tstart'), act.peek('tend'), act.peek('activity'), act.peek('waypoints') );
-						console.log('made segment >> ', newseg);
-						sa(function() { day.segments.push(newseg);	});
+					_(acts).map(function(ca, i) {
+						var cstart = ca.peek('tstart');
+						if (i !== 0) {
+							var last_end = acts[i-1].peek('tend');
+							if (last_end.valueOf()-cstart.valueOf() > 60*1000) {
+								sa(function() { day.segments.push(makeSegment(last_end,cstart)); });
+							}
+						}
+						sa(function() { 
+							day.segments.push(makeSegment(ca.peek('tstart'),ca.peek('tend'), ca.peek('activity'), ca.peek('waypoints')));
+						});
 					});
+
+					// // filter for activities that have at least 1 waypoint
+					// acts = acts.filter(function(x) { return x.peek('waypoints'); });
+					// console.log('got activities for day :: ', dstart, ' > ', acts.length, acts);
+
+
+					// // filter out activities that are shorter than 1 minute 
+					// acts = acts.filter(function(x) { return x.peek('tend') - x.peek('tstart') > 60000; });
+
+					// // now have activities that have at least one segment and that are at least 1 minute
+					// acts.map(function(act) {  
+					// 	var newseg = makeSegment( act.peek('tstart'), act.peek('tend'), act.peek('activity'), act.peek('waypoints') );
+					// 	console.log('made segment >> ', newseg);
+					// 	sa(function() { day.segments.push(newseg);	});
+					// });
 				}).fail(function(bail) {
 					console.error('error getting activities >> ', bail);
 				});
