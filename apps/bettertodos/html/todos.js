@@ -189,6 +189,7 @@ angular
 			_.each($scope.todos, function (todo) {
 				if (!todo.has('title')) { todo.set('title', ['Untitled todo']) }
 				if (!todo.has('order')) { todo.set('order', [lastOrder + 1]); }
+				if (!todo.has('completed')) { todo.set('completed', [false]); }
 				lastOrder = todo.get('order')
 			});
 			if (newTodo) { $scope.todos.push(newTodo); }
@@ -196,7 +197,15 @@ angular
 				return todo.get('order')[0];
 			})
 			$update();
-		}
+		};
+
+		$scope.toggleTodoCompleted = function (todo) {
+			todo.loading = true;
+			todo.save('completed', [!todo.get('completed')[0]]).then(function () {
+				todo.loading = false;
+				updateTodos();
+			});
+		};
 
 		var state = $scope.s = {};
 

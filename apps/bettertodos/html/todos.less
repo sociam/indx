@@ -55,8 +55,7 @@ body {
 					position: absolute;
 				}
 				&.loading {
-					background: red;
-					outline: 5px solid red;
+					opacity: 0.7;
 				}
 				input[type=submit] {
 					display: none;
@@ -190,9 +189,11 @@ body {
 						font-size: 20px;
 					}
 				}
+				&.completed {
+					background: #f8f8f8;
+				}
 				&.loading {
-					background: red;
-					outline: 5px solid red;
+					opacity: 0.7;
 				}
 				.urgency {
 					position: absolute;
@@ -202,13 +203,14 @@ body {
 					width: 4px;
 					background: #ccc;
 				}
-				.checkbox {
+				.completedBox {
 					position: absolute;
-					top: 10px;
+					top: 15px;
 					height: 20px;
 					left: 14px;
 					border: 1px solid #eee;
 					margin: 0;
+					width: 20px;
 				}
 				.title {
 					left: 0;
