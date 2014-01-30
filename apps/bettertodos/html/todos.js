@@ -23,9 +23,9 @@ angular
 				if (!app.has('lists')) { app.set('lists', []); }
 				updateLists();
 				
-				/*app.on('change:lists', function () {
-					$scope.lists = app.get('lists');
-				});*/
+				app.on('change:lists', function () {
+					updateLists();
+				});
 				u.safeApply($scope);
 			});
 

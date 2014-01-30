@@ -29,7 +29,7 @@
 									placeholder="My todo list"
 									ng-model="list.attributes.title[0]" 
 									ng-disabled="list !== s.editingList"
-									ng-blur="(list.title[0] === '') && cancelCreateList()"
+									ng-blur="(list.attributes.title[0] === '') && cancelEditList()"
 									set-focus="list === s.editingList">
 						</div>
 						<div class="static count">{{ countTodos(list) }}</div>
