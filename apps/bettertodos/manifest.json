@@ -1,0 +1,14 @@
+{
+	"name": "Better Todos",
+	"version": 0.8,
+	"description": "Stay organised with a simple todo list!",
+	"icons": {
+		"128": "icon.png"
+	},
+	"author": [
+		{
+			"name": "Peter West",
+			"email": "peter.g.west@gmail.com"
+		}
+	]
+}

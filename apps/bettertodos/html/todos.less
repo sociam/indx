@@ -1,0 +1,200 @@
+@import url(http://fonts.googleapis.com/css?family=Port+Lligat+Slab|Playball);
+
+@app-top: 42px;
+
+.indx-toolbar {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	z-index: 1080;
+}
+
+.todos-messages {
+	font-size: 20px;
+	text-align: center;
+	margin: 60px 20px;
+	display: none;
+}
+
+.todos-main-body {
+	cursor: default;
+	.todos-sidebar {
+		position: fixed;
+		left: 0;
+		top: @app-top;
+		bottom: 0;
+		width: 300px;
+		border-right: 1px solid #eee;
+		& > ul {
+			padding: 0 0 0 0;
+			margin: 0;
+			list-style: none;
+			position: relative;
+			height: 100%;
+			& > li {
+				display: block;
+				font-size: 25px;
+				padding: 10px 0;
+				line-height: 50px;
+				position: relative;
+				height: 50px;
+				form {
+					position: absolute;
+					left: 0; right: 0; top: 0; bottom: 0;
+					& > * {
+						position: absolute;
+					}
+				}
+				& > * {
+					position: absolute;
+				}
+				&.loading {
+					background: red;
+					outline: 5px solid red;
+				}
+				input[type=submit] {
+					display: none;
+				}
+				.static { display: block; }
+				&:hover {
+					background: #eee;
+				}
+				&.selected, &:hover.selected {
+					background: #26517C;
+					color: white;
+					cursor: text;
+				}
+				&.editing, &:hover.editing {
+					background: white;
+					color: black;
+					.edit { display: block; }
+					.static { display: none; }
+
+					.icon:hover {
+						background: rgba(255, 255, 255, 0.3);
+					}
+				}
+				&.special {
+					position: absolute;
+					left: 0;
+					right: 0;
+					&.special-completed{
+						bottom: 0;
+					}
+					&.special-all {
+						bottom: 50px;
+					}
+					.icon {
+						display: none;
+					}
+				}
+				.title {
+					left: 0;
+					top: 0;
+					right: 0;
+					bottom: 0;
+					text-indent: 50px;
+					z-index: 10;
+					input {
+						display: block;
+						background: transparent;
+						border: 0;
+						color: inherit;
+						width: 100%;
+						text-indent: 50px;
+						height: 100%;
+					}
+				}
+				.count {
+					right: 30px;
+					top: 0;
+					z-index: 20;
+				}
+				.dropdown {
+					position: absolute;
+					top: 5px;
+					padding: 8px;
+					right: 0;
+					z-index: 50;
+					.dropdown-button {
+						text-align: right;
+					}
+					.dropdown-menu {
+						display: block;
+					}
+				}
+				 .delete {
+					right: 15px;
+					top: 0;
+					z-index: 20;
+					padding: 0 10px;
+					&:hover {
+						background: rgba(255, 255, 255, 0.3);
+					}
+				}
+			}
+
+		}
+	}
+	.todos-body {
+		margin-top: @app-top;
+		margin-left: 300px;
+		ul {
+			padding: 0;
+			margin: 0;
+			list-style: none;
+			li {
+				position: relative;
+				display: block;
+				height: 40px;
+				line-height: 40px;
+				font-size: 22px;
+				border-bottom: 1px solid #eee;
+				.urgency {
+					position: absolute;
+					left: -1px;
+					top: 0;
+					bottom: -1px;
+					width: 4px;
+					background: #ccc;
+				}
+				.checkbox {
+					position: absolute;
+					top: 10px;
+					height: 20px;
+					left: 14px;
+					border: 1px solid #eee;
+					margin: 0;
+				}
+				.title {
+					margin-left: 50px;
+				}
+			}
+		}
+	}
+}
+
+
+.urgency-low {
+	background-color: #33CC00 !important;
+	border-color: #33CC00 !important;
+	color: white;
+	.todo-urgency-down { opacity: 0.4; }
+}
+.urgency-med {
+	background-color: #FFCC00 !important;
+	border-color: #FFCC00 !important;
+	color: black;
+}
+.urgency-high {
+	background-color: #FF9900 !important;
+	border-color: #FF9900 !important;
+	color: white;
+}
+.urgency-urgent {
+	background-color: #FF0000 !important;
+	border-color: #FF0000 !important;
+	color: white;
+	.todo-urgency-up { opacity: 0.4; }
+}
