@@ -52,6 +52,36 @@ class BoxHandler(BaseHandler):
         BoxHandler.log(logging.DEBUG, "BoxHandler OPTIONS request.", extra = {"request": request})
         self.return_ok(request)
 
+    def apply_diff(self, request, token):
+        """ Apply a diff to a box """
+        if not token:
+            BoxHandler.log(logging.DEBUG, "BoxHandler apply_diff request (token not valid), args are: {0}".format(request.args), extra = {"request": request})
+            return self.return_forbidden(request)
+
+        def err_cb(failure):
+            failure.trap(Exception)
+            BoxHandler.log(logging.ERROR, "BoxHandler apply_diff err_cb: {0}".format(failure), extra = {"request": request, "token": token})
+            return self.return_internal_error(request)
+
+        def store_cb(store):
+            store.setLoggerClass(BoxHandler, extra = {"token": token, "request": request})
+            BoxHandler.log(logging.DEBUG, "BoxHandler diff request, args are: {0}".format(request.args), extra = {"request": request, "token": token})
+
+            try:
+                diff = self.get_arg(request, "data")
+                if diff is None:
+                    raise Exception("data argument not specified, or blank.")
+                diff = cjson.decode(diff)
+            except Exception as e:
+                BoxHandler.log(logging.ERROR, "Exception in box.apply_diff getting argument from_version: {0}".format(e), extra = {"request": request, "token": token})
+                return self.return_bad_request(request, "Error getting valid diff from the 'data' argument")
+
+            diff_data = diff['data']
+            commits = diff['@commits']
+            store.apply_diff(diff_data, commits).addCallbacks(lambda empty: self.return_ok(request), lambda failure: self.return_internal_error(request))
+
+        token.get_store().addCallbacks(store_cb, err_cb)
+
 
     def diff(self, request, token):
         """ Return the objects (or ids of objects) that have changes between two versions of the objectstore.
@@ -170,8 +200,8 @@ class BoxHandler(BaseHandler):
         remote_serverid = self.get_arg(request, "serverid")
 
         if not remote_public or not remote_hash or not remote_encpk2 or not remote_serverid:
-            BoxHandler.log(logging.ERROR, "BoxHandler generate_new_key: public, public-hash, encpk2 or serverid was missing.", extra = {"request": request, "token": token})
-            return self.remote_bad_request(request, "public, public-hash, encpk2, or serverid was missing.")
+            BoxHandler.log(logging.ERROR, "BoxHandler generate_new_key: public, public-hash, encpk2, or serverid was missing.", extra = {"request": request, "token": token})
+            return self.remote_bad_request(request, "public, public-hash, encpk2 or serverid was missing.")
 
         def err_cb(failure):
             failure.trap(Exception)
@@ -181,36 +211,42 @@ class BoxHandler(BaseHandler):
         if type(remote_encpk2) != type(""):
             remote_encpk2 = json.dumps(remote_encpk2) 
         remote_encpk2_hsh = sha512_hash(remote_encpk2)
-            
+
         local_keys = generate_rsa_keypair(3072)
 
-        def setacl_cb(empty):
+        def store_cb(store):
 
-            def created_cb(empty):
+            def setacl_cb(empty):
 
-                def saved_cb(empty):
-                    def servervar_cb(empty):
+                def created_cb(empty):
 
-    #                    encpk2 = rsa_encrypt(load_key(local_keys['public']), token.password)
-                        encpk2 = make_encpk2(local_keys, token.password)
+                    def saved_cb(empty):
+                        def servervar_cb(empty):
 
-                        self.return_created(request, {"data": {"public": local_keys['public'], "public-hash": local_keys['public-hash'], "encpk2": encpk2, "serverid": self.webserver.server_id}})
+        #                    encpk2 = rsa_encrypt(load_key(local_keys['public']), token.password)
+                            encpk2 = make_encpk2(local_keys, token.password)
 
-                    if is_linked:
-                        self.database.save_linked_box(token.boxid).addCallbacks(servervar_cb, err_cb)
-                    else:
-                        servervar_cb(None)
+                            self.return_created(request, {"data": {"public": local_keys['public'], "public-hash": local_keys['public-hash'], "encpk2": encpk2, "serverid": self.webserver.server_id}})
 
-                self.database.save_encpk2(remote_encpk2_hsh, remote_encpk2, remote_serverid).addCallbacks(saved_cb, err_cb)
+                        if is_linked:
+                            self.database.save_linked_box(token.boxid).addCallbacks(servervar_cb, err_cb)
+                        else:
+                            servervar_cb(None)
 
-            def new_key_added_cb(empty):
-                self.webserver.keystore.put(local_keys, token.username, token.boxid).addCallbacks(created_cb, err_cb) # store in the local keystore
+                    self.database.save_encpk2(remote_encpk2_hsh, remote_encpk2, remote_serverid).addCallbacks(saved_cb, err_cb)
 
-            remote_keys = {"public": remote_public, "public-hash": remote_hash, "private": ""}
-            self.webserver.keystore.put(remote_keys, token.username, token.boxid).addCallbacks(new_key_added_cb, err_cb)
+                def new_key_added_cb(empty):
+                    self.webserver.keystore.put(local_keys, token.username, token.boxid).addCallbacks(created_cb, err_cb) # store in the local keystore
 
-        user = IndxUser(self.database, token.username)
-        user.set_acl(token.boxid, "@indx", {"read": True, "write": True, "control": False, "owner": False}).addCallbacks(setacl_cb, lambda failure: self.return_internal_error(request))
+                remote_keys = {"public": remote_public, "public-hash": remote_hash, "private": ""}
+                self.webserver.keystore.put(remote_keys, token.username, token.boxid).addCallbacks(new_key_added_cb, err_cb)
+
+            user = IndxUser(self.database, token.username)
+            user.set_acl(token.boxid, "@indx", {"read": True, "write": True, "control": False, "owner": False}).addCallbacks(setacl_cb, lambda failure: self.return_internal_error(request))
+
+#            store.apply_diff(remote_diff['data'], remote_diff['@commits']).addCallbacks(applied_cb, lambda failure: self.return_internal_error(request))
+
+        token.get_store().addCallbacks(store_cb, lambda failure: self.return_internal_error(request))
 
 
     def get_acls(self, request, token):
@@ -679,6 +715,16 @@ BoxHandler.subhandlers = [
         'require_token': True,
         'require_acl': ['read'],
         'handler': BoxHandler.get_object_ids,
+        'accept':['application/json'],
+        'content-type':'application/json'
+        },
+    {
+        "prefix": "apply_diff",
+        'methods': ['PUT'],
+        'require_auth': False,
+        'require_token': True,
+        'require_acl': ['write'],
+        'handler': BoxHandler.apply_diff,
         'accept':['application/json'],
         'content-type':'application/json'
         },

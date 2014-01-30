@@ -233,6 +233,18 @@ class IndxClient:
         return self.client.get(url)
 
     @require_token
+    def apply_diff(self, diff):
+        """ Update objects in a box, in diff JSON format.
+        
+            diff -- A diff in JSON format
+        """
+        self._debug("Called API: apply_diff with diff: {0}".format(diff)) 
+
+        url = "{0}/apply_diff".format(self.base)
+        values = {"data": cjson.encode(diff)}
+        return self.client.put(url, values)
+
+    @require_token
     def update_raw(self, version, objects):
         """ Update objects in a box, in INDX format.
         
@@ -332,9 +344,10 @@ class IndxClient:
         url = "{0}/get_acls".format(self.base)
         return self.client.get(url)
 
+
     @require_token
     def generate_new_key(self, local_key, encpk2, serverid):
-        """ Generate new key and store it in the keystore, send our public (not private) key to the remote server. Return the public and public-hash parts. (Not the private part.)  """
+        """ Generate new key and store it in the keystore, send our public (not private) key to the remote server. Return the public and public-hash parts. (Not the private part.) """
         self._debug("Called API: generate_new_key")
 
         url = "{0}/generate_new_key".format(self.base)

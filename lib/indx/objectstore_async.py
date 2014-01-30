@@ -295,7 +295,10 @@ class ObjectStoreAsync:
         def ver_cb(version):
             self.debug("get_latest_objs ver_cb: {0}".format(version))
             if version == 0:
-                return result_d.callback({"@version": 0 })
+                if render_json:
+                    return result_d.callback({"@version": 0 })
+                else:
+                    return result_d.callback(Graph())
 
             query = "SELECT triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples WHERE subject = ANY(%s)"
 
@@ -479,7 +482,7 @@ class ObjectStoreAsync:
 
 
 
-    def apply_diff(self, diff, commit_ids):
+    def apply_diff(self, diff, commits):
         """ Apply a JSON-type diff to the database, appending to the wb_vers_diff table and modifying the wb_latest_vers table. """
         logging.debug("Objectstore apply_diff, apply_diff")
         result_d = Deferred()
@@ -668,16 +671,20 @@ class ObjectStoreAsync:
                         run_next(None)
                         return result2_d
 
-                    def diff_cb(empty):
-                        logging.debug("Objectstore apply_diff, diff_cb")
+                    def commits_cb(empty):
 
-                        def latest_cb(empty):
-                            logging.debug("Objectstore apply_diff, latest_cb")
-                            self._notify(cur, new_version, commits = commit_ids).addCallbacks(lambda _: iresult_d.callback({"@version": new_version}), iresult_d.errback)
+                        def diff_cb(empty):
+                            logging.debug("Objectstore apply_diff, diff_cb")
 
-                        gen_queries(['latest', 'subjects'], cur, max_params = 0).addCallbacks(latest_cb, iresult_d.errback)
+                            def latest_cb(empty):
+                                logging.debug("Objectstore apply_diff, latest_cb")
+                                self._notify(cur, new_version, commits = commits.keys()).addCallbacks(lambda _: iresult_d.callback({"@version": new_version}), iresult_d.errback)
 
-                    gen_queries(['diff'], cur, max_params = 0).addCallbacks(diff_cb, iresult_d.errback)
+                            gen_queries(['latest', 'subjects'], cur, max_params = 0).addCallbacks(latest_cb, iresult_d.errback)
+
+                        gen_queries(['diff'], cur, max_params = 0).addCallbacks(diff_cb, iresult_d.errback)
+
+                    self.store_commits(commits, cur = cur).addCallbacks(commits_cb, iresult_d.errback)
      
                 self._get_latest_ver(cur).addCallbacks(ver_cb, iresult_d.errback)
 
@@ -691,6 +698,7 @@ class ObjectStoreAsync:
         
         self.conns['conn']().addCallbacks(iconn_cb, result_d.errback)
         return result_d
+
 
     def order_diff_rows(self, diff_rows):
         """ Re-order the diff_rows so that add_predicate etc comes before add_triple. """
@@ -1020,7 +1028,7 @@ class ObjectStoreAsync:
         return result_d
 
 
-    def store_commits(self, commits):
+    def store_commits(self, commits, cur = None):
         """ Store commits in the commits table unless they are already there. """
         result_d = Deferred()
 
@@ -1037,6 +1045,9 @@ class ObjectStoreAsync:
                 query = "SELECT EXISTS(SELECT commit_hash FROM ix_commits WHERE commit_hash = %s) AS EXISTENZ"
            
                 def checked_cb(rows):
+                    if cur is not None:
+                        rows = cur.fetchall()
+
                     exists = rows[0][0]
                     if exists:
                         return loop(None)
@@ -1044,13 +1055,24 @@ class ObjectStoreAsync:
                     ins_query = "INSERT INTO ix_commits (commit_hash, date, server_id, original_version, commit_log) VALUES (%s, %s, %s, %s, %s)"
                     ins_params = [commit['commit_hash'], commit['date'], commit['server_id'], commit['original_version'], commit['commit_log']]
 
-                    conn.runOperation(ins_query, ins_params).addCallbacks(loop, result_d.errback)
+                    if cur is None:
+                        conn.runOperation(ins_query, ins_params).addCallbacks(loop, result_d.errback)
+                    else:
+                        cur.execute(ins_query, ins_params).addCallbacks(loop, result_d.errback) 
                     
-                conn.runQuery(query, [commit_id]).addCallbacks(checked_cb, result_d.errback)
+                if cur is None:
+                    conn.runQuery(query, [commit_id]).addCallbacks(checked_cb, result_d.errback)
+                else:
+                    cur.execute(query, [commit_id]).addCallbacks(checked_cb, result_d.errback)
 
             loop(None)
 
-        self.conns['conn']().addCallbacks(connected, result_d.errback)
+
+        if cur is None:
+            self.conns['conn']().addCallbacks(connected, result_d.errback)
+        else:
+            connected(None)
+
         return result_d
 
 

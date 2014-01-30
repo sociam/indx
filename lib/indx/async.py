@@ -189,20 +189,23 @@ class IndxAsync:
         # send the session ID when connection works
         self.send200(data = {'sessionid': self.sessionid})
 
-    def listen_diff(self):
+    def listen_diff(self, observer = None):
         def err_cb(failure):
             logging.error("WebSocketsHandler listen_diff, err_cb: {0}".format(failure))
 
         def store_cb(store):
             logging.debug("WebSocketsHandler listen_diff, store_cb: {0}".format(store))
 
-            def observer(diff):
+            def observer_local(diff):
                 """ Receive an update from the server. """
                 logging.debug("WebSocketsHandler listen_diff observer notified: {0}".format(diff))
 
                 self.sendJSON({"action": "diff", "operation": "update", "data": diff})
 
-            store.listen(observer) # no callbacks, nothing to do
+            if observer is None:
+                store.listen(observer_local) # no callbacks, nothing to do
+            else:
+                store.listen(observer)
 
         self.token.get_store().addCallbacks(store_cb, err_cb)
 
