@@ -23,10 +23,7 @@ angular
 				app = a;
 				if (!app.has('lists')) { app.set('lists', []); }
 				updateLists();
-				
-				app.on('change:lists', function () {
-					updateLists();
-				});
+				app.on('change:lists', updateLists);
 				u.safeApply($scope);
 			});
 
@@ -63,8 +60,12 @@ angular
 		};
 
 		$scope.selectList = function (list) {
+			if (state.selectedList) {
+				state.selectedList.off('change:todos', updateTodos);
+			}
 			state.selectedList = list;
 			updateTodos();
+			list.on('change:todos', updateTodos);
 		};
 
 		$scope.deleteList = function (list) {
