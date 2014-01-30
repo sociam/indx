@@ -1,0 +1,17 @@
+<div class="day-container">
+	<div class="datelabel">
+		<span class="dow">{{ day.dow }}</span> <span class="day">{{ day.dom }}</span> <span class="month">{{ day.month }}</span>
+	</div>
+	<div class="segments">
+		<div class="segment row" ng-repeat="seg in day.segments">
+			<!-- columns --> 
+			<div class="cell col-xs-1">
+				<div class="times">{{ simpleTime(seg.tstart) }} - {{ simpleTime(seg.tend) }}</div>
+				<div class="name">{{ seg.name }}</div>
+			</div>
+			<div class="cell col-xs-2">
+				<locmap ng-show="seg.location" location="seg.location"></locmap>
+			</div>
+		</div>
+	</div>
+</div>
