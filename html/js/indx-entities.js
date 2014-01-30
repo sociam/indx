@@ -239,7 +239,16 @@
 						return d.promise();
 					},
 					getMyTweets:function(box, tstart, tend) {
-						
+						if (tstart && tend) {
+							var query = ( { '$and': [
+									{'type':'post'},
+									{'tweet_user_id_indx':'twitter_user_me'},
+									{'created_at':{'$ge':toQueryTime(tstart)}},
+									{'created_at':{'$le':toQueryTime(tend)}}
+									] } );
+							return search(box, query);
+						}
+						return u.dreject('must specify all arguments: tstart, tend');
 					},
 					getInstagram:undefined,
 					getFBMessage:undefined,
