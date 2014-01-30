@@ -71,8 +71,9 @@ angular
 			list.destroy().then(function () {
 				var lists = app.get('lists');
 				lists.splice(lists.indexOf(list), 1);
-				app.set('lists', lists);
-				updateLists();
+				app.save('lists', lists).then(function () {
+					updateLists();
+				});
 			});
 		};
 
