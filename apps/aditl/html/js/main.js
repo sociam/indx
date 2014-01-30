@@ -9,7 +9,12 @@ angular
 			scope:{ day:'=' },
 			templateUrl:'/apps/aditl/templates/day-container.html',
 			controller:function($scope) {
-
+				var prezero = function(n) { 
+					return n < 10 ? "0"+n : n;
+				};
+				$scope.simpleTime = function(d) { 
+					return prezero(d.getHours()) + ":" + prezero(d.getMinutes());
+				};
 			}
 		};
 	}).directive('locmap', function() {
@@ -89,7 +94,7 @@ angular
 
 
 					// filter out activities that are shorter than 1 minute 
-					acts = acts.filter(function(x) { return x.peek('tend') - x.peek('tstart') < 60000; });
+					acts = acts.filter(function(x) { return x.peek('tend') - x.peek('tstart') > 60000; });
 
 					// now have activities that have at least one segment and that are at least 1 minute
 					acts.map(function(act) {  

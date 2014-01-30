@@ -1,5 +1,7 @@
 
-* { box-sizing:border-box; } 
+* { 
+	box-sizing:border-box; 
+} 
 
 .diary {
 	margin-top:50px;
@@ -10,7 +12,7 @@
 	height:200px;
 	border:grey;
 	display:inline-block;
-	margin:20px;
+	// margin:20px;
 
 }
 .day-container {
@@ -37,16 +39,18 @@
 		border-bottom:1px solid #aff;
 		margin:0px 40px 0px 40px;
 		.cell {
+			padding:12px;
+			border:1px solid #eee;
 			position:relative;
 			.name {	
-				position:absolute;
+				// position:absolute;
 				font-size:8pt; 
-				bottom:5px; left:5px;
+				// bottom:5px; left:5px;
 			}
 			.times {
 				font-size:9pt;
-				position:absolute;
-				top:5px; left:5px;
+				// position:absolute;
+				// top:5px; left:5px;
 			}
 		}
 	}

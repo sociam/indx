@@ -5,9 +5,11 @@
 	<div class="segments">
 		<div class="segment row" ng-repeat="seg in day.segments">
 			<!-- columns --> 
-			<div class="cell col-xs-4">
+			<div class="cell col-xs-1">
 				<div class="times">{{ simpleTime(seg.tstart) }} - {{ simpleTime(seg.tend) }}</div>
 				<div class="name">{{ seg.name }}</div>
+			</div>
+			<div class="cell col-xs-2">
 				<locmap location="seg.location"></locmap>
 			</div>
 		</div>
