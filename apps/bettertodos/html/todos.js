@@ -13,6 +13,11 @@ angular
 			app,
 			box;
 
+		var specialLists = [
+			new Backbone.Model({ id: 'todo-list-all', title: ['All todos'], special: ['all'], todos: [] }),
+			new Backbone.Model({ id: 'todo-list-completed', title: ['Completed'], special: ['completed'], todos: [] })
+		];
+
 		// Wait until user is logged in and a box has been selected
 		var init = function (b) {
 			console.log('init');
@@ -111,13 +116,29 @@ angular
 		}
 
 		var updateLists = function () {
-			$scope.lists = [].concat(app.get('lists'));
+			console.log('UPDATING LISTS');
+			// update special lists;
+			var specialAll = _.findWhere(specialLists, { id: 'todo-list-all' }),
+				specialCompleted = _.findWhere(specialLists, { id: 'todo-list-completed' });
+
+			specialAll.set('todos', _.reduce(app.get('lists'), function (memo, list) {
+				return memo.concat(list.get('todos') || []);
+			}, []));
+
+			specialCompleted.set('todos', _.filter(specialAll.get('todos'), function (todo) {
+				return (todo.get('completed') || [])[0];
+			}));
+
+
+			$scope.lists = [].concat(app.get('lists'), specialLists);
 			console.log($scope.lists)
 			_.each($scope.lists, function (list) {
 				if (!list.has('title')) { list.set('title', ['Untitled list']) }
 				if (!list.has('todos')) { list.set('todos', []) }
 			});
 			if (newList) { $scope.lists.push(newList); }
+
+
 			$update();
 		}
 
@@ -204,6 +225,7 @@ angular
 			todo.save('completed', [!todo.get('completed')[0]]).then(function () {
 				todo.loading = false;
 				updateTodos();
+				updateLists();
 			});
 		};
 

@@ -19,9 +19,11 @@
 			<ul>
 				<li 	ng-repeat="list in lists" 
 						ng-click="selectList(list)"
+						class="special-{{ list.attributes.special[0] }}"
 						ng-class="{	selected: list === s.selectedList,
 									editing: list === s.editingList,
-									loading: list.loading }">
+									loading: list.loading,
+									special: list.attributes.special }">
 					<form ng-submit="saveList(list)">
 						<div class="title">
 							<input 	type="text" 
