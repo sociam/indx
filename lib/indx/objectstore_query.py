@@ -158,7 +158,10 @@ class ObjectStoreQuery:
                 raise InvalidObjectQueryException("Invalid type of val: {0}".format(val))
 
         # INTERSET means that the default is AND if no $or or $and is specified.
-        return "(" + " INTERSECT ".join(subqueries) + ")", params
+        if len(subqueries) > 0:
+            return "(" + " INTERSECT ".join(subqueries) + ")", params
+        else:
+            return "", params # this means we can look at length of wheres in to_sql to determine if this is an empty query
 
 
     def to_sql(self, q, predicate_filter = None): 
