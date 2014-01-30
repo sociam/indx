@@ -1225,7 +1225,7 @@ class ObjectStoreAsync:
         return cur.execute(*args, **kwargs)
 
 
-    def update(self, objs, specified_prev_version, delete_ids=[], new_files_oids=[], delete_files_ids=[]):
+    def update(self, objs, specified_prev_version, delete_ids=[], new_files_oids=[], delete_files_ids=[], propagate = True):
         """ Create a new version of the database, and insert only the objects references in the 'objs' dict. All other objects remain as they are in the specified_prev_version of the db.
 
             objs -- json expanded notation of objects,
@@ -1285,7 +1285,7 @@ class ObjectStoreAsync:
 
                             def files_added_cb(info):
                                 self.debug("Objectstore update, files_added_cb info: {0}".format(info))
-                                self._notify(cur, new_ver).addCallbacks(lambda _: interaction_d.callback({"@version": new_ver}), check_err_cb)
+                                self._notify(cur, new_ver, propagate = propagate).addCallbacks(lambda _: interaction_d.callback({"@version": new_ver}), check_err_cb)
 
                             self._add_files_to_version(cur, new_files_oids, new_ver).addCallbacks(files_added_cb, check_err_cb)
 

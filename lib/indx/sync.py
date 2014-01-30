@@ -264,7 +264,7 @@ class IndxSync:
 
                     self.root_store.diff(0, None, "diff").addCallbacks(diff_cb, return_d.errback)
 
-                self.root_store.update(new_objs, ver).addCallbacks(update_cb, return_d.errback)
+                self.root_store.update(new_objs, ver, propagate = True).addCallbacks(update_cb, return_d.errback)
 
             client = IndxClient(remote_address, remote_box, self.APPID, token = remote_token)
             client.generate_new_key(local_keys, local_encpk, server_id).addCallbacks(new_remote_key_cb, return_d.errback)
@@ -480,7 +480,7 @@ class IndxSync:
                             def status_cb(empty):
                                 self.root_store.store_commits(commits).addCallbacks(result_d.callback, result_d.errback)
 
-                            self.root_store.update([status_obj], new_version).addCallbacks(status_cb, result_d.errback)
+                            self.root_store.update([status_obj], new_version, propagate = False).addCallbacks(status_cb, result_d.errback)
 
                         # apply diff
                         self.root_store.apply_diff(diff, commits).addCallbacks(applied_diff_cb, result_d.errback)
