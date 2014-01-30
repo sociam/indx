@@ -12,4 +12,4 @@ pycrypto
 oauth2
 keyring
 fs
-w
+autobahn

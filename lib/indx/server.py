@@ -23,6 +23,8 @@ from twisted.web.resource import ForbiddenResource
 from twisted.web.static import File
 from twisted.internet import reactor, ssl
 from twisted.internet.defer import Deferred
+from twisted.python.failure import Failure
+from twisted.web.server import Session
 
 import indx.webserver.handlers as handlers
 from indx.webserver.handlers.box import BoxHandler
@@ -30,6 +32,7 @@ from indx.webserver.handlers.app import AppsMetaHandler
 from indx.webserver import token
 import indx.indx_pg2 as database
 from indx.sync import IndxSync
+from indx.keystore import IndxKeystore
 
 from indx.webserver.handlers.websockets import WebSocketsHandler
 from txWebSocket.websocket import WebSocketSite
@@ -41,6 +44,9 @@ class WebServer:
         """ Set up the server with a INDX. """
 
         self.config = config
+
+        from twisted.internet.defer import setDebugging
+        setDebugging(True)
 
         # enable ssl (or not)
         self.ssl = config['server'].get('ssl') or False
@@ -68,10 +74,11 @@ class WebServer:
             logging.debug("WebServer auth_cb, can_auth: {0}".format(can_auth))
             if can_auth:
 
-                def checked_db_ok():
+                def checked_db_ok(server_id):
+                    self.server_id = server_id # Gets the Server ID from the database
                     self.check_users().addCallbacks(lambda checked: self.server_setup(), err_cb)
 
-                self.database.check_indx_db().addCallbacks(lambda checked: checked_db_ok(), err_cb) # check indx DB exists, otherwise create it - then setup the server
+                self.database.check_indx_db().addCallbacks(checked_db_ok, err_cb) # check indx DB exists, otherwise create it - then setup the server
             else:
                 print "Authentication failed, check username and password are correct."
                 reactor.stop()
@@ -100,46 +107,54 @@ class WebServer:
 
         INDX_USERNAME = "@indx"
 
-        def got_users(users):
-            logging.debug("check_users, got: {0}".format(users))
+        def got_indx_cb(indx_conn):
+            logging.debug("check_users, got_indx_cb")
 
-            create_owner_user = len(users) < 1 # if there are no users yet, we will create an owner user on the command line
+            self.keystore = IndxKeystore(indx_conn)
 
-            indx_user_exists = False
-            for user in users:
-                if user["@id"] == INDX_USERNAME:
-                    indx_user_exists = True
+            def got_users(users):
+                logging.debug("check_users, got: {0}".format(users))
 
-            def user_len_check(empty):
-                """ Now create the owner user if we need to. """
+                create_owner_user = len(users) < 1 # if there are no users yet, we will create an owner user on the command line
 
-                def check_encryption_keys(empty):
-                    """ Now check that each user has a key pair, and create ones for those that do not. """
-                    self.database.missing_key_check().addCallbacks(result_d.callback, result_d.errback)
+                indx_user_exists = False
+                for user in users:
+                    if user["@id"] == INDX_USERNAME:
+                        indx_user_exists = True
 
-                if create_owner_user:
-                    logging.debug("No users - prompting user on the command-line now.")
-                    print "There are no users in the system, please create an owner user now."
-                    new_username = ""
-                    while len(new_username) == 0:
-                        new_username = raw_input("Username: ")
-                    new_password = ""
-                    while len(new_password) == 0:
-                        new_password = getpass.getpass("Password: ")
+                def user_len_check(empty):
+                    """ Now create the owner user if we need to. """
 
-                    self.database.create_user(new_username, new_password, 'local_owner').addCallbacks(check_encryption_keys, result_d.errback)
+                    def check_encryption_keys(empty):
+                        """ Now check that each user has a key pair, and create ones for those that do not. """
+                        self.database.missing_key_check().addCallbacks(result_d.callback, result_d.errback)
+
+                    if create_owner_user:
+                        logging.debug("No users - prompting user on the command-line now.")
+                        print "There are no users in the system, please create an owner user now."
+                        new_username = ""
+                        while len(new_username) == 0:
+                            new_username = raw_input("Username: ")
+                        new_password = ""
+                        while len(new_password) == 0:
+                            new_password = getpass.getpass("Password: ")
+
+                        self.database.create_user(new_username, new_password, 'local_owner').addCallbacks(check_encryption_keys, result_d.errback)
+                    else:
+                        check_encryption_keys(None)
+
+
+                if not indx_user_exists:
+                    # create the @indx user now
+                    self.database.create_user(INDX_USERNAME, "", "internal").addCallbacks(user_len_check, result_d.errback)
                 else:
-                    check_encryption_keys(None)
+                    user_len_check(None)
+                    
 
+            self.database.list_users().addCallbacks(got_users, result_d.errback)
 
-            if not indx_user_exists:
-                # create the @indx user now
-                self.database.create_user(INDX_USERNAME, "", "internal").addCallbacks(user_len_check, result_d.errback)
-            else:
-                user_len_check(None)
-                
+        self.database.connect_indx_db().addCallbacks(got_indx_cb, result_d.errback)
 
-        self.database.list_users().addCallbacks(got_users, result_d.errback)
         return result_d
 
 
@@ -187,28 +202,37 @@ class WebServer:
         reactor.callWhenRunning(d.callback, "INDX HTTP startup") #@UndefinedVariable
         reactor.addSystemEventTrigger("during", "shutdown", lambda *x: self.shutdown()) #@UndefinedVariable
 
-    def sync_box(self, root_box, username):
-        """ Start syncing the named box for that username. """
-        logging.debug("WebServer, sync_box for root_box {0} and username {1}".format(root_box, username))
+    def sync_box(self, root_box):
+        """ Start syncing the named box. """
+        logging.debug("WebServer, sync_box for root_box {0}".format(root_box))
+        return_d = Deferred()
 
         if root_box in self.syncs:
-            logging.error("sync_box: Two users have the same root box ({0}), error.".format(root_box))
-            return
+            logging.error("sync_box: returning from cache")
+            indxsync = self.syncs[root_box]
+            return_d.callback(indxsync)
+        else:
+            def err_cb(failure):
+                logging.error("WebServer, sync_box error getting token: {0} {1}".format(failure, failure.value))
+                # FIXME do something with the error?
+                return_d.errback(failure)
 
-        def err_cb(failure):
-            logging.error("WebServer, sync_box error getting token: {0} {1}".format(failure, failure.value))
-            # FIXME do something with the error?
+            self.syncs[root_box] = None # reserve the slot
 
-        self.syncs[root_box] = None # reserve the slot
+            def store_cb(root_store):
+                indxsync = IndxSync(root_store, self.database, self.server_url, self.keystore)
+                self.syncs[root_box] = indxsync
+                return_d.callback(indxsync)
 
-        def store_cb(root_store):
-            self.syncs[root_box] = IndxSync(root_store, self.database, self.server_url)
+            # assign ourselves a new token to access the root box using the @indx user
+            # this only works because the "create_root_box" function gave this user read permission
+            # this doesn't work in the general case.
+            def token_cb(token):
+                token.get_store().addCallbacks(store_cb, err_cb)
 
-        # assign ourselves a new token to access the root box using the @indx user
-        # this only works because the "create_root_box" function gave this user read permission
-        # this doesn't work in the general case.
-        token = self.tokens.new("@indx","",root_box,"IndxSync","/","::1")
-        token.get_store().addCallbacks(store_cb, err_cb)
+            self.tokens.new("@indx","",root_box,"IndxSync","/","::1", self.server_id).addCallbacks(token_cb, return_d.errback)
+
+        return return_d 
 
     def start_syncing(self):
         """ Start IndxSyncing root boxes. (after indx is up and running) """
@@ -220,14 +244,22 @@ class WebServer:
             logging.error("WebServer, start_syncing error getting root boxes: {0} {1}".format(failure, failure.value))
             # FIXME do something with the error?
 
-        def root_boxes_cb(rows):
-            logging.debug("WebServer start_syncing root_boxes_cb")
+        def linked_boxes_cb(rows):
+            logging.debug("WebServer start_syncing linked_boxes_cb")
             for row in rows:
-                username, root_box = row
-                logging.debug("WebServer start_syncing user: {0}, root box: {1}".format(username, root_box))
-                reactor.callInThread(lambda empty: self.sync_box(root_box, username), None)
+                linked_box = row[0]
+                logging.debug("WebServer start_syncing linked box: {0}".format(linked_box))
 
-        self.database.get_root_boxes().addCallbacks(root_boxes_cb, err_cb)
+                def sync_a_box():
+                    
+                    def sync_cb(indxsync):
+                        indxsync.sync_boxes().addCallbacks(lambda empty: logging.debug("Sucessfully called sync in webserver."), lambda failure: logging.error("Failure syncing in webserver."))
+
+                    self.sync_box(linked_box).addCallbacks(sync_cb, lambda failure: logging.error("Failure syncing in webserver."))
+
+                reactor.callInThread(lambda empty: sync_a_box(), None)
+
+        self.database.get_linked_boxes().addCallbacks(linked_boxes_cb, err_cb)
 
 
     def shutdown(self):
@@ -237,6 +269,11 @@ class WebServer:
     
     def start(self):        
         factory = WebSocketSite(self.root)
+
+        class LongSession(Session):
+                sessionTimeout = 60 * 60 * 6 # = 6 hours (value is in seconds - default is 15 minutes)
+
+        factory.sessionFactory = LongSession
 
         ## WebSockets is a Handler that is created for each request, so we add it differently here:
         factory.webserver = self;
@@ -275,8 +312,9 @@ class WebServer:
         """ Add a single INDX to the server. """
         parent.putChild(name, BoxHandler(self, name)) # e.g. /indx
 
-    def run(self):
+    def run(self, reactor_start = True):
         """ Run the server. """
-        reactor.run() #@UndefinedVariable
+        if reactor_start:
+            reactor.run() #@UndefinedVariable
 
 

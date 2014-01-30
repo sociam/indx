@@ -3,10 +3,37 @@
 		.module('indx')
 		.factory('utils',function() {
 			var DEBUG=0, INFO=1, LOG=2, WARN=3, ERROR=4, DEBUG_LEVEL = DEBUG;
+			var jQ = jQuery;
 			return {
 				DEBUG_LEVELS: { INFO:INFO, LOG:LOG, WARN:WARN, ERROR:ERROR },
 				setDebugLevel:function(lvl) {	DEBUG_LEVEL = lvl; return lvl; },
                 uuid: function(){ return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {var r = Math.random()*16|0,v=c=='x'?r:r&0x3|0x8;return v.toString(16);});},
+                toBlankDict:function(L) {
+                	var o = {};
+                	L.map(function(l) { o[l] = true; });
+                	return o;
+                },
+                zip:function(a1,a2) {
+                	return this.range(Math.min(a1.length,a2.length)).map(function(i) {
+                		return [a1[i],a2[i]];
+                	});
+                },
+                inherit:function(p) {
+                	// inherit() returns a newly created object that inherits properties from the
+					// prototype object p.  It uses the ECMAScript 5 function Object.create() if
+					// it is defined, and otherwise falls back to an older technique.
+				    if (p == null) throw TypeError(); // p must be a non-null object
+				    if (Object.create)                // If Object.create() is defined...
+				        return Object.create(p);      //    then just use it.
+				    var t = typeof p;                 // Otherwise do some more type checking
+				    if (t !== "object" && t !== "function") throw TypeError();
+				    function f() {};                  // Define a dummy constructor function.
+				    f.prototype = p;                  // Set its prototype property to p.
+				    return new f();                   // Use f() to create an "heir" of p.
+				},
+				fastkeys:function(obj) {
+                	return Object.keys(obj); 
+                },
 				guid: function(len) {
 					len = len || 64;
 					var alpha = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ-';
@@ -60,7 +87,7 @@
 				debug : function() { try { if (DEBUG_LEVEL >= DEBUG) { console.debug.apply(console,arguments); }} catch(e) { } },
 				error : function() { try { if (DEBUG_LEVEL >= ERROR) { console.error.apply(console,arguments); }} catch(e) {}},
 				isInteger:function(n) { return n % 1 === 0; },
-				deferred:function() { return new $.Deferred(); },
+				deferred:function() { return new jQ.Deferred(); },
 				chunked:function(l,n) {
 					return this.range(Math.floor(l.length / n) + (l.length % n === 0 ? 0 : 1)).map(function(ith) { 
 						var start = ith*n;
@@ -68,7 +95,7 @@
 					});
 				},
 				shake:function(el, times, px) {
-					var d = new $.Deferred(), l = px || 20;
+					var d = new jQ.Deferred(), l = px || 20;
 					for (var i = 0; i < 4; i++) {
 						$(el).animate({'margin-left':"+=" + (l = -l) + 'px'}, 50);
 					}
@@ -77,16 +104,16 @@
 					return d.promise();
 				},
 				dresolve:function(val) {
-					var d = new $.Deferred();
+					var d = new jQ.Deferred();
 					d.resolve(val);
 					return d.promise();
 				},
 				dreject:function(err) {
-					var d = new $.Deferred();
+					var d = new jQ.Deferred();
 					d.reject(err);
 					return d.promise();
 				},
-				whend:function(deferredArray) { return $.when.apply($,deferredArray); },
+				whend:function(deferredArray) { return jQ.when.apply($,deferredArray); },
 				t:function(template,v) { return _(template).template(v); },
 				assert:function(t,s) { if (!t) { throw new Error(s); }},
 				TO_OBJ: function(pairs) { var o = {};	pairs.map(function(pair) { o[pair[0]] = pair[1]; }); return o; },
@@ -134,13 +161,13 @@
 				},
 				when:function(x) {
 					var d = this.deferred();
-					$.when.apply($,x).then(function() {	d.resolve(_.toArray(arguments)); }).fail(d.reject);
+					jQ.when.apply(jQ,x).then(function() {	d.resolve(_.toArray(arguments)); }).fail(d.reject);
 					return d.promise();
 				},
 				whenSteps:function(fns, failFast) {
 					// executes a bunch of functions that return deferreds in sequence
 					var me = arguments.callee;
-					var d = new $.Deferred();
+					var d = new jQ.Deferred();
 					if (fns.length == 1) { return fns[0]().then(d.resolve).fail(d.reject);	}
 					fns[0]().then(function() {
 						me(fns.slice(1));

@@ -1,7 +1,22 @@
-import logging, json, subprocess,sys, os
+#    Copyright (C) 2011-2013 University of Southampton
+#    Copyright (C) 2011-2013 Daniel Alexander Smith
+#    Copyright (C) 2011-2013 Max Van Kleek
+#    Copyright (C) 2011-2013 Nigel R. Shadbolt
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU Affero General Public License, version 3,
+#    as published by the Free Software Foundation.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU Affero General Public License for more details.
+#
+#    You should have received a copy of the GNU Affero General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import logging, json, tempfile, subprocess, sys
 from indx.webserver.handlers.base import BaseHandler
-from indxclient import IndxClient
 
 class ServiceHandler(BaseHandler):
 
@@ -10,10 +25,24 @@ class ServiceHandler(BaseHandler):
         self.pipe = None
         self.service_path = service_path
         self.subhandlers = self._make_subhandlers()
+        self._set_up_output_buffers()
+
+    def _set_up_output_buffers(self):
+        self.errpipe_out = tempfile.NamedTemporaryFile()
+        self.errpipe_in = open(self.errpipe_out.name,'r')
+        self.err_output = []
+        self.stdoutpipe_out = tempfile.NamedTemporaryFile()
+        self.stdoutpipe_in = open(self.stdoutpipe_out.name,'r')
+        self.std_output = []
+
 
     def is_service(self):
         manifest = self._load_manifest()
         return 'type' in manifest and 'service' in manifest['type']
+
+    def on_boot(self):
+        manifest = self._load_manifest()
+        return 'on_boot' in manifest and manifest['on_boot']
 
     def _make_subhandlers(self):
         return [
@@ -61,6 +90,24 @@ class ServiceHandler(BaseHandler):
                 'handler': ServiceHandler.is_running_handler,
                 'accept':['application/json'],
                 'content-type':'application/json'
+            },
+            {
+                "prefix": "{0}/api/get_stderr".format(self.service_path),
+                'methods': ['GET'],
+                'require_auth': True,
+                'require_token': False,
+                'handler': ServiceHandler.get_stderr_log,
+                'accept':['application/json'],
+                'content-type':'application/json'
+            },
+            {
+                "prefix": "{0}/api/get_stdout".format(self.service_path),
+                'methods': ['GET'],
+                'require_auth': True,
+                'require_token': False,
+                'handler': ServiceHandler.get_stdout_log,
+                'accept':['application/json'],
+                'content-type':'application/json'
             }
         ]
 
@@ -75,31 +122,43 @@ class ServiceHandler(BaseHandler):
         manifest_data.close()
         return manifest
 
-    def get_config(self, request):
+    def get_config(self, request, token):
         try:
+            #print "in service.py - get config"
             manifest = self._load_manifest()
-            result = subprocess.check_output(manifest['get_config'])
-            logging.debug(' get config result {0} '.format(result))
+            result = subprocess.check_output(manifest['get_config'],cwd=self.get_app_cwd())
+            #print "service.py - getConfig Manifest returned: "+str(result)
+            #logging.debug(' get config result {0} {1}'.format(result))
             result = json.loads(result)
+            #print "service.py - getConfig json: "+str(result)
             logging.debug(' get json config result {0} '.format(result))
             return self.return_ok(request,data={'config':result})
         except :
+            print "error in service.py get config"+str(sys.exc_info())
             logging.error("Error in get_config {0}".format(sys.exc_info()[0]))
             return self.return_internal_error(request)
+
+    def get_app_cwd(self):
+        cwd = "apps/{0}".format(self.service_path)
+        logging.debug('getappcwd {0}'.format(cwd))
+        return cwd
         
-    def set_config(self, request): 
+    def set_config(self, request, token): 
         try:
+            #print "in service.py - set config"
             # invoke external process to set their configs
             logging.debug("set_config -- getting config from request")        
-            config = self.get_arg(request, "config")
-            logging.debug("set_config config arg {0}".format(config))
+            jsonconfig = self.get_arg(request, "config")
+            logging.debug("set_config config arg {0}".format(jsonconfig))
             ## load the manifest 
             manifest = self._load_manifest()
-            jsonconfig = json.dumps(config)
+            # jsonconfig = json.dumps(config)
+            logging.debug("set_config jsonconfig arg {0}".format(jsonconfig))
+
             # somewhere inside this we have put {0} wildcard so we wanna substitute that
             # with the actual config obj
             expanded = [x.format(jsonconfig) for x in manifest['set_config']]
-            result = subprocess.call(expanded)
+            result = subprocess.call(expanded, cwd=self.get_app_cwd())
             logging.debug("result of subprocess call {0}".format(result))
             return self.return_ok(request, data={'result': result})
         except :
@@ -112,14 +171,36 @@ class ServiceHandler(BaseHandler):
         return self.pipe is not None and self.pipe.poll() is None
 
     def start(self):
-        if self.is_running():
-           self.stop()
+        print "service.py - Start called"
+        if self.is_running(): self.stop()
         manifest = self._load_manifest()
-        command = manifest['run']
-        self.pipe = subprocess.Popen(command)
+        command = [x.format(self.webserver.server_url) for x in manifest['run']]
+        print command
+        self._set_up_output_buffers()
+        self.pipe = subprocess.Popen(command,cwd=self.get_app_cwd())#,stderr=self.errpipe_out,stdout=self.stdoutpipe_out)
         return self.is_running()
 
-    def start_handler(self,request):
+    def _dequeue_stderr(self):
+        if (self.errpipe_out.tell() == self.errpipe_in.tell()): return
+        new_lines = self.errpipe_in.read()
+        if new_lines: self.err_output.extend([x.strip() for x in new_lines.split('\n') if len(x.strip()) > 0])
+    def _dequeue_stdout(self):
+        if (self.stdoutpipe_out.tell() == self.stdoutpipe_in.tell()): return
+        new_lines = self.stdoutpipe_in.read()
+        if new_lines: self.std_output.extend([x.strip() for x in new_lines.split('\n') if len(x.strip()) > 0])
+
+    def get_stderr_log(self,request, token):
+        self._dequeue_stderr()
+        from_id = self.get_arg(request, "offset") and int(self.get_arg(request,"offset"))
+        if not from_id: from_id = 0
+        return self.return_ok(request,data={'messages':self.err_output[from_id:]})
+    def get_stdout_log(self,request, token):
+        self._dequeue_stdout()
+        from_id = self.get_arg(request, "offset") and int(self.get_arg(request,"offset"))
+        if not from_id: from_id = 0
+        return self.return_ok(request,data={'messages':self.std_output[from_id:]})
+
+    def start_handler(self,request, token):
         result = self.start()
         return self.return_ok(request, data={'result': result})
 
@@ -128,11 +209,11 @@ class ServiceHandler(BaseHandler):
             self.pipe.kill()
         self.pipe = None
 
-    def stop_handler(self,request):
+    def stop_handler(self,request, token):
         self.stop()
         return self.return_ok(request)
 
-    def is_running_handler(self,request):
+    def is_running_handler(self,request, token):
         return self.return_ok(request, data={'running': self.is_running()})
 
     def render(self, request):

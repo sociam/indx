@@ -36,7 +36,7 @@ class AdminHandler(BaseHandler):
     """ Add/remove boxes, add/remove users, change config. """
     base_path = 'admin'
     
-    def info(self, request):
+    def info(self, request, token):
         """ Information about the INDX. """
         return self.return_ok(request, data = {"indx_uri": self.webserver.server_url} )
 
@@ -57,7 +57,7 @@ class AdminHandler(BaseHandler):
         self.webserver.get_master_box_list().addCallback(cont).addErrback(d.errback)
         return d
 
-    def delete_box_handler(self, request):
+    def delete_box_handler(self, request, token):
         """ Delete a box. """
         box_name = self.get_arg(request, "name")
         logging.debug("Deleting box {0}".format(box_name))
@@ -65,9 +65,9 @@ class AdminHandler(BaseHandler):
             logging.error("Box name is empty - returning 400.")
             return self.return_bad_request(request)
 
-        self.database.delete_box(box_name).addCallbacks(lambda success: self.return_no_content(request), lambda fail: self.return_internal_error(request))
+        self.database.delete_box(box_name).addCallbacks(lambda success: self.return_ok(request), lambda fail: self.return_internal_error(request))
     
-    def create_box_handler(self, request):
+    def create_box_handler(self, request, token):
         """ Create a new box. """
         box_name = self.get_arg(request, "name")
         logging.debug('asking to create box ' + box_name)
@@ -99,7 +99,7 @@ class AdminHandler(BaseHandler):
             .addCallback(check)\
             .addErrback(lambda *er: logging.debug('{0}'.format(er)) and self.return_forbidden(request))
 
-    def create_root_box(self, request):
+    def create_root_box(self, request, token):
         """ Specify a new box as the root box for the logged in user. """
 
         box_name = self.get_arg(request, "box")
@@ -120,8 +120,12 @@ class AdminHandler(BaseHandler):
                 logging.debug(' result > {0} '.format(result))
 
                 def created_cb(empty):
-                    self.webserver.sync_box(box_name, username)
-                    self.return_ok(request)
+                    self.webserver.register_box(box_name, self.webserver.root)
+
+                    def synced_cb(indxsync):
+                        indxsync.sync_boxes().addCallbacks(lambda empty: self.return_created(request), lambda failure: logging.error("AdminHandler: Error creating root box: {0}".format(failure)))
+
+                    self.webserver.sync_box(box_name).addCallbacks(synced_cb, err_cb)
 
                 self.database.create_root_box(box_name, username, password).addCallbacks(created_cb, err_cb)
             except Exception as e :
@@ -132,7 +136,7 @@ class AdminHandler(BaseHandler):
             .addErrback(lambda *er: logging.debug('{0}'.format(er)) and self.return_forbidden(request))
 
 
-    def list_boxes_handler(self,request):
+    def list_boxes_handler(self,request, token):
         def boxes(db_list):
             return self.return_ok(request, data={"list": db_list})
         #this gets all boxes
@@ -144,7 +148,7 @@ class AdminHandler(BaseHandler):
             .addCallback(boxes)\
             .addErrback(lambda *x: self.return_internal_error(request))
 
-    def create_user_handler(self, request):
+    def create_user_handler(self, request, token):
         new_username, new_password = self.get_arg(request, "username"), self.get_arg(request, "password")
         logging.debug("Creating new user with username: {0}".format(new_username))
 
@@ -164,7 +168,7 @@ class AdminHandler(BaseHandler):
 
         self.database.create_user(new_username, new_password, 'local').addCallbacks(lambda *x: self.return_ok(request), err_cb)
     
-    def list_user_handler(self, request):
+    def list_user_handler(self, request, token):
         logging.debug("AdminHandler, list_user_handler: Getting user list")
 
         def filter_user_list(users):
@@ -179,8 +183,11 @@ class AdminHandler(BaseHandler):
 
         self.database.list_users().addCallbacks(filter_user_list, lambda *x: self.return_internal_error(request))
         
-    def list_apps_handler(self, request):
+    def list_apps_handler(self, request, token):
         self.return_ok(request, data={"apps":self.webserver.appshandler.get_modules()})
+
+    def admin_return_ok(self,request,token):
+        return self.return_ok(request)
         
 AdminHandler.subhandlers = [
     {
@@ -216,15 +223,6 @@ AdminHandler.subhandlers = [
         'require_auth': True,
         'require_token': False,
         'handler': AdminHandler.create_box_handler,
-        'content-type':'text/plain', # optional
-        'accept':['application/json']
-    },
-    {
-        'prefix': 'create_box',
-        'methods': ['POST'],
-        'require_auth': False,
-        'require_token': False,
-        'handler': BaseHandler.return_forbidden,
         'content-type':'text/plain', # optional
         'accept':['application/json']
     },
@@ -269,7 +267,7 @@ AdminHandler.subhandlers = [
         'methods': ['OPTIONS'],
         'require_auth': False,
         'require_token': False,
-        'handler': BaseHandler.return_ok,
+        'handler': AdminHandler.admin_return_ok,
         'content-type':'text/plain', # optional
         'accept':['application/json']
    }

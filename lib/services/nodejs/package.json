@@ -1,0 +1,20 @@
+{
+  "name": "nodejs-support-for-services",
+  "version": "0.0.0",
+  "main": "nodeindx.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": "",
+  "author": "emax",
+  "license": "BSD",
+  "dependencies": {
+    "optimist":"",
+    "angular":"",
+    "underscore": "~1.5.2",
+    "jquery":"~1.8.2",
+    "backbone":"",
+    "request":"",
+    "ws":""
+  }
+}

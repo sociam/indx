@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+	<link href="/css/bootstrap.css" rel="stylesheet">
+	<link href="/css/angular-ui.css" rel="stylesheet">
+	<link href="/css/select2.css" rel="stylesheet"/>
+	<link rel="stylesheet/less" type="text/css" href="/components/toolbar/toolbar.less">
+	<link rel="stylesheet/less" type="text/css" href="css/exporter.less">
+	<title>Box data exporter</title>
+  </head>
+  <body ng-app="exporter" ng-controller="main" ng-cloak>
+    <toolbar box-var='selectedBox' username-var='selectedUser'></toolbar>
+	<div class='main'> 
+	  <div ng-show="selectedUser && selectedBox">
+	  	<div class="output" ng-show='!wait' >
+		  	<div class="btn-group">
+		  		<label class="btn"><input ng-model='format' type="radio" value="ntriples" name="output-type">N3</label>
+		  		<label class="btn"><input ng-model='format' type="radio" value="json" name="output-type" checked="true">JSON</label>
+                <label class="btn"><input ng-model='format' type="radio" value="jsonld" name="output-type">JSON-LD</label>
+		  		<label class="btn"><input ng-model='format' type="radio" value="csv" name="output-type">CSV</label>
+		  	</div>	
+		  	<div class="btn btn-primary savebtn" ng-disabled="wait" ng-click='doSave()'><span class="glyphicon glyphicon-floppy-open"></span> Export </div>
+            <div class="btn btn-primary savebtn" ng-disabled="wait" ng-click='toFile()' ng-show='boxData'><span class="glyphicon glyphicon-floppy-open"></span> Save as </div>
+            <input type="text" ng-show='boxData' ng-model="filename" style="align:right;" placeholder="{{ selectedBox }}.{{ fileext }}"/>
+		  	<div ng-show='boxData'>
+		  		<hr/><pre> {{ boxData }} </pre>
+	        </div>
+	  	</div>
+	  	<div class="waitoverlay" ng-show="wait">
+	  		<div class="pleasewait">please wait ..</div>
+	  		<img src="img/39.gif"></img>
+	  	</div>	
+	  </div>
+	  <div ng-show="!selectedUser">
+		<h2> Please log in to export your data </h2>
+	  </div>
+	  <div ng-show="selectedUser && !selectedBox">
+		<h2> Please select a box to export its data </h2>
+	  </div>
+	</div><!-- main -->
+  </body>
+  <script src="/js/vendor/d3.min.js" type="text/javascript"></script>
+  <script src="/js/vendor/lesscss.min.js" type="text/javascript"></script>
+  <script src="/js/vendor/jquery.min.js" type="text/javascript"></script>
+  <script src="/js/vendor/blur.js" type="text/javascript"></script>
+  <script src="/js/vendor/underscore.min.js" type="text/javascript"></script>
+  <script src="/js/vendor/backbone.min.js" type="text/javascript"></script>
+  <script src="/js/vendor/bootstrap.min.js" type="text/javascript"></script>
+  <!-- angular -->
+  <script src="/js/vendor/angular.min.js" type="text/javascript"></script>
+  <script src="/js/vendor/angular-ui.js" type="text/javascript"></script>
+  <!-- indx -->
+  <script src="/js/indx.js" type="text/javascript"></script>
+  <script src="/js/indx-utils.js" type="text/javascript"></script>
+  <script src="/components/toolbar/toolbar.js" type="text/javascript"></script>
+  <script src="js/FileSaver.js" type="text/javascript" /></script>
+  <script src="js/exporter.js" type="text/javascript"></script>
+</html>

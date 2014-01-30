@@ -14,11 +14,9 @@ h1, h2, h3 {
 
 .testpass, .testpass a {
   color: #5cb85c;
-  //color: white;
 }
 .testfail, .testfail a {
   color: #d9534f;
-  //color: white;
 }
 th {
   font-weight: bold;
@@ -50,13 +48,12 @@ th {
 }
 
 h2 {
-  background: #f6f6f6;
   border-bottom: 1px solid #ddd;
-  font-size: 16px;
+  font-size: 14px;
   text-transform: uppercase;
   text-align: left;
   padding: 10px 5px;
-  margin-bottom: 0;
+  margin: 0;
 }
 th {
   text-transform: uppercase;
@@ -65,8 +62,7 @@ th {
 }
 
 .header {
-  border-bottom: 1px solid #ddd;
-  .icon, h1, .nav {
+  .icon, h1 {
     display: inline-block;
     vertical-align: bottom;
   }
@@ -78,14 +74,10 @@ th {
     color: #666;
     margin-bottom: 10px;
   }
-  .nav {
-    border-bottom: 0;
-    margin-left: 60px;
-  }
 }
 
 p.description {
-  margin: 10px;
+  margin: 10px auto;
 }
 
 .tab-pane {
@@ -136,4 +128,132 @@ iframe {
   left: 0;
   right: 0;
   bottom: 0;
+}
+
+.main-col {
+  margin-right: 300px;
+  box-sizing: border-box;
+}
+.side-col {
+  position: absolute;
+  right: 10px;
+  top: 42px;
+  width: 300px;
+}
+
+.manifest-list {
+  margin: 20px;
+
+  .message {
+    padding: 15px;
+  }
+
+  ul.icons {
+    margin: 0;
+    padding: 0;
+    li {
+      padding: 0;
+      width: 200px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0px 2px #eee;
+      background: #f9f9f9;
+      cursor: pointer;
+      display: inline-block;
+      border: 1px solid #eee;
+      margin: 12px;
+      vertical-align: top;
+      border-radius: 4px 4px;
+      &:hover {
+        border: 1px solid #ccc;
+        text-decoration: none;
+        .name {
+          color: black;
+          text-decoration: none;
+        }
+      }
+      a:hover, a:hover .name {
+        background: white;
+        text-decoration: none;
+      }
+
+      .col1 {
+        img {
+          position: absolute;
+          top: 8px;
+          left: 8px;
+        }
+        .name { /* expands for multi-line */
+          padding-left: 50px;
+          padding-top: 8px;
+          padding-bottom: 30px;
+          margin-bottom: 48px;
+          color: #888;
+          font-size: 11px;
+        }
+        .meta {
+          position: absolute;
+          left: 50px;
+          bottom: 56px;
+          .version {
+            font-size: 11px;
+            color: #999;
+          }
+        }
+      }
+      .col2 {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        border-top: 1px solid #eee;
+
+        .stamp1 {
+          border-right: 1px solid #eee;
+        }
+        .stamp1, .stamp2 {
+          display: inline-block;
+          vertical-align: top;
+          box-sizing: border-box;
+          width: 50%;
+          height: 47px;
+          color: #ccc;
+          text-align: center;
+          padding: 8px 3px 5px;
+          .note {
+            font-size: 11px;
+            color: #999;
+          }
+          i {
+            display: block;
+          }
+          &.docs-icon {
+            &.built { color: green; }
+            &.building { color: yellow; }
+            &.notbuilt { color: #a94442; }
+            //&.none { display: none; }
+          }
+
+          &.tests-icon {
+            &.failed { color: red; }
+            &.passed { color: green; }
+            &.notrun { color: gold; }
+            &.running { color: yellow; }
+            //&.none { display: none; }
+          }
+        }
+
+      }
+    }
+  }
+}
+
+.alert {
+  max-width: 600px;
+  margin: 30px auto 0;
+}
+
+.loading-msg {
+  margin: 30px auto 0;
+  text-align: center;
 }

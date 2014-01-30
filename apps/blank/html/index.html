@@ -13,15 +13,13 @@
 		<h4>This example service shows how INDX services can be started, stopped and configured.
 			All services are run as separate processes from INDX.</h4>
 
-		<div class="status">
-			<table>
-				<tr>
-					<td> {{ runstate }} </td>
-					<td><div class="btn btn-success" ng-click="doStart()">Start</div></td>
-					<td><div class="btn btn-danger" ng-click="doStop()">Stop</div></td> 
-				</tr>
-			</table>
-		</div>
+		<table class="status">
+			<tr>
+				<td> {{ runstate }} </td>
+				<td><div class="btn btn-success" ng-click="doStart()">Start</div></td>
+				<td><div class="btn btn-danger" ng-click="doStop()">Stop</div></td> 
+			</tr>
+		</table>
 		<table class='security'>
 			<tr><td>Service User</td><td><select ng-model="app.user" ng-options='u.name for u in users'></select></td></tr>
 			<tr><td>Service User's Password</td><td><input type="password" ng-model='app.password'></td></tr>
@@ -43,7 +41,7 @@
 		    <div class="status">{{ status }}</div>
 		</div>
 	</div>	
-	<div ng-show="!(selectedUser && selectedBox)">
+	<div ng-show="!(selectedUser && selectedBox)" class="main">
 		<h1>Please log in and select a box </h1>
 	</div>
   </body>

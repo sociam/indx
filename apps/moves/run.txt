@@ -1,0 +1,14 @@
+require('./run').testRun('https://indx.local:8211').then(function(g) { global.g = g; });
+
+g.getProfile()
+
+g.getTimeline( g.diary.get('firstDate')[0], new Date(g.diary.get('firstDate')[0].valueOf() + 7*24*60*60*1000 + 59*60*1000) ).then(function(x) { console.log('yay', x); }).fail(function(bail) { console.error(':(', bail); })
+
+store.getBox('bieber').then(function(b) { window.b = b; b.getObj('moves-diary').then(function(md) { window.md = md; }); });
+
+
+g.checkAccessToken().then(function(result) { console.log('yay', result); }).fail(function(bail){ console.error('bail >> ', bail); });
+
+g.getProfile().then(function(r) { console.log(r); }).fail(function(bail) { console.error(bail); });
+
+g.refreshToken().then(function(result) { console.log('refresh yay', result); }).fail(function(bail){ console.error('bail >> ', bail); });

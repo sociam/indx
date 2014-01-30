@@ -53,111 +53,70 @@ class IndxConnectionPool:
 
     # Wrap query functions with auto-reconnection
     def runQuery(self, *args, **kwargs):
+        logging.debug("IndxConnectionPool runQuery, args: {0}, kwargs: {1}".format(args, kwargs))
+        deferred = Deferred()
+        pool_deferred = self.pool.runQuery(*args, **kwargs)
+        pool_deferred.addCallback(deferred.callback)
 
-        try:
-            logging.debug("IndxConnectionPool runQuery")
-            deferred = Deferred()
-            pool_deferred = self.pool.runQuery(*args, **kwargs)
-            pool_deferred.addCallback(deferred.callback)
-
-            def err_cb(failure):
-                logging.debug("IndxConnectionPool runQuery err_cb {0} {1}".format(failure, failure.value))
-                # failure!
-                # reconnect and try the query again
-                # TODO check exception is a psycopg2.InterfaceError and a "connection already closed" error first, otherwise send on to the deferred errback instead
-                def connected2(conn):
-                    logging.debug("IndxConnectionPool runQuery err_cb connected2")
-                    conn.runQuery(*args, **kwargs).addCallbacks(deferred.callback, deferred.errback)
-
-                self.pool = self._connectPool()
-                self.pool.start().addCallbacks(connected2, deferred.errback) # FIXME is this the best errback?
-
-            pool_deferred.addErrback(err_cb)
-            return deferred
-        except Exception as e:
-            logging.error("IndxConnectionPool runQuery Exception: reconnecting, e: {0}".format(e))
-
-            self.pool = self._connectPool()
-
-            deferred = Deferred()
-            def connected(conn):
-                logging.debug("IndxConnectionPool runQuery Exception: connected")
+        def err_cb(failure):
+            logging.debug("IndxConnectionPool runQuery err_cb {0} {1}".format(failure, failure.value))
+            # failure!
+            # reconnect and try the query again
+            # TODO check exception is a psycopg2.InterfaceError and a "connection already closed" error first, otherwise send on to the deferred errback instead
+            def connected2(conn):
+                logging.debug("IndxConnectionPool runQuery err_cb connected2")
                 conn.runQuery(*args, **kwargs).addCallbacks(deferred.callback, deferred.errback)
 
-            # auto-restart the pool
-            self.pool.start().addCallbacks(connected, deferred.errback)
-            return deferred
+            self.pool.close() # clean up existing
+            self.pool = self._connectPool()
+            self.pool.start().addCallbacks(connected2, deferred.errback) # FIXME is this the best errback?
+
+        pool_deferred.addErrback(err_cb)
+        return deferred
 
 
     def runOperation(self, *args, **kwargs):
-        try:
-            logging.debug("IndxConnectionPool runOperation")
-            deferred = Deferred()
-            pool_deferred = self.pool.runOperation(*args, **kwargs)
-            pool_deferred.addCallback(deferred.callback)
+        logging.debug("IndxConnectionPool runOperation, args: {0}, kwargs: {1}".format(args, kwargs))
+        deferred = Deferred()
+        pool_deferred = self.pool.runOperation(*args, **kwargs)
+        pool_deferred.addCallback(deferred.callback)
 
-            def err_cb(failure):
-                logging.debug("IndxConnectionPool runOperation err_cb {0} {1}".format(failure, failure.value))
-                # failure!
-                # reconnect and try the query again
-                # TODO check exception is a psycopg2.InterfaceError and a "connection already closed" error first, otherwise send on to the deferred errback instead
-                def connected2(conn):
-                    logging.debug("IndxConnectionPool runOperation err_cb connected2")
-                    conn.runOperation(*args, **kwargs).addCallbacks(deferred.callback, deferred.errback)
-
-                self.pool = self._connectPool()
-                self.pool.start().addCallbacks(connected2, deferred.errback) # FIXME is this the best errback?
-
-            pool_deferred.addErrback(err_cb)
-            return deferred
-        except Exception as e:
-            logging.error("IndxConnectionPool runOperation Exception: reconnecting, e: {0}".format(e))
-
-            self.pool = self._connectPool()
-
-            deferred = Deferred()
-            def connected(conn):
-                logging.debug("IndxConnectionPool runOperation Exception connected")
+        def err_cb(failure):
+            logging.debug("IndxConnectionPool runOperation err_cb {0} {1}".format(failure, failure.value))
+            # failure!
+            # reconnect and try the query again
+            # TODO check exception is a psycopg2.InterfaceError and a "connection already closed" error first, otherwise send on to the deferred errback instead
+            def connected2(conn):
+                logging.debug("IndxConnectionPool runOperation err_cb connected2")
                 conn.runOperation(*args, **kwargs).addCallbacks(deferred.callback, deferred.errback)
 
-            # auto-restart the pool
-            self.pool.start().addCallbacks(connected, deferred.errback)
-            return deferred
+            self.pool.close() # clean up existing
+            self.pool = self._connectPool()
+            self.pool.start().addCallbacks(connected2, deferred.errback) # FIXME is this the best errback?
+
+        pool_deferred.addErrback(err_cb)
+        return deferred
 
 
     def runInteraction(self, *args, **kwargs):
-        logging.debug("IndxConnectionPool runInteraction")
-        try:
-            deferred = Deferred()
-            pool_deferred = self.pool.runInteraction(*args, **kwargs)
-            pool_deferred.addCallback(deferred.callback)
+        logging.debug("IndxConnectionPool runInteraction, args: {0}, kwargs: {1}".format(args, kwargs))
+        deferred = Deferred()
+        pool_deferred = self.pool.runInteraction(*args, **kwargs)
+        pool_deferred.addCallback(deferred.callback)
 
-            def err_cb(failure):
-                logging.debug("IndxConnectionPool runInteration err_cb {0} {1}".format(failure, failure.value))
-                # failure!
-                # reconnect and try the query again
-                # TODO check exception is a psycopg2.InterfaceError and a "connection already closed" error first, otherwise send on to the deferred errback instead
-                def connected2(conn):
-                    logging.debug("IndxConnectionPool runInteraction err_cb connected2")
-                    conn.runInteraction(*args, **kwargs).addCallbacks(deferred.callback, deferred.errback)
-
-                self.pool = self._connectPool()
-                self.pool.start().addCallbacks(connected2, deferred.errback) # FIXME is this the best errback?
-
-            pool_deferred.addErrback(err_cb)
-            return deferred
-        except Exception as e:
-            logging.error("IndxConnectionPool runInteraction Exception: reconnecting, e: {0}".format(e))
-
-            self.pool = self._connectPool()
-
-            deferred = Deferred()
-            def connected(conn):
-                logging.error("IndxConnectionPool runInteraction Exception connected")
+        def err_cb(failure):
+            logging.debug("IndxConnectionPool runInteration err_cb {0} {1}".format(failure, failure.value))
+            # failure!
+            # reconnect and try the query again
+            # TODO check exception is a psycopg2.InterfaceError and a "connection already closed" error first, otherwise send on to the deferred errback instead
+            def connected2(conn):
+                logging.debug("IndxConnectionPool runInteraction err_cb connected2")
                 conn.runInteraction(*args, **kwargs).addCallbacks(deferred.callback, deferred.errback)
 
-            # auto-restart the pool
-            self.pool.start().addCallbacks(connected, deferred.errback)
-            return deferred
+            self.pool.close() # clean up existing
+            self.pool = self._connectPool()
+            self.pool.start().addCallbacks(connected2, deferred.errback) # FIXME is this the best errback?
 
+        pool_deferred.addErrback(err_cb)
+        return deferred
 

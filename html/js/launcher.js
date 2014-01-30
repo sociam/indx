@@ -1,9 +1,5 @@
-
-
-
 (function() {
-
-	angular.module('launcher', ['indx'])
+	angular.module('launcher', ['indx','ngRoute'])
 		.config(['$routeProvider', function($routeProvider) {
 			$routeProvider
 			.when('/', {templateUrl: 'templates/root.html', controller:"Root", requireslogin:false})
@@ -33,22 +29,8 @@
 				} catch(e) { console.error(e); }
 			}).fail(function(err) { console.error(err); });
 		} catch(e) { console.error(e); }
-	}).directive('user',function() {
-		return {
-			restrict:'E',
-			templateUrl:'templates/user.html',
-			scope:{user:"=model"},
-			replace:true
-		};
-	}).directive('userselect',function() {
-		return {
-			restrict:'E',
-			templateUrl:'templates/userselect.html',
-			scope:{users:"=model"},
-			replace:true
-		};
 	}).controller('Login',function($scope, $location, client, backbone, utils) {
-		$scope.isLocalUser = function(u) { return u && (u.type == 'local_owner' || u.type == 'local_user'); };
+		$scope.isLocalUser = function(u) { return u && (u.type == 'local_owner' || u.type == 'local'); };
 		$scope.isOpenIDUser = function(u) { return u.type == 'openid'; };
 		console.log('route::login');
 		var u = utils, store = client.store, sa = function(f) { return utils.safeApply($scope,f);};
@@ -150,6 +132,35 @@
 			});
 		};
 		getAppsList();
+
+		// box list too!
+		var getBoxesList = function() {
+			store.getBoxList().then(function(bids) {
+				console.log('got box list >> ', bids);
+				var remaining = bids.concat(), success_boxes = [];
+				var d = u.deferred();
+				var dfds = bids.map(function(bid) { 
+					console.log('getting ', bid);
+					store.getBox(bid).then(function(b) { 
+						success_boxes.push(b);
+						remaining = _(remaining).without(bid);
+						if (remaining.length == 0) { d.resolve(success_boxes); }
+					}).fail(function(err) {
+						remaining = _(remaining).without(bid);
+						if (remaining.length == 0) { d.resolve(success_boxes); }						
+					});
+				});
+				d.then(function() {
+					console.log("SUCCESS BOXES >> ", success_boxes);
+					sa(function() { $scope.boxes = success_boxes; });
+				});
+			}).fail(function() {
+				sa(function() { delete $scope.boxes; });
+				u.error('oops can\'t get boxes - not ready i guess');
+			});
+		};
+		store.on('login', getBoxesList);
+		getBoxesList();
 	}).controller('main', function($location, $scope, client, utils) {
 		var u = utils;
 		// we want to route
@@ -190,6 +201,8 @@
 			}
 		});
 
+		window.store = client.store;
+
 	}).controller('BoxesList', function($location, $scope, client, utils) {
 		var u = utils,store = client.store, sa = function(f) { return utils.safeApply($scope,f); };
 		var getBoxesList = function() {
@@ -218,6 +231,23 @@
 		};
 	});
 })();
+
+// this directive moved to toolbar.js
+// .directive('user',function() {
+// 		return {
+// 			restrict:'E',
+// 			templateUrl:'templates/user.html',
+// 			scope:{ user: "=model" },
+// 			replace:true
+// 		};
+// 	}).directive('userselect',function() {
+// 		return {
+// 			restrict:'E',
+// 			templateUrl:'templates/userselect.html',
+// 			scope:{users:"=model"},
+// 			replace:true
+// 		};
+// 	})
 // .directive('boxeslist',function() {
 // 		return {
 // 			restrict: 'E',

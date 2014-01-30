@@ -4,13 +4,16 @@
   "version": "1.0",
   "description": "indx webjournal 0.1 by electronic Max et al",
   "browser_action": {
-    "default_icon":"img/indx-icon.png",
+    "default_icon":"img/hypercube-lt-transparent.png",
     "default_popup":"popup-indx.html",
-    "default_title":"INDX"
+    "default_title":"INDX Weblogger"
   },
   "background": {
     "persistent":true,
     "page":"background.html"
+  },
+  "icons":{
+   "128":"img/hypercube-lt-transparent.png"   
   },
   "options_page": "options.html",
   "permissions": [

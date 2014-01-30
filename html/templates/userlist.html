@@ -2,7 +2,7 @@
 	<div class="login-window" ng-show="!selected.user" ng-animate="{show: 'animate-show',hide: 'animate-hide'}" ng-cloak>
 		<div class="logo">
 			<h4>welcome to</h4>
-			<p><img class="logo" src="img/indx.png"></img></p>
+			<p><img class="logo" src="/img/indx.png"></img></p>
         </div>
         <!-- markus is playing with this 
         <select ng-show="!selected.user">
@@ -11,14 +11,14 @@
         -->
 		<ul ng-show="!selected.user" class='userlist'>
 			<li ng-repeat='u in users'>
-				<a ng-click="selectUser(u)"><user model='u' ></user></a>
+				<a ng-click="selectUser(u)"><user model='u'></user></a>
 			</li>
 			<li>
 				<a>
 					<div class="special">
 						<form ng-submit="openidValidate(selected.newOpenidUrl) && openidSelectUser(selected.newOpenidUrl)">
 							<input class="openid-input" type="text" placeholder="Login with another OpenID" ng-model="selected.newOpenidUrl" ng-keyup="openidValidate(selected.newOpenidUrl)">
-							<img ng-click="openidValidate(selected.newOpenidUrl) && openidSelectUser(selected.newOpenidUrl)" src="img/openid.png" ng-class="{'openid-icon':true, 'openid-disabled':!openidValidate(selected.newOpenidUrl)}">
+							<img ng-click="openidValidate(selected.newOpenidUrl) && openidSelectUser(selected.newOpenidUrl)" src="/img/openid.png" ng-class="{'openid-icon':true, 'openid-disabled':!openidValidate(selected.newOpenidUrl)}">
 						</form>	
 						<div class="openid-error" ng-bind="openidError"></div>
 					</div>

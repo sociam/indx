@@ -1,54 +1,104 @@
 
 @import url('/components/toolbar/spinner.less');
 body.modal-open { margin: 0px !important; }
+@font-face { 
+  font-family: "Lato"; 
+  src: url('/fonts/Lato/Lato-Regular.ttf'); 
+}
+@font-face
+{
+font-family: "Lato-Light";
+src: url('/fonts/Lato/Lato-Light.ttf'),
+}
+.container, .main {
+	margin-top:50px;
+}
 .indx-toolbar {
-	color:#aaa;
+	font-family:'Lato', 'helvetica neue', 'helvetica';  
+	font-weight:100;
+	box-sizing:border-box;
+	position:relative;
+	margin:0px 0px 0px 0px !important;
+	z-index: 10000;
+	&.hide { display:none; }	
+    .right-align{ text-align:right;   }
+
+    // fixes a bug which causes things to resize weirdly
+	.modal { overflow-y:hidden !important; 	}
+	.navbar {
+		opacity:0.88;
+		background-color:white;
+		min-height:34px;
+		height:42px;
+	}
+	.btn { 
+		height:27px !important; 
+		padding: 3px 8px;
+		border: 1px solid rgba(0,0,0,0) !important;
+		&:hover{
+			border: 1px solid rgba(0,0,0,0.1) !important;
+		}
+		* { vertical-align: top; }
+	}
 	label, .modal-header {
 		font-variant:small-caps;
 		// font-size:120%;
 		line-height:90%;
-		font-weight:100;
+		font-weight:120;
 	}
     .login-btn {
     	color:#666;
     	position:absolute;
-		right:8px; top:9px;
-		background-color:rgba(247,247,247,1.0);
-		border:1px solid rgba(0,0,0,0.1);
-		padding:7px 30px 3px 10px;
+		right:10px; top:7px;
+		padding:6px 10px 8px 10px;
+		// background-color:rgba(247,247,247,1.0);
+		background-color:white;
+		border:1px solid rgba(0,0,0,0.2);
+		&.is-logged-in {
+			padding:7px 34px 10px 14px;
+		}
 		.usericon { 
 			position:absolute;
-			right:10px;
+			right:12px;
 			top:50%;
 			margin-top:-9px;
 		}
 	}
-	position:relative;
-	margin:0px 0px 0px 0px !important;
-	* { box-sizing:border-box; }
-	&.hide { display:none; }	
-    .right-align{ text-align:right;   }
-	.navbar-brand { font-weight: 100; font-size:180%; margin-left:15px;}
+
+    /// navbar brand ----------------------
+	.navbar-brand, .navbar-app-brand { 
+		display:inline-block;
+		color:black;
+		font-family:"Lato-Light";  
+		font-weight:100 !important; 
+		font-size:13pt; 
+		margin-left:15px;
+		padding:8px 0px 0px 0px;
+		.appicon {
+			max-width:22px;
+			margin:-3px 4px 0px 0px;
+		}
+	}
+	.navbar-brand {
+		margin-top:4px;
+		color:rgba(0,0,0,0.3);
+		font-size:16pt;
+	}
     .modal-backdrop {
 		// -webkit-filter:	blur(10px) grayscale(.5) opacity(0.8) !important;
     }
     .modal {
 		// -webkit-filter:	blur(0.5px) grayscale(.5) opacity(0.9) !important;
 	}
-	#logout-dialog {
-		.buttons {
-			position:absolute;
-			right:20px; bottom:20px;
+	.logout-dialog {
+		.modal-header .close {
+			margin-right:-5px;
+			margin-top:-10px;			
 		}
 		.logout-msg {  
 			font-size: 32pt;
 			font-weight:100;
-			padding-bottom:44px;
 		}
-	}
-	#logout-dialog .modal-header .close {
-		margin-right:-5px;
-		margin-top:-10px;
 	}
 	label {
 		font-weight:100;
@@ -68,53 +118,158 @@ body.modal-open { margin: 0px !important; }
 	}
     .modal-footer { vertical-align:middle;  }
 	.box-selector {
-		margin:9px 0px 0px 9px;
+		display:inline-block;
 		* { font-size:88%; color:#aaa !important; }
 		.btn {
+			position:relative;
+			margin:7px 10px 10px 10px;
 			background-color:rgba(0,0,0,0);
-			border:1px solid rgba(0,0,0,0.1);
+			border:1px solid rgba(0,0,0,0.2);
+			.caret { 
+				vertical-align:middle;
+			}
 		}
 	}
-	 /*
-    .login_dialog, .logout_dialog {
-		* { font-weight:100 !important; }
-       .btn { font-weight:200 !important; }
-		form {
-			margin: 0px;
-			.control-group { margin-bottom:10px; }
-			color:#111;			
-			input[type=text],input[type=password] {
-				font-family:'Consolas', 'Monaco', monospace;
-				font-size:12pt;
-				height:2.0em;
-				outline: none !important;
-				-webkit-outline: none !important;
-				border:none;
-				border-bottom: 1px solid #eee;
-				box-shadow:none;
-				border-radius:0px;
+	.login-window, .password-dialog {
+		background:white;
+		box-spacing:border-box;
+		border:1px solid #eee;
+		padding:20px;
+		width:440px; // todo make reactive
+		margin:40px auto 0px auto;
+		position:relative;
+
+		-moz-box-shadow: 0 0 5px #888;
+		-webkit-box-shadow: 0 0 5px#888;
+		box-shadow: 0 0 5px #888;
+		oveflow:hidden;
+	} // login-window and password dialog
+	.login-window {
+		.userlist {
+			margin:20px 20px 0px 20px;
+			padding:10px;	
+			h1 { font-size:80%; } 
+			list-style-type:none;
+			li {
+				.user, .special {
+					border:1px solid white;
+					&:hover { border:1px solid #eee; }
+					padding:10px;
+					// .icon { float:left; clear:both; padding:2px; margin-right:10px; }
+					// .name { padding-left:10px; }
+					margin:8px;
+					.openid-domain {
+						font-size:80%;
+					}
+				}
+				.special {
+					position:relative;
+					color:#aaa;
+					font-style:italic;
+					.openid-icon {
+						position:absolute; right:12px; top:50%; 
+						margin-top:-15px; 
+						width:30px; height:30px; 
+						&.openid-disabled {
+							opacity:0.2;
+						}
+					}
+					.openid-input {
+						color:#888;
+						font-weight:400;
+						outline: 0; 
+						font-size:80%;
+						border:none !important;
+						&:focus {
+							border-bottom:1px solid #eee !important;
+						}
+						width:260px;
+					}
+					.openid-error {
+						position:absolute;
+						bottom:3px;
+						left:121px;
+						color:rgba(176,113,177,1.0);
+						text-decoration:none !important;
+						font-size:80%;
+					}
+				}
 			}		
 		}
-		div.error {
-			display:inline-block;
-			line-height:20px;
-			width:340px;
-			border:1px solid rgba(240,100,100,0.20);
-			color:rgba(240,100,100,1.0);
-			background-color: rgba(240,100,100,0.05);
-			border-radius:2px;
-			text-align:left;
-			padding:6px 11px 6px 11px;
-			margin:0px 15px 0px 0px;
+		.logo {
+			text-align:center;
+			img { width:120px !important; }
 		}
-		div.spinner {
-			display:inline-block;
-			position:relative;
-			width:30px !important; height:30px !important;
-			padding:4px 20px;
-			margin:-10px 6px -10px 10px;
-			opacity:0.7;
+		h4 {
+			font-weight:100;
+			font-style:oblique;
+			margin-bottom:0.5em;
+		}	
+	} // login-dialog
+
+	.password-dialog {
+		-moz-user-select: -moz-none;
+	    -khtml-user-select: none;
+	    -webkit-user-select: none;
+	    -ms-user-select: none;
+	    user-select: none;
+
+		margin-left:auto; margin-right:auto;
+		text-align:center;
+		
+		textarea:focus, input:focus{ outline: 0; }
+		* {
+		    -webkit-transition: 250ms ease-in all;
+		    -moz-transition: 250ms ease-in all;
+		    -ms-transition: 250ms ease-in all;
+		    -o-transition: 250ms ease-in all;
+		    transition: 250ms ease-in all;
 		}
-    } 
-    */
+		form {
+			padding:22px; margin:0px; 
+			div { display:inline-block; }	
+			.username {
+				display:inline-block;
+				.goback {
+					position:absolute; 
+					z-index:-100;
+					min-width:22px;
+					font-size:12px; // padding-left:8px; 
+					top:50%; margin-top:-6px;
+				}
+				&:hover .goback { margin-left:-32px; z-index:100; }
+				position:relative; // left:28px; top:50%; margin-top:-22px; right:50%;
+				text-align:right;
+				margin-right:15px;
+				display:inline-block;
+				font-size: 22px;
+				font-style:italics;
+			}
+			.controls {
+				display:inline-block;
+				input[type='password'] {
+					display:inline-block;
+					background:rgba(0,0,0,0);
+					// position:absolute; left:50%; top:50%; margin-top:-22px; right:68px;
+					// margin-top:5px;
+					font-size:16pt;
+					border-top:none;
+					border-left:none;
+					border-right:none;
+					border-bottom:1px solid #aaa;
+					&:hover { border-bottom:2px solid #aaa;	}	
+					&:focus { border-bottom:2px solid #444;	}	
+				}	
+				.submit { 
+					display:inline-block;
+					//position:absolute; right:32px; top:50%; margin-top:-14px;
+					width:20px;
+					padding-left:0px;
+					opacity:0.7;
+					&:hover { padding-left:8px; opacity:1.0;}
+				}
+			}
+		} // password-dialog
+	} // indx-toolbar
 }
+

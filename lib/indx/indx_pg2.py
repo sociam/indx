@@ -20,6 +20,7 @@ import logging
 import psycopg2
 import binascii
 import json
+import uuid
 from indx.connectionpool import IndxConnectionPool
 from txpostgres import txpostgres
 from hashing_passwords import make_hash, check_hash
@@ -85,6 +86,66 @@ class IndxDatabase:
             d.addCallbacks(hash_cb, return_d.errback)
 
         # get a connection to the INDX db from the pool
+        self.connect_indx_db().addCallbacks(connected_cb, return_d.errback)
+        return return_d
+
+    def set_server_var(self, key, value, boxid = None):
+        logging.debug("IndxPG2: set_server_var, key: {0}, value: {1}, boxid: {2}".format(key, value, boxid))
+        return_d = Deferred()
+        # TODO do this in a transaction
+
+        def connected_cb(conn):
+            logging.debug("IndxPG2: set_server_var connected_cb")
+
+            def existing_cb(prev_value):
+                logging.debug("IndxPG2: set_server_var existing_cb")
+            
+                if prev_value is not None:
+                    # UPDATE existing
+                    if boxid is None:
+                        query = "UPDATE tbl_indx_core SET value = %s WHERE key = %s AND boxid IS NULL"
+                        params = [value, key]
+                    else:
+                        query = "UPDATE tbl_indx_core SET value = %s WHERE key = %s AND boxid = %s"
+                        params = [value, key, boxid]
+                else:
+                    # INSERT a new value
+                    query = "INSERT INTO tbl_indx_core (key, value, boxid) VALUES (%s, %s, %s)"
+                    params = [key, value, boxid]
+
+                conn.runOperation(query, params).addCallbacks(return_d.callback, return_d.errback)
+
+            self.get_server_var(key, boxid = boxid).addCallbacks(existing_cb, return_d.errback)
+
+        self.connect_indx_db().addCallbacks(connected_cb, return_d.errback)
+        return return_d
+
+
+    def get_server_var(self, key, boxid = None):
+        logging.debug("IndxPG2: get_server_var, key: {0}, boxid: {1}".format(key, boxid))
+        return_d = Deferred()
+
+        if boxid is None:
+            query = "SELECT value FROM tbl_indx_core WHERE key = %s AND boxid IS NULL"
+            params = [key]
+        else:
+            query = "SELECT value WHERE tbl_indx_core key = %s AND boxid = %s"
+            params = [key, boxid]
+
+        def connected_cb(conn):
+            logging.debug("IndxPG2: get_server_var connected_cb")
+
+            def result_cb(rows):
+                logging.debug("IndxPG2: get_server_var result_cb")
+
+                if len(rows) < 1:
+                    return_d.callback(None)
+                else:
+                    value = rows[0][0]
+                    return_d.callback(value)
+
+            conn.runQuery(query, params).addCallbacks(result_cb, return_d.errback)
+
         self.connect_indx_db().addCallbacks(connected_cb, return_d.errback)
         return return_d
 
@@ -168,13 +229,40 @@ class IndxDatabase:
         conn.runQuery("select exists(select * from information_schema.tables where table_name=%s)", ["tbl_indx_core"]).addCallbacks(table_cb, return_d.errback)
         return return_d
 
+    def get_server_id(self):
+        logging.debug("IndxPG2: get_server_id")
+        return_d = Deferred()
+
+        def serverid_cb(server_id):
+            logging.debug("IndxPG2: get_server_id, existing id is: {0}".format(server_id))
+            if server_id is not None:
+                # already set
+                return_d.callback(server_id)
+                return
+
+            logging.debug("IndxPG2: get_server_id, generating new id, is: {0}".format(server_id))
+            server_id = "{}".format(uuid.uuid1())
+            self.set_server_var("server_id", server_id).addCallbacks(lambda done: return_d.callback(server_id), return_d.errback)
+
+        self.get_server_var("server_id").addCallbacks(serverid_cb, return_d.errback)
+        return return_d
+
 
     def check_indx_db(self):
-        """ Check the INDX db exists, and create if it doesn't. """
+        """ Check the INDX db exists, and create if it doesn't.
+        
+            Returns the server ID to the callback of the deferred.
+        """
+        logging.debug("IndxPG2: check_indx_db")
         return_d = Deferred()
 
         def connected_cb(conn):
             d = conn.runQuery("SELECT 1 from pg_database WHERE datname='{0}'".format(self.db_name))
+
+            def serverid_cb(empty):
+                # post-schema upgrade
+                self.get_server_id().addCallbacks(lambda server_id: return_d.callback(server_id), return_d.errback)
+
 
             def check_cb(rows):
                 if len(rows) == 0:
@@ -193,7 +281,7 @@ class IndxDatabase:
                                 queries += objsql + " "
 
                             def schema_cb(empty):
-                                self.schema_upgrade(conn_indx).addCallbacks(lambda success: return_d.callback(True), return_d.errback)
+                                self.schema_upgrade(conn_indx).addCallbacks(serverid_cb, return_d.errback)
 
                             conn_indx.runOperation(queries).addCallbacks(schema_cb, return_d.errback)
 
@@ -201,10 +289,10 @@ class IndxDatabase:
 
                     d2.addCallbacks(create_cb, return_d.errback)
                 else:
-                    def connect_indx(conn_indx):
-                        self.schema_upgrade(conn_indx).addCallbacks(lambda success: return_d.callback(True), return_d.errback)
+                    def connect_indx2(conn_indx):
+                        self.schema_upgrade(conn_indx).addCallbacks(serverid_cb, return_d.errback)
 
-                    self.connect_indx_db().addCallbacks(connect_indx, return_d.errback)
+                    self.connect_indx_db().addCallbacks(connect_indx2, return_d.errback)
 
 
             d.addCallbacks(check_cb, return_d.errback)
@@ -257,7 +345,7 @@ class IndxDatabase:
         return return_d
 
 
-    def create_database_users(self, db_name):
+    def create_database_and_users(self, conn_newdb, db_name, creation_queries):
         """ Create new database users for a specific database, one with read-write access, and one with read access.
         """
         return_d = Deferred()
@@ -276,35 +364,38 @@ class IndxDatabase:
             "GRANT ALL PRIVILEGES ON DATABASE %s TO %s" % (db_name, rw_user),
         ]
 
-        def connected(conn):
+        def connected(conn_indx):
             if len(queries) < 1:
 
-                # queries to be run by INDX user on new DB
-                queries_db = [
-                    "GRANT SELECT ON ALL TABLES IN SCHEMA public TO %s" % (ro_user),
-                    "REASSIGN OWNED BY %s TO %s" % (self.db_user, rw_user),
-                ]
+                def connected_rw_user_cb(conn_rw_user):
 
-                def connected_db(conn_db):
-                
-                    if len(queries_db) < 1:
-                        return_d.callback((rw_user, rw_user_pass, ro_user, ro_user_pass))
-                        return
-                    
-                    query_db = queries_db.pop(0)
-                    d_db = conn_db.runOperation(query_db)
-                    d_db.addCallbacks(lambda nothing: connected_db(conn_db), return_d.errback)
-                    return
+                    def created_cb(empty):
 
-                connect(db_name, self.db_user, self.db_pass).addCallbacks(connected_db, return_d.errback)
-                return
+                        queries_db = [
+                            "GRANT SELECT ON ALL TABLES IN SCHEMA public TO %s" % (ro_user),
+                        ]
 
-            query = queries.pop(0)
-            d = conn.runOperation(query)
-            d.addCallbacks(lambda nothing: connected(conn), return_d.errback)
-            return
+                        def inner_queries_cb(empty):
+                            if len(queries_db) < 1:
 
-        # get connection to INDX database from POOL
+                                return_d.callback((rw_user, rw_user_pass, ro_user, ro_user_pass))
+                            else: 
+                                query_db = queries_db.pop(0)
+                                d_db = conn_rw_user.runOperation(query_db)
+                                d_db.addCallbacks(inner_queries_cb, return_d.errback)
+
+                        inner_queries_cb(None)
+
+                    # run database schema/view/function creation queries as the rw_user
+                    conn_rw_user.runOperation(creation_queries).addCallbacks(created_cb, return_d.errback)
+
+                connect(db_name, rw_user, rw_user_pass).addCallbacks(connected_rw_user_cb, return_d.errback)
+            else:
+                query = queries.pop(0)
+                d = conn_indx.runOperation(query)
+                d.addCallbacks(lambda nothing: connected(conn_indx), return_d.errback)
+
+        #c get connection to INDX database from POOL
         self.connect_indx_db().addCallbacks(connected, return_d.errback)
         return return_d
 
@@ -447,54 +538,103 @@ class IndxDatabase:
                         fh_objsql.close()
                         queries += " " + objsql # concat operations together and run once below
 
-                    def operations_cb(empty):
-                        logging.debug("indx_pg2 create_box, operations_cb")
+                    def created_cb(user_details):
+                        logging.debug("indx_pg2 create_box, created_cb")
+                        rw_user, rw_user_pass, ro_user, ro_user_pass = user_details
 
-                        def created_cb(user_details):
-                            logging.debug("indx_pg2 create_box, created_cb")
-                            rw_user, rw_user_pass, ro_user, ro_user_pass = user_details
+                        def got_keys_cb(keys):
+                            logging.debug("indx_pg2 create_box, got_keys_cb")
 
-                            def got_keys_cb(keys):
-                                logging.debug("indx_pg2 create_box, got_keys_cb")
+                            # assign ownership now to db_owner
+                            rw_pw_encrypted = rsa_encrypt(keys['public'], rw_user_pass)
+                            ro_pw_encrypted = rsa_encrypt(keys['public'], ro_user_pass)
 
-                                # assign ownership now to db_owner
-                                rw_pw_encrypted = rsa_encrypt(keys['public'], rw_user_pass)
-                                ro_pw_encrypted = rsa_encrypt(keys['public'], ro_user_pass)
+                            def indx_db(conn_indx):
+                                logging.debug("indx_pg2 create_box, indx_db")
+                                d_q = conn_indx.runOperation("INSERT INTO tbl_keychain (user_id, db_name, db_user, db_user_type, db_password_encrypted) VALUES ((SELECT id_user FROM tbl_users WHERE username = %s), %s, %s, %s, %s), ((SELECT id_user FROM tbl_users WHERE username = %s), %s, %s, %s, %s)", [db_owner, db_name, rw_user, 'rw', rw_pw_encrypted, db_owner, db_name, ro_user, 'ro', ro_pw_encrypted])
 
-                                def indx_db(conn_indx):
-                                    logging.debug("indx_pg2 create_box, indx_db")
-                                    d_q = conn_indx.runOperation("INSERT INTO tbl_keychain (user_id, db_name, db_user, db_user_type, db_password_encrypted) VALUES ((SELECT id_user FROM tbl_users WHERE username = %s), %s, %s, %s, %s), ((SELECT id_user FROM tbl_users WHERE username = %s), %s, %s, %s, %s)", [db_owner, db_name, rw_user, 'rw', rw_pw_encrypted, db_owner, db_name, ro_user, 'ro', ro_pw_encrypted])
+                                def inserted(empty):
+                                    logging.debug("indx_pg2 create_box, inserted, next ACL")
 
-                                    def inserted(empty):
-                                        logging.debug("indx_pg2 create_box, inserted, next ACL")
+                                    acl_q = conn_indx.runOperation("INSERT INTO tbl_acl (database_name, user_id, acl_read, acl_write, acl_owner, acl_control) VALUES (%s, (SELECT id_user FROM tbl_users WHERE username = %s), %s, %s, %s, %s)", [box_name, db_owner, True, True, True, True])
 
-                                        acl_q = conn_indx.runOperation("INSERT INTO tbl_acl (database_name, user_id, acl_read, acl_write, acl_owner, acl_control) VALUES (%s, (SELECT id_user FROM tbl_users WHERE username = %s), %s, %s, %s, %s)", [box_name, db_owner, True, True, True, True])
+                                    def inserted_acl(empty):
+                                        logging.debug("indx_pg2 create_box, inserted_acl - create_box finished")
+                                        return_d.callback(True)
 
-                                        def inserted_acl(empty):
-                                            logging.debug("indx_pg2 create_box, inserted_acl - create_box finished")
-                                            return_d.callback(True)
+                                    acl_q.addCallbacks(inserted_acl, return_d.errback)
 
-                                        acl_q.addCallbacks(inserted_acl, return_d.errback)
+                                d_q.addCallbacks(inserted, return_d.errback)
 
-                                    d_q.addCallbacks(inserted, return_d.errback)
+                            # connect to INDX db to add new DB accounts to keychain
+                            self.connect_indx_db().addCallbacks(indx_db, return_d.errback)
 
-                                # connect to INDX db to add new DB accounts to keychain
-                                self.connect_indx_db().addCallbacks(indx_db, return_d.errback)
+                        user = IndxUser(self, db_owner)
+                        user.get_keys().addCallbacks(got_keys_cb, return_d.errback)
+                        
+                    d = self.create_database_and_users(conn_newdb, db_name, queries)
+                    d.addCallbacks(created_cb, return_d.errback)
 
-                            user = IndxUser(self, db_owner)
-                            user.get_keys().addCallbacks(got_keys_cb, return_d.errback)
-                            
-                        d = self.create_database_users(db_name)
-                        d.addCallbacks(created_cb, return_d.errback)
-
-                    conn_newdb.runOperation(queries).addCallbacks(operations_cb, return_d.errback)
-
-                connect(db_name, self.db_user, self.db_pass).addCallbacks(connected_newdb, return_d.errback)  ### XXX finish
+                connect(db_name, self.db_user, self.db_pass).addCallbacks(connected_newdb, return_d.errback)
             
             d = conn.runOperation("CREATE DATABASE %s WITH ENCODING='UTF8' OWNER=%s CONNECTION LIMIT=-1" % (db_name, self.db_user))
             d.addCallbacks(created, return_d.errback)
 
         connect(POSTGRES_DB, self.db_user, self.db_pass).addCallbacks(connected, return_d.errback)
+        return return_d
+
+    def save_token(self, token):
+        """ Save a token into the db. """
+        return_d = Deferred()
+
+        password_encrypted = encrypt(token.password, self.db_pass)
+        def conn_cb(conn):
+
+            query = "INSERT INTO tbl_tokens (token_id, username, password_encrypted, boxid, appid, origin, clientip, server_id, created) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, now())"
+            params = [token.id, token.username, password_encrypted, token.boxid, token.appid, token.origin or '', token.clientip, token.server_id]
+
+            conn.runOperation(query, params).addCallbacks(lambda empty: return_d.callback(True), return_d.errback)
+
+        self.connect_indx_db().addCallbacks(conn_cb, return_d.errback)
+        return return_d
+
+    def get_token(self, tid):
+        """ Get a token by its ID. Return a deferred, callback with the token, or with None if invalid/expired. """
+        return_d = Deferred()
+
+        # TODO get/save tokens in transactions
+
+        TOKEN_MAX_DAYS = 7
+
+        def conn_cb(conn):
+            # token expired maths is done at server side
+            query = "SELECT token_id, username, password_encrypted, boxid, appid, origin, clientip, server_id, (date_part('epoch', age(created, now()))::integer) + date_part('epoch', interval '{0} days')::integer AS expired FROM tbl_tokens WHERE token_id = %s".format(TOKEN_MAX_DAYS)
+            params = [tid]
+
+            def query_cb(rows):
+                if len(rows) < 1:
+                    return_d.callback(None)
+                    return
+
+                row = rows[0]
+                token_id, username, password_encrypted, boxid, appid, origin, clientip, server_id, expired = row
+
+                if expired < 0:
+                    # token is expired, delete it and return None
+                    query = "DELETE FROM tbl_tokens WHERE token_id = %s"
+                    params = [tid]
+
+                    conn.runOperation(query, params).addCallbacks(lambda empty: return_d.callback(None), return_d.errback)
+                    return
+
+                # decrypt password
+                password = decrypt(password_encrypted, self.db_pass)
+                token = (username, password, boxid, appid, origin, clientip, server_id)
+                return_d.callback(token)
+
+            conn.runQuery(query, params).addCallbacks(query_cb, return_d.errback)
+        
+        self.connect_indx_db().addCallbacks(conn_cb, return_d.errback)
         return return_d
 
 
@@ -557,7 +697,16 @@ class IndxDatabase:
             d = conn.runOperation("DROP DATABASE {0}".format(db_name))
 
             def dropped_cb(val):
-                self.remove_database_users(db_name).addCallbacks(lambda done: return_d.callback(True), return_d.errback)
+
+                def users_cb(empty):
+
+                    def conn_indx_cb(conn_indx):
+
+                        conn_indx.runOperation("DELETE FROM tbl_indx_core WHERE boxid = %s", [box_name]).addCallbacks(lambda empty: return_d.callback(True), return_d.errback)
+
+                    self.connect_indx_db().addCallbacks(conn_indx_cb, return_d.errback)
+
+                self.remove_database_users(db_name).addCallbacks(users_cb, return_d.errback)
 
             d.addCallbacks(dropped_cb, return_d.errback)
 
@@ -598,16 +747,67 @@ class IndxDatabase:
         return return_d
 
 
-    def get_root_boxes(self):
+    def get_linked_boxes(self):
+        """ Get a list of linked boxes. """
+        logging.debug("idnx_pg2 get_linked_boxes")
+        return_d = Deferred()
+
+        def connected(conn):
+            logging.debug("indx_pg2.get_linked_boxes : connected")
+            query = "SELECT DISTINCT boxid FROM tbl_indx_core WHERE key = %s AND value IS NOT NULL"
+            params = ['is_a_linked_box']
+
+            d = conn.runQuery(query, params)
+            d.addCallbacks(return_d.callback, return_d.errback)
+
+        self.connect_indx_db().addCallbacks(connected, return_d.errback)
+        return return_d
+
+    def save_linked_box(self, boxid):
+        """ Save the fact that this box is now linked. """
+
+        logging.debug("idnx_pg2 save_linked_boxes")
+        return_d = Deferred()
+
+        def connected(conn):
+            logging.debug("indx_pg2.save_linked_boxes : connected")
+            query = "SELECT DISTINCT boxid FROM tbl_indx_core WHERE key = %s AND value IS NOT NULL AND boxid = %s"
+            params = ['is_a_linked_box', boxid]
+
+            d = conn.runQuery(query, params)
+            
+            def check_cb(rows):
+                logging.debug("indx_pg2.save_linked_boxes : check_cb, rows: {0}".format(rows))
+
+                if len(rows) > 0: 
+                    return_d.callback(True)
+                    return # already in the db
+
+                conn.runOperation("INSERT INTO tbl_indx_core (key, value, boxid) VALUES (%s, %s, %s)", ['is_a_linked_box', True, boxid]).addCallbacks(return_d.callback, return_d.errback)
+
+            d.addCallbacks(check_cb, return_d.errback)
+
+        self.connect_indx_db().addCallbacks(connected, return_d.errback)
+        return return_d
+
+
+
+    def get_root_boxes(self, username = None):
         """ Get a list of the root boxes for each user. """
         logging.debug('indx_pg2 get_root_boxes')
         return_d = Deferred()
 
         def connected(conn):
             logging.debug("indx_pg2.get_root_boxes : connected")
-            d = conn.runQuery("SELECT DISTINCT username, root_box FROM tbl_users WHERE root_box IS NOT NULL")
+            query = "SELECT DISTINCT username, root_box FROM tbl_users WHERE root_box IS NOT NULL"
+            params = []
+
+            if username is not None:
+                query += " AND username = %s"
+                params.append(username)
+
+            d = conn.runQuery(query, params)
             d.addCallbacks(return_d.callback, return_d.errback)
-            return
 
         self.connect_indx_db().addCallbacks(connected, return_d.errback)
         return return_d

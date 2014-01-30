@@ -13,7 +13,9 @@ angular
 
 		var _get_config_from_service = function() {
 			s._ajax('GET', 'apps/service_twitter/api/get_config').then(function(x) { 
-				var config = JSON.parse(x.config);
+				console.info('Twitter service got config from server: ',x)
+				var config = x.config //JSON.parse(x.config);
+				console.info('Success in _get_config_from_service, got config of', config)
 
 				// simple stuff
 				sa(function() { 
@@ -22,11 +24,20 @@ angular
 							box : config.box,
 							password: config.password,
 						},
+						consumer_key:config.consumer_key,
+						consumer_secret:config.consumer_secret,
+						access_token:config.access_token,
+						access_token_secret:config.access_token_secret,
+						twitter_username:config.twitter_username,
+						twitter_search_words:config.twitter_search_words,
+						twitter_status:config.twitter_status,
+						twitter_network:config.twitter_network,
 						start:config.start,
-						step:config.step,
-						frequency:config.frequency
+						step:config.step
 					});
 				});
+				
+				console.info('Got the config details for Twitter user:', $scope.twitter_username);
 
 				// restore the user
 				if (config.user && $scope.users) { 
@@ -35,7 +46,9 @@ angular
 						console.log('match ', match[0]);
 						window.match = match[0];
 						sa(function() { $scope.app.user = match[0]; });
+
 					}
+
 				}
 
 			}).fail(function(err) { 

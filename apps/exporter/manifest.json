@@ -1,0 +1,21 @@
+{
+	"name": "Box exporter",
+	"version": 0.1,
+	"type":["app"],
+	"description": "Box data exporter to various formats",
+	"configpanel":"html/index.html",
+	"icons": { 
+		"128": "img/export128.png",
+		"512": "img/export512.png"
+ 	},
+	"author": [
+		{
+			"name": "Laura Dragan",
+			"email":"aprilush@gmail.com"
+		},
+		{
+			"name": "eMax",
+			"email":"max@hip.cat"
+		}
+	]
+}

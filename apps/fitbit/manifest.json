@@ -2,11 +2,12 @@
 	"name": "Fitbit Harvester",
 	"type": ["service"],
 	"version": 0.1,
+	"on_boot": 0,
 	"description": "Harvester of your Fitbit data",
 	"configpanel":"html/index.html",
-	"run":["python", "apps/fitbit/bin/fitbit_harvester.py"],
-	"set_config":["python", "apps/fitbit/bin/fitbit_harvester.py", "--config", "{0}"],
-	"get_config":["python", "apps/fitbit/bin/fitbit_harvester.py", "--get-config"],
+	"run":["python", "bin/fitbit_harvester.py", "--server", "{0}"],
+	"set_config":["python", "bin/fitbit_harvester.py", "--config", "{0}"],
+	"get_config":["python", "bin/fitbit_harvester.py", "--get-config"],
 	"icons": { 
 		"128": "img/fitbit-128.png",
 		"512": "img/fitbit-512.png" 

@@ -45,7 +45,7 @@ class IndxUser:
             check_q = "SELECT public_key_rsa, private_key_rsa_env FROM tbl_users WHERE username = %s"
             check_p = [self.username]
 
-            def check_cb(rows):
+            def check_cb(rows, *args, **kw):
                 logging.debug("IndxUser, get_keys, connected_cb, check_cb")
                 if len(rows) < 1:
                     return_d.callback(None)
@@ -79,7 +79,7 @@ class IndxUser:
             check_q = "SELECT EXISTS(SELECT * FROM tbl_users WHERE username = %s AND public_key_rsa IS NOT NULL AND private_key_rsa_env IS NOT NULL)"
             check_p = [self.username]
 
-            def check_cb(rows):
+            def check_cb(rows, *args, **kw):
                 logging.debug("IndxUser, generate_encryption_keys, connected_cb, check_cb")
 
                 exists = rows[0][0]
@@ -136,7 +136,7 @@ class IndxUser:
         def connected_cb(conn):
             logging.debug("IndxUser, get_user_info, connected_cb")
 
-            query = "SELECT username_type, user_metadata_json, username FROM tbl_users WHERE username = %s"
+            query = "SELECT username_type, user_metadata_json, username, root_box FROM tbl_users WHERE username = %s"
             params = [self.username]
 
             def query_cb(conn, rows):
@@ -145,12 +145,15 @@ class IndxUser:
                 if len(rows) < 1:
                     return_d.callback(None) # no user info available
                 else:
-                    if decode_json:
-                        return_d.callback({"type": rows[0][0], "user_metadata": json.loads(rows[0][1] or '{}'), "username": rows[0][2]})
-                    else:
-                        return_d.callback({"type": rows[0][0], "user_metadata": rows[0][1] or '{}', "username": rows[0][2]})
+                    typ, user_metadata, username, root_box = rows[0]
+                    user_info = {"type": typ, "user_metadata": user_metadata or '{}', "username": username, "root_box": root_box}
 
-            conn.runQuery(query, params).addCallbacks(lambda rows: query_cb(conn, rows), return_d.errback)
+                    if decode_json:
+                        user_info['user_metadata'] = json.loads(user_info['user_metadata'])
+
+                    return_d.callback(user_info)
+
+            conn.runQuery(query, params).addCallbacks(lambda rows, *args, **kw: query_cb(conn, rows), return_d.errback)
 
         self.db.connect_indx_db().addCallbacks(connected_cb, return_d.errback)
         return return_d
@@ -180,7 +183,7 @@ class IndxUser:
 
                 return_d.callback(results)
 
-            conn.runQuery(query, params).addCallbacks(lambda rows: query_cb(conn, rows), return_d.errback)
+            conn.runQuery(query, params).addCallbacks(lambda rows, *args, **kwargs: query_cb(conn, rows), return_d.errback)
 
         self.db.connect_indx_db().addCallbacks(connected_cb, return_d.errback)
         return return_d
@@ -213,7 +216,7 @@ class IndxUser:
                 }
                 return_d.callback(acl)
 
-            conn.runQuery(query, params).addCallbacks(lambda rows: query_cb(conn, rows), return_d.errback)
+            conn.runQuery(query, params).addCallbacks(lambda rows, *args, **kwargs: query_cb(conn, rows), return_d.errback)
 
         self.db.connect_indx_db().addCallbacks(connected_cb, return_d.errback)
         return return_d
@@ -254,7 +257,7 @@ class IndxUser:
             user_check_q = "SELECT EXISTS(SELECT * FROM tbl_users WHERE username = %s)"
             user_check_p = [target_username]
 
-            def user_check_cb(rows):
+            def user_check_cb(rows, *args, **kw):
                 logging.debug("IndxUser, set_acl, connected_cb, user_check_cb")
                 present = rows[0][0] # EXISTS returns true/false 
                 if not present:
@@ -268,7 +271,7 @@ class IndxUser:
                 acl_check_q = "SELECT acl_control, acl_owner FROM tbl_acl WHERE user_id = (SELECT id_user FROM tbl_users WHERE username = %s) AND DATABASE_NAME = %s"
                 acl_check_p = [self.username, database_name]
 
-                def acl_check_cb(rows):
+                def acl_check_cb(rows, *args, **kw):
                     logging.debug("IndxUser, set_acl, connected_cb, acl_check_cb")
                     if len(rows) < 1:
                         e = Exception("User '{0}' does not have permission to make this ACL change to database '{1}'.".format(self.username, database_name))
@@ -292,7 +295,7 @@ class IndxUser:
                     acl2_check_q = "SELECT acl_owner FROM tbl_acl WHERE user_id = (SELECT id_user FROM tbl_users WHERE username = %s) AND DATABASE_NAME = %s"
                     acl2_check_p = [target_username, database_name]
 
-                    def acl2_check_cb(rows):
+                    def acl2_check_cb(rows, *args, **kw):
                         logging.debug("IndxUser, set_acl, connected_cb, acl2_check_cb")
  
                         if len(rows) < 1:

@@ -1,0 +1,24 @@
+{
+	"name": "Test runner service",
+	"version": 0.3,
+	"type":["service"],
+	"description": "Test runner service",
+	"on_boot": 0,
+	"configpanel":"html/index.html",
+	"run":["node", "run.js", "--indxhost", "{0}"],
+	"set_config":["node", "run.js", "--setconfig", "{0}"],
+	"get_config":["node", "run.js", "--getconfig"],
+	"icons": {
+		"128": "icon.png"
+	},
+	"author": [
+		{
+			"name": "Peter West",
+			"email": "peter.g.west@gmail.com"
+		},
+		{
+			"name": "eMax",
+			"email":"max@hip.cat"
+		}
+	]
+}
