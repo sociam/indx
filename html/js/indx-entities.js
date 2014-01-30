@@ -238,7 +238,9 @@
 						});
 						return d.promise();
 					},
-					getTweet:undefined,
+					getMyTweets:function(box, tstart, tend) {
+						
+					},
 					getInstagram:undefined,
 					getFBMessage:undefined,
 					getFBWallPost:undefined,
