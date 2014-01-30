@@ -106,7 +106,7 @@
 					},
 					make:function(box, name, location_type, latitude, longitude, moves_id, otherprops) {
 						var d = u.deferred(), args = _(arguments).toArray();
-						var argnames = [undefined, undefined, 'location_type', 'latitude', 'longitude', 'moves_id'],
+						var argnames = [undefined, 'name', 'location_type', 'latitude', 'longitude', 'moves_id'],
 							zipped = u.zip(argnames, args).filter(function(x) { return x[0]; }),
 							argset = u.dict(zipped);
 						var id = 'location-'+u.guid(); // ['location', name || '', location_type && location_type !== 'unknown' ? location_type : '' , moves_id ? moves_id : '', latitude.toString(), longitude.toString() ].join('-');

@@ -21,8 +21,8 @@ var nodeindx = require('../../lib/services/nodejs/nodeindx'),
     injector = nodeindx.injector,
     entities = injector.get('entities');
 
-var SEVEN_DAYS_USEC =  6*24*60*60*1000; // + 23*59*59*1000;
-var TWENTY_FOUR_HOURS_USEC = 5*24*60*60*1000;
+var SEVEN_DAYS_USEC =  5*24*60*60*1000; // + 23*59*59*1000;
+var TWENTY_FOUR_HOURS_USEC = 24*60*60*1000;
 
 var toMovesDate = function(date) {
     u.assert(date instanceof Date, 'Must be a Date');
