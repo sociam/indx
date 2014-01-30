@@ -44,7 +44,7 @@ class IndxSync:
 
     APPID = "INDXSync Client Model"
 
-    def __init__(self, root_store, database, url, keystore):
+    def __init__(self, root_store, database, url, keystore, webserver):
         """ Initialise with the root box and connection to the INDX db.
         
             root_store -- Connected objectstore to the root box.
@@ -58,6 +58,7 @@ class IndxSync:
         self.database = database
         self.url = url
         self.keystore = keystore
+        self.webserver = webserver
 
         # ids of objects we are watching - these are id of objects with types in the TYPES list
         # if their ids appear in the diffs that hit our observer, then we re-run the sync queries against this box
@@ -342,7 +343,7 @@ class IndxSync:
 
                                 def token_cb(remote_token):
                                     logging.debug("IndxSync sync_boxes token_cb")
-                                    client = IndxClient(remote_server_url, remote_box, self.APPID, client = clientauth.client, token = remote_token)
+                                    client = IndxClient(remote_server_url, remote_box, self.APPID, client = clientauth.client, token = remote_token, keystore = self.keystore)
                                     
                                     def updated_cb(empty):
 
@@ -364,9 +365,9 @@ class IndxSync:
 
                                             # auths and sets up listening for diffs, filtering them and passing them to the observer
                                             if websocket is None:
-                                                wsclient = client.connect_ws(local_key['key']['private'], local_key_hash, observer, remote_encpk2) # open a new socket
+                                                wsclient = client.connect_ws(local_key['key']['private'], local_key_hash, observer, remote_encpk2, self.webserver) # open a new socket
                                             else:
-                                                websocket.listen_diff(observer = observer) # use an existing websocket
+                                                websocket.listen_remote(local_key['key']['private'], local_key_hash, observer, remote_encpk2) # use an existing websocket
 
                                             next_model(None)
 

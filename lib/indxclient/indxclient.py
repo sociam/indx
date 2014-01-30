@@ -25,6 +25,7 @@ import pprint
 import cjson
 import base64
 import traceback
+from indx.crypto import auth_keys
 import Crypto.Random.OSRNG.posix
 import Crypto.PublicKey.RSA
 import Crypto.Hash.SHA512
@@ -58,12 +59,13 @@ def value_truncate(data, max_length = 255):
 class IndxClient:
     """ Authenticates and accesses an INDX. """
 
-    def __init__(self, address, box, appid, token = None, client = None):
+    def __init__(self, address, box, appid, token = None, client = None, keystore = None):
         """ Connect to an INDX and authenticate. """
         self.address = address
         self.box = box
         self.token = token
         self.appid = appid
+        self.keystore = keystore # if you want to access websockets connections as a client (usually only the server does this)
 
         self.params = {"app": self.appid}
         if self.token is not None:
@@ -462,7 +464,7 @@ class IndxClient:
         return wsclient
 
     # no require token
-    def connect_ws(self, private_key, key_hash, observer, remote_encpk2):
+    def connect_ws(self, private_key, key_hash, observer, remote_encpk2, webserver):
 
         address = self.address + "ws"
 
@@ -473,16 +475,18 @@ class IndxClient:
         else:
             raise Exception("IndxClient: Unknown scheme to URL: {0}".format(address))
 
-        wsclient = IndxWebSocketClient(address, observer, keyauth = {"key_hash": key_hash, "private_key": private_key, "encpk2": remote_encpk2})
+        wsclient = IndxWebSocketClient(address, observer, self.keystore, webserver = webserver, keyauth = {"key_hash": key_hash, "private_key": private_key, "encpk2": remote_encpk2})
         return wsclient
 
 
 class IndxWebSocketClient:
 
-    def __init__(self, address, observer, token = None, keyauth = None, appid = None):
+    def __init__(self, address, observer, keystore, webserver = None, token = None, keyauth = None, appid = None):
         self.address = address
         self.token = token
         self.keyauth = keyauth
+        self.keystore = keystore
+        self.webserver = webserver # for looking up account when connecting back etc.
         indx_observer = observer
         appid = appid or "IndxWebSocketClient"
 
@@ -521,7 +525,71 @@ class IndxWebSocketClient:
 
             # manage state by setting a response function each time
             def send_to_observer(self, data):
-                indx_observer(data)
+                # manage connections coming back from server first..
+                    # TODO imple
+
+                if data.get("action") == "diff" and data.get("operation") == "start":
+
+                    def store_cb(store):
+                        logging.debug("WebSocketsHandler listen_diff, store_cb: {0}".format(store))
+
+                        def observer_local(diff):
+                            """ Receive an update from the server. """
+                            logging.debug("WebSocketsHandler listen_diff observer notified: {0}".format(diff))
+
+                            self.sendMessage(cjson.encode({"action": "diff", "operation": "update", "data": diff}))
+
+                        store.listen(observer_local) # no callbacks, nothing to do
+
+                    # self.token is set by 'login_keys' below
+                    self.token.get_store().addCallbacks(store_cb, lambda failure: self.sendMessage(cjson.encode({"success": False, "error": "500 Internal Server Error"})))
+
+                elif data.get("action") == "login_keys":
+                    try:
+                        signature, key_hash, algo, method, appid, encpk2 = data['signature'], data['key_hash'], data['algo'], data['method'], data['appid'], data['encpk2']
+                    except Exception as e:
+                        logging.error("IndxClient/ASync login_keys error getting all parameters.")
+                        return self.sendMessage(cjson.encode({"success": False, "error": "400 Bad Request"}))
+
+                    def win(resp):
+                        # authenticated now - state of this isn't saved though, we get a token immediately instead
+
+
+                        username, password, boxid = resp
+                        origin = "/ws" # TODO double-check this
+                        # get token, return that
+
+                        def got_acct(acct):
+                            if acct == False:
+                                return self.send401()
+
+                            db_user, db_pass = acct
+
+                            def token_cb(new_token):
+                                self.token = new_token
+
+                                def store_cb(store):
+                                    # success, send token back to user
+                                    return self.sendMessage(cjson.encode({"success": True, "token": new_token.id, "respond_to": "login_keys"}))
+
+                                new_token.get_store().addCallbacks(store_cb, lambda failure: cjson.encode({"success": False, "error": "500 Internal Server Error"}))
+
+                            # TODO extract IP from 'address' above
+                            webserver.tokens.new(username,password,boxid,appid,origin,"::1",webserver.server_id).addCallbacks(token_cb, lambda failure: cjson.encode({"success": False, "error": "500 Internal Server Error"}))
+
+
+                        webserver.database.lookup_best_acct(boxid, username, password).addCallbacks(got_acct, lambda conn: cjson.encode({"success": False, "error": "500 Internal Server Error"}))
+
+                    def fail(empty):
+                        self.sendMessage(cjson.encode({"success": False, "error": "401 Unauthorized"}))
+
+                    auth_keys(keystore, signature, key_hash, algo, method, self.sessionid, encpk2).addCallbacks(win, fail)
+                    
+
+
+                else:
+                    # otherwise send diffs back to indx
+                    indx_observer(data)
 
             def respond_to_auth(self, data):
                 if data['success']:
@@ -829,4 +897,5 @@ def sha512_hash(src):
     h = Crypto.Hash.SHA512.new()
     h.update(src)
     return h.hexdigest()
+
 
