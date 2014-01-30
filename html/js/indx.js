@@ -616,17 +616,18 @@ angular
 							return d.resolve(results);
 						}
 						// otherwise we are getting full objects, so ...
-						d.resolve(_(results.data).map(function(dobj,id) {
+						var ds = _(results.data).map(function(dobj,id) {
 							// console.debug('getting id ', id);
 							if (cache.get(id)) { 
 								// console.debug('cached! ', id); 
-								return cache.get(id); 
+								return u.dresolve(cache.get(id)); 
 							}
 							// console.debug('not cached! ', id);
-							var model = this_._createModelForID(id);
-							model._deserialiseAndSet(dobj, true);
-							return model;
-						}));
+							var model = this_._createModelForID(id), dv_ = u.deferred();
+							model._deserialiseAndSet(dobj, true).then(function() {dv_.resolve(model); }).fail(dv_.reject);
+							return dv_.promise();
+						});
+						u.when(ds).then(d.resolve).fail(d.reject);
 					}).fail(function(err) { error(err); d.reject(err); });
 				return d.promise();
 			},
@@ -1147,7 +1148,7 @@ angular
 							try {
 								userMetadata = JSON.parse(userMetadata);
 								_(user).extend(userMetadata);
-								console.debug('user is now --' , user)
+								console.debug('user is now --' , user);
 							} catch(e) { console.error('error parsing json, no biggie', userMetadata);	}
 						}
 						u.log('logging in user >>', user);
@@ -1202,10 +1203,10 @@ angular
 			reconnect:function() {
 				if (this.get('user_type') === 'openid') {
 					u.log('reconnecting as openid ', this.get('username'));
-					return this.loginOpenID(this.get('username'))
+					return this.loginOpenID(this.get('username'));
 				}
 				u.log('reconnecting as local ', this.get('username'), this.get('password'));
-			 	return this.login(this.get('username'),this.get('password'));
+				return this.login(this.get('username'),this.get('password'));
 			},
 			disconnect:function() {
 				return this.attributes.boxes.map(function(b) { b.disconnect(); });
@@ -1255,7 +1256,7 @@ angular
 							}							
 							if (!u.name) {
 								var id = u["@id"];
-								if (id.indexOf('http') == 0) {
+								if (id.indexOf('http') === 0) {
 									id = id.split('/');
 									id = id[id.length-1];
 								}

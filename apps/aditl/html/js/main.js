@@ -19,7 +19,10 @@ angular
 			scope:{ location:'=' },
 			template:'<div class="locmap"></div>',
 			link:function(scope, element, attribute) {
+
 				var lat = scope.location.peek('latitude'), lon = scope.location.peek('longitude');
+				// console.log(' location >> ', scope.location, lat, lon);
+				// console.log('', JSON.stringify(scope.location.attributes));
 				scope.map = L.map(element[0]).setView([lat, lon], 18);
 
 				element.attr('data-latitude', lat);
@@ -90,7 +93,7 @@ angular
 
 					// now have activities that have at least one segment and that are at least 1 minute
 					acts.map(function(act) {  
-						var newseg = makeSegment(act.peek('tstart'), act.peek('tend'), act.peek('activity'), act.peek('waypoints') );
+						var newseg = makeSegment( act.peek('tstart'), act.peek('tend'), act.peek('activity'), act.peek('waypoints') );
 						console.log('made segment >> ', newseg);
 						sa(function() { day.segments.push(newseg);	});
 					});

@@ -115,13 +115,15 @@
 				},
 				activities:{
 					getAll:function(box, extras) {
-						return search(box, _(extras).chain().clone().extend({type:'Activity'}));
+						return search(box, _(extras).chain().clone().extend({type:'activity'}));
 					},
 					getByActivityType:function(box, tstart, tend, activity_types) {
 						if (!_.isArray(activity_types)) { activity_types=[activity_types]; };
 						var query = ({
-							'$and':[ {type:'Activity'},	{'$or': activity_types.map(function(atype) { return {'activity': atype}; })} ]
-						});
+							'$and':[ 
+							{type:'activity'},
+							{'$or': activity_types.map(function(atype) { return {'activity': atype}; })}
+						]});
 						if (tstart) { query.$and.push({'tstart': {'$ge': toQueryTime(tstart) }}); }
 						if (tend) { query.$and.push({'tstart': {'$le': toQueryTime(tend)}}); }
 						console.log('issuing query ... ', JSON.stringify(query));
