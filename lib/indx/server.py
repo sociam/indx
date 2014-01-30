@@ -220,7 +220,7 @@ class WebServer:
             self.syncs[root_box] = None # reserve the slot
 
             def store_cb(root_store):
-                indxsync = IndxSync(root_store, self.database, self.server_url, self.keystore)
+                indxsync = IndxSync(root_store, self.database, self.server_url, self.keystore, self)
                 self.syncs[root_box] = indxsync
                 return_d.callback(indxsync)
 

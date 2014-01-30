@@ -583,6 +583,44 @@ class IndxDatabase:
         connect(POSTGRES_DB, self.db_user, self.db_pass).addCallbacks(connected, return_d.errback)
         return return_d
 
+    def lookup_encpk2(self, server_id):
+        return_d = Deferred()
+
+        def conn_cb(conn):
+
+            query = "SELECT hash, encpk, serverid FROM tbl_encpk WHERE serverid = %s"
+            params = [server_id]
+
+            def rows_cb(rows):
+                if len(rows) < 1:
+                    return return_d.callback(None)
+                row = rows[0]
+                hsh, encpk, serverid = row
+                return_d.callback(json.loads(encpk))
+
+            conn.runQuery(query, params).addCallbacks(rows_cb, return_d.errback)
+
+        self.connect_indx_db().addCallbacks(conn_cb, return_d.errback)
+        return return_d
+
+    def save_encpk2(self, hsh, encpk2, remote_server_id):
+        """ Save an encpk2 into the db. """
+        return_d = Deferred()
+
+        if not (type(encpk2) == type("") or type(encpk2) == type(u"")):
+            encpk2 = json.dumps(encpk2) # in case it was decoded as JSON in a stream of bigger JSON
+
+        def conn_cb(conn):
+
+            query = "INSERT INTO tbl_encpk (hash, encpk, serverid) VALUES (%s, %s, %s)"
+            params = [hsh, encpk2, remote_server_id]
+
+            conn.runOperation(query, params).addCallbacks(lambda empty: return_d.callback(True), return_d.errback)
+
+        self.connect_indx_db().addCallbacks(conn_cb, return_d.errback)
+        return return_d
+    
+
     def save_token(self, token):
         """ Save a token into the db. """
         return_d = Deferred()
