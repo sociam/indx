@@ -1,5 +1,5 @@
 /* jshint undef: true, strict:false, trailing:false, unused:false */
-/* global require, exports, console, process, module, L, angular */
+/* global require, exports, console, process, module, L, angular, _ */
 
 angular
 	.module('wellbeing', ['ng','indx','infinite-scroll'])
@@ -15,6 +15,9 @@ angular
 				$scope.simpleTime = function(d) { 
 					return prezero(d.getHours()) + ':' + prezero(d.getMinutes());
 				};
+				$scope.isHigh = function(v, range) {};
+				$scope.isMedium = function(v, range) {};
+				$scope.isLow = function(v, range) {};
 			}
 		};
 	}).directive('locmap', function() {
@@ -59,6 +62,11 @@ angular
 		var weekday=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 		var months = [ 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December' ];
 
+		var getBrowsingTopDocs = function(tstart,tend) {
+			var d = u.deferred();
+			return d.promise();
+		};
+
 		var makeSegment = function(tstart, tend, segname, location) {
 			var seg = { 
 				tstart: tstart,
@@ -69,6 +77,11 @@ angular
 				fitbit : [],
 				browsing: []
 			};
+
+			getBrowsingTopDocs(tstart,tend).then(function(topdocs) {
+				sa(function() { seg.browsing = topdocs;	});
+			});
+
 			return seg;
 		};
 
@@ -104,7 +117,12 @@ angular
 							}
 						}
 						sa(function() { 
-							day.segments.push(makeSegment(ca.peek('tstart'),ca.peek('tend'), ca.peek('activity'), ca.peek('waypoints')));
+							var newseg = makeSegment(ca.peek('tstart'),ca.peek('tend'), ca.peek('activity'), ca.peek('waypoints'));
+							newseg.moves = {};
+							newseg.moves.calories = ca.peek('calories');
+							newseg.moves.steps = ca.peek('steps');
+							newseg.moves.distance = ca.peek('distance');							
+							day.segments.push(newseg);
 						});
 					});
 
@@ -140,6 +158,7 @@ angular
 				i++;
 			}
 		};
+
 		$scope.$watch('user + box', function() { 
 			if (!$scope.user) { console.log('no user :( '); return; }
 			$scope.days = [];
@@ -157,4 +176,5 @@ angular
 			}).fail(function(bail) { console.error(bail); });
 		});
 		window._s = $scope;
+		window.entities = entities;
 	});

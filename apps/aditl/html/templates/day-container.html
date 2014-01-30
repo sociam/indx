@@ -12,6 +12,17 @@
 			<div class="cell col-xs-2">
 				<locmap ng-show="seg.location" location="seg.location"></locmap>
 			</div>
+			<div class="moves cell col-xs-1">
+				<div class="label">moves</div>
+				<div ng-class="{distance:true, high:isHigh(seg.moves.distance), medium:isMed(seg.moves.distance), low:isLow(seg.moves.distance)}" ng-show="seg.moves.distance"> {{ seg.moves.distance/1000.0 }} km </div>
+				<div ng-class="{steps:true, high:isHigh(seg.moves.steps), medium:isMed(seg.moves.steps), low:isLow(seg.moves.steps)}" ng-show="seg.moves.steps"> {{ seg.moves.steps }} steps </div>
+				<div ng-class="{calories:true, high:isHigh(seg.moves.calories), medium:isMed(seg.moves.calories), low:isLow(seg.moves.calories)}" ng-show="seg.moves.caloriesdistance"> {{ seg.moves.calories }} kcals </div>
+			</div>
+			<div ng-show="seg.documents" class="moves cell col-xs-2">
+				<div ng-repeat="d in seg.documents">
+
+				</div>
+			</div>
 		</div>
 	</div>
 </div>

@@ -86,7 +86,7 @@
 									Math.abs(result.peek('latitude') - lat), 
 									Math.abs(result.peek('longitude') - lng)
 								);  // Math.sqrt( Math.pow(result.peek('latitude') - lat,2) + Math.pow(result.peek('longitude') - lng, 2) );
-								console.log(' dist > ', result.peek('latitude'), lat, result.peek('longitude'), lng, dist[result.id]);
+								// console.log(' dist > ', result.peek('latitude'), lat, result.peek('longitude'), lng, dist[result.id]);
 								resD[result.id] = result;
 							});
 							var kbyD = _(dist).keys();
