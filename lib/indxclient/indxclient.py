@@ -243,7 +243,7 @@ class IndxClient:
         self._debug("Called API: apply_diff with diff: {0}".format(diff)) 
 
         url = "{0}/apply_diff".format(self.base)
-        values = {"data": cjson.encode(diff)}
+        values = {"data": json.loads(diff)}
         return self.client.put(url, values)
 
     @require_token
@@ -255,7 +255,7 @@ class IndxClient:
         """
         self._debug("Called API: update_raw with version: {0}, objects: {1}".format(version, objects)) 
 
-        values = {"data": cjson.encode(objects), "version": version}
+        values = {"data": json.loads(objects), "version": version}
         return self.client.put(self.base, values)
 
     @require_token
@@ -270,7 +270,7 @@ class IndxClient:
         prepared_objects = self._prepare_objects(objects)
         self._debug("update: prepared_objects: {0}".format(pprint.pformat(prepared_objects, indent=2, width=80)))
         
-        values = {"data": cjson.encode(prepared_objects), "version": version}
+        values = {"data": json.loads(prepared_objects), "version": version}
         return self.client.put(self.base, values)
 
     @require_token
@@ -500,7 +500,8 @@ class IndxWebSocketClient:
             def onMessage(self, payload, isBinary):
                 try:
                     logging.debug("IndxClientProtocol onMessage, payload {0}".format(payload))
-                    data = cjson.decode(payload)
+                    #data = cjson.decode(payload, all_unicode=True)
+                    data = json.loads(payload)
                     
                     if data.get("sessionid"):
                         # when server starts, do keys auth
@@ -519,7 +520,7 @@ class IndxWebSocketClient:
                 if token is not None:
                     msg = {"action": "auth", "token": token}
                     self.on_response = self.respond_to_auth
-                    self.sendMessage(cjson.encode(msg))
+                    self.sendMessage(json.loads(msg))
                 elif keyauth is not None:
                     self.on_response = lambda x: logging.debug("Waiting for sessionid before we can auth.")
 
@@ -537,19 +538,19 @@ class IndxWebSocketClient:
                             """ Receive an update from the server. """
                             logging.debug("WebSocketsHandler listen_diff observer notified: {0}".format(diff))
 
-                            self.sendMessage(cjson.encode({"action": "diff", "operation": "update", "data": diff}))
+                            self.sendMessage(json.loads({"action": "diff", "operation": "update", "data": diff}))
 
                         store.listen(observer_local) # no callbacks, nothing to do
 
                     # self.token is set by 'login_keys' below
-                    self.token.get_store().addCallbacks(store_cb, lambda failure: self.sendMessage(cjson.encode({"success": False, "error": "500 Internal Server Error"})))
+                    self.token.get_store().addCallbacks(store_cb, lambda failure: self.sendMessage(json.loads({"success": False, "error": "500 Internal Server Error"})))
 
                 elif data.get("action") == "login_keys":
                     try:
                         signature, key_hash, algo, method, appid, encpk2 = data['signature'], data['key_hash'], data['algo'], data['method'], data['appid'], data['encpk2']
                     except Exception as e:
                         logging.error("IndxClient/ASync login_keys error getting all parameters.")
-                        return self.sendMessage(cjson.encode({"success": False, "error": "400 Bad Request"}))
+                        return self.sendMessage(json.loads({"success": False, "error": "400 Bad Request"}))
 
                     def win(resp):
                         # authenticated now - state of this isn't saved though, we get a token immediately instead
@@ -570,18 +571,18 @@ class IndxWebSocketClient:
 
                                 def store_cb(store):
                                     # success, send token back to user
-                                    return self.sendMessage(cjson.encode({"success": True, "token": new_token.id, "respond_to": "login_keys"}))
+                                    return self.sendMessage(json.loads({"success": True, "token": new_token.id, "respond_to": "login_keys"}))
 
-                                new_token.get_store().addCallbacks(store_cb, lambda failure: cjson.encode({"success": False, "error": "500 Internal Server Error"}))
+                                new_token.get_store().addCallbacks(store_cb, lambda failure: json.loads({"success": False, "error": "500 Internal Server Error"}))
 
                             # TODO extract IP from 'address' above
-                            webserver.tokens.new(username,password,boxid,appid,origin,"::1",webserver.server_id).addCallbacks(token_cb, lambda failure: cjson.encode({"success": False, "error": "500 Internal Server Error"}))
+                            webserver.tokens.new(username,password,boxid,appid,origin,"::1",webserver.server_id).addCallbacks(token_cb, lambda failure: json.loads({"success": False, "error": "500 Internal Server Error"}))
 
 
-                        webserver.database.lookup_best_acct(boxid, username, password).addCallbacks(got_acct, lambda conn: cjson.encode({"success": False, "error": "500 Internal Server Error"}))
+                        webserver.database.lookup_best_acct(boxid, username, password).addCallbacks(got_acct, lambda conn: json.loads({"success": False, "error": "500 Internal Server Error"}))
 
                     def fail(empty):
-                        self.sendMessage(cjson.encode({"success": False, "error": "401 Unauthorized"}))
+                        self.sendMessage(json.loads({"success": False, "error": "401 Unauthorized"}))
 
                     auth_keys(keystore, signature, key_hash, algo, method, self.sessionid, encpk2).addCallbacks(win, fail)
                     
@@ -598,7 +599,7 @@ class IndxWebSocketClient:
 
                     self.on_response = self.send_to_observer
                     msg = {"action": "diff", "operation": "start"}
-                    self.sendMessage(cjson.encode(msg))
+                    self.sendMessage(json.loads(msg))
                 else:
                     logging.error("IndxWebSocketClient WebSocket auth failure.")
 
@@ -618,7 +619,7 @@ class IndxWebSocketClient:
 
                     values = {"action": "login_keys", "signature": signature, "key_hash": key_hash, "algo": algo, "method": method, "appid": appid, "encpk2": encpk2}
                     self.on_response = self.respond_to_auth
-                    self.sendMessage(cjson.encode(values))
+                    self.sendMessage(json.loads(values))
 
 
                 except Exception as e:

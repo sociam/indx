@@ -71,7 +71,8 @@ class BoxHandler(BaseHandler):
                 diff = self.get_arg(request, "data")
                 if diff is None:
                     raise Exception("data argument not specified, or blank.")
-                diff = cjson.decode(diff)
+                #diff = cjson.decode(diff, all_unicode=True)
+                diff = json.loads(diff)
             except Exception as e:
                 BoxHandler.log(logging.ERROR, "Exception in box.apply_diff getting argument from_version: {0}".format(e), extra = {"request": request, "token": token})
                 return self.return_bad_request(request, "Error getting valid diff from the 'data' argument")
@@ -557,8 +558,8 @@ class BoxHandler(BaseHandler):
             else:
                 return self.return_bad_request(request,"Specify a previous version with &version=")
 
-            #objs = json.loads(self.get_arg(request, "data"))
-            objs = cjson.decode(self.get_arg(request, "data"))
+            objs = json.loads(self.get_arg(request, "data"))
+            #objs = cjson.decode(self.get_arg(request, "data"), all_unicode=True)
 
             if type(objs) != type([]):
                 objs = [objs]

@@ -247,7 +247,8 @@ class IndxAsync:
     def sendJSON(self, data):
         """ Send data as JSON to the WebSocket. """
         logging.debug("ASync send JSON of data: {0}".format(data))
-        encoded = cjson.encode(data)
+        #encoded = cjson.encode(data)
+        encoded = json.dumps(data)
         self.send_f(encoded)
 
     def send500(self):
