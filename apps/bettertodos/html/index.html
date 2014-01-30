@@ -51,6 +51,7 @@
 						ng-click="editTodo(todo)"
 						ng-class="{	editing: todo === s.editingTodo,
 									loading: todo.loading }">
+					<a ng-click="createTodo(todo.attributes.order[0])" class="createTodoLink"><div class="line"></div><div class="i"><i class="fa fa-plus"></i></div></a>
 					<form ng-submit="saveTodo(todo)">
 						<div class="urgency urgency-{{ todo.attributes.urgency[0] }}"></div>
 						<div class="checkbox"></div>
@@ -64,7 +65,6 @@
 						</div>
 					</form>
 				</li>
-				<li ng-click="createTodo()"><div class="title text-muted">New todo</div></li>
 			</ul>
 		</div>
 	</div>

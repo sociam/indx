@@ -2,6 +2,10 @@
 
 @app-top: 42px;
 
+body {
+	background: #f8f8f8;
+}
+
 .indx-toolbar {
 	position: fixed;
 	top: 0;
@@ -33,6 +37,7 @@
 			position: relative;
 			height: 100%;
 			& > li {
+				background: white;
 				display: block;
 				font-size: 25px;
 				padding: 10px 0;
@@ -70,10 +75,6 @@
 					color: black;
 					.edit { display: block; }
 					.static { display: none; }
-
-					.icon:hover {
-						background: rgba(255, 255, 255, 0.3);
-					}
 				}
 				&.special {
 					position: absolute;
@@ -84,9 +85,6 @@
 					}
 					&.special-all {
 						bottom: 50px;
-					}
-					.icon {
-						display: none;
 					}
 				}
 				.title {
@@ -141,17 +139,57 @@
 	.todos-body {
 		margin-top: @app-top;
 		margin-left: 300px;
-		ul {
+		& > ul {
 			padding: 0;
 			margin: 0;
 			list-style: none;
-			li {
+			box-shadow: 0 15px 15px -15px rgba(0,0,0,0.3);
+			& > li {
+				background: white;
 				position: relative;
 				display: block;
-				height: 40px;
+				height: 50px;
 				line-height: 40px;
 				font-size: 22px;
 				border-bottom: 1px solid #eee;
+				.createTodoLink {
+					position: absolute;
+					top: -15px;
+					left: 0;
+					width: 100%;
+					text-align: center;
+					height: 30px;
+					opacity: 0;
+					z-index: 200;
+					&:hover {
+						opacity: 1;
+						.line {
+							top: 5px;
+							bottom: 5px;
+						}
+					}
+					.line {
+						position: absolute;
+						left: 0;
+						right: 0;
+						top: 15px;
+						bottom: 15px;
+						transition: top 0.1s linear, bottom 0.1s linear;
+						box-shadow: inset 0px 0px 15px rgba(0,0,0,0.3);
+						background: white;
+					}
+					.i {
+						position: absolute;
+						left: 0;
+						right: 0;
+						top: 0;
+						bottom: 0;
+						text-align: center;
+						color: #ddd;
+						z-index: 10;
+						font-size: 20px;
+					}
+				}
 				&.loading {
 					background: red;
 					outline: 5px solid red;

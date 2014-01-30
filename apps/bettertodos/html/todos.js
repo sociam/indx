@@ -134,9 +134,9 @@ angular
 
 
 		// todo - check box is defined (or put in init)
-		$scope.createTodo = function () {
+		$scope.createTodo = function (before) {
 			box.getObj('todo-'  + u.uuid()).then(function (todo) {
-				todo.set({ title: [''] });
+				todo.set({ title: [''], order: [before - 0.5] });
 				newTodo = todo;
 				updateTodos();
 				$scope.editTodo(todo);
@@ -184,10 +184,16 @@ angular
 			var list = state.selectedList;
 			$scope.todos = [].concat(list.get('todos'));
 			console.log($scope.todos)
+			var lastOrder = 0;
 			_.each($scope.todos, function (todo) {
 				if (!todo.has('title')) { todo.set('title', ['Untitled todo']) }
+				if (!todo.has('order')) { todo.set('order', [lastOrder + 1]); }
+				lastOrder = todo.get('order')
 			});
 			if (newTodo) { $scope.todos.push(newTodo); }
+			$scope.todos = _.sortBy($scope.todos, function (todo) {
+				return todo.get('order')[0];
+			})
 			$update();
 		}
 
