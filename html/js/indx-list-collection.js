@@ -150,6 +150,7 @@ angular
 					models = [models];
 				}
 				_.each(models, function (model) {
+					console.log('MODEL ID', model.id)
 					if (!_(model).isObject()) {
 						console.warn('Found non-object in array -->', model);
 						return;
@@ -173,7 +174,7 @@ angular
 				this.log('extend', model.id)
 				var prototype = this.model ? this.model.prototype : {};
 
-				_.extend(model, prototype);
+				_.extend(model, prototype, model.prototype);
 
 				model.box = this.box;
 				model.collection = this;

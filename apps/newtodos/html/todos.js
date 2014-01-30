@@ -62,7 +62,7 @@ angular
 
 		};
 
-		$(function () {
+/*		$(function () {
 			initDlg();
 		});
 		var initDlg = function () {
@@ -94,7 +94,7 @@ angular
 						// TODO
 					});
 				});
-		};
+		};*/
 
 		// Destroy the current views (if there are any)
 		var destroy = function () {
@@ -221,6 +221,12 @@ angular
 								top: offset.top + $icon.height() - 10,
 								left: offset.left - 1
 							});
+						}
+					}).end()
+					.find('input').keydown(function (e) {
+						if (e.keyCode === 13) { // enter
+							console.log(that.todoList)
+							that.todoList.save('title', [ $(this).val() ]);
 						}
 					});
 				return this;
