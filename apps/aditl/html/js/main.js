@@ -64,6 +64,21 @@ angular
 
 		var getBrowsingTopDocs = function(tstart,tend) {
 			var d = u.deferred();
+			entities.activities.getByActivityType(box,tstart,tend,['browse']).then(function(reads) { 
+				console.log('READS[', tstart, '-', tend, '] >> ', reads);
+				var docsbyid = {};
+				var timebydoc = {};
+				reads.map(function(read) { 
+					var doc = read.peek('what'), tstart = read.peek('tstart'), tend = read.peek('tend');
+					if (doc) {
+						docsbyid[doc.id] = doc;
+						timebydoc[doc.id] = (timebydoc[doc.id] ? timebydoc[doc.id] : 0) + (tend-tstart);
+					}
+				});
+				var docids = _(timebydoc).keys();
+				docids.sort(function(a,b) { return timebydoc[b] - timebydoc[a]; });
+				d.resolve(docids.map(function(xx) { return docsbyid[xx]; }).slice(0,10));
+			});
 			return d.promise();
 		};
 
@@ -79,7 +94,7 @@ angular
 			};
 
 			getBrowsingTopDocs(tstart,tend).then(function(topdocs) {
-				sa(function() { seg.browsing = topdocs;	});
+				sa(function() { seg.documents = topdocs.slice(0,10);	});
 			});
 
 			return seg;
@@ -90,6 +105,7 @@ angular
 
 			var dstart = new Date(date.valueOf()); dstart.setHours(0,0,0,0);
 			var dend = new Date(date.valueOf()); dend.setHours(23,59,59,999);
+			var todaystart = new Date(); todaystart.setHours(0,0,0,0);
 
 			var day = { 
 				date:date,dstart:dstart,dend:dend,
@@ -125,6 +141,14 @@ angular
 							day.segments.push(newseg);
 						});
 					});
+
+					if (dstart === todaystart && day.segments) {
+						// add one more segment to now
+						var last_end = acts[i-1].peek('tend');
+						if (last_end.valueOf()-(new Date()).valueOf() > 60*1000) {
+							day.segments.push(makeSegment(last_end,new Date()));
+						}
+					}
 
 					// // filter for activities that have at least 1 waypoint
 					// acts = acts.filter(function(x) { return x.peek('waypoints'); });
