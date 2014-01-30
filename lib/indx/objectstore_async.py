@@ -900,13 +900,14 @@ class ObjectStoreAsync:
 
             if "deleted" in next_ver_diff['changed'][uri]:
                 # deleted in the new diff, remove all 'added' and 'replaced' in existing diff
-                if "added" in existing_diff['changed'][uri]:
-                    del existing_diff['changed'][uri]['added'] 
-                if "replaced" in existing_diff['changed'][uri]:
-                    del existing_diff['changed'][uri]['replaced']
-                if "deleted" not in existing_diff['changed'][uri]:
-                    existing_diff['changed'][uri]['deleted'] = {}
-                existing_diff['changed'][uri]['deleted'] = next_ver_diff['changed'][uri]['deleted']
+                if uri in existing_diff['changed']:
+                    if "added" in existing_diff['changed'][uri]:
+                        del existing_diff['changed'][uri]['added'] 
+                    if "replaced" in existing_diff['changed'][uri]:
+                        del existing_diff['changed'][uri]['replaced']
+                    if "deleted" not in existing_diff['changed'][uri]:
+                        existing_diff['changed'][uri]['deleted'] = {}
+                    existing_diff['changed'][uri]['deleted'] = next_ver_diff['changed'][uri]['deleted']
 
         return existing_diff
 
