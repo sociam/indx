@@ -1,3 +1,6 @@
+/* jshint undef: true, strict:false, trailing:false, unused:false */
+/* global require, exports, console, process, module, L, angular, _, jQuery */
+
 (function() {
 	angular
 		.module('indx')
@@ -32,6 +35,14 @@
 					}
 					return ret;
                 },
+                joinModelChunksIntoString:function(model) {
+                	// inverse of the last method
+					var strs = [], val;
+					for (var i = 0; (val = model.peek(''+i)) !== undefined; i++) {
+						strs.push(val);
+					}
+					return strs.join("");
+				},
                 inherit:function(p) {
                 	// inherit() returns a newly created object that inherits properties from the
 					// prototype object p.  It uses the ECMAScript 5 function Object.create() if

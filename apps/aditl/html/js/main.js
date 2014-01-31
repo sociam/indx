@@ -6,16 +6,30 @@ angular
 	.controller('pages', function($scope, client, utils, entities) { 
 		$scope.$watch('user + box', function() { 
 			var u = utils;
+			var sa = function(fn) { return u.safeApply($scope, fn); };
+
 			if (!$scope.user) { console.log('no user :( '); return; }
 			$scope.decodeThumb = function(th) { 
 				if (th) {
 					// console.log('th zero >> ', th[0]);
-					return th && th.join('') || ''; // decodeURIComponent(th);
+					return utils.joinModelChunksIntoString(th);
 				}
 			};
 
 			client.store.getBox($scope.box).then(function(_box) { 
 				window.box = _box;
+				_box.on('obj-add', function(x) { 
+					console.log('obj-add >> ', x);
+					_box.getObj(x).then(function(model) { 
+						if (model && model.peek('type') == 'web-page') { 
+							sa(function() { 
+								if ($scope.pages.indexOf(model) < 0) { 
+									$scope.pages = [model].concat($scope.pages);
+								}
+							});
+						}
+					});
+				});
 				entities.documents.getWebPage(_box).then(function(pages) {
 					window.pages = pages;
 					u.safeApply($scope, function() {  

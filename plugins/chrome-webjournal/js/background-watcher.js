@@ -8,6 +8,7 @@
 
     var app = angular.module('webjournal').factory('watcher', function(utils, client, entities, pluginUtils, $injector) {
         var u = utils, pu = pluginUtils;
+
         // window watcher
         var WindowWatcher = Backbone.Model.extend({
             defaults: { enabled:true },
@@ -23,14 +24,11 @@
                             _done(); 
                         } else if (tab.status == 'complete') {
                             // no thumb, loaded so let's capture
-                            console.log("capturing visible tab >> ");
-                            chrome.tabs.captureVisibleTab(undefined, { format:'jpeg', quality:50 }, function(dataUrl) {
-                                // console.log('got a thumbnail for ', tab.url, dataUrl);
-                                if (dataUrl) {
-                                    tabthumbs[tab.url] = u.splitStringIntoChunks(dataUrl,1000);  // encodeURIComponent(dataUrl);
-                                    console.log(' chunks >> ', tabthumbs[tab.url].length, typeof dataUrl, tabthumbs[tab.url][0], dataUrl);
-                                }
+                            this_._getThumbnail(tab.url).then(function(thumbnail_model) {
+                                tabthumbs[tab.url] = thumbnail_model;
                                 _done();
+                            }).fail(function(bail) { 
+                                console.error('error with thumbnail, ', bail);
                             });
                         } else {
                             // loading, let's just start and try again
@@ -96,6 +94,23 @@
                     // ignore.
                 });
                 window.watcher = this;
+            },
+            _getThumbnail : function(url) {
+                // gets a thumbnail object
+                var box = this.box, id = 'thumbnail-' + url, d = u.deferred();
+                box.getObj(id).then(function(model) { 
+                    // already have it? 
+                    if (model.peek('0')) {  return d.resolve(model);    }
+                    // don't have it already
+                    chrome.tabs.captureVisibleTab(undefined, { format:'jpeg', quality:50 }, function(dataUrl) {
+                        if (dataUrl) {
+                            model.set(u.splitStringIntoChunksObj(dataUrl,1000));  // encodeURIComponent(dataUrl);
+                        }
+                        console.log('thumbail model >> ', model.id, model.attributes);
+                        model.save().then(function() { d.resolve(model); }).fail(d.reject);
+                    });
+                });
+                return d.promise();
             },
             _attempt_reconnect:function() {
                 // very suspicious about this >_< .. TODO look at 

@@ -9,13 +9,11 @@
   </head>
   <body ng-app="wellbeing" ng-controller="pages" ng-cloak>
 	<toolbar box-var='box' username-var='user'></toolbar>
-  	<div ng-show="user && box" class='diary container'>
-   		<!--- <locmap ng-repeat="loc in locations" location="loc"></locmap>-->
-      <div ng-repeat="d in pages" class="page">
+  	<div ng-show="user && box" class='pages container'>
+      <div ng-repeat="d in pages" class="page" ng-show="d.peek('thumbnail')">
         <a ng-href="{{ d.peek('url') }}" target="_blank">
-         <!-- <img class="favicon" ng-show="d.peek('favicon')" ng-src="{{ d.peek('favicon') }}">{{ d.peek('title') || 'unknown page' }} -->
-         <img class='thumbnail' ng-show="d.peek('thumbnail')" ng-src="{{ decodeThumb(d.attributes.thumbnail) }}">
-         {{ d.peek('title') }}
+         <img class='thumbnail' ng-show="d.peek('thumbnail')" ng-src="{{ decodeThumb(d.peek('thumbnail')) }}">
+         <div class="title">{{ d.peek('title') }}</div>
        </a>
       </div>
   	</div>
