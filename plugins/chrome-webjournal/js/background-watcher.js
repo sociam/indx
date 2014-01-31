@@ -113,7 +113,7 @@
                             // already have it? 
                             delete this_._fetching_thumbnail[url];
                             if (dataUrl !== undefined) {
-                                model.set(u.splitStringIntoChunksObj(dataUrl,1500));  // encodeURIComponent(dataUrl);
+                                model.set(u.splitStringIntoChunksObj(dataUrl,150000));  // encodeURIComponent(dataUrl);
                             }
                             // console.log('thumbail model >> ', model.id, model.attributes);
                             model.set({type:"thumbnail"});
