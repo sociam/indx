@@ -270,7 +270,7 @@ class IndxClient:
         prepared_objects = self._prepare_objects(objects)
         self._debug("update: prepared_objects: {0}".format(pprint.pformat(prepared_objects, indent=2, width=80)))
         
-        values = {"data": json.loads(prepared_objects), "version": version}
+        values = {"data": json.dumps(prepared_objects), "version": version}
         return self.client.put(self.base, values)
 
     @require_token
