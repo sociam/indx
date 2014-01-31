@@ -109,10 +109,10 @@ angular
 		var getNikeFuel  = function(tstart,tend) {
 			var d = u.deferred();
 			jQuery.when(
-				entities.activities.getNikeStepsPerMin(this.box, tstart, tend),
-				entities.activities.getNikeCaloriesPerMin(this.box, tstart, tend),
-				entities.activities.getNikeFuelPerMin(this.box, tstart, tend),
-				entities.activities.getNikeStarsPerMin(this.box, tstart, tend)
+				entities.activities.getNikeStepsPerMin(box, tstart, tend),
+				entities.activities.getNikeCaloriesPerMin(box, tstart, tend),
+				entities.activities.getNikeFuelPerMin(box, tstart, tend),
+				entities.activities.getNikeStarsPerMin(box, tstart, tend)
 			).then(function(steps, calories, fuel, stars) {
 				// laura help me out here :) 
 				var totals = {};
@@ -128,10 +128,10 @@ angular
 		var getFitBitMetrics  = function(tstart,tend) {
 			var d = u.deferred();
 			jQuery.when(
-				entities.activities.getFitbitStepsPerMin(this.box, tstart, tend),
-				entities.activities.getFitbitCaloriesPerMin(this.box, tstart, tend),
-				entities.activities.getFitbitDistancePerMin(this.box, tstart, tend),
-				entities.activities.getFitbitElevationPerMin(this.box, tstart, tend)
+				entities.activities.getFitbitStepsPerMin(box, tstart, tend),
+				entities.activities.getFitbitCaloriesPerMin(box, tstart, tend),
+				entities.activities.getFitbitDistancePerMin(box, tstart, tend),
+				entities.activities.getFitbitElevationPerMin(box, tstart, tend)
 			).then(function(steps, calories, distance, elevation) {
 				// laura help me out here :) 
 				var totals = {};
@@ -144,7 +144,6 @@ angular
 			return d.promise();
 		};
 
-
 		var makeSegment = function(tstart, tend, segname, location) {
 			var seg = { 
 				tstart: tstart,
@@ -153,6 +152,7 @@ angular
 				location : location,
 				nike : {},
 				fitbit : {},
+				tweets : {},
 				browsing: []
 			};
 
@@ -167,6 +167,10 @@ angular
 			getFitBitMetrics(tstart,tend).then(function(total) {
 				sa(function() {  seg.fitbit = total; });
 			}).fail(function(bail) { console.log('couldnt get fitbit '); });
+
+			entities.documents.getMyTweets(box, tstart, tend).then(function(tweets){
+				sa(function() {  seg.tweets = tweets; });
+			});
 
 			return seg;
 		};

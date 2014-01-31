@@ -34,6 +34,13 @@
 					<li class="elevation" ng-show="seg.fitbit.elevation"> {{ seg.fitbit.stars }} m elev. </li>
 				</ol>
 			</div>			
+			<div ng-show="seg.tweets" class="tweets cell col-xs-1">
+				<ol>
+					<li class="tweet" ng-repeat="tweet in seg.tweets"> 
+						{{ tweet.text }} steps 
+					</li>
+				</ol>
+			</div>
 			<div ng-show="seg.documents" class="documents cell col-xs-3">
 				<ol>
 					<li class="document" ng-repeat="d in seg.documents">
