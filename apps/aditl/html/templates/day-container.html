@@ -37,7 +37,9 @@
 			<div ng-show="seg.tweets" class="tweets cell col-xs-1">
 				<ol>
 					<li class="tweet" ng-repeat="tweet in seg.tweets"> 
-						{{ tweet.text }} steps 
+						<!-- laura/ramine - fix things here :) -->
+						{{ tweet.peek('text') }} steps 
+						<!-- thanks :) -->
 					</li>
 				</ol>
 			</div>
