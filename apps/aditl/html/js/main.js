@@ -19,7 +19,7 @@ angular
 				$scope.isMedium = function(v, range) {};
 				$scope.isLow = function(v, range) {};
 				$scope.decodeThumb = function(th) { 
-					return decodeURIComponent(th);
+					return th; // decodeURIComponent(th);
 				};
 			}
 		}; 
@@ -119,7 +119,7 @@ angular
 			};
 
 			// segment the day by activity
-			entities.activities.getByActivityType(	box, dstart, dend, ['walk','run','stay','transport'] ).then(
+			entities.activities.getByActivityType(	box, dstart, dend, ['walking','cycling','running','stay','transport'] ).then(
 				function(acts) {
 					var sorted = acts.concat();
 					acts.sort(function(x,y) { return x.peek('tstart').valueOf() - y.peek('tstart').valueOf(); });
@@ -149,12 +149,12 @@ angular
 					});
 
 					// add a segment for now
-					if (dstart.valueOf() == todaystart.valueOf() && day.segments) {
-					// 	// add one more segment to now
-					 	var last_end = acts[acts.length-1].peek('tend');
-					 	if ((new Date()).valueOf() - last_end.valueOf() > 60*1000) {
-					 		day.segments.push(makeSegment(last_end, new Date(new Date().valueOf()+60000) ));
-					 	}
+					var last_end = (acts.length && acts[acts.length-1].peek('tend') || dstart);
+					var last_shouldbe = new Date(Math.min( (new Date()).valueOf(), dend.valueOf() ));
+					if (last_shouldbe.valueOf() - last_end.valueOf() > 60*1000) {
+						sa(function() { 
+							day.segments.push(makeSegment(last_end, last_shouldbe));
+						});
 					}
 
 					// // filter for activities that have at least 1 waypoint

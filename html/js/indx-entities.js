@@ -65,7 +65,7 @@
 				return box.query(properties);
 			};
 
-			var LATLNG_THRESH = 0.002;
+			var LATLNG_THRESH = 0.0005;
 
 			return {
 				toObj:to_obj,
@@ -98,12 +98,15 @@
 						});
 						return d.promise();
 					},
-					getByMovesID: function(box, movesid) {
+					getByMovesId: function(box, movesid) {
 						return this.getAll(box, { moves_id: movesid });
 					},
 					getByName:function(box, name) {
 						return this.getAll(box, { name: name });
 					},
+					getByFoursquareId:function(box, fsqid) {
+						return this.getAll(box, { foursquare_id: fsqid });
+					},					
 					make:function(box, name, location_type, latitude, longitude, moves_id, otherprops) {
 						var d = u.deferred(), args = _(arguments).toArray();
 						var argnames = [undefined, 'name', 'location_type', 'latitude', 'longitude', 'moves_id'],
@@ -125,7 +128,7 @@
 						return search(box, _(extras).chain().clone().extend({type:'activity'}));
 					},
 					getByActivityType:function(box, tstart, tend, activity_types) {
-						if (!_.isArray(activity_types)) { activity_types=[activity_types]; };
+						if (!_.isArray(activity_types)) { activity_types=[activity_types]; }
 						var query = ({
 							'$and':[ 
 							{type:'activity'},

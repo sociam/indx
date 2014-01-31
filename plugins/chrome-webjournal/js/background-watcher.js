@@ -23,9 +23,10 @@
                                 _done(); 
                             } else if (tab.status == 'complete') {
                                 // no thumb, loaded so let's capture
-                                chrome.tabs.captureVisibleTab(undefined, { }, function(dataUrl) {
+                                console.log("capturing visible tab >> ");
+                                chrome.tabs.captureVisibleTab(undefined, { format:'jpeg', quality:1 }, function(dataUrl) {
                                     console.log('got a thumbnail for ', tab.url, dataUrl);
-                                    tabthumbs[tab.url] = encodeURIComponent(dataUrl);
+                                    tabthumbs[tab.url] = dataUrl;  // encodeURIComponent(dataUrl);
                                     _done();
                                 });
                             } else {
