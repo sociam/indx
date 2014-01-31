@@ -24,9 +24,12 @@
                             } else if (tab.status == 'complete') {
                                 // no thumb, loaded so let's capture
                                 console.log("capturing visible tab >> ");
-                                chrome.tabs.captureVisibleTab(undefined, { format:'jpeg', quality:1 }, function(dataUrl) {
-                                    console.log('got a thumbnail for ', tab.url, dataUrl);
-                                    tabthumbs[tab.url] = dataUrl;  // encodeURIComponent(dataUrl);
+                                chrome.tabs.captureVisibleTab(undefined, { format:'jpeg', quality:50 }, function(dataUrl) {
+                                    // console.log('got a thumbnail for ', tab.url, dataUrl);
+                                    if (dataUrl) {
+                                        tabthumbs[tab.url] = u.splitStringIntoChunks(dataUrl,1000);  // encodeURIComponent(dataUrl);
+                                        console.log(' chunks >> ', tabthumbs[tab.url].length, typeof dataUrl, tabthumbs[tab.url][0], dataUrl);
+                                    }
                                     _done();
                                 });
                             } else {
@@ -182,7 +185,7 @@
                     if (this_.current_record !== undefined && this_.current_record.peek('what') && url == this_.current_record.peek('what').id) {
                         console.info('updating existing >>>>>>>>>>> ', this_.current_record.peek('what').id);
                         this_.current_record.set({tend:now});
-                        this_.current_record.set(tabinfo);
+                        this_.current_record.peek('what').set(tabinfo);
                         this_._record_updated(this_.current_record).fail(function(bail) { 
                             console.error('error on save >> ', bail);
                             this_.trigger('connection-error', bail);
@@ -239,7 +242,9 @@
                 var this_ = this, box = this.box, store = this.get('store'), journal = this.get('journal'), 
                     current_record = this.current_record;
 
-                if (current_record) { return current_record.save(); } 
+                if (current_record) { 
+                    return u.when( current_record.save(), current_record.peek('what').save() );
+                } 
                 return u.dresolve();
 
                 // var signalerror = function(e) {  

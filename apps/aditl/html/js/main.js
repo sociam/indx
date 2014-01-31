@@ -3,7 +3,30 @@
 
 angular
 	.module('wellbeing', ['ng','indx','infinite-scroll'])
-	.directive('dayContainer', function() {
+	.controller('pages', function($scope, client, utils, entities) { 
+		$scope.$watch('user + box', function() { 
+			var u = utils;
+			if (!$scope.user) { console.log('no user :( '); return; }
+			$scope.decodeThumb = function(th) { 
+				if (th) {
+					// console.log('th zero >> ', th[0]);
+					return th && th.join('') || ''; // decodeURIComponent(th);
+				}
+			};
+
+			client.store.getBox($scope.box).then(function(_box) { 
+				window.box = _box;
+				box = _box;
+				entities.documents.getWebPage(_box).then(function(pages) {
+					window.pages = pages;
+					u.safeApply($scope, function() {  
+						console.log('got pages >> ', pages);
+						$scope.pages = pages;
+					});
+				});
+			}).fail(function(bail) { console.error(bail); });
+		});
+	}).directive('dayContainer', function() {
 		return {
 			restrict:'E',
 			scope:{ day:'=' },
@@ -19,7 +42,8 @@ angular
 				$scope.isMedium = function(v, range) {};
 				$scope.isLow = function(v, range) {};
 				$scope.decodeThumb = function(th) { 
-					return th; // decodeURIComponent(th);
+					console.log('decodethumb >> ', th.length, _(th).isArray());
+					return th && th.join('') || ''; // decodeURIComponent(th);
 				};
 			}
 		}; 
