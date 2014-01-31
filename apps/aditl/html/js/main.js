@@ -111,15 +111,14 @@ angular
 			jQuery.when(
 				entities.activities.getNikeStepsPerMin(box, tstart, tend),
 				entities.activities.getNikeCaloriesPerMin(box, tstart, tend),
-				entities.activities.getNikeFuelPerMin(box, tstart, tend),
-				entities.activities.getNikeStarsPerMin(box, tstart, tend)
+				entities.activities.getNikeFuelPerMin(box, tstart, tend)
 			).then(function(steps, calories, fuel, stars) {
 				// laura help me out here :) 
 				var totals = {};
-				totals.steps = steps && steps.length && steps.reduce(function(x,y) { return x.peek('val') + y.peek('val'); }, 0);
-				totals.calories = calories && calories.length && calories.reduce(function(x,y) { return x.peek('val') + y.peek('val'); }, 0);
-				totals.fuel = fuel && fuel.length && fuel.reduce(function(x,y) { return x.peek('val') + y.peek('val'); }, 0);
-				totals.stars = stars && stars.length && stars.reduce(function(x,y) { return x.peek('val') + y.peek('val'); }, 0);
+				totals.steps = steps && steps.length && steps.reduce(function(x,y) { return x + parseFloat(y.peek('value')); }, 0);
+				totals.calories = calories && calories.length && calories.reduce(function(x,y) { return x + parseFloat(y.peek('value')); }, 0);
+				totals.fuel = fuel && fuel.length && fuel.reduce(function(x,y) { return x + parseFloat(y.peek('value')); }, 0);
+				// totals.stars = stars && stars.length && stars.reduce(function(x,y) { return x.peek('val') + y.peek('val'); }, 0);
 				d.resolve(totals);
 			}).fail(d.reject);
 			return d.promise();
@@ -131,14 +130,17 @@ angular
 				entities.activities.getFitbitStepsPerMin(box, tstart, tend),
 				entities.activities.getFitbitCaloriesPerMin(box, tstart, tend),
 				entities.activities.getFitbitDistancePerMin(box, tstart, tend),
+				entities.activities.getFitbitFloorsPerMin(box, tstart, tend),
 				entities.activities.getFitbitElevationPerMin(box, tstart, tend)
-			).then(function(steps, calories, distance, elevation) {
+			).then(function(steps, calories, distance, floors, elevation) {
 				// laura help me out here :) 
+				console.log("FITBITS >> ", steps)
 				var totals = {};
-				totals.steps = steps && steps.length && steps.reduce(function(x,y) { return x.peek('val') + y.peek('val'); }, 0);
-				totals.calories = calories && calories.length && calories.reduce(function(x,y) { return x.peek('val') + y.peek('val'); }, 0);
-				totals.distance = distance && distance.length && distance.reduce(function(x,y) { return x.peek('val') + y.peek('val'); }, 0);
-				totals.steps = elevation && elevation.length && elevation.reduce(function(x,y) { return x.peek('val') + y.peek('val'); }, 0);
+				totals.steps = steps && steps.length && steps.reduce(function(x,y) { return x + parseFloat(y.peek('value')); }, 0);
+				totals.calories = calories && calories.length && calories.reduce(function(x,y) { return x + parseFloat(y.peek('value')); }, 0);
+				totals.distance = distance && distance.length && distance.reduce(function(x,y) { return x + parseFloat(y.peek('value')); }, 0);
+				totals.floors = floors && floors.length && floors.reduce(function(x,y) { return x + parseFloat(y.peek('value')); }, 0);
+				totals.elevation = elevation && elevation.length && elevation.reduce(function(x,y) { return x + parseFloat(y.peek('value')); }, 0);
 				d.resolve(totals);
 			}).fail(d.reject);
 			return d.promise();
@@ -152,8 +154,8 @@ angular
 				location : location,
 				nike : {},
 				fitbit : {},
-				tweets : {},
-				browsing: []
+				tweets : [],
+				documents: []
 			};
 
 			getBrowsingTopDocs(tstart,tend).then(function(topdocs) {
@@ -169,6 +171,7 @@ angular
 			}).fail(function(bail) { console.log('couldnt get fitbit '); });
 
 			entities.documents.getMyTweets(box, tstart, tend).then(function(tweets){
+				console.log('TWEETS for the segment [', tstart, '-', tend, '] >> ', tweets);
 				sa(function() {  seg.tweets = tweets; });
 			});
 
@@ -275,7 +278,7 @@ angular
 				// 	});
 				// }).fail(function(bail) { console.log('fail querying ', bail); });				
 				// $scope.genDay();
-				u.safeApply($scope, function() { $scope.generatePast(undefined,4); });
+				u.safeApply($scope, function() { $scope.generatePast(undefined,10); });
 			}).fail(function(bail) { console.error(bail); });
 		});
 		window._s = $scope;
