@@ -54,9 +54,8 @@
 						ng-class="{	editing: todo === s.editingTodo,
 									loading: todo.loading,
 									completed: todo.attributes.completed[0] }">
-					<a ng-click="createTodo(todo.attributes.order[0])" class="createTodoLink"><div class="line"></div><div class="i"><i class="fa fa-plus"></i></div></a>
+					<a ng-click="createTodo(todo.attributes.order[0])" class="createTodoLink" ng-if=""><div class="line"></div><div class="i"><i class="fa fa-plus"></i></div></a>
 					<form ng-submit="saveTodo(todo)">
-						<div class="urgency urgency-{{ todo.attributes.urgency[0] }}"></div>
 						<div class="completedBox" ng-click="toggleTodoCompleted(todo)">
 							<i class="fa fa-check" ng-if="todo.attributes.completed[0]"></i>
 						</div>

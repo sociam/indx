@@ -2,15 +2,11 @@
 
 @app-top: 42px;
 
-body {
-	background: #f8f8f8;
-}
+body { background: #f8f8f8; }
 
 .indx-toolbar {
 	position: fixed;
-	top: 0;
-	left: 0;
-	right: 0;
+	top: 0; left: 0; right: 0;
 	z-index: 1080;
 }
 
@@ -21,13 +17,13 @@ body {
 	display: none;
 }
 
+.loading { opacity: 0.7; }
+
 .todos-main-body {
 	cursor: default;
 	.todos-sidebar {
 		position: fixed;
-		left: 0;
-		top: @app-top;
-		bottom: 0;
+		left: 0; top: @app-top; bottom: 0;
 		width: 300px;
 		border-right: 1px solid #eee;
 		background: white;
@@ -48,23 +44,12 @@ body {
 				form {
 					position: absolute;
 					left: 0; right: 0; top: 0; bottom: 0;
-					& > * {
-						position: absolute;
-					}
+					& > * { position: absolute; }
 				}
-				& > * {
-					position: absolute;
-				}
-				&.loading {
-					opacity: 0.7;
-				}
-				input[type=submit] {
-					display: none;
-				}
+				& > * { position: absolute; }
+				input[type=submit] { display: none; }
 				.static { display: block; }
-				&:hover {
-					background: #eee;
-				}
+				&:hover { background: #eee; }
 				&.selected, &:hover.selected {
 					background: #26517C;
 					color: white;
@@ -80,19 +65,12 @@ body {
 					position: absolute;
 					left: 0;
 					right: 0;
-					&.special-completed {
-						bottom: 0;
-					}
-					&.special-all {
-						bottom: 50px;
-					}
+					&.special-completed { bottom: 0; }
+					&.special-all { bottom: 50px; }
 				}
 				.title {
-					left: 0;
-					top: 0;
-					right: 0;
-					bottom: 0;
-					text-indent: 50px;
+					left: 0; top: 0; right: 0; bottom: 0;
+					text-indent: 20px;
 					z-index: 10;
 					input {
 						display: block;
@@ -100,36 +78,23 @@ body {
 						border: 0;
 						color: inherit;
 						width: 100%;
-						text-indent: 50px;
+						text-indent: 20px;
 						height: 100%;
 					}
 				}
 				.count {
-					right: 30px;
-					top: 0;
+					right: 30px; top: 0;
 					z-index: 20;
 				}
 				.dropdown {
 					position: absolute;
-					top: 5px;
+					top: 5px; right: 0;
 					padding: 8px;
-					right: 0;
 					z-index: 500;
-					.dropdown-button {
-						text-align: right;
-					}
+					.dropdown-button { text-align: right; }
 					.dropdown-menu {
 						display: block;
 						z-index: 500;
-					}
-				}
-				 .delete {
-					right: 15px;
-					top: 0;
-					z-index: 20;
-					padding: 0 10px;
-					&:hover {
-						background: rgba(255, 255, 255, 0.3);
 					}
 				}
 			}
@@ -193,17 +158,6 @@ body {
 				&.completed {
 					background: #f8f8f8;
 				}
-				&.loading {
-					opacity: 0.7;
-				}
-				.urgency {
-					position: absolute;
-					left: -1px;
-					top: 0;
-					bottom: -1px;
-					width: 4px;
-					background: #ccc;
-				}
 				.completedBox {
 					position: absolute;
 					top: 15px;
@@ -233,28 +187,4 @@ body {
 			}
 		}
 	}
-}
-
-
-.urgency-low {
-	background-color: #33CC00 !important;
-	border-color: #33CC00 !important;
-	color: white;
-	.todo-urgency-down { opacity: 0.4; }
-}
-.urgency-med {
-	background-color: #FFCC00 !important;
-	border-color: #FFCC00 !important;
-	color: black;
-}
-.urgency-high {
-	background-color: #FF9900 !important;
-	border-color: #FF9900 !important;
-	color: white;
-}
-.urgency-urgent {
-	background-color: #FF0000 !important;
-	border-color: #FF0000 !important;
-	color: white;
-	.todo-urgency-up { opacity: 0.4; }
 }
