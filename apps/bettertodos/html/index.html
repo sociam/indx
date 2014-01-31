@@ -9,7 +9,7 @@
 	<link href="/css/font-awesome.min.css" rel="stylesheet">
 	<title>Todo list</title>
 </head>
-<body ng-app="todos" ng-controller="todos" ng-click="bodyClick()">
+<body ng-app="todos" ng-controller="todos">
 	<toolbar box-var='selectedBox' username-var='selectedUser'></toolbar>
 
 	<div class="todos-messages alert alert-info" ng-if="msg">{{ msg }}</div>
@@ -35,7 +35,7 @@
 						</div>
 						<div class="static count">{{ countTodos(list) }}</div>
 						<div class="dropdown" ng-class="{ open: list.showDropdown }">
-							<div class="dropdown-button" ng-click="list.showDropdown = !list.showDropdown"><i class="fa fa-caret-down"></i></div>
+							<div class="dropdown-button" click-elsewhere="list.showDropdown = false" ng-click="list.showDropdown = !list.showDropdown"><i class="fa fa-caret-down"></i></div>
 							<ul ng-show="list.showDropdown" class="dropdown-menu" >
 								<li ng-click="editList(list)"><a href="#">Rename</a></li>
 								<li ng-click="deleteList(list)"><a href="#">Delete</a></li>
