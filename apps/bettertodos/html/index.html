@@ -14,7 +14,7 @@
 
 	<div class="todos-messages alert alert-info" ng-if="msg">{{ msg }}</div>
 
-	<div class="todos-main-body">
+	<div class="todos-main-body" ng-if="!msg">
 		<div class="todos-sidebar">
 			<ul>
 				<li 	ng-repeat="list in lists" 

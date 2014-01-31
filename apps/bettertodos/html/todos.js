@@ -113,7 +113,11 @@ angular
 				delete list.loading;
 				updateLists();
 			});
-		}
+		};
+
+		$scope.countTodos = function (list) {
+			return list.get('todos').length;
+		};
 
 		var updateLists = function () {
 			console.log('UPDATING LISTS');
