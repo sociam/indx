@@ -11,10 +11,11 @@ angular
 			$scope.pages = [];
 
 			$scope.decodeThumb = function(th) { 
-				if (th) {
-					// console.log('th zero >> ', th[0]);
-					return utils.joinModelChunksIntoString(th);
-				}
+				return th; 
+				// if (th) {
+				// 	// console.log('th zero >> ', th[0]);
+				// 	return utils.joinModelChunksIntoString(th);
+				// }
 			};
 
 			client.store.getBox($scope.box).then(function(_box) { 

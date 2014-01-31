@@ -28,7 +28,7 @@
                             // no thumb, loaded so let's capture
                             console.log('getting thumb >> ');
                             this_._getThumbnail(tab.url).then(function(thumbnail_model) {
-                                console.log('continuation thumb ', thumbnail_model.id, _(thumbnail_model.attributes).keys().length);
+                                // console.log('continuation thumb ', thumbnail_model.id, _(thumbnail_model.attributes).keys().length);
                                 tabthumbs[tab.url] = thumbnail_model;
                                 _done();
                             }).fail(function(bail) { 
@@ -109,16 +109,17 @@
                 } else {
                     this._fetching_thumbnail[url] = d;
                     chrome.tabs.captureVisibleTab(undefined, { format:'png' }, function(dataUrl) {
-                        box.getObj(id).then(function(model) { 
-                            // already have it? 
-                            delete this_._fetching_thumbnail[url];
-                            if (dataUrl !== undefined) {
-                                model.set(u.splitStringIntoChunksObj(dataUrl,150000));  // encodeURIComponent(dataUrl);
-                            }
-                            // console.log('thumbail model >> ', model.id, model.attributes);
-                            model.set({type:"thumbnail"});
-                            model.save().then(function() { d.resolve(model); }).fail(function() { console.error("ERROR SAVING THUMBNAIL ", url); d.reject();});
-                        });
+                        d.resolve(dataUrl);                        
+                        // box.getObj(id).then(function(model) { 
+                        //     // already have it? 
+                        //     delete this_._fetching_thumbnail[url];
+                        //     if (dataUrl !== undefined) {
+                        //         model.set(u.splitStringIntoChunksObj(dataUrl,150000));  // encodeURIComponent(dataUrl);
+                        //     }
+                        //     // console.log('thumbail model >> ', model.id, model.attributes);
+                        //     model.set({type:"thumbnail"});
+                        //     model.save().then(function() { d.resolve(model); }).fail(function() { console.error("ERROR SAVING THUMBNAIL ", url); d.reject();});
+                        // });
                     });
                 }
                 return d.promise();
