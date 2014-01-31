@@ -140,9 +140,9 @@ angular
 				if (!list.has('title')) { list.set('title', ['Untitled list']) }
 				if (!list.has('todos')) { list.set('todos', []) }
 			});
-			delete $scope.introStep;
+			delete state.isFirstList;
 			if ($scope.lists.length === 0) {
-				$scope.introStep = "create-list";
+				state.isFirstList = true;
 			}
 			if (newList) { $scope.lists.push(newList); }
 

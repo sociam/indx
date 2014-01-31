@@ -146,6 +146,9 @@ body { background: #f8f8f8; }
 							top: 5px;
 							bottom: 5px;
 						}
+						.i {
+							color: #444;
+						}
 					}
 					.line {
 						position: absolute;
@@ -164,7 +167,7 @@ body { background: #f8f8f8; }
 						top: 0;
 						bottom: 0;
 						text-align: center;
-						color: #ddd;
+						color: #999;
 						z-index: 10;
 						font-size: 20px;
 					}
@@ -208,22 +211,26 @@ body { background: #f8f8f8; }
 	margin: 10px;
 	max-width: 345px;
 	& > .fa {
-		position: absolute;
-		left: 10px;
-		top: 10px;
 		font-size: 24px
 	}
 	& > h3 {
-		padding-left: 35px;
 		font-size: 1em;
 		font-weight: bold;
 		text-transform: uppercase;
 		margin: 0 0 13px 0;
 	}
-	& > p {
-		padding-left: 30px;
-	}
+	
 	&.intro-step-create-list {
-
+		& > .fa {
+			position: absolute;
+			left: 10px;
+			top: 10px;
+		}
+		& > h3, & > p { padding-left: 35px; }
+	}
+	&.intro-step-create-todo {
+		text-align: center;
+		margin: 47px auto 0;
+		h3 { margin-top: 20px; }
 	}
 }
