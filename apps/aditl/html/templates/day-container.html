@@ -12,6 +12,48 @@
 			<div class="cell col-xs-2">
 				<locmap ng-show="seg.location" location="seg.location"></locmap>
 			</div>
+			<div class="moves cell col-xs-1">
+				<div class="label">moves</div>
+				<div ng-class="{distance:true, high:isHigh(seg.moves.distance), medium:isMed(seg.moves.distance), low:isLow(seg.moves.distance)}" ng-show="seg.moves.distance"> {{ seg.moves.distance/1000.0 }} km </div>
+				<div ng-class="{steps:true, high:isHigh(seg.moves.steps), medium:isMed(seg.moves.steps), low:isLow(seg.moves.steps)}" ng-show="seg.moves.steps"> {{ seg.moves.steps }} steps </div>
+				<div ng-class="{calories:true, high:isHigh(seg.moves.calories), medium:isMed(seg.moves.calories), low:isLow(seg.moves.calories)}" ng-show="seg.moves.caloriesdistance"> {{ seg.moves.calories }} kcals </div>
+			</div>
+			<div ng-show="seg.nike" class="nike cell col-xs-1">
+				<ol>
+					<li class="steps" ng-show="seg.nike.steps"> {{ seg.nike.steps }} steps </li>
+					<li class="calories" ng-show="seg.nike.calories"> {{ seg.nike.calories }} cal </li>
+					<li class="fuel" ng-show="seg.nike.fuel"> {{ seg.nike.fuel }} fuel </li>
+					<li class="stars" ng-show="seg.nike.stars"> {{ seg.nike.stars }} stars </li>
+				</ol>
+			</div>	
+			<div ng-show="seg.fitbit" class="fitbit cell col-xs-1">
+				<ol>
+					<li class="steps" ng-show="seg.fitbit.steps"> {{ seg.fitbit.steps }} steps </li>
+					<li class="calories" ng-show="seg.fitbit.calories"> {{ seg.fitbit.calories }} cal </li>
+					<li class="distance" ng-show="seg.fitbit.distance"> {{ seg.fitbit.distance }} km </li>
+					<li class="elevation" ng-show="seg.fitbit.elevation"> {{ seg.fitbit.stars }} m elev. </li>
+				</ol>
+			</div>			
+			<div ng-show="seg.tweets" class="tweets cell col-xs-1">
+				<ol>
+					<li class="tweet" ng-repeat="tweet in seg.tweets"> 
+						<!-- laura/ramine - fix things here :) -->
+						{{ tweet.peek('text') }} steps 
+						<!-- thanks :) -->
+					</li>
+				</ol>
+			</div>
+			<div ng-show="seg.documents" class="documents cell col-xs-3">
+				<ol>
+					<li class="document" ng-repeat="d in seg.documents">
+						<a ng-href="{{ d.peek('url') }}" target="_blank">
+							<!-- <img class="favicon" ng-show="d.peek('favicon')" ng-src="{{ d.peek('favicon') }}">{{ d.peek('title') || 'unknown page' }} -->
+							<!--- <img class='thumbnail' ng-show="d.peek('thumbnail')" ng-src="{{ decodeThumb(d.peek('thumbnail')) }}"> -->
+							<div ng-show="!d.peek('thumbnail')" data-page-url=""> {{ d.peek('title') || ' - ' }} </div>
+						</a>
+					</li>
+				</ol>
+			</div>
 		</div>
 	</div>
 </div>

@@ -65,7 +65,7 @@
 				return box.query(properties);
 			};
 
-			var LATLNG_THRESH = 0.002;
+			var LATLNG_THRESH = 0.0005;
 
 			return {
 				toObj:to_obj,
@@ -86,7 +86,7 @@
 									Math.abs(result.peek('latitude') - lat), 
 									Math.abs(result.peek('longitude') - lng)
 								);  // Math.sqrt( Math.pow(result.peek('latitude') - lat,2) + Math.pow(result.peek('longitude') - lng, 2) );
-								console.log(' dist > ', result.peek('latitude'), lat, result.peek('longitude'), lng, dist[result.id]);
+								// console.log(' dist > ', result.peek('latitude'), lat, result.peek('longitude'), lng, dist[result.id]);
 								resD[result.id] = result;
 							});
 							var kbyD = _(dist).keys();
@@ -98,12 +98,15 @@
 						});
 						return d.promise();
 					},
-					getByMovesID: function(box, movesid) {
+					getByMovesId: function(box, movesid) {
 						return this.getAll(box, { moves_id: movesid });
 					},
 					getByName:function(box, name) {
 						return this.getAll(box, { name: name });
 					},
+					getByFoursquareId:function(box, fsqid) {
+						return this.getAll(box, { foursquare_id: fsqid });
+					},					
 					make:function(box, name, location_type, latitude, longitude, moves_id, otherprops) {
 						var d = u.deferred(), args = _(arguments).toArray();
 						var argnames = [undefined, 'name', 'location_type', 'latitude', 'longitude', 'moves_id'],
@@ -125,7 +128,7 @@
 						return search(box, _(extras).chain().clone().extend({type:'activity'}));
 					},
 					getByActivityType:function(box, tstart, tend, activity_types) {
-						if (!_.isArray(activity_types)) { activity_types=[activity_types]; };
+						if (!_.isArray(activity_types)) { activity_types=[activity_types]; }
 						var query = ({
 							'$and':[ 
 							{type:'activity'},
@@ -238,7 +241,18 @@
 						});
 						return d.promise();
 					},
-					getTweet:undefined,
+					getMyTweets:function(box, tstart, tend) {
+						if (tstart && tend) {
+							var query = ( { '$and': [
+									{'type':'post'},
+									{'tweet_user_id_indx':'twitter_user_me'},
+									{'created_at':{'$ge':toQueryTime(tstart)}},
+									{'created_at':{'$le':toQueryTime(tend)}}
+									] } );
+							return search(box, query);
+						}
+						return u.dreject('must specify all arguments: tstart, tend');
+					},
 					getInstagram:undefined,
 					getFBMessage:undefined,
 					getFBWallPost:undefined,

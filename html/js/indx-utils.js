@@ -18,6 +18,13 @@
                 		return [a1[i],a2[i]];
                 	});
                 },
+                splitStringIntoChunks:function(str,len) {
+					var ret = [ ];
+					for (var offset = 0, strLen = str.length; offset < strLen; offset += len) {
+						ret.push(str.substring(offset, offset + len));
+					}
+					return ret;
+                },
                 inherit:function(p) {
                 	// inherit() returns a newly created object that inherits properties from the
 					// prototype object p.  It uses the ECMAScript 5 function Object.create() if

@@ -1,9 +1,31 @@
 /* jshint undef: true, strict:false, trailing:false, unused:false */
-/* global require, exports, console, process, module, L, angular */
+/* global require, exports, console, process, module, L, angular, _, jQuery */
 
 angular
 	.module('wellbeing', ['ng','indx','infinite-scroll'])
-	.directive('dayContainer', function() {
+	.controller('pages', function($scope, client, utils, entities) { 
+		$scope.$watch('user + box', function() { 
+			var u = utils;
+			if (!$scope.user) { console.log('no user :( '); return; }
+			$scope.decodeThumb = function(th) { 
+				if (th) {
+					// console.log('th zero >> ', th[0]);
+					return th && th.join('') || ''; // decodeURIComponent(th);
+				}
+			};
+
+			client.store.getBox($scope.box).then(function(_box) { 
+				window.box = _box;
+				entities.documents.getWebPage(_box).then(function(pages) {
+					window.pages = pages;
+					u.safeApply($scope, function() {  
+						console.log('got pages >> ', pages);
+						$scope.pages = pages;
+					});
+				});
+			}).fail(function(bail) { console.error(bail); });
+		});
+	}).directive('dayContainer', function() {
 		return {
 			restrict:'E',
 			scope:{ day:'=' },
@@ -15,8 +37,15 @@ angular
 				$scope.simpleTime = function(d) { 
 					return prezero(d.getHours()) + ':' + prezero(d.getMinutes());
 				};
+				$scope.isHigh = function(v, range) {};
+				$scope.isMedium = function(v, range) {};
+				$scope.isLow = function(v, range) {};
+				$scope.decodeThumb = function(th) { 
+					console.log('decodethumb >> ', th.length, _(th).isArray());
+					return th && th.join('') || ''; // decodeURIComponent(th);
+				};
 			}
-		};
+		}; 
 	}).directive('locmap', function() {
 		return {
 			restrict:'E',
@@ -41,8 +70,6 @@ angular
 					scope.map.setView([lat, lon], 18); 
 					L.marker([lat, lon]).addTo(scope.map);
 				}
-
-
 					// add a marker in the given location, attach some popup content to it and open the popup
 					    // .bindPopup(scope.location.peek('name') ? scope.location.peek('name') : scope.location.id)
 					    // .openPopup();
@@ -59,16 +86,92 @@ angular
 		var weekday=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 		var months = [ 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December' ];
 
+		var getBrowsingTopDocs = function(tstart,tend) {
+			var d = u.deferred();
+			entities.activities.getByActivityType(box,tstart,tend,['browse']).then(function(reads) { 
+				console.log('READS[', tstart, '-', tend, '] >> ', reads);
+				var docsbyid = {};
+				var timebydoc = {};
+				reads.map(function(read) { 
+					var doc = read.peek('what'), tstart = read.peek('tstart'), tend = read.peek('tend');
+					if (doc) {
+						docsbyid[doc.id] = doc;
+						timebydoc[doc.id] = (timebydoc[doc.id] ? timebydoc[doc.id] : 0) + (tend-tstart);
+					}
+				});
+				var docids = _(timebydoc).keys();
+				docids.sort(function(a,b) { return timebydoc[b] - timebydoc[a]; });
+				d.resolve(docids.map(function(xx) { return docsbyid[xx]; }));
+			});
+			return d.promise();
+		};
+
+		var getNikeFuel  = function(tstart,tend) {
+			var d = u.deferred();
+			jQuery.when(
+				entities.activities.getNikeStepsPerMin(box, tstart, tend),
+				entities.activities.getNikeCaloriesPerMin(box, tstart, tend),
+				entities.activities.getNikeFuelPerMin(box, tstart, tend),
+				entities.activities.getNikeStarsPerMin(box, tstart, tend)
+			).then(function(steps, calories, fuel, stars) {
+				// laura help me out here :) 
+				var totals = {};
+				totals.steps = steps && steps.length && steps.reduce(function(x,y) { return x.peek('val') + y.peek('val'); }, 0);
+				totals.calories = calories && calories.length && calories.reduce(function(x,y) { return x.peek('val') + y.peek('val'); }, 0);
+				totals.fuel = fuel && fuel.length && fuel.reduce(function(x,y) { return x.peek('val') + y.peek('val'); }, 0);
+				totals.stars = stars && stars.length && stars.reduce(function(x,y) { return x.peek('val') + y.peek('val'); }, 0);
+				d.resolve(totals);
+			}).fail(d.reject);
+			return d.promise();
+		};
+
+		var getFitBitMetrics  = function(tstart,tend) {
+			var d = u.deferred();
+			jQuery.when(
+				entities.activities.getFitbitStepsPerMin(box, tstart, tend),
+				entities.activities.getFitbitCaloriesPerMin(box, tstart, tend),
+				entities.activities.getFitbitDistancePerMin(box, tstart, tend),
+				entities.activities.getFitbitElevationPerMin(box, tstart, tend)
+			).then(function(steps, calories, distance, elevation) {
+				// laura help me out here :) 
+				var totals = {};
+				totals.steps = steps && steps.length && steps.reduce(function(x,y) { return x.peek('val') + y.peek('val'); }, 0);
+				totals.calories = calories && calories.length && calories.reduce(function(x,y) { return x.peek('val') + y.peek('val'); }, 0);
+				totals.distance = distance && distance.length && distance.reduce(function(x,y) { return x.peek('val') + y.peek('val'); }, 0);
+				totals.steps = elevation && elevation.length && elevation.reduce(function(x,y) { return x.peek('val') + y.peek('val'); }, 0);
+				d.resolve(totals);
+			}).fail(d.reject);
+			return d.promise();
+		};
+
 		var makeSegment = function(tstart, tend, segname, location) {
 			var seg = { 
 				tstart: tstart,
 				tend: tend,
 				name : segname,
 				location : location,
-				nike : [],
-				fitbit : [],
+				nike : {},
+				fitbit : {},
+				tweets : {},
 				browsing: []
 			};
+
+			getBrowsingTopDocs(tstart,tend).then(function(topdocs) {
+				sa(function() { seg.documents = topdocs.slice(0,10);	});
+			});
+
+			getNikeFuel(tstart,tend).then(function(total) {
+				sa(function() { seg.nike = total; });
+			}).fail(function(bail) { console.log('couldnt get fuel '); });
+
+			getFitBitMetrics(tstart,tend).then(function(total) {
+				sa(function() {  seg.fitbit = total; });
+			}).fail(function(bail) { console.log('couldnt get fitbit '); });
+
+			entities.documents.getMyTweets(box, tstart, tend).then(function(tweets){
+				sa(function() {  seg.tweets = tweets; });
+			});
+
 			return seg;
 		};
 
@@ -77,6 +180,7 @@ angular
 
 			var dstart = new Date(date.valueOf()); dstart.setHours(0,0,0,0);
 			var dend = new Date(date.valueOf()); dend.setHours(23,59,59,999);
+			var todaystart = new Date(); todaystart.setHours(0,0,0,0);
 
 			var day = { 
 				date:date,dstart:dstart,dend:dend,
@@ -87,7 +191,7 @@ angular
 			};
 
 			// segment the day by activity
-			entities.activities.getByActivityType(	box, dstart, dend, ['walk','run','stay','transport'] ).then(
+			entities.activities.getByActivityType(	box, dstart, dend, ['walking','cycling','running','stay','transport'] ).then(
 				function(acts) {
 					var sorted = acts.concat();
 					acts.sort(function(x,y) { return x.peek('tstart').valueOf() - y.peek('tstart').valueOf(); });
@@ -99,14 +203,31 @@ angular
 						var cstart = ca.peek('tstart');
 						if (i !== 0) {
 							var last_end = acts[i-1].peek('tend');
+							if (last_end.valueOf() > cstart.valueOf()) { 
+								cstart = new Date(last_end.valueOf())+ 1;
+							}
 							if (last_end.valueOf()-cstart.valueOf() > 60*1000) {
 								sa(function() { day.segments.push(makeSegment(last_end,cstart)); });
 							}
 						}
 						sa(function() { 
-							day.segments.push(makeSegment(ca.peek('tstart'),ca.peek('tend'), ca.peek('activity'), ca.peek('waypoints')));
+							var newseg = makeSegment(ca.peek('tstart'),ca.peek('tend'), ca.peek('activity'), ca.peek('waypoints'));
+							newseg.moves = {};
+							newseg.moves.calories = ca.peek('calories');
+							newseg.moves.steps = ca.peek('steps');
+							newseg.moves.distance = ca.peek('distance');							
+							day.segments.push(newseg);
 						});
 					});
+
+					// add a segment for now
+					var last_end = (acts.length && acts[acts.length-1].peek('tend') || dstart);
+					var last_shouldbe = new Date(Math.min( (new Date()).valueOf(), dend.valueOf() ));
+					if (last_shouldbe.valueOf() - last_end.valueOf() > 60*1000) {
+						sa(function() { 
+							day.segments.push(makeSegment(last_end, last_shouldbe));
+						});
+					}
 
 					// // filter for activities that have at least 1 waypoint
 					// acts = acts.filter(function(x) { return x.peek('waypoints'); });
@@ -140,6 +261,7 @@ angular
 				i++;
 			}
 		};
+
 		$scope.$watch('user + box', function() { 
 			if (!$scope.user) { console.log('no user :( '); return; }
 			$scope.days = [];
@@ -157,4 +279,5 @@ angular
 			}).fail(function(bail) { console.error(bail); });
 		});
 		window._s = $scope;
+		window.entities = entities;
 	});
