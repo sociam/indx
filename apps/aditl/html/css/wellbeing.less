@@ -16,6 +16,34 @@
 	// margin:20px;
 
 }
+.pages { 
+	.page {
+		position:relative;
+		border:1px solid #eee;
+		display:inline-block;
+		margin:10px 5px;
+		.title {
+			overflow:hidden;
+			font-size:10pt;
+			position:absolute;
+			left:20px;
+			bottom	:20px;
+			right:20px;
+			opacity:0;
+			z-index:10;
+			&:hover {
+				opacity:1.0;
+			}
+		}
+		.thumbnail { 
+			width:150px;
+		}
+		&:hover {
+			box-shadow: #eee 2px 2px;
+		}
+	}
+}
+
 .day-container {
 	position:relative;
 	min-height:400px;
