@@ -319,8 +319,9 @@ class TwitterService:
                         page_counter += 1
                     logging.info("Got {0} Pages of statuses".format(len(status_timeline_pages)))
                     first_pass = True
-            except:
+            except Exception as e:
                 logging.info('COULD NoT GET STATUS, PROBABLY NO UPDATES AS OF YET...')
+                logging.error(e)
             #print "GOT STATUS TIMELINE: "+str(len(status_timeline))
             #have we got any statuses?
             if (len(status_timeline)>0) or (len(status_timeline_pages)>0): 
