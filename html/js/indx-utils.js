@@ -25,6 +25,13 @@
 					}
 					return ret;
                 },
+                splitStringIntoChunksObj:function(str,len) {
+					var ret = {};
+					for (var offset = 0, strLen = str.length; offset < strLen; offset += len) {
+						ret[offset/len] = str.substring(offset, offset + len);
+					}
+					return ret;
+                },
                 inherit:function(p) {
                 	// inherit() returns a newly created object that inherits properties from the
 					// prototype object p.  It uses the ECMAScript 5 function Object.create() if
