@@ -249,6 +249,7 @@
 									{'created_at':{'$ge':toQueryTime(tstart)}},
 									{'created_at':{'$le':toQueryTime(tend)}}
 									] } );
+							console.log('issuing query ... ', JSON.stringify(query));
 							return search(box, query);
 						}
 						return u.dreject('must specify all arguments: tstart, tend');
