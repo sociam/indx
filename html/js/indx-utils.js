@@ -30,8 +30,8 @@
                 },
                 splitStringIntoChunksObj:function(str,len) {
 					var ret = {};
-					for (var offset = 0, strLen = str.length; offset < strLen; offset += len) {
-						ret[offset/len] = str.substring(offset, offset + len);
+					for (var i = 0, strLen = str.length; i*len < strLen; i += 1) {
+						ret[""+i] = str.substring(i*len, (i+1)*len);
 					}
 					return ret;
                 },

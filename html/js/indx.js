@@ -418,6 +418,9 @@ angular
 				}
 				return files.get(fid);
 			},
+			uncacheObj: function(obj) {
+				return this._objcache().remove(obj);
+			},
 			_setUpWebSocket:function() {
 				if (! this.getUseWebSockets() ) { return; }
 				this.disconnect();

@@ -14,17 +14,21 @@
             defaults: { enabled:true },
             initialize:function(attributes) {
                 var this_ = this;
+                this._fetching_thumbnail = {};
                 this.bind('user-action', function() { this_.handle_action.apply(this_, arguments); });
                 var _trigger = function(windowid, tabid, tab) {
                     var _done = function() {
                        this_.trigger('user-action', { url: tab.url, title: tab.title, favicon:tab.favIconUrl, tabid:tab.id, windowid:windowid, thumbnail:tabthumbs[tab.url] });
                     };
                     var _thumbs = function() { 
+                        console.log("_thumbs", tab.url, tab.status, 'already have? ', tabthumbs[tab.url] !== undefined);
                         if (tabthumbs[tab.url]) { 
                             _done(); 
                         } else if (tab.status == 'complete') {
                             // no thumb, loaded so let's capture
+                            console.log('getting thumb >> ');
                             this_._getThumbnail(tab.url).then(function(thumbnail_model) {
+                                console.log('continuation thumb ', thumbnail_model.id, _(thumbnail_model.attributes).keys().length);
                                 tabthumbs[tab.url] = thumbnail_model;
                                 _done();
                             }).fail(function(bail) { 
@@ -97,21 +101,26 @@
             },
             _getThumbnail : function(url) {
                 // gets a thumbnail object
-                var box = this.box, id = 'thumbnail-' + url, d = u.deferred();
-                box.getObj(id).then(function(model) { 
-                    // already have it? 
-                    if (model.peek('0')) {  return d.resolve(model);    }
-                    // don't have it already
-                    setTimeout(function() { 
-                        chrome.tabs.captureVisibleTab(undefined, { format:'jpeg', quality:50 }, function(dataUrl) {
-                            if (dataUrl) {
-                                model.set(u.splitStringIntoChunksObj(dataUrl,1000));  // encodeURIComponent(dataUrl);
+                var box = this.box, id = 'thumbnail-' + url, 
+                d = u.deferred(), this_ = this;
+                if (this._fetching_thumbnail[url]) { 
+                    console.log("already getting thumbnail >> ", url);
+                    this._fetching_thumbnail[url].then(function() { d.resolve(tabthumbs[url]); }).fail(d.reject);
+                } else {
+                    this._fetching_thumbnail[url] = d;
+                    chrome.tabs.captureVisibleTab(undefined, { format:'png' }, function(dataUrl) {
+                        box.getObj(id).then(function(model) { 
+                            // already have it? 
+                            delete this_._fetching_thumbnail[url];
+                            if (dataUrl !== undefined) {
+                                model.set(u.splitStringIntoChunksObj(dataUrl,1500));  // encodeURIComponent(dataUrl);
                             }
-                            console.log('thumbail model >> ', model.id, model.attributes);
-                            model.save().then(function() { d.resolve(model); }).fail(d.reject);
+                            // console.log('thumbail model >> ', model.id, model.attributes);
+                            model.set({type:"thumbnail"});
+                            model.save().then(function() { d.resolve(model); }).fail(function() { console.error("ERROR SAVING THUMBNAIL ", url); d.reject();});
                         });
-                    }, 250); // healthy 250msec delay
-                });
+                    });
+                }
                 return d.promise();
             },
             _attempt_reconnect:function() {

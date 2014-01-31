@@ -2,13 +2,14 @@
 /* global require, exports, console, process, module, L, angular, _, jQuery */
 
 angular
-	.module('wellbeing', ['ng','indx','infinite-scroll'])
+	.module('wellbeing', ['ng','indx','infinite-scroll','ngAnimate'])
 	.controller('pages', function($scope, client, utils, entities) { 
 		$scope.$watch('user + box', function() { 
 			var u = utils;
 			var sa = function(fn) { return u.safeApply($scope, fn); };
-
 			if (!$scope.user) { console.log('no user :( '); return; }
+			$scope.pages = [];
+
 			$scope.decodeThumb = function(th) { 
 				if (th) {
 					// console.log('th zero >> ', th[0]);
@@ -18,15 +19,26 @@ angular
 
 			client.store.getBox($scope.box).then(function(_box) { 
 				window.box = _box;
-				_box.on('obj-add', function(x) { 
-					console.log('obj-add >> ', x);
-					_box.getObj(x).then(function(model) { 
+				_box.on('obj-add', function(id) { 
+					console.log('obj-add >> ', id);
+					_box.getObj(id).then(function(model) { 
 						if (model && model.peek('type') == 'web-page') { 
-							sa(function() { 
-								if ($scope.pages.indexOf(model) < 0) { 
-									$scope.pages = [model].concat($scope.pages);
-								}
-							});
+							var pushit = function() { 
+								sa(function() { 
+									console.log('keeping obj ', model.id);
+									if ($scope.pages.indexOf(model) < 0) { 
+										$scope.pages = [model].concat($scope.pages);
+									}
+								}); 
+							};
+							if (!model.peek('thumbnail')) {
+								setTimeout(pushit, 1000);
+							} else {
+								pushit();
+							}
+						} else {
+							console.log('uncaching obj ', model.id);
+							_box.uncacheObj(model);
 						}
 					});
 				});
@@ -39,6 +51,11 @@ angular
 				});
 			}).fail(function(bail) { console.error(bail); });
 		});
+		window.scope = $scope;
+		$scope.addImg = function(thumbobj) {
+			var data = $scope.decodeThumb(thumbobj);
+			jQuery(".pages").append("<img class='page' data-add='manual' style='border: 1px solid red' src='"+data+"''>");
+		};
 	}).directive('dayContainer', function() {
 		return {
 			restrict:'E',
