@@ -102,13 +102,15 @@
                     // already have it? 
                     if (model.peek('0')) {  return d.resolve(model);    }
                     // don't have it already
-                    chrome.tabs.captureVisibleTab(undefined, { format:'jpeg', quality:50 }, function(dataUrl) {
-                        if (dataUrl) {
-                            model.set(u.splitStringIntoChunksObj(dataUrl,1000));  // encodeURIComponent(dataUrl);
-                        }
-                        console.log('thumbail model >> ', model.id, model.attributes);
-                        model.save().then(function() { d.resolve(model); }).fail(d.reject);
-                    });
+                    setTimeout(function() { 
+                        chrome.tabs.captureVisibleTab(undefined, { format:'jpeg', quality:50 }, function(dataUrl) {
+                            if (dataUrl) {
+                                model.set(u.splitStringIntoChunksObj(dataUrl,1000));  // encodeURIComponent(dataUrl);
+                            }
+                            console.log('thumbail model >> ', model.id, model.attributes);
+                            model.save().then(function() { d.resolve(model); }).fail(d.reject);
+                        });
+                    }, 250); // healthy 250msec delay
                 });
                 return d.promise();
             },
