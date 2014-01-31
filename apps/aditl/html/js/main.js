@@ -1,5 +1,5 @@
 /* jshint undef: true, strict:false, trailing:false, unused:false */
-/* global require, exports, console, process, module, L, angular, _ */
+/* global require, exports, console, process, module, L, angular, _, jQuery */
 
 angular
 	.module('wellbeing', ['ng','indx','infinite-scroll'])
@@ -16,7 +16,6 @@ angular
 
 			client.store.getBox($scope.box).then(function(_box) { 
 				window.box = _box;
-				box = _box;
 				entities.documents.getWebPage(_box).then(function(pages) {
 					window.pages = pages;
 					u.safeApply($scope, function() {  
@@ -71,8 +70,6 @@ angular
 					scope.map.setView([lat, lon], 18); 
 					L.marker([lat, lon]).addTo(scope.map);
 				}
-
-
 					// add a marker in the given location, attach some popup content to it and open the popup
 					    // .bindPopup(scope.location.peek('name') ? scope.location.peek('name') : scope.location.id)
 					    // .openPopup();
@@ -109,20 +106,67 @@ angular
 			return d.promise();
 		};
 
+		var getNikeFuel  = function(tstart,tend) {
+			var d = u.deferred();
+			jQuery.when(
+				entities.activities.getNikeStepsPerMin(this.box, tstart, tend),
+				entities.activities.getNikeCaloriesPerMin(this.box, tstart, tend),
+				entities.activities.getNikeFuelPerMin(this.box, tstart, tend),
+				entities.activities.getNikeStarsPerMin(this.box, tstart, tend)
+			).then(function(steps, calories, fuel, stars) {
+				// laura help me out here :) 
+				var totals = {};
+				totals.steps = steps && steps.length && steps.reduce(function(x,y) { return x.peek('val') + y.peek('val'); }, 0);
+				totals.calories = calories && calories.length && calories.reduce(function(x,y) { return x.peek('val') + y.peek('val'); }, 0);
+				totals.fuel = fuel && fuel.length && fuel.reduce(function(x,y) { return x.peek('val') + y.peek('val'); }, 0);
+				totals.stars = stars && stars.length && stars.reduce(function(x,y) { return x.peek('val') + y.peek('val'); }, 0);
+				d.resolve(totals);
+			}).fail(d.reject);
+			return d.promise();
+		};
+
+		var getFitBitMetrics  = function(tstart,tend) {
+			var d = u.deferred();
+			jQuery.when(
+				entities.activities.getFitbitStepsPerMin(this.box, tstart, tend),
+				entities.activities.getFitbitCaloriesPerMin(this.box, tstart, tend),
+				entities.activities.getFitbitDistancePerMin(this.box, tstart, tend),
+				entities.activities.getFitbitElevationPerMin(this.box, tstart, tend)
+			).then(function(steps, calories, distance, elevation) {
+				// laura help me out here :) 
+				var totals = {};
+				totals.steps = steps && steps.length && steps.reduce(function(x,y) { return x.peek('val') + y.peek('val'); }, 0);
+				totals.calories = calories && calories.length && calories.reduce(function(x,y) { return x.peek('val') + y.peek('val'); }, 0);
+				totals.distance = distance && distance.length && distance.reduce(function(x,y) { return x.peek('val') + y.peek('val'); }, 0);
+				totals.steps = elevation && elevation.length && elevation.reduce(function(x,y) { return x.peek('val') + y.peek('val'); }, 0);
+				d.resolve(totals);
+			}).fail(d.reject);
+			return d.promise();
+		};
+
+
 		var makeSegment = function(tstart, tend, segname, location) {
 			var seg = { 
 				tstart: tstart,
 				tend: tend,
 				name : segname,
 				location : location,
-				nike : [],
-				fitbit : [],
+				nike : {},
+				fitbit : {},
 				browsing: []
 			};
 
 			getBrowsingTopDocs(tstart,tend).then(function(topdocs) {
 				sa(function() { seg.documents = topdocs.slice(0,10);	});
 			});
+
+			getNikeFuel(tstart,tend).then(function(total) {
+				sa(function() { seg.nike = total; });
+			}).fail(function(bail) { console.log('couldnt get fuel '); });
+
+			getFitBitMetrics(tstart,tend).then(function(total) {
+				sa(function() {  seg.fitbit = total; });
+			}).fail(function(bail) { console.log('couldnt get fitbit '); });
 
 			return seg;
 		};

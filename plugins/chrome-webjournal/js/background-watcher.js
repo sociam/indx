@@ -15,30 +15,39 @@
                 var this_ = this;
                 this.bind('user-action', function() { this_.handle_action.apply(this_, arguments); });
                 var _trigger = function(windowid, tabid, tab) {
-                        var _done = function() {
-                           this_.trigger('user-action', { url: tab.url, title: tab.title, favicon:tab.favIconUrl, tabid:tab.id, windowid:windowid, thumbnail:tabthumbs[tab.url] });
-                        };
-                        var _thumbs = function() { 
-                            if (tabthumbs[tab.url]) { 
-                                _done(); 
-                            } else if (tab.status == 'complete') {
-                                // no thumb, loaded so let's capture
-                                console.log("capturing visible tab >> ");
-                                chrome.tabs.captureVisibleTab(undefined, { format:'jpeg', quality:50 }, function(dataUrl) {
-                                    // console.log('got a thumbnail for ', tab.url, dataUrl);
-                                    if (dataUrl) {
-                                        tabthumbs[tab.url] = u.splitStringIntoChunks(dataUrl,1000);  // encodeURIComponent(dataUrl);
-                                        console.log(' chunks >> ', tabthumbs[tab.url].length, typeof dataUrl, tabthumbs[tab.url][0], dataUrl);
-                                    }
-                                    _done();
-                                });
-                            } else {
-                                // loading, let's just start and try again
+                    var _done = function() {
+                       this_.trigger('user-action', { url: tab.url, title: tab.title, favicon:tab.favIconUrl, tabid:tab.id, windowid:windowid, thumbnail:tabthumbs[tab.url] });
+                    };
+                    var _thumbs = function() { 
+                        if (tabthumbs[tab.url]) { 
+                            _done(); 
+                        } else if (tab.status == 'complete') {
+                            // no thumb, loaded so let's capture
+                            console.log("capturing visible tab >> ");
+                            chrome.tabs.captureVisibleTab(undefined, { format:'jpeg', quality:50 }, function(dataUrl) {
+                                // console.log('got a thumbnail for ', tab.url, dataUrl);
+                                if (dataUrl) {
+                                    tabthumbs[tab.url] = u.splitStringIntoChunks(dataUrl,1000);  // encodeURIComponent(dataUrl);
+                                    console.log(' chunks >> ', tabthumbs[tab.url].length, typeof dataUrl, tabthumbs[tab.url][0], dataUrl);
+                                }
                                 _done();
-                            }
-                        };
-                        if (tab) { return _thumbs(); }
-                        chrome.tabs.get(tabid, function(_tab) { tab = _tab; _thumbs(); });
+                            });
+                        } else {
+                            // loading, let's just start and try again
+                            _done();
+                        }
+                    };
+                    if (tab) { return _thumbs(); }
+                    if (tabid) { 
+                        chrome.tabs.get(tabid, function(_tab) { 
+                            tab = _tab; 
+                            if (tab) { return _thumbs();  }
+                            this_.trigger('user-action', undefined);
+
+                        });
+                    } else {
+                        this_.trigger('user-action', undefined);
+                    }
                 };
                 // window created
                 // created new window, which has grabbed focus

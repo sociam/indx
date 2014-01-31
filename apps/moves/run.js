@@ -413,7 +413,7 @@ var MovesService = Object.create(nodeservice.NodeService, {
             var tplocations = (activity.trackPoints && activity.trackPoints.map(function(tP) { return this_._makeTrackPointPlace(tP); })) || [];
             u.when(tplocations).then(function(trackObjects)  {
                 // console.log('trackobjects >>> ', trackObjects);
-                console.log('MAKE ACTIVITY >> ', activity, activity.activity)
+                console.log('MAKE ACTIVITY >> ', activity, activity.activity);
                 entities.activities.make1(this_.box, activities[activity.activity],
                     this_.whom,
                     fromMovesDate(activity.startTime),
@@ -422,6 +422,7 @@ var MovesService = Object.create(nodeservice.NodeService, {
                     activity.steps,
                     activity.calories,
                     trackObjects).then(function(activity_model) { 
+                        activity_model.set({diary:this_.diary});
                         save_aggressively(activity_model).then(function() { da.resolve(activity_model); }).fail(da.reject); 
                     });
             }).fail(da.reject);
@@ -441,29 +442,24 @@ var MovesService = Object.create(nodeservice.NodeService, {
         value:function(segment) {
             // console.log('saveSegment >> ', fromMovesDate(segment.startTime), fromMovesDate(segment.endTime), segment.type, segment.place);
             var whom = this.whom, this_ = this, ds = u.deferred();
-            var get_acts = function(acts){  return acts.map(function(activity) { return this_._makeActivity(activity); }); };
-            
-            var dact = segment.activities ? get_acts(segment.activities) : u.dresolve();
-            var dpl = segment.place ? this_._makePlace(segment.place) : u.dresolve();
 
-            jQuery.when(u.when(dact), dpl).then(function(activities, place) { 
-                var saved_acts = u.when(activities.map(function(a) { 
-                    if (place) { a.set({where: place, diary:this_.diary}); }
-                    return save_aggressively(a);
-                }));
-                if (segment.type === 'move') {
-                    // then our subactivities are self-describing
-                    saved_acts.then(ds.resolve).fail(ds.reject);
-                } else {
-                    // this is a stay. 
-                    var from_t = fromMovesDate(segment.startTime), to_t = fromMovesDate(segment.endTime);
+            if (segment.type === 'move') {
+                u.when(segment.activities.map(function(activity) { 
+                    return this_._makeActivity(activity); 
+                })).then(ds.resolve).fail(ds.reject);
+            } else {
+                var dpl = segment.place ? this_._makePlace(segment.place) : u.dresolve();
+                // this is a stay. 
+                var from_t = fromMovesDate(segment.startTime), to_t = fromMovesDate(segment.endTime);
+                // we are ignoring simultaneous activities for now.
+                this_._makePlace(segment.place).then(function(place) { 
                     entities.activities.make1(this_.box, 'stay', this_.whom, from_t, to_t ).then(function(am) {
                         am.set({diary:this_.diary});
                         am.set({waypoints:[place]});
-                        u.when(save_aggressively(am), saved_acts).then(ds.resolve).fail(ds.reject);
+                        save_aggressively(am).then(ds.resolve).fail(ds.reject);
                     }).fail(ds.reject);
-                }
-            });
+                }).fail(ds.reject);
+            }
             return ds.promise();
         }
     },
