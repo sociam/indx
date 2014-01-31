@@ -48,6 +48,11 @@
 			</ul>
 		</div>
 		<div class="todos-body">
+			<div class="alert alert-info intro-step intro-step-create-list" ng-if="introStep === 'create-list'">
+				<i class="fa fa-long-arrow-left"></i>
+				<h3>Create your first todo list</h3>
+				<p>Enter a name for your list and press enter.</p>
+			</div>
 			<ul>
 				<li 	ng-repeat="todo in todos"
 						ng-click="editTodo(todo)"
@@ -70,6 +75,11 @@
 					</form>
 				</li>
 			</ul>
+			<div class="alert alert-info intro-step intro-step-create-todo" ng-if="introStep === 'create-todo'">
+				<i class="fa fa-long-arrow-left"></i>
+				<h3>Create your first todo</h3>
+				<p>Click the <i class="fa fa-plus"></i> button above.</p>
+			</div>
 		</div>
 	</div>
 

@@ -52,7 +52,7 @@ angular
 		// todo - check box is defined (or put in init)
 		$scope.createList = function () {
 			box.getObj('todoList-'  + u.uuid()).then(function (list) {
-				list.set({ title: [''] });
+				list.set({ title: [''], 'todos': [] });
 				newList = list;
 				updateLists();
 				$scope.editList(list);
@@ -97,10 +97,10 @@ angular
 				dfd.reject();
 			} else {
 				list.save().then(function () {
-					console.log('SAVED', list.get('title'))
+					console.log('SAVED', list.get('title'),app.get('lists'), [list])
 					if (list === newList) {
 						newList = undefined;
-						app.save('lists', [app.get('lists')].concat([list])).then(function () {
+						app.save('lists', app.get('lists').concat([list])).then(function () {
 							dfd.resolve();
 						});
 					} else {
@@ -120,7 +120,7 @@ angular
 		};
 
 		var updateLists = function () {
-			console.log('UPDATING LISTS');
+			console.log('UPDATING LISTS', app.get('lists'));
 			// update special lists;
 			var specialAll = _.findWhere(specialLists, { id: 'todo-list-all' }),
 				specialCompleted = _.findWhere(specialLists, { id: 'todo-list-completed' });
@@ -134,14 +134,26 @@ angular
 			}));
 
 
-			$scope.lists = [].concat(app.get('lists'), specialLists);
+			$scope.lists = [].concat(app.get('lists'));
 			console.log($scope.lists)
 			_.each($scope.lists, function (list) {
 				if (!list.has('title')) { list.set('title', ['Untitled list']) }
 				if (!list.has('todos')) { list.set('todos', []) }
 			});
+			delete $scope.introStep;
+			if ($scope.lists.length === 0) {
+				$scope.introStep = "create-list";
+			}
 			if (newList) { $scope.lists.push(newList); }
 
+			if ($scope.lists.length === 0) {
+				$scope.createList();
+				return;
+			}
+
+			$scope.lists = $scope.lists.concat(specialLists);
+
+			if (!state.selectedList) { $scope.selectList($scope.lists[0]); }
 
 			$update();
 		}
@@ -208,6 +220,7 @@ angular
 
 		var updateTodos = function () {
 			var list = state.selectedList;
+			console.log(list)
 			$scope.todos = [].concat(list.get('todos'));
 			console.log($scope.todos)
 			var lastOrder = 0;
