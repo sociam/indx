@@ -121,7 +121,17 @@ body { background: #f8f8f8; }
 				line-height: 40px;
 				font-size: 22px;
 				border-bottom: 1px solid #eee;
-				.createTodoLink {
+				&.end-cap {
+					height: 0;
+					.create-todo-link {
+						top: 10px;
+						opacity: 1;
+						.line {
+							display: none;
+						}
+					}
+				}
+				.create-todo-link {
 					position: absolute;
 					top: -15px;
 					left: 0;

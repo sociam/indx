@@ -59,7 +59,7 @@
 						ng-class="{	editing: todo === s.editingTodo,
 									loading: todo.loading,
 									completed: todo.attributes.completed[0] }">
-					<a ng-click="createTodo(todo.attributes.order[0])" class="createTodoLink" ng-if=""><div class="line"></div><div class="i"><i class="fa fa-plus"></i></div></a>
+					<a ng-click="createTodo(todo.attributes.order[0])" class="create-todo-link"  ng-if="!list.attributes.special"><div class="line"></div><div class="i"><i class="fa fa-plus"></i></div></a>
 					<form ng-submit="saveTodo(todo)">
 						<div class="completedBox" ng-click="toggleTodoCompleted(todo)">
 							<i class="fa fa-check" ng-if="todo.attributes.completed[0]"></i>
@@ -74,6 +74,7 @@
 						</div>
 					</form>
 				</li>
+				<li class="end-cap"><a ng-click="createTodo(todo.attributes.order[0])" class="create-todo-link" ng-if="!list.attributes.special"><div class="line"></div><div class="i"><i class="fa fa-plus"></i></div></a></li>
 			</ul>
 			<div class="alert alert-info intro-step intro-step-create-todo" ng-if="introStep === 'create-todo'">
 				<i class="fa fa-long-arrow-left"></i>
