@@ -34,7 +34,7 @@
 									set-focus="list === s.editingList">
 						</div>
 						<div class="static count">{{ countTodos(list) }}</div>
-						<div class="dropdown">
+						<div class="dropdown" ng-class="{ open: list.showDropdown }">
 							<div class="dropdown-button" ng-click="list.showDropdown = !list.showDropdown"><i class="fa fa-caret-down"></i></div>
 							<ul ng-show="list.showDropdown" class="dropdown-menu" >
 								<li ng-click="editList(list)"><a href="#">Rename</a></li>
