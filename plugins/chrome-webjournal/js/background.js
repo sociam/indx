@@ -4,6 +4,8 @@
 (function() {
     var server;
     var DEFAULT_URL = 'https://indx.local:8211';
+    var GEO_ENABLE = false;
+
     localStorage.indx_url = localStorage.indx_url || DEFAULT_URL;
 
     var setErrorBadge = function(errtext) {
@@ -148,7 +150,7 @@
         // main -------------->
         // background page
         window.utils = utils;
-        var winstance = watcher.init(), n_logged = 0, geoinstance = geowatcher.init();
+        var winstance = watcher.init(), n_logged = 0, geoinstance = GEO_ENABLE && geowatcher.init();
         // 
         var displayFail = function(reason) { 
             setErrorBadge('x' , reason);
@@ -162,7 +164,7 @@
             window.s = store;
             console.log('geoinstance >> ', geoinstance);
             winstance.set_store(store);
-            geoinstance.set({store:store});
+            if (geoinstance) { geoinstance.set({store:store}); }
             winstance.setError();
             store.on('disconnect', function() {
                 displayFail('disconnected from indx');

@@ -111,6 +111,15 @@ More installation and API documentation can be found on the INDX wiki:
 
 https://github.com/sociam/indx/wiki
 
+## OS X : Set up your keychain
+
+It is recommended that you set up python keyring to use OS X's keychain
+
+    mkdir ~/.local/share/python_keyring
+
+Now create the file ~/.local/share/python_keyring/keyringrc.cfg containing:
+    
+
 ## setting up INDX for SSL (recommended)
 
 It is recommended that you run INDX on SSL (https) instead of http for many

@@ -21,7 +21,8 @@ var nodeindx = require('../../lib/services/nodejs/nodeindx'),
     injector = nodeindx.injector,
     entities = injector.get('entities');
 
-var SEVEN_DAYS_USEC =  6*24*60*60*1000; // + 23*59*59*1000;
+var SEVEN_DAYS_USEC =  5*24*60*60*1000; // + 23*59*59*1000;
+var TWENTY_FOUR_HOURS_USEC = 24*60*60*1000;
 
 var toMovesDate = function(date) {
     u.assert(date instanceof Date, 'Must be a Date');
@@ -64,7 +65,7 @@ var save_aggressively = function(model) {
 };
 var quit = function(bail) { 
     console.error(bail); 
-    throw new Error("ERROR ", bail);
+    throw new Error('ERROR ', bail);
     // process.exit(-1);  
 };
 // var persist_thru_obsoletes = function(box, f, d) {
@@ -129,7 +130,7 @@ var MovesService = Object.create(nodeservice.NodeService, {
                 var today = new Date();
                 if (today.valueOf() - lastGrabbedDate.valueOf() < SEVEN_DAYS_USEC) {
                     // just bloody update once.
-                    return this_.getTimeline( lastGrabbedDate, today ).then(function() {
+                    return this_.getTimeline( new Date(lastGrabbedDate.valueOf() - TWENTY_FOUR_HOURS_USEC) , today ).then(function() {
                         updateLGD(today);
                         d.resolve();
                     }).fail(d.reject);
@@ -334,11 +335,36 @@ var MovesService = Object.create(nodeservice.NodeService, {
                     lon: longitude coordinate as number
         */        
         value:function(place) {
-            var dr = u.deferred(), this_ = this;
-            entities.locations.getByLatLng(this_.box, place.location.lat, place.location.lon).then(function(matching_locs) { 
-                if (matching_locs && matching_locs.length) {  dr.resolve(matching_locs[0]); } else {
+            var dr = u.deferred(), this_ = this, dfetch = u.deferred();
+
+            var trybyLatLng = function() {
+                var dfz = u.deferred();
+                entities.locations.getByLatLng(this_.box, place.location.lat, place.location.lon)
+                    .then(dfz.resolve).fail(dfz.reject);
+                return dfz.promise();
+            };
+            entities.locations.getByMovesId(this_.box, place.id).then(function(results) {
+                if (results && results.length) { return dfetch.resolve(results); }
+                if (place.foursquareId) {
+                    entities.locations.getByFoursquareId(this_.box, place.foursquareId).then(function(res2) {
+                        if (results && results.length) { return dfetch.resolve(results); }
+                        trybyLatLng().then(dfetch.resolve).fail(dfetch.reject);
+                    });
+                } else {
+                    trybyLatLng().then(dfetch.resolve).fail(dfetch.reject);
+                }
+            });
+
+            dfetch.then(function(matching_locs) { 
+                // if eveyrthing else fails!
+                if (matching_locs && matching_locs.length) { 
+                    console.log('matching places [', place.location.lat, place.location.lon, '] >> ', matching_locs.length, 
+                            matching_locs.map(function(x) { return x.id + ' :: ' + x.peek('latitude') + ', ' + x.peek('longitude'); }));
+                    dr.resolve(matching_locs[0]); 
+                } else {
+                    console.log(' no matching places, -- ', place.location.lat, ', ', place.location.lon, ' making a new one ');
                     entities.locations.make(this_.box, place.name, place.type, place.location.lat, place.location.lon, place.id,
-                        { foursquare_id: place.foursquare_id }).then(function(model_loc) { 
+                        { foursquare_id: place.foursquareId }).then(function(model_loc) { 
                             // save it before it gets lost
                             if (place.type == 'home') { model_loc.set({home_of: this_.whom}); }
                             if (place.type == 'work') { model_loc.set({work_of: this_.whom}); }
@@ -353,6 +379,7 @@ var MovesService = Object.create(nodeservice.NodeService, {
     },
     _makeTrackPointPlace: {
         value:function(trackPoint) {
+            console.log('makeTrackPointPlace > ', trackPoint);
             var dr = u.deferred(), this_ = this;
             entities.locations.getByLatLng(this_.box, trackPoint.lat, trackPoint.lon).then(function(matching_locs) { 
                 if (matching_locs && matching_locs.length) {  dr.resolve(matching_locs[0]); } else {
@@ -383,15 +410,19 @@ var MovesService = Object.create(nodeservice.NodeService, {
         value: function(activity) {
             var da = u.deferred(), this_ = this;
             var activities = { 'wlk' : 'walking', 'cyc' : 'cycling', 'run': 'running', 'trp':'transport'};
-            u.when(activity.trackPoints && activity.trackPoints.map(function(tP) { return this_._makeTrackPointPlace(tP); }) || u.dresolve()).then(function(trackObjects)  {
+            var tplocations = (activity.trackPoints && activity.trackPoints.map(function(tP) { return this_._makeTrackPointPlace(tP); })) || [];
+            u.when(tplocations).then(function(trackObjects)  {
+                // console.log('trackobjects >>> ', trackObjects);
+                console.log('MAKE ACTIVITY >> ', activity, activity.activity);
                 entities.activities.make1(this_.box, activities[activity.activity],
                     this_.whom,
                     fromMovesDate(activity.startTime),
                     fromMovesDate(activity.endTime),
                     activity.distance,
                     activity.steps,
-                    activities.calories,
+                    activity.calories,
                     trackObjects).then(function(activity_model) { 
+                        activity_model.set({diary:this_.diary});
                         save_aggressively(activity_model).then(function() { da.resolve(activity_model); }).fail(da.reject); 
                     });
             }).fail(da.reject);
@@ -409,28 +440,26 @@ var MovesService = Object.create(nodeservice.NodeService, {
             activities (optional): JSON array of activities for the segment
         */
         value:function(segment) {
+            // console.log('saveSegment >> ', fromMovesDate(segment.startTime), fromMovesDate(segment.endTime), segment.type, segment.place);
             var whom = this.whom, this_ = this, ds = u.deferred();
-            var get_acts = function(acts){  return acts.map(function(activity) { return this_._makeActivity(activity); }); };
-            var dact = segment.activities ? get_acts(segment.activities) : u.dresolve();
-            var dpl = segment.place ? this_._makePlace(segment.place) : u.dresolve();
 
-            jQuery.when(u.when(dact), dpl).then(function(activities, place) { 
-                var saved_acts = u.when(activities.map(function(a) { 
-                    if (place) { a.set({where: place, diary:this_.diary}); }
-                    return save_aggressively(a);
-                }));
-                if (segment.type === 'move') {
-                    // then our subactivities are self-describing
-                    saved_acts.then(ds.resolve).fail(ds.reject);
-                } else {
-                    // this is a stay. 
-                    var from_t = fromMovesDate(segment.startTime), to_t = fromMovesDate(segment.endTime);
+            if (segment.type === 'move') {
+                u.when(segment.activities.map(function(activity) { 
+                    return this_._makeActivity(activity); 
+                })).then(ds.resolve).fail(ds.reject);
+            } else {
+                var dpl = segment.place ? this_._makePlace(segment.place) : u.dresolve();
+                // this is a stay. 
+                var from_t = fromMovesDate(segment.startTime), to_t = fromMovesDate(segment.endTime);
+                // we are ignoring simultaneous activities for now.
+                this_._makePlace(segment.place).then(function(place) { 
                     entities.activities.make1(this_.box, 'stay', this_.whom, from_t, to_t ).then(function(am) {
                         am.set({diary:this_.diary});
-                        u.when(save_aggressively(am), saved_acts).then(ds.resolve).fail(ds.reject);
+                        am.set({waypoints:[place]});
+                        save_aggressively(am).then(ds.resolve).fail(ds.reject);
                     }).fail(ds.reject);
-                }
-            });
+                }).fail(ds.reject);
+            }
             return ds.promise();
         }
     },

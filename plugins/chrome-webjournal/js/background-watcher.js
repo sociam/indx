@@ -4,49 +4,84 @@
 (function() { 
     var OBJ_TYPE = localStorage.indx_webjournal_type || 'web-page-view';
     var OBJ_ID = localStorage.indx_webjournal_id || 'my-web-journal';
+    var tabthumbs = {};
 
     var app = angular.module('webjournal').factory('watcher', function(utils, client, entities, pluginUtils, $injector) {
         var u = utils, pu = pluginUtils;
+
         // window watcher
         var WindowWatcher = Backbone.Model.extend({
             defaults: { enabled:true },
             initialize:function(attributes) {
                 var this_ = this;
-                this.bind('user-action', function() {  
-                    // if (this_.get('enabled')) { 
-                        this_.handle_action.apply(this_, arguments); 
-                    // }  
-                });
+                this.bind('user-action', function() { this_.handle_action.apply(this_, arguments); });
+                var _trigger = function(windowid, tabid, tab) {
+                    var _done = function() {
+                       this_.trigger('user-action', { url: tab.url, title: tab.title, favicon:tab.favIconUrl, tabid:tab.id, windowid:windowid, thumbnail:tabthumbs[tab.url] });
+                    };
+                    var _thumbs = function() { 
+                        if (tabthumbs[tab.url]) { 
+                            _done(); 
+                        } else if (tab.status == 'complete') {
+                            // no thumb, loaded so let's capture
+                            this_._getThumbnail(tab.url).then(function(thumbnail_model) {
+                                tabthumbs[tab.url] = thumbnail_model;
+                                _done();
+                            }).fail(function(bail) { 
+                                console.error('error with thumbnail, ', bail);
+                            });
+                        } else {
+                            // loading, let's just start and try again
+                            _done();
+                        }
+                    };
+                    if (tab) { return _thumbs(); }
+                    if (tabid) { 
+                        chrome.tabs.get(tabid, function(_tab) { 
+                            tab = _tab; 
+                            if (tab) { return _thumbs();  }
+                            this_.trigger('user-action', undefined);
+
+                        });
+                    } else {
+                        this_.trigger('user-action', undefined);
+                    }
+                };
                 // window created
                 // created new window, which has grabbed focus
                 chrome.windows.onCreated.addListener(function(w) {
                     if (w && w.id) {
                         // console.log('window created >> ', w);
-                        chrome.tabs.getSelected(w.id, function(tab) { this_.trigger('user-action', { url: tab.url, title: tab.title, favicon:tab.favIconUrl, tabid: tab.id, windowid:w.id });  });
+                        chrome.tabs.query({windowId:w.id, active:true}, function(tab) { 
+                            if (tab) { _trigger(w.id, undefined, tab);  } else { this_.trigger('user-action', undefined); }
+                        });
                     }
                 });
                 // removed window, meaning focus lost
                 chrome.windows.onRemoved.addListener(function(window) { this_.trigger('user-action', undefined); });
                 // window focus changed
                 chrome.windows.onFocusChanged.addListener(function(w) {
-                    if (w >= 0) {
-                        chrome.tabs.getSelected(w, function(tab) {
-                            // console.info('window focus-change W:', w, ', tab:', tab, 'tab url', tab.url);
-                            this_.trigger('user-action', tab !== undefined ? { url: tab.url, title: tab.title, favicon:tab.favIconUrl, tabid: tab.id, windowid:w.id } : undefined);
+                    if (w && w.id) {
+                        // console.log('window created >> ', w);
+                        chrome.tabs.query({windowId:w.id, active:true}, function(tab) { 
+                            if (tab) { _trigger(w.id, undefined, tab);  } else { 
+                                this_.trigger('user-action', undefined);  
+                            }
                         });
                     }
                 });
                 // tab selection changed
-                chrome.tabs.onSelectionChanged.addListener(function(tabid, info, t) {
-                    chrome.tabs.getSelected(info.windowId, function(tab) {
-                        this_.trigger('user-action', tab !== undefined ? { url: tab.url, title: tab.title, favicon:tab.favIconUrl, tabid:tab.id, windowid:info.windowId } : undefined);
-                    });
+                chrome.tabs.onActivated.addListener(function(activeInfo) {
+                    var tabId = activeInfo.tabId, windowId = activeInfo.windowId;
+                    _trigger(windowId, tabId);
+
                 });
                 // updated a tab 
                 chrome.tabs.onUpdated.addListener(function(tabid, changeinfo, tab) {
                     // console.info('tab_updated', t.url, changeinfo.status);
                     if (changeinfo.status == 'loading') { return; }
-                    this_.trigger('user-action', { url: tab.url, title: tab.title, tabid: tab.id, favicon:tab.favIconUrl, windowid:window.id });
+                    _trigger(tab.windowId, tabid);
+                    // this_.trigger('user-action', { url: tab.url, title: tab.title, tabid: tab.id, favicon:tab.favIconUrl, windowid:window.id });
                 });
 
                 this._init_history();
@@ -58,8 +93,26 @@
                     this_._attempt_reconnect();
                     // ignore.
                 });
-
                 window.watcher = this;
+            },
+            _getThumbnail : function(url) {
+                // gets a thumbnail object
+                var box = this.box, id = 'thumbnail-' + url, d = u.deferred();
+                box.getObj(id).then(function(model) { 
+                    // already have it? 
+                    if (model.peek('0')) {  return d.resolve(model);    }
+                    // don't have it already
+                    setTimeout(function() { 
+                        chrome.tabs.captureVisibleTab(undefined, { format:'jpeg', quality:50 }, function(dataUrl) {
+                            if (dataUrl) {
+                                model.set(u.splitStringIntoChunksObj(dataUrl,1000));  // encodeURIComponent(dataUrl);
+                            }
+                            console.log('thumbail model >> ', model.id, model.attributes);
+                            model.save().then(function() { d.resolve(model); }).fail(d.reject);
+                        });
+                    }, 250); // healthy 250msec delay
+                });
+                return d.promise();
             },
             _attempt_reconnect:function() {
                 // very suspicious about this >_< .. TODO look at 
@@ -155,17 +208,17 @@
                 // if (tabinfo.favicon) { console.log('FAVICON ', tabinfo.favicon); }
                 setTimeout(function() { 
                     var now = new Date();
-                    if (this_.current_record !== undefined && url == this_.current_record.peek('what')) {
-                        // console.info('updating existing >>>>>>>>>>> ');
+                    if (this_.current_record !== undefined && this_.current_record.peek('what') && url == this_.current_record.peek('what').id) {
+                        console.info('updating existing >>>>>>>>>>> ', this_.current_record.peek('what').id);
                         this_.current_record.set({tend:now});
-                        this_.current_record.set(tabinfo);
+                        this_.current_record.peek('what').set(tabinfo);
                         this_._record_updated(this_.current_record).fail(function(bail) { 
                             console.error('error on save >> ', bail);
                             this_.trigger('connection-error', bail);
                         });
                     } else if (tabinfo) {
                         // different now
-                        // console.info('new record!');
+                        console.info('new record!');
                         if (this_.current_record) {
                             // finalise last one
                             this_.current_record.set({tend:now});
@@ -215,7 +268,9 @@
                 var this_ = this, box = this.box, store = this.get('store'), journal = this.get('journal'), 
                     current_record = this.current_record;
 
-                if (current_record) { return current_record.save(); } 
+                if (current_record) { 
+                    return u.when( current_record.save(), current_record.peek('what').save() );
+                } 
                 return u.dresolve();
 
                 // var signalerror = function(e) {  

@@ -24,11 +24,11 @@ from mimeparse import quality
 from urlparse import parse_qs
 from indx.user import IndxUser
 from twisted.internet.defer import Deferred
-try:
-    import cjson
-    logging.debug("Using CJSON.")
-except Exception as e:
-    logging.debug("No CJSON, falling back to python json.")
+#try:
+#    import cjson
+#    logging.debug("Using CJSON.")
+#except Exception as e:
+#    logging.debug("No CJSON, falling back to python json.")
 
 class BaseHandler(Resource):
     """ Add/remove boxes, add/remove users, change config. """
@@ -298,7 +298,8 @@ class BaseHandler(Resource):
         if additional_data:
             response.update(additional_data)
         try:
-            responsejson = cjson.encode(response)
+            #responsejson = cjson.encode(response)
+            responsejson = json.dumps(response)
             logging.debug("Encoding response with cjson")
         except Exception as e:
             responsejson = json.dumps(response)

@@ -172,7 +172,8 @@ class CLIClient:
     def update(self):
         """ Test to update objects in a box. """
         logging.debug("Updating data to box: '{0}' on server '{1}'".format(self.args['box'], self.args['server']))
-        return self.indx.update(self.args['version'], cjson.decode(self.args['data'].read()))
+        #return self.indx.update(self.args['version'], cjson.decode(self.args['data'].read()), all_unicode=True)
+        return self.indx.update(self.args['version'], json.loads(self.args['data'].read()))
 
 
     def delete(self):

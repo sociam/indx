@@ -158,7 +158,10 @@ class ObjectStoreQuery:
                 raise InvalidObjectQueryException("Invalid type of val: {0}".format(val))
 
         # INTERSET means that the default is AND if no $or or $and is specified.
-        return " INTERSECT ".join(subqueries), params
+        if len(subqueries) > 0:
+            return "(" + " INTERSECT ".join(subqueries) + ")", params
+        else:
+            return "", params # this means we can look at length of wheres in to_sql to determine if this is an empty query
 
 
     def to_sql(self, q, predicate_filter = None): 
@@ -190,7 +193,7 @@ class ObjectStoreQuery:
 
         sql = "SELECT DISTINCT {0} FROM wb_v_latest_triples ".format(", ".join(selects))
         if len(wheres) > 0:
-            sql += " WHERE wb_v_latest_triples.subject IN ({0})".format(wheres)
+            sql += " WHERE wb_v_latest_triples.subject IN {0}".format(wheres)
 
         logging.debug("ObjectStoreQuery to_sql, sql: {0}, params: {1}".format(sql, params))
 

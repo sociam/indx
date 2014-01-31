@@ -20,7 +20,7 @@ import json
 import cjson
 from twisted.internet.defer import Deferred
 import indx_pg2 as database
-from indx.crypto import auth_keys
+from indx.crypto import auth_keys, rsa_sign
 import indx.sync
 
 class IndxAsync:
@@ -37,9 +37,23 @@ class IndxAsync:
         try:
             def err_cb(failure):
                 logging.error("WebSocketsHandler receive, err_cb: {0}".format(failure))
-                
+            
+
+
             data = json.loads(frame)
-            if data['action'] == "auth":
+            if data.get("action") == "diff" and data.get("operation") == "update":
+                # received after login_keys succeeds and we send the diff/start message
+                self.remote_observer(data)
+                return
+
+            elif data.get('respond_to') == "login_keys":
+                # a response to our attempt to re-connect back to the client
+                logging.debug("Async got a respond to login_keys: {0}".format(data))
+                # TODO handle errors
+                self.sendJSON({"action": "diff", "operation": "start"}) 
+                return
+
+            elif data['action'] == "auth":
 
                 def token_cb(token):
                     try:    
@@ -65,7 +79,7 @@ class IndxAsync:
                 self.send200(data = {'sessionid': self.sessionid})
             elif data['action'] == "login_keys":
                 try:
-                    signature, key_hash, algo, method, appid = data['signature'], data['key_hash'], data['algo'], data['method'], data['appid']
+                    signature, key_hash, algo, method, appid, encpk2 = data['signature'], data['key_hash'], data['algo'], data['method'], data['appid'], data['encpk2']
                 except Exception as e:
                     logging.error("ASync login_keys error getting all parameters.")
                     return self.send400()
@@ -73,8 +87,7 @@ class IndxAsync:
                 def win(resp):
                     # authenticated now - state of this isn't saved though, we get a token immediately instead
 
-                    username, boxid = resp
-                    password = "" # TODO double-check this
+                    username, password, boxid = resp
                     origin = "/ws" # TODO double-check this
                     # get token, return that
 
@@ -91,7 +104,7 @@ class IndxAsync:
                                 # first, try to connect back through the websocket
                                 self.token = token
                                 self.connectBackToClient(key_hash, store).addCallbacks(lambda empty: logging.debug("ASync, success connecting back."), lambda failure: logging.error("ASync, failure connecting back: {0}".format(failure)))
-                                return self.send200(data = {"token": token.id})
+                                return self.send200(data = {"token": token.id, "respond_to": "login_keys"})
 
                             token.get_store().addCallbacks(store_cb, lambda failure: self.send500())
 
@@ -100,11 +113,10 @@ class IndxAsync:
 
                     self.webserver.database.lookup_best_acct(boxid, username, password).addCallbacks(got_acct, lambda conn: self.send401())
 
-
                 def fail(empty):
                     self.send401()
 
-                auth_keys(self.webserver.keystore, signature, key_hash, algo, method, self.sessionid).addCallbacks(win, fail)
+                auth_keys(self.webserver.keystore, signature, key_hash, algo, method, self.sessionid, encpk2).addCallbacks(win, fail)
 
             elif data['action'] == "diff":
                 # turn on/off diff listening
@@ -145,6 +157,31 @@ class IndxAsync:
 
         self.get_model_by_key(public_key_hash, store).addCallbacks(model_cb, return_d.errback)
         return return_d
+
+
+    def listen_remote(self, private_key, key_hash, observer, remote_encpk2):
+        self.remote_observer = observer 
+        keyauth = {"key_hash": key_hash, "private_key": private_key, "encpk2": remote_encpk2}
+
+        try:
+            SSH_MSG_USERAUTH_REQUEST = "50"
+            method = "publickey"
+            algo = "SHA512"
+
+            key_hash, private_key, encpk2 = keyauth['key_hash'], keyauth['private_key'], keyauth['encpk2']
+            if not (type(encpk2) == type("") or type(encpk2) == type(u"")):
+                encpk2 = json.dumps(encpk2)
+
+            ordered_signature_text = '{0}\t{1}\t"{2}"\t{3}\t{4}'.format(SSH_MSG_USERAUTH_REQUEST, self.sessionid, method, algo, key_hash)
+            signature = rsa_sign(private_key, ordered_signature_text)
+
+            values = {"action": "login_keys", "signature": signature, "key_hash": key_hash, "algo": algo, "method": method, "appid": "INDX ASync", "encpk2": encpk2}
+
+            self.sendJSON(values)
+
+        except Exception as e:
+            logging.error("ASync: {0}".format(e))
+
 
     def get_model_by_key(self, public_key_hash, store):
         """ Get the ID of a 'link' object, based on the hash of a public key it uses.
@@ -197,20 +234,21 @@ class IndxAsync:
         def store_cb(store):
             logging.debug("WebSocketsHandler listen_diff, store_cb: {0}".format(store))
 
-            def observer(diff):
+            def observer_local(diff):
                 """ Receive an update from the server. """
                 logging.debug("WebSocketsHandler listen_diff observer notified: {0}".format(diff))
 
                 self.sendJSON({"action": "diff", "operation": "update", "data": diff})
 
-            store.listen(observer) # no callbacks, nothing to do
+            store.listen(observer_local) # no callbacks, nothing to do
 
         self.token.get_store().addCallbacks(store_cb, err_cb)
 
     def sendJSON(self, data):
         """ Send data as JSON to the WebSocket. """
         logging.debug("ASync send JSON of data: {0}".format(data))
-        encoded = cjson.encode(data)
+        #encoded = cjson.encode(data)
+        encoded = json.dumps(data)
         self.send_f(encoded)
 
     def send500(self):

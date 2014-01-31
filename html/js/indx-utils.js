@@ -1,3 +1,6 @@
+/* jshint undef: true, strict:false, trailing:false, unused:false */
+/* global require, exports, console, process, module, L, angular, _, jQuery */
+
 (function() {
 	angular
 		.module('indx')
@@ -18,6 +21,28 @@
                 		return [a1[i],a2[i]];
                 	});
                 },
+                splitStringIntoChunks:function(str,len) {
+					var ret = [ ];
+					for (var offset = 0, strLen = str.length; offset < strLen; offset += len) {
+						ret.push(str.substring(offset, offset + len));
+					}
+					return ret;
+                },
+                splitStringIntoChunksObj:function(str,len) {
+					var ret = {};
+					for (var offset = 0, strLen = str.length; offset < strLen; offset += len) {
+						ret[offset/len] = str.substring(offset, offset + len);
+					}
+					return ret;
+                },
+                joinModelChunksIntoString:function(model) {
+                	// inverse of the last method
+					var strs = [], val;
+					for (var i = 0; (val = model.peek(''+i)) !== undefined; i++) {
+						strs.push(val);
+					}
+					return strs.join("");
+				},
                 inherit:function(p) {
                 	// inherit() returns a newly created object that inherits properties from the
 					// prototype object p.  It uses the ECMAScript 5 function Object.create() if

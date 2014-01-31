@@ -24,6 +24,6 @@
     "cookies",
     "history",
     "geolocation",
-    "https://*/*"
+    "<all_urls>"
   ]
 }
