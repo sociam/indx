@@ -7,12 +7,20 @@ angular
 		$scope.$watch('user + box', function() { 
 			var u = utils;
 			var pages = jQuery('.pages');
-			var templ = '<img class="page">';
+			var appenddebug = function(model) { 
+				var url = model.peek('thumbnail');
+				var row = ['<tr>','<td class="url">',model.id.slice(0,100),'</td>','<td>',url && url.length,'</td><td class="data"><a href="',url && url,'">',url && url.slice(0,300),'</a></td></tr>'].join('');
+				console.log('appending row ', row);
+				jQuery('#debugtable').append(row);
+			};
 			var prepend = function(model){
 				console.log('prepending ', model.id);
 				var datauri = model.peek('thumbnail');
-				var el = $(templ).attr('src',datauri).appendTo(pages);
-
+				if (datauri) { 
+					var templ = ['<a target="_blank" href="',model.id,'">','<img class="page" src="',datauri,'">','</a>'].join('');
+					$(templ).appendTo(pages)
+				}
+				appenddebug(model);
 			};
 			client.store.getBox($scope.box).then(function(_box) { 
 				_box.on('obj-add', function(id) { 
@@ -26,8 +34,11 @@ angular
 					});
 				});
 				entities.documents.getWebPage(_box).then(function(pages) {
+					console.log('got pages >> ', pages.length, pages);
 					window.pages = pages;
-					pages.map(function(page) { prepend(page); });
+					pages.map(function(page) { 
+						prepend(page); 
+					});
 				});
 			}).fail(function(bail) { console.error(bail); });
 		});

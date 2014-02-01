@@ -9,8 +9,10 @@
   </head>
   <body ng-app="wellbeing" ng-controller="pages2" ng-cloak>
 	<toolbar box-var='box' username-var='user'></toolbar>
-  	<div ng-show="user && box" class='pages container'>
-  	</div>
+  	<div ng-show="user && box" class='pages container'></div>
+    <div class="debug container">
+      <table id="debugtable"></table>
+    </div>
 	<div ng-show="!user">
 		<h1>Please log in.</h1>
 	</div>
