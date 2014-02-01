@@ -138,9 +138,7 @@ angular
 				return memo.concat(list.get('todos') || []);
 			}, []));
 
-			specialCompleted.set('todos', _.filter(specialAll.get('todos'), function (todo) {
-				return (todo.get('completed') || [])[0];
-			}));
+			specialCompleted.set('todos', [].concat(specialAll.get('todos')));
 
 			_.each(app.get('lists'), function (list) {
 				if (!list.has('title')) { list.set('title', ['Untitled list']) }
@@ -168,6 +166,14 @@ angular
 
 			_.each($scope.lists, function (list) {
 				if (!list.staged) { staged(list); }
+
+				list.set('count', [_.reject(list.get('todos'), function (todo) {
+					var reject = todo.has('completed') && todo.get('completed')[0];
+					if (list.has('special') && list.get('special')[0] === 'completed') {
+						reject = !reject;
+					}
+					return reject;
+				}).length]);
 			})
 
 			if (!state.selectedList) { $scope.selectList($scope.lists[0]); }
@@ -271,15 +277,21 @@ angular
 
 		var updateTodos = function () {
 			var list = state.selectedList,
-				todos = _.map(list.get('todos'), function (todo) {
+				specialList = list.has('special') ? list.get('special')[0] : false,
+				todos = _.chain(list.get('todos')).map(function (todo) {
 					if (!todo.has('title')) { todo.set('title', ['Untitled todo']) }
 					if (!todo.has('completed')) { todo.set('completed', [false]); }
 					if (!todo.has('order')) { todo.set('order', [0]); }
 					todo.off('change', updateTodos);
 					todo.on('change', updateTodos);
 					return todo;
-				});
-			list.save('force-update-hack', Math.random()); // hack to force updates on other clients
+				}).reject(function (todo) {
+					return specialList === 'completed' ? !todo.get('completed')[0] : todo.get('completed')[0];
+				}).value();
+			console.log('!!!!!!', specialList)
+			if (!specialList) {
+				list.save('force-update-hack', Math.random()); // hack to force updates on other clients
+			}
 			if (newTodo) { todos.push(newTodo); }
 			todos = _.sortBy(todos, function (todo) {
 				return todo.get('order')[0];
