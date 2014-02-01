@@ -30,7 +30,7 @@
 									placeholder="My todo list"
 									ng-model="list.staged.attributes.title[0]" 
 									ng-disabled="list !== s.editingList"
-									ng-blur="cancelEditList()"
+									ng-blur="normalLists.length === 0 || cancelEditList()"
 									ng-escape="cancelEditList()"
 									set-focus="list === s.editingList">
 						</div>

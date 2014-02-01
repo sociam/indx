@@ -149,6 +149,7 @@ angular
 			});
 
 			$scope.lists = [].concat(app.get('lists'));
+			$scope.normalLists = [].concat(app.get('lists'));
 
 			delete state.isFirstList;
 			if ($scope.lists.length === 0) {
