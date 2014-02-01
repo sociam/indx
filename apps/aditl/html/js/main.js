@@ -3,10 +3,21 @@
 
 angular
 	.module('wellbeing', ['ng','indx','infinite-scroll','ngAnimate'])
-	.controller('pages2', function($scope, client, utils, entities) { 
+	.directive('pages2page', function() { 
+		return {
+			restrict:'E',
+			scope:{ page:'=' },
+			replace:true,
+			templateUrl:'/apps/aditl/templates/pages2page.html',
+			controller:function($scope, utils) {
+				// literally nothing necessary here.
+			}
+		};
+	}).controller('pages2', function($scope, $injector, client, utils, entities) { 
 		$scope.$watch('user + box', function() { 
 			var u = utils;
-			var pages = jQuery('.pages');
+			var sa = function(fn) { return u.safeApply($scope, fn); };
+			$scope.pages = [];
 			var appenddebug = function(model) { 
 				var url = model.peek('thumbnail');
 				var row = ['<tr>','<td class="url">',model.id.slice(0,100),'</td>','<td>',url && url.length,'</td><td class="data"><a href="',url && url,'">',url && url.slice(0,300),'</a></td></tr>'].join('');
@@ -14,18 +25,16 @@ angular
 				jQuery('#debugtable').append(row);
 			};
 			var prepend = function(model){
-				console.log('prepending ', model.id);
+				var parent = jQuery('.pages');
 				var datauri = model.peek('thumbnail');
-				if (datauri) { 
-					var templ = ['<a target="_blank" href="',model.id,'">','<img class="page" src="',datauri,'">','</a>'].join('');
-					$(templ).appendTo(pages)
-				}
+				sa(function() { $scope.pages.push(model); });
 				appenddebug(model);
 			};
 			client.store.getBox($scope.box).then(function(_box) { 
 				_box.on('obj-add', function(id) { 
 					_box.getObj(id).then(function(model) { 
 						if (model && model.peek('type') == 'web-page') { 
+							console.log("new Page prepending >> ", model.id);
 							prepend(model);
 						} else {
 							console.log('uncaching obj ', model.id);

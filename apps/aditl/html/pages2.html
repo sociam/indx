@@ -9,7 +9,9 @@
   </head>
   <body ng-app="wellbeing" ng-controller="pages2" ng-cloak>
 	<toolbar box-var='box' username-var='user'></toolbar>
-  	<div ng-show="user && box" class='pages container'></div>
+  	<div ng-show="user && box" class='pages2 container'>
+      <pages2page page="p" ng-repeat="p in pages"></pages2page>      
+    </div>
     <div class="debug container">
       <table id="debugtable"></table>
     </div>
