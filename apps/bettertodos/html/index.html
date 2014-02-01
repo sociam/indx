@@ -9,7 +9,7 @@
 	<link href="/css/font-awesome.min.css" rel="stylesheet">
 	<title>Todo list</title>
 </head>
-<body ng-app="todos" ng-controller="todos">
+<body ng-app="todos" ng-controller="todos" ng-cloak>
 	<toolbar box-var='selectedBox' username-var='selectedUser'></toolbar>
 
 	<div class="todos-messages alert alert-info" ng-if="msg">{{ msg }}</div>

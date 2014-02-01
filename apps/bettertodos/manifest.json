@@ -3,7 +3,8 @@
 	"version": 0.8,
 	"description": "Stay organised with a simple todo list!",
 	"icons": {
-		"128": "icon.png"
+		"128": "icon.png",
+		"svg": "icon.svg"
 	},
 	"author": [
 		{
