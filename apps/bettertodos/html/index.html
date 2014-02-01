@@ -53,7 +53,7 @@
 				<h3>Create your first todo list</h3>
 				<p>Enter a name for your list and press enter.</p>
 			</div>
-			<ul ng-if="s.selectedList.isCreated()">
+			<ul ng-if="s.selectedList.attributes.special[0] || s.selectedList.isCreated()">
 				<li 	ng-repeat="todo in todos"
 						ng-click="editTodo(todo)"
 						ng-class="{	editing: todo === s.editingTodo,
