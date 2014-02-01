@@ -86,7 +86,9 @@ angular
 		};
 
 		$scope.cancelEditList = function () {
-			console.log('cancel')
+			console.log('cancel', state.editingList)
+			//console.log(state.editingList.previousAttributes())
+			//state.editingList.set(state.editingList.previousAttributes())
 			delete state.editingList;
 			newList = undefined;
 			updateLists();
@@ -98,7 +100,7 @@ angular
 			if (list.get('title')[0] === '') {
 				dfd.reject();
 			} else {
-				list.save().then(function () {
+				list.save(list.stagedAttributes).then(function () {
 					list.isCreated = function () { return true; }
 					console.log('SAVED', list.get('title'),app.get('lists'), [list])
 					if (list === newList) {
@@ -122,6 +124,14 @@ angular
 			return list.get('todos').length;
 		};
 
+
+		var updateStagedListList = function (list) {
+			list.stagedAttributes = {};
+			_.each(list.attributes, function (v, k) {
+				list.stagedAttributes[k] = _.clone(v);
+			});
+		};
+
 		var updateLists = function () {
 			console.log('UPDATING LISTS', app.get('lists'));
 			// update special lists;
@@ -136,14 +146,17 @@ angular
 				return (todo.get('completed') || [])[0];
 			}));
 
-
-			$scope.lists = [].concat(app.get('lists'));
-			console.log($scope.lists)
-			_.each($scope.lists, function (list) {
+			_.each(app.get('lists'), function (list) {
 				if (!list.has('title')) { list.set('title', ['Untitled list']) }
 				if (!list.has('todos')) { list.set('todos', []) }
 				list.isCreated = function () { return true; }
+				updateStagedList(list);
+				list.off('change', updateStagedList); // FIXME - not sure if needed
+				list.on('change', updateStagedList);
 			});
+
+			$scope.lists = [].concat(app.get('lists'));
+
 			delete state.isFirstList;
 			if ($scope.lists.length === 0) {
 				state.isFirstList = true;
