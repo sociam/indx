@@ -27,6 +27,8 @@ from tweepy import API
 from tweepy import Status
 from tweepy import Cursor
 from twisted.internet.defer import Deferred
+from twisted.internet import reactor, threads
+
 
 appid = "twitter_service"
 
@@ -263,30 +265,74 @@ class TwitterService:
         
         harvest_d = Deferred()
 
-        try:
-            self.api = tweepy.API(service.auth)
-            friends_list = self.api.friends_ids(service.twitter_username)
-            followers_list = self.api.followers_ids(service.twitter_username)
-            current_timestamp = str(time.time()).split(".")[0] #str(datetime.now())
-            timestamp = datetime.now().isoformat('T')
-            uniq_id = "twitter_user_network_at_"+current_timestamp
-            network_objs = {"@id":uniq_id, "app_object": appid, "twitter_username": service.twitter_username, "timestamp": timestamp, "friends_list": friends_list, "followers_list": followers_list}
-            logging.info("Found {0} Friends and {1} Followers".format(len(friends_list), len(followers_list)))
-            #print friends_objs
-            #for friend in friends_list:
-                #print friend
-            #now append the results
-            def update_cb(re):
-                logging.debug("network harvest async worked {0}".format(re))
+        def found_cb(results):
+            friends_number = 0
+            followers_number = 0
+            since_id_found = 0
+            try:
+                config_returned = results['data']['service_twitter_config']
+                friends_number = int(config_returned['friends_list_size'][0]['@value'])
+                followers_number = int(config_returned['followers_list_size'][0]['@value'])
+                since_id_found = int(config_returned['timeline_since_id'][0]['@value'])
+                logging.info('Found the Twitter Config Object.')
+                logging.info("Old Config: {0} Friends and {1} Followers".format(friends_number, followers_number))
+            except:
+                #print sys.exc_info()
+                pass
+
+            try:
+                self.api = tweepy.API(service.auth)
+                friends_list = self.api.friends_ids(service.twitter_username)
+                followers_list = self.api.followers_ids(service.twitter_username)
+                current_timestamp = str(time.time()).split(".")[0] #str(datetime.now())
+                timestamp = str(datetime.now().isoformat('T')).split(".")[0]
+                uniq_id = "twitter_user_network_at_"+current_timestamp
+                network_objs = {"@id":uniq_id, "app_object": appid, "twitter_username": service.twitter_username, "timestamp": timestamp, "friends_list": friends_list, "followers_list": followers_list}
+                new_friends_number = len(friends_list)
+                new_followers_number = len(followers_list)
+
+                if (friends_number != new_friends_number) or (followers_number != new_followers_number):
+                    logging.info("Twitter Config is old. Found {0} Friends and {1} Followers. Will Update".format(new_friends_number, new_followers_number))
+                    #print friends_objs
+                    #for friend in friends_list:
+                        #print friend
+                    #now append the results
+
+                    #also create the service_twitter_config obiect:
+                    twitter_config_obj = {"@id": "service_twitter_config", "app_object": appid, "config_last_updated_at": timestamp, 
+                    "config_for_twitter_user": service.twitter_username, "friends_list_generated_at": timestamp, "follower_list_generated_at": timestamp,
+                    "friends_list_size": str(len(friends_list)), "followers_list_size": str(len(followers_list)), "timeline_since_id": since_id_found}
+
+                    #give them to indx to add...
+                    objects_for_indx= []
+                    objects_for_indx.append(network_objs)
+                    objects_for_indx.append(twitter_config_obj)
+
+
+                    def update_cb(re):
+                        logging.debug("network harvest async worked {0}".format(re))
+                        harvest_d.callback(True)
+
+                    def update_cb_fail(re):
+                        logging.error("network harvest async failed {0}".format(re))
+                        harvest_d.errback
+
+                    self.insert_object_to_indx(service, objects_for_indx).addCallbacks(update_cb, update_cb_fail)
+                else:
+                    logging.info("Twitter Config is upto date. No need to update INDX")
+                    harvest_d.callback(True)
+            except:
+                logging.debug('harvest network failed')
                 harvest_d.callback(True)
 
-            def update_cb_fail(re):
-                logging.error("network harvest async failed {0}".format(re))
-                harvest_d.errback
+        def error_cb(re):
+            found_cb()
 
-            self.insert_object_to_indx(service, network_objs).addCallbacks(update_cb, update_cb_fail)
-        except:
-            logging.debug('harvest network failed')
+        def_search = Deferred()
+        find_twitter_config = {"@id": "service_twitter_config"} 
+        logging.info("Searching for twitter_config to check if network already harvested... ")
+        def_search = service.indx_con.query(json.dumps(find_twitter_config))
+        def_search.addCallbacks(found_cb, error_cb)
 
         return harvest_d
     
@@ -300,125 +346,170 @@ class TwitterService:
         #to-do
         timeline_harvest_cb = Deferred()
 
-        try:
-            #logging.debug('Getting Users Twitter Timeline since the last Id of {0}'.format(service.since_id))
-            self.api = tweepy.API(service.auth)
-            first_pass = False
-            status_timeline = []
-            status_timeline_pages = []
+        def found_cb(results):
+            friends_number = 0
+            followers_number = 0
+            since_id_found = 0
             try:
-                if service.since_id > 0:
-                    status_timeline = self.api.user_timeline(service.twitter_username, service.since_id)
-                else:
-                    status_timeline_pages = []
-                    logging.info("getting pages of status (it's working, just be patient...)")
-                    page_counter = 0
-                    for page in Cursor(self.api.user_timeline, id=service.twitter_username).pages():
-                        status_timeline_pages.append(page)
-                        logging.info("got page {0}".format(page_counter))
-                        page_counter += 1
-                    logging.info("Got {0} Pages of statuses".format(len(status_timeline_pages)))
-                    first_pass = True
-            except Exception as e:
-                logging.info('COULD NoT GET STATUS, PROBABLY NO UPDATES AS OF YET...')
-                logging.error(e)
-            #print "GOT STATUS TIMELINE: "+str(len(status_timeline))
-            #have we got any statuses?
-            if (len(status_timeline)>0) or (len(status_timeline_pages)>0): 
-                
-                #if we are dealing with the first pass of statuses, then do some processing
-                if first_pass:
-                    status_batch_for_indx = []
-                    status_objects_already_found = {}
-                    for page in status_timeline_pages:
-                        for status in page:
-                            #tweet = json.loads(status)
-                            #print str(status)
-                            tweet_indx = {}
-                            tweet_indx['@id'] = "twitter_status_tweet_id_"+unicode(status.id)
-                            tweet_indx['type'] = "post"
-                            tweet_indx['tweet_id'] = unicode(status.id)
-                            tweet_indx['app_object'] = appid
-                            text = unicode(status.text)
-                            tweet_indx['tweet_text'] = text
-                            tweet_indx['tweet_user_id'] = status.author.name
-                            tweet_indx['created_at'] = self.iso_timestamp(str(status.created_at))
-                            tweet_indx['retweet_count'] = status.retweet_count
+                config_returned = results['data']['service_twitter_config']
+                friends_number = int(config_returned['friends_list_size'][0]['@value'])
+                followers_number = int(config_returned['followers_list_size'][0]['@value'])
+                since_id_found = int(config_returned['timeline_since_id'][0]['@value'])
 
-                            #find anything about the tweet user (Your name might have changed, good to check..)
-                            try:
-                                tweet_user = status.author
-                                twitter_user_indx = {}
-                                twitter_user_indx['@id'] = "twitter_user_me" #+unicode(tweet_user.id)
-                                twitter_user_indx['type'] = "user"
-                                twitter_user_indx['twitter_user_id'] = unicode(tweet_user.id)
-                                twitter_user_indx['twitter_user_name'] = tweet_user.name
-                                twitter_user_indx['account_created_at'] = self.iso_timestamp(str(tweet_user.created_at))
-                                twitter_user_indx['followers_count'] = tweet_user.followers_count
-                                twitter_user_indx['friends_count'] = tweet_user.friends_count
-                                twitter_user_indx['statuses_count'] = tweet_user.statuses_count
-                                twitter_user_indx['profile_image_url'] = tweet_user.profile_image_url
+                logging.info('Found the Twitter Config Object.')
+                logging.info("Old Config: {0} Since ID".format(since_id_found))
+            except:
+                #print sys.exc_info()
+                pass
 
-                                #update the status object...
-                                tweet_indx['tweet_user_id_indx'] = twitter_user_indx['@id']
+
+            #if sinceIs found, then we need to check index to see if that object has been added...
+            try:
+                #logging.debug('Getting Users Twitter Timeline since the last Id of {0}'.format(service.since_id))
+                self.api = tweepy.API(service.auth)
+                first_pass = False
+                second_pass = False
+                status_timeline = []
+                status_timeline_pages = []
+                try:
+                    if since_id_found > 0:
+                        status_timeline = self.api.user_timeline(service.twitter_username, since_id_found)
+                        second_pass = True
+                    else:
+                        status_timeline_pages = []
+                        logging.info("No Previous Status Objects Found, Getting all status backlog (it's working, just be patient...)")
+                        page_counter = 0
+                        for page in Cursor(self.api.user_timeline, id=service.twitter_username).pages():
+                            status_timeline_pages.append(page)
+                            logging.info("got page {0}".format(page_counter))
+                            page_counter += 1
+                        logging.info("Got {0} Pages of statuses".format(len(status_timeline_pages)))
+                        first_pass = True
+                except Exception as e:
+                    logging.info('Could not get Twitter Status Tweets, Probably no updates as of yet...')
+                    #logging.error(e)
+
+                #print "GOT STATUS TIMELINE: "+str(len(status_timeline))
+                #have we got any statuses?
+                if (len(status_timeline)>0) or (len(status_timeline_pages)>0): 
+
+
+                    if second_pass:
+                        logging.info("Found some new statuses. Will Inster the latest....")
+                    
+                    #if we are dealing with the first pass of statuses, then do some processing
+                    if first_pass:
+                        status_batch_for_indx = []
+                        status_objects_already_found = {}
+                        for page in status_timeline_pages:
+                            for status in page:
+                                #tweet = json.loads(status)
+                                #print str(status)
+                                tweet_indx = {}
+                                tweet_indx['@id'] = "twitter_status_tweet_id_"+unicode(status.id)
+                                tweet_indx['type'] = "post"
+                                tweet_indx['tweet_id'] = unicode(status.id)
+                                tweet_indx['app_object'] = appid
+                                text = unicode(status.text)
+                                tweet_indx['tweet_text'] = text
+                                tweet_indx['tweet_user_id'] = status.author.name
+                                tweet_indx['created_at'] = self.iso_timestamp(str(status.created_at))
+                                tweet_indx['retweet_count'] = status.retweet_count
+
+                                #find anything about the tweet user (Your name might have changed, good to check..)
                                 try:
-                                    if status_objects_already_found[twitter_user_indx['@id']]:
-                                        pass
-                                    #found it so, do nothing
-                                except:
-                                    status_objects_already_found[twitter_user_indx['@id']] = True
-                                    status_batch_for_indx.append(twitter_user_indx)
+                                    tweet_user = status.author
+                                    twitter_user_indx = {}
+                                    twitter_user_indx['@id'] = "twitter_user_me" #+unicode(tweet_user.id)
+                                    twitter_user_indx['type'] = "user"
+                                    twitter_user_indx['twitter_user_id'] = unicode(tweet_user.id)
+                                    twitter_user_indx['twitter_user_name'] = tweet_user.name
+                                    twitter_user_indx['account_created_at'] = self.iso_timestamp(str(tweet_user.created_at))
+                                    twitter_user_indx['followers_count'] = tweet_user.followers_count
+                                    twitter_user_indx['friends_count'] = tweet_user.friends_count
+                                    twitter_user_indx['statuses_count'] = tweet_user.statuses_count
+                                    twitter_user_indx['profile_image_url'] = tweet_user.profile_image_url
 
-                            except:
-                                pass
-
-
-                            #now find anything about where the tweet was made...
-                            try:
-
-                                obj_id = unicode(tweet_user['location'].replace(",","_").replace(" ",""))
-                                if len(obj_id) > 2:
-                                    obj_id = "twitter_user_location_id_"+obj_id
-                                    twitter_user_location_indx = {}
-                                    twitter_user_location_indx['@id'] = obj_id
-                                    twitter_user_location_indx['type'] = "location"
-                                    twitter_user_location_indx['location'] = twitter_user_indx['location']
-
-                                    #now the status can be linked to the location...
-                                    twitter_user_indx['twitter_user_location_indx'] = twitter_user_location_indx['@id']
-                                    # make a check to see if the object is areadly there
+                                    #update the status object...
+                                    tweet_indx['tweet_user_id_indx'] = twitter_user_indx['@id']
                                     try:
-                                        if status_objects_already_found[twitter_user_location_indx['@id']]:
+                                        if status_objects_already_found[twitter_user_indx['@id']]:
                                             pass
                                         #found it so, do nothing
                                     except:
-                                        status_objects_already_found[twitter_user_location_indx['@id']] = True
-                                        status_batch_for_indx.append(twitter_user_location_indx)
-                            except:
-                                pass
+                                        status_objects_already_found[twitter_user_indx['@id']] = True
+                                        status_batch_for_indx.append(twitter_user_indx)
 
-                            #finally add the tweet
-                            status_batch_for_indx.append(tweet_indx)
+                                except:
+                                    pass
 
+
+                                #now find anything about where the tweet was made...
+                                try:
+
+                                    obj_id = unicode(tweet_user['location'].replace(",","_").replace(" ",""))
+                                    if len(obj_id) > 2:
+                                        obj_id = "twitter_user_location_id_"+obj_id
+                                        twitter_user_location_indx = {}
+                                        twitter_user_location_indx['@id'] = obj_id
+                                        twitter_user_location_indx['type'] = "location"
+                                        twitter_user_location_indx['location'] = twitter_user_indx['location']
+
+                                        #now the status can be linked to the location...
+                                        twitter_user_indx['twitter_user_location_indx'] = twitter_user_location_indx['@id']
+                                        # make a check to see if the object is areadly there
+                                        try:
+                                            if status_objects_already_found[twitter_user_location_indx['@id']]:
+                                                pass
+                                            #found it so, do nothing
+                                        except:
+                                            status_objects_already_found[twitter_user_location_indx['@id']] = True
+                                            status_batch_for_indx.append(twitter_user_location_indx)
+                                except:
+                                    pass
+
+                                #finally add the tweet
+                                status_batch_for_indx.append(tweet_indx)
+
+                                #get the latest since ID
+                                if int(tweet_indx['tweet_id']) > since_id_found:
+                                    since_id_found = int(tweet_indx['tweet_id'])
+
+                        #now create the config obj...
+                        timestamp = str(datetime.now().isoformat('T')).split(".")[0]
+                        twitter_config_obj = {"@id": "service_twitter_config", "app_object": appid, "config_last_updated_at": timestamp, 
+                        "config_for_twitter_user": service.twitter_username, "friends_list_generated_at": timestamp, "follower_list_generated_at": timestamp,
+                        "friends_list_size": friends_number, "followers_list_size": followers_number, "timeline_since_id": since_id_found}
+                        #and add it to commit to indx
+                        status_batch_for_indx.append(twitter_config_obj)
+
+
+                    def update_cb(re):
+                        logging.debug("timeline harvest async worked {0}".format(re))
+                        timeline_harvest_cb.callback(True)
+
+                    def update_cb_fail(re):
+                        logging.error("timeline harvest async failed {0}".format(re))
+                        timeline_harvest_cb.errback
+
+                    self.insert_object_to_indx(service, status_batch_for_indx).addCallbacks(update_cb, update_cb_fail)
+                
                 else:
-                    pass #for now...
-
-
-                def update_cb(re):
-                    logging.debug("timeline harvest async worked {0}".format(re))
                     timeline_harvest_cb.callback(True)
 
-                def update_cb_fail(re):
-                    logging.error("timeline harvest async failed {0}".format(re))
-                    timeline_harvest_cb.errback
-
-                self.insert_object_to_indx(service, status_batch_for_indx).addCallbacks(update_cb, update_cb_fail)
-            
-            else:
+            except:
+                logging.error('twitter timeline harvest failed {0}'.format(sys.exc_info()))
                 timeline_harvest_cb.callback(True)
-        except:
-            logging.error('twitter timeline harvest failed {0}'.format(sys.exc_info()))
-            timeline_harvest_cb.callback(True)
+
+
+        def error_cb(re):
+            found_cb()
+
+        def_search = Deferred()
+        find_twitter_config = {"@id": "service_twitter_config"} 
+        logging.info("Searching for twitter_config to check if network already harvested... ")
+        def_search = service.indx_con.query(json.dumps(find_twitter_config))
+        def_search.addCallbacks(found_cb, error_cb)
 
         return timeline_harvest_cb
 
