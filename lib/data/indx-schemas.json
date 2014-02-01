@@ -59,7 +59,7 @@
                 "next-version": "",
                 "sql": [
                     "ALTER TABLE wb_strings ADD COLUMN uuid text NULL;",
-                    "UPDATE wb_strings SET uuid = string;",
+                    "UPDATE wb_strings SET uuid = md5(string);",
                     "ALTER TABLE wb_strings ALTER COLUMN uuid SET NOT NULL;",
                     "ALTER TABLE wb_strings ADD COLUMN chunk integer NOT NULL DEFAULT 1;",
                     "",
