@@ -6,7 +6,7 @@
 
 angular
 	.module('indx')
-	.factory('staged', function (client) {
+	.factory('staged', function () {
 		'use strict';
 
 		var cloneAttributes = function (attributes) {
