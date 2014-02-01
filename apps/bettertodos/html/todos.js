@@ -258,12 +258,10 @@ angular
 
 	}).directive('setFocus', function($timeout) {
 		return {
-			link: function(scope, element, attrs) {
-				scope.$watch(attrs.setFocus, function (value) {
-					console.log(value)
+			link: function($scope, element, attrs) {
+				$scope.$watch(attrs.setFocus, function (value) {
 					if (value === true) { 
-						element[0].focus();
-						scope[attrs.focusMe] = false;
+						setTimeout(function () { element[0].focus(); });
 					}
 				});
 			}
