@@ -23,6 +23,7 @@ angular
 			console.log('init');
 
 			box = b;
+			$scope.box = b; // FIXME remove (just for console use)
 
 			box.getObj('todoApp').then(function (a) {
 				app = a;
@@ -55,6 +56,7 @@ angular
 				list.set({ title: [''], 'todos': [] });
 				newList = list;
 				updateLists();
+				list.isCreated = function () { return false; }
 				$scope.editList(list);
 			});
 		};
@@ -97,6 +99,7 @@ angular
 				dfd.reject();
 			} else {
 				list.save().then(function () {
+					list.isCreated = function () { return true; }
 					console.log('SAVED', list.get('title'),app.get('lists'), [list])
 					if (list === newList) {
 						newList = undefined;
@@ -139,6 +142,7 @@ angular
 			_.each($scope.lists, function (list) {
 				if (!list.has('title')) { list.set('title', ['Untitled list']) }
 				if (!list.has('todos')) { list.set('todos', []) }
+				list.isCreated = function () { return true; }
 			});
 			delete state.isFirstList;
 			if ($scope.lists.length === 0) {
