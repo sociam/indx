@@ -22,12 +22,11 @@
                     };
                     var _thumbs = function() { 
                         console.log("_thumbs", tab.url, tab.status, 'already have? ', tabthumbs[tab.url] !== undefined);
-                        if (tabthumbs[tab.url]) { 
-                            _done(); 
-                        } else if (tab.status == 'complete') {
+                        if (tabthumbs[tab.url]) {  _done(); } 
+                        else if (tab.status == 'complete') {
                             // no thumb, loaded so let's capture
                             console.log('getting thumb >> ');
-                            this_._getThumbnail(tab.url).then(function(thumbnail_model) {
+                            this_._getThumbnail(windowid, tab.url).then(function(thumbnail_model) {
                                 // console.log('continuation thumb ', thumbnail_model.id, _(thumbnail_model.attributes).keys().length);
                                 tabthumbs[tab.url] = thumbnail_model;
                                 _done();
@@ -99,17 +98,22 @@
                 });
                 window.watcher = this;
             },
-            _getThumbnail : function(url) {
+            _getThumbnail : function(wid,url) {
                 // gets a thumbnail object
                 var box = this.box, id = 'thumbnail-' + url, 
                 d = u.deferred(), this_ = this;
                 if (this._fetching_thumbnail[url]) { 
-                    console.log("already getting thumbnail >> ", url);
+                    // console.log('already getting thumbnail >> ', url);
                     this._fetching_thumbnail[url].then(function() { d.resolve(tabthumbs[url]); }).fail(d.reject);
                 } else {
                     this._fetching_thumbnail[url] = d;
-                    chrome.tabs.captureVisibleTab(undefined, { format:'png' }, function(dataUrl) {
-                        d.resolve(dataUrl);                        
+                    chrome.tabs.captureVisibleTab(wid, { format:'png' }, function(dataUrl) {
+                        if (dataUrl) {
+                            u.resizeImage(dataUrl, 320, 320).then(function(smallerDataUri) {
+                                delete this_._fetching_thumbnail[url];
+                                d.resolve(smallerDataUri); 
+                            });
+                        } else { d.resolve(); }
                         // box.getObj(id).then(function(model) { 
                         //     // already have it? 
                         //     delete this_._fetching_thumbnail[url];

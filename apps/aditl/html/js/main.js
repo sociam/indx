@@ -3,20 +3,47 @@
 
 angular
 	.module('wellbeing', ['ng','indx','infinite-scroll','ngAnimate'])
-	.controller('pages', function($scope, client, utils, entities) { 
+	.controller('pages2', function($scope, client, utils, entities) { 
+		$scope.$watch('user + box', function() { 
+			var u = utils;
+			var pages = jQuery('.pages');
+			var templ = '<img class="page">';
+			var prepend = function(model){
+				console.log('prepending ', model.id);
+				var datauri = model.peek('thumbnail');
+				var el = $(templ).attr('src',datauri).appendTo(pages);
+
+			};
+			client.store.getBox($scope.box).then(function(_box) { 
+				_box.on('obj-add', function(id) { 
+					_box.getObj(id).then(function(model) { 
+						if (model && model.peek('type') == 'web-page') { 
+							prepend(model);
+						} else {
+							console.log('uncaching obj ', model.id);
+							_box.uncacheObj(model);
+						}
+					});
+				});
+				entities.documents.getWebPage(_box).then(function(pages) {
+					window.pages = pages;
+					pages.map(function(page) { prepend(page); });
+				});
+			}).fail(function(bail) { console.error(bail); });
+		});
+		window.scope = $scope;
+		// $scope.addImg = function(thumbobj) {
+		// 	var data = $scope.decodeThumb(thumbobj);
+		// 	jQuery(".pages").append("<img class='page' data-add='manual' style='border: 1px solid red' src='"+data+"''>");
+		// };
+	}).controller('pages', function($scope, client, utils, entities) { 
 		$scope.$watch('user + box', function() { 
 			var u = utils;
 			var sa = function(fn) { return u.safeApply($scope, fn); };
 			if (!$scope.user) { console.log('no user :( '); return; }
 			$scope.pages = [];
 
-			$scope.decodeThumb = function(th) { 
-				return th; 
-				// if (th) {
-				// 	// console.log('th zero >> ', th[0]);
-				// 	return utils.joinModelChunksIntoString(th);
-				// }
-			};
+
 
 			client.store.getBox($scope.box).then(function(_box) { 
 				window.box = _box;
@@ -29,14 +56,12 @@ angular
 									console.log('keeping obj ', model.id);
 									if ($scope.pages.indexOf(model) < 0) { 
 										$scope.pages = [model].concat($scope.pages);
+										// $scope.pages.push(model);
 									}
 								}); 
 							};
-							if (!model.peek('thumbnail')) {
-								setTimeout(pushit, 1000);
-							} else {
-								pushit();
-							}
+							// if (!model.peek('thumbnail')) {	setTimeout(pushit, 1000); } else { pushit();}
+							pushit();
 						} else {
 							console.log('uncaching obj ', model.id);
 							_box.uncacheObj(model);
@@ -53,10 +78,10 @@ angular
 			}).fail(function(bail) { console.error(bail); });
 		});
 		window.scope = $scope;
-		$scope.addImg = function(thumbobj) {
-			var data = $scope.decodeThumb(thumbobj);
-			jQuery(".pages").append("<img class='page' data-add='manual' style='border: 1px solid red' src='"+data+"''>");
-		};
+		// $scope.addImg = function(thumbobj) {
+		// 	var data = $scope.decodeThumb(thumbobj);
+		// 	jQuery(".pages").append("<img class='page' data-add='manual' style='border: 1px solid red' src='"+data+"''>");
+		// };
 	}).directive('dayContainer', function() {
 		return {
 			restrict:'E',
@@ -166,7 +191,7 @@ angular
 				entities.activities.getFitbitElevationPerMin(box, tstart, tend)
 			).then(function(steps, calories, distance, floors, elevation) {
 				// laura help me out here :) 
-				console.log("FITBITS >> ", steps)
+				// console.log("FITBITS >> ", steps);
 				var totals = {};
 				totals.steps = steps && steps.length && steps.reduce(function(x,y) { return x + parseFloat(y.peek('value')); }, 0);
 				totals.calories = calories && calories.length && calories.reduce(function(x,y) { return x + parseFloat(y.peek('value')); }, 0);

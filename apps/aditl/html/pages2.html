@@ -7,15 +7,9 @@
 	<link rel="stylesheet/less" type="text/css" href="css/wellbeing.less">	
 	<title>indx :: web pages</title>
   </head>
-  <body ng-app="wellbeing" ng-controller="pages" ng-cloak>
+  <body ng-app="wellbeing" ng-controller="pages2" ng-cloak>
 	<toolbar box-var='box' username-var='user'></toolbar>
   	<div ng-show="user && box" class='pages container'>
-      <div ng-repeat="d in pages" class="page" ng-show="d.peek('thumbnail')" data-url="{{d.id}}">
-        <a ng-href="{{ d.peek('thumbnail') }}" target="_blank">
-         <img class='thumbnail' ng-show="{{d.attributes.thumbnail[0]}}" ng-src="{{ d.attributes.thumbnail[0] }}">
-         <div class="title">{{ d.peek('title') }}</div>
-       </a>
-      </div>
   	</div>
 	<div ng-show="!user">
 		<h1>Please log in.</h1>

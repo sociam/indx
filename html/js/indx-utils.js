@@ -153,6 +153,28 @@
 				NotImplementedYet:function() {
 					throw new Error('Not Implemented Yet');
 				},
+				resizeImage:function(dataURI, width, height) {
+					var d = this.deferred(), this_ = this;
+					if (dataURI) {
+			            var canvas, context, image, imageData;
+			            canvas = document.createElement('canvas');
+			            canvas.width = width;
+			            canvas.height = height;
+			            context = canvas.getContext('2d');
+			            image = new Image();
+			            image.addEventListener('load', function(){
+							console.log('resize load');
+							var cw = image.width, ch = image.height;
+							var ratio = width*1.0/cw;
+							console.log('new width height ', cw, ch, canvas.width, Math.round(ratio*ch));
+			                context.drawImage(image, 0, 0, canvas.width, Math.round(ratio*ch)); // , canvas.height);
+			                imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+			                d.resolve(canvas.toDataURL());
+			            }, false);
+			            image.src = dataURI;
+			        } else { d.reject(); }
+			        return d.promise();
+				},
 				getParameterByName: function(name,str) {
 					name = name.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
 					var regexS = "[\\?&]" + name + "=([^&#]*)";

@@ -32,6 +32,8 @@
 	}
 	
 	.page {
+        -webkit-transition:0.5s linear all;
+		transition:0.5s linear all;		
 		position:relative;
 		border:1px solid #eee;
 		display:inline-block;
@@ -55,6 +57,8 @@
 		}
 		&:hover {
 			box-shadow: #eee 2px 2px;
+			width:250px;
+			.thumbnail { width:250px; }
 		}
 	}
 }
