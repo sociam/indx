@@ -216,24 +216,23 @@ angular
 			state.editingTodo = todo;
 		}
 
-		$scope.cancelEditTodo = function () {
-			delete state.editingTodo;
-			newTodo = undefined;
-			updateTodos();
-		};
-
 		$scope.saveTodo = function (todo) {
 			var dfd = $.Deferred(),
 				list = state.selectedList;
 			todo.loading = true;
 			if (todo.get('title')[0] === '') { // delete the todo
-				todo.destroy().then(function () {
-					var todos = [].concat(list.get('todos'));
-					todos.splice(todos.indexOf(todo), 1);
-					list.save('todos', todos).then(function () {
-						dfd.resolve();
+				if (todo === newTodo) {
+					newTodo = undefined;
+					dfd.resolve();
+				} else {
+					todo.destroy().then(function () {
+						var todos = [].concat(list.get('todos'));
+						todos.splice(todos.indexOf(todo), 1);
+						list.save('todos', todos).then(function () {
+							dfd.resolve();
+						});
 					});
-				});
+				}
 			} else {
 				todo.save().then(function () {
 					console.log('SAVED', list.get('title'))
@@ -290,7 +289,7 @@ angular
 			link: function($scope, element, attrs) {
 				$scope.$watch(attrs.setFocus, function (value) {
 					if (value === true) { 
-						setTimeout(function () { element[0].focus(); });
+						element[0].focus();
 					}
 				});
 			}
