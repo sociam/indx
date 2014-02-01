@@ -208,19 +208,14 @@ angular
 				todo.set({ title: [''], order: [order] });
 				newTodo = todo;
 				updateTodos();
-				$scope.editTodo(todo);
 			});
 		};
 
-		$scope.editTodo = function (todo) {
-			state.editingTodo = todo;
-		};
 
-
-		$scope.cancelEditTodo = function () {
-			if (!state.editingTodo) { return; }
-			state.editingTodo.staged.reset();
-			delete state.editingTodo;
+		$scope.cancelEditTodo = function (todo) {
+			console.log(todo);
+			if (!todo) { return; }
+			todo.staged.reset();
 			newTodo = undefined;
 			updateTodos();
 		};
@@ -256,7 +251,6 @@ angular
 				});
 			}
 			dfd.then(function () {
-				delete state.editingTodo;
 				delete todo.loading;
 				updateTodos();
 				updateLists();
@@ -298,10 +292,10 @@ angular
 
 	}).directive('setFocus', function($timeout) {
 		return {
-			link: function ($scope, element, attrs) {
+			link: function ($scope, elem, attrs) {
 				$scope.$watch(attrs.setFocus, function (value) {
 					if (value === true) { 
-						element[0].focus();
+						setTimeout(function () { elem[0].focus(); });
 					}
 				});
 			}
@@ -317,20 +311,20 @@ angular
 				$document.bind('click', function() {
 					// magic here.
 					scope.$apply(attr.clickElsewhere);
-				})
-			}
-		};
-	}).directive('ngEscape', function () {
-		return {
-			restrict: 'A',
-			link: function (scope, elem, attr, ctrl) {
-				elem.bind('keydown keypress', function (e) {
-					console.log('blah')
-					if (event.keyCode === 27) {
-						$scope.$apply(attr.ngEscape);
-						e.stopPropagation();
-					}
 				});
 			}
 		};
-	});
+	}).directive('ngEscape', ['$parse', function($parse) {
+		return function ($scope, elem, attr) {
+			var fn = $parse(attr.ngEscape);
+			elem.bind('keydown keypress', function (e) {
+				if (e.keyCode === 27) {
+					$scope.$apply(function() { fn($scope, {$event:e}); });
+					setTimeout(function () { elem[0].blur(); });
+					e.stopPropagation();
+				} else if (e.keyCode === 13) {
+					setTimeout(function () { elem[0].blur(); });
+				}
+			});
+		}
+	}]);

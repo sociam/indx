@@ -56,9 +56,7 @@
 			</div>
 			<ul ng-if="s.selectedList.attributes.special[0] || s.selectedList.isCreated()">
 				<li 	ng-repeat="todo in todos"
-						ng-click="editTodo(todo)"
-						ng-class="{	editing: todo === s.editingTodo,
-									loading: todo.loading,
+						ng-class="{	loading: todo.loading,
 									special: s.selectedList.attributes.special[0],
 									completed: todo.attributes.completed[0] }">
 					<a class="todo-create-before" ng-click="createTodoBefore(todo)" ng-if="!s.selectedList.attributes.special">
@@ -72,10 +70,9 @@
 							<input 	type="text" 
 									placeholder="My todo"
 									ng-model="todo.staged.attributes.title[0]" 
-									ng-disabled="todo !== s.editingTodo"
 									ng-blur="saveTodo(todo)"
 									ng-escape="cancelEditTodo(todo)"
-									set-focus="todo === s.editingTodo">
+									set-focus="!todo.attributes.name[0]">
 						</div>
 					</form>
 				</li>
