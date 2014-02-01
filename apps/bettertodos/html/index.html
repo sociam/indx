@@ -31,6 +31,7 @@
 									ng-model="list.staged.attributes.title[0]" 
 									ng-disabled="list !== s.editingList"
 									ng-blur="cancelEditList()"
+									ng-escape="cancelEditList()"
 									set-focus="list === s.editingList">
 						</div>
 						<div class="static count">{{ countTodos(list) }}</div>
@@ -70,9 +71,10 @@
 						<div class="title">
 							<input 	type="text" 
 									placeholder="My todo"
-									ng-model="todo.attributes.title[0]" 
+									ng-model="todo.staged.attributes.title[0]" 
 									ng-disabled="todo !== s.editingTodo"
 									ng-blur="saveTodo(todo)"
+									ng-escape="cancelEditTodo(todo)"
 									set-focus="todo === s.editingTodo">
 						</div>
 					</form>

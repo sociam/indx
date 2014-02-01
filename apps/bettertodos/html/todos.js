@@ -214,13 +214,22 @@ angular
 
 		$scope.editTodo = function (todo) {
 			state.editingTodo = todo;
-		}
+		};
+
+
+		$scope.cancelEditTodo = function () {
+			if (!state.editingTodo) { return; }
+			state.editingTodo.staged.reset();
+			delete state.editingTodo;
+			newTodo = undefined;
+			updateTodos();
+		};
 
 		$scope.saveTodo = function (todo) {
 			var dfd = $.Deferred(),
 				list = state.selectedList;
 			todo.loading = true;
-			if (todo.get('title')[0] === '') { // delete the todo
+			if (todo.staged.get('title')[0] === '') { // delete the todo
 				if (todo === newTodo) {
 					newTodo = undefined;
 					dfd.resolve();
@@ -234,7 +243,7 @@ angular
 					});
 				}
 			} else {
-				todo.save().then(function () {
+				todo.staged.save().then(function () {
 					console.log('SAVED', list.get('title'))
 					if (todo === newTodo) {
 						newTodo = undefined;
@@ -265,7 +274,10 @@ angular
 			if (newTodo) { todos.push(newTodo); }
 			todos = _.sortBy(todos, function (todo) {
 				return todo.get('order')[0];
-			})
+			});
+			_.each(todos, function (todo) {
+				if (!todo.staged) { staged(todo); }
+			});
 			$scope.todos = todos;
 			$update();
 		};
@@ -286,7 +298,7 @@ angular
 
 	}).directive('setFocus', function($timeout) {
 		return {
-			link: function($scope, element, attrs) {
+			link: function ($scope, element, attrs) {
 				$scope.$watch(attrs.setFocus, function (value) {
 					if (value === true) { 
 						element[0].focus();
@@ -296,16 +308,29 @@ angular
 		};
 	}).directive('clickElsewhere', function($document){
 		return {
-		restrict: 'A',
-		link: function(scope, elem, attr, ctrl) {
-			elem.bind('click', function(e) {
-				// this part keeps it from firing the click on the document.
-				e.stopPropagation();
-			});
-			$document.bind('click', function() {
-				// magic here.
-				scope.$apply(attr.clickElsewhere);
-			})
+			restrict: 'A',
+			link: function (scope, elem, attr, ctrl) {
+				elem.bind('click', function (e) {
+					// this part keeps it from firing the click on the document.
+					e.stopPropagation();
+				});
+				$document.bind('click', function() {
+					// magic here.
+					scope.$apply(attr.clickElsewhere);
+				})
 			}
-		}
+		};
+	}).directive('ngEscape', function () {
+		return {
+			restrict: 'A',
+			link: function (scope, elem, attr, ctrl) {
+				elem.bind('keydown keypress', function (e) {
+					console.log('blah')
+					if (event.keyCode === 27) {
+						$scope.$apply(attr.ngEscape);
+						e.stopPropagation();
+					}
+				});
+			}
+		};
 	});
