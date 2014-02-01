@@ -144,7 +144,9 @@ angular
 
 			_.each(app.get('lists'), function (list) {
 				if (!list.has('title')) { list.set('title', ['Untitled list']) }
-				if (!list.has('todos')) { list.set('todos', []) }
+				if (!list.has('todos')) { list.set('todos', []); }
+				list.off('change', updateLists);
+				list.on('change', updateLists);
 				list.isCreated = function () { return true; }
 			});
 
@@ -273,8 +275,11 @@ angular
 					if (!todo.has('title')) { todo.set('title', ['Untitled todo']) }
 					if (!todo.has('completed')) { todo.set('completed', [false]); }
 					if (!todo.has('order')) { todo.set('order', [0]); }
+					todo.off('change', updateTodos);
+					todo.on('change', updateTodos);
 					return todo;
 				});
+			list.save('force-update-hack', Math.random()); // hack to force updates on other clients
 			if (newTodo) { todos.push(newTodo); }
 			todos = _.sortBy(todos, function (todo) {
 				return todo.get('order')[0];
@@ -284,6 +289,7 @@ angular
 			});
 			$scope.todos = todos;
 			$update();
+			updateLists();
 		};
 
 		$scope.toggleTodoCompleted = function (todo) {
