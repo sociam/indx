@@ -79,6 +79,9 @@ angular
 				var lists = app.get('lists');
 				lists.splice(lists.indexOf(list), 1);
 				app.save('lists', lists).then(function () {
+					if (state.selectedList === list) {
+						delete state.selectedList;
+					}
 					updateLists();
 				});
 			});
@@ -186,13 +189,23 @@ angular
 		// todo - check box is defined (or put in init)
 		$scope.createTodoBefore = function (next) {
 			box.getObj('todo-'  + u.uuid()).then(function (todo) {
-				var todos = state.selectedList.get('todos'),
-					prev = next ? next.get('prev') : todos[todos.length - 1];
-				todo.set({
-					title: [''],
-					next: next ? [next] : undefined,
-					prev: prev ? [prev] : undefined 
-				});
+				var nextOrder = next ? next.get('order')[0] : 0,
+					prev = _.chain(state.selectedList.get('todos')).sortBy(function (_todo) {
+						return -_todo.get('order')[0];
+					}).find(function (_todo) {
+						return !next || (_todo.get('order')[0] < nextOrder);
+					}).value(),
+					prevOrder = prev ? prev.get('order')[0] : 0,
+					order = 0;
+
+				if (next && prev) {
+					order = prevOrder + (nextOrder - prevOrder) / 2
+				} else if (prev) {
+					order = prevOrder + 1;
+				}
+
+				console.log('NP', /*next, prev, */nextOrder, prevOrder, order)
+				todo.set({ title: [''], order: [order] });
 				newTodo = todo;
 				updateTodos();
 				$scope.editTodo(todo);
@@ -218,25 +231,15 @@ angular
 				dfd.reject();
 			} else {
 				todo.save().then(function () {
-					// update linked list
-					var dfd1, dfd2,
-						prev = todo.get('prev'),
-						next = todo.get('next');
-					console.log('np', next, prev)
-					if (prev) { dfd1 = prev[0].save('next', [todo]); }
-					if (next) { dfd2 = next[0].save('prev', [todo]); }
-					console.log(todo, prev, next)
-					$.when(dfd1, dfd2).then(function () {
-						console.log('SAVED', list.get('title'))
-						if (todo === newTodo) {
-							newTodo = undefined;
-							list.save('todos', list.get('todos').concat([todo])).then(function () {
-								dfd.resolve();
-							});
-						} else {
+					console.log('SAVED', list.get('title'))
+					if (todo === newTodo) {
+						newTodo = undefined;
+						list.save('todos', list.get('todos').concat([todo])).then(function () {
 							dfd.resolve();
-						}
-					});
+						});
+					} else {
+						dfd.resolve();
+					}
 				});
 			}
 			dfd.then(function () {
@@ -247,24 +250,18 @@ angular
 		}
 
 		var updateTodos = function () {
-			var list = state.selectedList;
-			console.log(list)
-			$scope.todos = [];
-			var nextTodo = _.find(list.get('todos'), function (todo) {
-				return !todo.has('prev');
-			});
-			console.log('FIRST', nextTodo)
-			while (nextTodo) {
-				$scope.todos.push(nextTodo);
-				nextTodo = nextTodo.has('next') ? nextTodo.get('next')[0] : undefined;
-			}
-			console.log($scope.todos)
-			_.each($scope.todos, function (todo) {
-				if (!todo.has('title')) { todo.set('title', ['Untitled todo']) }
-				if (!todo.has('completed')) { todo.set('completed', [false]); }
-			});
-			if (newTodo) { $scope.todos.push(newTodo); }
-			// todos is a linked list
+			var list = state.selectedList,
+				todos = _.map(list.get('todos'), function (todo) {
+					if (!todo.has('title')) { todo.set('title', ['Untitled todo']) }
+					if (!todo.has('completed')) { todo.set('completed', [false]); }
+					if (!todo.has('order')) { todo.set('order', [0]); }
+					return todo;
+				});
+			if (newTodo) { todos.push(newTodo); }
+			todos = _.sortBy(todos, function (todo) {
+				return todo.get('order')[0];
+			})
+			$scope.todos = todos;
 			$update();
 		};
 
