@@ -149,6 +149,10 @@ body { background: #f8f8f8; }
 				@trigger-margin: 10px; // size on each end of todo that will trigger gap
 				@gap-size: 30px; // size of gap between todos 
 				position: relative;
+				&.editing {
+					.todo-create-before { display: none; }
+					.todo-body { margin-top: 0; }
+				}
 				.todo-create-before {
 					position: relative;
 					z-index: 20;
