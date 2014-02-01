@@ -107,6 +107,7 @@ angular
 					if (list === newList) {
 						newList = undefined;
 						app.save('lists', app.get('lists').concat([list])).then(function () {
+							console.log('updated list', app.get('lists'))
 							dfd.resolve();
 						});
 					} else {
@@ -254,8 +255,17 @@ angular
 				delete todo.loading;
 				updateTodos();
 				updateLists();
+				_finishedEditingTodo = todo;
 			});
-		}
+		};
+
+		var _finishedEditingTodo;
+		// hack to get todo text box to deselect after pressing enter
+		$scope.finishedEditingTodo = function (todo) {
+			var r = _finishedEditingTodo === todo;
+			if (r) { _finishedEditingTodo = undefined; }
+			return r;
+		};
 
 		var updateTodos = function () {
 			var list = state.selectedList,
@@ -298,6 +308,16 @@ angular
 				});
 			}
 		};
+	}).directive('setBlur', function($timeout) {
+		return {
+			link: function ($scope, elem, attrs) {
+				$scope.$watch(attrs.setBlur, function (value) {
+					if (value === true) { 
+						setTimeout(function () { elem[0].blur(); });
+					}
+				});
+			}
+		};
 	}).directive('clickElsewhere', function($document){
 		return {
 			restrict: 'A',
@@ -320,8 +340,6 @@ angular
 					$scope.$apply(function() { fn($scope, {$event:e}); });
 					setTimeout(function () { elem[0].blur(); });
 					e.stopPropagation();
-				} else if (e.keyCode === 13) {
-					setTimeout(function () { elem[0].blur(); });
 				}
 			});
 		}

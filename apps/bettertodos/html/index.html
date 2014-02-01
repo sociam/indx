@@ -24,7 +24,7 @@
 									editing: list === s.editingList,
 									loading: list.loading,
 									special: list.attributes.special }">
-					<form ng-submit="saveList(list)">
+					<form ng-submit="saveList(list, list === s.newList)">
 						<div class="title">
 							<input 	type="text" 
 									placeholder="My todo list"
@@ -72,7 +72,8 @@
 									ng-model="todo.staged.attributes.title[0]" 
 									ng-blur="saveTodo(todo)"
 									ng-escape="cancelEditTodo(todo)"
-									set-focus="!todo.attributes.title[0]">
+									set-focus="!todo.attributes.title[0]"
+									set-blur="finishedEditingTodo(todo)">
 						</div>
 					</form>
 				</li>
