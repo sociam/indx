@@ -19,10 +19,11 @@ angular
 
 		// Wait until user is logged in and a box has been selected
 		var init = function (b) {
-			console.log('init');
-
+			newList = undefined;
+			newTodo = undefined;
+			app = undefined;
 			box = b;
-			$scope.box = b; // FIXME remove (just for console use)
+			//$scope.box = b; // FIXME remove (just for console use)
 
 			box.getObj('todoApp').then(function (a) {
 				app = a;
