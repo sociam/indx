@@ -58,6 +58,7 @@
 						ng-click="editTodo(todo)"
 						ng-class="{	editing: todo === s.editingTodo,
 									loading: todo.loading,
+									special: s.selectedList.attributes.special[0],
 									completed: todo.attributes.completed[0] }">
 					<a class="todo-create-before" ng-click="createTodoBefore(todo)" ng-if="!s.selectedList.attributes.special">
 						<div class="line"><div class="i"><i class="fa fa-plus"></i></div></div>
