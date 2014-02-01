@@ -4,6 +4,27 @@ angular
 	.controller('todos', function ($scope, client, utils) {
 		'use strict';
 
+		var indxStaged = function (obj) {
+			var cloneAttributes = function (attributes) {
+				var _attributes = {};
+				_.each(attributes, function (v, k) {
+					_attributes[k] = _.clone(v);
+				});
+				return _attributes;
+			};
+			var Staged = Backbone.Model.extend({
+				initialize: function (attrs, options) {
+					this.obj = options.obj;
+					this.obj.on('change', this.reset, this)
+					this.reset();
+				},
+				reset: function () { this.set(cloneAttributes(this.obj.attributes)); return this; },
+				commit: function () { this.obj.set(cloneAttributes(this.attributes)); return this; },
+				save: function () { return this.obj.save(this.attributes); }
+			});
+			obj.staged = new Staged(undefined, { obj: obj });
+		};
+
 
 		var urgencies = ['low', 'med', 'high', 'urgent'];
 
@@ -87,8 +108,7 @@ angular
 
 		$scope.cancelEditList = function () {
 			console.log('cancel', state.editingList)
-			//console.log(state.editingList.previousAttributes())
-			//state.editingList.set(state.editingList.previousAttributes())
+			state.editingList.staged.reset();
 			delete state.editingList;
 			newList = undefined;
 			updateLists();
@@ -100,7 +120,7 @@ angular
 			if (list.get('title')[0] === '') {
 				dfd.reject();
 			} else {
-				list.save(list.stagedAttributes).then(function () {
+				list.staged.save().then(function () {
 					list.isCreated = function () { return true; }
 					console.log('SAVED', list.get('title'),app.get('lists'), [list])
 					if (list === newList) {
@@ -125,13 +145,6 @@ angular
 		};
 
 
-		var updateStagedListList = function (list) {
-			list.stagedAttributes = {};
-			_.each(list.attributes, function (v, k) {
-				list.stagedAttributes[k] = _.clone(v);
-			});
-		};
-
 		var updateLists = function () {
 			console.log('UPDATING LISTS', app.get('lists'));
 			// update special lists;
@@ -150,9 +163,7 @@ angular
 				if (!list.has('title')) { list.set('title', ['Untitled list']) }
 				if (!list.has('todos')) { list.set('todos', []) }
 				list.isCreated = function () { return true; }
-				updateStagedList(list);
-				list.off('change', updateStagedList); // FIXME - not sure if needed
-				list.on('change', updateStagedList);
+				indxStaged(list);
 			});
 
 			$scope.lists = [].concat(app.get('lists'));
