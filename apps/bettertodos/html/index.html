@@ -59,7 +59,7 @@
 						ng-class="{	editing: todo === s.editingTodo,
 									loading: todo.loading,
 									completed: todo.attributes.completed[0] }">
-					<a class="todo-create-before" ng-click="createTodo(todo.attributes.order[0])" ng-if="!s.selectedList.attributes.special">
+					<a class="todo-create-before" ng-click="createTodoBefore(todo)" ng-if="!s.selectedList.attributes.special">
 						<div class="line"><div class="i"><i class="fa fa-plus"></i></div></div>
 					</a>
 					<form ng-submit="saveTodo(todo)"  class="todo-body">
@@ -77,7 +77,7 @@
 					</form>
 				</li>
 				<li class="end-cap">
-					<a class="todo-create-before" ng-click="createTodo(todo.attributes.order[0])" ng-if="!s.selectedList.attributes.special">
+					<a class="todo-create-before" ng-click="createTodoBefore()" ng-if="!s.selectedList.attributes.special">
 						<div class="i"><i class="fa fa-plus"></i></div>
 					</a>
 				</li>

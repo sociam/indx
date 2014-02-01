@@ -184,9 +184,15 @@ angular
 
 
 		// todo - check box is defined (or put in init)
-		$scope.createTodo = function (before) {
+		$scope.createTodoBefore = function (next) {
 			box.getObj('todo-'  + u.uuid()).then(function (todo) {
-				todo.set({ title: [''], order: [before - 0.5] });
+				var todos = state.selectedList.get('todos'),
+					prev = next ? next.get('prev') : todos[todos.length - 1];
+				todo.set({
+					title: [''],
+					next: next ? [next] : undefined,
+					prev: prev ? [prev] : undefined 
+				});
 				newTodo = todo;
 				updateTodos();
 				$scope.editTodo(todo);
@@ -212,15 +218,25 @@ angular
 				dfd.reject();
 			} else {
 				todo.save().then(function () {
-					console.log('SAVED', list.get('title'))
-					if (todo === newTodo) {
-						newTodo = undefined;
-						list.save('todos', list.get('todos').concat([todo])).then(function () {
+					// update linked list
+					var dfd1, dfd2,
+						prev = todo.get('prev'),
+						next = todo.get('next');
+					console.log('np', next, prev)
+					if (prev) { dfd1 = prev[0].save('next', [todo]); }
+					if (next) { dfd2 = next[0].save('prev', [todo]); }
+					console.log(todo, prev, next)
+					$.when(dfd1, dfd2).then(function () {
+						console.log('SAVED', list.get('title'))
+						if (todo === newTodo) {
+							newTodo = undefined;
+							list.save('todos', list.get('todos').concat([todo])).then(function () {
+								dfd.resolve();
+							});
+						} else {
 							dfd.resolve();
-						});
-					} else {
-						dfd.resolve();
-					}
+						}
+					});
 				});
 			}
 			dfd.then(function () {
@@ -233,19 +249,22 @@ angular
 		var updateTodos = function () {
 			var list = state.selectedList;
 			console.log(list)
-			$scope.todos = [].concat(list.get('todos'));
+			$scope.todos = [];
+			var nextTodo = _.find(list.get('todos'), function (todo) {
+				return !todo.has('prev');
+			});
+			console.log('FIRST', nextTodo)
+			while (nextTodo) {
+				$scope.todos.push(nextTodo);
+				nextTodo = nextTodo.has('next') ? nextTodo.get('next')[0] : undefined;
+			}
 			console.log($scope.todos)
-			var lastOrder = 0;
 			_.each($scope.todos, function (todo) {
 				if (!todo.has('title')) { todo.set('title', ['Untitled todo']) }
-				if (!todo.has('order')) { todo.set('order', [lastOrder + 1]); }
 				if (!todo.has('completed')) { todo.set('completed', [false]); }
-				lastOrder = todo.get('order')
 			});
 			if (newTodo) { $scope.todos.push(newTodo); }
-			$scope.todos = _.sortBy($scope.todos, function (todo) {
-				return todo.get('order')[0];
-			})
+			// todos is a linked list
 			$update();
 		};
 
