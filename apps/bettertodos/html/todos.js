@@ -76,7 +76,7 @@ angular
 
 		$scope.deleteList = function (list) {
 			list.destroy().then(function () {
-				var lists = app.get('lists');
+				var lists = [].concat(app.get('lists'));
 				lists.splice(lists.indexOf(list), 1);
 				app.save('lists', lists).then(function () {
 					if (state.selectedList === list) {
@@ -226,9 +226,14 @@ angular
 			var dfd = $.Deferred(),
 				list = state.selectedList;
 			todo.loading = true;
-			console.log('SAVE', todo.get('title'), todo.toJSON())
-			if (todo.get('title')[0] === '') {
-				dfd.reject();
+			if (todo.get('title')[0] === '') { // delete the todo
+				todo.destroy().then(function () {
+					var todos = [].concat(list.get('todos'));
+					todos.splice(todos.indexOf(todo), 1);
+					list.save('todos', todos).then(function () {
+						dfd.resolve();
+					});
+				});
 			} else {
 				todo.save().then(function () {
 					console.log('SAVED', list.get('title'))
@@ -246,6 +251,7 @@ angular
 				delete state.editingTodo;
 				delete todo.loading;
 				updateTodos();
+				updateLists();
 			});
 		}
 

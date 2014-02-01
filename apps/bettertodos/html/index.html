@@ -71,7 +71,7 @@
 									placeholder="My todo"
 									ng-model="todo.attributes.title[0]" 
 									ng-disabled="todo !== s.editingTodo"
-									ng-blur="(todo.attributes.title[0] === '') && cancelEditTodo()"
+									ng-blur="saveTodo(todo)"
 									set-focus="todo === s.editingTodo">
 						</div>
 					</form>
