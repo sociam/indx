@@ -96,7 +96,7 @@ angular
 		$scope.saveList = function (list) {
 			var dfd = $.Deferred();
 			list.loading = true;
-			if (list.get('title')[0] === '') {
+			if (list.staged.get('title')[0] === '') {
 				dfd.reject();
 			} else {
 				list.staged.save().then(function () {
@@ -114,8 +114,9 @@ angular
 			}
 			dfd.then(function () {
 				delete state.editingList;
-				delete list.loading;
 				updateLists();
+			}).always(function () {
+				delete list.loading;
 			});
 		};
 
@@ -142,7 +143,6 @@ angular
 				if (!list.has('title')) { list.set('title', ['Untitled list']) }
 				if (!list.has('todos')) { list.set('todos', []) }
 				list.isCreated = function () { return true; }
-				staged(list);
 			});
 
 			$scope.lists = [].concat(app.get('lists'));
@@ -159,6 +159,10 @@ angular
 			}
 
 			$scope.lists = $scope.lists.concat(specialLists);
+
+			_.each($scope.lists, function (list) {
+				if (!list.staged) { staged(list); }
+			})
 
 			if (!state.selectedList) { $scope.selectList($scope.lists[0]); }
 
