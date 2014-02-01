@@ -7,7 +7,7 @@
 	<link rel="stylesheet/less" type="text/css" href="css/wellbeing.less">	
 	<title>indx :: web pages</title>
   </head>
-  <body ng-app="wellbeing" ng-controller="pages" ng-cloak>
+  <body ng-app="aditl" ng-controller="pages" ng-cloak>
 	<toolbar box-var='box' username-var='user'></toolbar>
   	<div ng-show="user && box" class='pages container'>
       <div ng-repeat="d in pages" class="page" ng-show="d.peek('thumbnail')" data-url="{{d.id}}">

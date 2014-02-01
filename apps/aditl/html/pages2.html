@@ -4,10 +4,10 @@
 	<link href="/css/angular-ui.css" rel="stylesheet">
 	<link rel="stylesheet" href="/js/vendor/leaflet/leaflet.css" />
 	<link rel="stylesheet/less" type="text/css" href="/components/toolbar/toolbar.less">
-	<link rel="stylesheet/less" type="text/css" href="css/wellbeing.less">	
+	<link rel="stylesheet/less" type="text/css" href="css/pages.less">	
 	<title>indx :: web pages</title>
   </head>
-  <body ng-app="wellbeing" ng-controller="pages2" ng-cloak>
+  <body ng-app="aditl" ng-controller="pages2" ng-cloak>
 	<toolbar box-var='box' username-var='user'></toolbar>
   	<div ng-show="user && box" class='pages2 container'>
       <pages2page page="p" ng-repeat="p in pages"></pages2page>      
@@ -41,5 +41,6 @@
   <!-- leaflet --> 
   <script src="/js/vendor/leaflet/leaflet.js"></script>
   <script src="js/main.js" type="text/javascript"></script>  
+  <script src="js/pages.js" type="text/javascript"></script>  
 
 </html>
