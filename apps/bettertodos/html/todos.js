@@ -7,10 +7,7 @@ angular
 		var urgencies = ['low', 'med', 'high', 'urgent'];
 
 		var u = utils,
-			newList,
-			newTodo,
-			app,
-			box;
+			newList, newTodo, app, box, state;
 
 		var specialLists = [
 			new Backbone.Model({ id: 'todo-list-all', title: ['All todos'], special: ['all'], todos: [] }),
@@ -23,6 +20,7 @@ angular
 			newTodo = undefined;
 			app = undefined;
 			box = b;
+			state = $scope.s = {};
 			//$scope.box = b; // FIXME remove (just for console use)
 
 			box.getObj('todoApp').then(function (a) {
@@ -286,8 +284,6 @@ angular
 				updateLists();
 			});
 		};
-
-		var state = $scope.s = {};
 
 		window.$scope = $scope;
 
