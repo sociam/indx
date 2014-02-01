@@ -1,30 +1,8 @@
 /* global angular, $, console, _ */
 angular
 	.module('todos', ['ui', 'indx'])
-	.controller('todos', function ($scope, client, utils) {
+	.controller('todos', function ($scope, client, utils, staged) {
 		'use strict';
-
-		var indxStaged = function (obj) {
-			var cloneAttributes = function (attributes) {
-				var _attributes = {};
-				_.each(attributes, function (v, k) {
-					_attributes[k] = _.clone(v);
-				});
-				return _attributes;
-			};
-			var Staged = Backbone.Model.extend({
-				initialize: function (attrs, options) {
-					this.obj = options.obj;
-					this.obj.on('change', this.reset, this)
-					this.reset();
-				},
-				reset: function () { this.set(cloneAttributes(this.obj.attributes)); return this; },
-				commit: function () { this.obj.set(cloneAttributes(this.attributes)); return this; },
-				save: function () { return this.obj.save(this.attributes); }
-			});
-			obj.staged = new Staged(undefined, { obj: obj });
-		};
-
 
 		var urgencies = ['low', 'med', 'high', 'urgent'];
 
@@ -107,6 +85,7 @@ angular
 		};
 
 		$scope.cancelEditList = function () {
+			if (!state.editingList) { return; }
 			console.log('cancel', state.editingList)
 			state.editingList.staged.reset();
 			delete state.editingList;
@@ -163,7 +142,7 @@ angular
 				if (!list.has('title')) { list.set('title', ['Untitled list']) }
 				if (!list.has('todos')) { list.set('todos', []) }
 				list.isCreated = function () { return true; }
-				indxStaged(list);
+				staged(list);
 			});
 
 			$scope.lists = [].concat(app.get('lists'));
