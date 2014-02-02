@@ -40,7 +40,7 @@ angular
 		var _get_facebook_token_config_from_service = function() {
 			console.info('trying to run _get_facebook_token_config_from_service')
 			s._ajax('GET', 'apps/service_facebook/api/get_config').then(function(x) { 
-				var config = x.config;
+				var config = JSON.parse(x.config);
 				console.info('Success in get_facebook_token_config_from_service, got config of', config)
 				// simple stuff
 				sa(function() { 
@@ -52,7 +52,8 @@ angular
 				$scope.facebook_auth_status = "Long Token Authorised"
 				var date = new Date();
 				$scope.timestamp = date.toISOString();
-				console.info('Set new expiry time set: ', config.facebook_access_token_expire_time);
+				console.info('Set new expiry time set: ', $scope.facebook_access_token_expire_time);
+				console.info('Set new Long Token: ', $scope.facebook_access_token_long);
 				console.info('Set net token type: ', $scope.facebook_auth_status);
 				console.info('Timestamp of new token: ', $scope.timestamp);
 
@@ -237,6 +238,7 @@ angular
 			.then(function(x) { console.info('App Stop result (): ', x); status('Stop command successful'); })
 			.fail(function(x) { status(' Error ' + x.toString()); });
 		};
+
 		$scope.setConfig = function(config) { 
 			console.info('i got a config ', config);
 			

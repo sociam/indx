@@ -373,7 +373,9 @@ class TwitterService:
                 status_timeline_pages = []
                 try:
                     if since_id_found > 0:
-                        status_timeline = self.api.user_timeline(service.twitter_username, since_id_found)
+                        for page in Cursor(self.api.user_timeline,  id=service.twitter_username, since_id=since_id_found).pages():
+                            status_timeline_pages.append(page)
+                        logging.info("Previous Status Objects Found, Looking for statuses from ID {0}".format(since_id_found))
                         second_pass = True
                     else:
                         status_timeline_pages = []
@@ -391,89 +393,88 @@ class TwitterService:
 
                 #print "GOT STATUS TIMELINE: "+str(len(status_timeline))
                 #have we got any statuses?
-                if (len(status_timeline)>0) or (len(status_timeline_pages)>0): 
-
+                if (len(status_timeline_pages)>0): 
 
                     if second_pass:
-                        logging.info("Found some new statuses. Will Inster the latest....")
+                        logging.info("Found some new statuses. Will insert the latest....")
                     
-                    #if we are dealing with the first pass of statuses, then do some processing
-                    if first_pass:
-                        status_batch_for_indx = []
-                        status_objects_already_found = {}
-                        for page in status_timeline_pages:
-                            for status in page:
-                                #tweet = json.loads(status)
-                                #print str(status)
-                                tweet_indx = {}
-                                tweet_indx['@id'] = "twitter_status_tweet_id_"+unicode(status.id)
-                                tweet_indx['type'] = "post"
-                                tweet_indx['tweet_id'] = unicode(status.id)
-                                tweet_indx['app_object'] = appid
-                                text = unicode(status.text)
-                                tweet_indx['tweet_text'] = text
-                                tweet_indx['tweet_user_id'] = status.author.name
-                                tweet_indx['created_at'] = self.iso_timestamp(str(status.created_at))
-                                tweet_indx['retweet_count'] = status.retweet_count
+                    # #if we are dealing with the first pass of statuses, then do some processing
+                    # if first_pass:
+                    status_batch_for_indx = []
+                    status_objects_already_found = {}
+                    for page in status_timeline_pages:
+                        for status in page:
+                            #tweet = json.loads(status)
+                            #print str(status)
+                            tweet_indx = {}
+                            tweet_indx['@id'] = "twitter_status_tweet_id_"+unicode(status.id)
+                            tweet_indx['type'] = "post"
+                            tweet_indx['tweet_id'] = unicode(status.id)
+                            tweet_indx['app_object'] = appid
+                            text = unicode(status.text)
+                            tweet_indx['tweet_text'] = text
+                            tweet_indx['tweet_user_id'] = status.author.name
+                            tweet_indx['created_at'] = self.iso_timestamp(str(status.created_at))
+                            tweet_indx['retweet_count'] = status.retweet_count
 
-                                #find anything about the tweet user (Your name might have changed, good to check..)
+                            #find anything about the tweet user (Your name might have changed, good to check..)
+                            try:
+                                tweet_user = status.author
+                                twitter_user_indx = {}
+                                twitter_user_indx['@id'] = "twitter_user_me" #+unicode(tweet_user.id)
+                                twitter_user_indx['type'] = "user"
+                                twitter_user_indx['twitter_user_id'] = unicode(tweet_user.id)
+                                twitter_user_indx['twitter_user_name'] = tweet_user.name
+                                twitter_user_indx['account_created_at'] = self.iso_timestamp(str(tweet_user.created_at))
+                                twitter_user_indx['followers_count'] = tweet_user.followers_count
+                                twitter_user_indx['friends_count'] = tweet_user.friends_count
+                                twitter_user_indx['statuses_count'] = tweet_user.statuses_count
+                                twitter_user_indx['profile_image_url'] = tweet_user.profile_image_url
+
+                                #update the status object...
+                                tweet_indx['tweet_user_id_indx'] = twitter_user_indx['@id']
                                 try:
-                                    tweet_user = status.author
-                                    twitter_user_indx = {}
-                                    twitter_user_indx['@id'] = "twitter_user_me" #+unicode(tweet_user.id)
-                                    twitter_user_indx['type'] = "user"
-                                    twitter_user_indx['twitter_user_id'] = unicode(tweet_user.id)
-                                    twitter_user_indx['twitter_user_name'] = tweet_user.name
-                                    twitter_user_indx['account_created_at'] = self.iso_timestamp(str(tweet_user.created_at))
-                                    twitter_user_indx['followers_count'] = tweet_user.followers_count
-                                    twitter_user_indx['friends_count'] = tweet_user.friends_count
-                                    twitter_user_indx['statuses_count'] = tweet_user.statuses_count
-                                    twitter_user_indx['profile_image_url'] = tweet_user.profile_image_url
+                                    if status_objects_already_found[twitter_user_indx['@id']]:
+                                        pass
+                                    #found it so, do nothing
+                                except:
+                                    status_objects_already_found[twitter_user_indx['@id']] = True
+                                    status_batch_for_indx.append(twitter_user_indx)
 
-                                    #update the status object...
-                                    tweet_indx['tweet_user_id_indx'] = twitter_user_indx['@id']
+                            except:
+                                pass
+
+
+                            #now find anything about where the tweet was made...
+                            try:
+
+                                obj_id = unicode(tweet_user['location'].replace(",","_").replace(" ",""))
+                                if len(obj_id) > 2:
+                                    obj_id = "twitter_user_location_id_"+obj_id
+                                    twitter_user_location_indx = {}
+                                    twitter_user_location_indx['@id'] = obj_id
+                                    twitter_user_location_indx['type'] = "location"
+                                    twitter_user_location_indx['location'] = twitter_user_indx['location']
+
+                                    #now the status can be linked to the location...
+                                    twitter_user_indx['twitter_user_location_indx'] = twitter_user_location_indx['@id']
+                                    # make a check to see if the object is areadly there
                                     try:
-                                        if status_objects_already_found[twitter_user_indx['@id']]:
+                                        if status_objects_already_found[twitter_user_location_indx['@id']]:
                                             pass
                                         #found it so, do nothing
                                     except:
-                                        status_objects_already_found[twitter_user_indx['@id']] = True
-                                        status_batch_for_indx.append(twitter_user_indx)
+                                        status_objects_already_found[twitter_user_location_indx['@id']] = True
+                                        status_batch_for_indx.append(twitter_user_location_indx)
+                            except:
+                                pass
 
-                                except:
-                                    pass
+                            #finally add the tweet
+                            status_batch_for_indx.append(tweet_indx)
 
-
-                                #now find anything about where the tweet was made...
-                                try:
-
-                                    obj_id = unicode(tweet_user['location'].replace(",","_").replace(" ",""))
-                                    if len(obj_id) > 2:
-                                        obj_id = "twitter_user_location_id_"+obj_id
-                                        twitter_user_location_indx = {}
-                                        twitter_user_location_indx['@id'] = obj_id
-                                        twitter_user_location_indx['type'] = "location"
-                                        twitter_user_location_indx['location'] = twitter_user_indx['location']
-
-                                        #now the status can be linked to the location...
-                                        twitter_user_indx['twitter_user_location_indx'] = twitter_user_location_indx['@id']
-                                        # make a check to see if the object is areadly there
-                                        try:
-                                            if status_objects_already_found[twitter_user_location_indx['@id']]:
-                                                pass
-                                            #found it so, do nothing
-                                        except:
-                                            status_objects_already_found[twitter_user_location_indx['@id']] = True
-                                            status_batch_for_indx.append(twitter_user_location_indx)
-                                except:
-                                    pass
-
-                                #finally add the tweet
-                                status_batch_for_indx.append(tweet_indx)
-
-                                #get the latest since ID
-                                if int(tweet_indx['tweet_id']) > since_id_found:
-                                    since_id_found = int(tweet_indx['tweet_id'])
+                            #get the latest since ID
+                            if int(tweet_indx['tweet_id']) > since_id_found:
+                                since_id_found = int(tweet_indx['tweet_id'])
 
                         #now create the config obj...
                         timestamp = str(datetime.now().isoformat('T')).split(".")[0]
