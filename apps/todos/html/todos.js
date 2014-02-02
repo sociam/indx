@@ -397,10 +397,7 @@ angular
 			// A = attribute, E = Element, C = Class and M = HTML Comment
 			restrict: 'A',
 			link: function (scope, element, attrs) {
-				var lastLiAbove = undefined;
-				element.mouseup(function () {
-					element.addClass('dragging')
-				});
+				var liAbove, liBelow;
 				element.sortable({
 					revert: true,
 					handle: "[draggable-handle]",
@@ -416,38 +413,41 @@ angular
 							ui.item.removeClass('dragging')
 						});
 					},
-					update: function () {
-						console.log('FIRED', arguments);
-					},
 					change: function (ev, ui) {
-						var liAbove = ui.placeholder.prev('li.todo'),
-							liBelow = ui.placeholder.next('li.todo');
-						if (lastLiAbove !== liAbove) {
-							lastLiAbove = liAbove;
-							if (liBelow.length) {
-								var nextTodo = angular.element(liBelow).scope().todo,
-									tscope = angular.element(ui.item).scope(),
-									draggingTodo = tscope.todo;
-								utils.safeApply(tscope);
-							}
-						}
+						liBefore = ui.placeholder.prev('li.todo');
+						liAfter = ui.placeholder.next('li.todo');
 					},
 					stop: function (ev, ui) {
+
 						var tscope = angular.element(ui.item).scope(),
 							todo = tscope.todo,
-							todos = scope.s.selectedList,
-							newTodos = element.find('li.todo')
-								.map(function () {
-									return angular.element(this).scope().todo;
-								})
-								.get();
-						lastLiAbove = undefined;
-						ui.item.removeClass('dragging');
-						//todo.isDragging = false;
-						//todo.saveStaged();
-						//todos.reset(newTodos).save();
-						//utils.safeApply(tscope);
-						//console.log(todos);
+							todoBeforeScope = angular.element(liBefore).scope(),
+							todoAfterScope = angular.element(liAfter).scope(),
+							todoBeforeOrder, todoAfterOrder, order;
+
+						if (todoBeforeScope) {
+							todoBeforeOrder = todoBeforeScope.todo.get('order')[0];
+						}
+						if (todoAfterScope) {
+							todoAfterOrder = todoAfterScope.todo.get('order')[0];
+						}
+						
+						ui.item.removeClass('dragging').addClass('loading');
+
+						if (todoAfterScope || todoBeforeScope) {
+							if (todoAfterScope && todoBeforeScope) {
+								order = todoBeforeOrder + (todoAfterOrder - todoBeforeOrder) / 2
+							} else if (todoBeforeScope) {
+								order = todoBeforeOrder + 1;
+							} else {
+								order = todoAfterOrder - 1;
+							}
+							todo.save({ order: [order] }).
+								then(function () {
+									ui.item.removeClass('loading');
+								});
+						}
+
 					}
 				}).disableSelection();
 			}
