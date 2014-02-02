@@ -21,7 +21,7 @@ angular.module('aditl')
 					return rect;
 				};
 				window.r = r;
-				r({ x: 0, y: 0, width:$scope.width, height: $scope.height, style: 'stroke:#eee;stroke-width:1px;fill:rgba(255,255,255,0.1);'})
+				r({ x: 0, y: 0, width:$scope.width, height: $scope.height, style: 'stroke:#eee;stroke-width:1px;fill:rgba(255,255,255,0.1);'});
 				var rs = [
 					r({ x: 10, y: 10, width: 50, height: 50, style: 'fill:yellow;stroke:1px solid blue'}),
 					r({ x: 30, y: 20, width: 50, height: 10, style: 'fill:red;stroke:1px solid blue'}),
