@@ -56,7 +56,7 @@
                 ]
             },
             "20140131-CHUNKING_LONG_STRINGS": {
-                "next-version": "",
+                "next-version": "20140202-STRINGS_INDEX_FIX",
                 "sql": [
                     "ALTER TABLE wb_strings ADD COLUMN uuid text NULL;",
                     "UPDATE wb_strings SET uuid = md5(string);",
@@ -137,6 +137,36 @@
                     "  ORDER BY wb_latest_vers.triple_order;",
                     "",
                     "ALTER TABLE wb_strings DROP CONSTRAINT u_string;"
+                ]
+            },
+            "20140202-STRINGS_INDEX_FIX": {
+                "next-version": "",
+                "sql": [
+                    "ALTER TABLE wb_strings ADD COLUMN tmp_uuid int8 NULL;",
+                    "UPDATE wb_strings SET tmp_uuid = ('x'||substr(md5(uuid),1,16))::bit(64)::bigint;",
+                    "DROP VIEW wb_v_latest_triples;",
+                    "DROP VIEW ix_v_strings;",
+                    "ALTER TABLE wb_strings DROP COLUMN uuid;",
+                    "ALTER TABLE wb_strings ADD COLUMN uuid int8 NULL;",
+                    "UPDATE wb_strings SET uuid = tmp_uuid;",
+                    "ALTER TABLE wb_strings DROP COLUMN tmp_uuid;",
+                    "CREATE INDEX ON wb_strings (string, uuid, chunk, id_string);",
+                    "CREATE INDEX ON wb_strings (id_string, uuid, chunk, string);",
+                    "CREATE INDEX ON wb_strings (uuid);",
+                    "CREATE OR REPLACE VIEW ix_v_strings AS",
+                    "SELECT MIN(id_string) as id_string, uuid, string_agg(string, '') as string, count(chunk) as chunk_count FROM (SELECT * FROM wb_strings ORDER BY id_string, uuid, chunk) AS ordered GROUP BY uuid;",
+                    "",
+                    "CREATE OR REPLACE VIEW wb_v_latest_triples AS ",
+                    " SELECT wb_latest_vers.triple_order, j_subject.string AS subject, ",
+                    "    j_predicate.string AS predicate, j_object.string AS obj_value, ",
+                    "    wb_objects.obj_type, wb_objects.obj_lang, wb_objects.obj_datatype",
+                    "   FROM wb_latest_vers",
+                    "   JOIN wb_triples ON wb_triples.id_triple = wb_latest_vers.triple",
+                    "   JOIN wb_objects ON wb_objects.id_object = wb_triples.object",
+                    "   JOIN ix_v_strings j_subject ON j_subject.id_string = wb_triples.subject",
+                    "   JOIN ix_v_strings j_predicate ON j_predicate.id_string = wb_triples.predicate",
+                    "   JOIN ix_v_strings j_object ON j_object.id_string = wb_objects.obj_value",
+                    "  ORDER BY wb_latest_vers.triple_order;"
                 ]
             }
         }
