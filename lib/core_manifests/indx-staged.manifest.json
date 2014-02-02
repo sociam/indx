@@ -3,7 +3,8 @@
 	"version": 0.1,
 	"description": "Provides a staging area for INDX objs - useful for reverting changes",
 	"icons": {
-		"128": "/apps/devtools/icons/indx-staged.png"
+		"128": "/apps/devtools/icons/indx-staged.png",
+		"128": "/apps/devtools/icons/indx-staged.svg"
 	},
 	"author": [
 		{
