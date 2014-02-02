@@ -28,7 +28,7 @@ angular.module('aditl')
 				};
 				$scope.thumb = getAppropriate($scope.page);
 				$element.find('img.thumbnail').on('error', function() {
-					console.error('IMAGE ERROR  -- ', error_count);
+					console.error('IMAGE ERROR  -- ', error_count, $scope.page.id);
 					error_count++;
 					if (error_count > 0) {  sa(function() { $scope.show = false; }); }
 					sa(function() { 
@@ -52,29 +52,52 @@ angular.module('aditl')
 				// var parent = jQuery('.pages');
 				// var datauri = model.peek('thumbnail');
 				sa(function() { 
+					console.log('model >> ', model);
 					if ($scope.pages.indexOf(model) < 0) { 
+						console.log('adding >> ');
 						$scope.pages.splice(0, 0, model); // push(model); //  = [model].concat($scope.pages); // .push(model); 
+					} else {
+						// console.log('moving it up! ');
+						var oldindx = $scope.pages.indexOf(model);
+						$scope.pages.splice(oldindx, 1);
+						$scope.pages.splice(0, 0, model);
+						console.log('pages 0 is now ', $scope.pages[0].id);
 					}
 				});
 				// appenddebug(model);
 			};
 			client.store.getBox($scope.box).then(function(_box) { 
-				_box.on('obj-add', function(id) { 
+				var update = function(id) {
 					_box.getObj(id).then(function(model) { 
-						if (model && model.peek('type') == 'web-page') { 
-							console.log('ew Page prepending >> ', model.id);
+						console.log(" model >> ", model.id);
+						if (model && model.peek('type') == 'activity' && model.peek('activity') == 'browse') { 
+							console.log(" GOT A BROWSE >> ", model.peek('what').id);
+							var page = model.peek('what');
+							if (page) { 
+								console.log('New Page prepending >> ', page.id, page.peek('thumbnail'));
+								prepend(page);
+							} else {
+								console.error("NO WHAT >> ", id);
+							}
+						} else if (model && model.peek('type') == 'web-page') {
+							console.log('prepending because its a web page');
 							prepend(model);
-						} else {
+						} else { 
 							console.log('uncaching obj ', model.id);
-							_box.uncacheObj(model);
+							if (model.peek('type') !== 'web-page') { 
+								_box.uncacheObj(model);
+							}
 						}
 					});
-				});
-				entities.documents.getWebPage(_box).then(function(pages) {
-					console.log('got pages >> ', pages.length, pages);
-					window.pages = pages;
-					pages.map(function(page) { 
-						prepend(page); 
+				};
+				_box.on('obj-add', function(id) { update(id); });
+
+				entities.activities.getAll(_box, { activity: 'browse' }).then(function(actions) {
+					console.log('actions >> ', actions.length);
+					actions.sort(function(x,y) { return y.peek('tstart') - x.peek('tstart'); });
+					actions.map(function(action) { 
+						var page = action.peek('what');
+						if (page) {  prepend(page);	}
 					});
 				});
 			}).fail(function(bail) { console.error(bail); });

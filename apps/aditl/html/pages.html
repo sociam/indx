@@ -16,7 +16,7 @@
         <li class="active"><a href="pages.html">Pages</a></li>
       </ul>    
     	<div class='pages2 col-xs-11'>
-        <pages2page page="p" ng-repeat="p in pages"></pages2page>      
+        <pages2page page="p" ng-repeat="p in pages track by p.id"></pages2page>      
         <div class="debug container">
           <table id="debugtable"></table>
         </div>      

@@ -13,7 +13,7 @@
         var WindowWatcher = Backbone.Model.extend({
             defaults: { enabled:true },
             initialize:function(attributes) {
-                var this_ = this,. _fetching = [];
+                var this_ = this, _fetching = [];
                 this._fetching_thumbnail = {};
                 this.bind('user-action', function() { this_.handle_action.apply(this_, arguments); });
                 var _trigger = function(windowid, tabid, tab) {
@@ -30,14 +30,12 @@
                             this_._getThumbnail(windowid, tab.url).then(function(thumbnail_model) {
                                 // console.log('continuation thumb ', thumbnail_model.id, _(thumbnail_model.attributes).keys().length);
                                 tabthumbs[tab.url] = thumbnail_model;
-                                delete _fetchingp[tab.url];
+                                delete _fetching[tab.url];
                                 _done();
-                            }).fail(function(bail) { 
-                                console.error('error with thumbnail, ', bail);
-                            });
+                            }).fail(function(bail) {  console.error('error with thumbnail, ', bail);  });
                         } else {
                             // loading, let's just start and try again
-                            _done();
+                            // _done();
                         }
                     };
                     if (tab) { return _thumbs(); }
@@ -111,7 +109,7 @@
                     this._fetching_thumbnail[url] = d;
                     chrome.tabs.captureVisibleTab(wid, { format:'png' }, function(dataUrl) {
                         if (dataUrl) {
-                            u.resizeImage(dataUrl, 80, 80).then(function(smallerDataUri) {
+                            u.resizeImage(dataUrl, 90, 90).then(function(smallerDataUri) {
                                 delete this_._fetching_thumbnail[url];
                                 d.resolve(smallerDataUri); 
                             });
@@ -275,8 +273,12 @@
             getDoc:function(url,title,tabinfo) {
                 var d = u.deferred(), this_ = this;
                 entities.documents.getWebPage(this.box, url).then(function(results) {
-                    if (results && results.length) { return d.resolve(results[0]);  }
-                    return entities.documents.makeWebPage(this_.box, url, title, tabinfo);
+                    if (results && results.length) { 
+                        console.log('updating page > and saving', results[0].id, tabinfo);
+                        if (tabinfo) { results[0].set(tabinfo); }
+                        return results[0].save().then(function() { d.resolve(results[0]); }).fail(d.reject);
+                    }
+                    entities.documents.makeWebPage(this_.box, url, title, tabinfo).then(d.resolve).fail(d.reject);
                 }).fail(d.reject);
                 return d.promise();
             },
