@@ -28,8 +28,7 @@
                             console.log('getting thumb >> ');
                             _fetching[tab.url] = true;
                             this_._getThumbnail(windowid, tab.url).then(function(thumbnail_model) {
-                                // console.log('continuation thumb ', thumbnail_model.id, _(thumbnail_model.attributes).keys().length);
-                                tabthumbs[tab.url] = thumbnail_model;
+                                console.log('continuation thumb ', thumbnail_model.slice(0,10)); // thumbnail_model.id, _(thumbnail_model.attributes).keys().length);
                                 delete _fetching[tab.url];
                                 _done();
                             }).fail(function(bail) {  console.error('error with thumbnail, ', bail);  });
@@ -104,16 +103,22 @@
                 d = u.deferred(), this_ = this;
                 if (this._fetching_thumbnail[url]) { 
                     // console.log('already getting thumbnail >> ', url);
-                    this._fetching_thumbnail[url].then(function() { d.resolve(tabthumbs[url]); }).fail(d.reject);
+                    this._fetching_thumbnail[url].then(function() { 
+                        d.resolve(tabthumbs[url]); 
+                    }).fail(d.reject);
                 } else {
                     this._fetching_thumbnail[url] = d;
                     chrome.tabs.captureVisibleTab(wid, { format:'png' }, function(dataUrl) {
                         if (dataUrl) {
                             u.resizeImage(dataUrl, 90, 90).then(function(smallerDataUri) {
+                                tabthumbs[url] = smallerDataUri;
                                 delete this_._fetching_thumbnail[url];
                                 d.resolve(smallerDataUri); 
-                            });
-                        } else { d.resolve(); }
+                            }).fail(function() { console.error('failed resizing '); d.reject(); });
+                        } else { 
+                            console.log('couldnt get thumbnail')
+                            d.resolve(); 
+                        }
                         // box.getObj(id).then(function(model) { 
                         //     // already have it? 
                         //     delete this_._fetching_thumbnail[url];
@@ -274,9 +279,13 @@
                 var d = u.deferred(), this_ = this;
                 entities.documents.getWebPage(this.box, url).then(function(results) {
                     if (results && results.length) { 
-                        console.log('updating page > and saving', results[0].id, tabinfo);
-                        if (tabinfo) { results[0].set(tabinfo); }
-                        return results[0].save().then(function() { d.resolve(results[0]); }).fail(d.reject);
+                        // console.log('updating page > and saving', results[0].id, tabinfo);
+                        if ( (!results[0].peek('thumbnail') && tabinfo.thumbnail) || 
+                             (!results[0].peek('favicon') && tabinfo.favicon) ) { 
+                            results[0].set(tabinfo); 
+                            return results[0].save().then(function() { d.resolve(results[0]); }).fail(d.reject);
+                        }
+                        return d.resolve(results[0]).fail(d.reject);
                     }
                     entities.documents.makeWebPage(this_.box, url, title, tabinfo).then(d.resolve).fail(d.reject);
                 }).fail(d.reject);
