@@ -1,10 +1,13 @@
 {
-	"name": "TODO List",
-	"version": 0.5,
+	"name": "Todo list",
+	"version": 0.8,
 	"description": "Stay organised with a simple todo list!",
 	"icons": {
 		"128": "icon.png",
-		"font-awesome": { "class": "fa fa-list", "background": "#A5EF00" }
+		"svg": "icon.svg"
+	},
+	"documents": {
+		"readme": "readme.md"
 	},
 	"author": [
 		{

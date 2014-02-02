@@ -1,151 +1,114 @@
 <html>
-  <head>
+<head>
 	<link rel="stylesheet" type="text/css" href="/css/angular-ui.css">
 	<link rel="stylesheet" type="text/css" href="/css/select2.css">
 	<link rel="stylesheet/less" type="text/css" href="/components/toolbar/toolbar.less">
-	<link rel="stylesheet/less" type="text/css" href="css/todos.less">
-	<link rel="stylesheet/less" type="text/css" href="/css/indx-ui/indx-ui.less">
-	<link href="/css/font-awesome.min.css" rel="stylesheet">
 	<link href="/css/jquery-ui.min.css" rel="stylesheet">
+	<link rel="stylesheet/less" type="text/css" href="/css/indx-ui/indx-ui.less">
+	<link rel="stylesheet/less" type="text/css" href="todos.less">
+	<link href="/css/font-awesome.min.css" rel="stylesheet">
 	<title>Todo list</title>
-  </head>
-  <body>
-	<div ng-app="todos" ng-controller="todos" ng-cloak class="no-select">
-  		<div class="alert alert-danger" ng-show="false">Failed to load</div>
-			<toolbar box-var='selectedBox' username-var='selectedUser'></toolbar>
+</head>
+<body ng-app="todos" ng-controller="todos" ng-cloak ng-escape="closeListDropdown()">
+	<toolbar box-var='selectedBox' username-var='selectedUser'></toolbar>
 
-		<div ng-show="selectedUser && selectedBox" class="app-container" ng-class="{ split: showLists }">
-			<div class="indx-navbars">
-				<nav class="indx-navbar" role="navigation">
-					<div href="#" class="navbar-header">
-						<a href="#" class="navbar-header hidden-xs" ng-click="showLists = !showLists">
-							<span class="navbar-brand">{{ todoLists.selected.getAttribute('title') }}</span>
-							<span class="caret"></span>
-						</a>
-						<a href="#" class="navbar-header visible-xs" ng-click="mobileMenu = !mobileMenu">
-							<span class="navbar-brand">{{ todoLists.selected.getAttribute('title') }}</span>
-							<span class="caret"></span>
-						</a>
-					</div>
-					<ul class="nav navbar-nav navbar-left hidden-xs">
-						<li><a href="#" ng-click="todoLists.selected.edit()" ng-show="!editingTodo"><i class="icon-cog"></i></a></li>
-					</ul>
-					<ul class="nav navbar-nav navbar-right" ng-show="!editingTodo">
-						<li ng-show="!search"><a href="#" ng-click="search = true"><i class="icon-search"></i></a></li>
-						<li ng-show="search" ng-animate="'fade'">
-							<form role="search">
-								<div class="form-group">
-									<div class="row">
-										<div class="col-sm-2 col-xs-3">
-											<button class="btn btn-default" ng-click="showCompleted = !showCompleted;" ng-class="{ active: showCompleted }" title="Show completed todos"><i class="icon-list"></i></button>
-										</div>
-										<div class="col-sm-10 col-xs-9">
-											<input class="form-control" type="text" placeholder="search" ng-model="searchText">
-											<a href="#" class="clearSearch" ng-click="searchText = ''; search = false;"><i class="icon-remove-sign"></i></a>
-										</div>
-									</div>
-								</div>
-							</form>
-						</li>
-  						<li><a href="#" ng-click="todoLists.selected.todos.newModel()"><i class="icon-plus"></i></a></li>
-					</ul>
-					<ul class="nav navbar-nav navbar-right" ng-show="editingTodo">
-						<li><a href="#" ng-click="editingTodo.remove()"><i class="icon-trash"></i></a></li>
-  						<li><a href="#" ng-click="editingTodo.saveStaged()"><i class="icon-ok"></i></a></li>
-					</ul>
-				</nav>
-			</div>
+	<div class="todos-messages alert alert-info" ng-if="msg">{{ msg }}</div>
 
-			<div class="indx-content">
-				<div class="visible-xs">
-					<div class="slide-menu todo-list-menu" ng-show="mobileMenu" ng-animate="'slide-menu'">
-						<ul class="nav nav-pills nav-stacked" ng-click="mobileMenu = false;">
-							<li><a href="#" ng-click="todoLists.selected.edit()"><i class="icon-cog"></i> Todo list settings</a></li>
-							<li ng-show="!showCompleted"><a href="#" ng-click="showCompleted = true"><i class="icon-check-empty"></i> Show completed todos</a></li>
-							<li ng-show="showCompleted"><a href="#" ng-click="showCompleted = false"><i class="icon-check"></i> Hide completed todos</a></li>
-							<li class="title">Todo lists</li>
-							<li class="thick separator"></li>
-							<li ng-class="{ active: todoList.isSelected }" ng-repeat="todoList in todoLists.allModels"><a href="#" ng-click="todoList.select()">
-								<i class="icon-list"></i>
-								{{ todoList.getAttribute('title') }}
-							</a></li>
-							<li class="separator"></li>
-							<li><a href="#" ng-click="todoLists.selected.edit()"><i class="icon-plus"></i> New todo list</a></li>
-		  				</ul>
-					</div>
-
-					<div class="modal-cover modal-fixed" ng-show="mobileMenu" ng-animate="fade" ng-click="mobileMenu = false"></div>
-				</div>
-
-				<div class="indx-sidebar">
-					<ul class="indx-list-flat todo-lists">
-						<li ng-repeat="todoList in todoLists.allModels" ng-class="{ active: todoList.isSelected }" >
-							<a href="#" ng-click="todoList.select()" droppable>
-								<i class="icon icon-{{ todoList.getAttribute('icon') }}"></i>
-								{{ todoList.getAttribute('title') }}
-							</a>
-						</li>
-						<li><a href="#" ng-click="todoLists.newModel()">
-							<i class="icon icon-plus"></i>
-							New list
-						</a></li>
-					</ul>
-					<div class="modal-cover" ng-show="editingTodo" ng-animate="fade" ng-click="editingTodo.restore()"></div>
-				</div>
-
-				<div class="indx-main">
-					<ul class="todo-list" ng-show="todoLists.selected" sortable>
-						<li ng-repeat="todo in todoLists.selected.todos.allModels | filter:todosFilter" class="todo-item" ng-class="{
-							completed: todo.attributes.completed[0],
-							editing: todo.isEditing,
-							disabled: !todo.isEditing && !!editingTodo,
-							justcompleted: todo.justCompleted
-						}" ng-include="'partials/todo.html'"  ng-click="todo.isEditing || editingTodo.restore();"></li>
-					</ul>
-				</div>
-			</div>
-		</div>
-
-
-		<div ng-show="todoLists.selected.isEditing">
-
-			<div class="modal-cover modal-fixed" ng-animate="fade" ng-click="todoLists.selected.restore()"></div>
-
-			<div class="dlg-container">
-				<div class="dlg">
-					<div class="dlg-title">Edit todo list</div>
-					<form ng-submit="todoLists.selected.saveStaged()">
-						<div class="dlg-body">
-							<input class="form-control" width="255" type="text" placeholder="Title" ng-model="todoLists.selected.stagedAttributes.title">
-							<div class="todo-list-icons">
-								<a href="#" ng-repeat="icon in icons" ng-click="todoLists.selected.stagedAttributes.icon = icon"><i class="icon icon-{{icon}}" ng-class="{active:todoLists.selected.getStagedAttribute('icon') === icon}"></i></a>
-							</div>
-							<button type="button" class="btn btn-danger" ng-click="todoLists.selected.remove()">Delete this todo list</button>
+	<div class="todos-main-body" ng-if="!msg">
+		<div class="todos-sidebar">
+			<ul>
+				<li 	ng-repeat="list in lists" 
+						ng-click="selectList(list)"
+						class="special-{{ list.attributes.special[0] }}"
+						ng-class="{	selected: list === s.selectedList,
+									editing: list === s.editingList,
+									loading: list.loading,
+									special: list.attributes.special }"
+						droppable>
+					<form ng-submit="saveList(list, list === s.newList)">
+						<div class="title">
+							<input 	type="text" 
+									placeholder="My todo list"
+									ng-model="list.staged.attributes.title[0]" 
+									ng-disabled="list !== s.editingList"
+									ng-blur="normalLists.length === 0 || cancelEditList()"
+									ng-escape="cancelEditList()"
+									set-focus="list === s.editingList">
 						</div>
-						<div class="dlg-controls">
-							<button type="button" ng-click="todoLists.selected.restore()">Close</button><button type="submit">Save</button>
+						<div class="static count">{{ list.attributes.count[0] }}</div>
+						<div class="dropdown" ng-class="{ open: s.showingListDropdown === list }" ng-if="list !== s.editingList && !list.attributes.special[0]">
+							<div class="dropdown-button" click-elsewhere="closeListDropdown()" ng-click="toggleListDropdown(list)"><i class="fa fa-caret-down"></i></div>
+							<ul ng-show="s.showingListDropdown === list" class="dropdown-menu" >
+								<li ng-click="editList(list)"><a href="#">Rename</a></li>
+								<li ng-click="deleteList(list)"><a href="#">Delete</a></li>
+							</ul>
+						</div>
+						<input type="submit">
+					</form>
+				</li>
+				<li ng-click="createList()" ng-if="!s.editingList"><div class="title text-muted">New todo list</div></li>
+			</ul>
+		</div>
+		<div class="todos-body">
+			<div class="alert alert-info intro-step intro-step-create-list" ng-if="s.isFirstList">
+				<i class="fa fa-long-arrow-left"></i>
+				<h3>Create your first todo list</h3>
+				<p>Enter a name for your list and press enter.</p>
+			</div>
+			<ul ng-if="s.selectedList.attributes.special[0] || s.selectedList.isCreated()" sortable>
+				<li 	class="todo"
+						ng-repeat="todo in todos"
+						ng-class="{	loading: todo.loading,
+									special: s.selectedList.attributes.special[0],
+									completed: todo.attributes.completed[0] }">
+					<a class="todo-create-before" ng-click="createTodoBefore(todo)" ng-if="!s.selectedList.attributes.special">
+						<div class="line"><div class="i"><i class="fa fa-plus"></i></div></div>
+					</a>
+					<form ng-submit="saveTodo(todo)"  class="todo-body">
+						<div class="gripper" draggable-handle><i></i><i></i><i></i></div>
+						<div class="completedBox" ng-click="toggleTodoCompleted(todo)">
+							<i class="fa fa-check" ng-if="todo.attributes.completed[0]"></i>
+						</div>
+						<div class="title">
+							<input 	type="text" 
+									placeholder="My todo"
+									ng-model="todo.staged.attributes.title[0]" 
+									ng-blur="saveTodo(todo)"
+									ng-escape="cancelEditTodo(todo)"
+									set-focus="!todo.attributes.title[0]"
+									set-blur="finishedEditingTodo(todo)">
 						</div>
 					</form>
-				</div>
+				</li>
+				<li class="end-cap">
+					<a class="todo-create-before" ng-click="createTodoBefore()" ng-if="!s.selectedList.attributes.special">
+						<div class="i"><i class="fa fa-plus"></i></div>
+					</a>
+				</li>
+			</ul>
+			<div class="alert alert-info intro-step intro-step-create-todo" ng-if="!s.selectedList.attributes.special && s.selectedList.isCreated() && !todos.length">
+				<i class="fa fa-long-arrow-up"></i>
+				<h3>Create your first todo</h3>
+				<p>Click the <i class="fa fa-plus"></i> button above.</p>
 			</div>
 		</div>
 	</div>
-  </body>
-  <script src="/js/vendor/lesscss.min.js" type="text/javascript"></script>
-  <script src="/js/vendor/jquery.min.js" type="text/javascript"></script>
-  <script src="/js/vendor/jquery-ui.min.js" type="text/javascript"></script>
-  <script src="/js/vendor/underscore.min.js" type="text/javascript"></script>
-  <script src="/js/vendor/backbone.min.js" type="text/javascript"></script>
-  <script src="/js/vendor/bootstrap.min.js" type="text/javascript"></script>
-  <!-- angular -->
-  <script src="/js/vendor/angular.min.js" type="text/javascript"></script>
-  <script src="/js/vendor/angular-ui.js" type="text/javascript"></script>
 
-  <!-- indx -->
-  <script src="/js/indx.js" type="text/javascript"></script>
-  <script src="/js/indx-utils.js" type="text/javascript"></script>
-  <script src="/js/indx-collection.js" type="text/javascript"></script>
-  <script src="/components/toolbar/toolbar.js" type="text/javascript"></script>
-  <script src="js/todos.js" type="text/javascript"></script>
-  <script src="js/models.js" type="text/javascript"></script>
+	<script src="/js/vendor/lesscss.min.js" type="text/javascript"></script>
+	<script src="/js/vendor/jquery.min.js" type="text/javascript"></script>
+	<script src="/js/vendor/jquery-ui.min.js" type="text/javascript"></script>
+	<script src="/js/vendor/underscore.min.js" type="text/javascript"></script>
+	<script src="/js/vendor/backbone.min.js" type="text/javascript"></script>
+	<!-- angular -->
+	<script src="/js/vendor/angular.min.js" type="text/javascript"></script>
+	<script src="/js/vendor/angular-ui.js" type="text/javascript"></script>
+
+	<!-- indx -->
+	<script src="/js/indx.js" type="text/javascript"></script>
+	<script src="/js/indx-utils.js" type="text/javascript"></script>
+	<script src="/js/indx-staged.js" type="text/javascript"></script>
+	<script src="/components/toolbar/toolbar.js" type="text/javascript"></script>
+	<script src="todos.js" type="text/javascript"></script>
+	<script src="/js/vendor/bootstrap.min.js" type="text/javascript"></script>
+</body>
 </html>
