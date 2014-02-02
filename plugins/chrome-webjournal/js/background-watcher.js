@@ -13,7 +13,7 @@
         var WindowWatcher = Backbone.Model.extend({
             defaults: { enabled:true },
             initialize:function(attributes) {
-                var this_ = this;
+                var this_ = this,. _fetching = [];
                 this._fetching_thumbnail = {};
                 this.bind('user-action', function() { this_.handle_action.apply(this_, arguments); });
                 var _trigger = function(windowid, tabid, tab) {
@@ -23,12 +23,14 @@
                     var _thumbs = function() { 
                         console.log("_thumbs", tab.url, tab.status, 'already have? ', tabthumbs[tab.url] !== undefined);
                         if (tabthumbs[tab.url]) {  _done(); } 
-                        else if (tab.status == 'complete') {
+                        else if (tab.status == 'complete' && !_fetching[tab.url]) {
                             // no thumb, loaded so let's capture
                             console.log('getting thumb >> ');
+                            _fetching[tab.url] = true;
                             this_._getThumbnail(windowid, tab.url).then(function(thumbnail_model) {
                                 // console.log('continuation thumb ', thumbnail_model.id, _(thumbnail_model.attributes).keys().length);
                                 tabthumbs[tab.url] = thumbnail_model;
+                                delete _fetchingp[tab.url];
                                 _done();
                             }).fail(function(bail) { 
                                 console.error('error with thumbnail, ', bail);
@@ -109,7 +111,7 @@
                     this._fetching_thumbnail[url] = d;
                     chrome.tabs.captureVisibleTab(wid, { format:'png' }, function(dataUrl) {
                         if (dataUrl) {
-                            u.resizeImage(dataUrl, 320, 320).then(function(smallerDataUri) {
+                            u.resizeImage(dataUrl, 80, 80).then(function(smallerDataUri) {
                                 delete this_._fetching_thumbnail[url];
                                 d.resolve(smallerDataUri); 
                             });
@@ -257,6 +259,8 @@
             },
             make_record:function(tstart, tend, url, title, tabinfo) {
                 // console.log('make record >> ', options, options.location);
+
+                if (!this.box) { return u.dreject(); }
                 var geowatcher = $injector.get('geowatcher'), d = u.deferred(), this_ = this;
                 this.getDoc(url,title,tabinfo).then(function(docmodel) { 
                     entities.activities.make1(this_.box, 

@@ -9,12 +9,20 @@
   </head>
   <body ng-app="aditl" ng-controller="pages2" ng-cloak>
 	<toolbar box-var='box' username-var='user'></toolbar>
-  	<div ng-show="user && box" class='pages2 container'>
-      <pages2page page="p" ng-repeat="p in pages"></pages2page>      
+  <div class="container" ng-show="user && box">
+    <div class="row">
+      <ul class="nav nav-pills nav-stacked col-xs-1">
+        <li><a href="index.html">Diary</a></li>
+        <li class="active"><a href="pages.html">Pages</a></li>
+      </ul>    
+    	<div class='pages2 col-xs-11'>
+        <pages2page page="p" ng-repeat="p in pages"></pages2page>      
+        <div class="debug container">
+          <table id="debugtable"></table>
+        </div>      
+      </div>
     </div>
-    <div class="debug container">
-      <table id="debugtable"></table>
-    </div>
+  </div> <!-- container --> 
 	<div ng-show="!user">
 		<h1>Please log in.</h1>
 	</div>

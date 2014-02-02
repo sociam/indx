@@ -3,53 +3,7 @@
 
 angular
 	.module('aditl', ['ng','indx','infinite-scroll','ngAnimate'])
-	.controller('pages', function($scope, client, utils, entities) { 
-		$scope.$watch('user + box', function() { 
-			var u = utils;
-			var sa = function(fn) { return u.safeApply($scope, fn); };
-			if (!$scope.user) { console.log('no user :( '); return; }
-			$scope.pages = [];
-
-
-
-			client.store.getBox($scope.box).then(function(_box) { 
-				window.box = _box;
-				_box.on('obj-add', function(id) { 
-					console.log('obj-add >> ', id);
-					_box.getObj(id).then(function(model) { 
-						if (model && model.peek('type') == 'web-page') { 
-							var pushit = function() { 
-								sa(function() { 
-									console.log('keeping obj ', model.id);
-									if ($scope.pages.indexOf(model) < 0) { 
-										$scope.pages = [model].concat($scope.pages);
-										// $scope.pages.push(model);
-									}
-								}); 
-							};
-							// if (!model.peek('thumbnail')) {	setTimeout(pushit, 1000); } else { pushit();}
-							pushit();
-						} else {
-							console.log('uncaching obj ', model.id);
-							_box.uncacheObj(model);
-						}
-					});
-				});
-				entities.documents.getWebPage(_box).then(function(pages) {
-					window.pages = pages;
-					u.safeApply($scope, function() {  
-						console.log('got pages >> ', pages);
-						$scope.pages = pages;
-					});
-				});
-			}).fail(function(bail) { console.error(bail); });
-		});
-		window.scope = $scope;
-		// $scope.addImg = function(thumbobj) {
-		// 	var data = $scope.decodeThumb(thumbobj);
-		// 	jQuery(".pages").append("<img class='page' data-add='manual' style='border: 1px solid red' src='"+data+"''>");
-		// };
-	}).directive('dayContainer', function() {
+	.directive('dayContainer', function() {
 		return {
 			restrict:'E',
 			scope:{ day:'=' },
@@ -77,8 +31,7 @@ angular
 			scope:{ location:'=' },
 			template:'<div class="locmap"></div>',
 			link:function(scope, element, attribute) {
-
-
+				
 				var lat = scope.location && scope.location.peek('latitude'), lon = scope.location && scope.location.peek('longitude');
 				// console.log(' location >> ', scope.location, lat, lon);
 				// console.log('', JSON.stringify(scope.location.attributes));
@@ -94,9 +47,9 @@ angular
 					scope.map.setView([lat, lon], 18); 
 					L.marker([lat, lon]).addTo(scope.map);
 				}
-					// add a marker in the given location, attach some popup content to it and open the popup
-					    // .bindPopup(scope.location.peek('name') ? scope.location.peek('name') : scope.location.id)
-					    // .openPopup();
+				// add a marker in the given location, attach some popup content to it and open the popup
+				    // .bindPopup(scope.location.peek('name') ? scope.location.peek('name') : scope.location.id)
+				    // .openPopup();
 			},
 			controller:function($scope) {
 			}

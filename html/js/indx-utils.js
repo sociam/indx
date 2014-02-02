@@ -163,10 +163,10 @@
 			            context = canvas.getContext('2d');
 			            image = new Image();
 			            image.addEventListener('load', function(){
-							console.log('resize load');
+							// console.log('resize load');
 							var cw = image.width, ch = image.height;
 							var ratio = width*1.0/cw;
-							console.log('new width height ', cw, ch, canvas.width, Math.round(ratio*ch));
+							// console.log('new width height ', cw, ch, canvas.width, Math.round(ratio*ch));
 			                context.drawImage(image, 0, 0, canvas.width, Math.round(ratio*ch)); // , canvas.height);
 			                imageData = context.getImageData(0, 0, canvas.width, canvas.height);
 			                d.resolve(canvas.toDataURL());

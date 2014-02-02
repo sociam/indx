@@ -9,8 +9,12 @@ angular.module('aditl')
 			replace:true,
 			templateUrl:'/apps/aditl/templates/pages2page.html',
 			controller:function($scope, $element, utils) {
+				var error_count = 0, u = utils;
 				// literally nothing necessary here.
 				// var original_thumb;
+				var sa = function(fn) { return u.safeApply($scope, fn); };
+				$scope.show = true;
+
 				var getAppropriate = function(model) { 
 					var url = model.id;
 					if ((/.jpeg$/gi).test(url) || (/.jpg$/gi).test(url) || (/.png$/gi).test(url) || (/.gif$/gi).test(url)) { return model.id; }
@@ -23,6 +27,14 @@ angular.module('aditl')
 					return model.peek('thumbnail'); 
 				};
 				$scope.thumb = getAppropriate($scope.page);
+				$element.find('img.thumbnail').on('error', function() {
+					console.error('IMAGE ERROR  -- ', error_count);
+					error_count++;
+					if (error_count > 0) {  sa(function() { $scope.show = false; }); }
+					sa(function() { 
+						$scope.thumb = getAppropriate($scope.page);
+					});
+				});
 			}
 		};
 	}).controller('pages2', function($scope, $injector, client, utils, entities) { 

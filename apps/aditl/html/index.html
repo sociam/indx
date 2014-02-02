@@ -9,11 +9,17 @@
   </head>
   <body ng-app="aditl" ng-controller="main" ng-cloak>
 	<toolbar box-var='box' username-var='user'></toolbar>
-    <!-- <div ng-show="user && box" class='diary container' infinite-scroll="generatePast(days[days.length-1].date,3)" infinite-scroll-distance="1"> -->
-  	<div ng-show="user && box" class='diary container'>
-   		<!--- <locmap ng-repeat="loc in locations" location="loc"></locmap>-->
-   		<day-container ng-repeat="day in days" day="day"></day-container>
-  	</div>
+    <div class="container" ng-show="user && box">
+    <div class="row">
+      <ul class="nav nav-pills nav-stacked col-xs-1">
+        <li class="active"><a href="#">Diary</a></li>
+        <li><a href="pages.html">Pages</a></li>
+      </ul>
+    	<div class='diary col-xs-11' >
+   		<!--- infinite-scroll="generatePast(days[days.length-1].date,3)" infinite-scroll-distance="1" -->
+     		<day-container ng-repeat="day in days" day="day"></day-container>
+    	</div>
+    </div>
 	<div ng-show="!user">
 		<h1>Please log in.</h1>
 	</div>
@@ -29,6 +35,8 @@
   <!-- angular --> 
   <script src="/js/vendor/angular.min.js" type="text/javascript"></script>
   <script src="/js/vendor/angular-ui.js" type="text/javascript"></script>
+  <script src="/js/vendor/angular-animate.min.js" type="text/javascript"></script>
+
   <script src="/js/vendor/ng-infinite-scroll.js" type="text/javascript"></script>
 
   <!-- indx --> 
