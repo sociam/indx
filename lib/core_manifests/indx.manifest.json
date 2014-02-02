@@ -18,7 +18,10 @@
 			"email": "peter.g.west@gmail.com"
 		}
 	],
-	"documentation": "indx.docs-config.js",
+	"documents": [
+		{ 	"type": "jsapi",
+			"file": "indx.docs-config.js" }
+	],
 	"tests": [
 		{ 	"title": "Browser JavaScript testing",
 			"type": "browser-js",

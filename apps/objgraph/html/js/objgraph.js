@@ -267,6 +267,7 @@ angular
 			if ($scope.selectedUser && $scope.selectedBox) {
 				client.store.getBox($scope.selectedBox).then(function(box) {
 					initialize(box);
+					window.box = box;
 				}).fail(function(e) { u.error('error ', e); });
 			}
 		});
