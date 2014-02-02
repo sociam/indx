@@ -61,7 +61,21 @@ angular
 
 		$scope.editList = function (list) {
 			state.editingList = list;
-			list.showDropdown = false;
+			$scope.closeListDropdown();
+		};
+
+		$scope.showListDropdown = function (list) {
+			state.showingListDropdown = list;
+		};
+		$scope.closeListDropdown = function () {
+			delete state.showingListDropdown;
+		};
+		$scope.toggleListDropdown = function (list) {
+			if (state.showingListDropdown === list) {
+				$scope.closeListDropdown(list);
+			} else {
+				$scope.showListDropdown(list);
+			}
 		};
 
 		$scope.selectList = function (list) {
@@ -188,9 +202,7 @@ angular
 
 		$scope.bodyClick = function () {
 			console.log(this)
-			$scope.lists.forEach(function (list) {
-				list.showDropdown = false;
-			});
+			delete state.showingListDropdown;
 		};
 
 
