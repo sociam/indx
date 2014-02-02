@@ -23,7 +23,8 @@
 						ng-class="{	selected: list === s.selectedList,
 									editing: list === s.editingList,
 									loading: list.loading,
-									special: list.attributes.special }">
+									special: list.attributes.special }"
+						droppable>
 					<form ng-submit="saveList(list, list === s.newList)">
 						<div class="title">
 							<input 	type="text" 
@@ -54,7 +55,7 @@
 				<h3>Create your first todo list</h3>
 				<p>Enter a name for your list and press enter.</p>
 			</div>
-			<ul ng-if="s.selectedList.attributes.special[0] || s.selectedList.isCreated()">
+			<ul ng-if="s.selectedList.attributes.special[0] || s.selectedList.isCreated()" sortable>
 				<li 	ng-repeat="todo in todos"
 						ng-class="{	loading: todo.loading,
 									special: s.selectedList.attributes.special[0],
@@ -63,6 +64,7 @@
 						<div class="line"><div class="i"><i class="fa fa-plus"></i></div></div>
 					</a>
 					<form ng-submit="saveTodo(todo)"  class="todo-body">
+						<div class="gripper" draggable-handle><i></i><i></i><i></i></div>
 						<div class="completedBox" ng-click="toggleTodoCompleted(todo)">
 							<i class="fa fa-check" ng-if="todo.attributes.completed[0]"></i>
 						</div>

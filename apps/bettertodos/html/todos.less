@@ -14,6 +14,12 @@ body { background: #f8f8f8; }
 	}
 }
 
+
+.dropping {
+	background-color: #fbeed5 !important;
+	color: #333 !important;
+}
+
 .todos-messages {
 	font-size: 20px;
 	text-align: center;
@@ -157,6 +163,9 @@ body { background: #f8f8f8; }
 					.todo-create-before { display: none; }
 					.todo-body { margin-top: 0; }
 				}
+				&:hover {
+					.completedBox, .gripper { opacity: 1; }
+				}
 				.todo-create-before {
 					position: relative;
 					z-index: 20;
@@ -201,6 +210,27 @@ body { background: #f8f8f8; }
 						transition: opacity 0.1s linear, top 0.1s linear;
 					}
 				}
+				.gripper {
+					position: absolute;
+					left: 0px;
+					top: 4px;
+					width: 19px;
+					opacity: 0;
+					padding: 8px 8px 8px 3px;
+					cursor: hand;
+					i {
+						display: block;
+						width: 0px;
+						height: 0px;
+						background: red;
+						border-top: 1px solid #bbb;
+						border-left: 1px solid #c1c1c1;
+						border-bottom: 2px solid #d8d8d8;
+						border-right: 2px solid #c6c6c6;
+						border-radius: 40px;
+						margin: 4px;
+					}
+				}
 				.todo-body {
 					position: relative;
 					z-index: 10;
@@ -230,13 +260,14 @@ body { background: #f8f8f8; }
 					position: absolute;
 					top: 15px;
 					height: 20px;
-					left: 14px;
-					border: 1px solid #eee;
+					left: 17px;
+					border: 1px solid #b8b8b8;
 					margin: 0;
 					width: 20px;
 					font-size: 18px;
 					line-height: 21px;
 					color: #999;
+					opacity: 0.8;
 				}
 				.title {
 					left: 0;

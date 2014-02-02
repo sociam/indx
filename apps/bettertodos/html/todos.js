@@ -313,6 +313,25 @@ angular
 			});
 		};
 
+		$scope.moveTodo = function (todo, oldList, newList) {
+			var dfd1, dfd2,
+				oldListTodos = [].concat(oldList.get('todos'));
+			oldListTodos.splice(oldListTodos.indexOf(todo), 1);
+			dfd1 = newList.save('todos', [todo].concat(newList.get('todos')));
+			dfd2 = oldList.save('todos', oldListTodos).then();
+			return $.when(dfd1, dfd2).then(function () {
+				updateTodos();
+			});
+		};
+
+		$(document)
+			.keydown(function (e) {
+				if (e.keyCode === 27) { //esc
+					$('[sortable]')
+						.sortable('cancel');
+				}
+			});
+
 		window.$scope = $scope;
 
 
@@ -361,4 +380,103 @@ angular
 				}
 			});
 		}
-	}]);
+	}]).directive('sortable', function (utils) {
+		return {
+			// A = attribute, E = Element, C = Class and M = HTML Comment
+			restrict: 'A',
+			link: function (scope, element, attrs) {
+				var lastLiAbove = undefined;
+				element.sortable({
+					revert: true,
+					handle: "[draggable-handle]",
+					placeholder: 'todo-placeholder',
+					tolerance: "pointer",
+					start: function (ev, ui) {
+						var height = ui.item.find('.todo-body')
+							.outerHeight() + 1,
+							tscope = angular.element(ui.item)
+								.scope();
+						ui.placeholder.height(height);
+						lastLiAbove = ui.placeholder.prev();
+						tscope.todo.isDragging = true;
+					},
+					change: function (ev, ui) {
+						var liAbove = ui.placeholder.prev('li.todo-item'),
+							liBelow = ui.placeholder.next('li.todo-item');
+						if (lastLiAbove !== liAbove) {
+							var clone = ui.placeholder.clone(),
+								height = clone.height();
+							$('.todo-placeholder.clone')
+								.remove();
+							lastLiAbove.after(clone);
+							clone.addClass('animate clone')
+								.height(0)
+							ui.placeholder.removeClass('animate')
+								.height(0);
+							setTimeout(function () {
+								ui.placeholder.addClass('animate')
+									.height(height);
+							});
+							lastLiAbove = liAbove;
+							if (liBelow.length) {
+								var nextTodo = angular.element(liBelow)
+									.scope()
+									.todo,
+									tscope = angular.element(ui.item)
+										.scope(),
+									draggingTodo = tscope.todo;
+								draggingTodo.stagedAttributes.urgency = nextTodo.getAttribute(
+									'urgency');
+								utils.safeApply(tscope);
+							}
+						}
+					},
+					stop: function (ev, ui) {
+						var tscope = angular.element(ui.item)
+							.scope(),
+							todo = tscope.todo,
+							todos = scope.todoLists.selected.todos,
+							newTodos = element.find('li.todo-item')
+								.map(function () {
+									return angular.element(this)
+										.scope()
+										.todo;
+								})
+								.get();
+						lastLiAbove = undefined;
+						todo.isDragging = false;
+						todo.saveStaged();
+						todos.reset(newTodos)
+							.save();
+						utils.safeApply(tscope);
+						console.log(todos);
+					}
+				})
+					.disableSelection();
+			}
+		};
+	})
+	.directive('droppable', function () {
+		return {
+			// A = attribute, E = Element, C = Class and M = HTML Comment
+			restrict: 'A',
+			link: function ($scope, element) {
+				element.droppable({
+					hoverClass: 'dropping',
+					tolerance: 'pointer',
+					drop: function (ev, ui) {
+						console.log('drop', ui);
+						var el = ui.draggable,
+							draggableScope = angular.element(el)
+								.scope(),
+							oldList = $scope.s.selectedList,
+							newList = $scope.list,
+							todo = draggableScope.todo;
+
+						console.log('move', todo, oldList, newList)
+						$scope.moveTodo(todo, oldList, newList);
+					}
+				});
+			}
+		};
+	});;
