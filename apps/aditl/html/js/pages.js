@@ -8,9 +8,10 @@ angular.module('aditl')
 			scope:{ page:'=' },
 			replace:true,
 			templateUrl:'/apps/aditl/templates/pages2page.html',
-			controller:function($scope, utils) {
+			controller:function($scope, $element, utils) {
 				// literally nothing necessary here.
-				$scope.getAppropriate = function(model) { 
+				// var original_thumb;
+				var getAppropriate = function(model) { 
 					var url = model.id;
 					if ((/.jpeg$/gi).test(url) || (/.jpg$/gi).test(url) || (/.png$/gi).test(url) || (/.gif$/gi).test(url)) { return model.id; }
 					if ((/youtube.com/gi).test(url)) {
@@ -19,8 +20,9 @@ angular.module('aditl')
 							return ['http://img.youtube.com/vi/',vidid,'/0.jpg'].join('');
 						} catch(e) { }
 					}
-					return model.peek('thumbnail');
+					return model.peek('thumbnail'); 
 				};
+				$scope.thumb = getAppropriate($scope.page);
 			}
 		};
 	}).controller('pages2', function($scope, $injector, client, utils, entities) { 
@@ -35,16 +37,20 @@ angular.module('aditl')
 				jQuery('#debugtable').append(row);
 			};
 			var prepend = function(model){
-				var parent = jQuery('.pages');
-				var datauri = model.peek('thumbnail');
-				sa(function() { $scope.pages.push(model); });
-				appenddebug(model);
+				// var parent = jQuery('.pages');
+				// var datauri = model.peek('thumbnail');
+				sa(function() { 
+					if ($scope.pages.indexOf(model) < 0) { 
+						$scope.pages.splice(0, 0, model); // push(model); //  = [model].concat($scope.pages); // .push(model); 
+					}
+				});
+				// appenddebug(model);
 			};
 			client.store.getBox($scope.box).then(function(_box) { 
 				_box.on('obj-add', function(id) { 
 					_box.getObj(id).then(function(model) { 
 						if (model && model.peek('type') == 'web-page') { 
-							console.log("new Page prepending >> ", model.id);
+							console.log('ew Page prepending >> ', model.id);
 							prepend(model);
 						} else {
 							console.log('uncaching obj ', model.id);
@@ -66,4 +72,4 @@ angular.module('aditl')
 		// 	var data = $scope.decodeThumb(thumbobj);
 		// 	jQuery(".pages").append("<img class='page' data-add='manual' style='border: 1px solid red' src='"+data+"''>");
 		// };
-	})
+	});
