@@ -4,7 +4,16 @@
 @shadow-size: 6px;
 @shadow-color: rgba(0, 0, 0, 0.1);
 
-body { background: #f8f8f8; }
+body {
+	background: #f8f8f8;
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	cursor: default;
+}
 
 .indx-toolbar {
 	position: fixed;
@@ -187,13 +196,13 @@ body { background: #f8f8f8; }
 					transition: height 0.1s linear;
 
 					&:hover {
-						transition-delay: 0.2s;
+						transition-delay: 0.35s;
 						height: @trigger-margin * 2 + @gap-size;
 						.line {
 							opacity: 1;
 						}
 						.i {
-							transition-delay: 0.2s;
+							transition-delay: 0.35s;
 							opacity: 1;
 							top: (@gap-size / 2) - 10px;
 						}
