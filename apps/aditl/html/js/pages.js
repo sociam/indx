@@ -71,16 +71,16 @@ angular.module('aditl')
 					_box.getObj(id).then(function(model) { 
 						console.log(" model >> ", model.id);
 						if (model && model.peek('type') == 'activity' && model.peek('activity') == 'browse') { 
-							console.log(" GOT A BROWSE >> ", model.peek('what').id);
+							// console.log(" GOT A BROWSE >> ", model.peek('what').id);
 							var page = model.peek('what');
 							if (page) { 
-								console.log('New Page prepending >> ', page.id, page.peek('thumbnail'));
+								// console.log('New Page prepending >> ', page.id, page.peek('thumbnail'));
 								prepend(page);
 							} else {
-								console.error("NO WHAT >> ", id);
+								// console.error("NO WHAT >> ", id);
 							}
 						} else if (model && model.peek('type') == 'web-page') {
-							console.log('prepending because its a web page');
+							// console.log('prepending because its a web page');
 							prepend(model);
 						} else { 
 							console.log('uncaching obj ', model.id);
@@ -94,7 +94,7 @@ angular.module('aditl')
 
 				entities.activities.getAll(_box, { activity: 'browse' }).then(function(actions) {
 					console.log('actions >> ', actions.length);
-					actions.sort(function(x,y) { return y.peek('tstart') - x.peek('tstart'); });
+					actions.sort(function(x,y) { return x.peek('tstart').valueOf() - y.peek('tstart').valueOf(); });
 					actions.map(function(action) { 
 						var page = action.peek('what');
 						if (page) {  prepend(page);	}
