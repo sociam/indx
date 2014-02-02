@@ -398,6 +398,9 @@ angular
 			restrict: 'A',
 			link: function (scope, element, attrs) {
 				var lastLiAbove = undefined;
+				element.mouseup(function () {
+					element.addClass('dragging')
+				});
 				element.sortable({
 					revert: true,
 					handle: "[draggable-handle]",
@@ -408,6 +411,13 @@ angular
 							tscope = angular.element(ui.item).scope();
 						ui.placeholder.height(height);
 						lastLiAbove = ui.placeholder.prev();
+						ui.item.addClass('dragging');
+						ui.item.one('mouseup', function () {
+							ui.item.removeClass('dragging')
+						});
+					},
+					update: function () {
+						console.log('FIRED', arguments);
 					},
 					change: function (ev, ui) {
 						var liAbove = ui.placeholder.prev('li.todo'),
@@ -432,6 +442,7 @@ angular
 								})
 								.get();
 						lastLiAbove = undefined;
+						ui.item.removeClass('dragging');
 						//todo.isDragging = false;
 						//todo.saveStaged();
 						//todos.reset(newTodos).save();

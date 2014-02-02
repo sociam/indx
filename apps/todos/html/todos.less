@@ -13,6 +13,7 @@ body {
 	-ms-user-select: none;
 	user-select: none;
 	cursor: default;
+	overflow-x: hidden; 
 }
 
 .indx-toolbar {
@@ -173,10 +174,16 @@ body {
 			& > li {
 				@trigger-margin: 10px; // size on each end of todo that will trigger gap
 				@gap-size: 30px; // size of gap between todos 
+				margin-top: 0;
 				position: relative;
-				&.editing, &.special {
+				transition: margin 0.5s ease-in-out;
+				&.editing, &.special, &.dragging {
 					.todo-create-before { display: none; }
 					.todo-body { margin-top: 0; }
+				}
+				&.dragging {
+					margin-top: @trigger-margin; // fixes jquery.sortable's inability to handle negative margins
+					transition: none;
 				}
 				&:hover {
 					.completedBox, .gripper { opacity: 1; }
@@ -184,6 +191,10 @@ body {
 				&.todo-placeholder {
 					box-shadow: inset 0 0 @shadow-size 0px @shadow-color;
 					background: #f8f8f8;
+					&:last-child {
+						box-shadow: none;
+						background: red;
+					}
 				}
 				.todo-create-before {
 					position: relative;
@@ -232,16 +243,16 @@ body {
 				.gripper {
 					position: absolute;
 					left: 0px;
-					top: 4px;
+					top: 0px;
 					width: 19px;
+					height: 49px;
 					opacity: 0;
-					padding: 8px 8px 8px 3px;
-					cursor: hand;
+					padding: 12px 8px 12px 3px;
+					cursor: move;
 					i {
 						display: block;
 						width: 0px;
 						height: 0px;
-						background: red;
 						border-top: 1px solid #bbb;
 						border-left: 1px solid #c1c1c1;
 						border-bottom: 2px solid #d8d8d8;
