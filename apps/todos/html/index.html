@@ -78,6 +78,9 @@
 									set-focus="!todo.attributes.title[0]"
 									set-blur="finishedEditingTodo(todo)">
 						</div>
+						<div ng-if="s.selectedList.attributes.special[0]" class="list-title">
+							{{ todo.list.attributes.title[0] }}
+						</div>
 					</form>
 				</li>
 				<li class="end-cap">
