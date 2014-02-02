@@ -21,7 +21,7 @@ angular
 			app = undefined;
 			box = b;
 			state = $scope.s = {};
-			//$scope.box = b; // FIXME remove (just for console use)
+			$scope.box = b; // FIXME remove (just for console use)
 
 			box.getObj('todoApp').then(function (a) {
 				app = a;
@@ -392,67 +392,41 @@ angular
 					placeholder: 'todo-placeholder',
 					tolerance: "pointer",
 					start: function (ev, ui) {
-						var height = ui.item.find('.todo-body')
-							.outerHeight() + 1,
-							tscope = angular.element(ui.item)
-								.scope();
+						var height = ui.item.find('.todo-body').outerHeight(),
+							tscope = angular.element(ui.item).scope();
 						ui.placeholder.height(height);
 						lastLiAbove = ui.placeholder.prev();
-						tscope.todo.isDragging = true;
 					},
 					change: function (ev, ui) {
-						var liAbove = ui.placeholder.prev('li.todo-item'),
-							liBelow = ui.placeholder.next('li.todo-item');
+						var liAbove = ui.placeholder.prev('li.todo'),
+							liBelow = ui.placeholder.next('li.todo');
 						if (lastLiAbove !== liAbove) {
-							var clone = ui.placeholder.clone(),
-								height = clone.height();
-							$('.todo-placeholder.clone')
-								.remove();
-							lastLiAbove.after(clone);
-							clone.addClass('animate clone')
-								.height(0)
-							ui.placeholder.removeClass('animate')
-								.height(0);
-							setTimeout(function () {
-								ui.placeholder.addClass('animate')
-									.height(height);
-							});
 							lastLiAbove = liAbove;
 							if (liBelow.length) {
-								var nextTodo = angular.element(liBelow)
-									.scope()
-									.todo,
-									tscope = angular.element(ui.item)
-										.scope(),
+								var nextTodo = angular.element(liBelow).scope().todo,
+									tscope = angular.element(ui.item).scope(),
 									draggingTodo = tscope.todo;
-								draggingTodo.stagedAttributes.urgency = nextTodo.getAttribute(
-									'urgency');
 								utils.safeApply(tscope);
 							}
 						}
 					},
 					stop: function (ev, ui) {
-						var tscope = angular.element(ui.item)
-							.scope(),
+						var tscope = angular.element(ui.item).scope(),
 							todo = tscope.todo,
-							todos = scope.todoLists.selected.todos,
-							newTodos = element.find('li.todo-item')
+							todos = scope.s.selectedList,
+							newTodos = element.find('li.todo')
 								.map(function () {
-									return angular.element(this)
-										.scope()
-										.todo;
+									return angular.element(this).scope().todo;
 								})
 								.get();
 						lastLiAbove = undefined;
-						todo.isDragging = false;
-						todo.saveStaged();
-						todos.reset(newTodos)
-							.save();
-						utils.safeApply(tscope);
-						console.log(todos);
+						//todo.isDragging = false;
+						//todo.saveStaged();
+						//todos.reset(newTodos).save();
+						//utils.safeApply(tscope);
+						//console.log(todos);
 					}
-				})
-					.disableSelection();
+				}).disableSelection();
 			}
 		};
 	})

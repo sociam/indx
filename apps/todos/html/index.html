@@ -56,7 +56,8 @@
 				<p>Enter a name for your list and press enter.</p>
 			</div>
 			<ul ng-if="s.selectedList.attributes.special[0] || s.selectedList.isCreated()" sortable>
-				<li 	ng-repeat="todo in todos"
+				<li 	class="todo"
+						ng-repeat="todo in todos"
 						ng-class="{	loading: todo.loading,
 									special: s.selectedList.attributes.special[0],
 									completed: todo.attributes.completed[0] }">

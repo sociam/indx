@@ -1,6 +1,8 @@
 @import url(http://fonts.googleapis.com/css?family=Port+Lligat+Slab|Playball);
 
 @app-top: 42px;
+@shadow-size: 6px;
+@shadow-color: rgba(0, 0, 0, 0.1);
 
 body { background: #f8f8f8; }
 
@@ -36,7 +38,7 @@ body { background: #f8f8f8; }
 		width: 300px;
 		border-right: 1px solid #eee;
 		background: white;
-		box-shadow: 0 0 8px 0 rgba(0,0,0,0.3);
+		box-shadow: 0 0 @shadow-size 0 @shadow-color;
 
 		& > ul {
 			padding: 0 0 0 0;
@@ -146,7 +148,7 @@ body { background: #f8f8f8; }
 		}
 	}
 	.todos-body {
-		box-shadow: inset 0 8px 8px -8px rgba(0, 0, 0, 0.3);
+		box-shadow: inset 0 @shadow-size @shadow-size -@shadow-size @shadow-color;
 		margin-top: @app-top;
 		margin-left: 300px;
 		min-height: 30px;
@@ -154,7 +156,7 @@ body { background: #f8f8f8; }
 			padding: 0;
 			margin: 0;
 			list-style: none;
-			box-shadow: 0 0 8px 0 rgba(0,0,0,0.3);
+			box-shadow: 0 0 @shadow-size 0 @shadow-color;
 			& > li {
 				@trigger-margin: 10px; // size on each end of todo that will trigger gap
 				@gap-size: 30px; // size of gap between todos 
@@ -165,6 +167,10 @@ body { background: #f8f8f8; }
 				}
 				&:hover {
 					.completedBox, .gripper { opacity: 1; }
+				}
+				&.todo-placeholder {
+					box-shadow: inset 0 0 @shadow-size 0px @shadow-color;
+					background: #f8f8f8;
 				}
 				.todo-create-before {
 					position: relative;
@@ -194,7 +200,7 @@ body { background: #f8f8f8; }
 						width: 100%;
 						top: @trigger-margin;
 						bottom: @trigger-margin;
-						box-shadow: inset 0 0 8px 0px rgba(0, 0, 0, 0.3);
+						box-shadow: inset 0 0 @shadow-size 0px @shadow-color;
 						background: #f8f8f8;
 						overflow: hidden;
 					}
