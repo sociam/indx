@@ -12,6 +12,7 @@ body { background: #f8f8f8; }
 	z-index: 1080;
 	.navbar { 
 		opacity: 1;
+		border-width: 0;
 		.navbar-inner { opacity: 0.88; }
 	}
 }
@@ -36,9 +37,9 @@ body { background: #f8f8f8; }
 		position: fixed;
 		left: 0; top: @app-top; bottom: 0;
 		width: 300px;
-		border-right: 1px solid #eee;
 		background: white;
 		box-shadow: 0 0 @shadow-size 0 @shadow-color;
+		border-top: 1px solid #eee;
 
 		& > ul {
 			padding: 0 0 0 0;
@@ -246,7 +247,8 @@ body { background: #f8f8f8; }
 					height: 50px;
 					line-height: 40px;
 					font-size: 22px;
-					border-bottom: 1px solid #eee;
+					border-left: 1px solid #eee;
+					border-top: 1px solid #eee;
 				}
 
 				&.end-cap {
