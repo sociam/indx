@@ -2,44 +2,8 @@
 /* global require, exports, console, process, module, L, angular, _, jQuery */
 
 angular
-	.module('wellbeing', ['ng','indx','infinite-scroll'])
-	.controller('pages', function($scope, client, utils, entities) { 
-		$scope.$watch('user + box', function() { 
-			var u = utils;
-			var sa = function(fn) { return u.safeApply($scope, fn); };
-
-			if (!$scope.user) { console.log('no user :( '); return; }
-			$scope.decodeThumb = function(th) { 
-				if (th) {
-					// console.log('th zero >> ', th[0]);
-					return utils.joinModelChunksIntoString(th);
-				}
-			};
-
-			client.store.getBox($scope.box).then(function(_box) { 
-				window.box = _box;
-				_box.on('obj-add', function(x) { 
-					console.log('obj-add >> ', x);
-					_box.getObj(x).then(function(model) { 
-						if (model && model.peek('type') == 'web-page') { 
-							sa(function() { 
-								if ($scope.pages.indexOf(model) < 0) { 
-									$scope.pages = [model].concat($scope.pages);
-								}
-							});
-						}
-					});
-				});
-				entities.documents.getWebPage(_box).then(function(pages) {
-					window.pages = pages;
-					u.safeApply($scope, function() {  
-						console.log('got pages >> ', pages);
-						$scope.pages = pages;
-					});
-				});
-			}).fail(function(bail) { console.error(bail); });
-		});
-	}).directive('dayContainer', function() {
+	.module('aditl', ['ng','indx','infinite-scroll','ngAnimate'])
+	.directive('dayContainer', function() {
 		return {
 			restrict:'E',
 			scope:{ day:'=' },
@@ -67,8 +31,7 @@ angular
 			scope:{ location:'=' },
 			template:'<div class="locmap"></div>',
 			link:function(scope, element, attribute) {
-
-
+				
 				var lat = scope.location && scope.location.peek('latitude'), lon = scope.location && scope.location.peek('longitude');
 				// console.log(' location >> ', scope.location, lat, lon);
 				// console.log('', JSON.stringify(scope.location.attributes));
@@ -84,9 +47,9 @@ angular
 					scope.map.setView([lat, lon], 18); 
 					L.marker([lat, lon]).addTo(scope.map);
 				}
-					// add a marker in the given location, attach some popup content to it and open the popup
-					    // .bindPopup(scope.location.peek('name') ? scope.location.peek('name') : scope.location.id)
-					    // .openPopup();
+				// add a marker in the given location, attach some popup content to it and open the popup
+				    // .bindPopup(scope.location.peek('name') ? scope.location.peek('name') : scope.location.id)
+				    // .openPopup();
 			},
 			controller:function($scope) {
 			}
@@ -148,7 +111,7 @@ angular
 				entities.activities.getFitbitElevationPerMin(box, tstart, tend)
 			).then(function(steps, calories, distance, floors, elevation) {
 				// laura help me out here :) 
-				console.log("FITBITS >> ", steps)
+				// console.log("FITBITS >> ", steps);
 				var totals = {};
 				totals.steps = steps && steps.length && steps.reduce(function(x,y) { return x + parseFloat(y.peek('value')); }, 0);
 				totals.calories = calories && calories.length && calories.reduce(function(x,y) { return x + parseFloat(y.peek('value')); }, 0);

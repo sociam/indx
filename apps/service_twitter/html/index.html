@@ -21,6 +21,9 @@
 				</tr>
 			</table>
 		</div>
+		<div class="row">
+			<div class="btn btn-default" ng-show="!(config.access_token && config.user && config.password && config.box)" ng-click="showConfig = !showConfig"> Reconfigure <div class="glyphicon glyphicon-cog"></div></div>
+		</div>
 		<table class='security'>
 			<tr><td>Service User</td><td><select ng-model="app.user" ng-options='u.name for u in users'></select></td></tr>
 			<tr><td>Service User's Password</td><td><input type="password" ng-model='app.password'></td></tr>
@@ -33,7 +36,7 @@
 		</td></tr>
 		</table>
 		<h4>In order to get these credentials, please visit <a href="https://dev.twitter.com/user/login?" target="_blank"> here</a> and create a Twitter Application</h4>
-		<table ng-show="!consumer_key || !consumer_secret || !access_token || !access_token_secret" class='params'>
+		<table ng-show="(!consumer_key || !consumer_secret || !access_token || !access_token_secret) || showConfig" class='params'>
 		    <tr><td>Consumer Key: </td><td><input type="text" name="consumer_key" ng-model="consumer_key"></input></td></tr>
 		    <tr><td>Consumer Secret: </td><td><input type="text" name="consumer_secret" ng-model="consumer_secret"></input></td></tr>
 		    <tr><td>Access Token: </td><td><input type="text" name="access_token" ng-model="access_token"></input></td></tr>

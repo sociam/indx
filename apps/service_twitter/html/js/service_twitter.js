@@ -111,11 +111,11 @@ angular
 			console.info('i got a config ', config);
 			s._ajax('GET', 'apps/service_twitter/api/set_config', { config: JSON.stringify(config) }).then(function(x) { 
 				console.log('success ', x);
-				status('configuration chage committed');
+				status('Configuration committed');
 				window.retval = x;
 			}).fail(function(e) {
 				console.error(e);
-				status('error committing change ' + e.toString());
+				status('Error committing change ' + e.toString());
 			});
 		};
 
