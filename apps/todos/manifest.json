@@ -6,6 +6,9 @@
 		"128": "icon.png",
 		"svg": "icon.svg"
 	},
+	"documents": {
+		"readme": "readme.md"
+	},
 	"author": [
 		{
 			"name": "Peter West",
