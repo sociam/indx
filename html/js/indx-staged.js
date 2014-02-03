@@ -21,7 +21,6 @@ angular
 			if (typeof attribute1 !== 'object') { attribute1 = [attribute1]; }
 			if (typeof attribute2 !== 'object') { attribute2 = [attribute2]; }
 			return _.reduce(attribute1, function (memo, v, k) {
-				console.log(v, attribute2[k])
 				return memo || v !== attribute2[k];
 			}, attribute1.length !== attribute2.length)
 		};
@@ -36,12 +35,10 @@ angular
 				return this;
 			},
 			hasChanged: function () {
-				console.log('hasChanged', this.attributes, this.obj.attributes)
 				var that = this,
 					keys = _.union(_.keys(this.attributes), _.keys(this.obj.attributes));
 				console.log(keys)
 				return _.reduce(keys, function (memo, key) {
-
 					return memo || areAttributesDifferent(that.attributes[key], that.obj.attributes[key]);
 				}, false);
 			},
