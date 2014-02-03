@@ -461,7 +461,7 @@ angular
 				});
 			}
 		};
-	}).directive('clickElsewhere', function($document){
+	}).directive('clickElsewhere', function ($document) {
 		return {
 			restrict: 'A',
 			link: function (scope, elem, attr, ctrl) {
@@ -551,22 +551,24 @@ angular
 			// A = attribute, E = Element, C = Class and M = HTML Comment
 			restrict: 'A',
 			link: function ($scope, element, attr) {
-				if ($scope.$apply(attr.ngDroppable)) {
-					element.droppable({
-						hoverClass: 'dropping',
-						tolerance: 'pointer',
-						drop: function (ev, ui) {
-							var el = ui.draggable,
-								draggableScope = angular.element(el)
-									.scope(),
-								//oldList = $scope.s.selectedList,
-								newList = $scope.list,
-								todo = draggableScope.todo;
+				setTimeout(function () { // herp
+					if ($scope.$apply(attr.ngDroppable)) {
+						element.droppable({
+							hoverClass: 'dropping',
+							tolerance: 'pointer',
+							drop: function (ev, ui) {
+								var el = ui.draggable,
+									draggableScope = angular.element(el)
+										.scope(),
+									//oldList = $scope.s.selectedList,
+									newList = $scope.list,
+									todo = draggableScope.todo;
 
-							$scope.moveTodo(todo, newList);
-						}
-					});
-				}
+								$scope.moveTodo(todo, newList);
+							}
+						});
+					}
+				});
 			}
 		};
 	});;
