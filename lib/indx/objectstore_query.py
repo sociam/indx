@@ -75,8 +75,8 @@ class ObjectStoreQuery:
 
         def gen_subquery(pred, vals, is_subquery = False, operator = "="):
 
-            self.table_counter += 1
-            table = "sub_{0}".format(self.table_counter)
+            #self.table_counter += 1
+            #table = "sub_{0}".format(self.table_counter)
 
 
             # single value
@@ -89,13 +89,16 @@ class ObjectStoreQuery:
 
 
             if pred == "@id":
-                query = "SELECT DISTINCT {0}.subject FROM wb_v_latest_triples AS {0} WHERE ({0}.subject {2} {1})".format(table, value_querypart, operator)
-                params = []
-            else:
-                query = "SELECT DISTINCT {0}.subject FROM wb_v_latest_triples AS {0} WHERE ({0}.predicate = %s AND {0}.obj_value {2} {1})".format(table, value_querypart, operator)
-                params = [pred]
+                query, params = self.create_subquery(subject = value_querypart, subject_operator = operator, inner_params = params_querypart)
 
-            params.extend(params_querypart)
+#                query = "SELECT DISTINCT {0}.subject FROM wb_v_latest_triples AS {0} WHERE ({0}.subject {2} {1})".format(table, value_querypart, operator)
+#                params = []
+            else:
+                query, params = self.create_subquery(predicate = pred, obj = value_querypart, obj_operator = operator, inner_params = params_querypart)
+#                query = "SELECT DISTINCT {0}.subject FROM wb_v_latest_triples AS {0} WHERE ({0}.predicate = %s AND {0}.obj_value {2} {1})".format(table, value_querypart, operator)
+#                params = [pred]
+
+            #params.extend(params_querypart)
             return query, params
 
 
@@ -163,6 +166,55 @@ class ObjectStoreQuery:
         else:
             return "", params # this means we can look at length of wheres in to_sql to determine if this is an empty query
 
+    def create_subquery(self, subject = None, subject_operator = "=", predicate = None, predicate_operator = "=", obj = None, obj_operator = "=", inner_params = []):
+        """ Try to create an optimal JOIN query without including / returning columns or tables we don't need here. """
+
+        self.table_counter += 1
+
+        params = []
+        query = "SELECT j_triples_{0}.subject".format(self.table_counter)
+        query += " FROM wb_latest_vers AS j_latest_{0} ".format(self.table_counter)
+        query += " JOIN wb_triples j_triples_{0} ON j_triples_{0}.id_triple = j_latest_{0}.triple".format(self.table_counter)
+
+        if predicate is not None:
+            # join predicate value
+            query += " JOIN ix_v_short_strings j_predicate_{0} ON j_predicate_{0}.id_string = j_triples_{0}.predicate".format(self.table_counter)
+
+        if obj is not None:
+            # join object value
+            query += " JOIN wb_objects j_objects_{0} ON j_objects_{0}.id_object = j_triples_{0}.object".format(self.table_counter)
+            query += " JOIN ix_v_short_strings j_object_{0} ON j_object_{0}.id_string = j_objects_{0}.obj_value".format(self.table_counter)
+
+        wheres = []
+        if subject is not None:
+            query += " JOIN ix_v_short_strings j_subject_{0} ON j_subject_{0}.id_string = j_triples_{0}.subject".format(self.table_counter)
+            wheres.append("j_subject_{1}.string {0} %s".format(subject_operator, self.table_counter))
+            if subject != "%s":
+                params.append(subject)
+            else:
+                params.extend(inner_params)
+
+        if predicate is not None:
+            wheres.append("j_predicate_{1}.string {0} %s".format(predicate_operator, self.table_counter))
+            if predicate != "%s":
+                params.append(predicate)
+            else:
+                params.extend(inner_params)
+
+        if obj is not None:
+            wheres.append("j_object_{1}.string {0} %s".format(obj_operator, self.table_counter))
+            if obj != "%s":
+                params.append(obj)
+            else:
+                params.extend(inner_params)
+
+        subquery = query
+        if len(wheres) > 0:
+            subquery += " WHERE " + " AND ".join(wheres)
+        return "(" + subquery + ")", params
+
+        
+
 
     def to_sql(self, q, predicate_filter = None): 
         """ Convert the query 'q', return a tuple of sql query and array of parameters.
@@ -177,23 +229,23 @@ class ObjectStoreQuery:
 
         # filter the predicates returned by the query
         if predicate_filter is not None:
-            wheres = "{0} AND wb_v_latest_triples.predicate = ANY(%s)".format(wheres)
+            wheres = "{0} AND wb_v_latest_triples_with_ids.predicate = ANY(%s)".format(wheres)
             params.extend([predicate_filter])
 
         # same order as table
         selects = [
-            "wb_v_latest_triples.triple_order",
-            "wb_v_latest_triples.subject",
-            "wb_v_latest_triples.predicate",
-            "wb_v_latest_triples.obj_value",
-            "wb_v_latest_triples.obj_type",
-            "wb_v_latest_triples.obj_lang",
-            "wb_v_latest_triples.obj_datatype"
+            "wb_v_latest_triples_with_ids.triple_order",
+            "wb_v_latest_triples_with_ids.subject",
+            "wb_v_latest_triples_with_ids.predicate",
+            "wb_v_latest_triples_with_ids.obj_value",
+            "wb_v_latest_triples_with_ids.obj_type",
+            "wb_v_latest_triples_with_ids.obj_lang",
+            "wb_v_latest_triples_with_ids.obj_datatype"
         ]
 
-        sql = "SELECT DISTINCT {0} FROM wb_v_latest_triples ".format(", ".join(selects))
+        sql = "SELECT DISTINCT {0} FROM wb_v_latest_triples_with_ids ".format(", ".join(selects))
         if len(wheres) > 0:
-            sql += " WHERE wb_v_latest_triples.subject IN {0}".format(wheres)
+            sql += " WHERE wb_v_latest_triples_with_ids.id_subject IN {0}".format(wheres)
 
         logging.debug("ObjectStoreQuery to_sql, sql: {0}, params: {1}".format(sql, params))
 
