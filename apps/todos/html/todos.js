@@ -1,115 +1,99 @@
 /* global angular, $, console, _ */
 angular
 	.module('todos', ['ui', 'indx'])
-	.controller('todos', function ($scope, client, utils, staged) {
-		'use strict';
+	.factory('listsFactory', function (staged) {
+		var box, app, newList, newTodo;
 
-		var urgencies = ['low', 'med', 'high', 'urgent'];
-
-		var u = utils,
-			newList, newTodo, app, box, state;
+		var factory;
 
 		var specialLists = [
 			new Backbone.Model({ id: 'todo-list-all', title: ['All todos'], special: ['all'], todos: [] }),
 			new Backbone.Model({ id: 'todo-list-completed', title: ['Completed'], special: ['completed'], todos: [] })
 		];
 
-		// Wait until user is logged in and a box has been selected
 		var init = function (b) {
+			console.log('lists.init');
+			box = b;
+			app = undefined;
 			newList = undefined;
 			newTodo = undefined;
-			app = undefined;
-			box = b;
-			state = $scope.s = {};
-			$scope.box = b; // FIXME remove (just for console use)
-
 			box.getObj('todoApp').then(function (a) {
 				app = a;
 				if (!app.has('lists')) { app.set('lists', []); }
-				updateLists();
-				app.on('change:lists', updateLists);
-				u.safeApply($scope);
+				update();
+				app.on('change:lists', update);
 			});
-
 		};
 
-		// watches for login or box changes
-		$scope.$watch('selectedBox + selectedUser', function () {
-			delete $scope.msg;
-			if (!$scope.selectedUser) {
-				$scope.msg = 'Please log in.';
-			} else if (!$scope.selectedBox) {
-				$scope.msg = 'Please select a box.';
-			} else {
-				client.store.getBox($scope.selectedBox)
-					.then(function (box) { init(box); })
-					.fail(function (e) { u.error('error ', e); $scope.msg = 'An error occured.'; });
-			}
-			
-		});
+		var update = function () {
+			console.log('lists.update');
+			// update special lists;
+			var specialAll = _.findWhere(specialLists, { id: 'todo-list-all' }),
+				specialCompleted = _.findWhere(specialLists, { id: 'todo-list-completed' });
 
-		// todo - check box is defined (or put in init)
-		$scope.createList = function () {
+			specialAll.set('todos', _.reduce(app.get('lists'), function (memo, list) {
+				return memo.concat(_.map(list.get('todos'), function (todo) {
+					return _.extend({ list: list }, todo);
+				}));
+			}, []));
+
+			specialCompleted.set('todos', [].concat(specialAll.get('todos')));
+
+			_.each(app.get('lists'), function (list) {
+				if (!list.has('title')) { list.set('title', ['Untitled list']) }
+				if (!list.has('todos')) { list.set('todos', []); }
+				list.off('change', update).on('change', update);
+				list.isCreated = function () { return true; }
+			});
+
+			var lists = [].concat(app.get('lists')),
+				basicLists = [].concat(app.get('lists'));
+
+			
+			if (newList) { lists.push(newList); }
+
+			if (lists.length === 0) {
+				create();
+				return;
+			}
+
+			lists = lists.concat(specialLists);
+
+			_.each(lists, function (list) {
+				if (!list.staged) { staged(list); } // add staging to each list
+
+				list.set('count', [_.reject(list.get('todos'), function (todo) {
+					var reject = todo.has('completed') && todo.get('completed')[0];
+					if (list.has('special') && list.get('special')[0] === 'completed') {
+						reject = !reject;
+					}
+					return reject;
+				}).length]);
+			});
+
+			factory.trigger('update', lists, basicLists);
+		};
+
+		var create = function () {
 			box.getObj('todoList-'  + u.uuid()).then(function (list) {
 				list.set({ title: [''], 'todos': [] });
 				newList = list;
-				updateLists();
+				update();
 				list.isCreated = function () { return false; }
-				$scope.editList(list);
 			});
 		};
 
-		$scope.editList = function (list) {
-			state.editingList = list;
-			$scope.closeListDropdown();
-		};
-
-		$scope.showListDropdown = function (list) {
-			state.showingListDropdown = list;
-		};
-		$scope.closeListDropdown = function () {
-			delete state.showingListDropdown;
-		};
-		$scope.toggleListDropdown = function (list) {
-			if (state.showingListDropdown === list) {
-				$scope.closeListDropdown(list);
-			} else {
-				$scope.showListDropdown(list);
-			}
-		};
-
-		$scope.selectList = function (list) {
-			if (state.selectedList) {
-				state.selectedList.off('change:todos', updateTodos);
-			}
-			state.selectedList = list;
-			updateTodos();
-			list.on('change:todos', updateTodos);
-		};
-
-		$scope.deleteList = function (list) {
+		var remove = function (list) {
 			list.destroy().then(function () {
 				var lists = [].concat(app.get('lists'));
 				lists.splice(lists.indexOf(list), 1);
 				app.save('lists', lists).then(function () {
-					if (state.selectedList === list) {
-						delete state.selectedList;
-					}
-					updateLists();
+					update();
 				});
 			});
 		};
 
-		$scope.cancelEditList = function () {
-			if (!state.editingList) { return; }
-			console.log('cancel', state.editingList)
-			state.editingList.staged.reset();
-			delete state.editingList;
-			newList = undefined;
-			updateLists();
-		};
-
-		$scope.saveList = function (list) {
+		var save = function (list) {
 			var dfd = $.Deferred();
 			list.loading = true;
 			if (list.staged.get('title')[0] === '') {
@@ -137,80 +121,18 @@ angular
 			});
 		};
 
-		$scope.countTodos = function (list) {
-			return list.get('todos').length;
-		};
+		factory = _.extend({
+			init: init,
+			create: create,
+			update: update,
+			remove: remove,
+			save: save
+		}, Backbone.Events);
 
-
-		var updateLists = function () {
-			console.log('UPDATING LISTS', app.get('lists'));
-			// update special lists;
-			var specialAll = _.findWhere(specialLists, { id: 'todo-list-all' }),
-				specialCompleted = _.findWhere(specialLists, { id: 'todo-list-completed' });
-
-			specialAll.set('todos', _.reduce(app.get('lists'), function (memo, list) {
-				return memo.concat(_.map(list.get('todos'), function (todo) {
-					return _.extend({ list: list }, todo);
-				}));
-			}, []));
-
-			specialCompleted.set('todos', [].concat(specialAll.get('todos')));
-
-			_.each(app.get('lists'), function (list) {
-				if (!list.has('title')) { list.set('title', ['Untitled list']) }
-				if (!list.has('todos')) { list.set('todos', []); }
-				list.off('change', updateLists);
-				list.on('change', updateLists);
-				list.isCreated = function () { return true; }
-			});
-
-			$scope.lists = [].concat(app.get('lists'));
-			$scope.normalLists = [].concat(app.get('lists'));
-
-			delete state.isFirstList;
-			if ($scope.lists.length === 0) {
-				state.isFirstList = true;
-			}
-			if (newList) { $scope.lists.push(newList); }
-
-			if ($scope.lists.length === 0) {
-				$scope.createList();
-				return;
-			}
-
-			$scope.lists = $scope.lists.concat(specialLists);
-
-			_.each($scope.lists, function (list) {
-				if (!list.staged) { staged(list); }
-
-				list.set('count', [_.reject(list.get('todos'), function (todo) {
-					var reject = todo.has('completed') && todo.get('completed')[0];
-					if (list.has('special') && list.get('special')[0] === 'completed') {
-						reject = !reject;
-					}
-					return reject;
-				}).length]);
-			})
-
-			if (!state.selectedList) { $scope.selectList($scope.lists[0]); }
-
-			$update();
-		}
-
-		var $update = function () {
-			console.log('$UPDATE', state.editingList)
-			u.safeApply($scope);
-		};
-
-		$scope.bodyClick = function () {
-			console.log(this)
-			delete state.showingListDropdown;
-		};
-
-
-
-		// todo - check box is defined (or put in init)
-		$scope.createTodoBefore = function (next) {
+		return factory;
+	})
+	.factory('todosFactory', function (list) {
+		var createBefore = function (todo) {
 			box.getObj('todo-'  + u.uuid()).then(function (todo) {
 				var nextOrder = next ? next.get('order')[0] : 0,
 					prev = _.chain(state.selectedList.get('todos')).sortBy(function (_todo) {
@@ -234,16 +156,7 @@ angular
 			});
 		};
 
-
-		$scope.cancelEditTodo = function (todo) {
-			console.log(todo);
-			if (!todo) { return; }
-			todo.staged.reset();
-			newTodo = undefined;
-			updateTodos();
-		};
-
-		$scope.saveTodo = function (todo) {
+		var save = function (todo) {
 			var dfd = $.Deferred(),
 				list = state.selectedList;
 			todo.loading = true;
@@ -281,15 +194,7 @@ angular
 			});
 		};
 
-		var _finishedEditingTodo;
-		// hack to get todo text box to deselect after pressing enter
-		$scope.finishedEditingTodo = function (todo) {
-			var r = _finishedEditingTodo === todo;
-			if (r) { _finishedEditingTodo = undefined; }
-			return r;
-		};
-
-		var updateTodos = function () {
+		var update = function () {
 			var list = state.selectedList,
 				specialList = list.has('special') ? list.get('special')[0] : false,
 				todos = _.chain(list.get('todos')).map(function (todo) {
@@ -317,6 +222,165 @@ angular
 			$update();
 			updateLists();
 		};
+		var moveTodo = function (todo, newList) {
+			var dfd1, dfd2,
+				oldListTodos = [].concat(oldList.get('todos'));
+			oldListTodos.splice(oldListTodos.indexOf(todo), 1);
+			dfd1 = newList.save('todos', [todo].concat(newList.get('todos')));
+			dfd2 = oldList.save('todos', oldListTodos).then();
+			return $.when(dfd1, dfd2).then(function () {
+				updateTodos();
+			});
+		};
+		return {
+			createBefore: createBefore
+		}
+	})
+	.controller('todos', function ($scope, listsFactory, client, utils) {
+		'use strict';
+
+		listsFactory.on('update', function (lists, basicLists) {
+			$scope.lists = lists;
+			$scope.normalLists = basicLists;
+			delete state.isFirstList;
+			if ($scope.lists.length === 0) {
+				state.isFirstList = true;
+			}
+			if (!state.selectedList) { $scope.selectList($scope.lists[0]); }
+			$update();
+		});
+
+		var u = utils,
+			state;
+
+		// Wait until user is logged in and a box has been selected
+		var init = function (b) {
+			listsFactory.init(b);
+			state = $scope.s = {};
+			//$scope.box = b; // FIXME remove (just for console use)
+		};
+
+		// watches for login or box changes
+		$scope.$watch('selectedBox + selectedUser', function () {
+			delete $scope.msg;
+			if (!$scope.selectedUser) {
+				$scope.msg = 'Please log in.';
+			} else if (!$scope.selectedBox) {
+				$scope.msg = 'Please select a box.';
+			} else {
+				client.store.getBox($scope.selectedBox)
+					.then(function (box) { init(box); })
+					.fail(function (e) { u.error('error ', e); $scope.msg = 'An error occured.'; });
+			}
+			
+		});
+
+		// todo - check box is defined (or put in init)
+		$scope.createList = function () {
+			listsFactory.create().then(function () {
+				$scope.editList(list);
+			});
+		};
+
+		$scope.editList = function (list) {
+			state.editingList = list;
+			$scope.closeListDropdown();
+		};
+
+		$scope.showListDropdown = function (list) {
+			state.showingListDropdown = list;
+		};
+		$scope.closeListDropdown = function () {
+			delete state.showingListDropdown;
+		};
+		$scope.toggleListDropdown = function (list) {
+			if (state.showingListDropdown === list) {
+				$scope.closeListDropdown(list);
+			} else {
+				$scope.showListDropdown(list);
+			}
+		};
+
+		$scope.selectList = function (list) {
+			if (state.selectedList) {
+				state.selectedList.off('change:todos', updateTodos);
+			}
+			state.selectedList = list;
+			updateTodos();
+			list.on('change:todos', updateTodos);
+		};
+
+		$scope.deleteList = function (list) {
+			listsFactory.remove(list).then(function () {
+				if (state.selectedList === list) {
+					delete state.selectedList;
+				}
+			});
+		};
+
+		$scope.cancelEditList = function () {
+			if (!state.editingList) { return; }
+			console.log('cancel', state.editingList)
+			state.editingList.staged.reset();
+			delete state.editingList;
+			newList = undefined;
+			updateLists();
+		};
+
+		$scope.saveList = function (list) {
+			
+		};
+
+		$scope.countTodos = function (list) {
+			return list.get('todos').length;
+		};
+
+
+		var updateLists = function () {
+			
+		}
+
+		var $update = function () {
+			console.log('$UPDATE', state.editingList)
+			u.safeApply($scope);
+		};
+
+		$scope.bodyClick = function () {
+			console.log(this)
+			delete state.showingListDropdown;
+		};
+
+
+
+		// todo - check box is defined (or put in init)
+		$scope.createTodoBefore = function (next) {
+			todos.createBefore(next);
+		};
+
+
+		$scope.cancelEditTodo = function (todo) {
+			console.log(todo);
+			if (!todo) { return; }
+			todo.staged.reset();
+			newTodo = undefined;
+			updateTodos();
+		};
+
+		$scope.saveTodo = function (todo) {
+			todos.save(todo);
+		};
+
+		var _finishedEditingTodo;
+		// hack to get todo text box to deselect after pressing enter
+		$scope.finishedEditingTodo = function (todo) {
+			var r = _finishedEditingTodo === todo;
+			if (r) { _finishedEditingTodo = undefined; }
+			return r;
+		};
+
+		var updateTodos = function () {
+			
+		};
 
 		$scope.toggleTodoCompleted = function (todo) {
 			todo.loading = true;
@@ -328,14 +392,7 @@ angular
 		};
 
 		$scope.moveTodo = function (todo, oldList, newList) {
-			var dfd1, dfd2,
-				oldListTodos = [].concat(oldList.get('todos'));
-			oldListTodos.splice(oldListTodos.indexOf(todo), 1);
-			dfd1 = newList.save('todos', [todo].concat(newList.get('todos')));
-			dfd2 = oldList.save('todos', oldListTodos).then();
-			return $.when(dfd1, dfd2).then(function () {
-				updateTodos();
-			});
+			
 		};
 
 		$(document)
@@ -454,8 +511,7 @@ angular
 				}).disableSelection();
 			}
 		};
-	})
-	.directive('droppable', function () {
+	}).directive('droppable', function () {
 		return {
 			// A = attribute, E = Element, C = Class and M = HTML Comment
 			restrict: 'A',
