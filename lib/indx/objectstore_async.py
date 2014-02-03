@@ -303,7 +303,8 @@ class ObjectStoreAsync:
                 else:
                     return result_d.callback(Graph())
 
-            query = "SELECT triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples WHERE subject = ANY(%s)"
+            query = "SELECT id_results.triple_order as triple_order, j_subject.string as subject, j_predicate.string as predicate, j_object.string as obj_value, wb_objects.obj_type, wb_objects.obj_lang, wb_objects.obj_datatype  FROM (WITH theid AS (SELECT unnest(wb_get_string_ids(%s)) AS someid) SELECT * FROM wb_latest_vers JOIN wb_triples ON wb_latest_vers.triple = wb_triples.id_triple WHERE subject IN (SELECT someid FROM theid)) AS id_results JOIN ix_v_short_strings j_subject ON j_subject.id_string = id_results.subject JOIN ix_v_short_strings j_predicate ON j_predicate.id_string = id_results.predicate JOIN wb_objects ON wb_objects.id_object = id_results.object JOIN ix_v_strings j_object ON j_object.id_string = wb_objects.obj_value ORDER BY triple_order"
+#            query = "SELECT triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples WHERE subject = ANY(%s)"
 
 
             if cur is None:
