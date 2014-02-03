@@ -30,7 +30,6 @@ angular
 				var that = this;
 				this.manifest = options.manifest;
 				this.on('change', function () {
-					console.log('changed', that.toJSON())
 					that.haveBeenRun = that.get('have_been_run');
 					that.isStarted = that.get('started');
 					that.mode = 
@@ -202,7 +201,6 @@ angular
 			},
 			add: function (model, options) {
 				var that = this;
-				console.log('adding', model)
 				if (_.isArray(model)) {
 					_.each(model, function (model) {
 						that.add(model, options);
@@ -210,9 +208,7 @@ angular
 					return this;
 				}
 				if (!(model instanceof Backbone.Model)) {
-					console.log('we\'re adding', model)
 					model.id = this.length;
-					console.log(model)
 					model = new this.model(model, this.options);
 				}
 				return Backbone.Collection.prototype.add.call(this, model, options);
@@ -226,22 +222,22 @@ angular
 			'none': ['No docs', 'No documentation has been provided']
 		};
 
-		var DocumentationModel = Backbone.Model.extend({
+		var Document = Backbone.Model.extend({
 			initialize: function (attrs, options) {
 				var that = this;
-				this.manifest = options.manifest;
+				//this.manifest = options.manifest;
 				this.on('change', function () {
 					that.isBuilt = that.get('built');
-					that.mode = 
-						that.isAvailable ? 
-							(	that.isBuilding ? 'building' :
-								that.isBuilt ? 'built' : 'notbuilt' ) : 'none'
+					that.mode = that.isBuilt ? 'built' :
+						that.isBuilding ? 'building' : 'notbuilt'
 					that.modeDescription = documentationModes[that.mode];
 				});
-				var raw = this.manifest.get('documentation');
-				this.isAvailable = !!raw;
-				this.docUrl = this.get('url');
-				this.set(raw, { silent: true }).trigger('change');
+				this.trigger('change');
+				console.log(this.mode);
+				
+				//this.isAvailable = !!raw;
+				//this.docUrl = this.get('url');
+				//this.set(raw, { silent: true }).trigger('change');
 			},
 			/*build: function () {
 				var that = this;
@@ -271,6 +267,26 @@ angular
 			}
 		});
 
+		var Documents = Backbone.Collection.extend({
+			model: Document,
+			initialize: function (models, options) {
+				var that = this;
+				this.options = options;
+				this.on('change add reset remove', function () {
+					var mode = 'none',
+						modes = _(that.models).pluck('mode');
+					console.log('M', models, that.models, modes)
+					if (modes.indexOf('built') > -1) { mode = 'built'; }
+					if (modes.indexOf('notbuilt') > -1) { mode = 'notbuilt'; }
+					if (modes.indexOf('building') > -1) { mode = 'building'; }
+					that.mode = mode;
+					that.modeDescription = documentationModes[that.mode];
+				});
+				//this.trigger('change');
+				console.log(this.mode);
+			},
+		})
+
 		var Manifest = Backbone.Model.extend({
 			defaults: {
 				icons: {
@@ -279,16 +295,16 @@ angular
 			},
 			initialize: function () {
 				var that = this;
-				this.documentation = new DocumentationModel(undefined, { manifest: this });
+				this.documents = new Documents(this.get('documents'), { manifest: this });
 				this.tests = new Tests(this.get('tests'), { manifest: this });
 				this.icon = this.get('icons')['128'];
-				this.documentation.on('all', function (event) {
+				/*this.documentation.on('all', function (event) {
 					if (['start_build', 'end_build'].indexOf(event) === -1) { return; }
 					//var args = Array.prototype.slice.call(arguments, 1);
 					//Backbone.Model.prototype.trigger.apply(that, args);
 					//console.log(event, args)
 					that.trigger(event, that, that.documentation);
-				});
+				});*/
 			}
 		});
 
@@ -314,7 +330,6 @@ angular
 		window.resizeIFrame = function (iframe, noEvents) {
 			var top = $('.tab-pane nav').offset().top + $('.tab-pane nav').height(),
 				wHeight = $(window).innerHeight();
-			console.log('t', iframe, top, wHeight)
 			$(iframe).css({ 'height': wHeight - top - 6 });
 			if (!noEvents) {
 				$(window).resize(function () {
@@ -329,7 +344,6 @@ angular
 			var queue = obj.get('command-queue');
 			queue.push(command);
 			obj.save('command-queue', queue);
-			console.log(obj);
 		};
 
 		var updateTest = function (obj, id, attributes) {
@@ -469,14 +483,11 @@ angular
 		};
 
 		var loadBox = function(bid) {
-			console.log('LOAD BOX', bid)
 			client.store.getBox(bid).then(function (_box) {
-				console.log('got box >> ', _box.id);
 				box = _box;
 				window.box = box;
 				box.getObj('testrunner').then(function (_testrunner) {
 					testrunner = _testrunner;
-					console.log('GOT testrunner', testrunner.get('tests'))
 					if (!testrunner.has('tests')) {
 						testrunner.set({ tests: [] });
 					}
@@ -485,7 +496,6 @@ angular
 			});
 		};
 		var init = function() {
-			console.log('change on box and user --- init >> ', $rootScope.selectedBox, $rootScope.selectedUser);
 			if ($rootScope.selectedUser && $rootScope.selectedBox) {
 				loadBox($rootScope.selectedBox);
 			}
