@@ -23,7 +23,7 @@
 					<li class="steps" ng-show="seg.nike.steps"> {{ seg.nike.steps }} steps </li>
 					<li class="calories" ng-show="seg.nike.calories"> {{ seg.nike.calories }} cal </li>
 					<li class="fuel" ng-show="seg.nike.fuel"> {{ seg.nike.fuel }} fuel </li>
-					<li class="stars" ng-show="seg.nike.stars"> {{ seg.nike.stars }} stars </li>
+					<!-- <li class="stars" ng-show="seg.nike.stars"> {{ seg.nike.stars }} stars </li> -->
 				</ol>
 			</div>	
 			<div ng-show="seg.fitbit" class="fitbit cell col-xs-1">
@@ -31,14 +31,15 @@
 					<li class="steps" ng-show="seg.fitbit.steps"> {{ seg.fitbit.steps }} steps </li>
 					<li class="calories" ng-show="seg.fitbit.calories"> {{ seg.fitbit.calories }} cal </li>
 					<li class="distance" ng-show="seg.fitbit.distance"> {{ seg.fitbit.distance }} km </li>
-					<li class="elevation" ng-show="seg.fitbit.elevation"> {{ seg.fitbit.stars }} m elev. </li>
+					<li class="floors" ng-show="seg.fitbit.floors"> {{ seg.fitbit.floors }} floors </li>
+					<li class="elevation" ng-show="seg.fitbit.elevation"> {{ seg.fitbit.elevation }} elev </li>
 				</ol>
 			</div>			
 			<div ng-show="seg.tweets" class="tweets cell col-xs-1">
 				<ol>
 					<li class="tweet" ng-repeat="tweet in seg.tweets"> 
 						<!-- laura/ramine - fix things here :) -->
-						{{ tweet.peek('text') }} steps 
+						{{ tweet.peek('tweet_text') }}
 						<!-- thanks :) -->
 					</li>
 				</ol>
@@ -48,7 +49,7 @@
 					<li class="document" ng-repeat="d in seg.documents">
 						<a ng-href="{{ d.peek('url') }}" target="_blank">
 							<!-- <img class="favicon" ng-show="d.peek('favicon')" ng-src="{{ d.peek('favicon') }}">{{ d.peek('title') || 'unknown page' }} -->
-							<!--- <img class='thumbnail' ng-show="d.peek('thumbnail')" ng-src="{{ decodeThumb(d.peek('thumbnail')) }}"> -->
+							<!-- <img class='thumbnail' ng-show="d.peek('thumbnail')" ng-src="{{ decodeThumb(d.peek('thumbnail')) }}">  --> 
 							<div ng-show="!d.peek('thumbnail')" data-page-url=""> {{ d.peek('title') || ' - ' }} </div>
 						</a>
 					</li>

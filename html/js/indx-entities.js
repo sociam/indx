@@ -125,7 +125,7 @@
 				},
 				activities:{
 					getAll:function(box, extras) {
-						return search(box, _(extras).chain().clone().extend({type:'activity'}));
+						return search(box, _(extras).chain().clone().extend({type:'activity'}).value());
 					},
 					getByActivityType:function(box, tstart, tend, activity_types) {
 						if (!_.isArray(activity_types)) { activity_types=[activity_types]; }
@@ -249,6 +249,7 @@
 									{'created_at':{'$ge':toQueryTime(tstart)}},
 									{'created_at':{'$le':toQueryTime(tend)}}
 									] } );
+							console.log('issuing query ... ', JSON.stringify(query));
 							return search(box, query);
 						}
 						return u.dreject('must specify all arguments: tstart, tend');
