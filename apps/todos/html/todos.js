@@ -1,7 +1,7 @@
 /* global angular, $, console, _ */
 angular
 	.module('todos', ['ui', 'indx'])
-	.factory('listsFactory', function (staged) {
+	.factory('listsFactory', function (todosFactory, staged) {
 		var box, app, newList, newTodo;
 
 		var factory;
@@ -75,25 +75,43 @@ angular
 		};
 
 		var create = function () {
+			console.log('lists.create');
+			var dfd = $.Deferred();
 			box.getObj('todoList-'  + u.uuid()).then(function (list) {
 				list.set({ title: [''], 'todos': [] });
 				newList = list;
 				update();
 				list.isCreated = function () { return false; }
+				dfd.resolve(list);
 			});
+			return dfd;
+		};
+
+		var cancel = function (list) {
+			list.staged.reset();
+			if (list === newList) {
+				newList = undefined;
+			}
+			update();
 		};
 
 		var remove = function (list) {
+			console.log('lists.remove');
+			var dfd = $.Deferred();
+			list.isDeleting = true;
 			list.destroy().then(function () {
 				var lists = [].concat(app.get('lists'));
 				lists.splice(lists.indexOf(list), 1);
 				app.save('lists', lists).then(function () {
 					update();
+					dfd.resolve();
 				});
 			});
+			return dfd;
 		};
 
 		var save = function (list) {
+			console.log('lists.save');
 			var dfd = $.Deferred();
 			list.loading = true;
 			if (list.staged.get('title')[0] === '') {
@@ -113,12 +131,8 @@ angular
 					}
 				});
 			}
-			dfd.then(function () {
-				delete state.editingList;
-				updateLists();
-			}).always(function () {
-				delete list.loading;
-			});
+			dfd.then(update);
+			return dfd;
 		};
 
 		factory = _.extend({
@@ -126,12 +140,18 @@ angular
 			create: create,
 			update: update,
 			remove: remove,
-			save: save
+			save: save,
+			cancel: cancel
 		}, Backbone.Events);
 
 		return factory;
 	})
-	.factory('todosFactory', function (list) {
+	.factory('todosFactory', function () {
+		var list;
+		var init = function (l) {
+			console.log('todos.init');
+			list = l;
+		}
 		var createBefore = function (todo) {
 			box.getObj('todo-'  + u.uuid()).then(function (todo) {
 				var nextOrder = next ? next.get('order')[0] : 0,
@@ -233,32 +253,16 @@ angular
 			});
 		};
 		return {
+			init: init,
 			createBefore: createBefore
 		}
 	})
 	.controller('todos', function ($scope, listsFactory, client, utils) {
 		'use strict';
 
-		listsFactory.on('update', function (lists, basicLists) {
-			$scope.lists = lists;
-			$scope.normalLists = basicLists;
-			delete state.isFirstList;
-			if ($scope.lists.length === 0) {
-				state.isFirstList = true;
-			}
-			if (!state.selectedList) { $scope.selectList($scope.lists[0]); }
-			$update();
-		});
-
 		var u = utils,
 			state;
 
-		// Wait until user is logged in and a box has been selected
-		var init = function (b) {
-			listsFactory.init(b);
-			state = $scope.s = {};
-			//$scope.box = b; // FIXME remove (just for console use)
-		};
 
 		// watches for login or box changes
 		$scope.$watch('selectedBox + selectedUser', function () {
@@ -275,9 +279,27 @@ angular
 			
 		});
 
+
+		// Wait until user is logged in and a box has been selected
+		var init = function (b) {
+			listsFactory.init(b);
+			state = $scope.s = {};
+			//$scope.box = b; // FIXME remove (just for console use)
+		};
+
+
+		listsFactory.on('update', function (lists, basicLists) {
+			console.log('fired update', state.selectedList);
+			$scope.lists = lists;
+			$scope.normalLists = basicLists;
+			state.isFirstList = $scope.lists.length === 0;
+			if (!state.selectedList) { $scope.selectList($scope.lists[0]); }
+			$update();
+		});
+
 		// todo - check box is defined (or put in init)
 		$scope.createList = function () {
-			listsFactory.create().then(function () {
+			listsFactory.create().then(function (list) {
 				$scope.editList(list);
 			});
 		};
@@ -302,6 +324,8 @@ angular
 		};
 
 		$scope.selectList = function (list) {
+			if (list.isDeleting) { return; }
+			console.log('selecting')
 			if (state.selectedList) {
 				state.selectedList.off('change:todos', updateTodos);
 			}
@@ -311,37 +335,32 @@ angular
 		};
 
 		$scope.deleteList = function (list) {
-			listsFactory.remove(list).then(function () {
-				if (state.selectedList === list) {
-					delete state.selectedList;
-				}
-			});
+			if (state.selectedList === list) {
+				delete state.selectedList;
+			}
+			listsFactory.remove(list);
 		};
 
 		$scope.cancelEditList = function () {
 			if (!state.editingList) { return; }
-			console.log('cancel', state.editingList)
-			state.editingList.staged.reset();
+			listsFactory.cancel(state.editingList)
 			delete state.editingList;
-			newList = undefined;
-			updateLists();
 		};
 
 		$scope.saveList = function (list) {
-			
+			listsFactory.save(list).then(function () {
+				delete state.editingList;
+			}).always(function () {
+				delete list.loading;
+			});
 		};
 
 		$scope.countTodos = function (list) {
 			return list.get('todos').length;
 		};
 
-
-		var updateLists = function () {
-			
-		}
-
 		var $update = function () {
-			console.log('$UPDATE', state.editingList)
+			console.log('$UPDATE')
 			u.safeApply($scope);
 		};
 
