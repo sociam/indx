@@ -1,9 +1,10 @@
 /* global angular, $, console, _ */
 
-var clog = function (msg) {
-	console.log('%c' + msg, 'background: #fbeed5;');
+var clog = function (msg, color) {
+	color = color || '#fbeed5';
+	console.log('%c' + msg, 'background: ' + color + ';');
 };
-var logMethods = function (obj, prefix) {
+var logMethods = function (obj, prefix, color) {
 	prefix = prefix || '';
 	_.each(obj, function (o, v) {
 		if (_.isFunction(o)) {
@@ -17,7 +18,7 @@ var logMethods = function (obj, prefix) {
 					}
 					if (str && str.length > 20) { str = str.slice(0, 16) + '...' + str.slice(-1); }
 					return str;
-				}).join(', ') + ')');
+				}).join(', ') + ')', color);
 				return o.apply(this, arguments);
 			};
 		}
@@ -158,7 +159,6 @@ angular
 		factory = _.extend({
 			init: init,
 			create: create,
-			update: update,
 			remove: remove,
 			save: save,
 			cancel: cancel
@@ -170,14 +170,18 @@ angular
 	})
 	.factory('todosFactory', function () {
 		var list;
+		var factory;
+
 		var init = function (l) {
 			console.log('todos.init');
 			list = l;
+			list.on('change:todos', update);
 		}
 		var createBefore = function (todo) {
+			var dfd = $.Deferred();
 			box.getObj('todo-'  + u.uuid()).then(function (todo) {
 				var nextOrder = next ? next.get('order')[0] : 0,
-					prev = _.chain(state.selectedList.get('todos')).sortBy(function (_todo) {
+					prev = _.chain(list.get('todos')).sortBy(function (_todo) {
 						return -_todo.get('order')[0];
 					}).find(function (_todo) {
 						return !next || (_todo.get('order')[0] < nextOrder);
@@ -191,16 +195,16 @@ angular
 					order = prevOrder + 1;
 				}
 
-				console.log('NP', /*next, prev, */nextOrder, prevOrder, order)
 				todo.set({ title: [''], order: [order] });
 				newTodo = todo;
-				updateTodos();
+				update();
+				dfd.resolve(todo);
 			});
+			return dfd;
 		};
 
 		var save = function (todo) {
-			var dfd = $.Deferred(),
-				list = state.selectedList;
+			var dfd = $.Deferred();
 			todo.loading = true;
 			if (todo.staged.get('title')[0] === '') { // delete the todo
 				if (todo === newTodo) {
@@ -230,26 +234,23 @@ angular
 			}
 			dfd.then(function () {
 				delete todo.loading;
-				updateTodos();
-				updateLists();
+				update();
+				//updateLists();
 				_finishedEditingTodo = todo;
 			});
 		};
 
 		var update = function () {
-			var list = state.selectedList,
-				specialList = list.has('special') ? list.get('special')[0] : false,
+			var specialList = list.has('special') ? list.get('special')[0] : false,
 				todos = _.chain(list.get('todos')).map(function (todo) {
 					if (!todo.has('title')) { todo.set('title', ['Untitled todo']) }
 					if (!todo.has('completed')) { todo.set('completed', [false]); }
 					if (!todo.has('order')) { todo.set('order', [0]); }
-					todo.off('change', updateTodos);
-					todo.on('change', updateTodos);
+					todo.off('change', update).on('change', update);
 					return todo;
 				}).reject(function (todo) {
 					return specialList === 'completed' ? !todo.get('completed')[0] : todo.get('completed')[0];
 				}).value();
-			console.log('!!!!!!', specialList)
 			if (!specialList) {
 				list.save('force-update-hack', Math.random()); // hack to force updates on other clients
 			}
@@ -260,26 +261,45 @@ angular
 			_.each(todos, function (todo) {
 				if (!todo.staged) { staged(todo); }
 			});
-			$scope.todos = todos;
-			$update();
-			updateLists();
+			//updateLists();
+
+			factory.trigger('update', todos);
 		};
 		var moveTodo = function (todo, newList) {
 			var dfd1, dfd2,
-				oldListTodos = [].concat(oldList.get('todos'));
-			oldListTodos.splice(oldListTodos.indexOf(todo), 1);
+				listTodos = [].concat(list.get('todos'));
+			oldListTodos.splice(listTodos.indexOf(todo), 1);
 			dfd1 = newList.save('todos', [todo].concat(newList.get('todos')));
-			dfd2 = oldList.save('todos', oldListTodos).then();
-			return $.when(dfd1, dfd2).then(function () {
-				updateTodos();
-			});
+			dfd2 = list.save('todos', listTodos).then();
+			return $.when(dfd1, dfd2).then(update);
 		};
-		return {
-			init: init,
-			createBefore: createBefore
+		var cancel = function (todo) {
+			todo.staged.reset();
+			newTodo = undefined;
+			update();
+		};
+		var complete = function (todo) {
+			todo.loading = true;
+			todo.save('completed', [!todo.get('completed')[0]]).then(function () {
+				todo.loading = false;
+				update();
+				//updateLists();
+			});
 		}
+		factory = _.extend({
+			init: init,
+			moveTodo: moveTodo,
+			save: save,
+			createBefore: createBefore,
+			cancel: cancel,
+			complete: complete
+		}, Backbone.Events);
+
+		logMethods(factory, 'todos.', '#CAEFB4');
+
+		return factory;
 	})
-	.controller('todos', function ($scope, listsFactory, client, utils) {
+	.controller('todos', function ($scope, listsFactory, todosFactory, client, utils) {
 		'use strict';
 
 		var u = utils,
@@ -310,11 +330,16 @@ angular
 		};
 
 
-		listsFactory.on('update', function (lists, basicLists) {
+		listsFactory.on('update', function (lists, basicLists, todosFactory) {
 			$scope.lists = lists;
 			$scope.normalLists = basicLists;
 			state.isFirstList = $scope.lists.length === 0;
 			if (!state.selectedList) { $scope.selectList($scope.lists[0]); }
+			$update();
+		});
+
+		todosFactory.on('update', function (todos) {
+			$scope.todos = todos;
 			$update();
 		});
 
@@ -346,13 +371,11 @@ angular
 
 		$scope.selectList = function (list) {
 			if (list.isDeleting) { return; }
-			console.log('selecting')
 			if (state.selectedList) {
-				state.selectedList.off('change:todos', updateTodos);
+				//state.selectedList.off('change:todos', updateTodos);
 			}
 			state.selectedList = list;
-			updateTodos();
-			list.on('change:todos', updateTodos);
+			todosFactory.init(list); 
 		};
 
 		$scope.deleteList = function (list) {
@@ -394,20 +417,14 @@ angular
 
 		// todo - check box is defined (or put in init)
 		$scope.createTodoBefore = function (next) {
-			todos.createBefore(next);
+			todosFactory.createBefore(next);
 		};
-
-
 		$scope.cancelEditTodo = function (todo) {
-			console.log(todo);
 			if (!todo) { return; }
-			todo.staged.reset();
-			newTodo = undefined;
-			updateTodos();
+			todosFactory.cancel(todo);
 		};
-
 		$scope.saveTodo = function (todo) {
-			todos.save(todo);
+			todosFactory.save(todo);
 		};
 
 		var _finishedEditingTodo;
@@ -418,28 +435,19 @@ angular
 			return r;
 		};
 
-		var updateTodos = function () {
-			
-		};
 
 		$scope.toggleTodoCompleted = function (todo) {
-			todo.loading = true;
-			todo.save('completed', [!todo.get('completed')[0]]).then(function () {
-				todo.loading = false;
-				updateTodos();
-				updateLists();
-			});
+			todosFactory.complete(todo);
 		};
 
-		$scope.moveTodo = function (todo, oldList, newList) {
-			
+		$scope.moveTodo = function (todo, newList) {
+			todosFactory.move(todo, newList);
 		};
 
 		$(document)
 			.keydown(function (e) {
 				if (e.keyCode === 27) { //esc
-					$('[sortable]')
-						.sortable('cancel');
+					$('[sortable]').sortable('cancel');
 				}
 			});
 
@@ -564,12 +572,12 @@ angular
 						var el = ui.draggable,
 							draggableScope = angular.element(el)
 								.scope(),
-							oldList = $scope.s.selectedList,
+							//oldList = $scope.s.selectedList,
 							newList = $scope.list,
 							todo = draggableScope.todo;
 
-						console.log('move', todo, oldList, newList)
-						$scope.moveTodo(todo, oldList, newList);
+						console.log('move', todo, newList)
+						$scope.moveTodo(todo, newList);
 					}
 				});
 			}
