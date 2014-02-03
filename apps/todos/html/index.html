@@ -24,7 +24,7 @@
 									editing: list === s.editingList,
 									loading: list.loading,
 									special: list.attributes.special }"
-						droppable>
+						ng-droppable="!list.attributes.special[0]">
 					<form ng-submit="saveList(list, list === s.newList)">
 						<div class="title">
 							<input 	type="text" 

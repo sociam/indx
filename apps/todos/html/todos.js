@@ -491,7 +491,7 @@ angular
 			// A = attribute, E = Element, C = Class and M = HTML Comment
 			restrict: 'A',
 			link: function (scope, element, attrs) {
-				var liAbove, liBelow;
+				var liAfter, liBefore;
 				element.sortable({
 					revert: true,
 					handle: "[draggable-handle]",
@@ -512,7 +512,7 @@ angular
 						liAfter = ui.placeholder.next('li.todo');
 					},
 					stop: function (ev, ui) {
-
+						if (!liBefore) { return; }
 						var tscope = angular.element(ui.item).scope(),
 							todo = tscope.todo,
 							todoBeforeScope = angular.element(liBefore).scope(),
@@ -546,25 +546,27 @@ angular
 				}).disableSelection();
 			}
 		};
-	}).directive('droppable', function () {
+	}).directive('ngDroppable', function () {
 		return {
 			// A = attribute, E = Element, C = Class and M = HTML Comment
 			restrict: 'A',
-			link: function ($scope, element) {
-				element.droppable({
-					hoverClass: 'dropping',
-					tolerance: 'pointer',
-					drop: function (ev, ui) {
-						var el = ui.draggable,
-							draggableScope = angular.element(el)
-								.scope(),
-							//oldList = $scope.s.selectedList,
-							newList = $scope.list,
-							todo = draggableScope.todo;
+			link: function ($scope, element, attr) {
+				if ($scope.$apply(attr.ngDroppable)) {
+					element.droppable({
+						hoverClass: 'dropping',
+						tolerance: 'pointer',
+						drop: function (ev, ui) {
+							var el = ui.draggable,
+								draggableScope = angular.element(el)
+									.scope(),
+								//oldList = $scope.s.selectedList,
+								newList = $scope.list,
+								todo = draggableScope.todo;
 
-						$scope.moveTodo(todo, newList);
-					}
-				});
+							$scope.moveTodo(todo, newList);
+						}
+					});
+				}
 			}
 		};
 	});;
