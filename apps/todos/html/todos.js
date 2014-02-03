@@ -289,7 +289,7 @@ angular
 			todo.save('completed', [!todo.get('completed')[0]]).then(function () {
 				todo.loading = false;
 				factory.update();
-				//updateLists();
+				list.trigger('change');
 			});
 		}
 		factory = _.extend({
