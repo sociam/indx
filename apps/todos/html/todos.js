@@ -44,7 +44,7 @@ angular
 				app = a;
 				if (!app.has('lists')) { app.set('lists', []); }
 				app.on('change:lists', update);
-				update();
+				factory.update();
 			});
 		};
 
@@ -64,7 +64,7 @@ angular
 			_.each(app.get('lists'), function (list) {
 				if (!list.has('title')) { list.set('title', ['Untitled list']) }
 				if (!list.has('todos')) { list.set('todos', []); }
-				list.off('change', update).on('change', update);
+				list.off('change', factory.update).on('change', factory.update);
 				list.isCreated = function () { return true; }
 			});
 
@@ -101,7 +101,7 @@ angular
 			box.getObj('todoList-'  + u.uuid()).then(function (list) {
 				list.set({ title: [''], 'todos': [] });
 				newList = list;
-				update();
+				factory.update();
 				list.isCreated = function () { return false; }
 				dfd.resolve(list);
 			});
@@ -113,7 +113,7 @@ angular
 			if (list === newList) {
 				newList = undefined;
 			}
-			update();
+			factory.update();
 		};
 
 		var remove = function (list) {
@@ -123,7 +123,7 @@ angular
 				var lists = [].concat(app.get('lists'));
 				lists.splice(lists.indexOf(list), 1);
 				app.save('lists', lists).then(function () {
-					update();
+					factory.update();
 					dfd.resolve();
 				});
 			});
@@ -132,6 +132,7 @@ angular
 
 		var save = function (list) {
 			var dfd = $.Deferred();
+			if (!list.staged.hasChanged()) { return dfd.reject(); }
 			list.loading = true;
 			if (list.staged.get('title')[0] === '') {
 				dfd.reject();
@@ -159,7 +160,8 @@ angular
 			create: create,
 			remove: remove,
 			save: save,
-			cancel: cancel
+			cancel: cancel,
+			update: update
 		}, Backbone.Events);
 
 		logMethods(factory, 'lists.');
@@ -173,11 +175,13 @@ angular
 			box = b;
 		};
 		var setList = function (l) {
-			console.log('todos.init');
+			if (list) { // remove listener on current list
+				list.off('change:todos', update);
+			}
 			list = l;
 			list.on('change:todos', update);
-			update();
-		}
+			factory.update();
+		};
 		var createBefore = function (next) {
 			var dfd = $.Deferred();
 			box.getObj('todo-'  + u.uuid()).then(function (todo) {
@@ -198,7 +202,7 @@ angular
 
 				todo.set({ title: [''], order: [order] });
 				newTodo = todo;
-				update();
+				factory.update();
 				dfd.resolve(todo);
 			});
 			return dfd;
@@ -206,6 +210,7 @@ angular
 
 		var save = function (todo) {
 			var dfd = $.Deferred();
+			if (!todo.staged.hasChanged()) { return dfd.reject(); }
 			todo.loading = true;
 			if (todo.staged.get('title')[0] === '') { // delete the todo
 				if (todo === newTodo) {
@@ -226,6 +231,7 @@ angular
 					if (todo === newTodo) {
 						newTodo = undefined;
 						list.save('todos', list.get('todos').concat([todo])).then(function () {
+							console.log('Saved list with new todos')
 							dfd.resolve();
 						});
 					} else {
@@ -233,11 +239,10 @@ angular
 					}
 				});
 			}
-			dfd.then(function () {
+			return dfd.then(function () {
 				delete todo.loading;
-				update();
+				factory.update();
 				//updateLists();
-				_finishedEditingTodo = todo;
 			});
 		};
 
@@ -253,7 +258,7 @@ angular
 					return specialList === 'completed' ? !todo.get('completed')[0] : todo.get('completed')[0];
 				}).value();
 			if (!specialList) {
-				list.save('force-update-hack', Math.random()); // hack to force updates on other clients
+				//list.save('force-update-hack', Math.random()); // hack to force updates on other clients
 			}
 			if (newTodo) { todos.push(newTodo); }
 			todos = _.sortBy(todos, function (todo) {
@@ -277,13 +282,13 @@ angular
 		var cancel = function (todo) {
 			todo.staged.reset();
 			newTodo = undefined;
-			update();
+			factory.update();
 		};
 		var complete = function (todo) {
 			todo.loading = true;
 			todo.save('completed', [!todo.get('completed')[0]]).then(function () {
 				todo.loading = false;
-				update();
+				factory.update();
 				//updateLists();
 			});
 		}
@@ -294,7 +299,8 @@ angular
 			save: save,
 			createBefore: createBefore,
 			cancel: cancel,
-			complete: complete
+			complete: complete,
+			update: update
 		}, Backbone.Events);
 
 		logMethods(factory, 'todos.', '#CAEFB4');
@@ -374,9 +380,6 @@ angular
 
 		$scope.selectList = function (list) {
 			if (list.isDeleting) { return; }
-			if (state.selectedList) {
-				//state.selectedList.off('change:todos', updateTodos);
-			}
 			state.selectedList = list;
 			todosFactory.setList(list); 
 		};
@@ -426,11 +429,14 @@ angular
 			if (!todo) { return; }
 			todosFactory.cancel(todo);
 		};
-		$scope.saveTodo = function (todo) {
-			todosFactory.save(todo);
-		};
-
 		var _finishedEditingTodo;
+		$scope.saveTodo = function (todo) {
+			console.log('save the list')
+			todosFactory.save(todo).then(function () {
+				console.log('everything has saved')
+				_finishedEditingTodo = todo;
+			});
+		};
 		// hack to get todo text box to deselect after pressing enter
 		$scope.finishedEditingTodo = function (todo) {
 			var r = _finishedEditingTodo === todo;
