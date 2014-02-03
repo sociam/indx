@@ -21,19 +21,22 @@
                        this_.trigger('user-action', { url: tab.url, title: tab.title, favicon:tab.favIconUrl, tabid:tab.id, windowid:windowid, thumbnail:tabthumbs[tab.url] });
                     };
                     var _thumbs = function() { 
-                        console.log("_thumbs", tab.url, tab.status, 'already have? ', tabthumbs[tab.url] !== undefined);
+                        // console.log("_thumbs", tab.url, tab.status, 'already have? ', tabthumbs[tab.url] !== undefined);
                         if (tabthumbs[tab.url]) {  _done(); } 
                         else if (tab.status == 'complete' && !_fetching[tab.url]) {
                             // no thumb, loaded so let's capture
-                            console.log('getting thumb >> ');
+                            // console.log('getting thumb >> ');
                             _fetching[tab.url] = true;
                             this_._getThumbnail(windowid, tab.url).then(function(thumbnail_model) {
-                                console.log('continuation thumb ', thumbnail_model.slice(0,10)); // thumbnail_model.id, _(thumbnail_model.attributes).keys().length);
+                                // console.log('continuation thumb ', thumbnail_model.slice(0,10)); // thumbnail_model.id, _(thumbnail_model.attributes).keys().length);
                                 delete _fetching[tab.url];
                                 _done();
-                            }).fail(function(bail) {  console.error('error with thumbnail, ', bail);  });
+                            }).fail(function(bail) {  
+                                console.error('error with thumbnail, ', bail);  
+                            });
                         } else {
                             // loading, let's just start and try again
+                            // we don't want to enable this because it will cause an unnecessary save.
                             // _done();
                         }
                     };
