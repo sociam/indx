@@ -1,4 +1,29 @@
 /* global angular, $, console, _ */
+
+var clog = function (msg) {
+	console.log('%c' + msg, 'background: #fbeed5;');
+};
+var logMethods = function (obj, prefix) {
+	prefix = prefix || '';
+	_.each(obj, function (o, v) {
+		if (_.isFunction(o)) {
+			obj[v] = function () {
+				clog(prefix + v + '(' + _.map(arguments, function (arg) {
+					var str;
+					try {
+						str = JSON.stringify(arg);
+					} catch (e) {
+						str = arg.toString();
+					}
+					if (str && str.length > 20) { str = str.slice(0, 16) + '...' + str.slice(-1); }
+					return str;
+				}).join(', ') + ')');
+				return o.apply(this, arguments);
+			};
+		}
+	});
+}
+
 angular
 	.module('todos', ['ui', 'indx'])
 	.factory('listsFactory', function (todosFactory, staged) {
@@ -12,7 +37,6 @@ angular
 		];
 
 		var init = function (b) {
-			console.log('lists.init');
 			box = b;
 			app = undefined;
 			newList = undefined;
@@ -26,7 +50,6 @@ angular
 		};
 
 		var update = function () {
-			console.log('lists.update');
 			// update special lists;
 			var specialAll = _.findWhere(specialLists, { id: 'todo-list-all' }),
 				specialCompleted = _.findWhere(specialLists, { id: 'todo-list-completed' });
@@ -75,7 +98,6 @@ angular
 		};
 
 		var create = function () {
-			console.log('lists.create');
 			var dfd = $.Deferred();
 			box.getObj('todoList-'  + u.uuid()).then(function (list) {
 				list.set({ title: [''], 'todos': [] });
@@ -96,7 +118,6 @@ angular
 		};
 
 		var remove = function (list) {
-			console.log('lists.remove');
 			var dfd = $.Deferred();
 			list.isDeleting = true;
 			list.destroy().then(function () {
@@ -111,7 +132,6 @@ angular
 		};
 
 		var save = function (list) {
-			console.log('lists.save');
 			var dfd = $.Deferred();
 			list.loading = true;
 			if (list.staged.get('title')[0] === '') {
@@ -143,6 +163,8 @@ angular
 			save: save,
 			cancel: cancel
 		}, Backbone.Events);
+
+		logMethods(factory, 'lists.');
 
 		return factory;
 	})
@@ -289,7 +311,6 @@ angular
 
 
 		listsFactory.on('update', function (lists, basicLists) {
-			console.log('fired update', state.selectedList);
 			$scope.lists = lists;
 			$scope.normalLists = basicLists;
 			state.isFirstList = $scope.lists.length === 0;
