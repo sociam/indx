@@ -266,10 +266,10 @@ angular
 
 			factory.trigger('update', todos);
 		};
-		var moveTodo = function (todo, newList) {
+		var move = function (todo, newList) {
 			var dfd1, dfd2,
 				listTodos = [].concat(list.get('todos'));
-			oldListTodos.splice(listTodos.indexOf(todo), 1);
+			listTodos.splice(listTodos.indexOf(todo), 1);
 			dfd1 = newList.save('todos', [todo].concat(newList.get('todos')));
 			dfd2 = list.save('todos', listTodos).then();
 			return $.when(dfd1, dfd2).then(update);
@@ -290,7 +290,7 @@ angular
 		factory = _.extend({
 			init: init,
 			setList: setList,
-			moveTodo: moveTodo,
+			move: move,
 			save: save,
 			createBefore: createBefore,
 			cancel: cancel,
