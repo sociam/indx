@@ -149,7 +149,9 @@ angular
 				specialCompleted = _.findWhere(specialLists, { id: 'todo-list-completed' });
 
 			specialAll.set('todos', _.reduce(app.get('lists'), function (memo, list) {
-				return memo.concat(list.get('todos') || []);
+				return memo.concat(_.map(list.get('todos'), function (todo) {
+					return _.extend({ list: list }, todo);
+				}));
 			}, []));
 
 			specialCompleted.set('todos', [].concat(specialAll.get('todos')));
