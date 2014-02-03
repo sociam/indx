@@ -139,11 +139,9 @@ angular
 			} else {
 				list.staged.save().then(function () {
 					list.isCreated = function () { return true; }
-					console.log('SAVED', list.get('title'),app.get('lists'), [list])
 					if (list === newList) {
 						newList = undefined;
 						app.save('lists', app.get('lists').concat([list])).then(function () {
-							console.log('updated list', app.get('lists'))
 							dfd.resolve();
 						});
 					} else {
@@ -151,7 +149,9 @@ angular
 					}
 				});
 			}
-			dfd.then(update);
+			dfd.then(update).always(function () {
+				delete list.loading;
+			});
 			return dfd;
 		};
 
@@ -227,11 +227,9 @@ angular
 				}
 			} else {
 				todo.staged.save().then(function () {
-					console.log('SAVED', list.get('title'))
 					if (todo === newTodo) {
 						newTodo = undefined;
 						list.save('todos', list.get('todos').concat([todo])).then(function () {
-							console.log('Saved list with new todos')
 							dfd.resolve();
 						});
 					} else {
@@ -313,7 +311,6 @@ angular
 		var u = utils,
 			state;
 
-
 		// watches for login or box changes
 		$scope.$watch('selectedBox + selectedUser', function () {
 			delete $scope.msg;
@@ -329,7 +326,6 @@ angular
 			
 		});
 
-
 		// Wait until user is logged in and a box has been selected
 		var init = function (b) {
 			listsFactory.init(b);
@@ -337,7 +333,6 @@ angular
 			state = $scope.s = {};
 			//$scope.box = b; // FIXME remove (just for console use)
 		};
-
 
 		listsFactory.on('update', function (lists, basicLists, todosFactory) {
 			$scope.lists = lists;
@@ -352,18 +347,20 @@ angular
 			$update();
 		});
 
+		var $update = function () {
+			console.log('$UPDATE')
+			u.safeApply($scope);
+		};
+
 		// todo - check box is defined (or put in init)
 		$scope.createList = function () {
-			listsFactory.create().then(function (list) {
-				$scope.editList(list);
-			});
+			listsFactory.create().then($scope.editList);
 		};
 
 		$scope.editList = function (list) {
 			state.editingList = list;
 			$scope.closeListDropdown();
 		};
-
 		$scope.showListDropdown = function (list) {
 			state.showingListDropdown = list;
 		};
@@ -385,9 +382,7 @@ angular
 		};
 
 		$scope.deleteList = function (list) {
-			if (state.selectedList === list) {
-				delete state.selectedList;
-			}
+			if (state.selectedList === list) { delete state.selectedList; }
 			listsFactory.remove(list);
 		};
 
@@ -400,25 +395,12 @@ angular
 		$scope.saveList = function (list) {
 			listsFactory.save(list).then(function () {
 				delete state.editingList;
-			}).always(function () {
-				delete list.loading;
 			});
 		};
 
 		$scope.countTodos = function (list) {
 			return list.get('todos').length;
 		};
-
-		var $update = function () {
-			console.log('$UPDATE')
-			u.safeApply($scope);
-		};
-
-		$scope.bodyClick = function () {
-			console.log(this)
-			delete state.showingListDropdown;
-		};
-
 
 
 		// todo - check box is defined (or put in init)
@@ -431,9 +413,7 @@ angular
 		};
 		var _finishedEditingTodo;
 		$scope.saveTodo = function (todo) {
-			console.log('save the list')
 			todosFactory.save(todo).then(function () {
-				console.log('everything has saved')
 				_finishedEditingTodo = todo;
 			});
 		};
@@ -443,7 +423,6 @@ angular
 			if (r) { _finishedEditingTodo = undefined; }
 			return r;
 		};
-
 
 		$scope.toggleTodoCompleted = function (todo) {
 			todosFactory.complete(todo);
@@ -461,7 +440,6 @@ angular
 			});
 
 		window.$scope = $scope;
-
 
 	}).directive('setFocus', function($timeout) {
 		return {
@@ -577,7 +555,6 @@ angular
 					hoverClass: 'dropping',
 					tolerance: 'pointer',
 					drop: function (ev, ui) {
-						console.log('drop', ui);
 						var el = ui.draggable,
 							draggableScope = angular.element(el)
 								.scope(),
@@ -585,7 +562,6 @@ angular
 							newList = $scope.list,
 							todo = draggableScope.todo;
 
-						console.log('move', todo, newList)
 						$scope.moveTodo(todo, newList);
 					}
 				});
