@@ -255,9 +255,6 @@ angular
 				}).reject(function (todo) {
 					return specialList === 'completed' ? !todo.get('completed')[0] : todo.get('completed')[0];
 				}).value();
-			if (!specialList) {
-				//list.save('force-update-hack', Math.random()); // hack to force updates on other clients
-			}
 			if (newTodo) { todos.push(newTodo); }
 			todos = _.sortBy(todos, function (todo) {
 				return todo.get('order')[0];
@@ -265,7 +262,6 @@ angular
 			_.each(todos, function (todo) {
 				if (!todo.staged) { staged(todo); }
 			});
-			//updateLists();
 
 			factory.trigger('update', todos);
 		};
@@ -287,7 +283,7 @@ angular
 			todo.save('completed', [!todo.get('completed')[0]]).then(function () {
 				todo.loading = false;
 				factory.update();
-				list.trigger('change');
+				(todo.list || list).save('force-update', Math.random()); // hack to force list counts to update
 			});
 		}
 		factory = _.extend({

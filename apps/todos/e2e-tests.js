@@ -66,4 +66,6 @@ describe('Todo list', function () {
 
 // check it has been deleted
 
+// updates in other client if todo is checked
+
 });
