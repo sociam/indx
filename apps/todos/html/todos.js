@@ -28,9 +28,7 @@ var logMethods = function (obj, prefix, color) {
 angular
 	.module('todos', ['ui', 'indx'])
 	.factory('listsFactory', function (todosFactory, staged) {
-		var box, app, newList, newTodo;
-
-		var factory;
+		var factory, box, app, newList, newTodo;
 
 		var specialLists = [
 			new Backbone.Model({ id: 'todo-list-all', title: ['All todos'], special: ['all'], todos: [] }),
@@ -45,8 +43,8 @@ angular
 			box.getObj('todoApp').then(function (a) {
 				app = a;
 				if (!app.has('lists')) { app.set('lists', []); }
-				update();
 				app.on('change:lists', update);
+				update();
 			});
 		};
 
@@ -168,14 +166,17 @@ angular
 
 		return factory;
 	})
-	.factory('todosFactory', function () {
-		var list;
-		var factory;
+	.factory('todosFactory', function (staged) {
+		var box, factory, list, newTodo;
 
-		var init = function (l) {
+		var init = function (b) {
+			box = b;
+		};
+		var setList = function (l) {
 			console.log('todos.init');
 			list = l;
 			list.on('change:todos', update);
+			update();
 		}
 		var createBefore = function (todo) {
 			var dfd = $.Deferred();
@@ -288,6 +289,7 @@ angular
 		}
 		factory = _.extend({
 			init: init,
+			setList: setList,
 			moveTodo: moveTodo,
 			save: save,
 			createBefore: createBefore,
@@ -325,6 +327,7 @@ angular
 		// Wait until user is logged in and a box has been selected
 		var init = function (b) {
 			listsFactory.init(b);
+			todosFactory.init(b);
 			state = $scope.s = {};
 			//$scope.box = b; // FIXME remove (just for console use)
 		};
@@ -375,7 +378,7 @@ angular
 				//state.selectedList.off('change:todos', updateTodos);
 			}
 			state.selectedList = list;
-			todosFactory.init(list); 
+			todosFactory.setList(list); 
 		};
 
 		$scope.deleteList = function (list) {
