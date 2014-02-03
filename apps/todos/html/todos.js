@@ -178,7 +178,7 @@ angular
 			list.on('change:todos', update);
 			update();
 		}
-		var createBefore = function (todo) {
+		var createBefore = function (next) {
 			var dfd = $.Deferred();
 			box.getObj('todo-'  + u.uuid()).then(function (todo) {
 				var nextOrder = next ? next.get('order')[0] : 0,
