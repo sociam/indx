@@ -37,7 +37,6 @@ angular
 			hasChanged: function () {
 				var that = this,
 					keys = _.union(_.keys(this.attributes), _.keys(this.obj.attributes));
-				console.log(keys)
 				return _.reduce(keys, function (memo, key) {
 					return memo || areAttributesDifferent(that.attributes[key], that.obj.attributes[key]);
 				}, false);
