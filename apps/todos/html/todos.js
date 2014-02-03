@@ -334,7 +334,7 @@ angular
 			$scope.lists = lists;
 			$scope.normalLists = basicLists;
 			state.isFirstList = basicLists.length === 0;
-			$scope.editList(lists[0]);
+			if (state.isFirstList) { $scope.editList(lists[0]); }
 			if (!state.selectedList) { $scope.selectList(lists[0]); }
 			$update();
 		});
