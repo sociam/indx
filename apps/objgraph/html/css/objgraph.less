@@ -1,3 +1,9 @@
+.indx-toolbar {
+  .navbar {
+    background: rgba(255, 255, 255, 0.8);
+  }
+}
+
 .node {
   stroke: #fff;
   stroke-width: 1.5px;
@@ -37,4 +43,43 @@
   margin: -1px 0 0 0;
   top: 100%;
   left: 0;
+}
+
+.obj-toolbar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 42px;
+  height: 40px;
+  padding: 8px 10px;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 8px 8px -8px rgba(0, 0, 0, 0.3);
+}
+
+.obj-list {
+  @li-height: 34px;
+  position: absolute;
+  top: 82px;
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 8px 8px 8px -8px rgba(0, 0, 0, 0.3);
+  padding: 10px;
+  width: 300px;
+  ul.objs {
+    padding: 0;
+    margin: 0;
+    list-style: none;
+    height: @li-height * 15;
+    overflow: hidden;
+    border-top: 1px solid #eee;
+    white-space: nowrap;
+    li {
+      height: @li-height;
+      line-height: @li-height;
+      box-sizing: border-box;
+      border-bottom: 1px solid #eee;
+      margin: 0;
+      line-height: @li-height;
+    }
+  }
 }

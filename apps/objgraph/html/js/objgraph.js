@@ -272,7 +272,13 @@ angular
 			}
 		});
 
-
+		$scope.s = {
+			page: 0,
+			orderBy: 'id',
+			orderReverse: false,
+			perPage: 15
+		}; // state
+		$scope.Math = window.Math;
 
 		var renderGraph = function (graph) {
 
@@ -399,4 +405,9 @@ angular
 
 
 
-	});
+	}).filter('startFrom', function() {
+    return function(input, start) {
+        start = +start; //parse to int
+        return input.slice(start);
+    }
+});;

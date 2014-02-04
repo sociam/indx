@@ -12,9 +12,28 @@
     <toolbar box-var='selectedBox' username-var='selectedUser'></toolbar>
     <div ng-show="!selectedUser" class="alert alert-danger">Please log in</div>
     <div ng-show="selectedUser && !selectedBox" class="alert alert-danger">Please select a box</div>
-    <div ng-show="selectedUser && selectedBox">
-      <h2>Showing {{ objs.length }} objects</h2>
-      <label><input type="checkbox" ng-model="options.clustering"> Cluster by similarity</label>
+	<div ng-show="selectedUser && selectedBox">
+		<div class="obj-toolbar">
+			<span class="result">Showing {{ objs.length }} objects</span>
+			<a href="#" ng-click="s.showList = false" ng-if="s.showList">Close list</a>
+			<a href="#" ng-click="s.showList = true" ng-if="!s.showList">Show list</a>
+			<label><input type="checkbox" ng-model="options.clustering"> Cluster by similarity</label>
+		</div>
+		<div class="obj-list" ng-if="s.showList">
+			Order by: <select ng-model="s.orderBy">
+				<option value="id">ID</option>
+			</select>
+			<a href="#" ng-show="s.orderReverse" ng-click="s.orderReverse = false">Asc</a>
+			<a href="#" ng-show="!s.orderReverse" ng-click="s.orderReverse = true">Desc</a>
+			<ul class="objs">
+				<li ng-repeat="obj in objs | startFrom:s.page*s.perPage | limitTo:s.perPage | orderBy:s.orderBy:s.orderReverse">
+					{{ obj.id }}
+				</li>
+			</ul>
+			<button ng-disabled="s.page <= 0" ng-click="s.page=s.page-1">Previous</button>
+			page {{ s.page+1 }} of {{ Math.ceil(objs.length/s.perPage) }}
+			<button ng-disabled="(s.page + 1) * s.perPage >= objs.length" ng-click="s.page=s.page+1">Next</button>
+		</div>
     </div>
   </div>
 </body>
