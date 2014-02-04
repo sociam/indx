@@ -68,8 +68,9 @@ angular.module('aditl')
 			};
 			client.store.getBox($scope.box).then(function(_box) { 
 				var update = function(id) {
+					console.log("PAGES QUERY for object ", id);
 					_box.getObj(id).then(function(model) { 
-						console.log(" model >> ", model.id);
+						// console.log(" model >> ", model.id);
 						if (model && model.peek('type') == 'activity' && model.peek('activity') == 'browse') { 
 							// console.log(" GOT A BROWSE >> ", model.peek('what').id);
 							var page = model.peek('what');
@@ -91,10 +92,12 @@ angular.module('aditl')
 					});
 				};
 				_box.on('obj-add', function(id) { update(id); });
-
 				entities.activities.getAll(_box, { activity: 'browse' }).then(function(actions) {
 					console.log('actions >> ', actions.length);
-					actions.sort(function(x,y) { return x.peek('tstart').valueOf() - y.peek('tstart').valueOf(); });
+					actions.sort(function(x,y) { 
+						return x && x.peek('start') && x.peek('tstart').valueOf() || (new Date()) 
+						- y && y.peek('tstart') && y.peek('tstart').valueOf() || 0; 
+					});
 					actions.map(function(action) { 
 						var page = action.peek('what');
 						if (page) {  prepend(page);	}
