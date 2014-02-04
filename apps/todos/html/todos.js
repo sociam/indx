@@ -84,13 +84,13 @@ angular
 			_.each(lists, function (list) {
 				if (!list.staged) { staged(list); } // add staging to each list
 
-				list.set('count', [_.reject(list.get('todos'), function (todo) {
+				list.count = _.reject(list.get('todos'), function (todo) {
 					var reject = todo.has('completed') && todo.get('completed')[0];
 					if (list.has('special') && list.get('special')[0] === 'completed') {
 						reject = !reject;
 					}
 					return reject;
-				}).length]);
+				}).length;
 			});
 
 			factory.trigger('update', lists, basicLists);
