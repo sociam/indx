@@ -86,7 +86,7 @@ angular
 				this.updateLinks(obj);
 				this.removeFromCluster(obj);
 				if (this.clustering) {
-					this.addToCluster(obj);
+					//this.addToCluster(obj);
 				}
 				// todo: trigger update
 				this.trigger('update');
@@ -218,7 +218,7 @@ angular
 
 		var initialize = function (box) {
 			var objs = new Objs([], { box: box }),
-				graph = new Graph({ objs: objs, clustering: true });
+				graph = new Graph({ objs: objs, clustering: false });
 			
 			$scope.objs = objs;
 			$scope.options = { clustering: graph.clustering }
