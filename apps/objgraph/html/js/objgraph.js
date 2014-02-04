@@ -78,6 +78,7 @@ angular
 			update: function (node, obj) {
 				_.extend(node, {
 					id: obj.id,
+					obj: obj,
 					data: obj.attributes,
 					group: this.getObjGroup(obj)
 				});
@@ -112,13 +113,13 @@ angular
 			getObjGroup: function (obj) {
 				var keys = _.keys(obj.attributes),
 					group = keys.sort().join('');
-					i = this.groups.indexOf(group);
-				if (i < 0) {
-					i = this.groups.length;
+
+				if (this.groups.indexOf(group) < 0) {
 					this.groups.push(group);
-					this.nodes.push({ id: '!cluster-' + i, group: -1 });
+					this.nodes.push({ id: '!cluster-' + group, group: -1 });
 				}
-				return i;
+				
+				return group;
 			},
 			updateLinkCache: function (obj) {
 				var id = obj.id;
@@ -285,7 +286,17 @@ angular
 			var width = 960,
 				height = 500;
 
-			var color = d3.scale.category20();
+			//var color = d3.scale.category20();
+
+			var colors = ['#1f77b4', '#aec7e8', '#ff7f0e', '#ffbb78', '#2ca02c', 
+					'#98df8a', '#d62728', '#ff9896', '#9467bd', '#c5b0d5', '#8c564b',
+					'#c49c94', '#e377c2', '#f7b6d2', '#7f7f7f', '#c7c7c7', '#bcbd22', 
+					'#dbdb8d', '#17becf', '#9edae5'],
+				color = function (str) {
+					return colors[_(str.split('')).reduce(function (m, c) {
+						return m + c.charCodeAt(0);
+					}, 0) % colors.length];
+				};
 
 			var zoom = d3.behavior.zoom()
 				.scaleExtent([1, 10])
@@ -349,7 +360,8 @@ angular
 					.style("fill", function (d) { return d.group < 0 ? 'transparent' : color(d.group); })
 					.style("stroke", function (d) { return d.group < 0 ? 'transparent' : "#fff"; })
 					.on('mouseover', tip.show)
-					.on('mouseout', tip.hide);
+					.on('mouseout', tip.hide)
+					.on('click', function (d) { $scope.s.selectedObj = d.obj; });
 
 /*
 				node.append("title")

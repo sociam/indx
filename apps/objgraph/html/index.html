@@ -26,7 +26,7 @@
 			<a href="#" ng-show="s.orderReverse" ng-click="s.orderReverse = false">Asc</a>
 			<a href="#" ng-show="!s.orderReverse" ng-click="s.orderReverse = true">Desc</a>
 			<ul class="objs">
-				<li ng-repeat="obj in objs | startFrom:s.page*s.perPage | limitTo:s.perPage | orderBy:s.orderBy:s.orderReverse">
+				<li ng-repeat="obj in objs | startFrom:s.page*s.perPage | limitTo:s.perPage | orderBy:s.orderBy:s.orderReverse" ng-click="s.selectedObj = obj">
 					{{ obj.id }}
 				</li>
 			</ul>
@@ -34,6 +34,28 @@
 			page {{ s.page+1 }} of {{ Math.ceil(objs.length/s.perPage) }}
 			<button ng-disabled="(s.page + 1) * s.perPage >= objs.length" ng-click="s.page=s.page+1">Next</button>
 		</div>
+		<div class="dlg-container" ng-if="s.selectedObj"><div class="dlg">
+			Edit object:
+			<form>
+				<div class="values">
+					<table>
+						<tr><th>ID</th><td>{{s.selectedObj.id}}</td></tr>
+						<tr ng-repeat="(key, vals) in s.selectedObj.attributes">
+							<th>{{ key }}</th>
+							<td>
+								<ol><li ng-repeat="val in vals">
+									<input type="input" ng-model="val">
+								</li><li>
+									<button ng-click="s.selectedObj.attributes.push('')">+</button>
+								</li></ol>
+							</td>
+						</tr>
+					</table>
+				</div>
+				<button type="submit">Save</button>
+				<button ng-click="s.selectedObj = undefined">Cancel</button>
+			</form>
+		</div></div>
     </div>
   </div>
 </body>
