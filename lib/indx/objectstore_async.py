@@ -247,7 +247,7 @@ class ObjectStoreAsync:
 
             def results_cb(rows, *args, **kw):
                 logging.debug("Objectstore query, results_cb")
-                graph = Graph.from_rows(rows)
+                graph = Graph.from_rows(self.combine_long_string_rows(rows))
 
                 def expanded_cb(*args, **kw):
                     logging.debug("Objectstore query, expanded_cb")
@@ -303,14 +303,14 @@ class ObjectStoreAsync:
                 else:
                     return result_d.callback(Graph())
 
-            query = "SELECT id_results.triple_order as triple_order, j_subject.string as subject, j_predicate.string as predicate, j_object.string as obj_value, wb_objects.obj_type, wb_objects.obj_lang, wb_objects.obj_datatype  FROM (WITH theid AS (SELECT unnest(wb_get_string_ids(%s)) AS someid) SELECT * FROM wb_latest_vers JOIN wb_triples ON wb_latest_vers.triple = wb_triples.id_triple WHERE subject IN (SELECT someid FROM theid)) AS id_results JOIN ix_v_short_strings j_subject ON j_subject.id_string = id_results.subject JOIN ix_v_short_strings j_predicate ON j_predicate.id_string = id_results.predicate JOIN wb_objects ON wb_objects.id_object = id_results.object JOIN ix_v_strings j_object ON j_object.id_string = wb_objects.obj_value ORDER BY triple_order"
+            query = "SELECT id_results.triple_order as triple_order, j_subject.string as subject, j_predicate.string as predicate, j_object.string as obj_value, wb_objects.obj_type, wb_objects.obj_lang, wb_objects.obj_datatype, j_object.uuid  FROM (WITH theid AS (SELECT unnest(wb_get_string_ids(%s)) AS someid) SELECT * FROM wb_latest_vers JOIN wb_triples ON wb_latest_vers.triple = wb_triples.id_triple WHERE subject_uuid IN (SELECT someid FROM theid)) AS id_results JOIN wb_strings j_subject ON j_subject.uuid = id_results.subject_uuid JOIN wb_strings j_predicate ON j_predicate.uuid = id_results.predicate_uuid JOIN wb_objects ON wb_objects.id_object = id_results.object JOIN wb_strings j_object ON j_object.uuid = wb_objects.obj_value_uuid ORDER BY triple_order, j_object.uuid, j_object.chunk"
 #            query = "SELECT triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples WHERE subject = ANY(%s)"
 
 
             if cur is None:
                 def conn_cb(conn):
                     logging.debug("Objectstore get_latest_objs, conn_cb")
-                    conn.runQuery(query, [object_ids]).addCallbacks(lambda rows: rows_cb(rows, version), err_cb)
+                    conn.runQuery(query, [object_ids]).addCallbacks(lambda rows: rows_cb(self.combine_long_string_rows(rows), version), err_cb)
                 
                 self.conns['conn']().addCallbacks(conn_cb, result_d.errback)
             else:
@@ -318,13 +318,45 @@ class ObjectStoreAsync:
                 def exec_cb(cur):
                     self.debug("Objectstore get_latest_objs exec_cb, cur: {0}".format(cur))
                     rows = cur.fetchall()
-                    rows_cb(rows, version)
+                    rows_cb(self.combine_long_string_rows(rows), version)
 
                 self._curexec(cur, query, [object_ids]).addCallbacks(exec_cb, err_cb)
 
         self._get_latest_ver(cur).addCallbacks(ver_cb, err_cb)
 
         return result_d
+
+
+    def combine_long_string_rows(self, rows, diff_row = False):
+
+        new_rows = []
+        prev_uuid = None
+        this_row = ()
+
+        if diff_row:
+            uuid_index = 9
+            obj_index = 4
+        else:
+            uuid_index = 7
+            obj_index = 3
+
+        # query must order by triples and then [uuid, chunk], so we can just loop through once here, and just look at uuid, ignoring chunk
+        for row in rows:
+
+            uuid = row[uuid_index]
+            if uuid == prev_uuid and prev_uuid != None:
+                # extend the object value string, everything else the same
+                this_row[obj_index] += row[obj_index]
+            else:
+                if len(this_row) > 0:
+                    new_rows.append(this_row)
+                this_row = list(copy.copy(row[0:uuid_index])) # without uuid
+                prev_uuid = uuid
+
+        if len(this_row) > 0:
+            new_rows.append(this_row)
+        
+        return new_rows
 
 
     def _ids_in_versions(self, versions):
@@ -376,6 +408,7 @@ class ObjectStoreAsync:
 
         def conn_cb(conn):
             logging.debug("Objectstore _ids_in_version, conn_cb")
+            # TODO optimise
             conn.runQuery("SELECT DISTINCT subject FROM wb_v_all_triples WHERE version = %s", [version]).addCallbacks(rows_cb, err_cb)
         
         self.conns['conn']().addCallbacks(conn_cb, result_d.errback)
@@ -407,7 +440,7 @@ class ObjectStoreAsync:
 
             def conn_cb(conn):
                 logging.debug("Objectstore get_object_ids, conn_cb")
-                conn.runQuery("SELECT DISTINCT j_subject.string AS subject FROM wb_latest_vers JOIN wb_triples ON wb_triples.id_triple = wb_latest_vers.triple JOIN wb_strings j_subject ON j_subject.id_string = wb_triples.subject", []).addCallbacks(lambda rows2: row_cb(rows2, version), err_cb)
+                conn.runQuery("SELECT DISTINCT j_subject.string AS subject FROM wb_latest_vers JOIN wb_triples ON wb_triples.id_triple = wb_latest_vers.triple JOIN wb_strings j_subject ON j_subject.uuid = wb_triples.subject_uuid", []).addCallbacks(lambda rows2: row_cb(rows2, version), err_cb)
             
             self.conns['conn']().addCallbacks(conn_cb, result_d.errback)
 
@@ -442,7 +475,7 @@ class ObjectStoreAsync:
 
             def conn_cb(conn):
                 logging.debug("Objectstore get_latest, conn_cb")
-                conn.runQuery("SELECT triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples", []).addCallbacks(lambda rows2: row_cb(rows2, version), err_cb) # ORDER BY is implicit, defined by the view, so no need to override it here
+                conn.runQuery("SELECT triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype, uuid FROM wb_v_latest_triples", []).addCallbacks(lambda rows2: row_cb(self.combine_long_string_rows(rows2), version), err_cb) # ORDER BY is implicit, defined by the view, so no need to override it here
             
             self.conns['conn']().addCallbacks(conn_cb, result_d.errback)
 
@@ -479,7 +512,7 @@ class ObjectStoreAsync:
 
         def conn_cb(conn):
             logging.debug("Objectstore _get_diff_versions, conn_cb")
-            conn.runQuery(query, params).addCallbacks(result_d.callback, result_d.errback)
+            conn.runQuery(query, params).addCallbacks(lambda rows: result_d.callback(self.combine_long_string_rows(rows, diff_row = True)), result_d.errback)
         
         self.conns['conn']().addCallbacks(conn_cb, result_d.errback)
         return result_d
@@ -572,7 +605,7 @@ class ObjectStoreAsync:
                     if 'deleted' in diff:
                         urilist = diff['deleted']
                         if len(urilist) > 0:
-                            queries['prelatest']['queries'].append(("DELETE FROM wb_latest_vers USING wb_triples, wb_strings AS subjects WHERE subjects.id_string = wb_triples.subject AND wb_latest_vers.triple = wb_triples.id_triple AND subjects.string = ANY(%s)", [urilist]))
+                            queries['prelatest']['queries'].append(("DELETE FROM wb_latest_vers USING wb_triples, wb_strings AS subjects WHERE subjects.uuid = wb_triples.subject_uuid AND wb_latest_vers.triple = wb_triples.id_triple AND subjects.string = ANY(%s)", [urilist]))
 
                         for uri in urilist:
                             queries['diff']['values'].append("(%s, %s, wb_get_string_id(%s), wb_get_string_id(%s), NULL, NULL)")

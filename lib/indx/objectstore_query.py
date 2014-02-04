@@ -172,22 +172,22 @@ class ObjectStoreQuery:
         self.table_counter += 1
 
         params = []
-        query = "SELECT j_triples_{0}.subject".format(self.table_counter)
+        query = "SELECT j_triples_{0}.subject_uuid".format(self.table_counter)
         query += " FROM wb_latest_vers AS j_latest_{0} ".format(self.table_counter)
         query += " JOIN wb_triples j_triples_{0} ON j_triples_{0}.id_triple = j_latest_{0}.triple".format(self.table_counter)
 
         if predicate is not None:
             # join predicate value
-            query += " JOIN ix_v_short_strings j_predicate_{0} ON j_predicate_{0}.id_string = j_triples_{0}.predicate".format(self.table_counter)
+            query += " JOIN wb_strings j_predicate_{0} ON j_predicate_{0}.uuid = j_triples_{0}.predicate_uuid".format(self.table_counter)
 
         if obj is not None:
             # join object value
             query += " JOIN wb_objects j_objects_{0} ON j_objects_{0}.id_object = j_triples_{0}.object".format(self.table_counter)
-            query += " JOIN ix_v_short_strings j_object_{0} ON j_object_{0}.id_string = j_objects_{0}.obj_value".format(self.table_counter)
+            query += " JOIN wb_strings j_object_{0} ON j_object_{0}.uuid = j_objects_{0}.obj_value_uuid".format(self.table_counter)
 
         wheres = []
         if subject is not None:
-            query += " JOIN ix_v_short_strings j_subject_{0} ON j_subject_{0}.id_string = j_triples_{0}.subject".format(self.table_counter)
+            query += " JOIN wb_strings j_subject_{0} ON j_subject_{0}.uuid = j_triples_{0}.subject_uuid".format(self.table_counter)
             wheres.append("j_subject_{1}.string {0} %s".format(subject_operator, self.table_counter))
             if subject != "%s":
                 params.append(subject)
@@ -240,12 +240,13 @@ class ObjectStoreQuery:
             "wb_v_latest_triples_with_ids.obj_value",
             "wb_v_latest_triples_with_ids.obj_type",
             "wb_v_latest_triples_with_ids.obj_lang",
-            "wb_v_latest_triples_with_ids.obj_datatype"
+            "wb_v_latest_triples_with_ids.obj_datatype",
+            "wb_v_latest_triples_with_ids.subject_uuid",
         ]
 
         sql = "SELECT DISTINCT {0} FROM wb_v_latest_triples_with_ids ".format(", ".join(selects))
         if len(wheres) > 0:
-            sql += " WHERE wb_v_latest_triples_with_ids.id_subject IN {0}".format(wheres)
+            sql += " WHERE wb_v_latest_triples_with_ids.subject_uuid IN {0}".format(wheres)
 
         logging.debug("ObjectStoreQuery to_sql, sql: {0}, params: {1}".format(sql, params))
 

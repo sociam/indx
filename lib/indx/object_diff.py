@@ -40,12 +40,12 @@ class ObjectSetDiff:
             "subjects": {
                 "values": [],
                 "params": [],
-                "query_prefix": "INSERT INTO wb_latest_subjects (id_subject) VALUES "
+                "query_prefix": "INSERT INTO wb_latest_subjects (subject_uuid) VALUES "
             },
             "diff": {
                 "values": [],
                 "params": [],
-                "query_prefix": "INSERT INTO wb_vers_diffs (version, diff_type, subject, predicate, object, object_order) VALUES "
+                "query_prefix": "INSERT INTO wb_vers_diffs (version, diff_type, subject_uuid, predicate_uuid, object, object_order) VALUES "
             },
             "prelatest": { # queries that are to be run immediately before latest. i.e., DELETE FROM before new INSERT INTO are run when replacing objects
                 "queries": [], # just bare queries, no prefixing/rendering
@@ -264,16 +264,16 @@ class ObjectSetDiff:
         
         for row in self.queries['latest_diffs']['remove_subject']:
             subject, predicate, sub_obj, object_order = row
-            self.queries['prelatest']['queries'].append(("DELETE FROM wb_latest_vers USING wb_triples, wb_strings AS subjects WHERE subjects.id_string = wb_triples.subject AND wb_latest_vers.triple = wb_triples.id_triple AND subjects.string = %s", [subject])) # XXX TODO test
+            self.queries['prelatest']['queries'].append(("DELETE FROM wb_latest_vers USING wb_triples, wb_strings AS subjects WHERE subjects.uuid = wb_triples.subject_uuid AND wb_latest_vers.triple = wb_triples.id_triple AND subjects.string = %s", [subject])) # XXX TODO test
 
         for row in self.queries['latest_diffs']['remove_predicate']:
             subject, predicate, sub_obj, object_order = row
-            self.queries['prelatest']['queries'].append(("DELETE FROM wb_latest_vers USING wb_triples, wb_strings AS predicates, wb_strings AS subjects WHERE wb_latest_vers.triple = wb_triples.id_triple AND predicates.id_string = wb_triples.predicate AND subjects.id_string = wb_triples.subject AND subjects.string = %s AND predicates.string = %s", [subject, predicate])) # XXX TODO test ## same as below
+            self.queries['prelatest']['queries'].append(("DELETE FROM wb_latest_vers USING wb_triples, wb_strings AS predicates, wb_strings AS subjects WHERE wb_latest_vers.triple = wb_triples.id_triple AND predicates.uuid = wb_triples.predicate_uuid AND subjects.uuid = wb_triples.subject_uuid AND subjects.string = %s AND predicates.string = %s", [subject, predicate])) # XXX TODO test ## same as below
         
         for row in self.queries['latest_diffs']['replace_objects']:
             subject, predicate, sub_obj, object_order = row
             # remove existing first
-            self.queries['prelatest']['queries'].append(("DELETE FROM wb_latest_vers USING wb_triples, wb_strings AS predicates, wb_strings AS subjects WHERE wb_latest_vers.triple = wb_triples.id_triple AND predicates.id_string = wb_triples.predicate AND subjects.id_string = wb_triples.subject AND subjects.string = %s AND predicates.string = %s", [subject, predicate])) # XXX TODO test ## same as above, remove everything with subject AND predicate
+            self.queries['prelatest']['queries'].append(("DELETE FROM wb_latest_vers USING wb_triples, wb_strings AS predicates, wb_strings AS subjects WHERE wb_latest_vers.triple = wb_triples.id_triple AND predicates.uuid = wb_triples.predicate_uuid AND subjects.uuid = wb_triples.subject_uuid AND subjects.string = %s AND predicates.string = %s", [subject, predicate])) # XXX TODO test ## same as above, remove everything with subject AND predicate
 
 
 
