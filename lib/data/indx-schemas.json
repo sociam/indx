@@ -679,7 +679,7 @@
                 ]
             },
             "20140204-FIX_TABLE_ISSUES": {
-                "next-version": "",
+                "next-version": "20140204-FIX_FUNCTION_REF",
                 "sql": [
                     "DROP FUNCTION wb_get_string_ids(text[]);",
                     "CREATE OR REPLACE FUNCTION wb_get_string_ids(input_strings text[])",
@@ -800,7 +800,37 @@
                     "  LANGUAGE plpgsql VOLATILE",
                     "  COST 100;"
                 ]
+            },
+            "20140204-FIX_FUNCTION_REF": {
+                "next-version": "",
+                "sql": [
+                    "DROP FUNCTION wb_get_triple_id(text, text, text, object_type, character varying, character varying);",
+                    "CREATE OR REPLACE FUNCTION wb_get_triple_id(input_subject text, input_predicate text, input_object_value text, input_object_type object_type, input_object_language character varying, input_object_datatype character varying)",
+                    "  RETURNS integer AS",
+                    "$BODY$DECLARE",
+                    "    subject_value_id integer;",
+                    "    predicate_value_id integer;",
+                    "    object_result integer;",
+                    "    triple_result integer;",
+                    "BEGIN",
+                    "    SELECT * INTO subject_value_id FROM wb_get_string_id(input_subject);",
+                    "    SELECT * INTO predicate_value_id FROM wb_get_string_id(input_predicate);",
+                    "    SELECT * INTO object_result FROM wb_get_object_id(input_object_type, input_object_value, input_object_language, input_object_datatype);",
+                    "",
+                    "    SELECT wb_triples.id_triple INTO triple_result FROM wb_triples WHERE",
+                    "    (wb_triples.subject_uuid = subject_value_id AND",
+                    "         wb_triples.predicate_uuid = predicate_value_id AND",
+                    "         wb_triples.object = object_result);",
+                    "    IF NOT FOUND THEN",
+                    "        INSERT INTO wb_triples (subject_uuid, predicate_uuid, object) VALUES (subject_value_id, predicate_value_id, object_result) RETURNING wb_triples.id_triple INTO triple_result;",
+                    "    END IF;",
+                    "    RETURN triple_result;",
+                    "END;$BODY$",
+                    "  LANGUAGE plpgsql VOLATILE",
+                    "  COST 100;"
+                ]
             }
+
         }
     },
     "updates": {
