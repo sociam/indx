@@ -75,7 +75,7 @@ angular
 			if (newList) { lists.push(newList); }
 
 			if (lists.length === 0) {
-				create();
+				factory.create();
 				return;
 			}
 
@@ -84,13 +84,13 @@ angular
 			_.each(lists, function (list) {
 				if (!list.staged) { staged(list); } // add staging to each list
 
-				list.set('count', [_.reject(list.get('todos'), function (todo) {
+				list.count = _.reject(list.get('todos'), function (todo) {
 					var reject = todo.has('completed') && todo.get('completed')[0];
 					if (list.has('special') && list.get('special')[0] === 'completed') {
 						reject = !reject;
 					}
 					return reject;
-				}).length]);
+				}).length;
 			});
 
 			factory.trigger('update', lists, basicLists);
@@ -333,8 +333,9 @@ angular
 		listsFactory.on('update', function (lists, basicLists, todosFactory) {
 			$scope.lists = lists;
 			$scope.normalLists = basicLists;
-			state.isFirstList = $scope.lists.length === 0;
-			if (!state.selectedList) { $scope.selectList($scope.lists[0]); }
+			state.isFirstList = basicLists.length === 0;
+			if (state.isFirstList) { $scope.editList(lists[0]); }
+			if (!state.selectedList) { $scope.selectList(lists[0]); }
 			$update();
 		});
 
