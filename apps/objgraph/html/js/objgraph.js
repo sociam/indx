@@ -357,7 +357,7 @@ angular
 
 				nodeEnter.append("svg:circle")
 					.attr("id",function (d) { return "Node;" + d.id; })
-					.attr("r", 5)
+					.attr("r", 3.5)
 					.style("fill", function (d) { return d.group < 0 ? 'transparent' : color(d.group); })
 					.style("stroke", function (d) { return d.group < 0 ? 'transparent' : "#fff"; })
 					.on('mouseover', tip.show)
@@ -386,10 +386,10 @@ angular
 
 				// Restart the force layout.
 				force
-					.gravity(.05)
-					.distance(30)
-					.charge(-50)
-					.linkDistance( 50 )
+					.gravity(.15)
+					.distance(20)
+					.charge(-20)
+					.linkDistance(30)
 					.size([width, height])
 					.start();
 			};
