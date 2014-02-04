@@ -6,9 +6,31 @@
 		"128": "icon.png",
 		"svg": "icon.svg"
 	},
-	"documents": {
-		"readme": "readme.md"
-	},
+	"documents": [
+		{ "type": "markdown", "title": "Readme", "file" : "readme.md" }
+	],
+	"tests": [
+		{ 	"title": "Browser JavaScript testing",
+			"type": "browser-js",
+			"config": "browser-js-config.js",
+			"params": [
+				{	"name": "username",
+					"title": "Test Username",
+					"type": "text" },
+				{	"name": "password",
+					"title": "Test User password",
+					"type": "password" },
+				{	"name": "indxURL",
+					"title": "INDX URL",
+					"type": "text",
+					"default": "http://localhost:8211" },
+				{	"name": "suppressLogs",
+					"title": "Supress Logs?",
+					"type": "text",
+					"default": "false" }
+			]
+		}
+	],
 	"author": [
 		{
 			"name": "Peter West",
