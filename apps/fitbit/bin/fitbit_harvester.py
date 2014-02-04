@@ -214,6 +214,7 @@ class FitbitHarvester:
                             self.logger.debug("Harvested! Suspending execution for 1 hours at {0}.".format(datetime.now().isoformat()))
                             # sleep(30)
                             sleep(3600)
+                            self.api_calls_left = 150
                             r_d.callback(None)
 
                         self.harvest(indx).addCallbacks(wait, r_d.errback)
