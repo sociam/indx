@@ -1,0 +1,363 @@
+@import url(http://fonts.googleapis.com/css?family=Port+Lligat+Slab|Playball);
+
+@app-top: 42px;
+@shadow-size: 6px;
+@shadow-color: rgba(0, 0, 0, 0.1);
+
+body {
+	background: #f8f8f8;
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	cursor: default;
+	overflow-x: hidden; 
+}
+
+.indx-toolbar {
+	position: fixed;
+	top: 0; left: 0; right: 0;
+	z-index: 1080;
+	.navbar { 
+		opacity: 1;
+		border-width: 0;
+		.navbar-inner { opacity: 0.88; }
+	}
+}
+
+
+.dropping {
+	background-color: #fbeed5 !important;
+	color: #333 !important;
+}
+
+.todos-messages {
+	font-size: 20px;
+	text-align: center;
+	margin: 60px 20px;
+}
+
+.loading { opacity: 0.7; }
+
+.todos-main-body {
+	cursor: default;
+	.todos-sidebar {
+		position: fixed;
+		left: 0; top: @app-top; bottom: 0;
+		width: 300px;
+		background: white;
+		box-shadow: 0 0 @shadow-size 0 @shadow-color;
+		border-top: 1px solid #eee;
+
+		& > ul {
+			padding: 0 0 0 0;
+			margin: 0;
+			list-style: none;
+			position: relative;
+			height: 100%;
+			& > li {
+				background: white;
+				display: block;
+				font-size: 25px;
+				padding: 10px 0;
+				line-height: 50px;
+				position: relative;
+				height: 50px;
+				form {
+					position: absolute;
+					left: 0; right: 0; top: 0; bottom: 0;
+					& > * { position: absolute; }
+				}
+				& > * { position: absolute; }
+				input[type=submit] { display: none; }
+				.static { display: block; }
+				&:hover {
+					background: #eee;
+					.count { display: none; }
+					.dropdown .dropdown-button { visibility: visible; }
+				}
+				&.selected, &:hover.selected {
+					background: #26517C;
+					color: white;
+					cursor: text;
+				}
+				&.editing, &:hover.editing {
+					background: white;
+					color: black;
+					.edit { display: block; }
+					.static { display: none; }
+					.title input {
+						outline: 1px solid #51a7e8;
+						box-shadow: inset 0 3px 3px rgba(0,0,0,0.075),0 0 7px rgba(81,167,232,0.5);
+					}
+				}
+				&.special {
+					position: absolute;
+					left: 0;
+					right: 0;
+					&.special-completed { bottom: 0; }
+					&.special-all { bottom: 50px; }
+					&:hover .count { display: block; }
+				}
+				.title {
+					left: 0; top: 0; right: 0; bottom: 0;
+					text-indent: 20px;
+					z-index: 10;
+					input {
+						display: block;
+						background: transparent;
+						border-radius: 4px;
+						border: 0;
+						color: inherit;
+						width: 100%;
+						text-indent: 20px;
+						height: 100%;
+						outline-offset: -2px;
+					}
+				}
+				.count {
+					right: 25px; top: 0;
+					z-index: 20;
+				}
+				.dropdown {
+					position: absolute;
+					top: 5px; right: 18px;
+					padding: 8px 8px;
+					z-index: 500;
+					&.open {
+						z-index: 1000;
+						.dropdown-button {
+							position: relative;
+							visibility: visible !important;
+							background: white;
+							color: #333;
+							padding: 0 5px;
+							margin: 0 -6px;
+							border-radius: 3px;
+							z-index: 510;
+							opacity: 1;
+							border: 1px solid rgba(0, 0, 0, 0.15);
+							border-bottom-width: 0;
+						}
+					}
+					.dropdown-button { 
+						text-align: right;
+						visibility: hidden;
+						cursor: pointer;
+						opacity: 0.8;
+						&:hover { opacity: 1; }
+					}
+					.dropdown-menu {
+						display: block;
+						z-index: 500;
+						left: auto;
+						right: -16px;
+						top: 29px;
+					}
+				}
+			}
+
+		}
+	}
+	.todos-body {
+		box-shadow: inset 0 @shadow-size @shadow-size -@shadow-size @shadow-color;
+		margin-top: @app-top;
+		margin-left: 300px;
+		min-height: 30px;
+		& > ul {
+			padding: 0;
+			margin: 0;
+			list-style: none;
+			box-shadow: 0 0 @shadow-size 0 @shadow-color;
+			& > li {
+				@trigger-margin: 10px; // size on each end of todo that will trigger gap
+				@gap-size: 30px; // size of gap between todos 
+				margin-top: 0;
+				position: relative;
+				transition: margin 0.5s ease-in-out;
+				&.editing, &.special, &.dragging {
+					.todo-create-before { display: none; }
+					.todo-body { margin-top: 0; }
+				}
+				&.dragging {
+					margin-top: @trigger-margin; // fixes jquery.sortable's inability to handle negative margins
+					transition: none;
+				}
+				&:hover {
+					.completedBox, .gripper { opacity: 1; }
+				}
+				&.todo-placeholder {
+					box-shadow: inset 0 0 @shadow-size 0px @shadow-color;
+					background: #f8f8f8;
+					&:last-child {
+						box-shadow: none;
+						background: red;
+					}
+				}
+				.todo-create-before {
+					position: relative;
+					z-index: 20;
+					display: block;
+					background: transparent;
+					margin-top: -@trigger-margin;
+					height: @trigger-margin * 2;
+
+					transition: height 0.1s linear;
+
+					&:hover {
+						transition-delay: 0.35s;
+						height: @trigger-margin * 2 + @gap-size;
+						.line {
+							opacity: 1;
+						}
+						.i {
+							transition-delay: 0.35s;
+							opacity: 1;
+							top: (@gap-size / 2) - 10px;
+						}
+					}
+					.line {
+						opacity: 0;
+						position: absolute;
+						width: 100%;
+						top: @trigger-margin;
+						bottom: @trigger-margin;
+						box-shadow: inset 0 0 @shadow-size 0px @shadow-color;
+						background: #f8f8f8;
+						overflow: hidden;
+					}
+					.i {
+						position: absolute;
+						top: -10px;
+						left: 0;
+						right: 0;
+						color: #666;
+						font-size: 20px;
+						text-align: center;
+						opacity: 0;
+						transition: opacity 0.1s linear, top 0.1s linear;
+					}
+				}
+				.gripper {
+					position: absolute;
+					left: 0px;
+					top: 0px;
+					width: 19px;
+					height: 49px;
+					opacity: 0;
+					padding: 12px 8px 12px 3px;
+					cursor: move;
+					i {
+						display: block;
+						width: 0px;
+						height: 0px;
+						border-top: 1px solid #bbb;
+						border-left: 1px solid #c1c1c1;
+						border-bottom: 2px solid #d8d8d8;
+						border-right: 2px solid #c6c6c6;
+						border-radius: 40px;
+						margin: 4px;
+					}
+				}
+				.todo-body {
+					position: relative;
+					z-index: 10;
+					margin-top: -@trigger-margin;
+					background: white;
+					display: block;
+					height: 50px;
+					line-height: 40px;
+					font-size: 22px;
+					border-left: 1px solid #eee;
+					border-top: 1px solid #eee;
+				}
+
+				.list-title {
+					position: absolute;
+					right: 10px;
+					top: 4px;
+					color: #999;
+					font-size: 12px;
+					font-style: italic;
+				}
+
+				&.end-cap {
+					height: 0;
+					border: 0;
+					.todo-create-before {
+						margin-top: 0;
+						height: 50px;
+						.i { opacity: 0.7; top: 20px; }
+						&:hover .i { opacity: 1; top: 20px; }
+					}
+				}
+				&.completed .todo-body {
+					background: #f8f8f8;
+				}
+				.completedBox {
+					position: absolute;
+					top: 15px;
+					height: 20px;
+					left: 17px;
+					border: 1px solid #b8b8b8;
+					margin: 0;
+					width: 20px;
+					font-size: 18px;
+					line-height: 21px;
+					color: #999;
+					opacity: 0.8;
+				}
+				.title {
+					left: 0;
+					top: 0;
+					right: 0;
+					bottom: 0;
+					text-indent: 50px;
+					z-index: 0;
+					input {
+						display: block;
+						background: transparent;
+						border: 0;
+						color: inherit;
+						width: 100%;
+						text-indent: 50px;
+						height: 100%;
+					}
+				}
+			}
+		}
+	}
+}
+
+.intro-step {
+	position: relative;
+	margin: 10px;
+	max-width: 345px;
+	background: transparent;
+	border: transparent;
+	& > .fa {
+		font-size: 24px
+	}
+	& > h3 {
+		font-size: 1em;
+		font-weight: bold;
+		text-transform: uppercase;
+		margin: 0 0 13px 0;
+	}
+	
+	&.intro-step-create-list {
+		& > .fa {
+			position: absolute;
+			left: 10px;
+			top: 10px;
+		}
+		& > h3, & > p { padding-left: 35px; }
+	}
+	&.intro-step-create-todo {
+		text-align: center;
+		margin: 47px auto 0;
+		h3 { margin-top: 20px; }
+	}
+}

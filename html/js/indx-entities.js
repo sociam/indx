@@ -125,7 +125,7 @@
 				},
 				activities:{
 					getAll:function(box, extras) {
-						return search(box, _(extras).chain().clone().extend({type:'activity'}));
+						return search(box, _(extras).chain().clone().extend({type:'activity'}).value());
 					},
 					getByActivityType:function(box, tstart, tend, activity_types) {
 						if (!_.isArray(activity_types)) { activity_types=[activity_types]; }

@@ -653,13 +653,13 @@ angular
 			///@arg {string} user : ID of user to get access control list for
 			///Gets the access control list of user, if specified, for this box or the box's entire ACL listings
 			///@then({userid: { read:{boolean},write:{boolean},owner:{boolean},control:{boolean}}) : Access control listings for this box organised by user
-			///@fail({error object}) : Failure 
+			///@fail({error object}) : Failure
 			getACL:function() {
 				var d = u.deferred();
 				this._ajax("GET", [this.getID(), 'get_acls'].join('/')).then(function(response) {
 					if (response.code == 200) {
 						return d.resolve(u.dict(response.data.map(function(x) { return [x.username, x.acl]; })));
-						// return d.resolve(response.data); 
+						// return d.resolve(response.data);
 					}
 					d.reject(d.message);
 				}).fail(d.reject);
@@ -695,7 +695,7 @@ angular
 						// { prop : [ {sval1 - @type:""}, {sval2 - @type} ... ]
 						var changedprops = [];
 						var deleted = _(obj.deleted).map(function(vs, k) {
-							changedprops.push(k); 
+							changedprops.push(k);
 							var dd = u.deferred();
 							u.when(vs.map(function(v) {	return deserialiseValue(v, this_);	})).then(function(values) {
 								var newVals = _(cached_obj.get(k) || []).difference(values);
@@ -1195,11 +1195,11 @@ angular
 				var d = u.deferred();
 				var this_ = this;
 				this._ajax('POST', 'auth/login', { username: username, password: password })
-					.then(function(l) { 
+					.then(function(l) {
 						var localUser =  _makeLocalUser(username);
 						this_.set({user_type:'local',username:username,password:password});
-						this_.trigger('login', localUser); 
-						d.resolve(localUser); 
+						this_.trigger('login', localUser);
+						d.resolve(localUser);
 					}).fail(function(l) { d.reject(l); });
 				return d.promise();
 			},
@@ -1215,7 +1215,7 @@ angular
 				return this.attributes.boxes.map(function(b) { b.disconnect(); });
 			},
 			isConnected:function() {
-				return this.attributes.boxes.map(function(b) { 
+				return this.attributes.boxes.map(function(b) {
 					return { box: b.id, connected: b.isConnected() };
 				});
 			},

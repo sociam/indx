@@ -16,6 +16,49 @@
 	// margin:20px;
 
 }
+.pages2 { 
+	vertical-align:top;
+	.page.ng-enter, .page.ng-leave {
+		-webkit-transition:0.5s linear all;
+		transition:0.5s linear all;
+	}
+	.page.ng-enter {
+		opacity:0;
+		// width:0px; height:0px;
+	}
+	.page.ng-enter.ng-enter-active {
+		opacity:1.0;
+		// width:150px; height:150px;
+	}	
+	.page {
+        -webkit-transition:0.5s linear all;
+		transition:0.5s linear all;		
+		overflow:hidden;
+		position:relative;
+		border:1px solid #eee;
+		display:inline-block;
+		margin:10px 5px;
+		width:150px;
+		.title {
+			overflow:hidden;
+			font-size:8pt;
+			position:absolute;
+			left:20px;
+			top	:20px;
+			right:20px;
+			opacity:0.8;
+			z-index:10;
+			word-break:break-all !important;
+			&:hover { opacity:1.0;	}
+		}
+		.thumbnail {  width:150px;	}
+		&:hover {
+			box-shadow: #eee 2px 2px;
+			width:250px;
+			.thumbnail { width:250px; }
+		}
+	}
+}
 .pages { 
 	vertical-align:top;
 	.page.ng-enter, .page.ng-leave {
@@ -32,6 +75,8 @@
 	}
 	
 	.page {
+        -webkit-transition:0.5s linear all;
+		transition:0.5s linear all;		
 		position:relative;
 		border:1px solid #eee;
 		display:inline-block;
@@ -55,6 +100,8 @@
 		}
 		&:hover {
 			box-shadow: #eee 2px 2px;
+			width:250px;
+			.thumbnail { width:250px; }
 		}
 	}
 }
@@ -107,6 +154,23 @@
 			.favicon { width:20px;}
 			.thumbnail { width:100px; }
 		}
+	}
 
+
+}
+
+#debugtable {
+	font-size:8pt;
+	width:100%;
+	* { vertical-align:top; } 
+	td.url { 
+		width:18%;
+		word-break:break-all !important;
+	}
+	td.data {
+		width:80%;
+		word-break:break-all !important;
+		max-height:120px;
+		overflow:hidden;
 	}
 }
