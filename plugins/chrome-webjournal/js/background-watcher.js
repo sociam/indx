@@ -13,7 +13,7 @@
         var WindowWatcher = Backbone.Model.extend({
             defaults: { enabled:true },
             initialize:function(attributes) {
-                var this_ = this,. _fetching = [];
+                var this_ = this, _fetching = [];
                 this._fetching_thumbnail = {};
                 this.bind('user-action', function() { this_.handle_action.apply(this_, arguments); });
                 var _trigger = function(windowid, tabid, tab) {
@@ -21,23 +21,23 @@
                        this_.trigger('user-action', { url: tab.url, title: tab.title, favicon:tab.favIconUrl, tabid:tab.id, windowid:windowid, thumbnail:tabthumbs[tab.url] });
                     };
                     var _thumbs = function() { 
-                        console.log("_thumbs", tab.url, tab.status, 'already have? ', tabthumbs[tab.url] !== undefined);
+                        // console.log("_thumbs", tab.url, tab.status, 'already have? ', tabthumbs[tab.url] !== undefined);
                         if (tabthumbs[tab.url]) {  _done(); } 
                         else if (tab.status == 'complete' && !_fetching[tab.url]) {
                             // no thumb, loaded so let's capture
-                            console.log('getting thumb >> ');
+                            // console.log('getting thumb >> ');
                             _fetching[tab.url] = true;
                             this_._getThumbnail(windowid, tab.url).then(function(thumbnail_model) {
-                                // console.log('continuation thumb ', thumbnail_model.id, _(thumbnail_model.attributes).keys().length);
-                                tabthumbs[tab.url] = thumbnail_model;
-                                delete _fetchingp[tab.url];
+                                // console.log('continuation thumb ', thumbnail_model.slice(0,10)); // thumbnail_model.id, _(thumbnail_model.attributes).keys().length);
+                                delete _fetching[tab.url];
                                 _done();
-                            }).fail(function(bail) { 
-                                console.error('error with thumbnail, ', bail);
+                            }).fail(function(bail) {  
+                                console.error('error with thumbnail, ', bail);  
                             });
                         } else {
                             // loading, let's just start and try again
-                            _done();
+                            // we don't want to enable this because it will cause an unnecessary save.
+                            // _done();
                         }
                     };
                     if (tab) { return _thumbs(); }
@@ -106,16 +106,22 @@
                 d = u.deferred(), this_ = this;
                 if (this._fetching_thumbnail[url]) { 
                     // console.log('already getting thumbnail >> ', url);
-                    this._fetching_thumbnail[url].then(function() { d.resolve(tabthumbs[url]); }).fail(d.reject);
+                    this._fetching_thumbnail[url].then(function() { 
+                        d.resolve(tabthumbs[url]); 
+                    }).fail(d.reject);
                 } else {
                     this._fetching_thumbnail[url] = d;
                     chrome.tabs.captureVisibleTab(wid, { format:'png' }, function(dataUrl) {
                         if (dataUrl) {
-                            u.resizeImage(dataUrl, 80, 80).then(function(smallerDataUri) {
+                            u.resizeImage(dataUrl, 90, 90).then(function(smallerDataUri) {
+                                tabthumbs[url] = smallerDataUri;
                                 delete this_._fetching_thumbnail[url];
                                 d.resolve(smallerDataUri); 
-                            });
-                        } else { d.resolve(); }
+                            }).fail(function() { console.error('failed resizing '); d.reject(); });
+                        } else { 
+                            console.log('couldnt get thumbnail')
+                            d.resolve(); 
+                        }
                         // box.getObj(id).then(function(model) { 
                         //     // already have it? 
                         //     delete this_._fetching_thumbnail[url];
@@ -275,8 +281,16 @@
             getDoc:function(url,title,tabinfo) {
                 var d = u.deferred(), this_ = this;
                 entities.documents.getWebPage(this.box, url).then(function(results) {
-                    if (results && results.length) { return d.resolve(results[0]);  }
-                    return entities.documents.makeWebPage(this_.box, url, title, tabinfo);
+                    if (results && results.length) { 
+                        // console.log('updating page > and saving', results[0].id, tabinfo);
+                        if ( (!results[0].peek('thumbnail') && tabinfo.thumbnail) || 
+                             (!results[0].peek('favicon') && tabinfo.favicon) ) { 
+                            results[0].set(tabinfo); 
+                            return results[0].save().then(function() { d.resolve(results[0]); }).fail(d.reject);
+                        }
+                        return d.resolve(results[0]).fail(d.reject);
+                    }
+                    entities.documents.makeWebPage(this_.box, url, title, tabinfo).then(d.resolve).fail(d.reject);
                 }).fail(d.reject);
                 return d.promise();
             },

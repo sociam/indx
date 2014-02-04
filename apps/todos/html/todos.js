@@ -75,7 +75,7 @@ angular
 			if (newList) { lists.push(newList); }
 
 			if (lists.length === 0) {
-				create();
+				factory.create();
 				return;
 			}
 
@@ -333,8 +333,9 @@ angular
 		listsFactory.on('update', function (lists, basicLists, todosFactory) {
 			$scope.lists = lists;
 			$scope.normalLists = basicLists;
-			state.isFirstList = $scope.lists.length === 0;
-			if (!state.selectedList) { $scope.selectList($scope.lists[0]); }
+			state.isFirstList = basicLists.length === 0;
+			if (state.isFirstList) { $scope.editList(lists[0]); }
+			if (!state.selectedList) { $scope.selectList(lists[0]); }
 			$update();
 		});
 

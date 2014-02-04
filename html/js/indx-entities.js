@@ -125,7 +125,7 @@
 				},
 				activities:{
 					getAll:function(box, extras) {
-						return search(box, _(extras).chain().clone().extend({type:'activity'}));
+						return search(box, _(extras).chain().clone().extend({type:'activity'}).value());
 					},
 					getByActivityType:function(box, tstart, tend, activity_types) {
 						if (!_.isArray(activity_types)) { activity_types=[activity_types]; }
@@ -136,7 +136,7 @@
 						]});
 						if (tstart) { query.$and.push({'tstart': {'$ge': toQueryTime(tstart) }}); }
 						if (tend) { query.$and.push({'tstart': {'$le': toQueryTime(tend)}}); }
-						console.log('issuing query ... ', JSON.stringify(query));
+						console.log('ENTITIES query ... ', JSON.stringify(query));
 						return search(box, query);
 					},
 					getByTimeseriesPointsPerMinute:function(box, ts, tstart, tend) {
