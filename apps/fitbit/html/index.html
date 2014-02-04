@@ -52,13 +52,13 @@
           </td>
         </tr>
       </table>
-      <h3>Service parameters</h3>
+<!--       <h3>Service parameters</h3>
       <table class='params'>
         <tr><td>Start date:</td><td><input type="text" placeholder="YYYY-mm-dd" name="start" ng-model="start"></input></td></tr>
         <tr><td>Overwrite existing? </td><td><input type="checkbox" ng-model="overwrite" checked='overwrite' /></td></tr>
-      </table>
+      </table> -->
       <div class='submits'>
-        <div class="btn btn-default" ng-click="setConfig({harvester:{start:start,box:box,user:user['@id'],password:password,overwrite:overwrite},fitbit:{pin:pin,token:token,req_token:req_token}})">Configure</div>
+        <div class="btn btn-default" ng-click="setConfig({harvester:{box:box,user:user['@id'],password:password},fitbit:{pin:pin,token:token,req_token:req_token}})">Configure</div>
         <div class="status">{{ status }}</div>
       </div>
     </div>

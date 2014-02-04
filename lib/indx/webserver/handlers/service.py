@@ -153,7 +153,7 @@ class ServiceHandler(BaseHandler):
             ## load the manifest 
             manifest = self._load_manifest()
             # jsonconfig = json.dumps(config)
-            logging.debug("set_config jsonconfig arg {0}".format(jsonconfig))
+            # logging.debug("set_config jsonconfig arg {0}".format(jsonconfig))
 
             # somewhere inside this we have put {0} wildcard so we wanna substitute that
             # with the actual config obj

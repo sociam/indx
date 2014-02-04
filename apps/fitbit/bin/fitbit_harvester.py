@@ -164,7 +164,7 @@ class FitbitHarvester:
                     token = stored_config_fitbit['token']
             if token is not None :
                 self.fitbit.set_token(token)
-        return stored_config_harvester['start'], stored_config_harvester['box'], stored_config_harvester['user'], stored_config_harvester['password']
+        return stored_config_harvester['box'], stored_config_harvester['user'], stored_config_harvester['password']
 
     def run(self):
         args = vars(self.parser.parse_args())
@@ -179,7 +179,7 @@ class FitbitHarvester:
             reactor.run()
          
     def work(self, server_url):
-        start, box, user, password = self.check_configuration()
+        box, user, password = self.check_configuration()
 
         self.fitbit_resources = FitbitResources(self.fitbit)
         self.logger.debug("Created FitbitResources.")
@@ -198,28 +198,28 @@ class FitbitHarvester:
                     self.logger.debug("Found or created all 5 time series.")
                     devs = []
                     for dev in self.devices:
-                        devs.append(dev["@id"])
+                        devs.append({"@id":dev["@id"]})
                 
                     def harvester_cb(harv, indx=indx, devs=devs):
                         harv_d = Deferred()
                         self.harvester = harv
                         if not self.harvester:
                             self.harvester = {"@id":self.harvester_id,"label":"INDX Fitbit Harvester meta info"}
-                        self.harvester.update({"user":self.user_id, "devices":devs})
+                        self.harvester.update({"user":{"@id":self.user_id}, "devices":devs})
                         self.safe_update(indx, self.harvester).addCallbacks(harv_d.callback, harv_d.errback)
                         return harv_d
 
                     def harvest_cb(x, indx=indx):
                         def wait(y):
                             self.logger.debug("Harvested! Suspending execution for 1 hours at {0}.".format(datetime.now().isoformat()))
-                            sleep(30)
-                            # sleep(3600)
+                            # sleep(30)
+                            sleep(3600)
                             r_d.callback(None)
 
                         self.harvest(indx).addCallbacks(wait, r_d.errback)
                 
                     self.harvester_id = "fitbit_harvester_{0}".format(self.user["encodedId"])
-                    self.find_create(indx, self.harvester_id, {"label":"INDX Fitbit Harvester meta info", "user":self.user_id, "devices":devs}).addCallbacks(harvester_cb, r_d.errback).addCallbacks(harvest_cb, r_d.errback)
+                    self.find_create(indx, self.harvester_id, {"label":"INDX Fitbit Harvester meta info", "user":{"@id":self.user_id}, "devices":devs}).addCallbacks(harvester_cb, r_d.errback).addCallbacks(harvest_cb, r_d.errback)
 
                 self.find_create_timeseries(indx).addCallbacks(timeseries_cb, r_d.errback)
 
@@ -331,49 +331,48 @@ class FitbitHarvester:
                             self.logger.debug("Found or created floors time series.")
                             ts_d.callback(indx)
 
-                        self.find_create(indx, self.floors_ts_id, {"label":"Fitbit Floors Time Series", "type":"Dataset", "user":self.user_id}).addCallbacks(f_ts_cb, ts_d.errback)
+                        self.find_create(indx, self.floors_ts_id, {"label":"Fitbit Floors Time Series", "type":"Dataset", "user":{"@id":self.user_id}}).addCallbacks(f_ts_cb, ts_d.errback)
     
-                    self.find_create(indx, self.elevation_ts_id, {"label":"Fitbit Elevation Time Series", "type":"Dataset", "user":self.user_id}).addCallbacks(e_ts_cb, ts_d.errback)
+                    self.find_create(indx, self.elevation_ts_id, {"label":"Fitbit Elevation Time Series", "type":"Dataset", "user":{"@id":self.user_id}}).addCallbacks(e_ts_cb, ts_d.errback)
                 
-                self.find_create(indx, self.distance_ts_id, {"label":"Fitbit Distance Time Series", "type":"Dataset", "user":self.user_id}).addCallbacks(d_ts_cb, ts_d.errback)
+                self.find_create(indx, self.distance_ts_id, {"label":"Fitbit Distance Time Series", "type":"Dataset", "user":{"@id":self.user_id}}).addCallbacks(d_ts_cb, ts_d.errback)
             
-            self.find_create(indx, self.calories_ts_id, {"label":"Fitbit Calories Time Series", "type":"Dataset", "user":self.user_id}).addCallbacks(c_ts_cb, ts_d.errback)
+            self.find_create(indx, self.calories_ts_id, {"label":"Fitbit Calories Time Series", "type":"Dataset", "user":{"@id":self.user_id}}).addCallbacks(c_ts_cb, ts_d.errback)
 
-        self.find_create(indx, self.steps_ts_id, {"label":"Fitbit Steps Time Series", "type":"Dataset", "user":self.user_id}).addCallbacks(s_ts_cb, ts_d.errback)
+        self.find_create(indx, self.steps_ts_id, {"label":"Fitbit Steps Time Series", "type":"Dataset", "user":{"@id":self.user_id}}).addCallbacks(s_ts_cb, ts_d.errback)
         return ts_d
 
     def harvest(self, indx):
         harv_d = Deferred()
 
-# memberSince (absolute last day) --- retrieved_from --- retrieved_to --- lastSync (advancing) 
-        if "retrieved_to" in self.harverster:
+        # memberSince (absolute last day) --- retrieved_from --- retrieved_to --- lastSync (advancing) 
+        last_sync = self.getLastSyncDayFromDevices() # returns None if not found
+        
+        if "retrieved_to" in self.harvester:
             self.retrieved_to = self.harvester["retrieved_to"]
-        elif "memberSince" in self.user:
-            self.retrieved_to = self.user["memberSince"]
         else:
             self.retrieved_to = None
 
-        last_sync = self.getLastSyncDayFromDevices() # returns None if not found
         if "retrieved_from" in self.harvester:
             self.retrieved_from = self.harvester["retrieved_from"]
-        else 
+        else: 
             self.retrieved_from = last_sync
         
-        if "memberSince" in self.user and self.retrieved_from == self.user["memberSince"]:
-            # we are done going back in time to retrieve data, we only check for new updates from now on
-            pass
+        self.logger.debug("self.user['memberSince']: {0}, last_sync: {1}, self.retrieved_from: {2}, self.retrieved_to: {3}, self.harvester: {4}".format(self.user['memberSince'], last_sync, self.retrieved_from, self.retrieved_to, self.harvester))
+
+        if "memberSince" in self.user and self.retrieved_from is not None and self.retrieved_from == self.user["memberSince"]:
+            self.logger.debug("we are done going back in time to retrieve data, we only check for new updates from now on")
+            # once all the old data was retrieved, we can get some of the new remaining data    
+            if  last_sync is not None and self.retrieved_to is not None and self.retrieved_to == last_sync :
+                self.logger.debug("there was no new sync since the last loop, not having anything new to retrieve")
+                harv_d.callback(None)
+            else:
+                self.logger.debug("there was a new sync since the last time, there is new data to retrieve")
+                self.harvest_forward(indx).addCallbacks(harv_d.callback, harv_d.errback)
         else:
-            # we still have to go back in time to retrieve old data, as we have not reached the date when the user became a member
+            self.logger.debug("we still have to go back in time to retrieve old data, as we have not reached the date when the user became a member")
             self.harvest_back(indx).addCallbacks(harv_d.callback, harv_d.errback)
 
-        # once all the old data was retrieved, we can get some of the new remaining data    
-        if  (last_sync not None) and self.retrieved_to == last_sync :
-            # there was no new sync since the last loop, not having anything new to retrieve
-            harv_d.callback(None)
-        else:
-            # there was a new sync since the last time, there is new data to retrieve
-            self.harvest_forward(indx).addCallbacks(harv_d.callback, harv_d.errback)
-        
         return harv_d
 
     def getLastSyncDayFromDevices(self):
@@ -390,6 +389,7 @@ class FitbitHarvester:
         return last.strftime("%Y-%m-%d") 
 
     def harvest_back(self, indx):
+        self.logger.debug("> In harvest_back")
         back_d = Deferred()
 
         def check_cb(x, indx=indx):
@@ -399,121 +399,68 @@ class FitbitHarvester:
                 back_d.callback(None)
 
         prev = datetime.strptime(self.retrieved_from, "%Y-%m-%d").date() + timedelta(days=-1)
-        self.retrieved_from = prev.strftime("%Y-%m-%d") 
         # if still after membership day, continue
+        if prev >= datetime.strptime(self.user["memberSince"], "%Y-%m-%d").date():
+            self.retrieved_from = prev.strftime("%Y-%m-%d") 
+            points = self.get_day_points(indx, self.retrieved_from) 
+            self.harvester["retrieved_from"] = self.retrieved_from
+            if self.retrieved_to is None: # and "retrieved_to" not in self.harvester
+                self.retrieved_to = self.retrieved_from
+                self.harvester["retrieved_to"] = self.retrieved_to
+            self.safe_update(indx, points+[self.harvester]).addCallbacks(check_cb, back_d.errback)
+        else:
+            self.logger.debug("Reached back to the memberSince date")
+            back_d.callback(None)
 
-        points = self.get_day_points(indx, self.retrieved_from) 
-        harvester["retrieved_from"] = self.retrieved_from
-        self.safe_update(indx, points+[harvester]).addCallbacks(check_cb, back_d.errback)
-
+        self.logger.debug("Out harvest_back >")
         return back_d
 
     def harvest_forward(self, indx):
+        self.logger.debug("> In harvest_forward")
         fwd_d = Deferred()
 
+        def check_cb(x, indx=indx):
+            if (self.api_calls_left > 4):
+                self.harvest_forward(indx).addCallbacks(fwd_d.callback, fwd_d.errback)
+            else:
+                fwd_d.callback(None)
+
+        next = datetime.strptime(self.retrieved_from, "%Y-%m-%d").date() + timedelta(days=1)
+        # if still before lastSyncTime day, continue
+        if next < datetime.strptime(self.getLastSyncDayFromDevices(), "%Y-%m-%d").date():
+            self.retrieved_to = next.strftime("%Y-%m-%d") 
+            points = self.get_day_points(indx, self.retrieved_to) 
+            self.harvester["retrieved_to"] = self.retrieved_to
+            self.safe_update(indx, points+[self.harvester]).addCallbacks(check_cb, fwd_d.errback)
+        else:
+            self.logger.debug("Reached the lastSyncTime date")
+            fwd_d.callback(None)
+
+        self.logger.debug("Out harvest_forward >")
         return fwd_d
 
-        # def harvester_cb(harvester, indx=indx):
-            
-            # def get_day_points(day):
-            #     gdp_return_d = Deferred()
+    def get_day_points(self, indx, daystr):
+        day = datetime.strptime(daystr, "%Y-%m-%d")
 
-            #     def points_cb(pts):
-            #         gdp_return_d.callback(pts)
+        steps = self.download_steps(day)
+        steps_dps = self.create_data_points(day.date(), steps, self.steps_ts_id, "StepCount")
 
-            #     if day.date().isoformat() in self.fetched_days:
-            #         self.logger.debug("Data for {0} was already fetched, rechecking!".format(day.date().isoformat()))
-            #         self.find_day_points(indx, day).addCallbacks(points_cb, gdp_return_d.errback)
-            #     else:
-            #         self.logger.debug("Data for {0} was not yet fetched. Getting it now.".format(day.date().isoformat()))
-            #         self.fetched_days.append(day.date().isoformat())
-            #         gdp_return_d.callback(None)
-            #     return gdp_return_d
+        calories = self.download_calories(day)
+        calories_dps = self.create_data_points(day.date(), calories, self.calories_ts_id, "CaloriesBurned")
+        
+        distance = self.download_distance(day)
+        distance_dps = self.create_data_points(day.date(), distance, self.distance_ts_id, "Distance")
+        
+        floors = self.download_floors(day)
+        floors_dps = self.create_data_points(day.date(), floors, self.floors_ts_id, "FloorsClimbed")
+        
+        elevation = self.download_elevation(day)
+        elevation_dps = self.create_data_points(day.date(), elevation, self.elevation_ts_id, "Elevation")
+        
+        self.api_calls_left = self.api_calls_left - 5
+        return steps_dps + calories_dps + distance_dps + floors_dps + elevation_dps
 
-            # def processing_cb(day_points, day):
-
-            #     # processing steps
-            #     steps = self.download_steps(day)
-
-            #     zeros = False
-            #     zeros = self.check_all_zero(steps)
-            #     if zeros :
-            #         self.logger.debug("Step data points are all 0. ")
-            #         if self.all_zeros > day:
-            #             self.all_zeros = day
-            #     else :
-            #         self.all_zeros = self.today()
-
-            #     steps_points = []
-            #     if day_points and self.steps_ts_id in day_points and day_points[self.steps_ts_id] :
-            #         steps_points = self.replace_data_points(day, steps, day_points[self.steps_ts_id], self.steps_ts_id, "http://sociam.org/ontology/health/StepCount")
-            #     else:
-            #         steps_points = self.create_data_points(day, steps, self.steps_ts_id, "http://sociam.org/ontology/health/StepCount") # a subclass of http://www.qudt.org/qudt/owl/1.0.0/quantity/index.html#Frequency and subclass of http://purl.org/linked-data/cube#Observation
-            #     # self.logger.debug("Saving {0} step data points.".format(len(steps_points)))
-
-            #     # processing calories
-            #     calories = self.download_calories(day)
-            #     calories_points = []
-            #     if day_points and self.calories_ts_id in day_points and day_points[self.calories_ts_id] :
-            #         calories_points = self.replace_data_points(day, calories, day_points[self.calories_ts_id], self.calories_ts_id, "http://sociam.org/ontology/health/CaloriesBurned")
-            #     else:
-            #         calories_points = self.create_data_points(day, calories, self.calories_ts_id, "http://sociam.org/ontology/health/CaloriesBurned") # subclass of http://purl.org/linked-data/cube#Observation
-            #     # self.logger.debug("Saving {0} calories data points.".format(len(calories_points)))
-
-            #     # processing distance
-            #     distance = self.download_distance(day)
-            #     distance_points = []
-            #     if day_points and self.distance_ts_id in day_points and day_points[self.distance_ts_id] :
-            #         distance_points = self.replace_data_points(day, distance, day_points[self.distance_ts_id], self.distance_ts_id, "http://sociam.org/ontology/health/Distance") # subclass of http://purl.org/linked-data/cube#Observation
-            #     else:
-            #         distance_points = self.create_data_points(day, distance, self.distance_ts_id, "http://sociam.org/ontology/health/Distance") # subclass of http://purl.org/linked-data/cube#Observation
-            #     # self.logger.debug("Saving {0} distance data points.".format(len(distance_points)))
-
-            #     # processing floors
-            #     floors = self.download_floors(day)
-            #     floors_points = []
-            #     if day_points and self.floors_ts_id in day_points and day_points[self.floors_ts_id] :
-            #         floors_points = self.replace_data_points(day, floors, day_points[self.floors_ts_id], self.floors_ts_id, "http://sociam.org/ontology/health/FloorsClimbed") # subclass of http://purl.org/linked-data/cube#Observation
-            #     else:
-            #         floors_points = self.create_data_points(day, floors, self.floors_ts_id, "http://sociam.org/ontology/health/FloorsClimbed") # subclass of http://purl.org/linked-data/cube#Observation
-            #     # self.logger.debug("Saving {0} floors data points.".format(len(floors_points)))
-
-            #     # processing elevation
-            #     elevation = self.download_elevation(day)
-            #     elevation_points = []
-            #     if day_points and self.elevation_ts_id in day_points and day_points[self.elevation_ts_id]:
-            #         elevation_points = self.replace_data_points(day, elevation, day_points[self.elevation_ts_id], self.elevation_ts_id, "http://sociam.org/ontology/health/Elevation") # subclass of http://purl.org/linked-data/cube#Observation
-            #     else:
-            #         elevation_points = self.create_data_points(day, elevation, self.elevation_ts_id, "http://sociam.org/ontology/health/Elevation") # subclass of http://purl.org/linked-data/cube#Observation
-            #     # self.logger.debug("Saving {0} elevation data points.".format(len(elevation_points)))
-                
-            #     proc_return_d = Deferred()
-            #     def saved_cb(x):
-            #         for (success, value) in x:
-            #             if not success:
-            #                 self.logger.error("Error saving data to INDX: {0}", value)
-            #                 proc_return_d.errback(value)
-            #         proc_return_d.callback(None)
-
-            #     harvester["fetched_days"] = self.fetched_days
-            #     harvester["zeros_from"] = self.all_zeros.isoformat()
-            #     save_deferred = DeferredList([self.safe_update(indx, steps_points), self.safe_update(indx, calories_points), self.safe_update(indx, distance_points), self.safe_update(indx, floors_points), self.safe_update(indx, elevation_points), self.safe_update(indx, harvester)])
-            #     save_deferred.addCallbacks(saved_cb, proc_return_d.errback)
-            #     return proc_return_d
-
-            # def advance_cb(x, day):
-            #     self.logger.debug("Advance for day: {0}, {1}".format(day, (day < self.today())))
-            #     if day < self.today():
-            #         next_day = day + timedelta(days=+1)
-            #         self.logger.debug("Advance next_day: {0}".format(next_day))
-            #         get_day_points(day).addCallbacks(processing_cb, return_d.errback, callbackArgs=[day]).addCallbacks(advance_cb, return_d.errback, callbackArgs=[next_day])
-            #     else:
-            #         self.logger.debug("Finished harvesting round! Exiting harvest() .. ")
-            #         return_d.callback(None)
-
-
-    def create_data_points(self, day, data, ts_id, rdf_type=None):
-        self.logger.debug("Started creating data points.")
+    def create_data_points(self, day, data, ts_id, otype):
         data_points = []
         for key in data.keys():
             if key.endswith('-intraday'):
@@ -521,62 +468,14 @@ class FitbitHarvester:
                     interval_start = datetime.combine(day, datetime.strptime(point["time"], "%H:%M:%S").time()) 
                     interval_end = interval_start+timedelta(minutes=1) 
                     value = point["value"]
-                    data_point = {  "@id": "fitbit_dp_{0}".format(uuid.uuid4()), 
-                                    # "http://sociam.org/ontology/timeseries/start": interval_start.isoformat(),
-                                    # "http://sociam.org/ontology/timeseries/end": interval_end.isoformat(),
-                                    # "http://sociam.org/ontology/timeseries/value": value,
-                                    # "http://purl.org/linked-data/cube#dataset": { "@id": ts_id } }
+                    data_point = {  "@id": "fitbit_{0}_dp_{1}_{2}".format(otype.lower(), self.user["encodedId"], interval_start.strftime("%Y%m%d%H%M")), 
                                     "start": interval_start.isoformat(),
                                     "end": interval_end.isoformat(),
                                     "value": value,
-                                    "timeseries": { "@id": ts_id } }
-                    if rdf_type:
-                        data_point["http://www.w3.org/1999/02/22-rdf-syntax-ns#type"] = [ { "@id": rdf_type } ]
+                                    "timeseries": { "@id": ts_id },
+                                    "type": { "@id": otype } }
                     data_points.append(data_point)
-                    # self.logger.debug("Created and appended data point: {0}".format(data_point))
-        self.logger.debug("Finished creating data points.")
-        return data_points
-
-    def replace_data_points(self, day, new_data, old_data, ts_id, rdf_type=None):
-        self.logger.debug("Started replacing values in data points.")
-        data_points = []
-        replaced = 0
-        kept = 0
-        created = 0
-        for key in new_data.keys():
-            if key.endswith('-intraday'):
-                for point in new_data[key]["dataset"]:
-                    data_point = None
-                    interval_start = datetime.combine(day, datetime.strptime(point["time"], "%H:%M:%S").time()) 
-                    interval_end = interval_start+timedelta(minutes=1) 
-                    value = point["value"]
-                    if interval_start in old_data:
-                        if len(old_data[interval_start]) > 1 :
-                            self.logger.error("There are {0} points for the same start time {1} in the same dataset {2}!!".format(len(old_data[interval_start]), interval_start, ts_id))
-                        old_point = old_data[interval_start][0] # there shouldn't be more than 1 point here!!!
-                        if old_point['value'][0]['@value'] == str(value):
-                            kept = kept+1
-                        else:
-                            replaced = replaced+1
-                            # if all_other_fields_match:
-                            data_point = {  "@id": old_point['@id'] }
-                    else:
-                        created = created+1
-                        data_point = {  "@id": "fitbit_dp_{0}".format(uuid.uuid4()) }
-                    if data_point :
-                        self.logger.debug("Making a data point for {0}".format(interval_start.isoformat()))
-                        # data_point["http://sociam.org/ontology/timeseries/start"] = interval_start.isoformat()
-                        # data_point["http://sociam.org/ontology/timeseries/end"] = interval_end.isoformat()
-                        # data_point["http://sociam.org/ontology/timeseries/value"] = value
-                        # data_point["http://purl.org/linked-data/cube#dataset"] = { "@id": ts_id } 
-                        data_point["start"] = interval_start.isoformat()
-                        data_point["end"] = interval_end.isoformat()
-                        data_point["value"] = value
-                        data_point["timeseries"] = { "@id": ts_id } 
-                        if rdf_type:
-                            data_point["http://www.w3.org/1999/02/22-rdf-syntax-ns#type"] = [ { "@id": rdf_type } ]
-                        data_points.append(data_point)
-        self.logger.debug("Finished replacing values in data points - replaced: {0}, kept: {1}, created: {2}".format(replaced, kept, created))
+        self.logger.debug("Created {0} {1} data points.".format(len(data_points), otype))
         return data_points
 
     def download_steps(self, day):
@@ -618,44 +517,6 @@ class FitbitHarvester:
         elevation = self.fitbit_intraday.get_elevation(day)[0]
         self.logger.debug("Retrieved elevation data for {0}.".format(day.date()))
         return elevation
-
-    def find_day_points(self, indx, day) :
-        self.logger.debug("Find day data points from {0}".format(day.date().isoformat()))
-        return_d = Deferred()
-
-        def found_cb(results):
-            out = {self.steps_ts_id:{}, self.calories_ts_id:{}, self.distance_ts_id:{}, self.floors_ts_id:{}, self.elevation_ts_id:{}}
-            for (success, resp) in results:
-                if success:
-                    if resp and 'code' in resp and resp['code']==200 and 'data' in resp:
-                        for pt in resp['data'] :
-                            obj = resp['data'][pt]
-                            # if 'http://purl.org/linked-data/cube#dataset' in obj and obj['http://purl.org/linked-data/cube#dataset'][0]['@id'] in [self.steps_ts_id, self.calories_ts_id, self.distance_ts_id, self.floors_ts_id, self.elevation_ts_id] :
-                            #     objs_date_hash = out[obj['http://purl.org/linked-data/cube#dataset'][0]['@id']]
-                            if 'timeseries' in obj and obj['timeseries'][0]['@id'] in [self.steps_ts_id, self.calories_ts_id, self.distance_ts_id, self.floors_ts_id, self.elevation_ts_id] :
-                                objs_date_hash = out[obj['timeseries'][0]['@id']]
-                                if find_start in objs_date_hash:
-                                    objs_list = objs_date_hash[find_start]
-                                else:
-                                    objs_list = []
-                                objs_list.append(obj) 
-                                objs_date_hash[find_start] = objs_list
-                                # out[obj['http://purl.org/linked-data/cube#dataset'][0]['@id']] = objs_date_hash
-                                out[obj['timeseries'][0]['@id']] = objs_date_hash
-                            self.logger.debug("Found points with start time {0}: {1}".format(find_start.isoformat(),objs_list))                    
-                else:
-                    self.logger.error("Didn't find any timepoints: {0}".format(resp))
-            return_d.callback(out)
-
-        deferreds = []
-        for h in range(24):
-            for m in range(60):
-                find_start = datetime.combine(day.date(), time(h,m,0)) 
-                self.logger.debug("Looking for data points with start time: {0}".format(find_start.isoformat()))
-                deferreds.append(indx.query(json.dumps({"start":find_start.isoformat()})))
-        DeferredList(deferreds).addCallbacks(found_cb, lambda f: self.logger.error("Error retrieving day points from indx for {0}: {1}".format(day.isoformat(), f)))
-        
-        return return_d
 
     def find_by_id(self, indx, oid) :
         return_d = Deferred()

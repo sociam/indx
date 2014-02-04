@@ -12,4 +12,4 @@ pycrypto
 oauth2
 keyring
 fs
-autobahn
+autobahn==0.7.4

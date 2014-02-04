@@ -16,43 +16,45 @@ class Fitbit:
             self.token = oauth.Token(access_token_key, access_token_secret)
 
     def get_token_url(self):
-        baseurl = "https://www.fitbit.com"
-        request_url = baseurl + "/oauth/request_token"
-        authorize_url = baseurl + "/oauth/authorize"
-        callback_url = "http://Silva:8211/apps/fitbit/authorized"
-        client = oauth.Client(self.consumer)
+        request_url = "{0}/oauth/request_token".format(self.api_base_url)
+        authorize_url = "{0}/oauth/authorize".format(self.api_base_url)
+        req = oauth.Request.from_consumer_and_token(consumer=self.consumer, http_method="POST", http_url=request_url)
+        sig_method = oauth.SignatureMethod_HMAC_SHA1()
+        req.sign_request(sig_method, self.consumer, self.token)
+        headers = req.to_header()
 
-        resp, body = client.request(request_url, method="POST")
-        if resp['status'] != '200':
-            raise Exception("Invalid response getting the request token {0}.".format(resp['status']))
+        request = urllib2.Request(request_url, data=None, headers=headers)
+        request.get_method = lambda: "POST"
+        # req.add_header('Authorization', headers['Authorization'])
+        resp = urllib2.urlopen(request)
+        if resp.getcode() != 200:
+            raise Exception("Invalid response {0} getting the request token {1} {2}.".format(resp.getcode(), resp.read(), resp.info()))
             sys.exit(1)
-
-        self.req_token = dict(urlparse.parse_qsl(body))
-
+        data = resp.read()
+        self.req_token = dict(urlparse.parse_qsl(data))
         self.logger.info("Successfully got request oauth_token: {0}, oauth_token_secret: {1}".format(self.req_token['oauth_token'], self.req_token['oauth_token_secret']))
-
-
-        # this interaction needs to be improved, but works for now 
-        # print "Go to the following link in your browser:"
         gotourl = "{0}?oauth_token={1}".format(authorize_url, self.req_token['oauth_token'])
-
-        # print gotourl
         return {"url":gotourl, "req_token":self.req_token}
 
     def get_token_with_pin(self, pin, req_token):
-        baseurl = "https://www.fitbit.com"
-        access_url = baseurl + "/oauth/access_token"
+        request_url = "{0}/oauth/access_token".format(self.api_base_url)
         token = oauth.Token(req_token['oauth_token'], req_token['oauth_token_secret'])
         token.set_verifier(pin)
-        client = oauth.Client(self.consumer, token)
 
-        resp, body = client.request(access_url, method="POST")
-        if resp['status'] != '200':
-            raise Exception("Invalid response getting the access token {0}.".format(resp['status']))
+        req = oauth.Request.from_consumer_and_token(consumer=self.consumer, token=token, http_method="POST", http_url=request_url)
+        sig_method = oauth.SignatureMethod_HMAC_SHA1()
+        req.sign_request(sig_method, self.consumer, token)
+        headers = req.to_header()
+
+        request = urllib2.Request(request_url, data=None, headers=headers)
+        request.get_method = lambda: "POST"
+        resp = urllib2.urlopen(request)
+        if resp.getcode() != 200:
+            raise Exception("Invalid response {0} getting the access token {1} {2}.".format(resp.getcode(), resp.read(), resp.info()))
             return None
-        auth = dict(urlparse.parse_qsl(body))
+        data = resp.read()
+        auth = dict(urlparse.parse_qsl(data))
         self.token = oauth.Token(auth['oauth_token'], auth['oauth_token_secret'])
-
         self.logger.info("Successfully got access oauth_token: {0}, oauth_token_secret: {1}".format(auth['oauth_token'], auth['oauth_token_secret']))
         return auth
 
