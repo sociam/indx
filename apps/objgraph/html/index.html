@@ -12,9 +12,53 @@
     <toolbar box-var='selectedBox' username-var='selectedUser'></toolbar>
     <div ng-show="!selectedUser" class="alert alert-danger">Please log in</div>
     <div ng-show="selectedUser && !selectedBox" class="alert alert-danger">Please select a box</div>
-    <div ng-show="selectedUser && selectedBox">
-      <h2>Showing {{ objs.length }} objects</h2>
-      <label><input type="checkbox" ng-model="options.clustering"> Cluster by similarity</label>
+	<div class="vis-container"></div>
+	<div ng-show="selectedUser && selectedBox">
+		<div class="main-body">
+			<div class="obj-toolbar">
+				<span class="result">Showing {{ objs.length }} objects</span>
+				<a href="#" ng-click="s.showList = false" ng-if="s.showList">Close list</a>
+				<a href="#" ng-click="s.showList = true" ng-if="!s.showList">Show list</a>
+				<label><input type="checkbox" ng-model="options.clustering"> Cluster by similarity</label>
+			</div>
+		</div>
+		<div class="obj-list" ng-if="s.showList">
+			Order by: <select class="form-control" ng-model="s.orderBy">
+				<option value="id">ID</option>
+			</select>
+			<a href="#" ng-show="s.orderReverse" ng-click="s.orderReverse = false">Asc</a>
+			<a href="#" ng-show="!s.orderReverse" ng-click="s.orderReverse = true">Desc</a>
+			<ul class="objs">
+				<li ng-repeat="obj in objs | startFrom:s.page*s.perPage | limitTo:s.perPage | orderBy:s.orderBy:s.orderReverse" ng-click="s.selectedObj = obj">
+					{{ obj.id }}
+				</li>
+			</ul>
+			<button class="btn btn-default" ng-disabled="s.page <= 0" ng-click="s.page=s.page-1">Previous</button>
+			page {{ s.page+1 }} of {{ Math.ceil(objs.length/s.perPage) }}
+			<button class="btn btn-default" ng-disabled="(s.page + 1) * s.perPage >= objs.length" ng-click="s.page=s.page+1">Next</button>
+		</div>
+		<div class="dlg-container" ng-if="s.selectedObj"><div class="dlg">
+			Edit object:
+			<form ng-submit="s.selectedObj.save() && (s.selectedObj = undefined)">
+				<div class="values">
+					<table>
+						<tr><th>ID</th><td>{{s.selectedObj.id}}</td></tr>
+						<tr ng-repeat="(key, vals) in s.selectedObj.attributes">
+							<th>{{ key }}</th>
+							<td>
+								<ol><li ng-repeat="(i, val) in vals">
+									<input class="form-control" type="input" ng-model="vals[i]">
+								</li><!-- <li>
+									<button class="btn btn-default" ng-click="s.selectedObj.attributes.push('')">+</button>
+								</li> --></ol>
+							</td>
+						</tr>
+					</table>
+				</div>
+				<button class="btn btn-default" type="submit">Save</button>
+				<button class="btn btn-default" ng-click="s.selectedObj = undefined">Cancel</button>
+			</form>
+		</div></div>
     </div>
   </div>
 </body>
