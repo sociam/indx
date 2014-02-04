@@ -31,6 +31,7 @@ angular
 						promise = $.Deferred(),
 						ids = this.box.getObjIDs();
 					that.box.getObj(ids).then(function (objs) {
+						console.log(_.map(objs, function (obj) { return obj.toJSON(); }))
 						that.reset(objs);
 						promise.resolve();
 					});
@@ -118,7 +119,7 @@ angular
 					this.groups.push(group);
 					this.nodes.push({ id: '!cluster-' + group, group: -1 });
 				}
-				
+
 				return group;
 			},
 			updateLinkCache: function (obj) {
