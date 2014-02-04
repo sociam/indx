@@ -10,8 +10,22 @@ angular
 		var Objs = Backbone.Collection.extend({
 				//model: TreeObj,
 				initialize: function (attributes, options) {
+					if (options.box) { this.setBox(options.box); }
+				},
+				fetch: function () {
+					var that = this,
+						promise = $.Deferred(),
+						ids = this.box.getObjIDs();
+					that.box.getObj(ids).then(function (objs) {
+						console.log(_.map(objs, function (obj) { return obj.toJSON(); }))
+						that.reset(objs);
+						promise.resolve();
+					});
+					return promise;
+				},
+				setBox: function (box) {
 					var that = this;
-					this.box = options.box
+					this.box = box;
 					that.box.on('all', function (e) {
 						console.log(e, arguments)
 					})
@@ -25,17 +39,7 @@ angular
 							that.remove(obj);
 						});
 					});
-				},
-				fetch: function () {
-					var that = this,
-						promise = $.Deferred(),
-						ids = this.box.getObjIDs();
-					that.box.getObj(ids).then(function (objs) {
-						console.log(_.map(objs, function (obj) { return obj.toJSON(); }))
-						that.reset(objs);
-						promise.resolve();
-					});
-					return promise;
+					return this;
 				}
 			});
 
@@ -57,45 +61,62 @@ angular
 			reset: function () {
 				this.nodes.splice(0, this.nodes.length);
 				this.links.splice(0, this.nodes.length);
+				this.queue = [];
 				this.groups = [];
 				this.linkCaches = {}; // obj_id -> [obj_id, obj_id, ...]
 
-				this.objs.each(this.add, this);
+				this.add(this.objs.models);
 			},
 			getNode: function (id) {
 				var node = _.where(this.nodes, { id: id }).pop();
 				return this.nodes.indexOf(node);
 			},
 			add: function (obj) {
-				console.log('ADD')
-				var that = this,
-					node = {};
-				this.nodes.push(node);
-				this.update(node, obj);
-				obj.on('change', function () {
-					that.update(node, obj);
-				});
+				if (_.isArray(obj)) {
+					this.queue = this.queue.concat(obj);
+				} else {
+					this.queue.push(obj);
+				}
+				this.pushQueue();
 			},
-			update: function (node, obj) {
+			pushQueue: _.throttle(function () {
+				var that = this;
+				this.queue.forEach(function (obj) {
+					var node = { obj: obj };
+					that.nodes.push(node);
+					that.update(node, obj, true);
+					obj.on('change', function () {
+						that.update(node, obj);
+					});
+				});
+				this.trigger('update');
+				this.queue = [];
+			}, 100),
+			update: function (node, obj, silent) {
 				_.extend(node, {
 					id: obj.id,
-					obj: obj,
 					data: obj.attributes,
 					group: this.getObjGroup(obj)
 				});
 				this.updateLinks(obj);
 				this.removeFromCluster(obj);
 				if (this.clustering) {
-					//this.addToCluster(obj);
+					this.addToCluster(obj);
 				}
 				// todo: trigger update
-				this.trigger('update');
+				if (!silent) {
+					this.trigger('update');
+				}
 				return node;
 			},
 			addToCluster: function (obj) {
 				var node = this.getNode(obj.id),
-					clusterNode = this.getNode('!cluster-' + this.nodes[node].group);
-				this.createLink({ source: node, target: clusterNode, value: 0 });
+					clusterName = this.nodes[node].group,
+					clusterNode;
+				if (clusterName) {
+					clusterNode = this.getNode('!cluster-' + clusterName);
+					this.createLink({ source: node, target: clusterNode, value: 0 });
+				}
 			},
 			removeFromCluster: function (obj) {
 				var node = this.getNode(obj.id),
@@ -144,8 +165,6 @@ angular
 					createToLinks, removeToLinks,
 					createFromLinks, removeFromLinks;
 
-				console.log(node, this.nodes.length, this.links.length);
-
 				_.each(this.linkCaches, function (targets, source) {
 					if (targets.indexOf(id) > -1) {
 						var sourceNode = that.getNode(source);
@@ -154,8 +173,6 @@ angular
 						}
 					}
 				});
-
-				console.log(linkCache, updatedFromLinks);
 				
 
 				_.each(linkCache, function (target) {
@@ -169,7 +186,6 @@ angular
 				createToLinks = _.difference(updatedToLinks, linksTo);
 				removeFromLinks = _.difference(linksFrom, updatedFromLinks);
 				createFromLinks = _.difference(updatedFromLinks, linksFrom);
-
 
 				//_.each([].concat(removeToLinks, removeFromLinks), this.removeLink, this);
 				_.each([].concat(createToLinks, createFromLinks), this.createLink, this);
@@ -215,10 +231,10 @@ angular
 			}
 		});
 
-
-		var initialize = function (box) {
-			var objs = new Objs([], { box: box }),
-				graph = new Graph({ objs: objs, clustering: false });
+		var objs, graph;
+		$(function () {
+			objs = new Objs([], { box: box });
+			graph = new Graph({ objs: objs, clustering: true });
 			
 			$scope.objs = objs;
 			$scope.options = { clustering: graph.clustering }
@@ -227,18 +243,18 @@ angular
 				graph.setClustering($scope.options.clustering);
 			});
 
-			objs.fetch().then(function () {
-				renderGraph(graph);
-			});
+			renderGraph(graph);
 
 			window.graph = graph;
 
 			objs.on('add remove reset', function () {
-				u.safeApply($scope);
+				$update();
 			});
 
+		});
+		var initialize = function (box) {
+			objs.setBox(box).fetch();
 		};
-
 
 				/*var objIds = _.pluck(this.nodes, 'id');
 
@@ -274,6 +290,10 @@ angular
 			}
 		});
 
+		var $update = function () {
+			u.safeApply($scope);
+		};
+
 		$scope.s = {
 			page: 0,
 			orderBy: 'id',
@@ -286,8 +306,6 @@ angular
 
 			var width = 960,
 				height = 500;
-
-			//var color = d3.scale.category20();
 
 			var colors = ['#1f77b4', '#aec7e8', '#ff7f0e', '#ffbb78', '#2ca02c', 
 					'#98df8a', '#d62728', '#ff9896', '#9467bd', '#c5b0d5', '#8c564b',
@@ -309,7 +327,7 @@ angular
 				.on("drag", dragged)
 				.on("dragend", dragended);
 
-			var vis = d3.select("body").append("svg")
+			var vis = d3.select(".vis-container").append("svg")
 				.attr("width", "100%")
 				.attr("height", "100%")
 				.style("pointer-events", "all")
@@ -335,6 +353,8 @@ angular
 
 				var nodes = force.nodes(graph.nodes),
 					links = force.links(graph.links);
+
+				console.log('links', graph.links.length);
 
 				var link = container.selectAll("line")
 					.data(graph.links, function(d) {
@@ -362,7 +382,7 @@ angular
 					.style("stroke", function (d) { return d.group < 0 ? 'transparent' : "#fff"; })
 					.on('mouseover', tip.show)
 					.on('mouseout', tip.hide)
-					.on('click', function (d) { $scope.s.selectedObj = d.obj; });
+					.on('click', function (d) { $scope.s.selectedObj = d.obj; $update(); });
 
 /*
 				node.append("title")
@@ -386,10 +406,10 @@ angular
 
 				// Restart the force layout.
 				force
-					.gravity(.15)
+					.gravity(.04)
 					.distance(20)
-					.charge(-20)
-					.linkDistance(30)
+					.charge(-15)
+					.linkDistance(20)
 					.size([width, height])
 					.start();
 			};
