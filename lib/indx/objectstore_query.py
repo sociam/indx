@@ -233,7 +233,14 @@ class ObjectStoreQuery:
             where = " WHERE j_predicate.string = ANY(%s)"
             params.extend([predicate_filter])
 
-        sql = """WITH theselect AS ({0}) SELECT wb_latest_vers.triple_order, j_subject.string AS subject, 
+        if len(query) > 0:
+            theselect_cte = "WITH theselect AS ({0}) ".format(query)
+            theselect_join = "JOIN theselect ON theselect.subject_uuid = j_subject.uuid"
+        else:
+            theselect_cte = ""
+            theselect_join = ""
+
+        sql = """{0} SELECT wb_latest_vers.triple_order, j_subject.string AS subject, 
             j_predicate.string AS predicate, j_object.string AS obj_value, 
             wb_objects.obj_type, wb_objects.obj_lang, wb_objects.obj_datatype, 
             j_subject.uuid AS subject_uuid
@@ -243,10 +250,10 @@ class ObjectStoreQuery:
            JOIN wb_strings j_subject ON j_subject.uuid = wb_triples.subject_uuid
            JOIN wb_strings j_predicate ON j_predicate.uuid = wb_triples.predicate_uuid
            JOIN wb_strings j_object ON j_object.uuid = wb_objects.obj_value_uuid
-            JOIN theselect ON theselect.subject_uuid = j_subject.uuid
             {1}
+            {2}
           ORDER BY wb_latest_vers.triple_order, j_object.uuid, j_object.chunk;
-        """.format(query, where)
+        """.format(theselect_cte, theselect_join, where)
 
         logging.debug("ObjectStoreQuery to_sql, sql: {0}, params: {1}".format(sql, params))
 
