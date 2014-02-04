@@ -25,6 +25,7 @@ import pprint
 import cjson
 import base64
 import traceback
+from indx.crypto import auth_keys
 import Crypto.Random.OSRNG.posix
 import Crypto.PublicKey.RSA
 import Crypto.Hash.SHA512
@@ -58,12 +59,13 @@ def value_truncate(data, max_length = 255):
 class IndxClient:
     """ Authenticates and accesses an INDX. """
 
-    def __init__(self, address, box, appid, token = None, client = None):
+    def __init__(self, address, box, appid, token = None, client = None, keystore = None):
         """ Connect to an INDX and authenticate. """
         self.address = address
         self.box = box
         self.token = token
         self.appid = appid
+        self.keystore = keystore # if you want to access websockets connections as a client (usually only the server does this)
 
         self.params = {"app": self.appid}
         if self.token is not None:
@@ -233,6 +235,18 @@ class IndxClient:
         return self.client.get(url)
 
     @require_token
+    def apply_diff(self, diff):
+        """ Update objects in a box, in diff JSON format.
+        
+            diff -- A diff in JSON format
+        """
+        self._debug("Called API: apply_diff with diff: {0}".format(diff)) 
+
+        url = "{0}/apply_diff".format(self.base)
+        values = {"data": json.loads(diff)}
+        return self.client.put(url, values)
+
+    @require_token
     def update_raw(self, version, objects):
         """ Update objects in a box, in INDX format.
         
@@ -241,7 +255,7 @@ class IndxClient:
         """
         self._debug("Called API: update_raw with version: {0}, objects: {1}".format(version, objects)) 
 
-        values = {"data": cjson.encode(objects), "version": version}
+        values = {"data": json.loads(objects), "version": version}
         return self.client.put(self.base, values)
 
     @require_token
@@ -256,7 +270,7 @@ class IndxClient:
         prepared_objects = self._prepare_objects(objects)
         self._debug("update: prepared_objects: {0}".format(pprint.pformat(prepared_objects, indent=2, width=80)))
         
-        values = {"data": cjson.encode(prepared_objects), "version": version}
+        values = {"data": json.dumps(prepared_objects), "version": version}
         return self.client.put(self.base, values)
 
     @require_token
@@ -332,13 +346,16 @@ class IndxClient:
         url = "{0}/get_acls".format(self.base)
         return self.client.get(url)
 
+
     @require_token
-    def generate_new_key(self, local_key):
-        """ Generate new key and store it in the keystore, send our public (not private) key to the remote server. Return the public and public-hash parts. (Not the private part.)  """
+    def generate_new_key(self, local_key, encpk2, serverid):
+        """ Generate new key and store it in the keystore, send our public (not private) key to the remote server. Return the public and public-hash parts. (Not the private part.) """
         self._debug("Called API: generate_new_key")
 
         url = "{0}/generate_new_key".format(self.base)
-        values = {"public": local_key['public'], "public-hash": local_key['public-hash']} # don't send private to anyone ever
+        if not (type(encpk2) == type("") or type(encpk2) == type(u"")):
+            encpk2 = json.dumps(encpk2)
+        values = {"public": local_key['public'], "public-hash": local_key['public-hash'], "encpk2": encpk2, "serverid": serverid} # don't send private to anyone ever
         return self.client.get(url, values)
 
     @require_token
@@ -447,7 +464,7 @@ class IndxClient:
         return wsclient
 
     # no require token
-    def connect_ws(self, private_key, key_hash, observer):
+    def connect_ws(self, private_key, key_hash, observer, remote_encpk2, webserver):
 
         address = self.address + "ws"
 
@@ -458,16 +475,18 @@ class IndxClient:
         else:
             raise Exception("IndxClient: Unknown scheme to URL: {0}".format(address))
 
-        wsclient = IndxWebSocketClient(address, observer, keyauth = {"key_hash": key_hash, "private_key": private_key})
+        wsclient = IndxWebSocketClient(address, observer, self.keystore, webserver = webserver, keyauth = {"key_hash": key_hash, "private_key": private_key, "encpk2": remote_encpk2})
         return wsclient
 
 
 class IndxWebSocketClient:
 
-    def __init__(self, address, observer, token = None, keyauth = None, appid = None):
+    def __init__(self, address, observer, keystore, webserver = None, token = None, keyauth = None, appid = None):
         self.address = address
         self.token = token
         self.keyauth = keyauth
+        self.keystore = keystore
+        self.webserver = webserver # for looking up account when connecting back etc.
         indx_observer = observer
         appid = appid or "IndxWebSocketClient"
 
@@ -481,7 +500,8 @@ class IndxWebSocketClient:
             def onMessage(self, payload, isBinary):
                 try:
                     logging.debug("IndxClientProtocol onMessage, payload {0}".format(payload))
-                    data = cjson.decode(payload)
+                    #data = cjson.decode(payload, all_unicode=True)
+                    data = json.loads(payload)
                     
                     if data.get("sessionid"):
                         # when server starts, do keys auth
@@ -500,13 +520,77 @@ class IndxWebSocketClient:
                 if token is not None:
                     msg = {"action": "auth", "token": token}
                     self.on_response = self.respond_to_auth
-                    self.sendMessage(cjson.encode(msg))
+                    self.sendMessage(json.loads(msg))
                 elif keyauth is not None:
                     self.on_response = lambda x: logging.debug("Waiting for sessionid before we can auth.")
 
             # manage state by setting a response function each time
             def send_to_observer(self, data):
-                indx_observer(data)
+                # manage connections coming back from server first..
+                    # TODO imple
+
+                if data.get("action") == "diff" and data.get("operation") == "start":
+
+                    def store_cb(store):
+                        logging.debug("WebSocketsHandler listen_diff, store_cb: {0}".format(store))
+
+                        def observer_local(diff):
+                            """ Receive an update from the server. """
+                            logging.debug("WebSocketsHandler listen_diff observer notified: {0}".format(diff))
+
+                            self.sendMessage(json.loads({"action": "diff", "operation": "update", "data": diff}))
+
+                        store.listen(observer_local) # no callbacks, nothing to do
+
+                    # self.token is set by 'login_keys' below
+                    self.token.get_store().addCallbacks(store_cb, lambda failure: self.sendMessage(json.loads({"success": False, "error": "500 Internal Server Error"})))
+
+                elif data.get("action") == "login_keys":
+                    try:
+                        signature, key_hash, algo, method, appid, encpk2 = data['signature'], data['key_hash'], data['algo'], data['method'], data['appid'], data['encpk2']
+                    except Exception as e:
+                        logging.error("IndxClient/ASync login_keys error getting all parameters.")
+                        return self.sendMessage(json.loads({"success": False, "error": "400 Bad Request"}))
+
+                    def win(resp):
+                        # authenticated now - state of this isn't saved though, we get a token immediately instead
+
+
+                        username, password, boxid = resp
+                        origin = "/ws" # TODO double-check this
+                        # get token, return that
+
+                        def got_acct(acct):
+                            if acct == False:
+                                return self.send401()
+
+                            db_user, db_pass = acct
+
+                            def token_cb(new_token):
+                                self.token = new_token
+
+                                def store_cb(store):
+                                    # success, send token back to user
+                                    return self.sendMessage(json.loads({"success": True, "token": new_token.id, "respond_to": "login_keys"}))
+
+                                new_token.get_store().addCallbacks(store_cb, lambda failure: json.loads({"success": False, "error": "500 Internal Server Error"}))
+
+                            # TODO extract IP from 'address' above
+                            webserver.tokens.new(username,password,boxid,appid,origin,"::1",webserver.server_id).addCallbacks(token_cb, lambda failure: json.loads({"success": False, "error": "500 Internal Server Error"}))
+
+
+                        webserver.database.lookup_best_acct(boxid, username, password).addCallbacks(got_acct, lambda conn: json.loads({"success": False, "error": "500 Internal Server Error"}))
+
+                    def fail(empty):
+                        self.sendMessage(json.loads({"success": False, "error": "401 Unauthorized"}))
+
+                    auth_keys(keystore, signature, key_hash, algo, method, self.sessionid, encpk2).addCallbacks(win, fail)
+                    
+
+
+                else:
+                    # otherwise send diffs back to indx
+                    indx_observer(data)
 
             def respond_to_auth(self, data):
                 if data['success']:
@@ -515,7 +599,7 @@ class IndxWebSocketClient:
 
                     self.on_response = self.send_to_observer
                     msg = {"action": "diff", "operation": "start"}
-                    self.sendMessage(cjson.encode(msg))
+                    self.sendMessage(json.loads(msg))
                 else:
                     logging.error("IndxWebSocketClient WebSocket auth failure.")
 
@@ -526,14 +610,16 @@ class IndxWebSocketClient:
                     method = "publickey"
                     algo = "SHA512"
 
-                    key_hash, private_key = keyauth['key_hash'], keyauth['private_key']
+                    key_hash, private_key, encpk2 = keyauth['key_hash'], keyauth['private_key'], keyauth['encpk2']
+                    if not (type(encpk2) == type("") or type(encpk2) == type(u"")):
+                        encpk2 = json.dumps(encpk2)
 
                     ordered_signature_text = '{0}\t{1}\t"{2}"\t{3}\t{4}'.format(SSH_MSG_USERAUTH_REQUEST, self.sessionid, method, algo, key_hash)
                     signature = rsa_sign(private_key, ordered_signature_text)
 
-                    values = {"action": "login_keys", "signature": signature, "key_hash": key_hash, "algo": algo, "method": method, "appid": appid}
+                    values = {"action": "login_keys", "signature": signature, "key_hash": key_hash, "algo": algo, "method": method, "appid": appid, "encpk2": encpk2}
                     self.on_response = self.respond_to_auth
-                    self.sendMessage(cjson.encode(values))
+                    self.sendMessage(json.loads(values))
 
 
                 except Exception as e:
@@ -758,7 +844,7 @@ class IndxClientAuth:
         return return_d
 
 
-    def auth_keys(self, private_key, key_hash):
+    def auth_keys(self, private_key, key_hash, remote_encpk2):
         """ Key based authentication, similar to RFC4252. """
         return_d = Deferred()
         try:
@@ -768,12 +854,15 @@ class IndxClientAuth:
 
             self.is_authed = False
 
+            if not (type(remote_encpk2) == type("") or type(remote_encpk2) == type(u"")):
+                remote_encpk2 = json.dumps(remote_encpk2)
+
             def session_id_cb(sessionid):
                 ordered_signature_text = '{0}\t{1}\t"{2}"\t{3}\t{4}'.format(SSH_MSG_USERAUTH_REQUEST, sessionid, method, algo, key_hash)
                 signature = rsa_sign(private_key, ordered_signature_text)
 
                 url = "{0}auth/login_keys".format(self.address)
-                values = {"signature": signature, "key_hash": key_hash, "algo": algo, "method": method}
+                values = {"signature": signature, "key_hash": key_hash, "algo": algo, "method": method, "encpk2": remote_encpk2}
 
                 self._debug("Calling auth_keys")
 
@@ -809,4 +898,5 @@ def sha512_hash(src):
     h = Crypto.Hash.SHA512.new()
     h.update(src)
     return h.hexdigest()
+
 

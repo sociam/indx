@@ -1,5 +1,5 @@
-/*global $,_,document,window,console,escape,Backbone,exports,WebSocket */
-/*jslint vars:true, todo:true */
+/* jshint undef: true, strict:false, trailing:false, unused:false, -W110 */
+/*global $,_,document,window,console,escape,Backbone,exports,WebSocket,process,_NODE_AJAX,angular,jQuery */
 ///  @title indx.js
 ///  @author Daniel Alexander Smith
 ///  @author Max Van Kleek
@@ -281,9 +281,9 @@ angular
 					var val_dfds = vals.map(function(val) {
 						var vd = u.deferred();
 						// it's an object, so return that
-						if (val.hasOwnProperty("@id")) {
+						if (val.hasOwnProperty('@id')) {
 							// object
-							var oid = val["@id"];
+							var oid = val['@id'];
 							fetch_dfds[oid] = fetch_dfds[oid] ? fetch_dfds[oid].concat(vd) : [vd];
 							// this_.box.getObj(val["@id"]).then(vd.resolve).fail(vd.reject);
 						}
@@ -305,9 +305,9 @@ angular
 								fetch_dfds[o.id].map(function(dfd) { dfd.resolve(o); });
 							});
 						}).fail(function() { 
-							_(fetch_dfds).values().map(function(dfd) { 
-								console.error(' dfd >> ', dfd);
-								dfd.reject('error fetching obj'); 
+							_(fetch_dfds).values().map(function(dfds) { 
+								console.error(' dfd >> ', dfds);
+								dfds.map(function(dd) { dd.reject('error fetching obj'); });
 							});
 						});
 					}
@@ -418,6 +418,9 @@ angular
 				}
 				return files.get(fid);
 			},
+			uncacheObj: function(obj) {
+				return this._objcache().remove(obj);
+			},
 			_setUpWebSocket:function() {
 				if (! this.getUseWebSockets() ) { return; }
 				this.disconnect();
@@ -518,7 +521,7 @@ angular
 				// try { throw new Error(''); } catch(e) { console.error(e); }
 				if (this._get_token_queue === undefined) { this._get_token_queue = []; }
 				var tq = this._get_token_queue, this_ = this, d = u.deferred();
-				tq.push(d); 				
+				tq.push(d);
 				if (tq.length === 1) { 
 					// console.debug('tq === 1, calling -------------- get_token');
 					this._ajax('POST', 'auth/get_token', { app: this.store.get('app') })
@@ -616,17 +619,18 @@ angular
 							return d.resolve(results);
 						}
 						// otherwise we are getting full objects, so ...
-						d.resolve(_(results.data).map(function(dobj,id) {
+						var ds = _(results.data).map(function(dobj,id) {
 							// console.debug('getting id ', id);
 							if (cache.get(id)) { 
 								// console.debug('cached! ', id); 
-								return cache.get(id); 
+								return u.dresolve(cache.get(id)); 
 							}
 							// console.debug('not cached! ', id);
-							var model = this_._createModelForID(id);
-							model._deserialiseAndSet(dobj, true);
-							return model;
-						}));
+							var model = this_._createModelForID(id), dv_ = u.deferred();
+							model._deserialiseAndSet(dobj, true).then(function() {dv_.resolve(model); }).fail(dv_.reject);
+							return dv_.promise();
+						});
+						u.when(ds).then(d.resolve).fail(d.reject);
 					}).fail(function(err) { error(err); d.reject(err); });
 				return d.promise();
 			},
@@ -649,13 +653,13 @@ angular
 			///@arg {string} user : ID of user to get access control list for
 			///Gets the access control list of user, if specified, for this box or the box's entire ACL listings
 			///@then({userid: { read:{boolean},write:{boolean},owner:{boolean},control:{boolean}}) : Access control listings for this box organised by user
-			///@fail({error object}) : Failure 
+			///@fail({error object}) : Failure
 			getACL:function() {
 				var d = u.deferred();
 				this._ajax("GET", [this.getID(), 'get_acls'].join('/')).then(function(response) {
 					if (response.code == 200) {
 						return d.resolve(u.dict(response.data.map(function(x) { return [x.username, x.acl]; })));
-						// return d.resolve(response.data); 
+						// return d.resolve(response.data);
 					}
 					d.reject(d.message);
 				}).fail(d.reject);
@@ -663,7 +667,7 @@ angular
 			},
 			// handles updates from websockets the server
 			_diffUpdate:function(response) {
-				console.debug("diffUpdate > ", response);
+				// console.debug("diffUpdate > ", response);
 				var d = u.deferred(), this_ = this, latestVersion = response['@to_version'],
 				addedIDs  = _(response.data.added).keys(),
 				changedIDs = _(response.data.changed).keys(),
@@ -691,7 +695,7 @@ angular
 						// { prop : [ {sval1 - @type:""}, {sval2 - @type} ... ]
 						var changedprops = [];
 						var deleted = _(obj.deleted).map(function(vs, k) {
-							changedprops.push(k); 
+							changedprops.push(k);
 							var dd = u.deferred();
 							u.when(vs.map(function(v) {	return deserialiseValue(v, this_);	})).then(function(values) {
 								var newVals = _(cached_obj.get(k) || []).difference(values);
@@ -835,8 +839,8 @@ angular
 				} else {
 					// only during fetch
 					current = updatedObjIDs.slice();
-					news = [], died = [];
 					news = _(current).filter(function(fid) { return !(fid in olds); }); // difference(olds);
+					died = [];
 					// not used 
 					// console.info('warning: slow operation');
 					// died = _(_(olds).keys()).difference(current);
@@ -1147,7 +1151,7 @@ angular
 							try {
 								userMetadata = JSON.parse(userMetadata);
 								_(user).extend(userMetadata);
-								console.debug('user is now --' , user)
+								console.debug('user is now --' , user);
 							} catch(e) { console.error('error parsing json, no biggie', userMetadata);	}
 						}
 						u.log('logging in user >>', user);
@@ -1191,27 +1195,27 @@ angular
 				var d = u.deferred();
 				var this_ = this;
 				this._ajax('POST', 'auth/login', { username: username, password: password })
-					.then(function(l) { 
+					.then(function(l) {
 						var localUser =  _makeLocalUser(username);
 						this_.set({user_type:'local',username:username,password:password});
-						this_.trigger('login', localUser); 
-						d.resolve(localUser); 
+						this_.trigger('login', localUser);
+						d.resolve(localUser);
 					}).fail(function(l) { d.reject(l); });
 				return d.promise();
 			},
 			reconnect:function() {
 				if (this.get('user_type') === 'openid') {
 					u.log('reconnecting as openid ', this.get('username'));
-					return this.loginOpenID(this.get('username'))
+					return this.loginOpenID(this.get('username'));
 				}
 				u.log('reconnecting as local ', this.get('username'), this.get('password'));
-			 	return this.login(this.get('username'),this.get('password'));
+				return this.login(this.get('username'),this.get('password'));
 			},
 			disconnect:function() {
 				return this.attributes.boxes.map(function(b) { b.disconnect(); });
 			},
 			isConnected:function() {
-				return this.attributes.boxes.map(function(b) { 
+				return this.attributes.boxes.map(function(b) {
 					return { box: b.id, connected: b.isConnected() };
 				});
 			},
@@ -1255,7 +1259,7 @@ angular
 							}							
 							if (!u.name) {
 								var id = u["@id"];
-								if (id.indexOf('http') == 0) {
+								if (id.indexOf('http') === 0) {
 									id = id.split('/');
 									id = id[id.length-1];
 								}

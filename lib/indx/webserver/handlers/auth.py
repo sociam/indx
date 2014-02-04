@@ -19,7 +19,7 @@ import logging
 from indx.webserver.handlers.base import BaseHandler
 import indx.indx_pg2 as database
 from twisted.internet.defer import Deferred
-
+import json
 import urlparse
 import urllib
 from openid.store import memstore
@@ -91,26 +91,15 @@ class AuthHandler(BaseHandler):
             wbSession.reset()
             return self.return_unauthorized(request)
 
-        def win(response):
-            user, box = response
-            logging.debug("Login/keys request win.")
-            wbSession = self.get_session(request)
-            wbSession.setAuthenticated(True)
-            wbSession.setUser(user)
-            wbSession.setUserType("auth")
-            wbSession.setPassword("")
-            wbSession.limit_boxes = [box] # only allow access to this box
-            self.return_ok(request)
-
-
         # get and verify parameters
         signature = self.get_arg(request, "signature")
         key_hash = self.get_arg(request, "key_hash")
         algo = self.get_arg(request, "algo")
         method = self.get_arg(request, "method")
+        encpk2 = self.get_arg(request, "encpk2")
 
-        if signature is None or key_hash is None or algo is None or method is None:
-            logging.error("auth_keys error, signature, key, algo or method is None, returning unauthorized")
+        if signature is None or key_hash is None or algo is None or method is None or encpk2 is None:
+            logging.error("auth_keys error, signature, key, algo, method, or encpk2 is None, returning unauthorized")
             return fail()
 
         try:
@@ -121,7 +110,19 @@ class AuthHandler(BaseHandler):
 
         sessionid = request.getSession().uid
 
-        auth_keys(self.webserver.keystore, signature, key_hash, algo, method, sessionid).addCallbacks(win, fail)
+        def win(response):
+            user, password, box = response
+            logging.debug("Login/keys request win.")
+            wbSession = self.get_session(request)
+            wbSession.setAuthenticated(True)
+            wbSession.setUser(user)
+            wbSession.setUserType("auth")
+            wbSession.limit_boxes = [box] # only allow access to this box
+            wbSession.setPassword(password)
+
+            self.return_ok(request)
+
+        auth_keys(self.webserver.keystore, signature, key_hash, algo, method, sessionid, encpk2).addCallbacks(win, fail)
 
 
     def auth_logout(self, request, token):

@@ -18,7 +18,7 @@ import logging
 import json
 import uuid
 import copy
-from indx.crypto import generate_rsa_keypair
+from indx.crypto import generate_rsa_keypair, rsa_encrypt, sha512_hash, load_key, make_encpk2
 from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
 from indx.objectstore_types import Literal
@@ -44,7 +44,7 @@ class IndxSync:
 
     APPID = "INDXSync Client Model"
 
-    def __init__(self, root_store, database, url, keystore):
+    def __init__(self, root_store, database, url, keystore, webserver):
         """ Initialise with the root box and connection to the INDX db.
         
             root_store -- Connected objectstore to the root box.
@@ -58,6 +58,7 @@ class IndxSync:
         self.database = database
         self.url = url
         self.keystore = keystore
+        self.webserver = webserver
 
         # ids of objects we are watching - these are id of objects with types in the TYPES list
         # if their ids appear in the diffs that hit our observer, then we re-run the sync queries against this box
@@ -144,7 +145,7 @@ class IndxSync:
 #        self.root_store.unlisten(self.observer)
 
 
-    def link_remote_box(self, local_user, remote_address, remote_box, remote_token):
+    def link_remote_box(self, local_user, local_pass, remote_address, remote_box, remote_token, server_id):
         """ Link a remote box with this local box (either a root box, or just a non-root synced box).
 
             Requires the credentials of the remote box, and will exchange keys using these credentials, store public keys of each box in the synced boxes, and then not require the credentials again in future to sync.
@@ -153,93 +154,122 @@ class IndxSync:
         return_d = Deferred()
 
         local_keys = generate_rsa_keypair(3072)
+        local_encpk = make_encpk2(local_keys, local_pass)
+#        local_encpk = rsa_encrypt(load_key(local_keys['public']), local_pass)
 
-        def new_remote_key_cb(remote_keys):
-            logging.debug("IndxSync link_remote_box, new_remote_key_cb, remote_keys: {0}".format(remote_keys))
-            # NB: no "private" in remote_keys, that never leaves the remote box.
-            remote_keys = remote_keys['data'] # remove the Indx HTTP response padding
+        def ver_cb(ver):
 
-            link_uid = uuid.uuid1()
-            local_key_uid = uuid.uuid1()
-            remote_key_uid = uuid.uuid1()
-            status1_uid = uuid.uuid1()
-            status2_uid = uuid.uuid1()
+            def new_remote_key_cb(remote_keys):
+                logging.debug("IndxSync link_remote_box, new_remote_key_cb, remote_keys: {0}".format(remote_keys))
+                # NB: no "private" in remote_keys, that never leaves the remote box.
+                remote_keys = remote_keys['data'] # remove the Indx HTTP response padding
 
-            link_uri = "link-{0}".format(link_uid)
-            status1_uri = "status-{0}".format(status1_uid)
-            status2_uri = "status-{0}".format(status2_uid)
+                remote_encpk = remote_keys['encpk2']
+                if type(remote_encpk) != type(""):
+                    remote_encpk = json.dumps(remote_encpk) 
 
-            # objects get updated to local box, and then synced across to the other boxes once the syncing starts
-            new_objs = [
-                {   "@id": link_uri,
-                    "type": [ {"@value": NS_ROOT_BOX + "link"} ],
-                    "boxes": [ {"@id": "box-{0}".format(local_key_uid)}, # links to the objs below
-                               {"@id": "box-{0}".format(remote_key_uid)}, # links to the objs below
-                             ],
-                    "statuses": [ {"@id": status1_uri}, {"@id": status2_uri} ],
-                },
-                { "@id": status1_uri,
-                  "type": [ {"@value": NS_ROOT_BOX + "status"} ],
-                  "src-boxid": [ {"@value": remote_box} ],
-                  "src-server-url": [ {"@value": remote_address} ],
-                  "dst-boxid": [ {"@value": self.root_store.boxid} ],
-                  "dst-server-url": [ {"@value": self.url} ],
-                },
-                { "@id": status2_uri,
-                  "type": [ {"@value": NS_ROOT_BOX + "status"} ],
-                  "dst-boxid": [ {"@value": remote_box} ],
-                  "dst-server-url": [ {"@value": remote_address} ],
-                  "src-boxid": [ {"@value": self.root_store.boxid} ],
-                  "src-server-url": [ {"@value": self.url} ],
-                },
-                {   "@id": "box-{0}".format(local_key_uid),
-                    "type": [ {"@value": NS_ROOT_BOX + "box"} ],
-                    "server-url": [ {"@value": self.url } ],
-                    "box": [ {"@value": self.root_store.boxid} ],
-                    "key": [ {"@id": local_keys['public-hash']}], # links to the key objs below
-                },
-                {   "@id": "box-{0}".format(remote_key_uid),
-                    "type": [ {"@value": NS_ROOT_BOX + "box"} ],
-                    "server-url": [ {"@value": remote_address } ],
-                    "box": [ {"@value": remote_box} ],
-                    "key": [ {"@id": remote_keys['public-hash']}], # links to the key objs below
-                },
-                {   "@id": local_keys['public-hash'],
-                    "type": [ {"@value": NS_ROOT_BOX + "key"} ],
-                    "public-key": [ {"@value": local_keys['public']} ], # share the full public keys everywhere (private keys only in respective server's keystores)
-                    "public-hash": [ {"@value": local_keys['public-hash']} ], # share the full public keys everywhere (private keys only in respective server's keystores)
-                },
-                {   "@id": remote_keys['public-hash'],
-                    "type": [ {"@value": NS_ROOT_BOX + "key"} ],
-                    "public-key": [ {"@value": remote_keys['public']} ], # share the full public keys everywhere
-                    "public-hash": [ {"@value": remote_keys['public-hash']} ], # share the full public keys everywhere
-                },
-            ]
+                remote_serverid = remote_keys['serverid']
 
-            def local_added_cb(empty):
-                logging.debug("IndxSync link_remote_box, local_added_cb")
+                link_uid = uuid.uuid1()
+                local_key_uid = uuid.uuid1()
+                remote_key_uid = uuid.uuid1()
+                status1_uid = uuid.uuid1()
+                status2_uid = uuid.uuid1()
 
-                def ver_cb(ver):
-                    logging.debug("IndxSync link_remote_box, ver_cb {0}".format(ver))
-                    # add new objects to local store
+                link_uri = "link-{0}".format(link_uid)
+                status1_uri = "status-{0}".format(status1_uid)
+                status2_uri = "status-{0}".format(status2_uid)
 
-                    def added_cb(response):
+                # objects get updated to local box, and then synced across to the other boxes once the syncing starts
+                new_objs = [
+                    {   "@id": link_uri,
+                        "type": [ {"@value": NS_ROOT_BOX + "link"} ],
+                        "boxes": [ {"@id": "box-{0}".format(local_key_uid)}, # links to the objs below
+                                   {"@id": "box-{0}".format(remote_key_uid)}, # links to the objs below
+                                 ],
+                        "statuses": [ {"@id": status1_uri}, {"@id": status2_uri} ],
+                    },
+                    { "@id": status1_uri,
+                      "type": [ {"@value": NS_ROOT_BOX + "status"} ],
+                      "src-boxid": [ {"@value": remote_box} ],
+                      "src-server-url": [ {"@value": remote_address} ],
+                      "dst-boxid": [ {"@value": self.root_store.boxid} ],
+                      "dst-server-url": [ {"@value": self.url} ],
+                      "last-version-seen": [ {"@value": ver + 1} ], #we save this because we will push our whole box to it in a sec - it is incremented because the version is before we put this in
+                    },
+                    { "@id": status2_uri,
+                      "type": [ {"@value": NS_ROOT_BOX + "status"} ],
+                      "dst-boxid": [ {"@value": remote_box} ],
+                      "dst-server-url": [ {"@value": remote_address} ],
+                      "src-boxid": [ {"@value": self.root_store.boxid} ],
+                      "src-server-url": [ {"@value": self.url} ],
+                    },
+                    {   "@id": "box-{0}".format(local_key_uid),
+                        "type": [ {"@value": NS_ROOT_BOX + "box"} ],
+                        "server-url": [ {"@value": self.url } ],
+                        "server-id": [ {"@value": server_id } ],
+                        "box": [ {"@value": self.root_store.boxid} ],
+                        "key": [ {"@id": local_keys['public-hash']}], # links to the key objs below
+                    },
+                    {   "@id": "box-{0}".format(remote_key_uid),
+                        "type": [ {"@value": NS_ROOT_BOX + "box"} ],
+                        "server-url": [ {"@value": remote_address } ],
+                        "server-id": [ {"@value": remote_serverid } ],
+                        "box": [ {"@value": remote_box} ],
+                        "key": [ {"@id": remote_keys['public-hash']}], # links to the key objs below
+                    },
+                    {   "@id": local_keys['public-hash'],
+                        "type": [ {"@value": NS_ROOT_BOX + "key"} ],
+                        "public-key": [ {"@value": local_keys['public']} ], # share the full public keys everywhere (private keys only in respective server's keystores)
+                        "public-hash": [ {"@value": local_keys['public-hash']} ], # share the full public keys everywhere (private keys only in respective server's keystores)
+                    },
+                    {   "@id": remote_keys['public-hash'],
+                        "type": [ {"@value": NS_ROOT_BOX + "key"} ],
+                        "public-key": [ {"@value": remote_keys['public']} ], # share the full public keys everywhere
+                        "public-hash": [ {"@value": remote_keys['public-hash']} ], # share the full public keys everywhere
+                    },
+                ]
 
-                        def added_indx_cb(empty):
-                            # start syncing/connecting using the new key
-                            self.sync_boxes([link_uri], include_push_all = True).addCallbacks(return_d.callback, return_d.errback)
 
-                        self.database.save_linked_box(self.root_store.boxid).addCallbacks(added_indx_cb, return_d.errback)
 
-                    self.root_store.update(new_objs, ver).addCallbacks(added_cb, return_d.errback)
+                def update_cb(empty):
 
-                self.root_store._get_latest_ver().addCallbacks(ver_cb, return_d.errback)
+                    def diff_cb(diff):
 
-            # add the local key to the local store
-            self.keystore.put(local_keys, local_user, self.root_store.boxid).addCallbacks(local_added_cb, return_d.errback) # store in the local keystore
+                        def applied_cb(empty):
 
-        client = IndxClient(remote_address, remote_box, self.APPID, token = remote_token)
-        client.generate_new_key(local_keys).addCallbacks(new_remote_key_cb, return_d.errback)
+                            def encpk_cb(empty):
+
+                                def remote_added_cb(empty):
+
+                                    def local_added_cb(empty):
+                                        logging.debug("IndxSync link_remote_box, local_added_cb")
+
+                                        def added_indx_cb(empty):
+                                            # start syncing/connecting using the new key
+                                            self.sync_boxes([link_uri], include_push_all = True).addCallbacks(lambda empty: return_d.callback(remote_keys['public']), return_d.errback)
+
+                                        self.database.save_linked_box(self.root_store.boxid).addCallbacks(added_indx_cb, return_d.errback)
+
+                                    # add the local key to the local store
+                                    self.keystore.put(local_keys, local_user, self.root_store.boxid).addCallbacks(local_added_cb, return_d.errback) # store in the local keystore
+
+                                self.keystore.put({"public": remote_keys['public'], "private": "", "public-hash": remote_keys['public-hash']}, local_user, self.root_store.boxid).addCallbacks(remote_added_cb, return_d.errback)
+
+                            # don't save the local encpk2 here, only give it to the remote server.
+                            # save the remote encpk2
+                            self.database.save_encpk2(sha512_hash(remote_encpk), remote_encpk, remote_serverid).addCallbacks(encpk_cb, return_d.errback)
+
+                        client.apply_diff(diff).addCallbacks(applied_cb, return_d.errback)
+
+                    self.root_store.diff(0, None, "diff").addCallbacks(diff_cb, return_d.errback)
+
+                self.root_store.update(new_objs, ver, propagate = True).addCallbacks(update_cb, return_d.errback)
+
+            client = IndxClient(remote_address, remote_box, self.APPID, token = remote_token)
+            client.generate_new_key(local_keys, local_encpk, server_id).addCallbacks(new_remote_key_cb, return_d.errback)
+
+        self.root_store._get_latest_ver().addCallbacks(ver_cb, return_d.errback)
         return return_d
 
 
@@ -291,6 +321,7 @@ class IndxSync:
                             logging.debug("IndxSync sync_boxes model_cb: remote box")
                             # remote box
                             remote_server_url = box.getOneValue("server-url")
+                            remote_server_id = box.getOneValue("server-id")
                             remote_box = boxid
                         else:
                             logging.debug("IndxSync sync_boxes model_cb: local box")
@@ -299,64 +330,70 @@ class IndxSync:
 
                             local_key_hash = local_key_obj.getOneValue("public-hash")
 
-                    def keystore_cb(local_key):
-                        # start sync 
-                        clientauth = IndxClientAuth(remote_server_url, self.APPID)
 
-                        def authed_cb(empty):
-                            logging.debug("IndxSync sync_boxes authed_cb")
+                    def encpk2_cb(remote_encpk2):
 
-                            def token_cb(remote_token):
-                                logging.debug("IndxSync sync_boxes token_cb")
-                                client = IndxClient(remote_server_url, remote_box, self.APPID, client = clientauth.client, token = remote_token)
-                                
-                                def updated_cb(empty):
+                        def keystore_cb(local_key):
+                            # start sync 
+                            clientauth = IndxClientAuth(remote_server_url, self.APPID)
 
-                                    def pushed_cb(empty):
 
-                                        def observer(data):
+                            def authed_cb(empty):
+                                logging.debug("IndxSync sync_boxes authed_cb")
 
-                                            if data.get('action') == 'diff' and data.get('operation') == 'update':
-                                                diff = data['data']
-
-                                                def done_cb(empty):
-                                                    logging.debug("IndxSync updating from a websocket done.")
-                                                def err_cb(failure):
-                                                    logging.error("IndxSync updating from a websocket error: {0}".format(failure))
-
-                                                self.update_to_latest_version(client, remote_server_url, remote_box, diff_in = diff).addCallbacks(done_cb, err_cb)                                  
-                                            else:
-                                                logging.error("Sync: Unknown data message from WebSocket: {0}".format(data))
-
-                                        # auths and sets up listening for diffs, filtering them and passing them to the observer
-                                        if websocket is None:
-                                            wsclient = client.connect_ws(local_key['key']['private'], local_key_hash, observer) # open a new socket
-                                        else:
-                                            websocket.listen_diff(observer) # use an existing websocket
-
-                                        next_model(None)
-
-                                    if not include_push_all:
-                                        pushed_cb(None)
-                                        return
+                                def token_cb(remote_token):
+                                    logging.debug("IndxSync sync_boxes token_cb")
+                                    client = IndxClient(remote_server_url, remote_box, self.APPID, client = clientauth.client, token = remote_token, keystore = self.keystore)
                                     
-                                    # push the whole box to the remote box
-                                    def latest_cb(graph):
-                                        def ver_cb(version):
-                                            client.update_raw(version, graph.to_flat_json()).addCallbacks(pushed_cb, return_d.errback)
+                                    def updated_cb(empty):
 
-                                        client.get_version().addCallbacks(lambda resp: ver_cb(resp['data']), return_d.errback)
+                                        def pushed_cb(empty):
 
-                                    self.root_store.get_latest(render_json = False).addCallbacks(latest_cb, return_d.errback)
+                                            def observer(data):
 
-                                # compare local version to previous, and update one of them, or both
-                                self.update_to_latest_version(client, remote_server_url, remote_box).addCallbacks(updated_cb, return_d.errback)
+                                                if data.get('action') == 'diff' and data.get('operation') == 'update':
+                                                    diff = data['data']
 
-                            clientauth.get_token(remote_box).addCallbacks(token_cb, return_d.errback)
- 
-                        clientauth.auth_keys(local_key['key']['private'], local_key_hash).addCallbacks(authed_cb, return_d.errback)
+                                                    def done_cb(empty):
+                                                        logging.debug("IndxSync updating from a websocket done.")
+                                                    def err_cb(failure):
+                                                        logging.error("IndxSync updating from a websocket error: {0}".format(failure))
 
-                    self.keystore.get(local_key_hash).addCallbacks(keystore_cb, return_d.errback)
+                                                    self.update_to_latest_version(client, remote_server_url, remote_box, diff_in = diff).addCallbacks(done_cb, err_cb)                                  
+                                                else:
+                                                    logging.error("Sync: Unknown data message from WebSocket: {0}".format(data))
+
+                                            # auths and sets up listening for diffs, filtering them and passing them to the observer
+                                            if websocket is None:
+                                                wsclient = client.connect_ws(local_key['key']['private'], local_key_hash, observer, remote_encpk2, self.webserver) # open a new socket
+                                            else:
+                                                websocket.listen_remote(local_key['key']['private'], local_key_hash, observer, remote_encpk2) # use an existing websocket
+
+                                            next_model(None)
+
+                                        if not include_push_all:
+                                            pushed_cb(None)
+                                            return
+                                        
+                                        # push the whole box to the remote box
+                                        def latest_cb(graph):
+                                            def ver_cb(version):
+                                                client.update_raw(version, graph.to_flat_json()).addCallbacks(pushed_cb, return_d.errback)
+
+                                            client.get_version().addCallbacks(lambda resp: ver_cb(resp['data']), return_d.errback)
+
+                                        self.root_store.get_latest(render_json = False).addCallbacks(latest_cb, return_d.errback)
+
+                                    # compare local version to previous, and update one of them, or both
+                                    self.update_to_latest_version(client, remote_server_url, remote_box).addCallbacks(updated_cb, return_d.errback)
+
+                                clientauth.get_token(remote_box).addCallbacks(token_cb, return_d.errback)
+     
+                            clientauth.auth_keys(local_key['key']['private'], local_key_hash, remote_encpk2).addCallbacks(authed_cb, return_d.errback)
+
+                        self.keystore.get(local_key_hash).addCallbacks(keystore_cb, return_d.errback)
+
+                    self.database.lookup_encpk2(remote_server_id).addCallbacks(encpk2_cb, return_d.errback)
                     
                 model_graph.expand_depth(5, self.root_store).addCallbacks(expanded_cb, return_d.errback)
 
@@ -443,10 +480,10 @@ class IndxSync:
                             def status_cb(empty):
                                 self.root_store.store_commits(commits).addCallbacks(result_d.callback, result_d.errback)
 
-                            self.root_store.update([status_obj], new_version).addCallbacks(status_cb, result_d.errback)
+                            self.root_store.update([status_obj], new_version, propagate = False).addCallbacks(status_cb, result_d.errback)
 
                         # apply diff
-                        self.root_store.apply_diff(diff, commits.keys()).addCallbacks(applied_diff_cb, result_d.errback)
+                        self.root_store.apply_diff(diff, commits).addCallbacks(applied_diff_cb, result_d.errback)
                         
                     self.root_store._vers_without_commits(version, remote_latest_version, commits.keys()).addCallbacks(vers_get_cb, result_d.errback)
 

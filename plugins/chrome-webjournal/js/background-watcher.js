@@ -4,49 +4,86 @@
 (function() { 
     var OBJ_TYPE = localStorage.indx_webjournal_type || 'web-page-view';
     var OBJ_ID = localStorage.indx_webjournal_id || 'my-web-journal';
+    var tabthumbs = {};
 
     var app = angular.module('webjournal').factory('watcher', function(utils, client, entities, pluginUtils, $injector) {
         var u = utils, pu = pluginUtils;
+
         // window watcher
         var WindowWatcher = Backbone.Model.extend({
             defaults: { enabled:true },
             initialize:function(attributes) {
-                var this_ = this;
-                this.bind('user-action', function() {  
-                    // if (this_.get('enabled')) { 
-                        this_.handle_action.apply(this_, arguments); 
-                    // }  
-                });
+                var this_ = this, _fetching = [];
+                this._fetching_thumbnail = {};
+                this.bind('user-action', function() { this_.handle_action.apply(this_, arguments); });
+                var _trigger = function(windowid, tabid, tab) {
+                    var _done = function() {
+                       this_.trigger('user-action', { url: tab.url, title: tab.title, favicon:tab.favIconUrl, tabid:tab.id, windowid:windowid, thumbnail:tabthumbs[tab.url] });
+                    };
+                    var _thumbs = function() { 
+                        console.log("_thumbs", tab.url, tab.status, 'already have? ', tabthumbs[tab.url] !== undefined);
+                        if (tabthumbs[tab.url]) {  _done(); } 
+                        else if (tab.status == 'complete' && !_fetching[tab.url]) {
+                            // no thumb, loaded so let's capture
+                            console.log('getting thumb >> ');
+                            _fetching[tab.url] = true;
+                            this_._getThumbnail(windowid, tab.url).then(function(thumbnail_model) {
+                                console.log('continuation thumb ', thumbnail_model.slice(0,10)); // thumbnail_model.id, _(thumbnail_model.attributes).keys().length);
+                                delete _fetching[tab.url];
+                                _done();
+                            }).fail(function(bail) {  console.error('error with thumbnail, ', bail);  });
+                        } else {
+                            // loading, let's just start and try again
+                            // _done();
+                        }
+                    };
+                    if (tab) { return _thumbs(); }
+                    if (tabid) { 
+                        chrome.tabs.get(tabid, function(_tab) { 
+                            tab = _tab; 
+                            if (tab) { return _thumbs();  }
+                            this_.trigger('user-action', undefined);
+
+                        });
+                    } else {
+                        this_.trigger('user-action', undefined);
+                    }
+                };
                 // window created
                 // created new window, which has grabbed focus
                 chrome.windows.onCreated.addListener(function(w) {
                     if (w && w.id) {
                         // console.log('window created >> ', w);
-                        chrome.tabs.getSelected(w.id, function(tab) { this_.trigger('user-action', { url: tab.url, title: tab.title, favicon:tab.favIconUrl, tabid: tab.id, windowid:w.id });  });
+                        chrome.tabs.query({windowId:w.id, active:true}, function(tab) { 
+                            if (tab) { _trigger(w.id, undefined, tab);  } else { this_.trigger('user-action', undefined); }
+                        });
                     }
                 });
                 // removed window, meaning focus lost
                 chrome.windows.onRemoved.addListener(function(window) { this_.trigger('user-action', undefined); });
                 // window focus changed
                 chrome.windows.onFocusChanged.addListener(function(w) {
-                    if (w >= 0) {
-                        chrome.tabs.getSelected(w, function(tab) {
-                            // console.info('window focus-change W:', w, ', tab:', tab, 'tab url', tab.url);
-                            this_.trigger('user-action', tab !== undefined ? { url: tab.url, title: tab.title, favicon:tab.favIconUrl, tabid: tab.id, windowid:w.id } : undefined);
+                    if (w && w.id) {
+                        // console.log('window created >> ', w);
+                        chrome.tabs.query({windowId:w.id, active:true}, function(tab) { 
+                            if (tab) { _trigger(w.id, undefined, tab);  } else { 
+                                this_.trigger('user-action', undefined);  
+                            }
                         });
                     }
                 });
                 // tab selection changed
-                chrome.tabs.onSelectionChanged.addListener(function(tabid, info, t) {
-                    chrome.tabs.getSelected(info.windowId, function(tab) {
-                        this_.trigger('user-action', tab !== undefined ? { url: tab.url, title: tab.title, favicon:tab.favIconUrl, tabid:tab.id, windowid:info.windowId } : undefined);
-                    });
+                chrome.tabs.onActivated.addListener(function(activeInfo) {
+                    var tabId = activeInfo.tabId, windowId = activeInfo.windowId;
+                    _trigger(windowId, tabId);
+
                 });
                 // updated a tab 
                 chrome.tabs.onUpdated.addListener(function(tabid, changeinfo, tab) {
                     // console.info('tab_updated', t.url, changeinfo.status);
                     if (changeinfo.status == 'loading') { return; }
-                    this_.trigger('user-action', { url: tab.url, title: tab.title, tabid: tab.id, favicon:tab.favIconUrl, windowid:window.id });
+                    _trigger(tab.windowId, tabid);
+                    // this_.trigger('user-action', { url: tab.url, title: tab.title, tabid: tab.id, favicon:tab.favIconUrl, windowid:window.id });
                 });
 
                 this._init_history();
@@ -58,8 +95,43 @@
                     this_._attempt_reconnect();
                     // ignore.
                 });
-
                 window.watcher = this;
+            },
+            _getThumbnail : function(wid,url) {
+                // gets a thumbnail object
+                var box = this.box, id = 'thumbnail-' + url, 
+                d = u.deferred(), this_ = this;
+                if (this._fetching_thumbnail[url]) { 
+                    // console.log('already getting thumbnail >> ', url);
+                    this._fetching_thumbnail[url].then(function() { 
+                        d.resolve(tabthumbs[url]); 
+                    }).fail(d.reject);
+                } else {
+                    this._fetching_thumbnail[url] = d;
+                    chrome.tabs.captureVisibleTab(wid, { format:'png' }, function(dataUrl) {
+                        if (dataUrl) {
+                            u.resizeImage(dataUrl, 90, 90).then(function(smallerDataUri) {
+                                tabthumbs[url] = smallerDataUri;
+                                delete this_._fetching_thumbnail[url];
+                                d.resolve(smallerDataUri); 
+                            }).fail(function() { console.error('failed resizing '); d.reject(); });
+                        } else { 
+                            console.log('couldnt get thumbnail')
+                            d.resolve(); 
+                        }
+                        // box.getObj(id).then(function(model) { 
+                        //     // already have it? 
+                        //     delete this_._fetching_thumbnail[url];
+                        //     if (dataUrl !== undefined) {
+                        //         model.set(u.splitStringIntoChunksObj(dataUrl,150000));  // encodeURIComponent(dataUrl);
+                        //     }
+                        //     // console.log('thumbail model >> ', model.id, model.attributes);
+                        //     model.set({type:"thumbnail"});
+                        //     model.save().then(function() { d.resolve(model); }).fail(function() { console.error("ERROR SAVING THUMBNAIL ", url); d.reject();});
+                        // });
+                    });
+                }
+                return d.promise();
             },
             _attempt_reconnect:function() {
                 // very suspicious about this >_< .. TODO look at 
@@ -155,17 +227,17 @@
                 // if (tabinfo.favicon) { console.log('FAVICON ', tabinfo.favicon); }
                 setTimeout(function() { 
                     var now = new Date();
-                    if (this_.current_record !== undefined && url == this_.current_record.peek('what')) {
-                        // console.info('updating existing >>>>>>>>>>> ');
+                    if (this_.current_record !== undefined && this_.current_record.peek('what') && url == this_.current_record.peek('what').id) {
+                        console.info('updating existing >>>>>>>>>>> ', this_.current_record.peek('what').id);
                         this_.current_record.set({tend:now});
-                        this_.current_record.set(tabinfo);
+                        this_.current_record.peek('what').set(tabinfo);
                         this_._record_updated(this_.current_record).fail(function(bail) { 
                             console.error('error on save >> ', bail);
                             this_.trigger('connection-error', bail);
                         });
                     } else if (tabinfo) {
                         // different now
-                        // console.info('new record!');
+                        console.info('new record!');
                         if (this_.current_record) {
                             // finalise last one
                             this_.current_record.set({tend:now});
@@ -190,6 +262,8 @@
             },
             make_record:function(tstart, tend, url, title, tabinfo) {
                 // console.log('make record >> ', options, options.location);
+
+                if (!this.box) { return u.dreject(); }
                 var geowatcher = $injector.get('geowatcher'), d = u.deferred(), this_ = this;
                 this.getDoc(url,title,tabinfo).then(function(docmodel) { 
                     entities.activities.make1(this_.box, 
@@ -204,8 +278,16 @@
             getDoc:function(url,title,tabinfo) {
                 var d = u.deferred(), this_ = this;
                 entities.documents.getWebPage(this.box, url).then(function(results) {
-                    if (results && results.length) { return d.resolve(results[0]);  }
-                    return entities.documents.makeWebPage(this_.box, url, title, tabinfo);
+                    if (results && results.length) { 
+                        // console.log('updating page > and saving', results[0].id, tabinfo);
+                        if ( (!results[0].peek('thumbnail') && tabinfo.thumbnail) || 
+                             (!results[0].peek('favicon') && tabinfo.favicon) ) { 
+                            results[0].set(tabinfo); 
+                            return results[0].save().then(function() { d.resolve(results[0]); }).fail(d.reject);
+                        }
+                        return d.resolve(results[0]).fail(d.reject);
+                    }
+                    entities.documents.makeWebPage(this_.box, url, title, tabinfo).then(d.resolve).fail(d.reject);
                 }).fail(d.reject);
                 return d.promise();
             },
@@ -215,7 +297,9 @@
                 var this_ = this, box = this.box, store = this.get('store'), journal = this.get('journal'), 
                     current_record = this.current_record;
 
-                if (current_record) { return current_record.save(); } 
+                if (current_record) { 
+                    return u.when( current_record.save(), current_record.peek('what').save() );
+                } 
                 return u.dresolve();
 
                 // var signalerror = function(e) {  

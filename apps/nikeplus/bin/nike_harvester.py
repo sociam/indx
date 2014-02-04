@@ -301,8 +301,8 @@ class NikeHarvester:
                 interval_start = start + timedelta(minutes=minute) 
                 interval_end = interval_start+timedelta(minutes=1) 
                 data_point = {  "@id": "nikeplus_dp_{0}".format(uuid.uuid4()), 
-                                    "start": interval_start.isoformat(),
-                                    "end": interval_end.isoformat(),
+                                    "tstart": interval_start.isoformat(),
+                                    "tend": interval_end.isoformat(),
                                     "value": value,
                                     "timeseries": { "@id": self.ts_ids_by_type[mtype] }, 
                                     "http://www.w3.org/1999/02/22-rdf-syntax-ns#type": { "@id": self.rdf_types[mtype] } }

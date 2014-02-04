@@ -39,6 +39,10 @@
 				return d.promise();
 			};
 
+			var toQueryTime = function(date) {	
+				return date.toISOString().slice(0,-5);	// chop off the .000Z or queries don't like it
+			};
+
 			var slowQuery = function(box, properties) {
 				var d = u.deferred(), results = [];
 				box.getObj(box.getObjIDs()).then(function(objs) {
@@ -61,7 +65,7 @@
 				return box.query(properties);
 			};
 
-			var LATLNG_THRESH = 0.05;
+			var LATLNG_THRESH = 0.0005;
 
 			return {
 				toObj:to_obj,
@@ -70,33 +74,42 @@
 						return search(box, _(extras || {}).chain().clone().extend({'type':'location'}).value());
 					},
 					getByLatLng: function(box, lat, lng) {
+						u.assert(box, 'box is undefined');
+						u.assert(lat, 'lat is undefined');
+						u.assert(lng, 'lng is undefined');						
 						var d = u.deferred();						
 						this.getAll(box).then(function(results) { 
-							console.log('results >> ', results);
 							var dist = {}, resD = {};
 							results.map(function(result) {
 								if (!(result.peek('latitude') && result.peek('longitude') )) { return; }
-								dist[result.id] = Math.sqrt(Math.pow(result.peek('latitude') - lat,2) + Math.pow(result.peek('longitude') - lng, 2));
+								dist[result.id] = Math.max( 
+									Math.abs(result.peek('latitude') - lat), 
+									Math.abs(result.peek('longitude') - lng)
+								);  // Math.sqrt( Math.pow(result.peek('latitude') - lat,2) + Math.pow(result.peek('longitude') - lng, 2) );
+								// console.log(' dist > ', result.peek('latitude'), lat, result.peek('longitude'), lng, dist[result.id]);
 								resD[result.id] = result;
 							});
 							var kbyD = _(dist).keys();
 							kbyD.sort(function(a,b) { return dist[a] - dist[b]; });
-							console.log('kbyD > ', kbyD);
+							// console.log('kbyD > ', kbyD);
 							var hits = kbyD.filter(function(k) { return dist[k] < LATLNG_THRESH; }).map(function(k) { return resD[k]; });
-							console.info('hits >> ', hits);
+							console.info('filtered hits >> ', hits.length);
 							d.resolve(hits);
 						});
 						return d.promise();
 					},
-					getByMovesID: function(box, movesid) {
+					getByMovesId: function(box, movesid) {
 						return this.getAll(box, { moves_id: movesid });
 					},
 					getByName:function(box, name) {
 						return this.getAll(box, { name: name });
 					},
+					getByFoursquareId:function(box, fsqid) {
+						return this.getAll(box, { foursquare_id: fsqid });
+					},					
 					make:function(box, name, location_type, latitude, longitude, moves_id, otherprops) {
 						var d = u.deferred(), args = _(arguments).toArray();
-						var argnames = [undefined, undefined, 'location_type', 'latitude', 'longitude', 'moves_id'],
+						var argnames = [undefined, 'name', 'location_type', 'latitude', 'longitude', 'moves_id'],
 							zipped = u.zip(argnames, args).filter(function(x) { return x[0]; }),
 							argset = u.dict(zipped);
 						var id = 'location-'+u.guid(); // ['location', name || '', location_type && location_type !== 'unknown' ? location_type : '' , moves_id ? moves_id : '', latitude.toString(), longitude.toString() ].join('-');
@@ -104,7 +117,7 @@
 							model.set(argset);
 							if (otherprops && _(otherprops).isObject()) { model.set(otherprops); }
 							model.set({'type':'location'});
-							console.log('SAVING LOCATION >>>>>>>>>>>>>>> ', model);
+							// console.log('SAVING LOCATION >>>>>>>>>>>>>>> ', model);
 							model.save().then(function() { d.resolve(model); }).fail(d.reject);
 						});
 						return d.promise();
@@ -112,8 +125,59 @@
 				},
 				activities:{
 					getAll:function(box, extras) {
-						return search(box, _(extras).chain().clone().extend({type:'Activity'}));
+						return search(box, _(extras).chain().clone().extend({type:'activity'}).value());
 					},
+					getByActivityType:function(box, tstart, tend, activity_types) {
+						if (!_.isArray(activity_types)) { activity_types=[activity_types]; }
+						var query = ({
+							'$and':[ 
+							{type:'activity'},
+							{'$or': activity_types.map(function(atype) { return {'activity': atype}; })}
+						]});
+						if (tstart) { query.$and.push({'tstart': {'$ge': toQueryTime(tstart) }}); }
+						if (tend) { query.$and.push({'tstart': {'$le': toQueryTime(tend)}}); }
+						console.log('issuing query ... ', JSON.stringify(query));
+						return search(box, query);
+					},
+					getByTimeseriesPointsPerMinute:function(box, ts, tstart, tend) {
+						// ts in {'fitbit_steps_ts', 'fitbit_calories_ts', 'fitbit_distance_ts', 'fitbit_floors_ts', 'fitbit_elevation_ts', 'nikeplus_steps_ts', 'nikeplus_calories_ts', 'nikeplus_fuel_ts', 'nikeplus_stars_ts'}
+						if (ts && tstart && tend) {
+							var query = ( {'$and': [ 
+									{'timeseries':ts}, 
+									{'tstart':{'$ge':toQueryTime(tstart)} },
+									{'tend':{'$le':toQueryTime(tend)} }
+								] } );
+							console.log('issuing query ... ', JSON.stringify(query));
+							return search(box, query);
+						}
+						return u.dreject('must specify all arguments: ts, tstart, tend');
+					},
+					getFitbitStepsPerMin:function(box, tstart, tend) {
+						return this.getByTimeseriesPointsPerMinute(box, 'fitbit_steps_ts', tstart, tend);
+					},
+					getFitbitCaloriesPerMin:function(box, tstart, tend) {
+						return this.getByTimeseriesPointsPerMinute(box, 'fitbit_calories_ts', tstart, tend);
+					},
+					getFitbitDistancePerMin:function(box, tstart, tend) {
+						return this.getByTimeseriesPointsPerMinute(box, 'fitbit_distance_ts', tstart, tend);
+					},
+					getFitbitFloorsPerMin:function(box, tstart, tend) {
+						return this.getByTimeseriesPointsPerMinute(box, 'fitbit_floors_ts', tstart, tend);
+					},
+					getFitbitElevationPerMin:function(box, tstart, tend) {
+						return this.getByTimeseriesPointsPerMinute(box, 'fitbit_elevation_ts', tstart, tend);					},
+					getNikeStepsPerMin:function(box, tstart, tend) {
+						return this.getByTimeseriesPointsPerMinute(box, 'nikeplus_steps_ts', tstart, tend);
+					},					
+					getNikeCaloriesPerMin:function(box, tstart, tend) {
+						return this.getByTimeseriesPointsPerMinute(box, 'nikeplus_calories_ts', tstart, tend);
+					},					
+					getNikeFuelPerMin:function(box, tstart, tend) {
+						return this.getByTimeseriesPointsPerMinute(box, 'nikeplus_fuel_ts', tstart, tend);
+					},					
+					getNikeStarsPerMin:function(box, tstart, tend) {
+						return this.getByTimeseriesPointsPerMinute(box, 'nikeplus_stars_ts', tstart, tend);
+					},					
 					make1:function(box, activity_type, whom, from_t, to_t, distance, steps, calories, waypoints, otherprops) {
 						var d = u.deferred(), args = _(arguments).toArray();
 						var id = ['activity', whom && whom.id || '', activity_type || '', from_t.valueOf().toString(), to_t.valueOf().toString()].join('-');
@@ -177,7 +241,19 @@
 						});
 						return d.promise();
 					},
-					getTweet:undefined,
+					getMyTweets:function(box, tstart, tend) {
+						if (tstart && tend) {
+							var query = ( { '$and': [
+									{'type':'post'},
+									{'tweet_user_id_indx':'twitter_user_me'},
+									{'created_at':{'$ge':toQueryTime(tstart)}},
+									{'created_at':{'$le':toQueryTime(tend)}}
+									] } );
+							console.log('issuing query ... ', JSON.stringify(query));
+							return search(box, query);
+						}
+						return u.dreject('must specify all arguments: tstart, tend');
+					},
 					getInstagram:undefined,
 					getFBMessage:undefined,
 					getFBWallPost:undefined,
