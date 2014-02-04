@@ -73,6 +73,11 @@ class Graph:
         if id not in self.objects_by_id:
             resource = Resource(id)
             self.add(resource, root=root)
+
+        # e.g. if the from_rows tried to add it as a root object, we should do that here, it might already be added as a non-root if it was in the 'object' column
+        if root and id not in self.root_object_ids:
+            self.root_object_ids.append(id)
+
         return self.objects_by_id[id]
 
     def objects(self):
