@@ -32,15 +32,17 @@ angular.module('loomp',['indx'])
 		$scope.saveDocument = function (editDoc) {
 			//TODO: check if doc with title exists, then change title to [title]([index])
 			$scope.editDoc.save().then(function(){
-				if(state.isFirstDocument){
-					app.save('documents',[].concat([$scope.editDoc])).then(function () {
+				if(state.isFirstDocument){ // save new and create list
+					app.save('documents',[$scope.editDoc]).then(function () {
+						state.isFirstDocument = false;
 						loadDocumentList(box);
 					});
-				} else if(app.get('documents').indexOf(editDoc) == -1){
-					app.save('documents', app.get('documents').concat([$scope.editDoc])).then(function () {
+				} else if(app.get('documents').indexOf(editDoc) == -1){ // save new and add to list
+					app.save('documents', [$scope.editDoc].concat(app.get('documents'))).then(function () {
+						state.isFirstDocument = false;
 						loadDocumentList(box);
 					});
-				} else{
+				} else{ // update existing
 					console.log('already in doclist, saved only');
 				}
 			});
@@ -50,7 +52,6 @@ angular.module('loomp',['indx'])
 			//TODO: check if saved, ask for save before close
 			sa(function() { 
 				$scope.editDoc = doc;
-				console.log(doc);
 				tinyMCE.activeEditor.setContent(doc.attributes.content.toString()+' ');
 			});
 		};
@@ -81,39 +82,105 @@ angular.module('loomp',['indx'])
 		});
 
 		window.$scope = $scope;
-	}).directive('uiTinymce', function() {
+	}).value('uiTinymceConfig', {
+		mode : 'textareas', 
+		theme : 'modern',
+		relative_urls: false,
+		plugins: ["advlist autolink link image lists charmap print preview hr anchor pagebreak spellchecker",
+        	"searchreplace wordcount visualblocks visualchars code fullscreen insertdatetime media nonbreaking",
+        	"save table contextmenu directionality template paste textcolor"],
+		toolbar: "insertfile undo redo | styleselect | bold italic | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | l      ink image | print preview media fullpage | forecolor backcolor emoticons", 
+		width : 980,
+		height : 500
+		})
+  .directive('uiTinymce', ['uiTinymceConfig', function (uiTinymceConfig) {
+    uiTinymceConfig = uiTinymceConfig || {};
+    var generatedIds = 0;
     return {
-        require: 'ngModel',
-        link: function(scope, element, attrs, ngModel) {
-            
-            element.tinymce({
-                // Location of TinyMCE script
-                script_url: 'js/tinymce/tiny_mce.js',
-
-                // General options
-                mode : 'textareas', 
-				theme : 'ribbon',
-				plugins : 'bestandsbeheer,tabfocus,advimagescale,image_tools,embed,tableextras,style,table,inlinepopups,searchreplace,contextmenu,paste,wordcount,advlist',
-				inlinepopups_skin : 'ribbon_popup',
-				width : "985",
-				height : "800",
-
-                // Change from local directive scope -> "parent" scope
-                // Update Textarea and Trigger change event
-                // you can also use handle_event_callback which fires more often
-                onchange_callback: function(e) {
-                    if (this.isDirty()) {
-                        this.save();
-
-                        // tinymce inserts the value back to the textarea element, so we get the val from element (work's only for textareas)
-                        ngModel.$setViewValue(element.val());
-                        $scope.$apply();
-                        
-                        return true;
-                    }
-                }
-            });
-
+      require: 'ngModel',
+      link: function (scope, elm, attrs, ngModel) {
+        var expression, options, tinyInstance,
+          updateView = function () {
+            ngModel.$setViewValue(elm.val());
+            if (!scope.$root.$$phase) {
+              scope.$apply();
+            }
+          };
+        // generate an ID if not present
+        if (!attrs.id) {
+          attrs.$set('id', 'uiTinymce' + generatedIds++);
         }
-    }
-});
+
+        if (attrs.uiTinymce) {
+          expression = scope.$eval(attrs.uiTinymce);
+        } else {
+          expression = {};
+        }
+        options = {
+          // Update model when calling setContent (such as from the source editor popup)
+          setup: function (ed) {
+            var args;
+            ed.on('init', function(args) {
+              ngModel.$render();
+            });
+            // Update model on button click
+            ed.on('ExecCommand', function (e) {
+              ed.save();
+              updateView();
+            });
+            // Update model on keypress
+            ed.on('KeyUp', function (e) {
+              ed.save();
+              updateView();
+            });
+            // Update model on change, i.e. copy/pasted text, plugins altering content
+            ed.on('SetContent', function (e) {
+              if(!e.initial){
+                ed.save();
+                updateView();
+              }
+            });
+            if (expression.setup) {
+              scope.$eval(expression.setup);
+              delete expression.setup;
+            }
+          },
+          mode: 'exact',
+          elements: attrs.id
+        };
+        // extend options with initial uiTinymceConfig and options from directive attribute value
+        angular.extend(options, uiTinymceConfig, expression);
+        setTimeout(function () {
+          //tinymce.baseURL = "https://indx.local:8211/apps/loomp/html/js/tinymce/4";
+          tinymce.init(options);
+        });
+
+
+        ngModel.$render = function() {
+          if (!tinyInstance) {
+            tinyInstance = tinymce.get(attrs.id);
+          }
+          if (tinyInstance) {
+            tinyInstance.setContent(ngModel.$viewValue || '');
+          }
+        };
+      }
+    };
+  }]).filter('filterDocs', function(){
+    
+	    return function(items, searchText){
+	        
+	        var arrayToReturn = [];
+	        if(searchText){
+	        	for (var i=0; i<items.length; i++){
+		            if (angular.lowercase(items[i].attributes.title[0]).indexOf(angular.lowercase(searchText)) != -1) {
+		                arrayToReturn.push(items[i]);
+		            }
+	        	}
+	        } else{
+	        	arrayToReturn = items;
+	        }
+	        
+	        return arrayToReturn;
+	    };
+	});

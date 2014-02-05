@@ -1,8 +1,0 @@
-#te-panel, #te-wrapper, #te-table, #te-info { margin: 0; padding: 0 }
-#te-panel { position:absolute; background-color:#fff; padding: 0;border:1px solid #868686;}
-#te-table-border-color { background-color:#a9a9a9; }
-#te-table { /*border-collapse: separate;border-spacing: 2px; */background:#fff;}
-#te-table td { font-size:1px;line-height:1px; overflow:hidden;width:12px; height:14px; cursor:default;}
-#te-table td.blank { background-color: #fff;  border:1px solid #646464;}
-#te-table td.fill { background-color: #fff; border: 1px solid #EF4810;}
-#te-info { font:11px Tahoma; text-align:center;cursor:pointer;border-top: 1px solid #868686; margin:3px;padding-top:3px;}
