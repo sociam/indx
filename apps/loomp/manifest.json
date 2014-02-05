@@ -1,0 +1,14 @@
+{
+	"name": "loomp",
+	"version": 0.1,
+	"description": "semantic text editor",
+	"icons": {
+		"128": "icon.png"
+	},
+	"author": [
+		{
+			"name": "Markus Luczak-Roesch",
+			"email": "mail@markus-luczak.de"
+		}
+	]
+}

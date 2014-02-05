@@ -1,0 +1,28 @@
+div.media_embed{
+    background-color: #fff; 
+    background-position: 50% 50%;
+    background-repeat:no-repeat;
+    border: 1px solid #ccc;
+    overflow:hidden;
+    position:relative;
+}
+div.media_embed * { display:none !important;width:1px;height:1px;position:absolute;top:-1000px;left:-1000px;}
+div.media_embed object { display:none !important;visibility:hidden !important;width:1px;height:1px;}
+div.media_embed embed { display:none !important;visibility:hidden !important;width:1px;height:1px;}
+div.media_embed iframe { display:none !important;visibility:hidden !important;width:1px !important;height:1px !important;}
+div.media_embed small { display:none !important;visibility:hidden !important;}
+div.media_embed a { display:none !important;visibility:hidden !important;}
+
+div.unknown_media{background-image:url("../img/embed.png")}
+div.youtube{background-image:url("../img/youtube.jpg")}
+div.vimeo{background-image:url("../img/vimeo.jpg");background-color: #FCFFBA !important;}
+div.google_maps{background-image:url("../img/google_maps.png")}
+div.flickr{background-image:url("../img/flickr.gif")}
+div.twitter{background-image:url("../img/twitter.png")}
+div.geostart{background-image:url("../img/geostart.jpg")}
+div.slideshare{background-image:url("../img/slideshare.gif")}
+div.coveritlive{background-image:url("../img/coveritlive.png")}
+div.uitzending_gemist{background-image:url("../img/uitzending_gemist.png");background-color: #F7F7F7 !important;}
+div.flash_audio{background-image:url("../img/mp3.png");border:none}
+div.flash_video{background-image:url("../img/video.png");background-color:#000;border:none}
+
