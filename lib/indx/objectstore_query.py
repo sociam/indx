@@ -172,22 +172,22 @@ class ObjectStoreQuery:
         self.table_counter += 1
 
         params = []
-        query = "SELECT j_triples_{0}.subject".format(self.table_counter)
+        query = "SELECT j_triples_{0}.subject_uuid".format(self.table_counter)
         query += " FROM wb_latest_vers AS j_latest_{0} ".format(self.table_counter)
         query += " JOIN wb_triples j_triples_{0} ON j_triples_{0}.id_triple = j_latest_{0}.triple".format(self.table_counter)
 
         if predicate is not None:
             # join predicate value
-            query += " JOIN ix_v_short_strings j_predicate_{0} ON j_predicate_{0}.id_string = j_triples_{0}.predicate".format(self.table_counter)
+            query += " JOIN wb_strings j_predicate_{0} ON j_predicate_{0}.uuid = j_triples_{0}.predicate_uuid".format(self.table_counter)
 
         if obj is not None:
             # join object value
             query += " JOIN wb_objects j_objects_{0} ON j_objects_{0}.id_object = j_triples_{0}.object".format(self.table_counter)
-            query += " JOIN ix_v_short_strings j_object_{0} ON j_object_{0}.id_string = j_objects_{0}.obj_value".format(self.table_counter)
+            query += " JOIN wb_strings j_object_{0} ON j_object_{0}.uuid = j_objects_{0}.obj_value_uuid".format(self.table_counter)
 
         wheres = []
         if subject is not None:
-            query += " JOIN ix_v_short_strings j_subject_{0} ON j_subject_{0}.id_string = j_triples_{0}.subject".format(self.table_counter)
+            query += " JOIN wb_strings j_subject_{0} ON j_subject_{0}.uuid = j_triples_{0}.subject_uuid".format(self.table_counter)
             wheres.append("j_subject_{1}.string {0} %s".format(subject_operator, self.table_counter))
             if subject != "%s":
                 params.append(subject)
@@ -225,27 +225,35 @@ class ObjectStoreQuery:
         logging.debug("ObjectStoreQuery to_sql, q: {0}, predicate_filter: {1}".format(q, predicate_filter))
 
         # look through the constraints of the query
-        wheres, params = self.process_predicates(q)
+        query, params = self.process_predicates(q)
 
         # filter the predicates returned by the query
+        where = ""
         if predicate_filter is not None:
-            wheres = "{0} AND wb_v_latest_triples_with_ids.predicate = ANY(%s)".format(wheres)
+            where = " WHERE j_predicate.string = ANY(%s)"
             params.extend([predicate_filter])
 
-        # same order as table
-        selects = [
-            "wb_v_latest_triples_with_ids.triple_order",
-            "wb_v_latest_triples_with_ids.subject",
-            "wb_v_latest_triples_with_ids.predicate",
-            "wb_v_latest_triples_with_ids.obj_value",
-            "wb_v_latest_triples_with_ids.obj_type",
-            "wb_v_latest_triples_with_ids.obj_lang",
-            "wb_v_latest_triples_with_ids.obj_datatype"
-        ]
+        if len(query) > 0:
+            theselect_cte = "WITH theselect AS ({0}) ".format(query)
+            theselect_join = "JOIN theselect ON theselect.subject_uuid = j_subject.uuid"
+        else:
+            theselect_cte = ""
+            theselect_join = ""
 
-        sql = "SELECT DISTINCT {0} FROM wb_v_latest_triples_with_ids ".format(", ".join(selects))
-        if len(wheres) > 0:
-            sql += " WHERE wb_v_latest_triples_with_ids.id_subject IN {0}".format(wheres)
+        sql = """{0} SELECT wb_latest_vers.triple_order, j_subject.string AS subject, 
+            j_predicate.string AS predicate, j_object.string AS obj_value, 
+            wb_objects.obj_type, wb_objects.obj_lang, wb_objects.obj_datatype, 
+            j_subject.uuid AS subject_uuid
+           FROM wb_latest_vers
+           JOIN wb_triples ON wb_triples.id_triple = wb_latest_vers.triple
+           JOIN wb_objects ON wb_objects.id_object = wb_triples.object
+           JOIN wb_strings j_subject ON j_subject.uuid = wb_triples.subject_uuid
+           JOIN wb_strings j_predicate ON j_predicate.uuid = wb_triples.predicate_uuid
+           JOIN wb_strings j_object ON j_object.uuid = wb_objects.obj_value_uuid
+            {1}
+            {2}
+          ORDER BY wb_latest_vers.triple_order, j_object.uuid, j_object.chunk;
+        """.format(theselect_cte, theselect_join, where)
 
         logging.debug("ObjectStoreQuery to_sql, sql: {0}, params: {1}".format(sql, params))
 

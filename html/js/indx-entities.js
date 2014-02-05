@@ -136,7 +136,7 @@
 						]});
 						if (tstart) { query.$and.push({'tstart': {'$ge': toQueryTime(tstart) }}); }
 						if (tend) { query.$and.push({'tstart': {'$le': toQueryTime(tend)}}); }
-						console.log('issuing query ... ', JSON.stringify(query));
+						console.log('ENTITIES query ... ', JSON.stringify(query));
 						return search(box, query);
 					},
 					getByTimeseriesPointsPerMinute:function(box, ts, tstart, tend) {
