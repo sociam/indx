@@ -53,6 +53,7 @@ angular.module('loomp',['indx'])
 			sa(function() { 
 				$scope.editDoc = doc;
 				tinyMCE.activeEditor.setContent(doc.attributes.content.toString()+' ');
+				loadAnnotationList();
 			});
 		};
 
@@ -64,6 +65,11 @@ angular.module('loomp',['indx'])
 			}
 			var list = [].concat(app.get('documents'));
 			sa(function() { $scope.docList = list;});
+		};
+
+		var loadAnnotationList = function () {
+			console.log(tinyMCE.activeEditor.dom.select('.annotation'));
+			sa(function() { $scope.annoList = tinyMCE.activeEditor.dom.select('.annotation'); });
 		};
 
 		// watches for login or box changes
@@ -86,10 +92,10 @@ angular.module('loomp',['indx'])
 		mode : 'textareas', 
 		theme : 'modern',
 		relative_urls: false,
-		plugins: ["advlist autolink link image lists charmap print preview hr anchor pagebreak spellchecker",
+		plugins: ["loomp advlist autolink link image lists charmap print preview hr anchor pagebreak spellchecker",
         	"searchreplace wordcount visualblocks visualchars code fullscreen insertdatetime media nonbreaking",
         	"save table contextmenu directionality template paste textcolor"],
-		toolbar: "insertfile undo redo | styleselect | bold italic | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | l      ink image | print preview media fullpage | forecolor backcolor emoticons", 
+		toolbar: "insertfile undo redo | styleselect | bold italic | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | l      ink image | print preview media fullpage | forecolor backcolor loomp", 
 		width : 980,
 		height : 500
 		})
@@ -174,6 +180,23 @@ angular.module('loomp',['indx'])
 	        if(searchText){
 	        	for (var i=0; i<items.length; i++){
 		            if (angular.lowercase(items[i].attributes.title[0]).indexOf(angular.lowercase(searchText)) != -1) {
+		                arrayToReturn.push(items[i]);
+		            }
+	        	}
+	        } else{
+	        	arrayToReturn = items;
+	        }
+	        
+	        return arrayToReturn;
+	    };
+	}).filter('filterAnno', function(){
+    
+	    return function(items, searchAnno){
+	        
+	        var arrayToReturn = [];
+	        if(searchAnno){
+	        	for (var i=0; i<items.length; i++){
+		            if (angular.lowercase(items[i].attributes.title.value).indexOf(angular.lowercase(searchAnno)) != -1) {
 		                arrayToReturn.push(items[i]);
 		            }
 	        	}
