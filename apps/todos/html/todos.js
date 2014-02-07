@@ -119,12 +119,16 @@ angular
 		var remove = function (list) {
 			var dfd = $.Deferred();
 			list.isDeleting = true;
-			list.destroy().then(function () {
-				var lists = [].concat(app.get('lists'));
-				lists.splice(lists.indexOf(list), 1);
-				app.save('lists', lists).then(function () {
-					factory.update();
-					dfd.resolve();
+			$.when.apply(null, _.map(list.get('todos'), function (todo) {
+				return todo.destroy();
+			})).then(function () {
+				list.destroy().then(function () {
+					var lists = [].concat(app.get('lists'));
+					lists.splice(lists.indexOf(list), 1);
+					app.save('lists', lists).then(function () {
+						factory.update();
+						dfd.resolve();
+					});
 				});
 			});
 			return dfd;
@@ -200,7 +204,7 @@ angular
 					order = prevOrder + 1;
 				}
 
-				todo.set({ title: [''], order: [order] });
+				todo.set({ title: [''], order: [order], completed: [false] });
 				newTodo = todo;
 				factory.update();
 				dfd.resolve(todo);
