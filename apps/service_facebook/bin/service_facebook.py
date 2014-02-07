@@ -22,7 +22,7 @@ from datetime import timedelta
 from threading import Timer
 from indxclient import IndxClient, IndxClientAuth
 from twisted.internet.defer import Deferred
-
+from twisted.internet import reactor, threads
 
 
 FACEBOOK_APP_ID = "415327441930292"
@@ -48,7 +48,7 @@ class FacebookService:
         logging.debug('Facebook Service - Checking if token is not expired')
         self.token_active = False
         if self.check_if_token_not_expired():
-            logging.debug('Facebook Service - Token is active still. Great News!')
+            logging.info('Facebook Service - Token is active still. Great News!')
             self.token_active = True
 
     def get_indx(self):

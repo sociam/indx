@@ -240,7 +240,7 @@ angular
 		};
 
 		$scope.setConfig = function(config) { 
-			console.info('i got a config ', config);
+			console.info('Got a config: ', config);
 			
 			if(config['box']){
 				//long token needs to be set first...
@@ -257,11 +257,11 @@ angular
 
 			s._ajax('GET', 'apps/service_facebook/api/set_config', { config: JSON.stringify(config) }).then(function(x) { 
 				console.log('success ', x);
-				status('configuration chage committed');
+				status('Configuration committed');
 				window.retval = x;
 			}).fail(function(e) {
 				console.error(e);
-				status('error committing change ' + e.toString());
+				status('Error committing change ' + e.toString());
 			});
 			return true;
 		};

@@ -112,6 +112,7 @@ class instagramServiceController:
         api = InstagramAPI(client_id=self.client_id, client_secret=self.client_secret, redirect_uri=self.redirect_uri)
         access_token = api.exchange_code_for_access_token(self.access_token_code)
         #print "got an access token: "+str(access_token[0])
+        #print access_token
         access_token_timestamp = str(datetime.datetime.now())
         instagram_username = access_token[1]['username']
         instagram_user_id = access_token[1]['id']

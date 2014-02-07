@@ -74,20 +74,24 @@ def run(args):
         # print(keyring.util.platform_.data_root())
         config = keyring.get_password("INDX", "INDX_Facebook_App")
         #print "Didnt match any args value, working with config of: "+str(config)
-        logging.debug("Facebook run.py - running the app with: {0}".format(config));
-        config = json.loads(config)
-        config['address'] = args['server']
-        logging.debug("Facebook run.py - Adding INDX address to config, new config loaded: {0}".format(config));
-        #test run with configs
-        #twitter_service = TwitterService(config)
+        logging.info("Facebook run.py - running the app with: {0}".format(config));
+        try:
+            config = json.loads(config)
+            config['address'] = args['server']
+            logging.info("Facebook run.py - Added INDX address to config, new config loaded: {0}".format(config));
+            #test run with configs
+            #twitter_service = TwitterService(config)
 
-        #only proceed with run IF the long token has been acheived.
-        token_type = config['facebook_auth_status']
+            #only proceed with run IF the long token has been acheived.
+            token_type = config['facebook_auth_status']
 
-        if "Long" in token_type:
-            service_controler = FacebookServiceController(config)
-            service_controler.load_service_instance()
-            time.sleep(2)
+            if "Long" in token_type:
+                service_controler = FacebookServiceController(config)
+                service_controler.load_service_instance()
+                time.sleep(2)
+        except:
+            logging.info('Failed to Run for some reason (see error below)')
+            print sys.exc_info()
 
 def get_config(args):
     #print "Getting config from keychain..."

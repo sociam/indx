@@ -39,6 +39,8 @@ class instagramService:
         self.batch_users = []
         self.feed_count = 0
         self.feed_count_total=0
+        self.instagram_username = config['instagram_username']
+        self.instagram_user_id = config['instagram_user_id']
 
     def stop_and_exit_service(self):
         logging.debug('instagram Service - HARD QUIT - instagram SERVICE')
@@ -158,51 +160,160 @@ class instagramService:
         print data
 
     def find_followers(self, userid):
+
+        #first do a lookup and see if the latest set if followers has allready been found
         follower_d = Deferred()
-        print "getting followers of user: "+str(userid)
-        followed_by = self.api.user_followed_by(userid)
 
-        current_timestamp = str(datetime.now())
-        uniq_id = "followers_at_"+current_timestamp
-        followed_by_objs = {"@id":uniq_id, "app_object": appid, "timestamp":current_timestamp, "followed_by_list": followed_by}
-        # print followed_by_objs
-        #for friend in friends_list:
-            #print friend
-        #now append the results
-        def update_cb(re):
-            logging.debug("network harvest async worked {0}".format(re))
-            follower_d.callback(True)
+        def found_cb(results):
+            friends_number = 0
+            followers_number = 0
+            #let's see if the object has some nice things in it.
+            try:
+                config_returned = results['data']['service_instagram_config']
+                friends_number = int(config_returned['friends_list_size'][0]['@value'])
+                followers_number = int(config_returned['followers_list_size'][0]['@value'])
+                logging.info('Found the instagram Config Object.')
+            except:
+                #print sys.exc_info()
+                pass
 
-        def update_cb_fail(re):
-            logging.error("network harvest async failed {0}".format(re))
-            follower_d.errback
 
-        self.insert_object_to_indx(followed_by_objs).addCallbacks(update_cb, update_cb_fail)
+            followed_by = self.api.user_followed_by(userid)[0]
+            #print "followed_by length: "+str(len(followed_by))
+            #print str(followed_by)
+            #see if the number is different, if it is, then update.. could be nicer than this, but for now, it will work (ish)
+            if (len(followed_by) != followers_number) or (followers_number == 0): 
+
+                followers_number = len(followed_by)
+                objects_to_insert = []
+                current_timestamp = str(time.time()).split(".")[0] #str(datetime.now())
+                timestamp = str(datetime.now().isoformat('T')).split(".")[0]
+                uniq_id = "instagram_follower_network_for_user_me" #+self.instagram_username
+                followed_by_obj = {"@id":uniq_id, "app_object": appid, "instagram_username":self.instagram_username, "instagram_user_id":self.instagram_user_id, "timestamp":timestamp, "followed_by_count": len(followed_by)}
+
+                followers_ids = []
+                for follower in followed_by:
+                    #print follower.username
+                    uniq_id = "instagram_user_"+str(follower.username)
+                    follower_obj = {"@id":uniq_id, "app_object": appid, "instagram_username":str(follower.username), "timestamp":timestamp}
+                    objects_to_insert.append(follower_obj)
+                    #we can add this to the followed_by_obj later
+                    followers_ids.append(uniq_id)
+
+                #link the followers for me
+                followed_by_obj['follower_ids'] = followers_ids
+                # print followed_by_objs
+                #for friend in friends_list:
+                    #print friend
+                #now append the results
+                def update_cb(re):
+                    logging.debug("network harvest async worked {0}".format(re))
+                    follower_d.callback(True)
+
+                def update_cb_fail(re):
+                    logging.error("network harvest async failed {0}".format(re))
+                    follower_d.errback
+
+                instagram_config_obj = {"@id": "service_instagram_config", "app_object": appid, "config_last_updated_at": timestamp,
+                "config_for_instagram_user": self.instagram_username, "friends_list_generated_at": timestamp, "follower_list_generated_at": timestamp,
+                "friends_list_size": friends_number, "followers_list_size": followers_number}
+
+                
+                objects_to_insert.append(followed_by_obj)
+                #objects_to_insert.append(followers)
+                objects_to_insert.append(instagram_config_obj)
+
+                self.insert_object_to_indx(objects_to_insert).addCallbacks(update_cb, update_cb_fail)
+            else:
+                follower_d.callback(True)
+
+        def error_cb(re):
+            found_cb()
+
+        def_search = Deferred()
+        find_instagram_config = {"@id": "service_instagram_config"} 
+        logging.info("Searching for instagram_config to check if network already harvested... ")
+        def_search = self.indx_con.query(json.dumps(find_instagram_config))
+        def_search.addCallbacks(found_cb, error_cb)
         
         return follower_d
         # print followed_by
 
     def find_friends(self, userid):
         friends_d = Deferred()
-        print "getting friends of user: "+str(userid)
-        friends_by_list = self.api.user_follows(userid)
-        current_timestamp = str(datetime.now())
-        uniq_id = "friends_at_"+current_timestamp
-        friends_by_objs = {"@id":uniq_id, "app_object": appid, "timestamp":current_timestamp, "friends_by_list": friends_by_list}
-        # print friends_by_objs
-        #for friend in friends_list:
-            #print friend
-        #now append the results
-        def update_cb(re):
-            logging.debug("network harvest async worked {0}".format(re))
-            friends_d.callback(True)
+       
 
-        def update_cb_fail(re):
-            logging.error("network harvest async failed {0}".format(re))
-            friends_d.errback
+        def found_cb(results):
+            friends_number = 0
+            followers_number = 0
+            #let's see if the object has some nice things in it.
+            try:
+                config_returned = results['data']['service_instagram_config']
+                friends_number = int(config_returned['friends_list_size'][0]['@value'])
+                followers_number = int(config_returned['followers_list_size'][0]['@value'])
+                logging.info('Found the instagram Config Object.')
+            except:
+                #print sys.exc_info()
+                pass
 
-        self.insert_object_to_indx(friends_by_objs).addCallbacks(update_cb, update_cb_fail)
-        
+            friends_by_list = self.api.user_follows(userid)[0]
+
+            if (len(friends_by_list) != friends_number) or (friends_number == 0): 
+
+
+                friends_number = len(friends_by_list)
+                objects_to_insert = []
+                current_timestamp = str(time.time()).split(".")[0] #str(datetime.now())
+                timestamp = str(datetime.now().isoformat('T')).split(".")[0]
+                uniq_id = "instagram_friends_network_for_user_me"#+self.instagram_username
+                friends_by_obj = {"@id":uniq_id, "app_object": appid, "instagram_username":self.instagram_username, "instagram_user_id":self.instagram_user_id, "timestamp":timestamp, "followed_by_count": len(friends_by_list)}
+
+                friends_ids = []
+                for friend in friends_by_list:
+                    #print follower.username
+                    uniq_id = "instagram_user_"+str(friend.username)
+                    friend_obj = {"@id":uniq_id, "app_object": appid, "instagram_username":str(friend.username), "timestamp":timestamp}
+                    objects_to_insert.append(friend_obj)
+                    #we can add this to the followed_by_obj later
+                    friends_ids.append(uniq_id)
+
+                friends_by_obj['friends_ids'] = friends_ids
+                # print friends_by_objs
+                #for friend in friends_list:
+                    #print friend
+                #now append the results
+                def update_cb(re):
+                    logging.debug("network harvest async worked {0}".format(re))
+                    friends_d.callback(True)
+
+                def update_cb_fail(re):
+                    logging.error("network harvest async failed {0}".format(re))
+                    friends_d.errback
+
+
+                instagram_config_obj = {"@id": "service_instagram_config", "app_object": appid, "config_last_updated_at": timestamp,
+                "config_for_instagram_user": self.instagram_username, "friends_list_generated_at": timestamp, "follower_list_generated_at": timestamp,
+                "friends_list_size": friends_number, "followers_list_size": followers_number}
+
+
+                objects_to_insert.append(friends_by_obj)
+                #objects_to_insert.append(followers)
+                objects_to_insert.append(instagram_config_obj)
+
+                self.insert_object_to_indx(objects_to_insert).addCallbacks(update_cb, update_cb_fail)
+            else:
+                friends_d.callback(True)
+
+
+        def error_cb(re):
+            found_cb()
+
+        def_search = Deferred()
+        find_instagram_config = {"@id": "service_instagram_config"} 
+        logging.info("Searching for instagram_config to check if network already harvested... ")
+        def_search = self.indx_con.query(json.dumps(find_instagram_config))
+        def_search.addCallbacks(found_cb, error_cb)
+            
         return friends_d
         # print followed_by
 
