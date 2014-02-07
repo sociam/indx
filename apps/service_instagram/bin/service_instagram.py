@@ -23,6 +23,7 @@ from indxclient import IndxClient, IndxClientAuth
 from twisted.internet.defer import Deferred
 from instagram import client, subscriptions
 from instagram.client import InstagramAPI
+from instagram.models import Media
 
 
 
@@ -103,23 +104,119 @@ class instagramService:
 
     def get_authenticated_user_feed(self):
         auth_d = Deferred()
-        print "Getting Auth User's feed"
-        user_feed = self.api.user_media_feed()
+        
+        def found_cb(results):
+            friends_number = 0
+            followers_number = 0
+            since_id = ""
+            #let's see if the object has some nice things in it.
+            try:
+                config_returned = results['data']['service_instagram_config']
+                friends_number = int(config_returned['friends_list_size'][0]['@value'])
+                followers_number = int(config_returned['followers_list_size'][0]['@value'])
+                since_id = int(config_returned['since_id'][0]['@value'])
+                logging.info('Found the instagram Config Object.')
+            except:
+                #print sys.exc_info()
+                pass
 
-        current_timestamp = str(datetime.now())
-        uniq_id = "user_feed_at_"+current_timestamp
-        user_feed_objs = {"@id":uniq_id, "app_object": appid, "timestamp":current_timestamp, "user_feed": user_feed}
-        # print user_feed_objs
+            #print "Getting Auth User's feed"
+            user_feed = self.api.user_media_feed()[0]
+            try:
+                latest_id = user_feed[0].id
+            except:
+                latest_id = "Null"
+            ##find the highest id...
 
-        def update_cb(re):
-            logging.debug("network harvest async worked {0}".format(re))
-            auth_d.callback(True)
+            if(latest_id != since_id ):
 
-        def update_cb_fail(re):
-            logging.error("network harvest async failed {0}".format(re))
-            auth_d.errback
+                logging.info("Found some new media, will insert it to INDX")
+                since_id = latest_id
+                objects_to_insert = []
+                current_timestamp = str(time.time()).split(".")[0] #str(datetime.now())
+                timestamp = str(datetime.now().isoformat('T')).split(".")[0]
+                current_timestamp = str(datetime.now())
 
-        self.insert_object_to_indx(user_feed_objs).addCallbacks(update_cb, update_cb_fail)
+                #the user responsible for this
+
+                #now create some nice user objects...
+                for media in user_feed:
+
+                    media_user_id = media.user.id
+                    media_username = media.user.username
+
+
+                    uniq_id = "instagram_media_"+media.id
+                    user_feed_obj = {"@id":uniq_id, "app_object": appid, "timestamp":timestamp, "type":"post", "instagram_user_id_indx":"instagram_user_me", "instagram_user_id": media_user_id, "instagram_username":media_username,
+                    "media_id":media.id, "media_caption":media.caption, "media_url":media.get_standard_resolution_url(), "media_like_count":media.like_count}
+
+                    #need to add INDX objects for tags and locations and the indx user of this
+
+                    #create location if available
+                    try:
+                        location = media.location
+                        uniq_id = "instagram_location_"+location.id
+                        location_obj = {"@id":uniq_id, "app_object": appid, "timestamp":timestamp, "type":"location", "instagram_location_id":location.id, "location_name": location.name, "latitude":location.point.latitude,
+                        "longitude":location.point.longitude}
+
+                        #now add this location to the user_feed_obj
+                        user_feed_obj['media_location_id'] = location_obj
+                        #thhen add it to a list of ojects to insert.
+                        objects_to_insert.append(location_obj)
+                    except:
+                        pass
+                   
+                    try:
+                        tag_ids = []
+                        for tag in media.tags:
+                            uniq_id = "instagram_tag_"+tag.name
+                            tag_obj = {"@id":uniq_id, "app_object": appid, "timestamp":timestamp, "type":"tag", "instagram_tag_name":tag.name}
+                            tag_ids.append(uniq_id)
+                            objects_to_insert.append(tag_obj)
+                        
+                        #now add this location to the user_feed_obj
+                        user_feed_obj['tags'] = tag_ids
+                    except:
+                        pass
+
+                    objects_to_insert.append(user_feed_obj)
+
+                #now create the instagram_user_me object
+                uniq_id = "instagram_user_me"
+                instagram_me_obj = {"@id":uniq_id, "app_object": appid, "timestamp":timestamp, "type":"user", "instagram_user_id":media_user_id, "instagram_username": media_username}
+                objects_to_insert.append(instagram_me_obj)
+
+
+                #and create the instagram config
+                instagram_config_obj = {"@id": "service_instagram_config", "app_object": appid, "type":"config", "config_last_updated_at": timestamp,
+                "config_for_instagram_user": self.instagram_username, "friends_list_generated_at": timestamp, "follower_list_generated_at": timestamp,
+                "friends_list_size":friends_number, "followers_list_size": followers_number, "since_id":since_id}
+                objects_to_insert.append(instagram_config_obj)
+
+       
+                def update_cb(re):
+                    logging.debug("network harvest async worked {0}".format(re))
+                    auth_d.callback(True)
+
+                def update_cb_fail(re):
+                    logging.error("network harvest async failed {0}".format(re))
+                    auth_d.errback
+
+                self.insert_object_to_indx(objects_to_insert).addCallbacks(update_cb, update_cb_fail)
+            else:
+                logging.info("already have the latest version of your instagram timeline")
+                auth_d.callback(True)
+
+
+
+        def error_cb(re):
+            found_cb()
+
+        def_search = Deferred()
+        find_instagram_config = {"@id": "service_instagram_config"} 
+        logging.info("Searching for instagram_config to check if Popular feed already harvested... ")
+        def_search = self.indx_con.query(json.dumps(find_instagram_config))
+        def_search.addCallbacks(found_cb, error_cb)        
         
         return auth_d
         # for feed in user_feed:
@@ -134,23 +231,104 @@ class instagramService:
 
     def get_popular_media(self):
         pop_d = Deferred()
-        print "getting popular media"
-        popular_media = self.api.media_popular(count=20)
 
-        current_timestamp = str(datetime.now())
-        uniq_id = "popular_media_at_"+current_timestamp
-        popular_media_objs = {"@id":uniq_id, "app_object": appid, "timestamp":current_timestamp, "popular_media": popular_media}
-        # print popular_media_objs
+        def found_cb(results):
+            friends_number = 0
+            followers_number = 0
+            since_id = ""
+            #let's see if the object has some nice things in it.
+            try:
+                config_returned = results['data']['service_instagram_config']
+                friends_number = int(config_returned['friends_list_size'][0]['@value'])
+                followers_number = int(config_returned['followers_list_size'][0]['@value'])
+                since_id = int(config_returned['since_id'][0]['@value'])
+                logging.info('Found the instagram Config Object.')
+            except:
+                #print sys.exc_info()
+                pass
 
-        def update_cb(re):
-            logging.debug("network harvest async worked {0}".format(re))
-            pop_d.callback(True)
+        #if(since_id > 0):
+            logging.info("getting popular media")
+            
+            objects_to_insert = []
+            current_timestamp = str(time.time()).split(".")[0] #str(datetime.now())
+            timestamp = str(datetime.now().isoformat('T')).split(".")[0]
+            current_timestamp = str(datetime.now())
+    
+            popular_media = self.api.media_popular(count=20)
 
-        def update_cb_fail(re):
-            logging.error("network harvest async failed {0}".format(re))
-            pop_d.errback
+            for media in popular_media:
 
-        self.insert_object_to_indx(popular_media_objs).addCallbacks(update_cb, update_cb_fail)
+                media_user_id = media.user.id
+                media_username = media.user.username
+
+                #now create the instagram_user object
+                uniq_user_id = "instagram_user_"+media.user.id
+                instagram_media_obj = {"@id":uniq_user_id, "app_object": appid, "timestamp":timestamp, "type":"user","instagram_user_id":media_user_id, "instagram_username": media_username}
+                objects_to_insert.append(instagram_media_obj)
+
+                uniq_id = "instagram_media_"+media.id
+                media_obj = {"@id":uniq_id, "app_object": appid, "timestamp":timestamp, "type":"post", "instagram_user_id_indx":uniq_user_id, "instagram_user_id": media_user_id, "instagram_username":media_username,
+                "media_id":media.id, "media_caption":media.caption, "media_url":media.get_standard_resolution_url(), "media_like_count":media.like_count}
+
+                #need to add INDX objects for tags and locations and the indx user of this
+
+                #create location if available
+                try:
+                    location = media.location
+                    uniq_id = "instagram_location_"+location.id
+                    location_obj = {"@id":uniq_id, "app_object": appid, "timestamp":timestamp, "type":"location", "instagram_location_id":location.id, "location_name": location.name, "latitude":location.point.latitude,
+                    "longitude":location.point.longitude}
+
+                    #now add this location to the user_feed_obj
+                    media_obj['media_location_id'] = location_obj
+                    #thhen add it to a list of ojects to insert.
+                    objects_to_insert.append(location_obj)
+                except:
+                    pass
+               
+                try:
+                    tag_ids = []
+                    for tag in media.tags:
+                        uniq_id = "instagram_tag_"+tag.name
+                        tag_obj = {"@id":uniq_id, "app_object": appid, "type":"tag", "timestamp":timestamp, "instagram_tag_name":tag.name}
+                        tag_ids.append(uniq_id)
+                        objects_to_insert.append(tag_obj)
+                    
+                    #now add this location to the user_feed_obj
+                    media_obj['tags'] = tag_ids
+                except:
+                    pass
+
+                objects_to_insert.append(media_obj)
+
+
+            def update_cb(re):
+                logging.debug("network harvest async worked {0}".format(re))
+                pop_d.callback(True)
+
+            def update_cb_fail(re):
+                logging.error("network harvest async failed {0}".format(re))
+                pop_d.errback
+
+
+            #and create the instagram config
+            instagram_config_obj = {"@id": "service_instagram_config", "app_object": appid, "type":"config", "config_last_updated_at": timestamp,
+            "config_for_instagram_user": self.instagram_username, "friends_list_generated_at": timestamp, "follower_list_generated_at": timestamp,
+            "friends_list_size":friends_number, "followers_list_size": followers_number, "since_id":since_id}
+            objects_to_insert.append(instagram_config_obj)   
+
+            self.insert_object_to_indx(objects_to_insert).addCallbacks(update_cb, update_cb_fail)
+
+        def error_cb(re):
+            found_cb()
+
+        def_search = Deferred()
+        find_instagram_config = {"@id": "service_instagram_config"} 
+        logging.info("Searching for instagram_config to check if Popular feed already harvested... ")
+        def_search = self.indx_con.query(json.dumps(find_instagram_config))
+        def_search.addCallbacks(found_cb, error_cb)
+
 
         return pop_d
 
@@ -167,17 +345,17 @@ class instagramService:
         def found_cb(results):
             friends_number = 0
             followers_number = 0
+            since_id = 0
             #let's see if the object has some nice things in it.
             try:
                 config_returned = results['data']['service_instagram_config']
                 friends_number = int(config_returned['friends_list_size'][0]['@value'])
                 followers_number = int(config_returned['followers_list_size'][0]['@value'])
+                since_id = int(config_returned['since_id'][0]['@value'])
                 logging.info('Found the instagram Config Object.')
             except:
                 #print sys.exc_info()
                 pass
-
-
             followed_by = self.api.user_followed_by(userid)[0]
             #print "followed_by length: "+str(len(followed_by))
             #print str(followed_by)
@@ -195,7 +373,7 @@ class instagramService:
                 for follower in followed_by:
                     #print follower.username
                     uniq_id = "instagram_user_"+str(follower.username)
-                    follower_obj = {"@id":uniq_id, "app_object": appid, "instagram_username":str(follower.username), "timestamp":timestamp}
+                    follower_obj = {"@id":uniq_id, "app_object": appid, "type":"user", "instagram_username":str(follower.username), "timestamp":timestamp}
                     objects_to_insert.append(follower_obj)
                     #we can add this to the followed_by_obj later
                     followers_ids.append(uniq_id)
@@ -214,9 +392,9 @@ class instagramService:
                     logging.error("network harvest async failed {0}".format(re))
                     follower_d.errback
 
-                instagram_config_obj = {"@id": "service_instagram_config", "app_object": appid, "config_last_updated_at": timestamp,
+                instagram_config_obj = {"@id":"service_instagram_config", "app_object": appid, "type":"config", "config_last_updated_at": timestamp,
                 "config_for_instagram_user": self.instagram_username, "friends_list_generated_at": timestamp, "follower_list_generated_at": timestamp,
-                "friends_list_size": friends_number, "followers_list_size": followers_number}
+                "friends_list_size": friends_number, "followers_list_size": followers_number, "since_id":since_id}
 
                 
                 objects_to_insert.append(followed_by_obj)
@@ -246,11 +424,13 @@ class instagramService:
         def found_cb(results):
             friends_number = 0
             followers_number = 0
+            since_id = 0
             #let's see if the object has some nice things in it.
             try:
                 config_returned = results['data']['service_instagram_config']
                 friends_number = int(config_returned['friends_list_size'][0]['@value'])
                 followers_number = int(config_returned['followers_list_size'][0]['@value'])
+                since_id = int(config_returned['since_id'][0]['@value'])
                 logging.info('Found the instagram Config Object.')
             except:
                 #print sys.exc_info()
@@ -272,7 +452,7 @@ class instagramService:
                 for friend in friends_by_list:
                     #print follower.username
                     uniq_id = "instagram_user_"+str(friend.username)
-                    friend_obj = {"@id":uniq_id, "app_object": appid, "instagram_username":str(friend.username), "timestamp":timestamp}
+                    friend_obj = {"@id":uniq_id, "app_object": appid, "type":"user", "instagram_username":str(friend.username), "timestamp":timestamp}
                     objects_to_insert.append(friend_obj)
                     #we can add this to the followed_by_obj later
                     friends_ids.append(uniq_id)
@@ -291,9 +471,9 @@ class instagramService:
                     friends_d.errback
 
 
-                instagram_config_obj = {"@id": "service_instagram_config", "app_object": appid, "config_last_updated_at": timestamp,
+                instagram_config_obj = {"@id": "service_instagram_config", "app_object": appid, "type":"config", "config_last_updated_at": timestamp,
                 "config_for_instagram_user": self.instagram_username, "friends_list_generated_at": timestamp, "follower_list_generated_at": timestamp,
-                "friends_list_size": friends_number, "followers_list_size": followers_number}
+                "friends_list_size": friends_number, "followers_list_size": followers_number, "since_id":since_id}
 
 
                 objects_to_insert.append(friends_by_obj)
