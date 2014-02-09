@@ -22,7 +22,7 @@ from threading import Timer, Thread
 from service_facebook import FacebookService
 from twisted.internet import task
 from twisted.internet.defer import Deferred
-from twisted.internet import reactor, threads
+from twisted.internet import reactor
     
 logging.basicConfig(level=logging.INFO)
 
@@ -91,6 +91,8 @@ class FacebookServiceController:
 
             def indx_cb(empty):
 
+                logging.info("Facebook Service loaded INDX Client, Now will attempt to harvest your feed.")
+
                 def harvest_all_cb(re):
                     logging.info("harvested all Facebook data sources, now attempting to wait for an hour")
                     reactor.callLater(3600.0, self.load_service_instance)
@@ -98,7 +100,7 @@ class FacebookServiceController:
                 facebook_service.harvest_all().addCallbacks(harvest_all_cb, lambda failure: logging.error("Facebook Service Controller - Callback Failure: Harvest All"))
 
             facebook_service.get_indx().addCallbacks(indx_cb, lambda failure: logging.error("Facebook Service Controller error logging into INDX: {0}".format(failure)))
-            reactor.run() #@UndefinedVariable
+            reactor.run()
         except:
             logging.info("An error occured in FacebookServiceController: load_service_instance")
             print sys.exc_info()

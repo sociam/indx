@@ -56,8 +56,8 @@ class FacebookService:
         return_d = Deferred()
 
         def authed_cb(): 
-            logging.debug("in service_tweets - Authed Callback")
-            logging.debug("in service_tweets - get_indx authclient Auth status: {0}".format(authclient.is_authed))
+            logging.info("in service_tweets - Authed Callback")
+            logging.info("in service_tweets - get_indx authclient Auth status: {0}".format(authclient.is_authed))
         
             def token_cb(token):
                 self.indx_con = IndxClient(self.config['address'], self.config['box'], app_id, token = token, client = authclient.client)
@@ -69,7 +69,7 @@ class FacebookService:
             logging.debug("in Facebook Service - get_indx/authed_cb failed for reason {0}".format(re))
             return_d.errback   
 
-        logging.debug("in Facebook Service - get_indx")    
+        logging.info("in Facebook Service - get_indx")    
         authclient = IndxClientAuth(self.config['address'], app_id)
         authclient.auth_plain(self.config['user'], self.config['password']).addCallbacks(lambda response: authed_cb(), authed_cb_fail)
 
@@ -150,12 +150,12 @@ class FacebookService:
     def harvest_facebook_profile(self):
         harvest_profile_d = Deferred()
 
-        logging.debug('Facebook Service - Getting users Facebook Profile')
-        graph = facebook.GraphAPI(self.facebook_access_token_long)
+        logging.info('Facebook Service - Getting users Facebook Profile')
+        graph = GraphAPI(self.facebook_access_token_long)
         profile = graph.get_object("me")
-        current_timestamp = str(datetime.datetime.now())
-        uniq_id = "facebook_profile_at_"+current_timestamp
-        object_to_insert = {"@id":uniq_id, "app_object": app_id, "timestamp": current_timestamp, "facebook_profile": profile}
+        timestamp = str(datetime.datetime.now().isoformat('T')).split(".")[0]
+        uniq_id = "facebook_profile_for_me"
+        object_to_insert = {"@id":uniq_id, "app_object": app_id, "timestamp": timestamp, "facebook_profile": profile}
 
         #now need to perform the asnc
         def insert_cb(re):
@@ -163,108 +163,148 @@ class FacebookService:
             harvest_profile_d.callback(True)
 
         def insert_cb_fail(re):
-            harvest_profile_d.errback
+            harvest_profile_d.callback(True)
 
-        self.insert_object_to_indx(self,object_to_insert).addCallbacks(insert_cb, insert_cb_fail)
+        self.insert_object_to_indx(object_to_insert).addCallbacks(insert_cb, insert_cb_fail)
 
         return harvest_profile_d
 
     ##here are all the facebook methods to havest the data
     def harvest_facebook_statuses(self):
         harvest_status_d = Deferred()
-        logging.debug('Facebook Service - Getting users Facebook Statuses')
-        graph = facebook.GraphAPI(self.facebook_access_token_long)
+        logging.info('Facebook Service - Getting users Facebook Statuses')
+        graph = GraphAPI(self.facebook_access_token_long)
         profile = graph.get_object("me")
         if len(profile)>1:
             #print "got Profile so should be able to get status"
             facebook_id = str(profile['id'])
-            query = facebook_id+"/permissions"
-
-            statuses =  graph.get_object(query) # graph.get_connections(facebook_id, "statuses")
+            query = facebook_id#+"/permissions"
+            statuses =   graph.get_connections(facebook_id, "statuses", limit=10000) #graph.get_object(query) #
             #time.sleep(5)
-            print statuses
+            #print statuses
             statuses = statuses['data']
-            current_timestamp = str(datetime.datetime.now())
-            uniq_id = "facebook_statuses_at_"+current_timestamp
-            object_to_insert = {"@id":uniq_id, "app_object": app_id, "timestamp": current_timestamp, "facebook_statuses": statuses}
+            for status in statuses:
 
+                #for each status, get the time
+                print status['message']
+                print str(status['updated_time']).split("+")[0]
+                try:
+                    likes = status['likes']['data']
+                    totalLikes = len(likes)
+                    print "total likes "+str(totalLikes)
+                    for like in likes:
+                        print like['id']
+                        print like['name']
+                except:
+                    pass
+
+                try:
+                    comments = status['comments']['data']
+                    print "comments..."
+                    for comment in comments:
+                        print comment['from']['id']
+                        print comment['from']['name']
+                        print comment['message']
+                        print str(comment['created_time']).split("+")[0]
+                        print comment['like_count']
+                except:
+                    pass
+
+
+
+
+            timestamp = str(datetime.datetime.now().isoformat('T')).split(".")[0]
+            uniq_id = "facebook_statuses_for_me"
+            object_to_insert = {"@id":uniq_id, "app_object": app_id, "timestamp":timestamp, "facebook_statuses": "status"}
+            logging.info("inserting statuses into indx")
             #now need to perform the asnc
             def insert_cb(re):
                 logging.info("Facebook Service - Found Statuses, Added To INDX {0} statuses".format(len(statuses)))
                 harvest_status_d.callback(True)
 
             def insert_cb_fail(re):
-                harvest_status_d.errback
+                harvest_status_d.callback(True)
 
-            self.insert_object_to_indx(self,object_to_insert).addCallbacks(insert_cb, insert_cb_fail)
+            self.insert_object_to_indx(object_to_insert).addCallbacks(insert_cb, insert_cb_fail)
+        else:
+            harvest_status_d.callback(True)
         return harvest_status_d
 
 
     def harvest_facebook_friends(self):
         harvest_friends_d = Deferred()
 
-        logging.debug('Facebook Service - Getting users Facebook Friends')
-        graph = facebook.GraphAPI(self.facebook_access_token_long)
-        #profile = graph.get_object("me")
-        #rint profile
-        friends_all = graph.get_connections("me", "friends")
-        friends = friends_all['data']
-        #print friends
-        #friend_list = [friend['id'] for friend in friends['data']]
-        current_timestamp = str(datetime.datetime.now())
-        uniq_id = "facebook_friends_list_at_"+current_timestamp
-        object_to_insert = {"@id":uniq_id, "app_object": app_id, "timestamp":current_timestamp, "facebook_friends_list": friends}
-        
-        logging.debug('Facebook Service - Got users Facebook Friends: {0}'.format(len(friends)))
-    
-        #now need to perform the asnc
-        def insert_cb(re):
-            logging.debug("Facebook Service - Found Friends List, Added To INDX {0} Friends".format(len(friends)))
+        try:
+            logging.info('Facebook Service - Getting users Facebook Friends')
+            try:
+                graph = GraphAPI(self.facebook_access_token_long)
+                #profile = graph.get_object("me")
+                #rint profile
+                friends_all = graph.get_connections("me", "friends")
+                friends = friends_all['data']
+                #print friends
+                #friend_list = [friend['id'] for friend in friends['data']]
+                #current_timestamp = str(time.time()).split(".")[0] #str(datetime.now())
+                timestamp = str(datetime.datetime.now().isoformat('T')).split(".")[0]
+                uniq_id = "facebook_friends_list_for_me"
+                object_to_insert = {"@id":uniq_id, "app_object": app_id, "timestamp":timestamp, "facebook_friends_list": friends}
+                
+                logging.info('Facebook Service - Got users Facebook Friends: {0}'.format(len(friends)))
+            
+                #now need to perform the asnc
+                def insert_cb(re):
+                    logging.debug("Facebook Service - Found Friends List, Added To INDX {0} Friends".format(len(friends)))
+                    harvest_friends_d.callback(True)
+
+                def insert_cb_fail(re):
+                    harvest_friends_d.callback(True)
+            except:
+                print sys.exc_info()
+                object_to_insert = []
+            if len(object_to_insert)>0:    
+                self.insert_object_to_indx(object_to_insert).addCallbacks(insert_cb, insert_cb_fail)
+            else:
+                harvest_friends_d.callback(True)
+        except:
             harvest_friends_d.callback(True)
-
-        def insert_cb_fail(re):
-            harvest_friends_d.errback
-
-        self.insert_object_to_indx(self,object_to_insert).addCallbacks(insert_cb, insert_cb_fail)
         
         return harvest_friends_d
 
     
-    def insert_object_to_indx(self, service, obj):
+    def insert_object_to_indx(self, obj):
 
         update_d = Deferred()
 
         def update_cb(resp):
-            service.version = resp['data']['@version']
-            logging.debug("Succesfully Updated INDX with Objects in update_cb, new diff version of {0}".format(service.version))
+            self.version = resp['data']['@version']
+            logging.debug("Succesfully Updated INDX with Objects in update_cb, new diff version of {0}".format(self.version))
             #logging.debug("Inserted Object into INDX: ".format(resp))
             update_d.callback(True)
             #return update_d
             #time.sleep(2)
 
-        def exception_cb(e, service=service, obj=obj):
+        def exception_cb(e, service=self, obj=obj):
             logging.debug("Exception Inserting into INDX, probably wrong version given")
             if isinstance(e.value, urllib2.HTTPError): # handle a version incorrect error, and update the version
                 if e.value.code == 409: # 409 Obsolete
                     response = e.value.read()
                     json_response = json.loads(response)
                     service.version = json_response['@version']
-                    logging.debug('INDX insert error in Facebook Service Object: '+str(response))
+                    logging.debug('INDX insert error in Instagram Service Object: '+str(response))
                     try:
                         service.indx_con.update(service.version, obj).addCallbacks(update_cb, exception_cb)
-                        #update_d.callback(True)
                         #logging.debug('Twitter Service - Successfully added Objects into Box')
                     except:
-                        logging.error('Facebook Service, error on insert {0}'.format(response))
+                        logging.error('Instagram Service, error on insert {0}'.format(response))
                         update_d.errback(e.value)
                 else:
-                    logging.error('Facebook Service Unknow error: {0}'.format(e.value.read()))
+                    logging.error('Instagram Service Unknow error: {0}'.format(e.value.read()))
                     update_d.errback(e.value)
             else:
                 logging.error("Error updating INDX: {0}".format(e.value))
                 update_d.errback(e.value)
         
-        logging.debug("in Facebook- Trying to insert into indx...Current diff version: {0} and objects (len) given {1}".format(service.version, len(obj)))
-        service.indx_con.update(service.version, obj).addCallbacks(update_cb, exception_cb)
+        logging.debug("in Instagram - Trying to insert into indx...Current diff version: {0} and objects (len) given {1}".format(self.version, len(obj)))
+        self.indx_con.update(self.version, obj).addCallbacks(update_cb, exception_cb)
         
         return update_d
