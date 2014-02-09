@@ -370,7 +370,6 @@ class FacebookService:
                     def insert_friend_cb_fail(re):
                         insertfriends(self)
 
-                    logging.info("inserting friends into indx")
                     friends_to_add = []
                     pop_point = 0
                     for x in range(0, 100):
@@ -391,6 +390,7 @@ class FacebookService:
                     logging.info("All Facebook Friends Added to Indx, will now proceed.")
 
             #this is a trick as indxclient is a bit nasty with big inserts
+            logging.info("inserting friends into indx")
             insertfriends(self)
 
             #now need to perform the asnc
