@@ -56,8 +56,8 @@ class FacebookService:
         return_d = Deferred()
 
         def authed_cb(): 
-            logging.info("in service_tweets - Authed Callback")
-            logging.info("in service_tweets - get_indx authclient Auth status: {0}".format(authclient.is_authed))
+            logging.debug("in service_tweets - Authed Callback")
+            logging.debug("in service_tweets - get_indx authclient Auth status: {0}".format(authclient.is_authed))
         
             def token_cb(token):
                 self.indx_con = IndxClient(self.config['address'], self.config['box'], app_id, token = token, client = authclient.client)
@@ -69,7 +69,7 @@ class FacebookService:
             logging.debug("in Facebook Service - get_indx/authed_cb failed for reason {0}".format(re))
             return_d.errback   
 
-        logging.info("in Facebook Service - get_indx")    
+        logging.debug("in Facebook Service - get_indx")    
         authclient = IndxClientAuth(self.config['address'], app_id)
         authclient.auth_plain(self.config['user'], self.config['password']).addCallbacks(lambda response: authed_cb(), authed_cb_fail)
 
@@ -183,7 +183,7 @@ class FacebookService:
                 friends_number = int(config_returned['friends_list_size'][0]['@value'])
                 followers_number = int(config_returned['followers_list_size'][0]['@value'])
                 since_id = int(config_returned['since_id'][0]['@value'])
-                logging.info('Found the Facebook Config Object.')
+                logging.debug('Found the Facebook Config Object.')
             except:
                 #print sys.exc_info()
                 pass
@@ -283,13 +283,13 @@ class FacebookService:
 
                 #now need to perform the asnc
                 def insert_cb(re):
-                    logging.info("Facebook Service - Found Statuses, Added To INDX {0} statuses".format(len(statuses)))
+                    logging.info("Facebook Service - Found {0} statuses, Added To INDX".format(len(statuses)))
                     harvest_status_d.callback(True)
 
                 def insert_cb_fail(re):
                     harvest_status_d.callback(True)
 
-                logging.info("inserting statuses into indx")
+                logging.debug("inserting statuses into indx")
                 self.insert_object_to_indx(objects_to_insert).addCallbacks(insert_cb, insert_cb_fail)
             else:
                 harvest_status_d.callback(True)
@@ -299,7 +299,7 @@ class FacebookService:
 
         def_search = Deferred()
         find_instagram_config = {"@id": "service_facebook_config"} 
-        logging.info("Searching for facebook_config to check if Popular feed already harvested... ")
+        logging.info("Searching for facebook_config to check if latest statues already harvested... ")
         def_search = self.indx_con.query(json.dumps(find_instagram_config))
         def_search.addCallbacks(found_cb, error_cb) 
         
@@ -319,7 +319,7 @@ class FacebookService:
                 friends_number = int(config_returned['friends_list_size'][0]['@value'])
                 followers_number = int(config_returned['followers_list_size'][0]['@value'])
                 since_id = int(config_returned['since_id'][0]['@value'])
-                logging.info('Found the Facebook Config Object.')
+                logging.debug('Found the Facebook Config Object.')
             except:
                 #print sys.exc_info()
                 pass
@@ -331,7 +331,7 @@ class FacebookService:
             friends_all = graph.get_connections("me", "friends", limit=1000)
             friends = friends_all['data']
             friends_number = len(friends)
-            logging.info('Facebook Service - Got users Facebook Friends: {0}'.format(friends_number))
+            logging.debug('Facebook Service - Got users Facebook Friends: {0}'.format(friends_number))
             objects_to_insert = []
             timestamp = str(datetime.datetime.now().isoformat('T')).split(".")[0]
             friend_ids = []
@@ -390,7 +390,7 @@ class FacebookService:
                     logging.info("All Facebook Friends Added to Indx, will now proceed.")
 
             #this is a trick as indxclient is a bit nasty with big inserts
-            logging.info("inserting friends into indx")
+            logging.debug("Inserting friends into indx")
             insertfriends(self)
 
             #now need to perform the asnc
@@ -401,7 +401,7 @@ class FacebookService:
             def insert_cb_fail(re):
                 harvest_friends_d.callback(True)
 
-            logging.info("inserting friends config into indx")
+            logging.debug("inserting friends config into indx")
             self.insert_object_to_indx(objects_to_insert).addCallbacks(insert_cb, insert_cb_fail)
 
         def error_cb(re):

@@ -74,11 +74,11 @@ def run(args):
         # print(keyring.util.platform_.data_root())
         config = keyring.get_password("INDX", "INDX_Facebook_App")
         #print "Didnt match any args value, working with config of: "+str(config)
-        logging.info("Facebook run.py - running the app with: {0}".format(config));
+        logging.debug("Facebook run.py - running the app with: {0}".format(config));
         try:
             config = json.loads(config)
             config['address'] = args['server']
-            logging.info("Facebook run.py - Added INDX address to config, new config loaded: {0}".format(config));
+            logging.debug("Facebook run.py - Added INDX address to config, new config loaded: {0}".format(config));
             #test run with configs
             #twitter_service = TwitterService(config)
 
