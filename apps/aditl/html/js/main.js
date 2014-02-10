@@ -174,15 +174,16 @@ angular
 			entities.activities.getByActivityType(	box, dstart, dend, ['walking','cycling','running','stay','transport'] ).then(
 				function(acts) {
 					var sorted = acts.concat();
-					acts.sort(function(x,y) { return x.peek('tstart').valueOf() - y.peek('tstart').valueOf(); });
-					console.log('ACTIVITIES for day ', dstart, ' ~~ >> ', acts, acts.map(function(act) { return act.id; }));
+					sorted = sorted.filter(function(x) { return x.peek('start') && x.peek('tend'); });
+					sorted.sort(function(x,y) { return x.peek('tstart').valueOf() - y.peek('tstart').valueOf(); });
+					console.log('ACTIVITIES for day ', dstart, ' ~~ >> ', sorted, sorted.map(function(act) { return act.id; }));
 
 					// [act1]  [act2][act3]           [act4]
 
-					_(acts).map(function(ca, i) {
+					_(sorted).map(function(ca, i) {
 						var cstart = ca.peek('tstart');
 						if (i !== 0) {
-							var last_end = acts[i-1].peek('tend');
+							var last_end = sorted[i-1].peek('tend');
 							if (last_end.valueOf() > cstart.valueOf()) { 
 								cstart = new Date(last_end.valueOf())+ 1;
 							}
@@ -201,7 +202,7 @@ angular
 					});
 
 					// add a segment for now
-					var last_end = (acts.length && acts[acts.length-1].peek('tend') || dstart);
+					var last_end = (sorted.length && sorted[sorted.length-1].peek('tend') || dstart);
 					var last_shouldbe = new Date(Math.min( (new Date()).valueOf(), dend.valueOf() ));
 					if (last_shouldbe.valueOf() - last_end.valueOf() > 60*1000) {
 						sa(function() { 
@@ -212,7 +213,6 @@ angular
 					// // filter for activities that have at least 1 waypoint
 					// acts = acts.filter(function(x) { return x.peek('waypoints'); });
 					// console.log('got activities for day :: ', dstart, ' > ', acts.length, acts);
-
 
 					// // filter out activities that are shorter than 1 minute 
 					// acts = acts.filter(function(x) { return x.peek('tend') - x.peek('tstart') > 60000; });
