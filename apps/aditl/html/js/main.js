@@ -135,28 +135,29 @@ angular
 				documents: []
 			};
 
-			getBrowsingTopDocs(tstart,tend).then(function(topdocs) {
-				sa(function() { seg.documents = topdocs.slice(0,10);	});
-			});
+			// getBrowsingTopDocs(tstart,tend).then(function(topdocs) {
+			// 	sa(function() { seg.documents = topdocs.slice(0,10);	});
+			// });
 
-			getNikeFuel(tstart,tend).then(function(total) {
-				sa(function() { seg.nike = total; });
-			}).fail(function(bail) { console.log('couldnt get fuel '); });
+			// getNikeFuel(tstart,tend).then(function(total) {
+			// 	sa(function() { seg.nike = total; });
+			// }).fail(function(bail) { console.log('couldnt get fuel '); });
 
-			getFitBitMetrics(tstart,tend).then(function(total) {
-				sa(function() {  seg.fitbit = total; });
-			}).fail(function(bail) { console.log('couldnt get fitbit '); });
+			// getFitBitMetrics(tstart,tend).then(function(total) {
+			// 	sa(function() {  seg.fitbit = total; });
+			// }).fail(function(bail) { console.log('couldnt get fitbit '); });
 
-			entities.documents.getMyTweets(box, tstart, tend).then(function(tweets){
-				console.log('TWEETS for the segment [', tstart, '-', tend, '] >> ', tweets);
-				sa(function() {  seg.tweets = tweets; });
-			});
+			// entities.documents.getMyTweets(box, tstart, tend).then(function(tweets){
+			// 	console.log('TWEETS for the segment [', tstart, '-', tend, '] >> ', tweets);
+			// 	sa(function() {  seg.tweets = tweets; });
+			// });
 
 			return seg;
 		};
 
 		var createDay = function(date) {
 			if (!box) return;
+
 
 			var dstart = new Date(date.valueOf()); dstart.setHours(0,0,0,0);
 			var dend = new Date(date.valueOf()); dend.setHours(23,59,59,999);
@@ -174,9 +175,13 @@ angular
 			entities.activities.getByActivityType(	box, dstart, dend, ['walking','cycling','running','stay','transport'] ).then(
 				function(acts) {
 					var sorted = acts.concat();
-					sorted = sorted.filter(function(x) { return x.peek('start') && x.peek('tend'); });
+					sorted = sorted.filter(function(x) { 
+						if (!(x.peek('tstart') || x.peek('tend'))) {
+							console.error('something is messed with ', x);
+						}
+						return x.peek('tstart') !== undefined && x.peek('tend') !== undefined; });
 					sorted.sort(function(x,y) { return x.peek('tstart').valueOf() - y.peek('tstart').valueOf(); });
-					console.log('ACTIVITIES for day ', dstart, ' ~~ >> ', sorted, sorted.map(function(act) { return act.id; }));
+					console.log('ACTIVITIES for day ', dstart, ' ~~ >> ', acts.length, sorted.length, sorted.map(function(act) { return act.id; }));
 
 					// [act1]  [act2][act3]           [act4]
 
