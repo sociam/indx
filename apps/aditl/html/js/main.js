@@ -219,7 +219,7 @@ angular
 
 
 					if (isToday(date)) {
-						console.log('today is true !! ', segments.length > 0);
+						// console.log('today is true !! ', segments.length > 0);
 						if (segments.length > 0) { 
 							var last_end = segments[segments.length-1].tend;
 							var last_shouldbe = (new Date()); 
