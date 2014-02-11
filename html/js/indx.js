@@ -786,7 +786,7 @@ angular
 				var lacks = _(missingModels).keys();
 				if (lacks.length > 0) {
 					// console.debug('calling with lacks ', lacks.length);
-					u.dmap(u.chunked(lacks, 150), function(lids) {
+					u.dmap(u.chunked(lacks, 50), function(lids) {
 						// console.debug('lids length ', lids.length);
 						this_._ajax('GET', this_.getID(), {'id':lids}).then(function(response) {
 							var resolvedIDs = _(response.data).map(function(mraw,id) {
