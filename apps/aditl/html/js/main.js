@@ -135,9 +135,9 @@ angular
 				documents: []
 			};
 
-			// getBrowsingTopDocs(tstart,tend).then(function(topdocs) {
-			// 	sa(function() { seg.documents = topdocs.slice(0,10);	});
-			// });
+			getBrowsingTopDocs(tstart,tend).then(function(topdocs) {
+				sa(function() { seg.documents = topdocs.slice(0,10); });
+			});
 
 			// getNikeFuel(tstart,tend).then(function(total) {
 			// 	sa(function() { seg.nike = total; });

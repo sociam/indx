@@ -46,11 +46,10 @@
 			</div>
 			<div ng-show="seg.documents" class="documents cell col-xs-3">
 				<ol>
-					<li class="document" ng-repeat="d in seg.documents">
+					<li class="document" ng-repeat="d in seg.documents" ng-show="d.peek('thumbnail')">
 						<a ng-href="{{ d.peek('url') }}" target="_blank">
 							<!-- <img class="favicon" ng-show="d.peek('favicon')" ng-src="{{ d.peek('favicon') }}">{{ d.peek('title') || 'unknown page' }} -->
-							<!-- <img class='thumbnail' ng-show="d.peek('thumbnail')" ng-src="{{ decodeThumb(d.peek('thumbnail')) }}">  --> 
-							<div ng-show="!d.peek('thumbnail')" data-page-url=""> {{ d.peek('title') || ' - ' }} </div>
+							<img class='thmb' ng-src="{{ d.peek('thumbnail') }}"> 
 						</a>
 					</li>
 				</ol>
