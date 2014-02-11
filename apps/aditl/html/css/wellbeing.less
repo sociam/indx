@@ -9,6 +9,9 @@
 	height:100%;
 	div.documents {
 		li {
+			-webkit-transition:0.1s linear all;
+			transition:0.1s linear all;
+
 			text-align:center;
 			display:inline-block;
 			margin:5px 2px 2px 2px;
@@ -26,7 +29,12 @@
 			&:hover {
 				color:black;
 				font-weight:200;
-				border: 3px solid black;
+				font-size:150%;
+				width:120px;
+				height:120px;
+				border: 1px solid #eee;
+				// box-shadow: 2px 2px #bbb;
+				margin: 5px 8px 8px 8px;
 			}
 		}		
 	}
