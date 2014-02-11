@@ -303,7 +303,7 @@ class ObjectStoreAsync:
                 else:
                     return result_d.callback(Graph())
 
-            query = "SELECT id_results.triple_order as triple_order, j_subject.string as subject, j_predicate.string as predicate, j_object.string as obj_value, wb_objects.obj_type, wb_objects.obj_lang, wb_objects.obj_datatype, j_object.uuid  FROM (WITH theid AS (SELECT unnest(wb_get_string_ids(%s)) AS someid) SELECT * FROM wb_latest_vers JOIN wb_triples ON wb_latest_vers.triple = wb_triples.id_triple WHERE subject_uuid IN (SELECT someid FROM theid)) AS id_results JOIN wb_strings j_subject ON j_subject.uuid = id_results.subject_uuid JOIN wb_strings j_predicate ON j_predicate.uuid = id_results.predicate_uuid JOIN wb_objects ON wb_objects.id_object = id_results.object JOIN wb_strings j_object ON j_object.uuid = wb_objects.obj_value_uuid ORDER BY triple_order, j_object.uuid, j_object.chunk"
+            query = "SELECT id_results.triple_order as triple_order, j_subject.string as subject, j_predicate.string as predicate, j_object.string as obj_value, wb_objects.obj_type, wb_objects.obj_lang, wb_objects.obj_datatype, j_object.uuid, j_object.chunk FROM (WITH theid AS (SELECT unnest(wb_get_string_ids(%s)) AS someid) SELECT * FROM wb_latest_vers JOIN wb_triples ON wb_latest_vers.triple = wb_triples.id_triple WHERE subject_uuid IN (SELECT someid FROM theid)) AS id_results JOIN wb_strings j_subject ON j_subject.uuid = id_results.subject_uuid JOIN wb_strings j_predicate ON j_predicate.uuid = id_results.predicate_uuid JOIN wb_objects ON wb_objects.id_object = id_results.object JOIN wb_strings j_object ON j_object.uuid = wb_objects.obj_value_uuid ORDER BY triple_order, j_object.uuid, j_object.chunk"
 #            query = "SELECT triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype FROM wb_v_latest_triples WHERE subject = ANY(%s)"
 
 
@@ -335,16 +335,21 @@ class ObjectStoreAsync:
 
         if diff_row:
             uuid_index = 9
+            chunk_index = 10
             obj_index = 4
         else:
             uuid_index = 7
+            chunk_index = 8
             obj_index = 3
 
-        # query must order by triples and then [uuid, chunk], so we can just loop through once here, and just look at uuid, ignoring chunk
+        # query must order by triples and then [uuid, chunk], so we can just loop through once here
+        prev_chunk = 0
         for row in rows:
 
             uuid = row[uuid_index]
-            if uuid == prev_uuid and prev_uuid != None:
+            chunk = row[chunk_index]
+
+            if uuid == prev_uuid and prev_uuid != None and chunk > prev_chunk:
                 # extend the object value string, everything else the same
                 this_row[obj_index] += row[obj_index]
             else:
@@ -352,6 +357,8 @@ class ObjectStoreAsync:
                     new_rows.append(this_row)
                 this_row = list(copy.copy(row[0:uuid_index])) # without uuid
                 prev_uuid = uuid
+
+            prev_chunk = chunk
 
         if len(this_row) > 0:
             new_rows.append(this_row)

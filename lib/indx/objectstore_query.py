@@ -243,7 +243,7 @@ class ObjectStoreQuery:
         sql = """{0} SELECT wb_latest_vers.triple_order, j_subject.string AS subject, 
             j_predicate.string AS predicate, j_object.string AS obj_value, 
             wb_objects.obj_type, wb_objects.obj_lang, wb_objects.obj_datatype, 
-            j_subject.uuid AS subject_uuid
+            j_subject.uuid AS subject_uuid, j_subject.chunk AS subject_chunk
            FROM wb_latest_vers
            JOIN wb_triples ON wb_triples.id_triple = wb_latest_vers.triple
            JOIN wb_objects ON wb_objects.id_object = wb_triples.object
