@@ -456,10 +456,14 @@ var MovesService = Object.create(nodeservice.NodeService, {
                     return this_._makeActivity(activity); 
                 })).then(ds.resolve).fail(ds.reject);
             } else {
-                var dpl = segment.place ? this_._makePlace(segment.place) : u.dresolve();
+                // var dpl = segment.place ? this_._makePlace(segment.place) : u.dresolve();
                 // this is a stay. 
+                if (!segment.place) {  
+                    console.info("WEIRD > NO PLACE FOR THIS SEGMENT ", segment);
+                    return u.dresolve(); 
+                }
                 var from_t = fromMovesDate(segment.startTime), to_t = fromMovesDate(segment.endTime);
-                console.log(' place activities from time >> ', from_t, ' to time >> ', to_t);
+                // console.log(' place activities from time >> ', from_t, ' to time >> ', to_t);
                 // we are ignoring simultaneous activities for now.
                 this_._makePlace(segment.place).then(function(place) { 
                     entities.activities.make1(this_.box, 'stay', this_.whom, from_t, to_t ).then(function(am) {
