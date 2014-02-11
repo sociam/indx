@@ -147,7 +147,7 @@ angular
 			var tstart = seg.tstart, tend = seg.tend;
 
 			getBrowsingTopDocs(tstart,tend).then(function(topdocs) {
-				sa(function() { seg.documents = topdocs.slice(0,10); });
+				sa(function() { seg.documents = topdocs.slice(0,20); });
 			});
 
 			// getNikeFuel(tstart,tend).then(function(total) {
