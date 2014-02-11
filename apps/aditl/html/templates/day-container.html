@@ -44,9 +44,10 @@
 					</li>
 				</ol>
 			</div>
-			<div ng-show="seg.documents" class="documents cell col-xs-5">
+			<div ng-show="seg.documents" class="documents cell col-xs-7">
 				<ol>
 					<li class="document" ng-repeat="d in seg.documents" ng-show="d.peek('thumbnail')">
+						<div class="lbl" ng-show="{{ d.peek('title') }}"> {{ d.peek('title') }}</div>
 						<a ng-href="{{ d.peek('url') }}" target="_blank">
 							<!-- <img class="favicon" ng-show="d.peek('favicon')" ng-src="{{ d.peek('favicon') }}">{{ d.peek('title') || 'unknown page' }} -->
 							<img class='thmb' ng-src="{{ d.peek('thumbnail') }}"> 
