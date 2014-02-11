@@ -83,6 +83,11 @@ angular
 			return d.promise();
 		};
 
+		var isToday = function(d) { 
+			var today = new Date();
+			return d.getDate() == today.getDate() && d.getYear() == today.getYear() && d.getMonth() == today.getMonth();
+		};
+
 		var getNikeFuel  = function(tstart,tend) {
 			var d = u.deferred();
 			jQuery.when(
@@ -185,6 +190,8 @@ angular
 
 					// [act1]  [act2][act3]           [act4]
 
+					var segments = [];
+
 					_(sorted).map(function(ca, i) {
 						var cstart = ca.peek('tstart');
 						if (i !== 0) {
@@ -193,27 +200,40 @@ angular
 								cstart = new Date(last_end.valueOf())+ 1;
 							}
 							if (last_end.valueOf()-cstart.valueOf() > 60*1000) {
-								sa(function() { day.segments.push(makeSegment(last_end,cstart)); });
+								sa(function() { segments.push(makeSegment(last_end,cstart)); });
 							}
 						}
-						sa(function() { 
-							var newseg = makeSegment(ca.peek('tstart'),ca.peek('tend'), ca.peek('activity'), ca.peek('waypoints'));
-							newseg.moves = {};
-							newseg.moves.calories = ca.peek('calories');
-							newseg.moves.steps = ca.peek('steps');
-							newseg.moves.distance = ca.peek('distance');							
-							day.segments.push(newseg);
-						});
+
+						var newseg = makeSegment(ca.peek('tstart'),ca.peek('tend'), ca.peek('activity'), ca.peek('waypoints'));
+						newseg.moves = {};
+						newseg.moves.calories = ca.peek('calories');
+						newseg.moves.steps = ca.peek('steps');
+						newseg.moves.distance = ca.peek('distance');							
+						segments.push(newseg);
 					});
 
-					// add a segment for now
-					var last_end = (sorted.length && sorted[sorted.length-1].peek('tend') || dstart);
-					var last_shouldbe = new Date(Math.min( (new Date()).valueOf(), dend.valueOf() ));
-					if (last_shouldbe.valueOf() - last_end.valueOf() > 60*1000) {
-						sa(function() { 
-							day.segments.push(makeSegment(last_end, last_shouldbe));
-						});
+
+					if (isToday(date)) {
+						console.log('today is true !! ', segments.length > 0);
+						if (segments.length > 0) { 
+							var last_end = segments[segments.length-1].tend;
+							var last_shouldbe = (new Date()); 
+							segments[segments.length - 1].tend = last_shouldbe;
+						} 
 					}
+
+					sa(function() { day.segments = day.segments.concat(segments); });
+
+					// add a segment for now
+					// var last_end = (sorted.length && sorted[sorted.length-1].peek('tend') || dstart);
+					// var last_shouldbe = new Date(Math.min( (new Date()).valueOf(), dend.valueOf() ));
+					// if (last_shouldbe.valueOf() - last_end.valueOf() > 60*1000) {
+					// 	sa(function() { 
+					// 		// test
+					// 		sorted[sorted.length-1].set({tend:last_shouldbe});
+					// 		// day.segments.push(makeSegment(last_end, last_shouldbe));
+					// 	});
+					// }
 
 					// // filter for activities that have at least 1 waypoint
 					// acts = acts.filter(function(x) { return x.peek('waypoints'); });
