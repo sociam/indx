@@ -140,6 +140,12 @@ angular
 				documents: []
 			};
 
+			return seg;
+		};
+
+		var populateSegment = function(seg) {
+			var tstart = seg.tstart, tend = seg.tend;
+
 			getBrowsingTopDocs(tstart,tend).then(function(topdocs) {
 				sa(function() { seg.documents = topdocs.slice(0,10); });
 			});
@@ -157,7 +163,6 @@ angular
 			// 	sa(function() {  seg.tweets = tweets; });
 			// });
 
-			return seg;
 		};
 
 		var createDay = function(date) {
@@ -223,6 +228,8 @@ angular
 					}
 
 					sa(function() { day.segments = day.segments.concat(segments); });
+
+					segments.map(function(x) { populateSegment(x); });
 
 					// add a segment for now
 					// var last_end = (sorted.length && sorted[sorted.length-1].peek('tend') || dstart);
