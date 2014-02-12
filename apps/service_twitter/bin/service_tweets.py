@@ -299,7 +299,7 @@ class TwitterService:
                     #now append the results
 
                     #also create the service_twitter_config obiect:
-                    twitter_config_obj = {"@id": "service_twitter_config", "app_object": appid, "config_last_updated_at": timestamp, 
+                    twitter_config_obj = {"@id": "service_twitter_config", "app_object": appid, "type":"config", "config_last_updated_at": timestamp, 
                     "config_for_twitter_user": service.twitter_username, "friends_list_generated_at": timestamp, "follower_list_generated_at": timestamp,
                     "friends_list_size": str(len(friends_list)), "followers_list_size": str(len(followers_list)), "timeline_since_id": since_id_found}
 
@@ -478,7 +478,7 @@ class TwitterService:
 
                         #now create the config obj...
                         timestamp = str(datetime.now().isoformat('T')).split(".")[0]
-                        twitter_config_obj = {"@id": "service_twitter_config", "app_object": appid, "config_last_updated_at": timestamp, 
+                        twitter_config_obj = {"@id": "service_twitter_config", "app_object": appid, "type":"config", "config_last_updated_at": timestamp, 
                         "config_for_twitter_user": service.twitter_username, "friends_list_generated_at": timestamp, "follower_list_generated_at": timestamp,
                         "friends_list_size": friends_number, "followers_list_size": followers_number, "timeline_since_id": since_id_found}
                         #and add it to commit to indx
@@ -645,7 +645,7 @@ class INDXListener(StreamListener):
                         hashtag_name = hashtag['text']
                         tweet_hashtag_indx = {}
                         tweet_hashtag_indx['@id'] = "twitter_hashtag_id_"+unicode(hashtag_name)
-                        tweet_hashtag_indx['type'] = "twitter_hashtag"
+                        tweet_hashtag_indx['type'] = "tag"
                         tweet_hashtag_indx['hashtag_name'] = hashtag_name
                         #add the hashtag to the associated tweet
                         tweet_hashtag_indx_list.append(tweet_hashtag_indx)

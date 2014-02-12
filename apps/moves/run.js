@@ -33,11 +33,14 @@ var toMovesDate = function(date) {
     return s;
 };
 var fromMovesDate = function(m_date) {
+    console.log('from Moves Date >> ', m_date);
     var year = m_date.slice(0,4), m = m_date.slice(4,6), d = m_date.slice(6,8);
     var hour = m_date.slice(9,11), min = m_date.slice(11,13), sec = m_date.slice(13,15);
     var newdate = [year, m, d].join('/');
     var newtime = [hour,min, sec].join(':');
-    return new Date(newtime + ' ' + newdate);
+    var toret =  new Date(newtime + ' ' + newdate);
+    console.log('to return >> ', toret);
+    return toret;
 };
 var daysBetween = function(date1, date2) {
     var diff = Math.abs(date2.valueOf() - date1.valueOf());
@@ -128,6 +131,11 @@ var MovesService = Object.create(nodeservice.NodeService, {
             var grab = function() { 
                 var lastGrabbedDate = diary.peek('lastGrabbedDate') || diary.peek('firstDate');
                 var today = new Date();
+
+                // TODO DISABLE THIS
+                // disabled long term grabbing --- eMax
+                // lastGrabbedDate = new Date();
+                // DISABLE ME ABOVE
                 if (today.valueOf() - lastGrabbedDate.valueOf() < SEVEN_DAYS_USEC) {
                     // just bloody update once.
                     return this_.getTimeline( new Date(lastGrabbedDate.valueOf() - TWENTY_FOUR_HOURS_USEC) , today ).then(function() {
@@ -448,9 +456,14 @@ var MovesService = Object.create(nodeservice.NodeService, {
                     return this_._makeActivity(activity); 
                 })).then(ds.resolve).fail(ds.reject);
             } else {
-                var dpl = segment.place ? this_._makePlace(segment.place) : u.dresolve();
+                // var dpl = segment.place ? this_._makePlace(segment.place) : u.dresolve();
                 // this is a stay. 
+                if (!segment.place) {  
+                    console.info("WEIRD > NO PLACE FOR THIS SEGMENT ", segment);
+                    return u.dresolve(); 
+                }
                 var from_t = fromMovesDate(segment.startTime), to_t = fromMovesDate(segment.endTime);
+                // console.log(' place activities from time >> ', from_t, ' to time >> ', to_t);
                 // we are ignoring simultaneous activities for now.
                 this_._makePlace(segment.place).then(function(place) { 
                     entities.activities.make1(this_.box, 'stay', this_.whom, from_t, to_t ).then(function(am) {

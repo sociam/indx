@@ -23,6 +23,7 @@ angular
 						_($scope).extend({
 							instagram_auth_status:config.instagram_auth_status,
 							instagram_user_id:config.instagram_user_id, 
+							isstagram_username:config.instagram_username,
 							access_token:config.access_token,
 							access_token_timestamp:config.access_token_timestamp 
 						});
