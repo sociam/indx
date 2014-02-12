@@ -141,3 +141,35 @@ charts.sparkline = function() {
 
   return render;
 };
+
+angular.module('aditl')
+  .directive('chartSparkline', function() {
+        var sparkline = charts.sparkline();
+        return {
+          restrict: 'E',
+          replace: true,
+          template: '<div class="chart"></div>',
+          scope: {
+            data: '=',
+          },
+          link: function($scope, $element, $attr) {
+            //we select the element of this directive
+            var div = d3.select($element[0]);
+            //we calculate it's dimensions so we can be responsive
+            var bbox = div.node().getBoundingClientRect();
+            sparkline.width(bbox.width || 900);
+            sparkline.height(bbox.height || 400 - 50);
+            window.onresize = function() {
+              bbox = div.node().getBoundingClientRect();
+              sparkline.width(bbox.width || 900);
+              sparkline.height(bbox.height || 400 - 50);
+              //this is how you update the chart
+              div.call(sparkline);
+            }
+            //we update the chart when the data get's updated
+            $scope.$watch('data', function(newVal, oldVal) {
+              if(newVal) div.datum(newVal).call(sparkline);
+            });
+          }
+        }
+      });
