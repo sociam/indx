@@ -230,6 +230,16 @@ angular
 			},
 			setClustering: function (clustering) {
 				this.clustering = clustering;
+			},
+			getNodes: function () {
+				return _.map(this.nodes, function (node) {
+					return _.clone(node);
+				});
+			},
+			getLinks: function () {
+				return _.map(this.links, function (link) {
+					return _.clone(link);
+				});
 			}
 		});
 
@@ -308,8 +318,8 @@ angular
 			},
 			update: function () {
 				var that = this;
-				var nodes = this.force.nodes(this.graph.nodes),
-					links = this.force.links(this.graph.links);
+				var nodes = this.force.nodes(this.graph.getNodes()),
+					links = this.force.links(this.graph.getLinks());
 
 				console.log('links', this.graph.links.length, this.graph.links, this.graph.nodes);
 
@@ -341,12 +351,13 @@ angular
 				node.exit().remove();
 
 				var link = this.container.selectAll("line")
-					.data(this.graph.links, function(d) {
-						return (d.source.index||d.source) + "-" + (d.target.index||d.target);  /// HACK
+					.data(this.graph.links, function (d) {
+						console.log(d.source + "-" + d.target, d)
+						return d.source + "-" + d.target;  /// HACK
 					});
 
 				link.enter().append("line")
-					.attr("id", function (d) {return d.source + "-" + d.target; })
+					.attr("id", function (d) { return d.source.index + "-" + d.target.index; })
 					.attr("class", "link")
 					.style("stroke-width", function (d) { return Math.sqrt(d.value * 2); });;
 
