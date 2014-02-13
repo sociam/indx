@@ -10,13 +10,15 @@
     "**/.*",
     "node_modules",
     "bower_components",
+    "html/js/vendor",
     "test",
-    "tests",
-    "html/js/vendor"
+    "tests"
   ],
   "dependencies": {
+    "angular-route": "~1.2.12",
     "angular-ui": "~0.4.0",
     "angular": "~1.2.12",
+    "backbone": "~1.1.0",
     "bootstrap": "~3.1.0",
     "less": "~1.6.3",
     "underscore": "~1.6.0"
