@@ -31,17 +31,17 @@ rm -rf build/ dist/
 python setup.py py2app
 
 # Rename the Application bundle
-mv dist/run.app dist/WebBox.app
+mv dist/run.app dist/INDX.app
 
 # copy our run script in
-cp run_app.sh dist/WebBox.app/Contents/MacOS/
+cp run_app.sh dist/INDX.app/Contents/MacOS/
 
 # make all scripts executable
-find dist/WebBox.app -name '*.sh' -exec chmod +x {} \;
-chmod +x dist/WebBox.app/Contents/Resources/4store/*
+find dist/INDX.app -name '*.sh' -exec chmod +x {} \;
+chmod +x dist/INDX.app/Contents/Resources/4store/*
 
 # replace run with run.sh in the bundle Info.plist
-python change_app_run_script.py dist/WebBox.app/Contents/Info.plist
+python change_app_run_script.py dist/INDX.app/Contents/Info.plist
 
 ./build-dmg.sh
 

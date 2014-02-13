@@ -5,14 +5,14 @@
 $version=`git describe --tags --always | sed 's/^v//; s/-.*//'`;
 chomp $version;
 
-$du = `du -csk dist/WebBox.app`;
+$du = `du -csk dist/INDX.app`;
 ($size) = ($du =~ /\s*(\d+)\s+total\s*$/si);
 $size = int $size * 1.5 / 1024 + 1;
 
 print("building $size MB DMG\n");
 
-$output = `hdiutil create "WebBox-$version" -ov -megabytes $size -fs HFS+ -volname \"WebBox-$version\"`;
-die "Couldn't create WebBox.dmg\nIs it mounted?" if $?;
+$output = `hdiutil create "INDX-$version" -ov -megabytes $size -fs HFS+ -volname \"INDX-$version\"`;
+die "Couldn't create INDX.dmg\nIs it mounted?" if $?;
 ($dmgName) = ($output =~ /created\s*:\s*(.+?)\s*$/m);
 die "FATAL: Couldn't read created dmg name\n" unless $dmgName;
 print("INFO: dmgName is $dmgName\n");
@@ -21,7 +21,7 @@ die "FATAL: Couldn't mount DMG $dmgName (Error: $?)\n" if $?;
 
 my ($dest) = ($output =~ /Apple_HFS\s+(.+?)\s*$/im);
 
-$output = `cp -r dist/WebBox.app "$dest"`;
+$output = `cp -r dist/INDX.app "$dest"`;
 #$readme = `cat app-aux/README.rtf`;
 #$readme =~ s/\$\\{AV\\}/$version/g;
 #open(README, '>', "$dest/README.rtf");
