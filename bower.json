@@ -10,7 +10,7 @@
     "**/.*",
     "node_modules",
     "bower_components",
-    "html/js/vendor",
+    "html/lib",
     "test",
     "tests"
   ],
