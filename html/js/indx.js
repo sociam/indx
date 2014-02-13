@@ -53,6 +53,9 @@
 angular
 	.module('indx', [])
 	.factory('client',function(utils) {
+		// long token support not fully implemented, disable for now
+		var ENABLE_LONG_TOKENS = false;
+
 		var u = utils, log = utils.log, error = utils.error, debug = utils.debug, jQ = jQuery;
 
 		var DEFAULT_HOST = document.location.host; // which may contain the port
@@ -1113,7 +1116,7 @@ angular
 				var b = this.boxes().get(boxid) || this._create(boxid);
 				if (!b._getCachedToken()) {
 					// console.info('indxjs getToken(): getting token for box ', boxid);
-					if (b._hasStoredToken()) { 
+					if (ENABLE_LONG_TOKENS && b._hasStoredToken()) { 
 						var d = u.deferred();
 						var cont = function() { return d.resolve(b); };
 						b.fetch()
@@ -1125,6 +1128,7 @@ angular
 								console.info('falling back to standard token fetching');
 								b.getToken().then(cont).fail(d.reject);
 							});
+						return d.promise();
 					}
 					return b.getToken().pipe(function() { return b.fetch();	});
 				}
