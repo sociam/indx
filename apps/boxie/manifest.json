@@ -3,8 +3,7 @@
 	"version": 0.3,
 	"description": "Box browser",
 	"icons": {
-		"128": "icon.png",
-		"font-awesome": { "class": "fa fa-archive", "background": "#FF7400" }
+		"128": "icon.png"
 	},
 	"author": [
 		{

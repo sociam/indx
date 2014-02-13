@@ -3,8 +3,7 @@
 	"version": 0.1,
 	"description": "Console for viewing docs and running tests",
 	"icons": {
-		"128": "icon.png",
-		"font-awesome": { "class": "fa fa-bug", "background": "#009999" }
+		"128": "icon.png"
 	},
 	"author": [
 		{
