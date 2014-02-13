@@ -28,7 +28,7 @@
       <input type="text" ng-model="server_url"></input>
       <div class="btn btn-default" ng-click="set_server(server_url)">Set INDX server to be {{ server_url }}</div>
     </td>
-    <tr><td></td><td ng-class="{error:status_error}">Status: {{ status }} </td></tr>
+    <tr><td></td><td ng-show="status" ng-class="{error:status_error}">Status: {{ status }} </td></tr>
     <tr><td></td><td>
       <div ng-show="user">
         <div>
@@ -36,6 +36,9 @@
         </div>
         <div>
           Box: {{ selected_box }}
+        </div>
+        <div>
+          Memory usage : {{ memuse }}
         </div>
         <div>
           <select ng-model="box_selection" ng-options="b for b in boxes"></select>

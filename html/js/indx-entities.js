@@ -185,13 +185,13 @@
 							zipped = u.zip(argnames, args).filter(function(x) { return x[0]; }),
 							argset = u.dict(zipped);
 						box.getObj(id).then(function(model) { 
-							// TODO REMOVE ME
-							// HACK PATCH TO MAKE sure all activities all have duration at least 1 msec
-							if (argset.tend) { 
-								var valval = new Date(argset.tend.valueOf() + 1);
-								console.log('resetting tend ', argset.tend, valval);
-								argset.tend = valval;
-							} 
+							// // TODO REMOVE ME
+							// // HACK PATCH TO MAKE sure all activities all have duration at least 1 msec
+							// if (argset.tend) { 
+							// 	var valval = new Date(argset.tend.valueOf() + 1);
+							// 	// console.log('resetting tend ', argset.tend, valval);
+							// 	argset.tend = valval;
+							// } 
 							model.set(argset);
 							model.set({type:'activity'});
 							model.set(otherprops);

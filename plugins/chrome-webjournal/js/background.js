@@ -19,7 +19,7 @@
         chrome.browserAction.setBadgeText({text:s.toString()});
         chrome.browserAction.setBadgeBackgroundColor({color:'#00ffff'});
     };
-    var duration_secs = function(d) { return (d.peek('tend') && d.peek(tend).valueOf() - d.peek('tstart') && d.peek('tstart').valueOf()) / 1000.0;  };
+    var duration_secs = function(d) { return (d.peek('tend') && d.peek('tend').valueOf() - d.peek('tstart') && d.peek('tstart').valueOf()) / 1000.0;  };
     var getBoxName = function() { return localStorage.indx_box || 'lifelog'; };
 
     var connect = function(client,utils) {
@@ -93,22 +93,9 @@
             var sa = function(f) { utils.safeApply($scope, f); };
             window.$s = $scope;
             var load_stats = function(store) {
-                store.getBoxList().then(function(boxes) {
-                    sa(function() { $scope.boxes = boxes; });
-                });
-                store.checkLogin().then(function(result) {
-                    sa(function() { 
-                        if (result.is_authenticated) {
-                            $scope.status = 'connected as ' + result.name || result.username;
-                            $scope.user = result;
-                        } else {
-                            $scope.status = 'not logged in';
-                        }
-                        $scope.status_error = false;
-                    });
-                }).fail(function() {
-                    sa(function() {  $scope.user_logged_in = 'error connecting';  });
-                });
+                store.getBoxList().then(function(boxes) {  sa(function() { $scope.boxes = boxes; });   });
+                $scope.user = store.get('username');
+                $scope.memuse = watcher._box._getCacheSize();
             };
             if (get_store()) {
                 var store = get_store();
@@ -127,7 +114,7 @@
             window.onunload=function() {
                 get_watcher().off(undefined, undefined, guid);
                 if (get_store()) { get_store().off(undefined,undefined,guid); }
-            };
+            };  
             $scope.server_url = localStorage.indx_url;
             $scope.set_server = function(url) {
                 console.log('setting server ... ', url);
