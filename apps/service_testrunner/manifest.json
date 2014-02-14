@@ -1,8 +1,8 @@
 {
-	"name": "Test runner service",
+	"name": "Test runner",
 	"version": 0.3,
 	"type":["service"],
-	"description": "Test runner service",
+	"description": "Runs indx js tests",
 	"on_boot": 0,
 	"configpanel":"html/index.html",
 	"run":["node", "run.js", "--indxhost", "{0}"],

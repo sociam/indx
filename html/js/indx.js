@@ -512,13 +512,13 @@ angular
 				return '__indx_box_token_' + this.getID();
 			},
 			_hasStoredToken:function() { 
-				return typeof localStorage !== undefined && localStorage[this._getStoredTokenKeyname()] !== undefined;
+				return typeof localStorage !== 'undefined' && localStorage[this._getStoredTokenKeyname()] !== undefined;
 			},
 			_getStoredToken:function() { 
-				return typeof localStorage !== undefined && localStorage[this._getStoredTokenKeyname()];				
+				return typeof localStorage !== 'undefined' && localStorage[this._getStoredTokenKeyname()];				
 			},
 			_setStoredToken:function(token) {
-				if (typeof localStorage !== undefined) { 
+				if (typeof localStorage !== 'undefined') { 
 					localStorage[this._getStoredTokenKeyname()] = token;
 				} 
 				return undefined;
