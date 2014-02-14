@@ -1,6 +1,6 @@
 {
   "name": "indx",
-  "version": "0.1",
+  "version": "0.1.0",
   "description": "Browser Personal Data Store.",
   "main": "index.js",
   "scripts": {
