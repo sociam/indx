@@ -184,7 +184,9 @@ class AdminHandler(BaseHandler):
         self.database.list_users().addCallbacks(filter_user_list, lambda *x: self.return_internal_error(request))
         
     def list_apps_handler(self, request, token):
-        self.return_ok(request, data={"apps":self.webserver.appshandler.get_modules()})
+        modules = self.webserver.appshandler.get_modules()
+        shownModules = [module for module in modules if not ('hidden' in module and module["hidden"])]
+        self.return_ok(request, data={"apps":shownModules})
 
     def admin_return_ok(self,request,token):
         return self.return_ok(request)
