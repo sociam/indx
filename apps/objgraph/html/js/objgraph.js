@@ -317,15 +317,14 @@ angular
 				this.update();
 			},
 			update: function () {
-				var that = this;
-				var nodes = this.force.nodes(this.graph.getNodes()),
-					links = this.force.links(this.graph.getLinks());
-
-				console.log('links', this.graph.links.length, this.graph.links, this.graph.nodes);
-
+				var that = this,
+					graphNodes = this.graph.nodes,
+					graphLinks = this.graph.getLinks(),
+					nodes = this.force.nodes(graphNodes),
+					links = this.force.links(graphLinks);
 
 				var node = this.container.selectAll("g.node")
-					.data(this.graph.nodes, function (d) { return d.id; });
+					.data(graphNodes, function (d) { return d.id; });
 
 				var nodeEnter = node.enter().append("g")
 					.attr("class", "node")
@@ -351,7 +350,7 @@ angular
 				node.exit().remove();
 
 				var link = this.container.selectAll("line")
-					.data(this.graph.links, function (d) {
+					.data(graphLinks, function (d) {
 						console.log(d.source + "-" + d.target, d)
 						return d.source + "-" + d.target;  /// HACK
 					});
