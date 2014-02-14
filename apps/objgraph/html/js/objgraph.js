@@ -39,6 +39,46 @@ angular
 
 		return Objs;
 	})
+	.factory('FilterObjsFactory', function (ObjsFactory) {
+		var FilterObjs = Backbone.Collection.extend({
+			initialize: function (attributes, options) {
+				this.objs = new ObjsFactory(attributes, options);
+				this.objs.on('add', this.add, this);
+				this.objs.on('remove', this.remove, this);
+				this.objs.on('reset', function (objs) {
+					this.reset(objs.models);
+				}, this);
+				this._textFilter = '';
+			},
+			fetch: function () {
+				return this.objs.fetch();
+			},
+			setBox: function (box) {
+				this.objs.setBox(box);
+				return this;
+			},
+			textFilter: function (str) {
+				this._textFilter = str.toLocaleLowerCase();
+				this.reset(this.objs.select(this.objPassFilter, this));
+			},
+			add: function (obj) {
+				if (_.isArray(obj)) {
+					_.each(obj, this.add, this);
+				} else {
+					if (this.objPassFilter(obj)) {
+						Backbone.Collection.prototype.add.apply(this, arguments);
+					}
+				}
+				return this;
+			},
+			objPassFilter: function (obj) {
+				if (!obj) { return false; }
+				return obj.id.toLocaleLowerCase().indexOf(this._textFilter) > -1;
+			}
+		});
+
+		return FilterObjs;
+	})
 	.factory('GraphModelFactory', function (client) {
 		// creates a graph (nodes and links) from linked objs
 		var Graph = Backbone.View.extend({
@@ -57,7 +97,7 @@ angular
 			},
 			reset: function () {
 				this.nodes.splice(0, this.nodes.length);
-				//this.links.splice(0, this.links.length);
+				this.links.splice(0, this.links.length);
 				this.queue = [];
 				this.groups = [];
 				this.linkCaches = {}; // obj_id -> [obj_id, obj_id, ...]
@@ -181,14 +221,14 @@ angular
 					}
 				});
 
-				//removeToLinks = _.difference(existingLinksTo, allLinksTo);
-				//createLinksTo = _.difference(allLinksTo, existingLinksTo);
-				//removeFromLinks = _.difference(existingLinksFrom, allLinksFrom);
-				//createLinksFrom = _.difference(allLinksFrom, existingLinksFrom);
+				removeToLinks = _.difference(existingLinksTo, allLinksTo);
+				createLinksTo = _.difference(allLinksTo, existingLinksTo);
+				removeFromLinks = _.difference(existingLinksFrom, allLinksFrom);
+				createLinksFrom = _.difference(allLinksFrom, existingLinksFrom);
 
-				//_.each([].concat(removeToLinks, removeFromLinks), this.removeLink, this);
+				_.each([].concat(removeToLinks, removeFromLinks), this.removeLink, this);
 				//this.links.splice(0, this.links.length);
-				_.each([].concat(this.links, allLinksTo, allLinksFrom), this.createLink, this);
+				_.each([].concat(createLinksTo, createLinksFrom), this.createLink, this);
 
 			},
 			removeLinks: function (obj) {
@@ -397,12 +437,12 @@ angular
 
 		return Graph;
 	})
-	.controller('root', function ($scope, client, utils, ObjsFactory, GraphModelFactory, GraphFactory) {
+	.controller('root', function ($scope, client, utils, FilterObjsFactory, GraphModelFactory, GraphFactory) {
 		'use strict';
 
 		var box,
 			u = utils,
-			objs = new ObjsFactory(),
+			objs = new FilterObjsFactory(),
 			graphModel = new GraphModelFactory({ objs: objs, clustering: false }),
 			graph = new GraphFactory({ graphModel: graphModel, element: '.vis-container' });
 
@@ -420,7 +460,11 @@ angular
 		graph.on('select', function (obj) {
 			$scope.s.selectedObj = obj;
 			$update();
-		})
+		});
+
+		$scope.$watch('s.textFilter', function () {
+			objs.textFilter($scope.s.textFilter);
+		});
 
 		$scope.$watch('selectedBox + selectedUser', function () {
 			delete $scope.msg;
@@ -448,7 +492,8 @@ angular
 			page: 0,
 			orderBy: 'id',
 			orderReverse: false,
-			perPage: 15
+			perPage: 15,
+			textFilter: ''
 		}; // state
 		$scope.Math = window.Math;
 

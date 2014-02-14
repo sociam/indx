@@ -17,6 +17,7 @@
 		<div class="main-body">
 			<div class="obj-toolbar">
 				<span class="result">Showing {{ objs.length }} objects</span>
+				<input type="text" ng-model="s.textFilter" placeholder="search">
 				<a href="#" ng-click="s.showList = false" ng-if="s.showList">Close list</a>
 				<a href="#" ng-click="s.showList = true" ng-if="!s.showList">Show list</a>
 				<label><input type="checkbox" ng-model="options.clustering"> Cluster by similarity</label>
