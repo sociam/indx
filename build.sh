@@ -1,11 +1,11 @@
 #!/bin/bash
 npm install
-gulp dependencies
+./node_modules/.bin/gulp dependencies
 (cd ./lib/services/nodejs; npm install)
 
 for D in ./apps/*; do
     if [ -d "${D}" ]; then
-    	echo "${D}"
+    	echo "Checking ${D}"
     	if [ -f "${D}/package.json" ]; then
     		echo "npm install"
         	(cd "${D}"; npm install; ../../node_modules/.bin/bower install)
@@ -16,7 +16,7 @@ for D in ./apps/*; do
         fi
         if [ -f "${D}/gulpfile.js" ]; then
         	echo "gulp"
-        	(cd "${D}"; gulp)
+        	(cd "${D}"; ../../node_modules/.bin/gulp)
         fi
     fi
 done
