@@ -9,10 +9,11 @@
 <body>
   <div ng-app="objgraph" ng-controller="root" ng-cloak>
     <toolbar box-var='selectedBox' username-var='selectedUser'></toolbar>
-    <div ng-show="!selectedUser" class="alert alert-danger">Please log in</div>
-    <div ng-show="selectedUser && !selectedBox" class="alert alert-danger">Please select a box</div>
-	<div class="vis-container"></div>
+
+	<div class="todos-messages alert alert-info" ng-if="msg">{{ msg }}</div>
+
 	<div ng-show="selectedUser && selectedBox">
+		<div class="vis-container"></div>
 		<div class="main-body">
 			<div class="obj-toolbar">
 				<span class="result">Showing {{ objs.length }} objects</span>
