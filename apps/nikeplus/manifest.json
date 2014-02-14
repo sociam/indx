@@ -1,9 +1,9 @@
 {
-	"name": "Nike+ Harvester",
+	"name": "Nike+",
 	"type": ["service"],
 	"version": 0.1,
 	"on_boot": 0,
-	"description": "Harvester of your Nike+ data",
+	"description": "Nike+ connector",
 	"configpanel":"html/index.html",
 	"run":["python", "bin/nike_harvester.py", "--server", "{0}"],
 	"set_config":["python", "bin/nike_harvester.py", "--config", "{0}"],

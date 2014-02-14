@@ -1,8 +1,8 @@
 {
-	"name": "Facebook Service",
+	"name": "Facebook",
 	"version": 0.1,
 	"type":["service"],
-	"description": "facebook_service",
+	"description": "Facebook connector",
 	"configpanel":"html/index.html",
 	"on_boot": 0,
 	"run":["python", "bin/run.py", "--server", "{0}"],

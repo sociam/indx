@@ -4,6 +4,7 @@
 	"type":["service"],
 	"description": "indx weather service",
 	"on_boot": 0,
+	"enabled":false,
 	"configpanel":"html/index.html",
 	"run":["node", "run.js", "--indxhost", "{0}"],
 	"set_config":["node", "run.js", "--setconfig", "{0}"],

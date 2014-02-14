@@ -172,19 +172,28 @@ div.main {
 	@appswidth:457px;
 	@boxeswidth:177px;
 	@toplevelmargin:20px;
-	.apps {	max-width:@appswidth; margin: 0px @toplevelmargin 0px 0px; }
-	.boxes { max-width:@boxeswidth - 3; width:@boxeswidth - 3; margin:0px; }
-	.toplevel {
-		width:@appswidth + @boxeswidth + @toplevelmargin + 4;
-		margin:20px auto;
+	.palette {	
+		// max-width:@appswidth; 
+		// margin: 0px @toplevelmargin 20px 0px; 
+		margin:0px;
+	}
+	.boxes { 
+		// max-width:@boxeswidth - 3; width:@boxeswidth - 3; margin:0px; 
+		margin:0px;
 		padding:0px;
 	}
-	.apps, .boxes {
-		display:inline-block;
+	// .toplevel {
+	// 	width:@appswidth + @boxeswidth + @toplevelmargin + 4;
+	// 	margin:20px auto;
+	// 	padding:0px;
+	// }
+	.palette, .boxes {
+		text-align:left;
+		// display:inline-block;
 		vertical-align:top;
 		padding:0px; 
-	   	background:#fcfcfc;
-	   	box-shadow:inset 0 0 4px #ccc;
+	   	// background:#fcfcfc;
+	   	// box-shadow:inset 0 0 4px #ccc;
 	    * { 
 	    	font-family:"Lato-Light" !important; 
 	    	font-weight:100;
@@ -195,13 +204,16 @@ div.main {
 	    	font-weight:200;
 	    	margin:0px 0px 0px 0px; // -9px; 
 	    	line-height:1.0em;
-	    	padding:20px 0px 0px 20px;
+	    	// padding:20px 0px 0px 20px;
+	    	padding:10px 0px 0px 10px; 
 	    }
 	    a { color:#222; }
 	    .applist {
 	    	list-style-type:none;
 	    	padding:0px;
 	    	margin:0px;
+	    	height:100%;
+	    	width:100%;
 	    	.app {
 	    		box-shadow: 0px 2px #eee;
 	    		background:white;
@@ -209,13 +221,13 @@ div.main {
 	    		a{ text-decoration: none; }
 	    		text-align:center;
 	    		display:inline-block;		
-	    		width:90px;
-	    		min-height:90px;
+	    		width:85px;
+	    		min-height:85px;
 	    		font-size:13pt;
 	    		border:1px solid #eee;
 				// padding:2px 10px 3px 10px;
 				padding:9px 6px;
-				margin:12px;
+				margin:9px;
 				// margin:0px 0px 0px 0px;
 				vertical-align: middle !important;
 				&:hover {
@@ -245,7 +257,7 @@ div.main {
 	}
 	.boxes ul { 
 		list-style-type:none; 
-    	padding:5px 0px 5px 18px;
+    	padding:5px 0px 5px 10px;
     	margin:0px;
 	}
 	.indx-boxlist-box {
@@ -254,7 +266,8 @@ div.main {
 		background:white;
 		border:1px solid #eee;
 		width:140px; height:95px;
-		margin:7px 10px 7px 0px;
+		// margin:7px 10px 7px 0px;
+		margin: 7px 0px;
 		.canvas {
 			position:absolute;
 			top:0px; left:0px; right:0px; bottom:0px;

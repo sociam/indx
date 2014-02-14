@@ -1,6 +1,7 @@
 {
 	"name": "External app",
 	"version": 0.1,
+	"enabled":false,
 	"type":["service"],
 	"description": "Example external app",
 	"on_boot": 1,

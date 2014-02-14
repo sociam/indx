@@ -1,3 +1,6 @@
+/* jshint undef: true, strict:false, trailing:false, unused:false, -W110 */
+/*global $,_,document,window,console,escape,Backbone,exports,WebSocket,process,_NODE_AJAX,angular,jQuery */
+
 (function() {
 	angular.module('launcher', ['indx','ngRoute'])
 		.config(['$routeProvider', function($routeProvider) {
@@ -11,6 +14,7 @@
 		}])
 	.controller('Root', function($scope, $location, client, utils) {
 		// root just redirects to appropriate places
+		var u = utils;
 		client.store.checkLogin().then(function(login) {
 			if (login.is_authenticated) {
 				u.safeApply($scope, function() { $location.path('/apps'); });
@@ -131,8 +135,6 @@
 				u.error('oops can\'t get apps - not ready i guess');
 			});
 		};
-		getAppsList();
-
 		// box list too!
 		var getBoxesList = function() {
 			store.getBoxList().then(function(bids) {
@@ -159,8 +161,21 @@
 				u.error('oops can\'t get boxes - not ready i guess');
 			});
 		};
-		store.on('login', getBoxesList);
+		store.on('login', function() { getBoxesList(); getAppsList(); });
+		getAppsList();
 		getBoxesList();
+	}).filter('appenabled', function() {
+		return function(things) {
+			return things && things.filter(function(x) {
+				return x.enabled !== false;
+			});
+		};
+	}).filter('apptype', function() {
+		return function(apps, type) {
+			var isapp = function(a) { return a.run === undefined; };
+			if (type == 'app') { return apps && apps.filter(isapp); }
+			return apps && apps.filter(function(x) { return !isapp(x); });
+		};
 	}).controller('main', function($location, $scope, client, utils) {
 		var u = utils;
 		// we want to route
