@@ -259,8 +259,7 @@ class BoxHandler(BaseHandler):
             return self.return_forbidden(request)
         BoxHandler.log(logging.DEBUG, "BoxHandler get_acls", extra = {"request": request, "token": token})
 
-        wbSession = self.get_session(request)
-        user = IndxUser(self.database, wbSession.username)
+        user = IndxUser(self.database, token.username)
         
         def err_cb(failure):
             failure.trap(Exception)
@@ -287,8 +286,7 @@ class BoxHandler(BaseHandler):
             return self.return_forbidden(request)
         BoxHandler.log(logging.DEBUG, "BoxHandler set_acl", extra = {"request": request, "token": token})
 
-        wbSession = self.get_session(request)
-        user = IndxUser(self.database, wbSession.username)
+        user = IndxUser(self.database, token.username)
 
         # box is set by the token (token.boxid)
         try:
