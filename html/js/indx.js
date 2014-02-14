@@ -53,6 +53,9 @@
 angular
 	.module('indx', [])
 	.factory('client',function(utils) {
+		// long token support not fully implemented, disable for now
+		var ENABLE_LONG_TOKENS = false;
+
 		var u = utils, log = utils.log, error = utils.error, debug = utils.debug, jQ = jQuery;
 
 		var DEFAULT_HOST = document.location.host; // which may contain the port
@@ -505,7 +508,28 @@ angular
 			_objlistdict : function() { return this.attributes.dobjlist; },			
 			_objcache:function() { return this.attributes.objcache; },
 			_getCachedToken:function() { return this.get("token"); },
-			_setToken:function(token) { this.set("token", token);	},
+			_getStoredTokenKeyname: function() { 
+				return '__indx_box_token_' + this.getID();
+			},
+			_hasStoredToken:function() { 
+				return typeof localStorage !== 'undefined' && localStorage[this._getStoredTokenKeyname()] !== undefined;
+			},
+			_getStoredToken:function() { 
+				return typeof localStorage !== 'undefined' && localStorage[this._getStoredTokenKeyname()];				
+			},
+			_setStoredToken:function(token) {
+				if (typeof localStorage !== 'undefined') { 
+					localStorage[this._getStoredTokenKeyname()] = token;
+				} 
+				return undefined;
+			},
+			_clearStoredToken:function() { 
+				delete localStorage[this._getStoredTokenKeyname()];
+			},
+			_setToken:function(token) { 
+				this.set("token", token);	
+				this._setStoredToken(token);
+			},
 			_setVersion:function(v) { this.set("version", v);	},
 
 			/// @return {integer} - Current version of the box
@@ -543,7 +567,7 @@ angular
 			/// @return {integer} - this box's id
 			getID:function() { return this.id || this.cid;	},
 			_ajax:function(method, path, data) {
-				data = _(_(data||{}).clone()).extend({box: this.id || this.cid, token:this.get('token')});
+				data = _(_(data||{}).clone()).extend({box: this.id || this.cid, token:this.get('token') || this._getStoredToken() });
 				return this.store._ajax(method, path, data);
 			},
 			/// @arg {string} id - Identity to use for hte file
@@ -786,7 +810,7 @@ angular
 				var lacks = _(missingModels).keys();
 				if (lacks.length > 0) {
 					// console.debug('calling with lacks ', lacks.length);
-					u.dmap(u.chunked(lacks, 150), function(lids) {
+					u.dmap(u.chunked(lacks, 50), function(lids) {
 						// console.debug('lids length ', lids.length);
 						this_._ajax('GET', this_.getID(), {'id':lids}).then(function(response) {
 							var resolvedIDs = _(response.data).map(function(mraw,id) {
@@ -860,22 +884,37 @@ angular
 				// all fetch really does is retrieve ids!
 				// new client :: this now _only_ fetches object ids
 				// return a list of models (each of type Object) to populate a GraphCollection
-				var d = u.deferred(), fd = u.deferred(), this_ = this;
 				if (this._isFetched()) {
 					// Nope - don't do anything -- we just wait for websockets to update us.
-					fd.resolve();
-				} else {
-					// otherwise we aren't fetched, so we just do it
-					var box = this.getID();
-					this._ajax("GET",[box,'get_object_ids'].join('/')).then(
-						function(response){
-							u.assert(response['@version'] !== undefined, 'no version provided');
-							this_.id = this_.getID(); // sets so that _isFetched later returns true
-							this_._setVersion(response['@version']);
-							this_._updateObjectList(response.ids);
-							fd.resolve(this_);
-						}).fail(fd.reject);
+					return u.dresolve(); 
+				} 
+
+				var d = u.deferred(), fd = u.deferred(), this_ = this;
+				if (this._is_fetching !== undefined) { 
+					fd.then(function() { d.resolve(this_); }).fail(d.reject);
+					this._is_fetching.push(fd);
+					return d.promise();
 				}
+				this._is_fetching = [];
+
+				// otherwise we aren't fetched, so we just do it
+				var box = this.getID();
+				this._ajax("GET",[box,'get_object_ids'].join('/')).then(
+					function(response){
+						u.assert(response['@version'] !== undefined, 'no version provided');
+						this_.id = this_.getID(); // sets so that _isFetched later returns true
+						this_._setVersion(response['@version']);
+						this_._updateObjectList(response.ids);
+						this_._is_fetching.map(function(x) { return x.resolve(this_); });
+						delete this_._is_fetching;
+						fd.resolve(this_);
+					}).fail(function() { 
+						var args = arguments;
+						this_._is_fetching.map(function(x) { return x.reject.apply(x, args); });
+						delete this_._is_fetching;
+						fd.reject(); 
+					});
+			
 				fd.then(function() {
 					this_.trigger('update-from-master', this_.getVersion());
 					d.resolve(this_);
@@ -1040,7 +1079,7 @@ angular
 				switch(method)
 				{
 				case "create": return box._createBox();
-				case "read": return box._checkTokenAndFetch();
+				case "read": return box._fetch(); // box._checkTokenAndFetch();
 				case "update": return box._update()[0];  // save whole box?
 				case "delete": return this.deleteBox(this.getID()); // hook up to destroy
 				}
@@ -1077,6 +1116,20 @@ angular
 				var b = this.boxes().get(boxid) || this._create(boxid);
 				if (!b._getCachedToken()) {
 					// console.info('indxjs getToken(): getting token for box ', boxid);
+					if (ENABLE_LONG_TOKENS && b._hasStoredToken()) { 
+						var d = u.deferred();
+						var cont = function() { return d.resolve(b); };
+						b.fetch()
+							.then(function() { 
+								console.info('successful cached token resumption >> '); 
+								cont(b); 
+							}).fail(function() { 
+								// fallback to regular token fetching
+								console.info('falling back to standard token fetching');
+								b.getToken().then(cont).fail(d.reject);
+							});
+						return d.promise();
+					}
 					return b.getToken().pipe(function() { return b.fetch();	});
 				}
 				console.info('indxjs getToken(): already have token for box --- ', boxid);

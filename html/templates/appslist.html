@@ -1,20 +1,34 @@
-<div class="toplevel">
-	<div class="apps">
-		<h2>apps:</h2>
-		<ul class="applist">
-			<li ng-repeat='a in apps' class="app">
-				<a ng-href='apps/{{ a.url || a["@id"] }}' target="_blank" title="{{ a.about }}">
-					<img class="appicon" ng-show="a.icons[128]" ng-src="apps/{{ a['@id'] }}/{{ a.icons[128] }}">
-					<img class="appicon" ng-show="!a.icons[128]" ng-src="/img/hypercube-lt.png">
-					<div class="appname">{{ (a.name || a["@id"]) | lowercase }}</div>
-				</a>
-			</li>
-		</ul>
+<div class="row">
+	<div class="col-xs-10">
+		<div class="palette apps">
+			<h2>apps:</h2>
+			<ul class="applist">
+				<li ng-repeat='a in apps | appenabled | apptype:"app"' class="app">
+					<a ng-href='apps/{{ a.url || a["@id"] }}' target="_blank" title="{{ a.about }}">
+						<img class="appicon" ng-show="a.icons[128]" ng-src="apps/{{ a['@id'] }}/{{ a.icons[128] }}">
+						<img class="appicon" ng-show="!a.icons[128]" ng-src="/img/hypercube-lt.png">
+						<div class="appname">{{ (a.name || a["@id"]) | lowercase }}</div>
+					</a>
+				</li>
+			</ul>
+		</div>
+		<div class="palette services">
+			<h2>services &amp; connectors:</h2>
+			<ul class="applist">
+				<li ng-repeat='a in apps | appenabled | apptype:"svc"' class="app">
+					<a ng-href='apps/{{ a.url || a["@id"] }}' target="_blank" title="{{ a.about }}">
+						<img class="appicon" ng-show="a.icons[128]" ng-src="apps/{{ a['@id'] }}/{{ a.icons[128] }}">
+						<img class="appicon" ng-show="!a.icons[128]" ng-src="/img/hypercube-lt.png">
+						<div class="appname">{{ (a.name || a["@id"]) | lowercase }}</div>
+					</a>
+				</li>
+			</ul>
+		</div>
 	</div>
-	<div ng-show="boxes" class="boxes">
+	<div ng-show="boxes" class="boxes col-xs-2">
 		<h2>boxes:</h2>
 		<ul>
-			<li><indx-boxlist-box ng-repeat="b in boxes" box="b"></indx-boxlist-box></li>
+			<li><indx-boxlist-box ng-repeat="b in boxes" b="b"></indx-boxlist-box></li>
 		</ul>
 	</div>
 </div>

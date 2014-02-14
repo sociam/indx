@@ -112,6 +112,7 @@
                 } else {
                     this._fetching_thumbnail[url] = d;
                     chrome.tabs.captureVisibleTab(wid, { format:'png' }, function(dataUrl) {
+                        console.log("data uri >> ", dataUrl);
                         if (dataUrl) {
                             u.resizeImage(dataUrl, 90, 90).then(function(smallerDataUri) {
                                 tabthumbs[url] = smallerDataUri;
@@ -119,7 +120,7 @@
                                 d.resolve(smallerDataUri); 
                             }).fail(function() { console.error('failed resizing '); d.reject(); });
                         } else { 
-                            console.log('couldnt get thumbnail')
+                            console.log('couldnt get thumbnail -- ', wid, url);
                             d.resolve(); 
                         }
                         // box.getObj(id).then(function(model) { 

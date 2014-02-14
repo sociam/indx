@@ -1,6 +1,7 @@
 {
 	"name": "Temporal Data",
 	"version": 0.1,
+	"enabled":false,
 	"type":["app"],
 	"description": "Temporal Data Manipulator",
 	"author": [

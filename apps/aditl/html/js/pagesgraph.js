@@ -25,10 +25,6 @@ angular.module('aditl')
 
 				var translate = function(d, x, y) { return ['translate(', x, ',', y, ')'].join(); };
 
-				// {  page1 : [ {instance1 val: val}, {instance2 val: val},  ],
-				//    page2 : [ { ... } ]
-				// }
-
 				var margin = { top: 5, right: 5, left: 5, bottom: 5 };
 				var width = $scope.width - margin.left - margin.right;
 				var height = $scope.height - margin.top - margin.bottom;
@@ -36,7 +32,34 @@ angular.module('aditl')
 				var y = d3.scale.linear().rangeRound([height,0]);
 
 				var update = function() { 
+					// {  page1 : [ {instance1 val: val}, {instance2 val: val},  ],
+					//    page2 : [ { ... } ]
+					// }
+
 					var data = $scope.stats;
+
+					// stacks the statistics proportional to time, outputting
+					// something that has [y0,
+					var stacked = _(data).map(function(pageviews, pid) { 
+						var y0 = 0; 
+						var offsets = pageviews.map(function(pv) {
+							var val = pv.peek('tend') && pv.peek('tstart') && (pv.peek('tend') - pv.peek('tstart')) || 0;
+							var offsets = { 
+								y0: y0,
+								y1: y0 + val,
+								tstart : pv.peek('tstart'),
+								tend: pv.peek('tend')
+							};
+							y0 = y0 + val;
+							return offsets;
+						});
+						return [pid, offsets];
+					});
+					stacked.sort(function(a,b) {
+						var ka = a[0], va=a[1], kb=b[0], vb = b[1];
+						return vb[vb.length - 1].y1 - va[va.length - 1].y1; 
+					});
+
 					var bars = svg.selectAll('g.bars')
 						.data($scope.stats)
 						.enter()
@@ -50,6 +73,8 @@ angular.module('aditl')
 						.attr('class', 'bar')
 						.attr("width", x.rangeBand())
 						.attr("y", function(d) { });
+
+
 				};
 
 				// var rdata = svg.selectAll('rect.bops').data(rs);

@@ -1,6 +1,7 @@
 {
 	"name": "Boxie",
 	"version": 0.3,
+	"enabled":false,
 	"description": "Box browser",
 	"icons": {
 		"128": "icon.png",

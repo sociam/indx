@@ -1,5 +1,5 @@
 {
-	"name": "Documentation generator service",
+	"name": "Doc generator",
 	"version": 0.1,
 	"type":["service"],
 	"description": "Generates documentation from JavaScript source code",

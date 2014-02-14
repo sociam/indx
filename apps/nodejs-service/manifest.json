@@ -1,7 +1,8 @@
 {
-	"name": "example nodejs",
+	"name": "nodejs service",
 	"version": 0.1,
 	"type":["service"],
+	"enabled": false,
 	"description": "example nodejs service",
 	"on_boot": 0,
 	"configpanel":"html/index.html",

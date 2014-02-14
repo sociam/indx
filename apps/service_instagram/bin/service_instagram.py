@@ -527,21 +527,21 @@ class instagramService:
                     response = e.value.read()
                     json_response = json.loads(response)
                     service.version = json_response['@version']
-                    logging.debug('INDX insert error in Twitter Service Object: '+str(response))
+                    logging.debug('INDX insert error in Instagram Service Object: '+str(response))
                     try:
                         service.indx_con.update(service.version, obj).addCallbacks(update_cb, exception_cb)
                         #logging.debug('Twitter Service - Successfully added Objects into Box')
                     except:
-                        logging.error('Twitter Service, error on insert {0}'.format(response))
+                        logging.error('Instagram Service, error on insert {0}'.format(response))
                         update_d.errback(e.value)
                 else:
-                    logging.error('Twitter Service Unknow error: {0}'.format(e.value.read()))
+                    logging.error('Instagram Service Unknow error: {0}'.format(e.value.read()))
                     update_d.errback(e.value)
             else:
                 logging.error("Error updating INDX: {0}".format(e.value))
                 update_d.errback(e.value)
         
-        logging.debug("in service_tweets - Trying to insert into indx...Current diff version: {0} and objects (len) given {1}".format(self.version, len(obj)))
+        logging.debug("in Instagram - Trying to insert into indx...Current diff version: {0} and objects (len) given {1}".format(self.version, len(obj)))
         self.indx_con.update(self.version, obj).addCallbacks(update_cb, exception_cb)
         
         return update_d
