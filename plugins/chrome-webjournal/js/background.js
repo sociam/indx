@@ -19,8 +19,15 @@
         chrome.browserAction.setBadgeText({text:s.toString()});
         chrome.browserAction.setBadgeBackgroundColor({color:'#00ffff'});
     };
-    var duration_secs = function(d) { return (d.peek('tend') && d.peek('tend').valueOf() - d.peek('tstart') && d.peek('tstart').valueOf()) / 1000.0;  };
-    var getBoxName = function() { return localStorage.indx_box || 'lifelog'; };
+    var duration_secs = function(d) { 
+        return (d.peek('tend') && d.peek('tend').valueOf() - d.peek('tstart') && d.peek('tstart').valueOf()) / 1000.0;  
+    };
+    var getBoxName = function() { 
+        return localStorage.indx_box || 'lifelog'; 
+    };
+
+    var get_watcher = function() { return chrome.extension.getBackgroundPage().watcher_instance; };
+    var get_store = function() { var w = get_watcher(); if (w) { return w.get('store'); } };
 
     var connect = function(client,utils) {
         var server_url = localStorage.indx_url;
@@ -58,9 +65,7 @@
             window.$s = $scope;
             var records = [];
             var guid = utils.guid();
-            var get_store = function() {  return chrome.extension.getBackgroundPage().store; };
-            var get_watcher = function() { return chrome.extension.getBackgroundPage().watcher_instance; };
-
+           
             // scope methods for rendering things nicely.
             $scope.date = function(d) { return new Date().toLocaleTimeString().slice(0,-3);  };
             $scope.duration = function(d) {
@@ -87,8 +92,6 @@
             window.onunload=function() { get_watcher().off(undefined, undefined, guid);  };
         }).controller('options', function($scope, client, utils) {
             // options screen only  -------------------------------------------
-            var get_watcher = function() { return chrome.extension.getBackgroundPage().watcher_instance; };
-            var get_store = function() { var w = get_watcher(); if (w) { return w.get('store'); } };
             var watcher = get_watcher(), guid = utils.guid(), old_store = get_store();
             var sa = function(f) { utils.safeApply($scope, f); };
             window.$s = $scope;
@@ -143,8 +146,10 @@
             setErrorBadge('x' , reason);
             winstance.setError(reason);
         };
-        window.watcher_instance = winstance;
-        winstance.on('new-entries', function(entries) { n_logged += entries.length; setOKBadge(''+n_logged);  });
+        winstance.on('new-entries', function(entries) { 
+            n_logged += entries.length; 
+            setOKBadge(''+n_logged);  
+        });
 
         var initStore = function(store) {
             console.info('connect successful >> ', store);
@@ -169,6 +174,7 @@
                     setTimeout(me, 10000); 
                 });
         };
+        window.watcher_instance = winstance;    
         runner();
     });
 }());
