@@ -96,7 +96,7 @@
                 return noprot.slice(0,maxlen);
             };
             var update_history = function(history) {  
-                console.log('update history >> ', history, history.length );
+                // console.log('update history >> ', history, history.length );
                 utils.safeApply($scope, function() { $scope.data = history.concat(); });     
             };
             get_watcher().on('updated-history', function(history) {  update_history(history); }, guid);
