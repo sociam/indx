@@ -392,10 +392,6 @@ angular
 					this_._flushDeleteQueue();
 				});
 				this.store.on('login', function() { console.debug('on login >> '); this_.reconnect(); });
-				this.on('new-token', function() { 
-					console.log('new token! setting up web socket >> '); 
-					this_._setUpWebSocket(); 
-				});
 				this._setUpWebSocket();
 				this._reset();
 			},
@@ -881,26 +877,70 @@ angular
 					this_.trigger('obj-remove', rid);
 					this_._objcache().remove(rid);
 				});
+			
 			},
-			_isFetched: function() { return this.get('token') && this.id !== undefined;	},
+			_prefetch:function() { 
+				// gets called by fetch() -- 
+				//  1. if already connected, we are already fetched
+				//  2. if not fetched yet, we get a fetch on.
+				// this does token management 
+				if (this.isConnected()) { 
+					console.log('connected already! resolving straightaway --- ');
+					return u.dresolve(this); 
+				}
+				var d = u.deferred(), this_ = this;			
+				if (this._is_fetching !== undefined) { 
+					// already fetching, so do something else :: 
+					this._is_fetching.push(d);
+					return d.promise();
+				} 
+
+				// not fetching already, so continue --
+				var success = function() { 
+					this_._setUpWebSocket();
+					this_._is_fetching.map(function(dfd) { dfd.resolve(this_); });
+					delete this_._is_fetching;
+					d.resolve(this_);
+				};
+				this._is_fetching = [];
+				if (this._getCachedToken() || ENABLE_LONG_TOKENS && this._hasStoredToken()) {
+					// try to give it a little go >> 
+					this_._fetch().then(success).fail(function() { 
+						// token might be dead so let's give a new token a try
+						this_.getToken().then(function() { this_._fetch().then(success).fail(d.reject);  }).fail(d.reject);
+					});
+				} else {
+					this.getToken().pipe(function() { return this_._fetch(); }).then(success).fail(d.reject);
+				}
+				return d.promise();
+
+
+				// if (!b._getCachedToken()) {
+				// 	// console.info('indxjs getToken(): getting token for box ', boxid);
+				// 	if (ENABLE_LONG_TOKENS && b._hasStoredToken()) { 
+				// 		var d = u.deferred();
+				// 		var cont = function() { return d.resolve(b); };
+				// 		safeFetch(b).then(function() { 
+				// 			console.info('successful cached token resumption >> '); 
+				// 			cont(b); 
+				// 		}).fail(function() { 
+				// 			// fallback to regular token fetching
+				// 			console.info('falling back to standard token fetching');
+				// 			b.getToken().then(cont).fail(d.reject);
+				// 		});
+				// 		return d.promise();
+				// 	}
+				// 	return b.getToken().pipe(function() { return safeFetch(b);	});
+				// }
+				// console.info('indxjs getToken(): already have token for box --- ', boxid);
+				// return u.dresolve(b);
+
+			},
 			_fetch:function() {
 				// all fetch really does is retrieve ids!
 				// new client :: this now _only_ fetches object ids
 				// return a list of models (each of type Object) to populate a GraphCollection
-				if (this._isFetched()) {
-					// Nope - don't do anything -- we just wait for websockets to update us.
-					return u.dresolve(); 
-				} 
-
-				var d = u.deferred(), fd = u.deferred(), this_ = this;
-				if (this._is_fetching !== undefined) { 
-					fd.then(function() { d.resolve(this_); }).fail(d.reject);
-					this._is_fetching.push(fd);
-					return d.promise();
-				}
-				this._is_fetching = [];
-
-				// otherwise we aren't fetched, so we just do it
+				var d = u.deferred(), this_ = this, fd = u.deferred();
 				var box = this.getID();
 				this._ajax("GET",[box,'get_object_ids'].join('/')).then(
 					function(response){
@@ -908,16 +948,8 @@ angular
 						this_.id = this_.getID(); // sets so that _isFetched later returns true
 						this_._setVersion(response['@version']);
 						this_._updateObjectList(response.ids);
-						this_._is_fetching.map(function(x) { return x.resolve(this_); });
-						delete this_._is_fetching;
 						fd.resolve(this_);
-					}).fail(function() { 
-						var args = arguments;
-						this_._is_fetching.map(function(x) { return x.reject.apply(x, args); });
-						delete this_._is_fetching;
-						fd.reject(); 
-					});
-			
+					}).fail(function() { fd.reject();  });				
 				fd.then(function() {
 					this_.trigger('update-from-master', this_.getVersion());
 					d.resolve(this_);
@@ -925,17 +957,6 @@ angular
 				return d.promise();
 			},
 			// -----------------------------------------------
-			_checkTokenAndFetch : function() {
-				var this_ = this;
-				if (this.get('token') === undefined) {
-					var d = u.deferred();
-					this.getToken()
-						.then(function() { this_._fetch().then(d.resolve).fail(d.reject);	})
-						.fail(d.reject);
-					return d.promise();
-				}
-				return this_._fetch();
-			},
 			_createBox:function() {
 				var d = u.deferred();
 				var this_ = this;
@@ -1082,7 +1103,7 @@ angular
 				switch(method)
 				{
 				case "create": return box._createBox();
-				case "read": return box._fetch(); // box._checkTokenAndFetch();
+				case "read": return box._prefetch(); // box._checkTokenAndFetch();
 				case "update": return box._update()[0];  // save whole box?
 				case "delete": return this.deleteBox(this.getID()); // hook up to destroy
 				}
@@ -1116,27 +1137,8 @@ angular
 			},
 			boxes:function() { return this.attributes.boxes;	},
 			getBox: function(boxid) {
-				var b = this.boxes().get(boxid) || this._create(boxid);
-				if (!b._getCachedToken()) {
-					// console.info('indxjs getToken(): getting token for box ', boxid);
-					if (ENABLE_LONG_TOKENS && b._hasStoredToken()) { 
-						var d = u.deferred();
-						var cont = function() { return d.resolve(b); };
-						b.fetch()
-							.then(function() { 
-								console.info('successful cached token resumption >> '); 
-								cont(b); 
-							}).fail(function() { 
-								// fallback to regular token fetching
-								console.info('falling back to standard token fetching');
-								b.getToken().then(cont).fail(d.reject);
-							});
-						return d.promise();
-					}
-					return b.getToken().pipe(function() { return b.fetch();	});
-				}
-				console.info('indxjs getToken(): already have token for box --- ', boxid);
-				return u.dresolve(b);
+				var b = this.boxes().get(boxid) || this._create(boxid);			
+				return b.fetch();
 			},
 			/// @arg <string|number> boxid: the id for the box
 			/// Creates a box with id boxid.  The user should have appropriate permissions
