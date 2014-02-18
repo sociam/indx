@@ -165,12 +165,18 @@
                 var this_ = this;
                 if (!this._history) { this._history = []; }
                 var N = 25, records = this._history, threshold_secs = 0; //.80;
-                this.on('new-entries', function(entries) {
-                    var longies = entries.filter(function(d) { return pu.duration_secs(d) > threshold_secs; });
-                    records = _(records).union(longies);
-                    records = records.slice(-N);
-                    this.trigger('updated-history', records);
-                    this_._history = records;
+                this.on('new-record', function(record) {
+                    console.log('new record >> ', record);
+                    if (records.indexOf(record) >= 0) {
+                        var old_indx = records.indexOf(record);
+                        records.splice(0, 0, records.splice(old_indx,1)[0]);
+                    } else {
+                        if (pu.duration_secs(record) > threshold_secs) { 
+                            records.splice(0, 0, record);
+                            records.splice(N);
+                            this.trigger('updated-history', records);
+                        }
+                    }
                 });
             },
             _get_history:function() { return this._history || [];  },
@@ -252,6 +258,7 @@
                             this_._record_updated(this_.current_record).fail(function(bail) { 
                                 this_._trigger_connection_error('error on save record');
                             });
+                            this_.trigger('new-record', this_.current_record);
                         }
                         delete this_.current_record;
                         if (tabinfo) {

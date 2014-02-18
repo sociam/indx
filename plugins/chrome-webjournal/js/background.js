@@ -77,21 +77,28 @@
                 if (secs < 60) {  return secs.toFixed(2) + 's'; }  
                 return (secs/60.0).toFixed(2) + 'm';
             };        
+            $scope.thumb = function(d) {
+                var what = d && d.peek('what');
+                if (!what) return false;
+                return what.peek('thumbnail');
+            };
             $scope.label = function(d) { 
                 var maxlen = 150;
-                if (d === undefined || !d.get('location')) { return ''; }
-                if (d.get('title') && d.get('title').length && d.get('title')[0].trim().length > 0) { return d.get('title')[0].slice(0,maxlen); }
-                var url = d.get('location')[0];
+                var what = d && d.peek('what');
+                if (!what) { return ''; }
+                if (what.peek('title') && what.peek('title').length && what.peek('title').trim().length > 0) { 
+                    return what.peek('title').slice(0,maxlen); 
+                }
+                var url = what.id;
                 if (!url) { return ''; }
                 var noprot = url.slice(url.indexOf('//')+2);
                 if (noprot.indexOf('www.') === 0) { noprot = noprot.slice(4); }
                 return noprot.slice(0,maxlen);
             };
             var update_history = function(history) {  
-                console.log('update history >> ', update_history.length );
-                utils.safeApply($scope, function() { $scope.data = history.concat().reverse(); });     
+                console.log('update history >> ', history, history.length );
+                utils.safeApply($scope, function() { $scope.data = history.concat(); });     
             };
-
             get_watcher().on('updated-history', function(history) {  update_history(history); }, guid);
             update_history(get_watcher()._get_history());
             window.onunload=function() { get_watcher().off(undefined, undefined, guid);  };
