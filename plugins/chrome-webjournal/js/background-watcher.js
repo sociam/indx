@@ -89,14 +89,14 @@
                     // this_.trigger('user-action', { url: tab.url, title: tab.title, tabid: tab.id, favicon:tab.favIconUrl, windowid:window.id });
                 });
 
-                this._init_history();
+                this._init_history();   
                 // todo: start it up on current focused window.
                 //  ---------------------------------------
                 this.on('connection-error', function(e) {  
-                    pu.setErrorBadge(':(');
-                    console.error('connection-error', e);
-                    this_._attempt_reconnect();
-                    // ignore.
+                    pu.setErrorBadge('connection error -- attempting reconnect');
+                    this_._attempt_reconnect()
+                        .then(function() {  this_._trigger_connection_ok(); })
+                        .fail(function() { console.error('getToken failed :( '); });
                 });
                 window.watcher = this;
             },
@@ -106,13 +106,10 @@
                 d = u.deferred(), this_ = this;
                 if (this._fetching_thumbnail[url]) { 
                     // console.log('already getting thumbnail >> ', url);
-                    this._fetching_thumbnail[url].then(function() { 
-                        d.resolve(tabthumbs[url]); 
-                    }).fail(d.reject);
+                    this._fetching_thumbnail[url].then(function() { d.resolve(tabthumbs[url]);    }).fail(d.reject);
                 } else {
                     this._fetching_thumbnail[url] = d;
                     chrome.tabs.captureVisibleTab(wid, { format:'png' }, function(dataUrl) {
-                        console.log("data uri >> ", dataUrl);
                         if (dataUrl) {
                             u.resizeImage(dataUrl, 90, 90).then(function(smallerDataUri) {
                                 tabthumbs[url] = smallerDataUri;
@@ -123,41 +120,45 @@
                             console.log('couldnt get thumbnail -- ', wid, url);
                             d.resolve(); 
                         }
-                        // box.getObj(id).then(function(model) { 
-                        //     // already have it? 
-                        //     delete this_._fetching_thumbnail[url];
-                        //     if (dataUrl !== undefined) {
-                        //         model.set(u.splitStringIntoChunksObj(dataUrl,150000));  // encodeURIComponent(dataUrl);
-                        //     }
-                        //     // console.log('thumbail model >> ', model.id, model.attributes);
-                        //     model.set({type:"thumbnail"});
-                        //     model.save().then(function() { d.resolve(model); }).fail(function() { console.error("ERROR SAVING THUMBNAIL ", url); d.reject();});
-                        // });
                     });
                 }
                 return d.promise();
             },
             _attempt_reconnect:function() {
                 // very suspicious about this >_< .. TODO look at 
-                var this_ = this;
-                if (this_.box && !this_._timeout) { 
-                    console.info('Attempting to refresh tokens ... ');
-                    var do_refresh = function() { 
-                        var b = this_.box;
-                        if (!b) { return; }
-                        b.reconnect().then(function() {  delete this_._timeout;  console.info('box refresh ok!');  })
-                        .fail(function(e) {
-                            console.error('box refresh fail :( ');
-                            console.error('scheduling a refresh ... ');
-                            delete this_._timeout;
-                            this_._timeout = setTimeout(function() {
-                                console.error('attempting refresh ... ');
-                                do_refresh();
-                            }, 1000);
-                        });
-                    };
-                    do_refresh();
+                if (this._timeout !== undefined) { 
+                    console.log('timeout is not undefined >> ', this._timeout);
+                    return u.when(this._timeout);   
                 }
+                if (!this.store) { return u.dreject(); }
+
+                var this_ = this, d = u.deferred();
+                if (!this.box) { 
+                    this_._timeout = d;
+                    this._load_box().then(function() { 
+                        console.error('thenning loadbox');
+                        delete this_._timeout; 
+                        d.resolve();
+                    }).fail(function() { 
+                        console.error('loadbox failing on reconnect');
+                        delete this_._timeout; 
+                        console.log('this timeout ', this_._timeout)
+                        d.reject();
+                    });
+                    return d.promise();
+                }
+
+                console.info('Attempting to refresh tokens ... ');
+                this._timeout = d;
+                this.box.reconnect().then(function() { 
+                    delete this_._timeout;
+                    d.resolve();
+                }).fail(function() { 
+                    delete this_._timeout;
+                    console.log('getToken fail and timeout ', this_._timeout);
+                    d.reject();
+                });
+                return d.promise();
             },
             _init_history:function() { 
                 // keep history around for plugins etc 
@@ -173,58 +174,61 @@
                 });
             },
             _get_history:function() { return this._history || [];  },
-            // start_polling:function(interval) {
-            //     var this_ = this;
-            //     this.stop_polling();
-            //     this_.poll = setInterval(function() {
-            //         if (this_.current_record !== undefined) {
-            //             this_.change(this_.current_record.location);
-            //         }
-            //     }, 1000);
-            // },
-            // stop_polling:function() {
-            //     if (this.poll) {
-            //         clearInterval(this.poll);
-            //         delete this.poll;
-            //     }
-            // },
             _load_box:function() {
-                var bid = pu.getBoxName(), store = this.get('store'), d = u.deferred(), this_ = this;
-                console.log('load box !! ', bid);
+                var bid = pu.getBoxName(), d = u.deferred(), this_ = this, store = this.store;
+                // console.log('load box !! ', bid);
                 if (bid && store) {
-                    store.getBox(bid).then(function(box) { 
-                        var dbox = u.deferred(), dwho = u.deferred();
-                        this_.box = box;
-                        box.getObj(OBJ_ID).then(function(obj) {
-                            obj.save(); // make sure journal exists.
-                            this_.set('journal', obj);
-                            dbox.resolve(box); 
+                    store.getBox(bid).then(function(box) {
+                        // TODO: need to get username from the box//token
+                        box.getObj(OBJ_ID).then(function(jobj) {
+                            jQuery.when(jobj.save()).then(function() { 
+                                this_.box = box;
+                                this_.set('journal', jobj);
+                                d.resolve(box); 
+                            }).fail(d.reject); 
                         }).fail(d.reject); 
-                        box.getObj(store.get('username')).then(function(userobj) {
-                            this_.whom = userobj;
-                            dwho.resolve(userobj);
-                        });                        
-                        jQuery.when(dbox, dwho).then(d.resolve).fail(d.reject);
-                    }).fail(d.reject);
+                        // box.getObj([OBJ_ID, store.get('username')]).then(function(objuser) {
+                        //     var jobj = objuser[0], whom = objuser[1];
+                        //     jQuery.when(jobj.save(), whom.save()).then(function() { 
+                        //         this_.box = box;
+                        //         this_.set('journal', jobj);
+                        //         d.resolve(box); 
+                        //     }).fail(d.reject); 
+                        // }).fail(d.reject); 
+                    }).fail(function(err) { 
+                        console.error('_load_box fail getBox(', bid, ')', error);
+                        d.reject();
+                    });
                 } else { 
                     if (!bid) { return d.reject('no box specified'); } 
                     d.reject('no store specified');
                  }
                 return d.promise();
             },
-            getError: function() {  return this.get('error'); },
-            setError: function(e) { this.set('error',e); this.trigger('error-update'); },
             set_store:function(store) {
                 var this_ = this;
-                console.log('set store > ', store, this.bid);
-                this.set({store:store});
+                this.store = store;
                 if (!store) { 
                     delete this.box; 
                     this.unset('journal');
                     return;
                 }
                 // store is defined
-                this._load_box().fail(function(bail) { this_.trigger('connection-error', bail); });
+                this._load_box()
+                    .then(function(bail) { 
+                        this_._trigger_connection_ok(bail); 
+                    }).fail(function(bail) { 
+                        console.log('set_store load box fail continuation -- ', bail);
+                        // this_._trigger_connection_error(bail); 
+                    });
+            },
+            _trigger_connection_ok: function(info) {
+                console.info('connection ok ', info);
+                this.trigger('connection-ok', info);
+            },            
+            _trigger_connection_error: function(error) {
+                console.error('connection error ', error);
+                this.trigger('connection-error', error);
             },
             handle_action:function(tabinfo) {
                 var url = tabinfo && tabinfo.url, title = tabinfo && tabinfo.title, this_ = this;
@@ -236,8 +240,7 @@
                         this_.current_record.set({tend:now});
                         this_.current_record.peek('what').set(tabinfo);
                         this_._record_updated(this_.current_record).fail(function(bail) { 
-                            console.error('error on save >> ', bail);
-                            this_.trigger('connection-error', bail);
+                            this_._trigger_connection_error('error on save current_record');
                         });
                     } else if (tabinfo) {
                         // different now
@@ -247,8 +250,7 @@
                             this_.current_record.set({tend:now});
                             // console.info('last record had ', this_.current_record.peek('tend') - this_.current_record.peek('tstart'));
                             this_._record_updated(this_.current_record).fail(function(bail) { 
-                                console.error('error on save >> ', bail);
-                                this_.trigger('connection-error', bail);
+                                this_._trigger_connection_error('error on save record');
                             });
                         }
                         delete this_.current_record;
@@ -256,9 +258,10 @@
                             this_.make_record(now, now, url, title, tabinfo).then(function(record) {
                                 this_.current_record = record;
                                 this_.trigger('new-record', record);
+                                this_._trigger_connection_ok();
                             }).fail(function(x) { 
                                 console.error(' error on _make_record >> ', x);
-                                this_.trigger('connection-error', x);
+                                this_._trigger_connection_error('error on make record');
                             });
                         }
                     }
@@ -297,47 +300,12 @@
             },
             _record_updated:function() {
                 // console.log('record updated ... box ', this.box, current_record);
-
                 var this_ = this, box = this.box, store = this.get('store'), journal = this.get('journal'), 
                     current_record = this.current_record;
-
                 if (current_record) { 
                     return u.when( current_record.save(), current_record.peek('what').save() );
                 } 
                 return u.dresolve();
-
-                // var signalerror = function(e) {  
-                //     this_.trigger('connection-error', e);   
-                // };
-                // if (store && box && journal && data.length > 0) {
-                //     var _rec_map = {};
-                //     var ids = data.map(function(rec) { 
-                //         var id = 'webjournal-log-'+rec.id;
-                //         _rec_map[id] = rec;
-                //         return id;
-                //     });
-                //     ids = utils.uniqstr(ids);
-                //     box.getObj(ids).then(function(rec_objs) {
-                //         rec_objs.map(function(rec_obj) {
-                //             var src = _({}).extend(_rec_map[rec_obj.id], {collection:journal});
-                //             delete src.id;
-                //             rec_obj.set(src);
-                //             rec_obj.save().fail(function(error) { 
-                //                 // might be obsolete
-                //                 // todo: do something more sensible
-                //                 if (error.status === 409) { 
-                //                     console.error('got obsolete call .. '); 
-                //                     return setTimeout(function() { rec_obj.save().fail(signalerror); }, 1000); 
-                //                 }
-                //                 console.error('saving error :: some other error ', error);
-                //                 signalerror(error);
-                //             });
-                //         });
-                //         this_.trigger('new-entries', rec_objs);
-                //     }).fail(signalerror); 
-                //     //  journal.save().fail(signalerror);
-                //     this.data = this.data.slice(data.length);
-                // }
             }
         });
         return {
@@ -348,9 +316,7 @@
                 return this.watcher;
             },
             set_store:function(store) { 
-                if (this.watcher) { 
-                    this.watcher.set('store', store); 
-                }
+                if (this.watcher) { this.watcher.set_store(store); }
             },
             set_enabled:function(enabled) {
                 if (this.watcher) { this.watcher.set('enabled', enabled); }
@@ -360,13 +326,6 @@
                 if (this.watcher) { return this.watcher.get('enabled'); }
                 return false;
             }
-            // set_polling:function(polling) {
-            //     if (polling) { 
-            //         this.watcher.start_polling();
-            //     } else {
-            //        this.watcher.end_polling();
-            //     }
-            // }
         };
     });
 })();

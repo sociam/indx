@@ -9,7 +9,8 @@
     localStorage.indx_url = localStorage.indx_url || DEFAULT_URL;
 
     var setErrorBadge = function(errtext) {
-        chrome.browserAction.setBadgeText({text:''+errtext});
+        chrome.browserAction.setBadgeText({text:'x'});
+        // chrome.browserAction.setBadgeText({text:''+errtext});
         chrome.browserAction.setBadgeBackgroundColor({color:'#ff0000'});
     };
     var clearBadge = function() {
@@ -29,21 +30,25 @@
     var get_watcher = function() { return chrome.extension.getBackgroundPage().watcher_instance; };
     var get_store = function() { var w = get_watcher(); if (w) { return w.get('store'); } };
 
-    var connect = function(client,utils) {
+    var make_store = function(client,utils) {
         var server_url = localStorage.indx_url;
         if (server === undefined) {
             server = new client.Store({server_host:server_url});
         }
-        if (server.get('server_host') !== server_url) { server.set('server_host', server_url); }
-        var d = utils.deferred();
-        server.checkLogin().then(function(response) {
-            if (response.is_authenticated) { 
-                setOKBadge(':)');
-                return d.resolve(server, response);  
-            }
-            d.reject('not logged in');
-        }).fail(d.reject);
-        return d.promise();
+        if (server.get('server_host') !== server_url) { 
+            server.set('server_host', server_url); 
+        }
+        return server;
+
+        // var d = utils.deferred();
+        // server.checkLogin().then(function(response) {
+        //     if (response.is_authenticated) { 
+        //         setOKBadge(':)');
+        //         return d.resolve(server, response);  
+        //     }
+        //     d.reject('not logged in');
+        // }).fail(d.reject);
+        // return d.promise();
     };
 
     // declare modules -----------------|
@@ -65,7 +70,6 @@
             window.$s = $scope;
             var records = [];
             var guid = utils.guid();
-           
             // scope methods for rendering things nicely.
             $scope.date = function(d) { return new Date().toLocaleTimeString().slice(0,-3);  };
             $scope.duration = function(d) {
@@ -87,6 +91,7 @@
                 console.log('update history >> ', update_history.length );
                 utils.safeApply($scope, function() { $scope.data = history.concat().reverse(); });     
             };
+
             get_watcher().on('updated-history', function(history) {  update_history(history); }, guid);
             update_history(get_watcher()._get_history());
             window.onunload=function() { get_watcher().off(undefined, undefined, guid);  };
@@ -122,13 +127,7 @@
             $scope.set_server = function(url) {
                 console.log('setting server ... ', url);
                 localStorage.indx_url = $scope.server_url;
-                connect(client,utils).then(function(server, result) {
-                    console.log('success connecting to new server >> telling watcher');
-                    get_watcher().set_store(server);
-                }).fail(function(e) {
-                    sa(function() { $scope.status = 'error connecting ' + e.toString(); });
-                    console.error('error connecting to new ');
-                });
+                get_watcher().set_store(make_store(client,utils));
             };
             $scope.box_selection = localStorage.indx_box;
             $scope.set_box = function(boxid) {
@@ -150,31 +149,9 @@
             n_logged += entries.length; 
             setOKBadge(''+n_logged);  
         });
-
-        var initStore = function(store) {
-            console.info('connect successful >> ', store);
-            window.s = store;
-            console.log('geoinstance >> ', geoinstance);
-            winstance.set_store(store);
-            if (geoinstance) { geoinstance.set({store:store}); }
-            winstance.setError();
-            store.on('disconnect', function() {
-                displayFail('disconnected from indx');
-                console.error('disconnected >> waiting 1 second before reconnection');
-            });
-            store.on('logout', function() {  displayFail('logged out of indx'); });
-        };
-        var runner = function() {
-            var me = arguments.callee;
-            connect(client,utils).then(initStore)
-                .fail(function(err) {
-                    console.error('connect failure ', err);
-                    displayFail(err.toString());
-                    console.error('cannot connect -- ', err);
-                    setTimeout(me, 10000); 
-                });
-        };
+        winstance.on('connection-error', function() { setErrorBadge('Error');  });
+        winstance.on('connection-ok', function() { setOKBadge(':)');  });
         window.watcher_instance = winstance;    
-        runner();
+        winstance.set_store(make_store(client,utils));              
     });
 }());
