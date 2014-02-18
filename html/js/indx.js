@@ -394,6 +394,11 @@ angular
 				this.store.on('login', function() { console.debug('on login >> '); this_.reconnect(); });
 				this._setUpWebSocket();
 				this._reset();
+				this.on('new-token', function() { 
+					console.log('token refreshed -- ', this_._getCachedToken() ); 
+					// this_._ws_auth();
+					this_._setUpWebSocket();
+				});
 			},
 			_reset:function() {
 				// this._updateQueue = {};
@@ -423,9 +428,22 @@ angular
 			uncacheObj: function(obj) {
 				return this._objcache().remove(obj);
 			},
+			_ws_auth : function() {
+				var token = this._getCachedToken() || this._getStoredToken();
+				if (this.isConnected()) {
+					console.info('propagating new token >> ');
+					var data = WS_MESSAGES_SEND.auth(token);
+					this._ws.send(data);
+				}
+			},
 			_setUpWebSocket:function() {
 				if (! this.getUseWebSockets() ) { return; }
-				this.disconnect();
+				if (this._ws) { 
+					console.log('already set up >> ', this._ws);
+					return; 
+				}
+
+				console.info('setUpWebSocket on ', this.getID());
 				var this_ = this, server_host = this.store.get('server_host'), store = this.store;
 				var protocol = (document.location.protocol === 'https:' || protocolOf(server_host) === 'https:') ? 'wss:/' : 'ws:/',
 					wprot = withoutProtocol(server_host),
@@ -434,33 +452,51 @@ angular
 
 				/// @ignore
 				ws.onmessage = function(evt) {
-					// u.debug('websocket :: incoming a message ', evt.data.toString()); // .substring(0,190));
+					// u.debug('websocket :: incoming a message ', evt.data.toString().substring(0,190)); // .substring(0,190));
 					var pdata = JSON.parse(evt.data);
-					if (pdata.action === 'diff') {
-						this_._diffUpdate(pdata.data).then(function() {
-							this_.trigger('update-from-master', this_.getVersion());
-						}).fail(function(err) {	u.error(err); });
-					}
+					this_.trigger('websocket-message', pdata);
 				};
-				/// @ignore
+
+				/// @ignoresou
 				ws.onopen = function() {
-					// u.debug("!!!!!!!!!!!!!!!! websocket open >>>>>>>>> ");
-					var data = WS_MESSAGES_SEND.auth(this_.get('token'));
-					ws.send(data);
-					data = WS_MESSAGES_SEND.diff();
-					ws.send(data);
-					this_._ws = ws;
-					this_.trigger('ws-connect');
+					// u.debug("!!!!!!!!!!!!!!!! websocket open >>>>>>>>> sending token ", this_._getCachedToken() || this_._getStoredToken());
+					this_._ws_auth();
+					this_.once('websocket-success', function() { 
+						console.info('websocket success -- sending diff request >> ');
+						var data = WS_MESSAGES_SEND.diff();
+						ws.send(data);
+						this_._ws = ws;
+						this_.trigger('ws-connect');
+					});
 				};
 				/// @ignore
 				ws.onclose = function(evt) {
 					// what do we do now?!
+					console.error("!!!!!!!!!!!!!!!! websocket closed -- lost connection to server");
 					this_.trigger('ws-disconnect');
 					this_.store.trigger('disconnect', evt);
-					u.error("!!!!!!!!!!!!!!!! websocket closed -- lost connection to server");
 					delete this_._ws;
-					// reconnect();
 				};
+
+				// handler
+				this_.on('websocket-message', function(pdata) { 
+					// console.info('websocket message >> ', pdata); 
+					if (pdata.action === 'diff') {
+						this_._diffUpdate(pdata.data).then(function() {
+							this_.trigger('update-from-master', this_.getVersion());
+						}).fail(function(err) {	u.error(err); });
+					} 
+					if (pdata.action === undefined && pdata.success === true) {
+						this_.trigger('websocket-success');
+					}
+					if (pdata.error == "500 Internal Server Error" && pdata.success === false) {
+						// 
+						this_.disconnect();
+						console.error('got a 500 websocket kiss of death, trying to get a new token ');
+						// get a new token
+						this_.getToken();
+					}
+				});
 				this_._ws = ws;
 			},
 			isConnected:function() {
@@ -566,7 +602,7 @@ angular
 			/// @return {integer} - this box's id
 			getID:function() { return this.id || this.cid;	},
 			_ajax:function(method, path, data) {
-				data = _(_(data||{}).clone()).extend({box: this.id || this.cid, token:this.get('token') || this._getStoredToken() });
+				data = _(_(data||{}).clone()).extend({box: this.id || this.cid, token:this._getCachedToken() || this._getStoredToken() });
 				return this.store._ajax(method, path, data);
 			},
 			/// @arg {string} id - Identity to use for hte file
@@ -903,11 +939,14 @@ angular
 					d.resolve(this_);
 				};
 				this._is_fetching = [];
-				if (this._getCachedToken() || ENABLE_LONG_TOKENS && this._hasStoredToken()) {
+				if (this._getCachedToken() || this._hasStoredToken()) {
 					// try to give it a little go >> 
 					this_._fetch().then(success).fail(function() { 
 						// token might be dead so let's give a new token a try
-						this_.getToken().then(function() { this_._fetch().then(success).fail(d.reject);  }).fail(d.reject);
+						console.error(' failed without asking for token, trying a getToken approach -- ');
+						this_.getToken().then(function() { 
+							this_._fetch().then(success).fail(d.reject);  
+						}).fail(d.reject);
 					});
 				} else {
 					this.getToken().pipe(function() { return this_._fetch(); }).then(success).fail(d.reject);

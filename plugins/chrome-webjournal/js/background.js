@@ -147,6 +147,7 @@
         // background page
         window.utils = utils;
         var winstance = watcher.init(), n_logged = 0, geoinstance = GEO_ENABLE && geowatcher.init();
+        var store = make_store(client,utils);
         // 
         var displayFail = function(reason) { 
             setErrorBadge('x' , reason);
@@ -159,6 +160,7 @@
         winstance.on('connection-error', function() { setErrorBadge('Error');  });
         winstance.on('connection-ok', function() { setOKBadge(':)');  });
         window.watcher_instance = winstance;    
-        winstance.set_store(make_store(client,utils));              
+        winstance.set_store(store);              
+        window.store = store;
     });
 }());

@@ -166,7 +166,7 @@
                 if (!this._history) { this._history = []; }
                 var N = 25, records = this._history, threshold_secs = 0; //.80;
                 this.on('new-record', function(record) {
-                    console.log('new record >> ', record);
+                    console.log('new record >> ', record.id, record, record.peek('what').id, record.peek('tend').valueOf() - record.peek('tstart').valueOf());
                     if (records.indexOf(record) >= 0) {
                         var old_indx = records.indexOf(record);
                         records.splice(0, 0, records.splice(old_indx,1)[0]);
@@ -250,7 +250,6 @@
                         });
                     } else if (tabinfo) {
                         // different now
-                        console.info('new record!');
                         if (this_.current_record) {
                             // finalise last one
                             this_.current_record.set({tend:now});
@@ -265,7 +264,7 @@
                             this_.make_record(now, now, url, title, tabinfo).then(function(record) {
                                 this_.current_record = record;
                                 this_.trigger('new-record', record);
-                                this_._trigger_connection_ok();
+                                // this_._trigger_connection_ok();
                             }).fail(function(x) { 
                                 console.error(' error on _make_record >> ', x);
                                 this_._trigger_connection_error('error on make record');
