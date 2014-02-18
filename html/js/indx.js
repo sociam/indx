@@ -392,7 +392,10 @@ angular
 					this_._flushDeleteQueue();
 				});
 				this.store.on('login', function() { console.debug('on login >> '); this_.reconnect(); });
-				this.on('new-token', function() { this_._setUpWebSocket(); });
+				this.on('new-token', function() { 
+					console.log('new token! setting up web socket >> '); 
+					this_._setUpWebSocket(); 
+				});
 				this._setUpWebSocket();
 				this._reset();
 			},
