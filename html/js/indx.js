@@ -397,8 +397,39 @@ angular
 				this.on('new-token', function() { 
 					console.log('token refreshed -- ', this_._getCachedToken() ); 
 					// this_._ws_auth();
+					this_.disconnect();
 					this_._setUpWebSocket();
 				});
+				this.on('box-ajax', function() { 
+					// if we are trying to make a call but we have lost our connection
+					// then we should try to reconnect
+					if (!this_.isConnected()) { this_._setUpWebSocket(); }
+				});
+
+				var reaper;				
+				this_.on('websocket-message', function(pdata) { 
+					// console.info('websocket message >> ', pdata); 
+					if (pdata.action === 'diff') {
+						this_._diffUpdate(pdata.data).then(function() {
+							this_.trigger('update-from-master', this_.getVersion());
+						}).fail(function(err) {	u.error(err); });
+					} 
+					if (pdata.action === undefined && pdata.success === true) {
+						this_.trigger('websocket-success');
+					}
+					if (pdata.error == "500 Internal Server Error" && pdata.success === false) {
+						// 
+						// get a new token
+						if (!reaper) { 
+							reaper = setTimeout(function() { 
+								console.error('got a 500 websocket kiss of death, trying to get a new token ');								
+								this_.disconnect();
+								reaper = undefined;
+								this_.getToken(); 
+							}, 500);
+						}
+					}
+				});				
 			},
 			_reset:function() {
 				// this._updateQueue = {};
@@ -442,7 +473,6 @@ angular
 					console.log('already set up >> ', this._ws);
 					return; 
 				}
-
 				console.info('setUpWebSocket on ', this.getID());
 				var this_ = this, server_host = this.store.get('server_host'), store = this.store;
 				var protocol = (document.location.protocol === 'https:' || protocolOf(server_host) === 'https:') ? 'wss:/' : 'ws:/',
@@ -477,36 +507,22 @@ angular
 					this_.store.trigger('disconnect', evt);
 					delete this_._ws;
 				};
-
 				// handler
-				this_.on('websocket-message', function(pdata) { 
-					// console.info('websocket message >> ', pdata); 
-					if (pdata.action === 'diff') {
-						this_._diffUpdate(pdata.data).then(function() {
-							this_.trigger('update-from-master', this_.getVersion());
-						}).fail(function(err) {	u.error(err); });
-					} 
-					if (pdata.action === undefined && pdata.success === true) {
-						this_.trigger('websocket-success');
-					}
-					if (pdata.error == "500 Internal Server Error" && pdata.success === false) {
-						// 
-						this_.disconnect();
-						console.error('got a 500 websocket kiss of death, trying to get a new token ');
-						// get a new token
-						this_.getToken();
-					}
-				});
 				this_._ws = ws;
 			},
 			isConnected:function() {
 				return this._ws && this._ws.readyState === 1;
 			},
 			disconnect:function() {
-				if (this._ws) { 
-					// if (this.isConnected()) { this._ws.close(); }
-					this._ws.close();
-					delete this._ws; return true; 
+				if (this._ws !== undefined) { 
+					var ws = this._ws;					
+					console.error('calling close >> ', ws);
+					ws.onmessage = function() {};
+					ws.onopen = function() {};
+					ws.onclose = function() {};
+					ws.close();
+					delete this._ws;
+					return true; 
 				}
 				return false;
 			},
@@ -603,6 +619,7 @@ angular
 			getID:function() { return this.id || this.cid;	},
 			_ajax:function(method, path, data) {
 				data = _(_(data||{}).clone()).extend({box: this.id || this.cid, token:this._getCachedToken() || this._getStoredToken() });
+				this.trigger('box-ajax');
 				return this.store._ajax(method, path, data);
 			},
 			/// @arg {string} id - Identity to use for hte file
@@ -1391,7 +1408,6 @@ angular
 					this.ajaxDefaults,
 					{ url: url, type : method, crossDomain: !this.isSameDomain(), data: _({}).extend(defaultData,data) }
 				);
-				// console.debug(' debug indxJS _ajax url ', options.url, options.method, options);
 				return ajax( options ); // returns a deferred
 			},
 			sync: function(method, model, options){
