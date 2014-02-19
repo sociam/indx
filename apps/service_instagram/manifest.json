@@ -2,7 +2,7 @@
 	"name": "Instagram",
 	"version": 0.1,
 	"type":["service"],
-	"description": "Instagram grabbing service",
+	"description": "Instagram connector",
 	"configpanel":"html/index.html",
 	"on_boot": 0,
 	"run":["python", "bin/run.py", "--server", "{0}"],

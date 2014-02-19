@@ -1,9 +1,9 @@
 {
-	"name": "Fitbit Harvester",
+	"name": "Fitbit",
 	"type": ["service"],
 	"version": 0.1,
 	"on_boot": 0,
-	"description": "Harvester of your Fitbit data",
+	"description": "Fitbit connector",
 	"configpanel":"html/index.html",
 	"run":["python", "bin/fitbit_harvester.py", "--server", "{0}"],
 	"set_config":["python", "bin/fitbit_harvester.py", "--config", "{0}"],
