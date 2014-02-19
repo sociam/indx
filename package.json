@@ -1,7 +1,7 @@
 {
   "name": "indx",
-  "version": "0.1.0",
-  "description": "Browser Personal Data Store.",
+  "version": "0.0.0",
+  "description": "Welcome to INDX.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -11,7 +11,7 @@
     "url": "git://github.com/sociam/indx.git"
   },
   "author": "",
-  "license": "AGPL-3.0",
+  "license": "AGPL",
   "readmeFilename": "README.md",
   "gitHead": "f0fa3eb26cf2b76bfb7a1fcd30a7c38852b68f14",
   "dependencies": {
