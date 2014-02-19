@@ -106,6 +106,14 @@
 					}).fail(d.reject);
 					return d.promise();
 				},
+				quickSame:function(a,b) { 
+					// a, b are two Arrays
+					if (a.length !== b.length) { return false; }
+					for (var i = 0; i < a.length; i++) {
+						if (a[i] !== b[i]) return false;
+					}
+					return true;
+				},
 				safeApply: function($scope, fn) { if (window) { window.setTimeout(function() { $scope.$apply(fn); }, 0); } },
 				log : function() { try { if (DEBUG_LEVEL >= LOG) { console.log.apply(console,arguments);  }} catch(e) { } },
 				warn : function() { try { if (DEBUG_LEVEL >= WARN) { console.warn.apply(console,arguments);  }} catch(e) { } },

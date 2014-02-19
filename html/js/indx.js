@@ -318,9 +318,7 @@ angular
 					u.when(val_dfds).then(function(objVals) {
 						// only update keys that have changed
 						var prevVals = this_.get(key);
-						if ( prevVals === undefined || objVals.length !== prevVals.length ||
-							 _(objVals).difference(prevVals).length > 0 ||
-							 _(prevVals).difference(objVals).length > 0) {
+						if ( prevVals === undefined || objVals.length !== prevVals.length || !u.quickSame(objVals,prevVals)) {
 							this_.set(key, objVals, { silent : silent });
 						}
 						kd.resolve();

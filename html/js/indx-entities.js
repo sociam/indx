@@ -195,7 +195,8 @@
 							model.set(argset);
 							model.set({type:'activity'});
 							model.set(otherprops);
-							model.save().then(function() { d.resolve(model); }).fail(d.reject);
+							d.resolve(model);
+							// model.save().then(function() { d.resolve(model); }).fail(d.reject);
 						});
 						return d.promise();
 					}

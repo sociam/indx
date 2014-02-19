@@ -32,7 +32,9 @@
                                 delete _fetching[tab.url];
                                 _done();
                             }).fail(function(bail) {  
+                                delete _fetching[tab.url];                                
                                 console.error('error with thumbnail, ', bail);  
+                                // _done();
                             });
                         } else {
                             // loading, let's just start and try again
@@ -166,7 +168,7 @@
                 if (!this._history) { this._history = []; }
                 var N = 25, records = this._history, threshold_secs = 0; //.80;
                 this.on('new-record', function(record) {
-                    console.log('new record >> ', record.id, record, record.peek('what').id, record.peek('tend').valueOf() - record.peek('tstart').valueOf());
+                    console.log('new record >> ', record.id, record.peek('what').id, record.peek('tend').valueOf() - record.peek('tstart').valueOf());
                     if (records.indexOf(record) >= 0) {
                         var old_indx = records.indexOf(record);
                         records.splice(0, 0, records.splice(old_indx,1)[0]);
