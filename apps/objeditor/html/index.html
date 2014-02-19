@@ -22,26 +22,39 @@
 			</form>
 		</div>
 		<div ng-if="s.obj">
-			Edit object:
-			<form ng-submit="s.obj.save()">
-				<div class="values">
-					<table>
-						<tr><th>ID</th><td>{{s.obj.id}}</td></tr>
-						<tr ng-repeat="(key, vals) in s.obj.attributes">
-							<th>{{ key }}</th>
-							<td>
-								<ol><li ng-repeat="(i, val) in vals">
-									<input class="form-control" type="input" ng-model="vals[i]">
-								</li><!-- <li>
-									<button class="btn btn-default" ng-click="s.obj.attributes.push('')">+</button>
-								</li> --></ol>
-							</td>
-						</tr>
-					</table>
+			<div class="boxie-toolbar">
+				<button class="btn btn-default btn-sm" type="submit">Save</button>
+				<button class="btn btn-default btn-sm" ng-click="s.obj = undefined">Cancel</button>
+				<button class="btn btn-danger btn-sm" ng-click="s.obj.destroy()">Delete</button>
+				<div class="toolbar-right">
+					<div class="btn-group">
+						<button class="btn btn-default btn-sm" ng-class="{ active: s.mode === 'form' }" ng-click="s.mode = 'form'">Form</a>
+						<button class="btn btn-default btn-sm" ng-class="{ active: s.mode === 'json' }" ng-click="s.mode = 'json'">JSON</a>
+					</button>
 				</div>
-				<button class="btn btn-default" type="submit">Save</button>
-				<button class="btn btn-default" ng-click="s.objID = undefined">Cancel</button>
-			</form>
+			</div>
+			<div class="edit edit-form" ng-if="s.mode === 'form'">
+				<form ng-submit="s.obj.save()">
+					<div class="values">
+						<table>
+							<tr><th>ID</th><td>{{s.obj.id}}</td></tr>
+							<tr ng-repeat="(key, vals) in s.obj.attributes">
+								<th>{{ key }}</th>
+								<td>
+									<ol><li ng-repeat="(i, val) in vals">
+										<input class="form-control" type="input" ng-model="vals[i]">
+									</li><!-- <li>
+										<button class="btn btn-default" ng-click="s.obj.attributes.push('')">+</button>
+									</li> --></ol>
+								</td>
+							</tr>
+						</table>
+					</div>
+				</form>
+			</div>
+			<div class="edit edit-json" ng-if="s.mode === 'json'">
+				<textarea ng-model="s.objJSON"></textarea>
+			</div>
 		</div>
     </div>
   </div>
