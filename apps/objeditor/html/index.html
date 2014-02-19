@@ -16,7 +16,7 @@
 		<div ng-if="!s.obj">
 			<form ng-submit="loadObj()">
 				<p>Enter the ID of an object to edit</p>
-				<input type="text" class="form-control" ng-model="s.objID">
+				<input type="text" class="form-control" ng-model="s.objID" placeholder="Object ID">
 				<input type="submit" ng-if="s.objExists" value="Load" ng-disabled="!s.objID">
 				<input type="submit" ng-if="!s.objExists" value="Create" ng-disabled="!s.objID">
 			</form>
