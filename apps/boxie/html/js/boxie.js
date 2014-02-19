@@ -1,6 +1,6 @@
 /* global angular, console, _, Backbone, $ */
 angular
-	.module('boxie', ['ui', 'indx'])
+	.module('boxie', ['ui', 'indx', 'infinite-scroll'])
 	.factory('ObjsFactory', function () {
 		var Objs = Backbone.Collection.extend({
 			initialize: function (attributes, options) {
@@ -45,9 +45,12 @@ angular
 				this.objs.on('add', this.add, this);
 				this.objs.on('remove', this.remove, this);
 				this.objs.on('reset', function (objs) {
-					this.reset(objs.models);
+					//this.reset(objs.models);
+					//this.filtered = [];
+					this.reload();
 				}, this);
 				this._textFilter = '';
+				this.filtered = [];
 			},
 			fetch: function () {
 				return this.objs.fetch();
@@ -58,7 +61,12 @@ angular
 			},
 			textFilter: function (str) {
 				this._textFilter = str.toLocaleLowerCase();
+				this.reload()
+			},
+			reload: function () {
 				this.reset(this.objs.select(this.objPassFilter, this));
+				this.filtered = [];
+				this.more(50);
 			},
 			add: function (obj) {
 				if (_.isArray(obj)) {
@@ -73,6 +81,25 @@ angular
 			objPassFilter: function (obj) {
 				if (!obj) { return false; }
 				return obj.id.toLocaleLowerCase().indexOf(this._textFilter) > -1;
+			},
+			order: function (order) {
+				this.orderField = order.field;
+				this.orderAscending = order.ascending;
+				this.reload();
+			},
+			comparator: function (model1, model2) {
+				var a = model1.get(this.orderField),
+					b = model2.get(this.orderField),
+					sorted = [a, b].sort();
+				if (this.orderAscending) { sorted.reverse(); }
+				return (sorted.indexOf(a) === 0) ? -1 : 1;
+			},
+			more: function (count) {
+				if (this.filtered.length < this.models.length) {
+					console.log('more')
+					var l = this.filtered.length;
+					this.filtered = this.filtered.concat(this.models.slice(l, l + (count || 10))); 
+				}
 			}
 		});
 
@@ -101,6 +128,10 @@ angular
 			objs.textFilter($scope.s.textFilter);
 		});
 
+		$scope.$watch('s.order', function () {
+			objs.order($scope.s.order)
+		});
+
 		$scope.$watch('selectedBox + selectedUser', function () {
 			delete $scope.msg;
 			if (!$scope.selectedUser) {
@@ -113,8 +144,11 @@ angular
 					.then(function (box) { init(box); })
 					.fail(function (e) { u.error('error ', e); $scope.msg = 'An error occured.'; });
 			}
-			
 		});
+
+		$scope.loadMore = function () {
+
+		};
 
 		var init = function (box) {
 			window.box = box;
@@ -126,16 +160,10 @@ angular
 		};
 		$scope.s = {
 			page: 0,
-			orderBy: 'id',
-			orderReverse: false,
+			order: { field: 'id', ascending: true },
 			perPage: 15,
 			textFilter: ''
 		}; // state
 		$scope.Math = window.Math;
 
-	}).filter('startFrom', function() {
-		return function (input, start) {
-			start = +start; //parse to int
-			return input.slice(start);
-		}
 	});

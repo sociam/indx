@@ -14,25 +14,30 @@
 
 	<div ng-show="selectedUser && selectedBox">
 		<div class="main-body">
-			<div class="obj-toolbar">
-				<span class="result">Showing {{ objs.length }} objects</span>
-				<input type="text" ng-model="s.textFilter" placeholder="search">
+			<div class="boxie-toolbar">
+				<div class="toolbar-left">
+					<input type="text" class="form-control input-sm search" ng-model="s.textFilter" placeholder="search">
+					<label>
+						Order: <select class="form-control input-sm order" ng-model="s.order.field">
+							<option value="id">ID</option>
+						</select>
+					</label>
+					<label>
+						<input type="checkbox" class="" ng-model="s.order.ascending"> Ascending
+					</label>
+					<span class="result">Showing {{ objs.length }} objects</span>
+				</div>
+				<div class="toolbar-right">
+					<button class="btn btn-default btn-sm">Add</button>
+				</div>
 			</div>
 		</div>
 		<div class="obj-list">
-			Order by: <select class="form-control" ng-model="s.orderBy">
-				<option value="id">ID</option>
-			</select>
-			<a href="#" ng-show="s.orderReverse" ng-click="s.orderReverse = false">Asc</a>
-			<a href="#" ng-show="!s.orderReverse" ng-click="s.orderReverse = true">Desc</a>
-			<ul class="objs">
-				<li ng-repeat="obj in objs | startFrom:s.page*s.perPage | limitTo:s.perPage | orderBy:s.orderBy:s.orderReverse" ng-click="s.selectedObj = obj">
+			<ul class="objs" infinite-scroll="objs.more()">
+				<li ng-repeat="obj in objs.filtered" ng-click="s.selectedObj = obj">
 					{{ obj.id }}
 				</li>
 			</ul>
-			<button class="btn btn-default" ng-disabled="s.page <= 0" ng-click="s.page=s.page-1">Previous</button>
-			page {{ s.page+1 }} of {{ Math.ceil(objs.length/s.perPage) }}
-			<button class="btn btn-default" ng-disabled="(s.page + 1) * s.perPage >= objs.length" ng-click="s.page=s.page+1">Next</button>
 		</div>
 		<div class="dlg-container" ng-if="s.selectedObj"><div class="dlg">
 			Edit object:
@@ -67,6 +72,7 @@
 <!-- angular -->
 <script src="/lib/angular/angular.min.js" type="text/javascript"></script>
 <script src="/lib/angular-ui/build/angular-ui.min.js" type="text/javascript"></script>
+<script src="lib/ngInfiniteScroll/ng-infinite-scroll.js" type="text/javascript"></script>
 
 <!-- indx -->
 <script src="/js/indx.js" type="text/javascript"></script>
