@@ -39,22 +39,12 @@
             server.set('server_host', server_url); 
         }
         return server;
-
-        // var d = utils.deferred();
-        // server.checkLogin().then(function(response) {
-        //     if (response.is_authenticated) { 
-        //         setOKBadge(':)');
-        //         return d.resolve(server, response);  
-        //     }
-        //     d.reject('not logged in');
-        // }).fail(d.reject);
-        // return d.promise();
     };
 
     // declare modules -----------------|
     var app = angular.module('webjournal', ['indx'])
         .config(function($compileProvider){ 
-            $compileProvider.aHrefSanitizationWhitelist(/^\s*(https?|ftp|data|mailto|file|chrome-extension):/); 
+            $compileProvider.aHrefSanitizationWhitelist(/^\s*(https?|ftp|data|mailto|file|chrome-extension|chrome|chrome\-extension):/); 
         }).config(function($sceProvider) {
             // Completely disable SCE - options iframe interference
             $sceProvider.enabled(false);
@@ -111,24 +101,31 @@
             // options screen only  -------------------------------------------
             var watcher = get_watcher(), guid = utils.guid(), old_store = get_store();
             var sa = function(f) { utils.safeApply($scope, f); };
-
-
             window.$s = $scope;
-            var notloggedin = function() {  sa(function() { $scope.loggedin = false; });  };
-            var loggedin = function() { sa(function() { $scope.loggedin = true; }); }
-            var load_stats = function(store) {
+            var notloggedin = function() {  
+                sa(function() { $scope.loggedin = false; });  
+            }, loggedin = function() { 
+                sa(function() { $scope.loggedin = true; }); 
+            }, load_stats = function(store) {
                 store.getBoxList().then(function(boxes) {  
+                    console.log('getting boxes >> ', boxes);
                     loggedin();
                     sa(function() { $scope.boxes = boxes; });   
-                }).fail(notloggedin);
+                }).fail(function() { 
+                    sa(function() { delete $scope.boxes; });   
+                    notloggedin();
+                });
                 $scope.user = store.get('username');
                 $scope.memuse = watcher._box._getCacheSize();
+                $scope.token = watcher._box._getCachedToken() || watcher._box._getStoredToken();
+            }, update_history = function() { 
+                sa(function() { 
+                    $scope.history = watcher._get_history().concat(); 
+                    $scope.thumbs = _(chrome.extension.getBackgroundPage().tt).clone();
+                });
             };
             // clean up
-            window.onunload=function() {
-                get_watcher().off(undefined, undefined, guid);
-                if (get_store()) { get_store().off(undefined,undefined,guid); }
-            };  
+            window.onunload=function() { get_watcher().off(undefined, undefined, guid); };  
             $scope.server_url = localStorage.indx_url;
             $scope.set_server = function(url) {
                 console.log('setting server ... ', url);
@@ -141,8 +138,6 @@
                 localStorage.indx_box = boxid;
                 get_watcher()._load_box();
             };
-
-
             if (get_store()) {
                 var store = get_store();
                 load_stats(store);
@@ -156,14 +151,9 @@
                 if(old_store) { old_store.off(undefined, undefined, guid); }
                 if (get_store()) { load_stats(get_store()); }
             }, guid);
+            watcher.on('updated-history', update_history);
+            update_history();
 
-
-            // debug only
-            setInterval(function() { 
-                sa(function() { 
-                    $scope.thumbs = _(chrome.extension.getBackgroundPage().tt).clone(); 
-                });
-            }, 1000);
     }).controller('background', function($scope, watcher, geowatcher, client, utils, entities) {
         // main -------------->
         // background page
