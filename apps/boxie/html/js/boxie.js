@@ -81,9 +81,6 @@ angular
 	.controller('root', function ($scope, $location, client, utils, FilterObjsFactory) {
 		'use strict';
 
-
-		//$location.html5Mode(false);
-
 		$scope.$watch(function() {
 			return $location.path();
 		}, function (path) {
