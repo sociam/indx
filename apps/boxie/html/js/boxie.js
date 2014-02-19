@@ -78,8 +78,17 @@ angular
 
 		return FilterObjs;
 	})
-	.controller('root', function ($scope, client, utils, FilterObjsFactory) {
+	.controller('root', function ($scope, $location, client, utils, FilterObjsFactory) {
 		'use strict';
+
+
+		//$location.html5Mode(false);
+
+		$scope.$watch(function() {
+			return $location.path();
+		}, function (path) {
+			$scope.selectedBox = path.split('/')[1];
+		});
 
 		var box,
 			u = utils,
@@ -102,6 +111,7 @@ angular
 			} else if (!$scope.selectedBox) {
 				$scope.msg = 'Please select a box.';
 			} else {
+				$location.path($scope.selectedBox);
 				client.store.getBox($scope.selectedBox)
 					.then(function (box) { init(box); })
 					.fail(function (e) { u.error('error ', e); $scope.msg = 'An error occured.'; });
