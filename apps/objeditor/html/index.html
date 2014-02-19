@@ -4,6 +4,7 @@
 <link href="/lib/angular-ui/build/angular-ui.min.css" rel="stylesheet">
 <link rel="stylesheet/less" type="text/css" href="/components/toolbar/toolbar.less">
 <link rel="stylesheet/less" type="text/css" href="css/objeditor.less">
+<link rel="stylesheet" type="text/css" href="lib/codemirror/lib/codemirror.css">
 <title>Object Editor</title>
 </head>
 <body>
@@ -53,7 +54,7 @@
 				</form>
 			</div>
 			<div class="edit edit-json" ng-if="s.mode === 'json'">
-				<textarea ng-model="s.objJSON"></textarea>
+				<textarea ng-model="s.objJSON" ui-codemirror="{ mode: 'javascript' }"></textarea>
 			</div>
 		</div>
     </div>
@@ -67,9 +68,9 @@
 <!-- angular -->
 <script src="/lib/angular/angular.min.js" type="text/javascript"></script>
 <script src="/lib/angular-ui/build/angular-ui.min.js" type="text/javascript"></script>
-<script src="lib/ngInfiniteScroll/ng-infinite-scroll.js" type="text/javascript"></script>
+<script type="text/javascript" src="lib/codemirror/lib/codemirror.js"></script>
+<script type="text/javascript" src="lib/codemirror/mode/javascript/javascript.js"></script>
 
-<script src="lib/blueimp-md5/js/md5.min.js" type="text/javascript"></script>
 
 
 <!-- indx -->

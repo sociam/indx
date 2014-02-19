@@ -1,6 +1,6 @@
 /* global angular, console, _, Backbone, $ */
 angular
-	.module('objeditor', ['ui', 'indx', 'infinite-scroll'])
+	.module('objeditor', ['ui', 'indx'])
 	.controller('root', function ($scope, $location, client, utils) {
 		'use strict';
 

@@ -1,5 +1,5 @@
 {
-  "name": "boxie",
+  "name": "objeditor",
   "version": "0.0.0",
   "homepage": "https://github.com/sociam/indx",
   "authors": [
@@ -15,7 +15,6 @@
     "tests"
   ],
   "dependencies": {
-    "ngInfiniteScroll": "~1.0.0",
-    "blueimp-md5": "~1.1.0"
+    "codemirror": "~3.21.0"
   }
 }
