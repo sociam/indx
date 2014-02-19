@@ -12,29 +12,32 @@
 	<title>chrome plugin for indx</title>
 </head>
 <body ng-app="webjournal" ng-controller="options" ng-cloak ng-csp>
-  <table>
-    <tr>
-      <td rowspan="10"><iframe ng-src="{{ server_url }}" width=600 height=600></iframe></td>
-    </tr>
-    <tr><td></td><td><b>indx web journal</b>
-
-    <a href="popup-indx.html" target="_blank">popup</a>
-
-    <div ng-repeat="(url,thumburi) in thumbs">
-      <a href="url"><img src="{{ thumburi }}"></a>
+  <div class="container">
+    <div class="row">
+      <div class="col-xs-12">
+        <img class="logo" src="img/hypercube-lt-transparent.png">
+        <div class="form-group">
+          <label for="indx_url_input">indx server url</label>
+          <input type="text" class="form-control" id="indx_url_input" placeholder="e.g. https://localhost:8211" ng-model="server_url">
+          <div class="btn btn-default" ng-click="set_server(server_url)">Set server to be {{ server_url }}</div>
+        </div>
+        <div ng-show="boxes" class="form-group">
+          <label for="box_selector"> store in </label>
+          <select id="box_selector" ng-model="box_selection" ng-options="b for b in boxes"></select>
+          <div class="btn btn-default" ng-click="set_box(box_selection)">Select {{ box_selection.id }}</div>
+        </div>
+        <!-- <td rowspan="10"><iframe ng-src="{{ server_url }}" width=600 height=600></iframe></td> -->
+        <a href="popup-indx.html" target="_blank" class="glyphicon glyphicon-th-list"></a>
+      </div>
     </div>
-
-    <p> This plugin keeps records your web activity to your indx so you have an unlimited history of your web - you never need to bookmark anything again!</p>
-
-    <p><b>won't capture incognito mode pages</b> - If you go into Incognito ("private browsing") mode of Chrome, this plugin will be disabled and nothing will be captured.
-    
-    </p>
-    </td>
-    <tr><td></td><td>INDX server: 
-      <input type="text" ng-model="server_url"></input>
-      <div class="btn btn-default" ng-click="set_server(server_url)">Set INDX server to be {{ server_url }}</div>
-    </td>
-    <tr><td></td><td ng-show="status" ng-class="{error:status_error}">Status: {{ status }} </td></tr>
+    <div class="row">
+    <div class="col-xs-12">
+      <div ng-show="status" ng-class="{error:status_error}">Status: {{ status }} </div>
+      <div ng-show="status" ng-class="{error:status_error}">User: {{ status }} </div>
+      <div ng-show="status" ng-class="{error:status_error}">Token: {{ token }} </div>
+      <div ng-show="status" ng-class="{error:status_error}">Status: {{ memuse }} </div>
+      <div ng-show="status" ng-class="{error:status_error}">History: {{ history.length }} </div>
+    </div>
     <tr><td></td><td>
       <div ng-show="user">
         <div>
@@ -51,9 +54,6 @@
           <div class="btn btn-default" ng-click="set_box(box_selection)">Select {{ box_selection.id }}</div>
         </div>
       </div>
-      <div ng-show="!user">
-        Please log in to the left.
-      </div>
     </tr>
   </table>
   <script src="js-platform/vendor/jquery.min.js" type="text/javascript"></script>
@@ -61,10 +61,11 @@
   <script src="js-platform/vendor/underscore.min.js" type="text/javascript"></script>
   <script src="js-platform/vendor/backbone.min.js" type="text/javascript"></script>
   <script src="js-platform/vendor/bootstrap.min.js" type="text/javascript"></script>
-  <script src="js-platform/vendor/angular-beta.js" type="text/javascript"></script>
+  <script src="js-platform/vendor/angular.min.js" type="text/javascript"></script>
   <script src="js-platform/indx.js" type="text/javascript"></script>
   <script src="js-platform/indx-utils.js" type="text/javascript"></script>
   <script src="components/toolbar/toolbar.js" type="text/javascript"></script>
   <script src="js/background.js" type="text/javascript"></script>
+  <script src="js/background-watcher.js" type="text/javascript"></script>
 </body>
 </html>

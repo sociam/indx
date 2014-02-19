@@ -34,7 +34,7 @@
                                 _done();
                             }).fail(function(bail) {  
                                 delete _fetching[url];                                
-                                console.error('error with thumbnail, ', bail);  
+                                console.error('error with thumbnail, ', bail);
                                 // _done();
                             });
                         } else {

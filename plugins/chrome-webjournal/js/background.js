@@ -111,25 +111,19 @@
             // options screen only  -------------------------------------------
             var watcher = get_watcher(), guid = utils.guid(), old_store = get_store();
             var sa = function(f) { utils.safeApply($scope, f); };
+
+
             window.$s = $scope;
+            var notloggedin = function() {  sa(function() { $scope.loggedin = false; });  };
+            var loggedin = function() { sa(function() { $scope.loggedin = true; }); }
             var load_stats = function(store) {
-                store.getBoxList().then(function(boxes) {  sa(function() { $scope.boxes = boxes; });   });
+                store.getBoxList().then(function(boxes) {  
+                    loggedin();
+                    sa(function() { $scope.boxes = boxes; });   
+                }).fail(notloggedin);
                 $scope.user = store.get('username');
                 $scope.memuse = watcher._box._getCacheSize();
             };
-            if (get_store()) {
-                var store = get_store();
-                load_stats(store);
-                store.on('disconnect', function() { sa(function() { $scope.status = 'disconnected :('; }); }, guid);
-                store.on('login', function() { load_stats(get_store()); }, guid);
-                store.on('logout', function() { sa(function() { $scope.status = 'logged out'; }); },guid);
-                store.on('error', function(e) { sa(function() { $scope.status = 'error - ' + e.toString(); }); },guid);
-            }
-            watcher.on('change:store', function(s) {
-                console.info('change:store', s);
-                if(old_store) { old_store.off(undefined, undefined, guid); }
-                if (get_store()) { load_stats(get_store()); }
-            }, guid);
             // clean up
             window.onunload=function() {
                 get_watcher().off(undefined, undefined, guid);
@@ -147,6 +141,23 @@
                 localStorage.indx_box = boxid;
                 get_watcher()._load_box();
             };
+
+
+            if (get_store()) {
+                var store = get_store();
+                load_stats(store);
+                store.on('disconnect', function() { sa(function() { $scope.status = 'disconnected :('; }); }, guid);
+                store.on('login', function() { loggedin(); });
+                store.on('logout', function() { sa(function() { $scope.status = 'logged out'; }); },guid);
+                store.on('error', function(e) { sa(function() { $scope.status = 'error - ' + e.toString(); }); },guid);
+            }
+            watcher.on('change:store', function(s) {
+                console.info('change:store', s);
+                if(old_store) { old_store.off(undefined, undefined, guid); }
+                if (get_store()) { load_stats(get_store()); }
+            }, guid);
+
+
             // debug only
             setInterval(function() { 
                 sa(function() { 
