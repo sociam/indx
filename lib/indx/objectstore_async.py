@@ -928,7 +928,7 @@ class ObjectStoreAsync:
 
                 elif uri in existing_diff['deleted']:
                     subkey = "deleted"
-                    del existing_diff['deleted'][uri]
+                    existing_diff['deleted'].remove(uri)
 
                     if uri not in existing_diff['changed']:
                         existing_diff['changed'][uri] = {}
