@@ -802,7 +802,7 @@
                 ]
             },
             "20140204-FIX_FUNCTION_REF": {
-                "next-version": "",
+                "next-version": "20140219-DIFFS_ORDERED_FOR_LONG_STRINGS",
                 "sql": [
                     "DROP FUNCTION wb_get_triple_id(text, text, text, object_type, character varying, character varying);",
                     "CREATE OR REPLACE FUNCTION wb_get_triple_id(input_subject text, input_predicate text, input_object_value text, input_object_type object_type, input_object_language character varying, input_object_datatype character varying)",
@@ -829,8 +829,24 @@
                     "  LANGUAGE plpgsql VOLATILE",
                     "  COST 100;"
                 ]
+            },
+            "20140219-DIFFS_ORDERED_FOR_LONG_STRINGS": {
+                "next-version": "",
+                "sql": [
+                    "CREATE OR REPLACE VIEW wb_v_diffs AS ",
+                    " SELECT wb_vers_diffs.version, wb_vers_diffs.diff_type, ",
+                    "    j_subject.string AS subject, j_predicate.string AS predicate, ",
+                    "    j_object.string AS obj_value, wb_objects.obj_type, wb_objects.obj_lang, ",
+                    "    wb_objects.obj_datatype, wb_vers_diffs.object_order, j_object.uuid, ",
+                    "    j_object.chunk",
+                    "   FROM wb_vers_diffs",
+                    "   LEFT JOIN wb_objects ON wb_objects.id_object = wb_vers_diffs.object",
+                    "   LEFT JOIN wb_strings j_subject ON j_subject.uuid = wb_vers_diffs.subject_uuid",
+                    "   LEFT JOIN wb_strings j_predicate ON j_predicate.uuid = wb_vers_diffs.predicate_uuid",
+                    "   LEFT JOIN wb_strings j_object ON j_object.uuid = wb_objects.obj_value_uuid",
+                    "  ORDER BY wb_vers_diffs.version, wb_vers_diffs.diff_type, j_subject.string, j_predicate.string, wb_vers_diffs.object_order, j_object.uuid, j_object.chunk, j_object.string, wb_objects.obj_type, wb_objects.obj_lang, wb_objects.obj_datatype;"
+                ]
             }
-
         }
     },
     "updates": {
