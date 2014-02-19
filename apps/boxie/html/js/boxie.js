@@ -2,6 +2,8 @@
 angular
 	.module('boxie', ['ui', 'indx', 'infinite-scroll'])
 	.factory('ObjsFactory', function () {
+
+		
 		var Objs = Backbone.Collection.extend({
 			initialize: function (attributes, options) {
 				if (options && options.box) { this.setBox(options.box); }
@@ -146,8 +148,29 @@ angular
 			}
 		});
 
-		$scope.loadMore = function () {
+		var colors = ['#1f77b4', '#ff7f0e', '#2ca02c', 
+				'#d62728', '#9467bd', '#8c564b'],
+			shapes = ['square', 'round', 'chamfer', 'spike'],
 
+			generateColor = function (n) {
+				return colors[n % colors.length];
+			},
+			generateShape = function (n) {
+				return shapes[n % shapes.length];
+			};
+
+		var mosaics = {};
+		$scope.mosaic = function (obj) {
+			console.log('mosaic')
+			if (mosaics[obj.id]) { return mosaics[obj.id]; }
+			var hash = md5(_.keys(obj.attributes).join(''));
+			return mosaics[obj.id] = _.times(2, function (x) {
+				return _.times(2, function (y) {
+					var color = generateColor(hash.charCodeAt(x * 6 + y)),
+						shape = generateShape(hash.charCodeAt(x * 6 + 3 + y));
+					return [color, shape];
+				});
+			});
 		};
 
 		var init = function (box) {
