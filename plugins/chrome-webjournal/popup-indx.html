@@ -15,8 +15,9 @@
         <td class="time">{{ date(d.get('start')[0]) }}</td>
         <td class="location">
           <a target="_blank" href="{{d.peek('what').id}}" >{{ label(d) }}
-              <img ng-show="thumb(d)" src="{{ thumb(d) }}">
+              <img ng-show="thumb(d)" ng-src="{{ thumb(d) }}">
           </a>
+          <a href="{{ thumb(d) }} " target="_blank">[]</a>
         </td>
         <td class="duration">({{ duration(d) }})</td>
       </tr>

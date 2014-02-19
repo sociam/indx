@@ -54,7 +54,7 @@
     // declare modules -----------------|
     var app = angular.module('webjournal', ['indx'])
         .config(function($compileProvider){ 
-            $compileProvider.aHrefSanitizationWhitelist(/^\s*(https?|ftp|mailto|file|chrome-extension):/); 
+            $compileProvider.aHrefSanitizationWhitelist(/^\s*(https?|ftp|data|mailto|file|chrome-extension):/); 
         }).config(function($sceProvider) {
             // Completely disable SCE - options iframe interference
             $sceProvider.enabled(false);
@@ -80,12 +80,7 @@
             var thumbs = [];    
             $scope.thumb = function(d) {
                 var what = d && d.peek('what');
-                if (what && thumbs[what.id]) { return thumbs[what.id]; }
-                if (what) { 
-                    thumbs[what.id] = what.peek('thumbnail');
-                    return thumbs[what.id];
-                }
-                return false;
+                return what.peek('thumbnail');
             };
             $scope.label = function(d) { 
                 var maxlen = 150;
@@ -102,6 +97,11 @@
             };
             var update_history = function(history) {  
                 // console.log('update history >> ', history, history.length );
+                if (history) { 
+                    window.hh = utils.dict(history.map(function(h) { 
+                        return [h.peek('what').id, h.peek('what').peek('thumbnail')]; 
+                    }));
+                }
                 utils.safeApply($scope, function() { $scope.data = history.concat(); });     
             };
             get_watcher().on('updated-history', function(history) {  update_history(history); }, guid);
