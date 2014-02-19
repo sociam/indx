@@ -510,10 +510,10 @@ class ObjectStoreAsync:
         self.debug("ObjectStore _get_diff_versions, versions: {0}".format(versions))
    
         if len(versions) == 1:
-            query = "SELECT version, diff_type, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype, object_order, uuid, chunk FROM wb_v_diffs WHERE version = %s ORDER BY subject, predicate, object_order, uuid, chunk"
+            query = "SELECT version, diff_type, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype, object_order, uuid, chunk FROM wb_v_diffs WHERE version = %s"
             params = [versions[0]]
         else:
-            query = "SELECT version, diff_type, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype, object_order, uuid, chunk FROM wb_v_diffs WHERE version = ANY(%s) ORDER BY subject, predicate, object_order, uuid, chunk"
+            query = "SELECT version, diff_type, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype, object_order, uuid, chunk FROM wb_v_diffs WHERE version = ANY(%s)"
             params = [versions]
 
 
