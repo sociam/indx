@@ -14,8 +14,8 @@
       <tr ng-repeat="d in data track by $index">
         <td class="time">{{ date(d.get('start')[0]) }}</td>
         <td class="location">
-          <a target="_new" ng-href="{{d.peek('what').id}}" >{{ label(d) }}
-            <!-- <img ng-show="thumb(d)" ng-src="{{ thumb(d) }}"> --> 
+          <a target="_blank" href="{{d.peek('what').id}}" >{{ label(d) }}
+              <img ng-show="thumb(d)" src="{{ thumb(d) }}">
           </a>
         </td>
         <td class="duration">({{ duration(d) }})</td>

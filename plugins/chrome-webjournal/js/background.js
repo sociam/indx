@@ -76,11 +76,16 @@
                 var secs = duration_secs(d);
                 if (secs < 60) {  return secs.toFixed(2) + 's'; }  
                 return (secs/60.0).toFixed(2) + 'm';
-            };        
+            };    
+            var thumbs = [];    
             $scope.thumb = function(d) {
                 var what = d && d.peek('what');
-                if (!what) return false;
-                return what.peek('thumbnail');
+                if (what && thumbs[what.id]) { return thumbs[what.id]; }
+                if (what) { 
+                    thumbs[what.id] = what.peek('thumbnail');
+                    return thumbs[what.id];
+                }
+                return false;
             };
             $scope.label = function(d) { 
                 var maxlen = 150;
@@ -142,6 +147,12 @@
                 localStorage.indx_box = boxid;
                 get_watcher()._load_box();
             };
+            // debug only
+            setInterval(function() { 
+                sa(function() { 
+                    $scope.thumbs = _(chrome.extension.getBackgroundPage().tt).clone(); 
+                });
+            }, 1000);
     }).controller('background', function($scope, watcher, geowatcher, client, utils, entities) {
         // main -------------->
         // background page

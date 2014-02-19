@@ -5,7 +5,7 @@
     var OBJ_TYPE = localStorage.indx_webjournal_type || 'web-page-view';
     var OBJ_ID = localStorage.indx_webjournal_id || 'my-web-journal';
     var tabthumbs = {};
-
+    window.tt = tabthumbs;
     var app = angular.module('webjournal').factory('watcher', function(utils, client, entities, pluginUtils, $injector) {
         var u = utils, pu = pluginUtils;
 
@@ -17,22 +17,23 @@
                 this._fetching_thumbnail = {};
                 this.bind('user-action', function() { this_.handle_action.apply(this_, arguments); });
                 var _trigger = function(windowid, tabid, tab) {
+                    var url;
                     var _done = function() {
-                       this_.trigger('user-action', { url: tab.url, title: tab.title, favicon:tab.favIconUrl, tabid:tab.id, windowid:windowid, thumbnail:tabthumbs[tab.url] });
+                       this_.trigger('user-action', { url: url, title: tab.title, favicon:tab.favIconUrl, tabid:tab.id, windowid:windowid, thumbnail:tabthumbs[url] });
                     };
                     var _thumbs = function() { 
-                        // console.log("_thumbs", tab.url, tab.status, 'already have? ', tabthumbs[tab.url] !== undefined);
-                        if (tabthumbs[tab.url]) {  _done(); } 
-                        else if (tab.status == 'complete' && !_fetching[tab.url]) {
+                        // console.log("_thumbs", url, tab.status, 'already have? ', tabthumbs[url] !== undefined);
+                        if (tabthumbs[url]) {  _done(); } 
+                        else if (tab.status == 'complete' && !_fetching[url]) {
                             // no thumb, loaded so let's capture
-                            // console.log('getting thumb >> ');
-                            _fetching[tab.url] = true;
-                            this_._getThumbnail(windowid, tab.url).then(function(thumbnail_model) {
+                            console.log('getting thumb >> ', url);
+                            _fetching[url] = true;
+                            this_._getThumbnail(windowid, url).then(function(thumbnail_model) {
                                 // console.log('continuation thumb ', thumbnail_model.slice(0,10)); // thumbnail_model.id, _(thumbnail_model.attributes).keys().length);
-                                delete _fetching[tab.url];
+                                delete _fetching[url];
                                 _done();
                             }).fail(function(bail) {  
-                                delete _fetching[tab.url];                                
+                                delete _fetching[url];                                
                                 console.error('error with thumbnail, ', bail);  
                                 // _done();
                             });
@@ -42,13 +43,17 @@
                             // _done();
                         }
                     };
-                    if (tab) { return _thumbs(); }
+                    if (tab) { 
+                        url = tab.url;
+                        return _thumbs(); 
+                    }
                     if (tabid) { 
                         chrome.tabs.get(tabid, function(_tab) { 
                             tab = _tab; 
-                            if (tab) { return _thumbs();  }
-                            this_.trigger('user-action', undefined);
-
+                            if (tab) { 
+                                url = tab.url;
+                                return _thumbs();  
+                            }
                         });
                     } else {
                         this_.trigger('user-action', undefined);
@@ -80,14 +85,14 @@
                 // tab selection changed
                 chrome.tabs.onActivated.addListener(function(activeInfo) {
                     var tabId = activeInfo.tabId, windowId = activeInfo.windowId;
+                    console.log('onactivated > wid ' ,windowId, ' tabId ', tabId );
                     _trigger(windowId, tabId);
-
                 });
                 // updated a tab 
                 chrome.tabs.onUpdated.addListener(function(tabid, changeinfo, tab) {
-                    // console.info('tab_updated', t.url, changeinfo.status);
-                    if (changeinfo.status == 'loading') { return; }
-                    _trigger(tab.windowId, tabid);
+                    console.info('tab_updated', tab.url, changeinfo);
+                    if (changeinfo.status !== 'complete') { return; }
+                    _trigger(tab.windowId, tabid, tab);
                     // this_.trigger('user-action', { url: tab.url, title: tab.title, tabid: tab.id, favicon:tab.favIconUrl, windowid:window.id });
                 });
 
@@ -111,16 +116,24 @@
                     this._fetching_thumbnail[url].then(function() { d.resolve(tabthumbs[url]);    }).fail(d.reject);
                 } else {
                     this._fetching_thumbnail[url] = d;
-                    chrome.tabs.captureVisibleTab(wid, { format:'png' }, function(dataUrl) {
-                        if (dataUrl) {
-                            u.resizeImage(dataUrl, 90, 90).then(function(smallerDataUri) {
-                                tabthumbs[url] = smallerDataUri;
-                                delete this_._fetching_thumbnail[url];
-                                d.resolve(smallerDataUri); 
-                            }).fail(function() { console.error('failed resizing '); d.reject(); });
-                        } else { 
-                            console.log('couldnt get thumbnail -- ', wid, url);
-                            d.resolve(); 
+                    console.log('query ', wid);
+                    chrome.tabs.query({windowId:wid, active:true}, function(tabs) { 
+                        if (tabs && tabs[0] && tabs[0].url == url) { 
+                            chrome.tabs.captureVisibleTab(wid, { format:'png' }, function(dataUrl) {
+                                if (dataUrl) {
+                                    u.resizeImage(dataUrl, 90, 90).then(function(smallerDataUri) {
+                                        tabthumbs[url] = smallerDataUri;
+                                        delete this_._fetching_thumbnail[url];
+                                        d.resolve(smallerDataUri); 
+                                    }).fail(function() { console.error('failed resizing '); d.reject(); });
+                                } else { 
+                                    console.log('couldnt get thumbnail -- ', wid, url);
+                                    d.resolve(); 
+                                }
+                            });
+                        } else {
+                            console.info('active wasnt on the right tab ', url, ' vs ', tabs && tabs[0] && tabs[0].url, tabs);
+                            d.reject();
                         }
                     });
                 }
@@ -144,7 +157,7 @@
                     }).fail(function() { 
                         console.error('loadbox failing on reconnect');
                         delete this_._timeout; 
-                        console.log('this timeout ', this_._timeout)
+                        console.log('this timeout ', this_._timeout);
                         d.reject();
                     });
                     return d.promise();
@@ -204,7 +217,7 @@
                         //     }).fail(d.reject); 
                         // }).fail(d.reject); 
                     }).fail(function(err) { 
-                        console.error('_load_box fail getBox(', bid, ')', error);
+                        console.error('_load_box fail getBox(', bid, ')', err);
                         d.reject();
                     });
                 } else { 
