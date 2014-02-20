@@ -1,6 +1,7 @@
 * {
 	border-sizing:border-box;
 	font-size:8pt;
+	-webkit-transition:0.5s linear all;	transition:0.15s linear all;		
 }
 html, body {
 	max-height:400px;
@@ -22,18 +23,37 @@ body { padding:3px; }
 	oveflow-x:none;
 	table {
 
-		tr { height:16px; }
+		tr { 
+			height:16px; 
+			overflow-y:hidden;
+			max-height:16px;
+			&:hover {
+				height:44px;
+				.thumb {
+					height:42px;
+				}
+			}
+		}
 		font-size:8pt;
 		.time { 
 			font-size:6pt; color:#bbb; 
 			padding-right:2px;
 		}
 		.location { 
+			position:relative;
 			font-size:8pt; 
 			width:230px;
+
 			min-width:230px;
 			max-width:230px;
 			overflow:hidden;
+			.thumb {
+				border:1px solid #eee;
+				position:absolute;
+				top:2px;
+				width:20px;
+				right:10px;
+			}
 		}
 		.duration { 
 			width:65px;

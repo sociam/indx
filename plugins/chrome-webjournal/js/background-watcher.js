@@ -185,6 +185,7 @@
                     if (records.indexOf(record) >= 0) {
                         var old_indx = records.indexOf(record);
                         records.splice(0, 0, records.splice(old_indx,1)[0]);
+                        this.trigger('updated-history', records);
                     } else {
                         if (pu.duration_secs(record) > threshold_secs) { 
                             records.splice(0, 0, record);
