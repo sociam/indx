@@ -206,9 +206,11 @@
                             jQuery.when(jobj.save()).then(function() { 
                                 this_.box = box;
                                 this_.set('journal', jobj);
+                                this_.trigger('change:box', box);
                                 d.resolve(box); 
                             }).fail(d.reject); 
                         }).fail(d.reject); 
+                        // get user id out of the token                        
                         // box.getObj([OBJ_ID, store.get('username')]).then(function(objuser) {
                         //     var jobj = objuser[0], whom = objuser[1];
                         //     jQuery.when(jobj.save(), whom.save()).then(function() { 
@@ -226,6 +228,9 @@
                     d.reject('no store specified');
                  }
                 return d.promise();
+            },
+            get_box: function() { 
+                return this.box; 
             },
             set_store:function(store) {
                 var this_ = this;
@@ -276,7 +281,7 @@
                             this_.trigger('new-record', this_.current_record);
                         }
                         delete this_.current_record;
-                        if (tabinfo) {
+                        if (tabinfo && this_.passes_url_filter(url)) {
                             this_.make_record(now, now, url, title, tabinfo).then(function(record) {
                                 this_.current_record = record;
                                 this_.trigger('new-record', record);
@@ -288,6 +293,14 @@
                         }
                     }
                 });
+            },
+            passes_url_filter:function(url) { 
+                // todo flesh this out in nice ways
+                var filters = [
+                    url.length >= 0,
+                    url.indexOf('chrome') !== 0
+                ];
+                return filters.reduce(function(a,b) { return a && b; }, true);
             },
             make_record:function(tstart, tend, url, title, tabinfo) {
                 // console.log('make record >> ', options, options.location);

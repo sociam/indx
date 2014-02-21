@@ -390,23 +390,8 @@ angular
 					this_._flushDeleteQueue();
 				});
 				this.store.on('login', function() { console.debug('on login >> '); this_.reconnect(); });
-				this._setUpWebSocket();
 				this._reset();
-				this.on('new-token', function() { 
-					console.log('token refreshed -- ', this_._getCachedToken() ); 
-					// this_._ws_auth();
-					this_.disconnect();
-					this_._setUpWebSocket();
-				});
-				this.on('box-ajax', function() { 
-					// if we are trying to make a call but we have lost our connection
-					// then we should try to reconnect
-					if (!this_.isConnected()) { this_._setUpWebSocket(); }
-				});
-
-				var reaper;				
-				this_.on('websocket-message', function(pdata) { 
-					// console.info('websocket message >> ', pdata); 
+				this.on('websocket-message', function(pdata) { 
 					if (pdata.action === 'diff') {
 						this_._diffUpdate(pdata.data).then(function() {
 							this_.trigger('update-from-master', this_.getVersion());
@@ -416,33 +401,33 @@ angular
 						this_.trigger('websocket-success');
 					}
 					if (pdata.error == "500 Internal Server Error" && pdata.success === false) {
-						// 
-						// get a new token
-						if (!reaper) { 
-							reaper = setTimeout(function() { 
-								console.error('got a 500 websocket kiss of death, trying to get a new token ');								
-								this_.disconnect();
-								reaper = undefined;
-								this_.getToken(); 
-							}, 500);
-						}
+						console.error('got a 500 websocket kiss of death, disconnecting.');								
+						this_._flush_tokens();
+						this_.disconnect();
 					}
 				});				
+
+				// set up web socket connection whenever we get a new token
+				this.on('new-token', function() { 
+					console.log('new token!! ', this_._getCachedToken(), this_._getStoredToken());
+					this_._setUpWebSocket(); 
+				});
+				this._setUpWebSocket();
+			},
+			_flush_tokens:function() { 
+				this._setToken();
 			},
 			_reset:function() {
 				// this._updateQueue = {};
 				// this._deleteQueue = {};
 				// this._fetchingQueue = {};
-				var rejectAll = function (dL) {
-					if (dL) { _(dL).values().map(function(d) { d.reject('reset'); });}
-				};
+				var rejectAll = function (dL) {	if (dL) { _(dL).values().map(function(d) { d.reject('reset'); });}	};
 				rejectAll(this._updateQueue);
 				this._updateQueue = {};
 				rejectAll(this._deleteQueue);
 				this._deleteQueue = {};
 				rejectAll(this._fetchingQueue);
 				this._fetchingQueue = {};
-				this.unset('token');
 			},
 			/// @arg {string} fid - file id
 			/// Tries to get a file with given id. If it doesn't exist, a file with that name is created.
@@ -467,6 +452,10 @@ angular
 			},
 			_setUpWebSocket:function() {
 				if (! this.getUseWebSockets() ) { return; }
+				if (! (this._getCachedToken() || this._getStoredToken()) ) { 
+					console.error('Do not have a token cached or stored, so not setting up websocket ');
+					return ; 
+				}
 				if (this._ws) { 
 					console.log('already set up >> ', this._ws);
 					return; 
@@ -484,7 +473,6 @@ angular
 					var pdata = JSON.parse(evt.data);
 					this_.trigger('websocket-message', pdata);
 				};
-
 				/// @ignoresou
 				ws.onopen = function() {
 					// u.debug("!!!!!!!!!!!!!!!! websocket open >>>>>>>>> sending token ", this_._getCachedToken() || this_._getStoredToken());
@@ -502,8 +490,7 @@ angular
 					// what do we do now?!
 					console.error("!!!!!!!!!!!!!!!! websocket closed -- lost connection to server");
 					this_.trigger('ws-disconnect');
-					this_.store.trigger('disconnect', evt);
-					delete this_._ws;
+					this_._disconnected();
 				};
 				// handler
 				this_._ws = ws;
@@ -511,23 +498,29 @@ angular
 			isConnected:function() {
 				return this._ws && this._ws.readyState === 1;
 			},
+			_disconnected:function() {
+				// called after disconnected
+				delete this._ws;
+				this._reset(); // kill all pending queues
+			},
 			disconnect:function() {
 				if (this._ws !== undefined) { 
-					var ws = this._ws;					
+					var ws = this._ws;		
 					console.error('calling close >> ', ws);
 					ws.onmessage = function() {};
 					ws.onopen = function() {};
 					ws.onclose = function() {};
 					ws.close();
+					this._disconnected();
 					delete this._ws;
-					return true; 
+					this._reset(); // kill all pending queues
+					return u.dresolve();
 				}
-				return false;
+				return u.dreject();
 			},
 			reconnect:function() {
 				var this_ = this;
-				this.disconnect();
-				this._reset();
+				if (this.isConnected()) { return u.dresolve();  }
 				return this.getToken().pipe(function() { return this_._fetch(); });
 			},
 			/// Gets whether the option to use websockets has been set; set this option using the store's options.use_websockets;
@@ -606,6 +599,10 @@ angular
 							this_._get_token_queue = [];
 						}).fail(function() { 
 							var args = arguments;
+							if (this_._ws) { 
+								console.error('warning >> forcing disconnect ');
+								this_.disconnect();							
+							}
 							this_._get_token_queue.map(function(d) { d.reject.apply(d,arguments); });
 							this_._get_token_queue = [];
 						});
@@ -616,9 +613,22 @@ angular
 			/// @return {integer} - this box's id
 			getID:function() { return this.id || this.cid;	},
 			_ajax:function(method, path, data) {
-				data = _(_(data||{}).clone()).extend({box: this.id || this.cid, token:this._getCachedToken() || this._getStoredToken() });
-				this.trigger('box-ajax');
-				return this.store._ajax(method, path, data);
+
+				// we may have no token any more! 
+				var token = this._getCachedToken() || this._getStoredToken(), 
+					d = u.deferred(), 
+					box_id = this.getID(),
+					this_ = this;
+
+				var cont = function() { 
+					data = _(_(data||{}).clone()).extend({box:box_id, token:token});
+					return this_.store._ajax(method, path, data);
+				};
+
+				if (token === undefined) { 
+					this.getToken().pipe(cont).fail(d.reject);
+				}
+				return cont();
 			},
 			/// @arg {string} id - Identity to use for hte file
 			/// @arg {HTML5File} filedata - HTML5 File object to put

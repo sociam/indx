@@ -103,21 +103,31 @@
             var sa = function(f) { utils.safeApply($scope, f); };
             window.$s = $scope;
             var notloggedin = function() {  
-                sa(function() { $scope.loggedin = false; });  
+                sa(function() { $scope.isloggedin = false; });  
             }, loggedin = function() { 
-                sa(function() { $scope.loggedin = true; }); 
+                sa(function() { $scope.isloggedin = true; }); 
             }, load_stats = function(store) {
+                console.log('getting boxlist -- ', store);
                 store.getBoxList().then(function(boxes) {  
                     console.log('getting boxes >> ', boxes);
                     loggedin();
                     sa(function() { $scope.boxes = boxes; });   
-                }).fail(function() { 
+                }).fail(function(bail) { 
+                    console.log('fail getting boxes ' );
                     sa(function() { delete $scope.boxes; });   
                     notloggedin();
                 });
-                $scope.user = store.get('username');
-                $scope.memuse = watcher._box._getCacheSize();
-                $scope.token = watcher._box._getCachedToken() || watcher._box._getStoredToken();
+                store.checkLogin().then(function(x) { 
+                    sa(function() { $scope.username = x && x.username; });
+                });
+                if (watcher.get_box()) { 
+                    var b = watcher.get_box();
+                    sa(function() { 
+                        $scope.token = b._getCachedToken() || b._getStoredToken();
+                        $scope.memuse = b.getCacheSize();                        
+                    });
+                }
+
             }, update_history = function() { 
                 sa(function() { 
                     $scope.history = watcher._get_history().concat(); 
@@ -138,22 +148,27 @@
                 localStorage.indx_box = boxid;
                 get_watcher()._load_box();
             };
-            if (get_store()) {
-                var store = get_store();
-                load_stats(store);
-                store.on('disconnect', function() { sa(function() { $scope.status = 'disconnected :('; }); }, guid);
-                store.on('login', function() { loggedin(); });
-                store.on('logout', function() { sa(function() { $scope.status = 'logged out'; }); },guid);
-                store.on('error', function(e) { sa(function() { $scope.status = 'error - ' + e.toString(); }); },guid);
-            }
-            watcher.on('change:store', function(s) {
-                console.info('change:store', s);
-                if(old_store) { old_store.off(undefined, undefined, guid); }
-                if (get_store()) { load_stats(get_store()); }
-            }, guid);
+
+
+            // if (get_store()) {
+            //     console.log('get store non undefined'); 
+            //     var store = get_store();
+            //     load_stats(store);
+            //     store.on('disconnect', function() { sa(function() { $scope.status = 'disconnected :('; }); }, guid);
+            //     store.on('login', function() { loggedin(); });
+            //     store.on('logout', function() { sa(function() { $scope.status = 'logged out'; }); },guid);
+            //     store.on('error', function(e) { sa(function() { $scope.status = 'error - ' + e.toString(); }); },guid);
+            // }
+            // watcher.on('change:store', function(s) {
+            //     console.info('change:store', s);
+            //     if(old_store) { old_store.off(undefined, undefined, guid); }
+            //     if (get_store()) { load_stats(get_store()); }
+            // }, guid);
+            watcher.on('change:box', function(b) { console.info('change box ... ', b.id); load_stats(make_store(client,utils)); },guid);
             watcher.on('updated-history', update_history);
             update_history();
-
+            load_stats(make_store(client,utils));
+            window.watcher = get_watcher();
     }).controller('background', function($scope, watcher, geowatcher, client, utils, entities) {
         // main -------------->
         // background page

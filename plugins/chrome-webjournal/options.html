@@ -16,28 +16,27 @@
     <div class="row">
       <div class="col-xs-12">
         <img class="logo" src="img/hypercube-lt-transparent.png">
-        <div class="form-group">
-          <label for="indx_url_input">indx server url</label>
-          <input type="text" class="form-control" id="indx_url_input" placeholder="e.g. https://localhost:8211" ng-model="server_url">
-          <div class="btn btn-default" ng-click="set_server(server_url)">Set server to be {{ server_url }}</div>
-        </div>
-        <div ng-show="boxes" class="form-group">
-          <label for="box_selector"> store in </label>
-          <select id="box_selector" ng-model="box_selection" ng-options="b for b in boxes"></select>
-          <div class="btn btn-default" ng-click="set_box(box_selection)">Select {{ box_selection.id }}</div>
-        </div>
-        <!-- <td rowspan="10"><iframe ng-src="{{ server_url }}" width=600 height=600></iframe></td> -->
-        <a href="popup-indx.html" target="_blank" class="glyphicon glyphicon-th-list"></a>
       </div>
     </div>
     <div class="row">
-    <div class="col-xs-12">
-      <div ng-show="status" ng-class="{error:status_error}">Logged in: {{ isloggedin }} </div>
-      <div ng-show="status" ng-class="{error:status_error}">User: {{ user }} </div>
-      <div ng-show="status" ng-class="{error:status_error}">Token: {{ token }} </div>
-      <div ng-show="status" ng-class="{error:status_error}">Status: {{ memuse }} </div>
-      <div ng-show="status" ng-class="{error:status_error}">History: {{ history.length }} </div>
+      <div class="col-xs-4 form-group">
+        <label for="indx_url_input">indx server url</label>
+        <input type="text" class="form-control" id="indx_url_input" placeholder="e.g. https://localhost:8211" ng-model="server_url">
+        <div class="btn btn-default" ng-click="set_server(server_url)">Set INDX Server</div>
+      </div>
+      <div ng-show="boxes" class="col-xs-2 form-group">
+        <label for="box_selector"> store in </label><br>
+        <select id="box_selector" ng-model="box_selection" ng-options="b for b in boxes"></select>
+        <div class="btn btn-default" ng-click="set_box(box_selection)">Save data in {{ box_selection }}</div>
+      </div>
+      <a href="popup-indx.html" target="_blank" class="glyphicon glyphicon-th-list"></a>
     </div>
+    <div class="row">
+        <div ng-show="isloggedin !== undefined" ng-class="{'col-xs-2':true}">Logged in: {{ isloggedin }} </div>
+        <div ng-show="user" ng-class="{'col-xs-2':true}">User: {{ username }} </div>
+        <div ng-show="token" ng-class="{'col-xs-2':true}">Token: {{ token }} </div>
+        <div ng-show="memuse" ng-class="{'col-xs-2':true}">Memory Used: <div class="figure">{{ memuse }}</div></div></div>
+   </div>
     <div class="row">
       <h2>recent pages:</h2>
       <div class="page" ng-repeat="h in history" data-url='h.peek("what").id' ng-show='h.peek("what").id.indexOf("unsafe:") < 0'>
