@@ -406,13 +406,11 @@ angular
 						this_.disconnect();
 					}
 				});				
-
 				// set up web socket connection whenever we get a new token
 				this.on('new-token', function() { 
 					console.log('new token!! ', this_._getCachedToken(), this_._getStoredToken());
 					this_._setUpWebSocket(); 
 				});
-				this._setUpWebSocket();
 			},
 			_flush_tokens:function() { 
 				this._setToken();
@@ -445,8 +443,8 @@ angular
 			_ws_auth : function() {
 				var token = this._getCachedToken() || this._getStoredToken();
 				if (this.isConnected()) {
-					console.info('propagating new token >> ');
 					var data = WS_MESSAGES_SEND.auth(token);
+					console.log("AUTH WEBSOCKET >> ", data);
 					this._ws.send(data);
 				}
 			},
@@ -457,7 +455,7 @@ angular
 					return ; 
 				}
 				if (this._ws) { 
-					console.log('already set up >> ', this._ws);
+					console.info('Websocket already set up ', this._ws);
 					return; 
 				}
 				console.info('setUpWebSocket on ', this.getID());
@@ -466,6 +464,8 @@ angular
 					wprot = withoutProtocol(server_host),
 					wsURL = [protocol,withoutProtocol(server_host),'ws'].join('/'),
 					ws = new WebSocket(wsURL);
+
+				this_._ws = ws;
 
 				/// @ignore
 				ws.onmessage = function(evt) {
@@ -492,8 +492,6 @@ angular
 					this_.trigger('ws-disconnect');
 					this_._disconnected();
 				};
-				// handler
-				this_._ws = ws;
 			},
 			isConnected:function() {
 				return this._ws && this._ws.readyState === 1;
@@ -552,10 +550,15 @@ angular
 				return '__indx_box_token_' + this.getID();
 			},
 			_hasStoredToken:function() { 
-				return typeof localStorage !== 'undefined' && localStorage[this._getStoredTokenKeyname()] !== undefined;
+				return 
+					typeof localStorage !== 'undefined' && 
+					localStorage[this._getStoredTokenKeyname()] !== undefined && 
+					localStorage[this._getStoredTokenKeyname()] !== 'undefined';
 			},
 			_getStoredToken:function() { 
-				return typeof localStorage !== 'undefined' && localStorage[this._getStoredTokenKeyname()];				
+				var token = typeof localStorage !== 'undefined' && localStorage[this._getStoredTokenKeyname()];
+				if (token && token !== 'undefined') { return token; } 
+				// otherwise undefined
 			},
 			_setStoredToken:function(token) {
 				if (typeof localStorage !== 'undefined') { 
@@ -584,18 +587,19 @@ angular
 				// console.debug('>> getToken ', ' id: ',this.id, ' cid: ',this.cid);
 				// try { throw new Error(''); } catch(e) { console.error(e); }
 				if (this._get_token_queue === undefined) { this._get_token_queue = []; }
-				var tq = this._get_token_queue, this_ = this, d = u.deferred();
+				var tq = this._get_token_queue, this_ = this, d = u.deferred(), box_id = this.getID();
 				tq.push(d);
 				if (tq.length === 1) { 
 					// console.debug('tq === 1, calling -------------- get_token');
-					this._ajax('POST', 'auth/get_token', { app: this.store.get('app') })
+					this.store._ajax('POST', 'auth/get_token', { box:box_id,  app: this.store.get('app') })
 						.then(function(data) {
-							// console.debug('setting token ', data.token, 'triggering ', tq.length);
+							console.debug('setting token ', data.token);
 							this_._setToken( data.token );
 							this_.trigger('new-token', data.token);
 							this_._get_token_queue.map(function(d) { d.resolve(this_); });
 							this_._get_token_queue = [];
-						}).fail(function() { 
+						}).fail(function(bail) { 
+							console.error('error getting auth/get_token ', bail);
 							var args = arguments;
 							if (this_._ws) { 
 								console.error('warning >> forcing disconnect ');
@@ -611,21 +615,30 @@ angular
 			/// @return {integer} - this box's id
 			getID:function() { return this.id || this.cid;	},
 			_ajax:function(method, path, data) {
-
 				// we may have no token any more! 
 				var token = this._getCachedToken() || this._getStoredToken(), 
-					d = u.deferred(), 
 					box_id = this.getID(),
 					this_ = this;
+				console.log('_ajax() call :: ', method, path, data, ' token: ', token);
 
 				var cont = function() { 
+					// reconnect if somehow we dead
+					if (!this_._ws) { this_._setUpWebSocket(); }
+					token = this_._getCachedToken();
 					data = _(_(data||{}).clone()).extend({box:box_id, token:token});
 					return this_.store._ajax(method, path, data);
 				};
-
 				if (token === undefined) { 
-					console.error('ajax but no token :( trying) >> ');
-					this.getToken().pipe(cont).fail(d.reject);
+					var d = u.deferred();
+					console.error('ajax but no token :( trying.getToken() >> ');
+					this.getToken().then(function() { 
+						console.info('ajax -- got token now continuing', this_._getCachedToken(), this_._getStoredToken());
+						cont().then(d.resolve).fail(d.reject);
+					}).fail(function(bail) { 
+						console.error('ajax -- getToken failed, bailing')
+						d.reject(bail);
+					});
+					return d.promise();
 				}
 				return cont();
 			},
@@ -936,25 +949,26 @@ angular
 				died.map(function(rid) {
 					this_.trigger('obj-remove', rid);
 					this_._objcache().remove(rid);
-				});
-			
+				});			
 			},
 			_prefetch:function() { 
 				// gets called by fetch() -- 
 				//  1. if already connected, we are already fetched
 				//  2. if not fetched yet, we get a fetch on.
 				// this does token management 
+				console.log('prefetch >> ');
 				if (this.isConnected()) { 
 					console.log('connected already! resolving straightaway --- ');
 					return u.dresolve(this); 
 				}
+				// not connectd, therefore we should really fetch
 				var d = u.deferred(), this_ = this;			
 				if (this._is_fetching !== undefined) { 
 					// already fetching, so do something else :: 
+					console.log('already fetching ... ');
 					this._is_fetching.push(d);
 					return d.promise();
 				} 
-
 				// not fetching already, so continue --
 				var success = function() { 
 					this_._setUpWebSocket();
@@ -962,57 +976,32 @@ angular
 					delete this_._is_fetching;
 					d.resolve(this_);
 				};
+				var fail = function(bail) { 
+					this_._is_fetching.map(function(dfd) { dfd.reject(bail); });
+					delete this_._is_fetching;
+					d.reject(bail);
+				};
 				this._is_fetching = [];
-				if (this._getCachedToken() || this._hasStoredToken()) {
-					// try to give it a little go >> 
-					this_._fetch().then(success).fail(function() { 
-						// token might be dead so let's give a new token a try
-						console.error(' failed without asking for token, trying a getToken approach -- ');
-						this_.getToken().then(function() { 
-							this_._fetch().then(success).fail(d.reject);  
-						}).fail(d.reject);
-					});
-				} else {
-					this.getToken().pipe(function() { return this_._fetch(); }).then(success).fail(d.reject);
-				}
+				console.log('_prefetch - token state :: ', this._getCachedToken(), this._hasStoredToken());
+				this_._fetch().then(success).fail(fail);
 				return d.promise();
-
-
-				// if (!b._getCachedToken()) {
-				// 	// console.info('indxjs getToken(): getting token for box ', boxid);
-				// 	if (ENABLE_LONG_TOKENS && b._hasStoredToken()) { 
-				// 		var d = u.deferred();
-				// 		var cont = function() { return d.resolve(b); };
-				// 		safeFetch(b).then(function() { 
-				// 			console.info('successful cached token resumption >> '); 
-				// 			cont(b); 
-				// 		}).fail(function() { 
-				// 			// fallback to regular token fetching
-				// 			console.info('falling back to standard token fetching');
-				// 			b.getToken().then(cont).fail(d.reject);
-				// 		});
-				// 		return d.promise();
-				// 	}
-				// 	return b.getToken().pipe(function() { return safeFetch(b);	});
-				// }
-				// console.info('indxjs getToken(): already have token for box --- ', boxid);
-				// return u.dresolve(b);
-
 			},
 			_fetch:function() {
 				// all fetch really does is retrieve ids!
 				// new client :: this now _only_ fetches object ids
 				// return a list of models (each of type Object) to populate a GraphCollection
+				console.log('_ fetch ');
 				var d = u.deferred(), this_ = this, fd = u.deferred();
 				var box = this.getID();
 				this._ajax("GET",[box,'get_object_ids'].join('/')).then(
 					function(response){
+						console.log('success on getobjids');
 						u.assert(response['@version'] !== undefined, 'no version provided');
 						this_.id = this_.getID(); // sets so that _isFetched later returns true
 						this_._setVersion(response['@version']);
 						this_._updateObjectList(response.ids);
 						fd.resolve(this_);
-					}).fail(function() { fd.reject();  });				
+					}).fail(fd.reject);				
 				fd.then(function() {
 					this_.trigger('update-from-master', this_.getVersion());
 					d.resolve(this_);
@@ -1070,7 +1059,7 @@ angular
 				}).fail(function(err) {
 					delete this_._updating;
 					if (err.status === 409) {
-						// add the defferds back in
+						// add the deferreds back in
 						_(uq).map(function(d,id) {
 							if (this_._updateQueue[id]) {
 								// someone's already added one back in! let's chain them
@@ -1200,7 +1189,7 @@ angular
 			},
 			boxes:function() { return this.attributes.boxes;	},
 			getBox: function(boxid) {
-				var b = this.boxes().get(boxid) || this._create(boxid);			
+				var b = this.boxes().get(boxid) || this._create(boxid);
 				return b.fetch();
 			},
 			/// @arg <string|number> boxid: the id for the box

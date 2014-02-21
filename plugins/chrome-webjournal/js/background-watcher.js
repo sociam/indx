@@ -100,10 +100,11 @@
                 // todo: start it up on current focused window.
                 //  ---------------------------------------
                 this.on('connection-error', function(e) {  
-                    pu.setErrorBadge('connection error -- attempting reconnect');
-                    this_._attempt_reconnect()
-                        .then(function() {  this_._trigger_connection_ok(); })
-                        .fail(function() { console.error('getToken failed :( '); });
+                    pu.setErrorBadge('connection error -- ');
+                    if (this_.box) { this_.box.disconnect(); }
+                    // this_._attempt_reconnect()
+                    //     .then(function() {  this_._trigger_connection_ok(); })
+                    //     .fail(function() { console.error('getToken failed :( '); });
                 });
                 window.watcher = this;
             },
@@ -139,42 +140,6 @@
                 }
                 return d.promise();
             },
-            _attempt_reconnect:function() {
-                // very suspicious about this >_< .. TODO look at 
-                if (this._timeout !== undefined) { 
-                    console.log('timeout is not undefined >> ', this._timeout);
-                    return u.when(this._timeout);   
-                }
-                if (!this.store) { return u.dreject(); }
-
-                var this_ = this, d = u.deferred();
-                if (!this.box) { 
-                    this_._timeout = d;
-                    this._load_box().then(function() { 
-                        console.error('thenning loadbox');
-                        delete this_._timeout; 
-                        d.resolve();
-                    }).fail(function() { 
-                        console.error('loadbox failing on reconnect');
-                        delete this_._timeout; 
-                        console.log('this timeout ', this_._timeout);
-                        d.reject();
-                    });
-                    return d.promise();
-                }
-
-                console.info('Attempting to refresh tokens ... ');
-                this._timeout = d;
-                this.box.reconnect().then(function() { 
-                    delete this_._timeout;
-                    d.resolve();
-                }).fail(function() { 
-                    delete this_._timeout;
-                    console.log('getToken fail and timeout ', this_._timeout);
-                    d.reject();
-                });
-                return d.promise();
-            },
             _init_history:function() { 
                 // keep history around for plugins etc 
                 var this_ = this;
@@ -198,7 +163,7 @@
             _get_history:function() { return this._history || [];  },
             _load_box:function() {
                 var bid = pu.getBoxName(), d = u.deferred(), this_ = this, store = this.store;
-                // console.log('load box !! ', bid);
+                console.log('load box !! ', bid);
                 if (bid && store) {
                     store.getBox(bid).then(function(box) {
                         // TODO: need to get username from the box//token
@@ -230,7 +195,7 @@
                 return d.promise();
             },
             get_box: function() { 
-                return this.box; 
+               return this.box; 
             },
             set_store:function(store) {
                 var this_ = this;
@@ -304,34 +269,39 @@
             },
             make_record:function(tstart, tend, url, title, tabinfo) {
                 // console.log('make record >> ', options, options.location);
-
-                if (!this.box) { return u.dreject(); }
-                var geowatcher = $injector.get('geowatcher'), d = u.deferred(), this_ = this;
-                this.getDoc(url,title,tabinfo).then(function(docmodel) { 
-                    entities.activities.make1(this_.box, 
-                      'browse',
-                      this.whom, tstart, tend,
-                      undefined, undefined, undefined,
-                      geowatcher.watcher && geowatcher.watcher.get('current_position'), 
-                      { what: docmodel }).then(d.resolve).fail(d.reject);
-                }).fail(d.reject);
+                var dbox = this.box ? u.dresolve(this.box) : this._load_box(), 
+                    d = u.deferred(), this_ = this;
+                var geowatcher = $injector.get('geowatcher');
+                dbox.then(function(box) {
+                    console.log('make record box >> ', box);
+                    this_.getDoc(url,title,tabinfo).then(function(docmodel) { 
+                        entities.activities.make1(box, 
+                          'browse',
+                          this_.whom, tstart, tend,
+                          undefined, undefined, undefined,
+                          geowatcher.watcher && geowatcher.watcher.get('current_position'), 
+                          { what: docmodel }).then(d.resolve).fail(d.reject);
+                    }).fail(d.reject);
+                }).fail(function(bail) { 
+                    console.error('make_record error on dbox ', bail);
+                    d.reject();
+                });
                 return d.promise();
             },
             getDoc:function(url,title,tabinfo) {
-                var d = u.deferred(), this_ = this;
-                entities.documents.getWebPage(this.box, url).then(function(results) {
-                    if (results && results.length) { 
-                        // console.log('updating page > and saving', results[0].id, tabinfo);
-                        if ( (!results[0].peek('thumbnail') && tabinfo.thumbnail) || 
-                             (!results[0].peek('favicon') && tabinfo.favicon) ) { 
-                            results[0].set(tabinfo); 
-                            return results[0].save().then(function() { d.resolve(results[0]); }).fail(d.reject);
-                        }
-                        return d.resolve(results[0]).fail(d.reject);
-                    }
-                    entities.documents.makeWebPage(this_.box, url, title, tabinfo).then(d.resolve).fail(d.reject);
-                }).fail(d.reject);
-                return d.promise();
+                return entities.documents.makeWebPage(this.box, url, title, tabinfo);
+                // entities.documents.getWebPage(this.box, url).then(function(results) {
+                //     if (results && results.length) { 
+                //         // console.log('updating page > and saving', results[0].id, tabinfo);
+                //         if ( (!results[0].peek('thumbnail') && tabinfo.thumbnail) || 
+                //              (!results[0].peek('favicon') && tabinfo.favicon) ) { 
+                //             results[0].set(tabinfo); 
+                //             return results[0].save().then(function() { d.resolve(results[0]); }).fail(d.reject);
+                //         }
+                //         return d.resolve(results[0]).fail(d.reject);
+                //     }
+                //     entities.documents.makeWebPage(this_.box, url, title, tabinfo).then(d.resolve).fail(d.reject);
+                // }).fail(d.reject);
             },
             _record_updated:function() {
                 // console.log('record updated ... box ', this.box, current_record);

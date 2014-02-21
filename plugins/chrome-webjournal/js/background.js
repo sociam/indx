@@ -148,8 +148,6 @@
                 localStorage.indx_box = boxid;
                 get_watcher()._load_box();
             };
-
-
             // if (get_store()) {
             //     console.log('get store non undefined'); 
             //     var store = get_store();
