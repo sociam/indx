@@ -512,8 +512,6 @@ angular
 					ws.onclose = function() {};
 					ws.close();
 					this._disconnected();
-					delete this._ws;
-					this._reset(); // kill all pending queues
 					return u.dresolve();
 				}
 				return u.dreject();
@@ -626,6 +624,7 @@ angular
 				};
 
 				if (token === undefined) { 
+					console.error('ajax but no token :( trying) >> ');
 					this.getToken().pipe(cont).fail(d.reject);
 				}
 				return cont();
