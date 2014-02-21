@@ -457,7 +457,7 @@ angular
 					return ; 
 				}
 				if (this._ws) { 
-					console.log('already set up >> ', this._ws);
+					console.info('Websocket already set up ', this._ws);
 					return; 
 				}
 				console.info('setUpWebSocket on ', this.getID());
@@ -621,12 +621,13 @@ angular
 					this_ = this;
 
 				var cont = function() { 
+					if (!this_._ws) { this_._setUpWebSocket(); }
 					data = _(_(data||{}).clone()).extend({box:box_id, token:token});
 					return this_.store._ajax(method, path, data);
 				};
-
 				if (token === undefined) { 
-					this.getToken().pipe(cont).fail(d.reject);
+					this.getToken().then(function() { cont(); }).fail(d.reject);
+					return d.promise();
 				}
 				return cont();
 			},
