@@ -101,6 +101,7 @@
             // options screen only  -------------------------------------------
             var watcher = get_watcher(), guid = utils.guid(), old_store = get_store();
             var sa = function(f) { utils.safeApply($scope, f); };
+            var logged_dudes = [];
             window.$s = $scope;
             var notloggedin = function() {  
                 sa(function() { $scope.isloggedin = false; });  
@@ -120,11 +121,22 @@
                 store.checkLogin().then(function(x) { 
                     sa(function() { $scope.username = x && x.username; });
                 });
+
                 if (watcher.get_box()) { 
                     var b = watcher.get_box();
-                    sa(function() { 
-                        $scope.token = b._getCachedToken() || b._getStoredToken();
-                        $scope.memuse = b.getCacheSize();                        
+                    b.countQuery({activity:'browse'}).then(function(x) {
+                        console.log('got a countquery response ', x);
+                        sa(function() { 
+                            $scope.base_browse_count = x; 
+                            $scope.browse_count = $scope.base_browse_count + logged_dudes.length;
+                        });
+                    });
+                    b.off(undefined,undefined,guid);
+                    b.on('obj-add', function(obj) { 
+                        sa(function() { 
+                            $scope.token = b._getCachedToken() || b._getStoredToken();
+                            $scope.memuse = b.getCacheSize();                        
+                        });                        
                     });
                 }
 
@@ -164,6 +176,12 @@
             // }, guid);
             watcher.on('change:box', function(b) { console.info('change box ... ', b.id); load_stats(make_store(client,utils)); },guid);
             watcher.on('updated-history', update_history);
+            watcher.on('new-record', function(record) { 
+                sa(function() { 
+                    if (logged_dudes.indexOf(record) < 0) { logged_dudes.push(record); }
+                    $scope.browse_count = $scope.base_browse_count + logged_dudes.length;
+                });
+            });
             update_history();
             load_stats(make_store(client,utils));
             window.watcher = get_watcher();

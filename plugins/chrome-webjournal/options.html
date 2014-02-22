@@ -13,6 +13,7 @@
 </head>
 <body ng-app="webjournal" ng-controller="options" ng-cloak ng-csp>
   <div class="container">
+    <div class="view-count"> {{ browse_count }} </div>
     <div class="row">
       <div class="col-xs-12">
         <img class="logo" src="img/hypercube-lt-transparent.png">
@@ -38,7 +39,6 @@
         <div ng-show="memuse" ng-class="{'col-xs-2':true}">Memory Used: <div class="figure">{{ memuse }}</div></div></div>
    </div>
     <div class="row">
-      <h2>recent pages:</h2>
       <div class="page" ng-repeat="h in history" data-url='h.peek("what").id' ng-show='h.peek("what").id.indexOf("unsafe:") < 0'>
         <a ng-show="h.peek('what')" href="h.peek('what').id"><img src="{{ thumbs[h.peek('what').id] }} "></a>
       </div>

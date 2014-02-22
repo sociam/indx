@@ -122,7 +122,7 @@
                         if (tabs && tabs[0] && tabs[0].url == url) { 
                             chrome.tabs.captureVisibleTab(wid, { format:'png' }, function(dataUrl) {
                                 if (dataUrl) {
-                                    u.resizeImage(dataUrl, 90, 90).then(function(smallerDataUri) {
+                                    u.resizeImage(dataUrl, 120, 120).then(function(smallerDataUri) {
                                         tabthumbs[url] = smallerDataUri;
                                         delete this_._fetching_thumbnail[url];
                                         d.resolve(smallerDataUri); 

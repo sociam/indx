@@ -550,8 +550,7 @@ angular
 				return '__indx_box_token_' + this.getID();
 			},
 			_hasStoredToken:function() { 
-				return 
-					typeof localStorage !== 'undefined' && 
+				return typeof localStorage !== 'undefined' &&
 					localStorage[this._getStoredTokenKeyname()] !== undefined && 
 					localStorage[this._getStoredTokenKeyname()] !== 'undefined';
 			},
@@ -619,7 +618,7 @@ angular
 				var token = this._getCachedToken() || this._getStoredToken(), 
 					box_id = this.getID(),
 					this_ = this;
-				// console.log('_ajax() call :: ', method, path, data, ' token: ', token);
+				console.log('_ajax() call :: ', method, path, data, ' token: ', token);
 
 				var cont = function() { 
 					// reconnect if somehow we dead
@@ -729,6 +728,15 @@ angular
 						});
 						u.when(ds).then(d.resolve).fail(d.reject);
 					}).fail(function(err) { error(err); d.reject(err); });
+				return d.promise();
+			},
+			countQuery:function(queryPattern) {
+				var d = u.deferred();
+				var k = _(queryPattern).keys()[0]; // select one key
+				this.query(queryPattern,[k]).then(function(x) {
+					console.log('countQuery got results >> ', x, _(x.data).size());
+					d.resolve(_(x.data).size());
+				}).fail(d.reject);
 				return d.promise();
 			},
 			///@arg {string} user : ID of user to give access to
