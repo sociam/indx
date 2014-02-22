@@ -46,18 +46,21 @@ var daysBetween = function(date1, date2) {
     var diff = Math.abs(date2.valueOf() - date1.valueOf());
     return diff/(1000*60*60*24);
 };
-var save_aggressively = function(model) {
-    var d = u.deferred(), me = arguments.callee, guid = u.guid(), box = model.box;
+var save_aggressively = function(model, retryCount) {
+    console.log('save aggressively >> ', model.id, retryCount);
+    var d = u.deferred(), me = arguments.callee, box = model.box;
     model.save().then(d.resolve).fail(function(bail) {
         console.log(' save fail 1023890189238901322809 ', bail.code);
-        var code = bail.code;
+        if (retryCount && retryCount > 10) { 
+            console.error('exceeded retry ---- ');
+            return d.reject("exceeded retry"); 
+        }
+        var code = parseInt(bail.code);
         if (code == 409 || code == 500) {
-            console.error('save_aggressively :: RESUMINGGGGGGGGGGGGGGGGGGGGGG SETUP > ');
-            box.on('update-from-master', function() { 
-                console.error('save_aggressively :: RESUMINGGGGGGGGGGGGGGGGGGGGGG RESUME << ');
-                box.off(undefined,undefined,guid);
-                me(model).then(d.resolve).fail(d.reject);
-            }, guid);
+            setTimeout(function() { 
+                console.error('save_aggressively :: RESUMINGGGGGGGGGGGGGGGGGGGGGG SETUP > ');
+                save_aggressively(model, (retryCount || 0)+1).then(d.resolve).fail(d.reject);
+            },1000);
         } else {
             // other failure code
             console.error('other failure code >> ', bail.code);
@@ -71,26 +74,6 @@ var quit = function(bail) {
     throw new Error('ERROR ', bail);
     // process.exit(-1);  
 };
-// var persist_thru_obsoletes = function(box, f, d) {
-//     var me = arguments.callee, guid = u.guid();
-//     f().then(d.resolve).fail(function(bail) {
-//         if (bail.code == 409) {
-//             box.on('update-from-master', function() { 
-//                 box.off(undefined,undefined,guid);
-//                 me(store, f,d);
-//             }, guid);
-//         } else {
-//             // other failure code
-//             console.error('other failure code >> ', bail.code);
-//             d.reject();
-//         }
-//     });
-// };
-// var save_aggressively = function(model) {
-//     var d = u.deferred();
-//     persist_thru_obsoletes(model.box, function() { return model.save(); },  d);
-//     return d.promise();
-// };
 var MovesService = Object.create(nodeservice.NodeService, {
     run: { 
         // master run 
@@ -106,7 +89,10 @@ var MovesService = Object.create(nodeservice.NodeService, {
                     this_.__continueGrabbing().then(function() {
                         console.info(' continue grabbing is DONE >>>>> ');
                         // update once. then update every 5 minutes
-                    }).fail(quit);
+                    }).fail(function() { 
+                        console.error('continueGrabbing quit >> ');
+                        quit();
+                    });
                     // console.log('chilling for 5 mins');
                     // setInterval(function() { 
                     //     // todo : do soemthing with refreshing token here.
@@ -119,13 +105,15 @@ var MovesService = Object.create(nodeservice.NodeService, {
     __continueGrabbing:{
         value:function() { 
             var config = this.config, this_ = this, diary = this.diary, d = u.deferred();
+            console.log("__continueGrabbing", this.diary.peek('lastGrabbedDate') );
+            
             var refreshToken = function() { this_.refreshToken().then(grab).fail(d.reject); };
 
             var updateLGD = function(date) { 
-                var d = u.deferred();
+                var dd = u.deferred();
                 this_.diary.set({lastGrabbedDate:date});
-                save_aggressively(this_.diary).then(d.resolve).fail(quit);
-                return d.promise();
+                save_aggressively(this_.diary).then(dd.resolve).fail(dd.reject);
+                return dd.promise();
             };
 
             var grab = function() { 
@@ -148,7 +136,10 @@ var MovesService = Object.create(nodeservice.NodeService, {
                 var endDate = new Date(lastGrabbedDate.valueOf() + SEVEN_DAYS_USEC);
                 // console.log('setting start-endDate to >> ', lastGrabbedDate, endDate);
                 this_.getTimeline(lastGrabbedDate,endDate).then(function() { 
-                    updateLGD(endDate);
+                    updateLGD(endDate).fail(function() { 
+                        console.log('updateLGD fail >> ');
+                        d.reject();
+                    });
                     setTimeout(function() { this_.__continueGrabbing().then(d.resolve).fail(d.reject); }, 1000);
                 }).fail(d.reject);
             };
@@ -507,6 +498,7 @@ var instantiate = function(indxhost) {
         if (indxhost){ ws.setHost(indxhost); }
         d.resolve(ws);
     }).fail(function(bail) {
+        console.log('instantiate exit >> ');
         output({event:'error', message:bail.message || bail.toString()});
         process.exit(1);
         d.reject();

@@ -444,21 +444,21 @@ angular
 				var token = this._getCachedToken() || this._getStoredToken();
 				if (this.isConnected()) {
 					var data = WS_MESSAGES_SEND.auth(token);
-					console.log("AUTH WEBSOCKET >> ", data);
+					// console.log("AUTH WEBSOCKET >> ", data);
 					this._ws.send(data);
 				}
 			},
 			_setUpWebSocket:function() {
 				if (! this.getUseWebSockets() ) { return; }
 				if (! (this._getCachedToken() || this._getStoredToken()) ) { 
-					console.error('Do not have a token cached or stored, so not setting up websocket ');
+					// console.info('Do not have a token cached or stored, so not setting up websocket ');
 					return ; 
 				}
 				if (this._ws) { 
-					console.info('Websocket already set up ', this._ws);
+					// console.info('Websocket already set up ');
 					return; 
 				}
-				console.info('setUpWebSocket on ', this.getID());
+				// console.info('setUpWebSocket on ', this.getID());
 				var this_ = this, server_host = this.store.get('server_host'), store = this.store;
 				var protocol = (document.location.protocol === 'https:' || protocolOf(server_host) === 'https:') ? 'wss:/' : 'ws:/',
 					wprot = withoutProtocol(server_host),
@@ -619,23 +619,24 @@ angular
 				var token = this._getCachedToken() || this._getStoredToken(), 
 					box_id = this.getID(),
 					this_ = this;
-				console.log('_ajax() call :: ', method, path, data, ' token: ', token);
+				// console.log('_ajax() call :: ', method, path, data, ' token: ', token);
 
 				var cont = function() { 
 					// reconnect if somehow we dead
 					if (!this_._ws) { this_._setUpWebSocket(); }
-					token = this_._getCachedToken();
+					token = this_._getCachedToken() || this_._getStoredToken();
+					console.log('using token > ', token);
 					data = _(_(data||{}).clone()).extend({box:box_id, token:token});
 					return this_.store._ajax(method, path, data);
 				};
 				if (token === undefined) { 
 					var d = u.deferred();
-					console.error('ajax but no token :( trying.getToken() >> ');
+					// console.error('ajax but no token :( trying.getToken() >> ');
 					this.getToken().then(function() { 
-						console.info('ajax -- got token now continuing', this_._getCachedToken(), this_._getStoredToken());
+						// console.info('ajax -- got token now continuing', this_._getCachedToken(), this_._getStoredToken());
 						cont().then(d.resolve).fail(d.reject);
 					}).fail(function(bail) { 
-						console.error('ajax -- getToken failed, bailing')
+						// console.error('ajax -- getToken failed, bailing')
 						d.reject(bail);
 					});
 					return d.promise();
@@ -873,7 +874,6 @@ angular
 					if (cachemodel) { return u.dresolve(cachemodel);	}
 					// otherwise we make a placeholder and loda it
 					var model = this_._createModelForID(oid);
-
 					missingModels[oid] = model;
 					dmissingByID[oid] = u.deferred();
 					this_._fetchingQueue[oid] = d;
@@ -1034,12 +1034,13 @@ angular
 			},
 			_requeueUpdate:function() {
 				var this_ = this;
-				if (!this._updateTimeout) {
-					this._updateTimeout = setTimeout(function() {
-						delete this_._updateTimeout;
-						this_._flushUpdateQueue();
-					}, 300);
-				}
+				this.once('update-from-master', function() { this_._flushUpdateQueue(); });
+				// if (!this._updateTimeout) {
+				// 	this._updateTimeout = setTimeout(function() {
+				// 		delete this_._updateTimeout;
+				// 		this_._flushUpdateQueue();
+				// 	}, 1000);
+				// }
 			},
 			_flushUpdateQueue:function() {
 				var this_ = this, uq = this._updateQueue, idsToUpdate = _(uq).keys();
@@ -1055,7 +1056,7 @@ angular
 				this_._doUpdate(updateArguments).then(function() {
 					delete this_._updating;
 					// TODO: resolve all of our deferreds now and delete them
-					idsToUpdate.map(function(id) { uq[id].resolve();		});
+					idsToUpdate.map(function(id) { uq[id].resolve();	});
 				}).fail(function(err) {
 					delete this_._updating;
 					if (err.status === 409) {
@@ -1117,12 +1118,13 @@ angular
 			},
 			_requeueDelete:function() {
 				var this_ = this;
-				if (!this._deleteTimeout) {
-					this._deleteTimeout = setTimeout(function() {
-						delete this_._deleteTimeout;
-						this_._flushDeleteQueue();
-					}, 300);
-				}
+				this.once('update-from-master', function() { this_._flushDeleteQueue();	});
+				// if (!this._deleteTimeout) {
+				// 	this._deleteTimeout = setTimeout(function() {
+				// 		delete this_._deleteTimeout;
+				// 		this_._flushDeleteQueue();
+				// 	}, 300);
+				// }
 			},
 			_flushDeleteQueue:function() {
 				var this_ = this, dq = this._deleteQueue, deleteIDs = _(dq).keys();
