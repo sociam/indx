@@ -200,8 +200,9 @@
             set_store:function(store) {
                 var this_ = this;
                 this.store = store;
+                this.trigger('change:store', store);
                 if (!store) { 
-                    delete this.box; 
+                    delete this.box;
                     this.unset('journal');
                     return;
                 }
