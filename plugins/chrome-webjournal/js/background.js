@@ -102,6 +102,7 @@
             var watcher = get_watcher(), guid = utils.guid(), old_store = get_store();
             var sa = function(f) { utils.safeApply($scope, f); };
             var logged_dudes = [];
+            $scope.durations = [];
             window.$s = $scope;
             var load_stats = function(store) {
                 console.log('getting boxlist -- ', store);
@@ -112,27 +113,32 @@
                     console.log('fail getting boxes ' );
                     sa(function() { delete $scope.boxes; });   
                 });
-                store.checkLogin().then(function(x) { 
-                    sa(function() { $scope.user = x; });
-                });
+                store.checkLogin().then(function(x) { sa(function() { $scope.user = x; });  });
                 if (watcher.get_box()) { 
                     var b = watcher.get_box();
-                    b.countQuery({activity:'browse'}).then(function(x) {
-                        console.log('got a countquery response ', x);
+                    var date = function(vd) { return new Date(vd['@value']);  };
+                    b.query({activity:'browse'}, ['tstart', 'tend', 'what']).then(function(x) {
+                        console.log('browse result >>', x);
+                        $scope.durations = _(x.data).map(function(activity,id) { 
+                            if (!activity.tend || !activity.tstart) { return 0; }
+                            var tstart = date(activity.tstart[0]).valueOf();
+                            return [tstart, date(activity.tend[0]).valueOf() - tstart];
+                        });
+                        $scope.durations.sort(function(a,b){ return b[0] - a[0]; });
+                        console.log('durations >> ', $scope.durations);
                         sa(function() { 
-                            $scope.base_browse_count = x; 
+                            $scope.base_browse_count = _(x.data).size(); 
                             $scope.browse_count = $scope.base_browse_count + logged_dudes.length;
                         });
                     });
                     b.off(undefined,undefined,guid);
-                    b.on('obj-add', function(obj) { 
-                        sa(function() { 
-                            $scope.token = b._getCachedToken() || b._getStoredToken();
-                            $scope.memuse = b.getCacheSize();                        
-                        });                        
-                    });
+                    b.on('obj-add', function(obj) { sa(function() {  $scope.memuse = b.getCacheSize(); }, guid); });
+                    b.on('new-token', function() { sa(function() { $scope.token = b._getCachedToken() || b._getStoredToken(); }); });
                 } 
-
+                sa(function() { 
+                    $scope.token = b._getCachedToken() || b._getStoredToken();
+                    $scope.memuse = b.getCacheSize();                        
+                });
             }, update_history = function() { 
                 sa(function() { 
                     $scope.history = watcher._get_history().concat(); 
@@ -140,7 +146,11 @@
                 });
             };
             // clean up
-            window.onunload=function() { get_watcher().off(undefined, undefined, guid); };  
+            window.onunload=function() { 
+                get_watcher().off(undefined, undefined, guid); 
+                var b = get_watcher().get_box();
+                if (b) { b.off(undefined, undefined, guid); }
+            };  
             $scope.server_url = localStorage.indx_url;
             $scope.set_server = function(url) {
                 console.log('setting server ... ', url);
@@ -178,7 +188,7 @@
             update_history();
             load_stats(make_store(client,utils));
             window.watcher = get_watcher();
-            $s = $scope;
+            window.$s = $scope;
     }).controller('background', function($scope, watcher, geowatcher, client, utils, entities) {
         // main -------------->
         // background page
