@@ -1,0 +1,18 @@
+<div class="facet">
+  <div class="num_items"> {{ elements.length }} </div>
+  <!-- --> 
+  <div class="dimensions">
+  	<div class="dimension" ng-repeat="d in dimensions">
+  		<!-- discrete list --> 
+  		<div class="discrete_selector" ng-show="d.type=='discrete'">
+  			<select options="v in d.values" ng-model="d.selected">
+  		</div>
+  	</div>
+  </div>
+  <!-- -->
+  <div class="filtered_values">
+  	<ol> 
+	  	<li ng-repeat="v in filtered_values"> {{ v.id }} </li>
+  	</ol>
+  </div>
+</div>

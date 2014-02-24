@@ -34,7 +34,7 @@
                 sa(function() { $scope.token = b._getCachedToken() || b._getStoredToken(); });
             }, update_memuse = function(b) { 
                 sa(function() {  $scope.memuse = b.getCacheSize(); }); 
-            }, update_box = function(b) {
+            }, set_box = function(b) {
                 var date = function(vd) { return new Date(vd['@value']);  };
                 b.query({activity:'browse'}, ['tstart', 'tend', 'what']).then(function(x) {
                     console.log('browse result >>', x);
@@ -54,6 +54,7 @@
                 b.on('obj-add', function(obj) { update_memuse(b); }, guid);
                 b.on('new-token', function() { update_token(b); }, guid);
                 sa(function() { 
+                    $scope.box = b;
                     update_token(b);
                     update_memuse(b);
                 });
@@ -104,9 +105,10 @@
                 set_store(store);  
             }, guid);
             watcher.on('change:box', function(b) {  
-                console.log('change:box', b.id);
-                if (watcher.get_box()) { update_box(watcher.get_box());  }
-            },guid);
+                if (watcher.get_box()) { 
+                    set_box(watcher.get_box());  
+                }
+        },guid);
             watcher.on('new-record', function(record) { 
                 sa(function() { 
                     if (logged_dudes.indexOf(record) < 0) { logged_dudes.push(record); }
@@ -121,9 +123,9 @@
             watcher.on('updated-history', update_history);
 
             // first startup....
-            set_store(pu.make_store(client,utils))
+            set_store(pu.make_store(client,utils));
             if (watcher.get_box()) { 
-                update_box(watcher.get_box()); 
+                set_box(watcher.get_box()); 
                 update_history();
             }
 
