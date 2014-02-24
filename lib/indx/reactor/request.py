@@ -16,23 +16,12 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import logging
 
-class IndxSubscriber:
+class IndxRequest:
 
-    def __init__(self, properties, callback):
-        self.properties = properties
-        self.callback = callback
-
-    def matches(self, properties):
-        """ Does this subscriber match all of these properties?
-        
-            returns bool
-        """
-        for key, value in properties.items():
-            if key not in self.properties:
-                return False
-            
-            if value != self.properties[key]:
-                return False
-
-        return True
+    def __init__(self, method, path, params, sessionid, callback):
+        self.method = method
+        self.path = path
+        self.params = params
+        self.sessionid = sessionid
+        self.callback = callback # response callback - pass in an IndxResponse to send it back to the user (HTTP or WebSocket usually)
 

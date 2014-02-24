@@ -16,23 +16,22 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import logging
 
-class IndxSubscriber:
+class IndxMapping:
 
-    def __init__(self, properties, callback):
-        self.properties = properties
-        self.callback = callback
+    def __init__(self, methods, path, params, handler):
+        self.methods = methods
+        self.path = "/" + path
+        self.params = params
+        self.handler = handler
 
-    def matches(self, properties):
-        """ Does this subscriber match all of these properties?
-        
-            returns bool
-        """
-        for key, value in properties.items():
-            if key not in self.properties:
-                return False
-            
-            if value != self.properties[key]:
-                return False
+    def matches(self, request):
+        """ request is an IndxRequest """
+        logging.debug("Comparing methods {0}, path {1} to request path: {2}, methods {3}".format(self.methods, self.path, request.path, request.method))
+        if request.method in self.methods and request.path == self.path:
+            return True
 
-        return True
+        return False
+
+    def request(self, request, token):
+        self.handler(request, token)
 

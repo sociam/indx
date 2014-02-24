@@ -16,23 +16,10 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import logging
 
-class IndxSubscriber:
+class IndxResponse:
 
-    def __init__(self, properties, callback):
-        self.properties = properties
-        self.callback = callback
-
-    def matches(self, properties):
-        """ Does this subscriber match all of these properties?
-        
-            returns bool
-        """
-        for key, value in properties.items():
-            if key not in self.properties:
-                return False
-            
-            if value != self.properties[key]:
-                return False
-
-        return True
+    def __init__(self, code, message, data = {}):
+        self.code = code
+        self.message = message
+        self.data = data
 

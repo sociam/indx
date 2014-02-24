@@ -24,13 +24,14 @@ from mimeparse import quality
 from urlparse import parse_qs
 from indx.user import IndxUser
 from twisted.internet.defer import Deferred
+from indx.reactor import IndxMapping, IndxWebHandler
 #try:
 #    import cjson
 #    logging.debug("Using CJSON.")
 #except Exception as e:
 #    logging.debug("No CJSON, falling back to python json.")
 
-class BaseHandler(Resource):
+class BaseHandler():
     """ Add/remove boxes, add/remove users, change config. """
 
     base_path=None  # Override me , e.g., 'auth'
@@ -45,10 +46,12 @@ class BaseHandler(Resource):
         #     'content-type':'text/plain' # optional
         # }
     }
+    mappings = []
 
-    def __init__(self, webserver, base_path=None, register=True):
-        Resource.__init__(self)
+    def __init__(self, webserver, indx_reactor, base_path=None, register=True):
+        #Resource.__init__(self)
         self.webserver = webserver
+        self.indx_reactor = indx_reactor
 
         if base_path is not None:
             self.base_path = base_path
@@ -56,7 +59,13 @@ class BaseHandler(Resource):
         self.isLeaf = True # stops twisted from seeking children resources from me
         if register:
             logging.debug("Adding web server handler to path: /" + (self.base_path or ''))
-            webserver.root.putChild(self.base_path, self) # register path with webserver
+            #webserver.root.putChild(self.base_path, self) # register path with webserver
+            webserver.root.putChild(self.base_path, IndxWebHandler(self.indx_reactor)) # register path with webserver
+
+            # register the handler with the indx reactor
+            for mapping in self.get_mappings():
+                self.indx_reactor.add_mapping(mapping)
+
 
         self.database = self.webserver.database
 
@@ -375,4 +384,25 @@ class BaseHandler(Resource):
         else:
             #logging.debug('local request - skipping cors')
             pass
+
+
+    def get_mappings(self):
+        mappings = []
+        for sh in self.subhandlers:
+            mapping = IndxMapping(sh['methods'], self.base_path + "/" + sh['prefix'], sh, lambda request, token: sh['handler'](self, request, token))
+            mappings.append(mapping)
+
+        return mappings
+
+##    {
+##        "prefix": "files",
+##        'methods': ['GET', 'PUT', 'DELETE'],
+##        'require_auth': False,
+##        'require_token': True,
+##        'require_acl': ['write'], # split this function into separate ones to allow for read-only file reading
+##        'force_get': True, # force the token function to get it from the query string for every method
+##        'handler': BoxHandler.files,
+##        'accept':['*/*'],
+##        'content-type':'application/json'
+##        },
 
