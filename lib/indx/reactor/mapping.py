@@ -26,8 +26,8 @@ class IndxMapping:
 
     def matches(self, request):
         """ request is an IndxRequest """
-        logging.debug("Comparing methods {0}, path {1} to request path: {2}, methods {3}".format(self.methods, self.path, request.path, request.method))
-        if request.method in self.methods and request.path == self.path:
+        if (request.method in self.methods) and (request.path == self.path):
+            logging.debug("Matched mapping: {0} = {1}, {2} = {3} for {4}".format(request.method, self.methods, request.path, self.path, self.handler))
             return True
 
         return False

@@ -24,7 +24,7 @@ from mimeparse import quality
 from urlparse import parse_qs
 from indx.user import IndxUser
 from twisted.internet.defer import Deferred
-from indx.reactor import IndxMapping, IndxWebHandler
+from indx.reactor import IndxMapping, IndxWebHandler, IndxResponse
 #try:
 #    import cjson
 #    logging.debug("Using CJSON.")
@@ -302,27 +302,12 @@ class BaseHandler():
         # never get here
         pass
 
-    def _respond(self, request, code, message, additional_data=None):
-        response = {"message": message, "code": code}
-        if additional_data:
-            response.update(additional_data)
+    def _respond(self, request, code, message, additional_data = {}):
         try:
-            #responsejson = cjson.encode(response)
-            responsejson = json.dumps(response)
-            logging.debug("Encoding response with cjson")
-        except Exception as e:
-            responsejson = json.dumps(response)
-            logging.debug("Encoding response with python json")
-
-        if not request._disconnected:
-            request.setResponseCode(code, message=message)
-            request.setHeader("Content-Type", "application/json")
-            request.setHeader("Content-Length", len(responsejson))
-            request.write(responsejson)
-            request.finish()
+            request.callback(IndxResponse(code, message, data = additional_data))
             logging.debug(' just called request.finish() with code %d ' % code)
-        else:
-            logging.debug(' didnt call request.finish(), because it was already disconnected')
+        except Exception as e:
+            logging.error("BaseHandler error sending response: {0}".format(e))
 
     def return_ok_file(self,request,fil,contenttype):
         if not request._disconnected:
@@ -388,8 +373,13 @@ class BaseHandler():
 
     def get_mappings(self):
         mappings = []
+
+        def handler_req(request, token, this_sh):
+            logging.debug("Handle request for {0}, {1}, {2}".format(self.base_path, this_sh['prefix'], this_sh['handler']))
+            this_sh['handler'](self, request, token)
+
         for sh in self.subhandlers:
-            mapping = IndxMapping(sh['methods'], self.base_path + "/" + sh['prefix'], sh, lambda request, token: sh['handler'](self, request, token))
+            mapping = (lambda sh_: IndxMapping(sh_['methods'], self.base_path + "/" + sh_['prefix'], sh_, lambda request, token: handler_req(request, token, sh_)))(sh)
             mappings.append(mapping)
 
         return mappings
