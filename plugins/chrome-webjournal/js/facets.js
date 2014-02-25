@@ -1,5 +1,5 @@
 /* jshint undef: true, strict:false, trailing:false, unused:false */
-/* global Backbone, angular, jQuery, _, chrome, console, crossfilter */
+/* global Backbone, angular, jQuery, _, chrome, console, crossfilter, d3 */
 
 // requires crossfilter
 
@@ -12,21 +12,27 @@
 			templateUrl:'/facets.html',
 			controller:function($scope, entities, utils) {
 				var cf,
+					values, 
 					u = utils, 
 					old_box,
 					sa = function(f) { utils.safeApply($scope, f); }, 
 					guid = u.guid(), 
+					ordering,
 					rawdate = function(vd) { return new Date(vd['@value']);  },
 					dimensions = [
-						{ name: 'url', f: function(d) { return d.url; }},
-						{ name: 'domain', f : function(d) { return d.domain; } },
-						{ name: 'duration', f : function(d) { return d.tend.valueOf() - d.tstart.valueOf(); }},
-						{ name: 'start', f : function(d) { return d.tend.valueOf(); }},
-						{ name: 'end', f : function(d) { return d.tstart.valueOf(); }},
-						{ name: 'id', f : function(d) { return d.id; }}
-					];					
+						{ name: 'url', f: function(d) { return d.url; }, type:'discrete'},
+						{ name: 'domain', f : function(d) { return d.domain; }, type:'discrete' },
+						{ name: 'duration', f : function(d) { return d.tend.valueOf() - d.tstart.valueOf(); }, type:'discrete'},
+						{ name: 'start', f : function(d) { return d.tend.valueOf(); }, type:'discrete'},
+						{ name: 'end', f : function(d) { return d.tstart.valueOf(); }, type:'discrete'},
+						{ name: 'id', f : function(d) { return d.id; }, type:'discrete'}
+					];
 
 				$scope.dimensions = [];
+				$scope.dateFormat = function(d) { 
+					console.log('d is >> ', d);
+					return d3.time.format('%H:%M:%S')(d);	
+				};
 
 				var expand = function(activity) {
 					var result = {
@@ -47,39 +53,51 @@
 				}, add_event = function(evtm) { 
 					var expm = expand(evtm);
 					if (cf) { cf.add(expm); }
+				}, set_dimension_filter = function(dimension, value) { 
+					dimension.d.filter(value ? value : null);
+					update_values();
+				}, set_ordering = function(dimension) { 
+					ordering = dimension;
 				}, update_values = function() { 
 					sa(function() {
 						if (cf) { 
-							$scope.values = cf.filter(null);
+							sa(function() { 
+								$scope.filtered_values = ordering.d.top(Infinity);	
+							});
 						}
-						// $scope.filtered_values = compute_filter(cf,$scope.dimensions);
 					});
 				}, init_cf = function(data, dimdefs) { 
-					cf = crossfilter(data);
+					values = data;
+					cf = crossfilter(values);
 					dimensions.map(function(dim) { 
 						dim.d = cf.dimension(dim.f);	
-						if (['url','domain'].indexOf(dim.name)) {
-							dim.g = dim.d.group();
-						}
+						dim.g = dim.d.group().all();
+						console.log(dim.g);
+						console.log(dim.g.map(function(x) { return x.key; }));
+						dim.values = dim.g.map(function(x) { return x.key; });
 					});
-					sa(function() { $scope.dimensions = dimensions;	});
+					console.log('dimensions >>', dimensions);
+					sa(function() { 
+						set_ordering(dimensions.filter(function(x) { return x.name == 'start'; })[0]);
+						$scope.dimensions = dimensions;	
+					});
+					update_values();
 				}, load_box = function(box) {
-					entities.getByActivityType(box,undefined,undefined,'browse').then(function(events){
-						console.log('loading events >. ', events.length);
-						events.map(expand).filter(u.defined).then(function(expanded) {
-							$scope.values = expanded;
-							init_cf(expanded);
-						});
+					console.log('load >>', box);					
+					entities.activities.getByActivityType(box,undefined,undefined,'browse').then(function(events){
+						console.info('facet ::: load browse >> ', events.length);
+						var expanded = events.map(expand).filter(u.defined);
+						init_cf(expanded);
 					});
 				};
 				
 				var set_box = function(box) { 
-					console.log('got a box >>>> ', box);
+					console.info('set box >> ', box);
 					cf = undefined;
 					if (old_box) { old_box.off(undefined, undefined, guid); }
 					$scope.dimensions = [];
 					box.on('obj-add', function(evt) {
-						if (evt.id.indexOf('activity') == 0 && evt.id.indexOf('browse') >= 0) {
+						if (evt.id.indexOf('activity') === 0 && evt.id.indexOf('browse') > 0) {
 							box.getObj(evt).then(function(evtm) {
 								add_event(evtm);
 								update_values();
@@ -91,8 +109,12 @@
 				};
 
 				$scope.$watch('box', function(box) {
-					if ($scope.box) { set_box($scope.box);}
+					console.info('facet ::: watch box >> ', box);
+					if ($scope.box) { 
+						set_box($scope.box);
+					}
 				});
+				window.$f = $scope;
 			}};
 		});
 }());

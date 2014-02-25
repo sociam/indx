@@ -4,15 +4,16 @@
   <div class="dimensions">
   	<div class="dimension" ng-repeat="d in dimensions">
   		<!-- discrete list --> 
-  		<div class="discrete_selector" ng-show="d.type=='discrete'">
-  			<select options="v in d.values" ng-model="d.selected">
-  		</div>
+  		<h2>{{ d.name }}</h2>
+ 			<select options="v in d.values" ng-model="d.s14elected">
   	</div>
   </div>
   <!-- -->
-  <div class="filtered_values">
+  <div class="vals">
   	<ol> 
-	  	<li ng-repeat="v in filtered_values"> {{ v.id }} </li>
+	  	<li ng-repeat="v in filtered_values"> 
+	  		{{ v.tstart }} - <a href="{{ v.url }}">{{ v.url }}</a> 
+	  	</li>
   	</ol>
   </div>
 </div>
