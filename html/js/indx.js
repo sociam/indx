@@ -327,6 +327,37 @@ angular
 				}).filter(u.defined);
 				return u.when(dfds);
 			},
+			_deserialiseAndSetForward:function(s_obj, silent, deferredset) {
+				// returns a promise that will ring true when 
+				// deferredset is resolved.
+				var this_ = this;
+				if (!deferredset) { deferredset = {}; }
+				var get_obj_d = function(id) { 
+					if (deferredset[id] === undefined) { deferredset[id] = u.deferred(); }
+					return deferredset[id];
+				};
+				var get_d = function(val) { 
+					// object
+					if (val.hasOwnProperty('@id')) { return get_obj_d(val['@id']);}
+					// literal
+					else if (val.hasOwnProperty("@value")) { return u.dresolve(deserialiseLiteral(val, this_.box));		}
+					// unknown
+					return u.dreject('cannot unpack value ' + val.toString(), val);				
+				};
+				// keys for object
+				var kds = _(s_obj).map(function(vals, key) {
+					if (key.indexOf('@') === 0) { return; } // skip "@id" etc etc
+					var kd = u.deferred();
+					// values for keys
+					var val_dfds = vals.map(function(val) {	return get_d(val); });
+					u.when(val_dfds).then(function(resolved_vals) { 
+						this_.set(key,resolved_vals,{silent: silent});
+						kd.resolve();
+					}).fail(kd.reject);
+					return kd.promise();
+				});
+				return u.when(kds); 
+			},
 			_loadFromJSON: function(json) {
 				var objdata = json, this_ = this;
 				if (objdata['@version'] === undefined) {
@@ -713,17 +744,20 @@ angular
 							// objects
 							return d.resolve(results);
 						}
+						var fetch_dfds = {};
 						// otherwise we are getting full objects, so ...
 						var ds = _(results.data).map(function(dobj,id) {
-							// console.debug('getting id ', id);
-							if (cache.get(id)) { 
-								// console.debug('cached! ', id); 
-								return u.dresolve(cache.get(id)); 
-							}
-							// console.debug('not cached! ', id);
+							if (cache.get(id)) { return u.dresolve(cache.get(id)); }
 							var model = this_._createModelForID(id), dv_ = u.deferred();
-							model._deserialiseAndSet(dobj, true).then(function() {dv_.resolve(model); }).fail(dv_.reject);
+							model._deserialiseAndSetForward(dobj, true, fetch_dfds).then(function() { dv_.resolve(model); }).fail(dv_.reject);
 							return dv_.promise();
+						});
+						// now we can fetch all of the things we've queued up
+						console.log('now fetching at once ', _(fetch_dfds).keys());
+						this_.getObj(_(fetch_dfds).keys()).then(function(objs) { 
+							objs.map(function(obj) { fetch_dfds[obj.id].resolve(obj); });
+						}).fail(function(bail) { 
+							_(fetch_dfds).values().map(function(dd) { dd.reject(bail); });
 						});
 						u.when(ds).then(d.resolve).fail(d.reject);
 					}).fail(function(err) { error(err); d.reject(err); });

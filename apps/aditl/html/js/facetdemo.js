@@ -2,7 +2,7 @@
 /* global require, exports, console, process, module, L, angular, _, jQuery */
 
 (function() {
-	angular.module('aditl', ['indx','ng']).controller('facetdemo', function($scope, client, utils) {
+	angular.module('aditl', ['indx','ng']).controller('facetdemo', function($scope, client, entities, utils) {
 		var u = utils,
 			sa = function(fn) { return u.safeApply($scope, fn); };
 
@@ -13,5 +13,6 @@
 		});
 		window.$s = $scope;
 		window.store = client.store;
+		window.en = entities;
 	});
 })();
