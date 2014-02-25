@@ -78,20 +78,36 @@
 							});
 						}
 					});
+				}, set_dim_filter = function(dim, value) { 
+					console.log('setting dimension filter >> ', value);
+					if (value) {
+						dim.filter(value);
+					} else {
+						dim.filter(null);
+					}
+					update_values();
 				}, init_cf = function(data, dimdefs) { 
 					values = data;
 					cf = crossfilter(values);
 					dimensions.map(function(dim) { 
 						dim.d = cf.dimension(dim.f);	
 						dim.g = dim.d.group().all();
-						console.log(dim.g);
-						console.log(dim.g.map(function(x) { return x.key; }));
+						// console.log(dim.g);
+						// console.log(dim.g.map(function(x) { return x.key; }));
 						dim.values = dim.g.map(function(x) { return x.key; });
 					});
-					console.log('dimensions >>', dimensions);
+					// console.log('dimensions >>', dimensions);
 					sa(function() { 
 						set_ordering(dimensions.filter(function(x) { return x.name == 'start'; })[0]);
-						$scope.dimensions = dimensions;	
+						$scope.dimensions = dimensions;
+						u.range(dimensions.length).map(function(i) { 
+							var dim_i = dimensions[i];
+							$scope.$watch('dimensions['+i+'].selected', 
+								function() { 
+									console.log('watch fired >> ', i, dim_i.name, dim_i.selected);
+									set_dim_filter(dim_i.d, dimensions['+i+'].selected); 
+								});
+						});
 					});
 					update_values();
 				}, load_box = function(box) {
