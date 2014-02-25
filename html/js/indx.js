@@ -618,13 +618,12 @@ angular
 				var token = this._getCachedToken() || this._getStoredToken(), 
 					box_id = this.getID(),
 					this_ = this;
-				console.log('_ajax() call :: ', method, path, data, ' token: ', token);
+				// console.log('_ajax() call :: ', method, path, data, ' token: ', token);
 
 				var cont = function() { 
 					// reconnect if somehow we dead
 					if (!this_._ws) { this_._setUpWebSocket(); }
 					token = this_._getCachedToken() || this_._getStoredToken();
-					console.log('using token > ', token);
 					data = _(_(data||{}).clone()).extend({box:box_id, token:token});
 					return this_.store._ajax(method, path, data);
 				};

@@ -17,14 +17,27 @@
 					sa = function(f) { utils.safeApply($scope, f); }, 
 					guid = u.guid(), 
 					ordering,
+					topOfDay = function(d) { 
+					    var day = new Date(d.valueOf());
+					    day.setHours(0); day.setMinutes(0); day.setSeconds(0); day.setMilliseconds(0); // midnight
+					    return day.valueOf();
+					}, 
+					today = topOfDay(new Date()),
+					yesterday = topOfDay(new Date() - 24 * 60 * 60 * 1000),
 					rawdate = function(vd) { return new Date(vd['@value']);  },
 					dimensions = [
-						{ name: 'url', f: function(d) { return d.url; }, type:'discrete'},
-						{ name: 'domain', f : function(d) { return d.domain; }, type:'discrete' },
+						{ name: 'url', f: function(d) { return d.url; }, type:'discrete' },
+						{ name: 'domain', f : function(d) { return d.domain; }, type:'discrete', show:true },
 						{ name: 'duration', f : function(d) { return d.tend.valueOf() - d.tstart.valueOf(); }, type:'discrete'},
 						{ name: 'start', f : function(d) { return d.tend.valueOf(); }, type:'discrete'},
 						{ name: 'end', f : function(d) { return d.tstart.valueOf(); }, type:'discrete'},
-						{ name: 'id', f : function(d) { return d.id; }, type:'discrete'}
+						{ name: 'date', f : function(d) { return topOfDay(d.tstart); }, facetformat: function(val) {
+							var tod = topOfDay(val);
+							if (tod == today) { return 'Today'; }
+							if (tod == yesterday) { return 'Yesterday'; }
+							return d3.time.format('%d %m')(new Date(val));
+						}, show: true},
+						{ name: 'id', f : function(d) { return d.id; }, type:'discrete' }
 					];
 
 				$scope.dimensions = [];
@@ -61,7 +74,7 @@
 					sa(function() {
 						if (cf) { 
 							sa(function() { 
-								$scope.filtered_values = ordering.d.top(Infinity);	
+								$scope.filtered_values = ordering.d.bottom(Infinity);	
 							});
 						}
 					});
@@ -106,7 +119,6 @@
 					old_box = box;
 					load_box(box);
 				};
-
 				$scope.$watch('box', function(box) {
 					console.info('facet ::: watch box >> ', box);
 					if ($scope.box) { 

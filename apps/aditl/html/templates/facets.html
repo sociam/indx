@@ -2,13 +2,12 @@
   <div class="num_items"> {{ elements.length }} </div>
   <!-- --> 
   <div class="dimensions">
-  	<div class="dimension" ng-repeat="d in dimensions">
+  	<div class="dimension" ng-repeat="d in dimensions" ng-show="d.show">
   		<!-- discrete list --> 
   		<h2>{{ d.name }}</h2>
-      <select multiple>
-      	<option ng-repeat="v in d.values" ng-model="d.selected">{{ v }}</option>
-      </select>
-  
+      <select class="form-control" multiple>
+      	<option ng-repeat="v in d.values" ng-model="d.selected">{{ (d.facetformat && d.facetformat(v)) || v }}</option>
+      </select>  
   	</div>
   </div>
   <!-- -->
