@@ -5,7 +5,10 @@
   	<div class="dimension" ng-repeat="d in dimensions">
   		<!-- discrete list --> 
   		<h2>{{ d.name }}</h2>
- 			<select options="v in d.values" ng-model="d.s14elected">
+      <select multiple>
+      	<option ng-repeat="v in d.values" ng-model="d.selected">{{ v }}</option>
+      </select>
+  
   	</div>
   </div>
   <!-- -->

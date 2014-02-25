@@ -4,12 +4,11 @@
 // requires crossfilter
 
 (function() {
-	angular.module('webjournal')
-	.directive('facets', function() {
+	angular.module('aditl').directive('facets', function() {
 		return {
 			restrict:'E',
 			scope:{ box:'=box'},
-			templateUrl:'/facets.html',
+			templateUrl:'templates/facets.html',
 			controller:function($scope, entities, utils) {
 				var cf,
 					values, 
@@ -96,9 +95,9 @@
 					cf = undefined;
 					if (old_box) { old_box.off(undefined, undefined, guid); }
 					$scope.dimensions = [];
-					box.on('obj-add', function(evt) {
-						if (evt.id.indexOf('activity') === 0 && evt.id.indexOf('browse') > 0) {
-							box.getObj(evt).then(function(evtm) {
+					box.on('obj-add', function(evtid) {
+						if (evtid.indexOf('activity') === 0 && evtid.indexOf('browse') > 0) {
+							box.getObj(evtid).then(function(evtm) {
 								add_event(evtm);
 								update_values();
 							});

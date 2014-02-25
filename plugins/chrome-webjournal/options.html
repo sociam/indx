@@ -34,9 +34,6 @@
         <div ng-show="memuse" ng-class="{'col-xs-4':true}">Memory Used: <div class="figure">{{ memuse }}</div></div>
     </div>
     <div class="row">
-      <facets class="col-xs-12" box='box'></facets>
-    </div>
-    <div class="row">
       <div class="page" ng-repeat="h in history" data-url='h.peek("what").id' ng-show='h.peek("what").id.indexOf("unsafe:") < 0'>
         <a ng-show="h.peek('what')" href="h.peek('what').id"><img src="{{ thumbs[h.peek('what').id] }} "></a>
       </div>
@@ -57,6 +54,5 @@
   <script src="js/background.js" type="text/javascript"></script>
   <script src="js/background-watcher.js" type="text/javascript"></script>
   <script src="js/options.js" type="text/javascript"></script>
-  <script src="js/facets.js" type="text/javascript"></script>
 </body>
 </html>
