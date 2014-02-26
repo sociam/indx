@@ -5,7 +5,8 @@
 	<link rel="stylesheet" href="/js/vendor/leaflet/leaflet.css" />
 	<link rel="stylesheet/less" type="text/css" href="/components/toolbar/toolbar.less">
 	<link rel="stylesheet/less" type="text/css" href="css/pages.less">	
-	<title>indx :: web pages</title>
+  <link rel="stylesheet/less" type="text/css" href="css/facetdemo.less">
+	<title>indx :: facets</title>
   </head>
   <body ng-app="aditl" ng-controller="facetdemo" ng-cloak>
 	<toolbar box-var='boxid' username-var='user'></toolbar>
@@ -16,8 +17,8 @@
         <li><a href="pages.html">Pages</a></li>
         <li class="active"><a href="pages.html">Facets</a></li>
       </ul>    
-    	<div class='pages2 col-xs-11'>
-        <!--<facets box="box"></facets>-->
+    	<div class='facetdemo col-xs-11'>
+        <facets box="box"></facets>
       </div>
     </div>
   </div> <!-- container --> 

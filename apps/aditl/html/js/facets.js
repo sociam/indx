@@ -27,9 +27,10 @@
 					rawdate = function(vd) { return new Date(vd['@value']);  },
 					dimensions = [
 						{ name: 'url', f: function(d) { return d.url; }, type:'discrete' },
-						{ name: 'domain', f : function(d) { return d.domain; }, type:'discrete', show:true },
+						{ name: 'domain', f : function(d) { return d.domain.trim(); }, type:'discrete', show:true },
 						{ name: 'duration', f : function(d) { return d.tend.valueOf() - d.tstart.valueOf(); }, type:'discrete'},
 						{ name: 'start', f : function(d) { return d.tend.valueOf(); }, type:'discrete'},
+						{ name: 'title', f : function(d) { return d.title; }, type:'discrete'},
 						{ name: 'end', f : function(d) { return d.tstart.valueOf(); }, type:'discrete'},
 						{ name: 'date', f : function(d) { return topOfDay(d.tstart); }, facetformat: function(val) {
 							var tod = topOfDay(val);
@@ -41,9 +42,21 @@
 					];
 
 				$scope.dimensions = [];
-				$scope.dateFormat = function(d) { 
-					console.log('d is >> ', d);
+				$scope.datetimeFormat = function(d) { 
+					return d3.time.format('%d/%m/%y %H:%M:%S')(d);	
+				};
+				$scope.timeFormat = function(d) { 
 					return d3.time.format('%H:%M:%S')(d);	
+				};
+				var deargs = function(url) { 
+					var q = url.indexOf('?')>=0;
+					if (q) { return url.slice(0,q); }
+					return url;
+				}
+				$scope.strip = function(url) { 
+					if (url.indexOf('http://') == 0) { return url.slice(7); }
+					if (url.indexOf('https://') == 0) { return url.slice(8); }
+					return url;
 				};
 
 				var expand = function(activity) {
@@ -51,7 +64,8 @@
 						tstart: activity.peek('tstart'),
 						tend:activity.peek('tend'),
 						url: activity.peek('what').id,
-						domain : urlDomain(activity.peek('what').id)
+						domain : urlDomain(activity.peek('what').id),
+						title : activity.peek('what').peek('title')
 					};
 					if (result.tstart && result.tend && result.url && result.domain) {
 						return result;
@@ -74,14 +88,14 @@
 					sa(function() {
 						if (cf) { 
 							sa(function() { 
-								$scope.filtered_values = ordering.d.bottom(Infinity);	
+								$scope.filtered_values = ordering.d.top(Infinity);	
 							});
 						}
 					});
 				}, set_dim_filter = function(dim, value) { 
 					console.log('setting dimension filter >> ', value);
 					if (value) {
-						dim.filter(value);
+						dim.filter(value[0]);
 					} else {
 						dim.filter(null);
 					}
@@ -102,10 +116,11 @@
 						$scope.dimensions = dimensions;
 						u.range(dimensions.length).map(function(i) { 
 							var dim_i = dimensions[i];
+							console.log('setting watch ', 'dimensions['+i+'].selected');
 							$scope.$watch('dimensions['+i+'].selected', 
-								function() { 
+								function() {
 									console.log('watch fired >> ', i, dim_i.name, dim_i.selected);
-									set_dim_filter(dim_i.d, dimensions['+i+'].selected); 
+									set_dim_filter(dim_i.d, dim_i.selected);
 								});
 						});
 					});

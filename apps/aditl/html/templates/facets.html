@@ -5,16 +5,24 @@
   	<div class="dimension" ng-repeat="d in dimensions" ng-show="d.show">
   		<!-- discrete list --> 
   		<h2>{{ d.name }}</h2>
-      <select class="form-control" multiple>
-      	<option ng-repeat="v in d.values" ng-model="d.selected">{{ (d.facetformat && d.facetformat(v)) || v }}</option>
+      <select class="form-control" multiple ng-model="d.selected">
+      	<option ng-repeat="v in d.values" value="{{ v }}">
+          {{ (d.facetformat && d.facetformat(v)) || v }}
+        </option>
       </select>  
   	</div>
   </div>
   <!-- -->
   <div class="vals">
   	<ol> 
-	  	<li ng-repeat="v in filtered_values"> 
-	  		{{ v.tstart }} - <a href="{{ v.url }}">{{ v.url }}</a> 
+	  	<li ng-repeat="v in filtered_values" class="access"> 
+	  		{{ datetimeFormat(v.tstart) }} :
+        <a href="{{ v.url }}" target="_blank">
+          <div class="page">
+            <span class="title">{{ v.title }}</span>
+            <span class="url">{{ strip(v.url) }}</span>
+          </div>
+        </a>
 	  	</li>
   	</ol>
   </div>
