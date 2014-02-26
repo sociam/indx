@@ -331,7 +331,9 @@ angular
 				// returns a promise that will ring true when 
 				// deferredset is resolved.
 				var this_ = this;
-				if (!deferredset) { deferredset = {}; }
+				if (deferredset === undefined) { 
+					deferredset = {}; 
+				}
 				var get_obj_d = function(id) { 
 					if (deferredset[id] === undefined) { deferredset[id] = u.deferred(); }
 					return deferredset[id];
@@ -355,7 +357,7 @@ angular
 						kd.resolve();
 					}).fail(kd.reject);
 					return kd.promise();
-				});
+				}).filter(u.defined);
 				return u.when(kds); 
 			},
 			_loadFromJSON: function(json) {
@@ -754,11 +756,13 @@ angular
 						});
 						// now we can fetch all of the things we've queued up
 						console.log('now fetching at once ', _(fetch_dfds).keys());
-						this_.getObj(_(fetch_dfds).keys()).then(function(objs) { 
-							objs.map(function(obj) { fetch_dfds[obj.id].resolve(obj); });
-						}).fail(function(bail) { 
-							_(fetch_dfds).values().map(function(dd) { dd.reject(bail); });
-						});
+						if (_(fetch_dfds).keys().length) {
+							this_.getObj(_(fetch_dfds).keys()).then(function(objs) { 
+								objs.map(function(obj) { fetch_dfds[obj.id].resolve(obj); });
+							}).fail(function(bail) { 
+								_(fetch_dfds).values().map(function(dd) { dd.reject(bail); });
+							});
+						}
 						u.when(ds).then(d.resolve).fail(d.reject);
 					}).fail(function(err) { error(err); d.reject(err); });
 				return d.promise();
@@ -894,73 +898,80 @@ angular
 				// console.debug(' getObj() >> ', objid);
 
 				u.assert(typeof objid === 'string' || typeof objid === 'number' || _.isArray(objid), "objid has to be a number or string or an array of such things");
+
 				var multi = _.isArray(objid),
 					ids = multi ? objid : [objid],
-					d = u.deferred(),
-					this_ = this;
+					this_ = this,
+					fetching = {},
+					newmodels = {};
 
-				// if has model
-				// to fix a deadlock condition -
-				// if we fetch someone who loops back to us
-				// then we will never resolve with this code:
-				//
-				// fetchingDfd.then(d.resolve).fail(d.reject);
-				// return d.promise();
-				// --
-				// therefore a fix:
-
-				var missingModels = {}, dmissingByID = {};
-				var ds = ids.map(function(oid) {
-					var cachemodel = this_._objcache().get(oid);
+				var fetchd = function(id)  {
+					var cachemodel = this_._objcache().get(id);
 					if (cachemodel) { return u.dresolve(cachemodel);	}
-					// otherwise we make a placeholder and loda it
-					var model = this_._createModelForID(oid);
-					missingModels[oid] = model;
-					dmissingByID[oid] = u.deferred();
-					this_._fetchingQueue[oid] = d;
-					return dmissingByID[oid];
-				});
-				var lacks = _(missingModels).keys();
-				if (lacks.length > 0) {
-					// console.debug('calling with lacks ', lacks.length);
-					u.dmap(u.chunked(lacks, 50), function(lids) {
-						// console.debug('lids length ', lids.length);
-						this_._ajax('GET', this_.getID(), {'id':lids}).then(function(response) {
-							var resolvedIDs = _(response.data).map(function(mraw,id) {
-								if (id[0] === '@') { return; }
-								var model = missingModels[id];
-								u.assert(id, "Got an id undefined");
-								u.assert(model, "Got a model we didnt ask for", id);
-								model._setFetched(true);
-								// console.debug('calling deserialise and set on ', mraw);
-								model._deserialiseAndSet(mraw).then(function() {
-									dmissingByID[id].resolve(model);
-									delete this_._fetchingQueue[id];
-								}).fail(function(e){
-									dmissingByID[id].reject('Error loading ' + id + ' ' + e);
-									delete this_._fetchingQueue[id];
-								});
-								return id;
-							}).filter(u.defined);
+					// not fetched
+					if (fetching[id] === undefined) { 
+						newmodels[id] = this_._createModelForID(id);
+						fetching[id] = u.deferred();
+					}
+					return fetching[id];
+				};
 
-							// NOT ACCOUNTED FOR check >>
-							// models not accounted for were blank.
-							_(lids).difference(resolvedIDs).map(function(id) {
-								dmissingByID[id].resolve(missingModels[id]);
-								delete this_._fetchingQueue[id];
+				var ds = ids.map(fetchd); // -> side effect: fetching  map
+
+				// this produces fetching
+				var lacks = _(fetching).keys();
+				var dsets = u.chunked(lacks, 50).map(function(lids) {
+					var dset = u.deferred();
+					this_._ajax('GET', this_.getID(), {'id':lids}).then(function(response) {
+						_(response.data).map(function(mraw,id) {
+							if (id[0] === '@') { return; }
+							var model = newmodels[id];
+							u.assert(id, "Got an id undefined");
+							u.assert(model, "Got a model we didnt ask for", id);
+							model._setFetched(true);
+							// console.debug('calling deserialise and set on ', mraw);
+							model._deserialiseAndSetForward(mraw, true, fetching).then(function() {
+								fetching[id].resolve(model);
+							}).fail(function(bail) { 
+								fetching[id].reject(bail);
 							});
-						}).fail(function(error) {
-							lids.map(function(id) {
-								dmissingByID[id].reject(error);
-								delete this_._fetchingQueue[id];
-							});
+						}).filter(u.defined);
+
+						// new guys will not have a url coming back, so we manually finish them off.
+						lids.map(function(id) { 
+							if (response.data[id] === undefined) { fetching[id].resolve(newmodels[id]); }
 						});
-						return u.when(lids.map(function(id) { return dmissingByID[id]; }));
+
+						dset.resolve();
+					}).fail(function(bail) {
+						lids.map(function(id) { fetching[id].reject(bail); });
+						dset.reject();
 					});
+					return dset.promise();
+				});
+
+				u.when(dsets).then(function() { 
+					// fetch extras that we picked up along the ay
+					var extras = _(fetching).keys().filter(function(id) { return ids.indexOf(id) < 0; });
+					// console.log('extras >>>>>> ', extras);
+					if (extras.length > 0) {
+						this_.getObj(extras).then(function(extra_ms) { 
+							extra_ms.map(function(extra_m) { fetching[extra_m.id].resolve(extra_m);	});
+						});
+					}
+				}); // no .fail needed because we've already rejected relevant dudes.
+
+				if (multi) {
+					return u.when(ds);	
 				} else {
-					// console.debug('already have all the models, returning directly ');
+					// singular, we have to continue with just the argument, not an array
+					var d0 = u.deferred();
+					u.when(ds).then(function(objs) { 
+						// console.log('objs >> ', objs);
+						d0.resolve(objs[0]); 
+					}).fail(d0.reject);
+					return d0.promise();
 				}
-				return multi ? u.when(ds) : ds[0];
 			},
 			// ----------------------------------------------------
 			_updateObjectList:function(updatedObjIDs, added, deleted) {

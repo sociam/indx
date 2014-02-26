@@ -108,8 +108,9 @@
                 if (watcher.get_box()) { 
                     set_box(watcher.get_box());  
                 }
-        },guid);
+            },guid);
             watcher.on('new-record', function(record) { 
+                console.log('new record >>>>>> ', record);
                 sa(function() { 
                     if (logged_dudes.indexOf(record) < 0) { logged_dudes.push(record); }
                     $scope.browse_count = $scope.base_browse_count + logged_dudes.length;

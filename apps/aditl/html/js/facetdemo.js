@@ -14,5 +14,6 @@
 		window.$s = $scope;
 		window.store = client.store;
 		window.en = entities;
+		window.u = utils;
 	});
 })();
