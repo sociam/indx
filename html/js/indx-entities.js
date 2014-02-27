@@ -245,7 +245,9 @@
 							model.set(argset);
 							model.set({type:'web-page'});
 							if (otherprops && _(otherprops).isObject()) { model.set(otherprops); }
-							model.save().then(function() { d.resolve(model); }).fail(d.reject);
+							// avoids extra saves
+							d.resolve(model);
+							// model.save().then(function() { d.resolve(model); }).fail(d.reject);
 						});
 						return d.promise();
 					},

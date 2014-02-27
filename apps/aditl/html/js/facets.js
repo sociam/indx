@@ -96,7 +96,6 @@
 				}, make_facet_vals = function(dim) { 
 					var group = dim.g;
 					var gg = group.top(Infinity).map(function(x) { return [x.key+"", x.value]; });
-					console.log('facet vals >> ', dim.name, u.dict(gg));
 					return u.dict(gg);
 				},
 				update_facet_vals = function() { 

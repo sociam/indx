@@ -5,6 +5,8 @@
     var OBJ_TYPE = localStorage.indx_webjournal_type || 'web-page-view';
     var OBJ_ID = localStorage.indx_webjournal_id || 'my-web-journal';
     var tabthumbs = {};
+    var MIN_DURATION = 1000; // filters switches for min duration
+
     window.tt = tabthumbs;
     var app = angular.module('webjournal').factory('watcher', function(utils, client, entities, pluginUtils, $injector) {
         var u = utils, pu = pluginUtils;
@@ -23,13 +25,16 @@
                     };
                     var _thumbs = function() { 
                         // console.log("_thumbs", url, tab.status, 'already have? ', tabthumbs[url] !== undefined);
-                        if (tabthumbs[url]) {  _done(); } 
+                        console.log('tab status ', tab.url, tab.status);
+                        if (tabthumbs[url]) {  
+                            console.log(url + ' - tabthumbs already ');
+                            _done(); 
+                        } 
                         else if (tab.status == 'complete' && !_fetching[url]) {
                             // no thumb, loaded so let's capture
                             console.log('getting thumb >> ', url);
                             _fetching[url] = true;
                             this_._getThumbnail(windowid, url).then(function(thumbnail_model) {
-                                // console.log('continuation thumb ', thumbnail_model.slice(0,10)); // thumbnail_model.id, _(thumbnail_model.attributes).keys().length);
                                 delete _fetching[url];
                                 _done();
                             }).fail(function(bail) {  
@@ -72,11 +77,13 @@
                 // removed window, meaning focus lost
                 chrome.windows.onRemoved.addListener(function(window) { this_.trigger('user-action', undefined); });
                 // window focus changed
-                chrome.windows.onFocusChanged.addListener(function(w) {
-                    if (w && w.id) {
-                        // console.log('window created >> ', w);
-                        chrome.tabs.query({windowId:w.id, active:true}, function(tab) { 
-                            if (tab) { _trigger(w.id, undefined, tab);  } else { 
+                chrome.windows.onFocusChanged.addListener(function(wid) {
+                    if (wid) {
+                        chrome.tabs.query({windowId:wid, active:true}, function(tab) { 
+                            if (tab) { 
+                                console.log('trigger --', wid, tab.url);
+                                _trigger(wid, undefined, tab[0]);
+                            } else { 
                                 this_.trigger('user-action', undefined);  
                             }
                         });
@@ -139,6 +146,9 @@
                     });
                 }
                 return d.promise();
+            },
+            _record_duration:function(rec) {
+                return rec.peek('tend') && rec.peek('tstart') && rec.peek('tend').valueOf() - rec.peek('tstart').valueOf() || 0;
             },
             _init_history:function() { 
                 // keep history around for plugins etc 
@@ -274,7 +284,6 @@
                     d = u.deferred(), this_ = this;
                 var geowatcher = $injector.get('geowatcher');
                 dbox.then(function(box) {
-                    console.log('make record box >> ', box);
                     this_.getDoc(url,title,tabinfo).then(function(docmodel) { 
                         entities.activities.make1(box, 
                           'browse',
@@ -291,24 +300,13 @@
             },
             getDoc:function(url,title,tabinfo) {
                 return entities.documents.makeWebPage(this.box, url, title, tabinfo);
-                // entities.documents.getWebPage(this.box, url).then(function(results) {
-                //     if (results && results.length) { 
-                //         // console.log('updating page > and saving', results[0].id, tabinfo);
-                //         if ( (!results[0].peek('thumbnail') && tabinfo.thumbnail) || 
-                //              (!results[0].peek('favicon') && tabinfo.favicon) ) { 
-                //             results[0].set(tabinfo); 
-                //             return results[0].save().then(function() { d.resolve(results[0]); }).fail(d.reject);
-                //         }
-                //         return d.resolve(results[0]).fail(d.reject);
-                //     }
-                //     entities.documents.makeWebPage(this_.box, url, title, tabinfo).then(d.resolve).fail(d.reject);
-                // }).fail(d.reject);
             },
             _record_updated:function() {
                 // console.log('record updated ... box ', this.box, current_record);
                 var this_ = this, box = this.box, store = this.get('store'), journal = this.get('journal'), 
                     current_record = this.current_record;
-                if (current_record) { 
+                if (current_record && (!MIN_DURATION || this_._record_duration(current_record) >= MIN_DURATION)) { 
+                    console.info('current_record passes > ', this_._record_duration(current_record));
                     return u.when( current_record.save(), current_record.peek('what').save() );
                 } 
                 return u.dresolve();
