@@ -105,10 +105,8 @@
 					cf = crossfilter(values);
 					dimensions.map(function(dim) { 
 						dim.d = cf.dimension(dim.f);	
-						dim.g = dim.d.group().all();
-						// console.log(dim.g);
-						// console.log(dim.g.map(function(x) { return x.key; }));
-						dim.values = dim.g.map(function(x) { return x.key; });
+						dim.g = cf.dimension(dim.f).group();
+						console.log("dim g ", dim.g.top(Infinity));
 					});
 					// console.log('dimensions >>', dimensions);
 					sa(function() { 

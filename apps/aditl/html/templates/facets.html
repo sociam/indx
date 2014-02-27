@@ -4,17 +4,16 @@
   <div class="dimensions">
   	<div class="dimension" ng-repeat="d in dimensions" ng-show="d.show">
   		<!-- discrete list --> 
-  		<h2>{{ d.name }}</h2>
       <select class="form-control" multiple ng-model="d.selected">
-      	<option ng-repeat="v in d.values" value="{{ v }}">
-          {{ (d.facetformat && d.facetformat(v)) || v }}
+      	<option ng-repeat="kv in d.g.top(100) | orderBy:+key" value="{{ kv.key }}" ng-class="{fade:(kv.value===0)}">
+          {{ (d.facetformat && d.facetformat(kv.key)) || kv.key }} ({{ kv.value }})
         </option>
-      </select>  
+      </select>
   	</div>
   </div>
   <!-- -->
   <div class="vals">
-  	<ol> 
+  	<ol>
 	  	<li ng-repeat="v in filtered_values" class="access"> 
 	  		{{ datetimeFormat(v.tstart) }} :
         <a href="{{ v.url }}" target="_blank">
