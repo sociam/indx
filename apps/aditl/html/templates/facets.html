@@ -1,28 +1,27 @@
 <div class="facet">
   <div class="num_items"> {{ elements.length }} </div>
   <!-- --> 
-  <div class="dimensions">
-  	<div class="dimension" ng-repeat="d in dimensions" ng-show="d.show">
+  <div class="row">
+  	<div class="col-xs-3 dimension" ng-repeat="d in dimensions" ng-show="d.show">
   		<!-- discrete list --> 
       <select class="form-control" multiple ng-model="d.selected">
-      	<option ng-repeat="kv in d.g.top(100) | orderBy:+key" value="{{ kv.key }}" ng-class="{fade:(kv.value===0)}">
-          {{ (d.facetformat && d.facetformat(kv.key)) || kv.key }} ({{ kv.value }})
+      	<option ng-repeat="(k,v) in d.facetvals | orderBy:k " value="{{ k }}" ng-class="{fade:(v===0)}">
+          {{ (d.facetformat && d.facetformat(k)) || k }} ({{ v }})
         </option>
       </select>
   	</div>
-  </div>
-  <!-- -->
-  <div class="vals">
-  	<ol>
-	  	<li ng-repeat="v in filtered_values" class="access"> 
-	  		{{ datetimeFormat(v.tstart) }} :
-        <a href="{{ v.url }}" target="_blank">
-          <div class="page">
-            <span class="title">{{ v.title }}</span>
-            <span class="url">{{ strip(v.url) }}</span>
-          </div>
-        </a>
-	  	</li>
-  	</ol>
+    <div class="vals col-xs-6">
+    	<ol>
+  	  	<li ng-repeat="v in filtered_values" class="access"> 
+  	  		{{ datetimeFormat(v.tstart) }} :
+          <a href="{{ v.url }}" target="_blank">
+            <div class="page">
+              <span class="title">{{ v.title }}</span>
+              <span class="url">{{ strip(v.url) }}</span>
+            </div>
+          </a>
+  	  	</li>
+    	</ol>
+    </div>
   </div>
 </div>

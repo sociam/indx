@@ -20,7 +20,7 @@
 					topOfDay = function(d) { 
 					    var day = new Date(d.valueOf());
 					    day.setHours(0); day.setMinutes(0); day.setSeconds(0); day.setMilliseconds(0); // midnight
-					    return day.valueOf();
+					    return day;;
 					}, 
 					today = topOfDay(new Date()),
 					yesterday = topOfDay(new Date() - 24 * 60 * 60 * 1000),
@@ -32,11 +32,12 @@
 						{ name: 'start', f : function(d) { return d.tend.valueOf(); }, type:'discrete'},
 						{ name: 'title', f : function(d) { return d.title; }, type:'discrete'},
 						{ name: 'end', f : function(d) { return d.tstart.valueOf(); }, type:'discrete'},
-						{ name: 'date', f : function(d) { return topOfDay(d.tstart); }, facetformat: function(val) {
-							var tod = topOfDay(val);
+						{ name: 'date', f : function(d) { return topOfDay(d.tstart).valueOf().toString(); }, facetformat: function(val) {
+							// val coming in will be a string
+							var tod = topOfDay(new Date(+val));
 							if (tod == today) { return 'Today'; }
 							if (tod == yesterday) { return 'Yesterday'; }
-							return d3.time.format('%d %m')(new Date(val));
+							return d3.time.format('%a %d/%m')(tod);
 						}, show: true},
 						{ name: 'id', f : function(d) { return d.id; }, type:'discrete' }
 					];
@@ -52,10 +53,10 @@
 					var q = url.indexOf('?')>=0;
 					if (q) { return url.slice(0,q); }
 					return url;
-				}
-				$scope.strip = function(url) { 
-					if (url.indexOf('http://') == 0) { return url.slice(7); }
-					if (url.indexOf('https://') == 0) { return url.slice(8); }
+				};
+				$scope.strip = function(url) {
+					if (url.indexOf('http://') === 0) { return url.slice(7); }
+					if (url.indexOf('https://') === 0) { return url.slice(8); }
 					return url;
 				};
 
@@ -92,6 +93,22 @@
 							});
 						}
 					});
+				}, make_facet_vals = function(dim) { 
+					var group = dim.g;
+					var gg = group.top(Infinity).map(function(x) { return [x.key+"", x.value]; });
+					console.log('facet vals >> ', dim.name, u.dict(gg));
+					return u.dict(gg);
+				},
+				update_facet_vals = function() { 
+					sa(function() { 
+						dimensions.map(function(dim) { 
+							if (!dim.g) { return; }
+							dim.g.top(Infinity).map(function(kv) { 
+								var key = kv.key+"", val = kv.value;
+								dim.facetvals[key] = val;
+							});
+						});
+					});
 				}, set_dim_filter = function(dim, value) { 
 					console.log('setting dimension filter >> ', value);
 					if (value) {
@@ -100,13 +117,17 @@
 						dim.filter(null);
 					}
 					update_values();
+					update_facet_vals();
+
 				}, init_cf = function(data, dimdefs) { 
 					values = data;
 					cf = crossfilter(values);
 					dimensions.map(function(dim) { 
-						dim.d = cf.dimension(dim.f);	
-						dim.g = cf.dimension(dim.f).group();
-						console.log("dim g ", dim.g.top(Infinity));
+						dim.d = cf.dimension(dim.f);
+						if (dim.show) {
+							dim.g = cf.dimension(dim.f).group();
+							dim.facetvals = make_facet_vals(dim);
+						}
 					});
 					// console.log('dimensions >>', dimensions);
 					sa(function() { 
