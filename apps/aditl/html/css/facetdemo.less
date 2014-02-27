@@ -1,0 +1,47 @@
+* { box-sizing:border-box; } 
+
+.facetdemo { 
+	vertical-align:top;
+	.page.ng-enter, .page.ng-leave {
+		-webkit-transition:0.5s linear all;
+		transition:0.5s linear all;
+	}
+	.page.ng-enter { opacity:0;	}
+	.page.ng-enter.ng-enter-active { opacity:1.0; }	
+	* { 
+		-webkit-transition:0.5s linear all;	transition:0.15s linear all;		
+	}
+	.access * { display:inline-block; }
+	.page {
+		vertical-align: middle;
+		background-color:#fff;
+        overflow:hidden;
+		position:relative;
+		margin:2px 2px;
+		width:100%
+		height:30px;
+		padding:0px;
+		.title {
+			background-color:rgba(255,255,255,0.72);
+			font-weight:200;
+		}
+		.url {
+			background-color:rgba(255,255,255,0.72);
+			font-weight:200;
+		}
+		&:hover {
+			box-shadow: #eee 2px 2px;
+			// width:160px;
+			.thumbnail { 
+				// width:160px; 
+				opacity:0.7; 
+			}
+			.title {
+				font-size:10pt;
+				font-weight:300;
+				opacity:1.0;
+				background-color:rgba(255,255,255,1);
+			}
+		}
+	}
+}
