@@ -35,6 +35,7 @@ class IndxWebHandler(Resource):
         path = request.path
         params = {
             "headers": request.headers,
+            "args": request.args,
         }
 
         logging.debug("IndxWebHandler, request, path: {0}".format(path))

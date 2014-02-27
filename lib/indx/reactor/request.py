@@ -22,6 +22,14 @@ class IndxRequest:
         self.method = method
         self.path = path
         self.params = params
+        self.headers = self.params.get('headers') or {}
+        self.args = self.params.get('args') or {}
         self.sessionid = sessionid
         self.callback = callback # response callback - pass in an IndxResponse to send it back to the user (HTTP or WebSocket usually)
+
+    ###
+    #   compatibility with Twisted request object
+    ###
+    def getHeader(self, key):
+        return self.headers.get(key)
 
