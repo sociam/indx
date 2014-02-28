@@ -11,12 +11,12 @@
       </select>
   	</div>
     <div class="vals col-xs-6">
-	  	<div ng-repeat="v in main_values" class="page" ng-click="open_page(v.url)">   
-           <img ng-src="{{v.thumbnail}}" class='thumbnail'>
-           <div class="duration">{{ format_mins(v.duration/60000) }} min</div>
-           <div class="count">{{ v.count }}</div>
-           <div class="title">{{ v.title }}</div>
-           <div class="url">{{ strip(v.url) }}</div>
+	  	<div ng-repeat="kv in main_values" class="page" ng-click="open_page(kv.key)" ng-show="kv.value.count > 0">   
+           <img ng-src="{{ pages[kv.key].thumbnail }}" class='thumbnail'>
+           <div class="duration">{{ format_mins(kv.value.duration/60000) }} min</div>
+           <div class="count">{{ kv.value.count }}</div>
+           <div class="title">{{ pages[kv.key].title }}</div>
+           <div class="url">{{ strip(kv.key) }}</div>
       </div>
     </div>
   </div>

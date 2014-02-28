@@ -22,7 +22,6 @@
 					    return day;
 					},
 					pagegroup,
-					pages = {},
 					today = topOfDay(new Date()),
 					yesterday = topOfDay(new Date() - 24 * 60 * 60 * 1000),
 					rawdate = function(vd) { return new Date(vd['@value']);  },
@@ -42,6 +41,7 @@
 						}, show: true}
 					];
 
+				$scope.pages = {};
 				$scope.dimensions = [];
 				$scope.datetimeFormat = function(d) { 
 					return d3.time.format('%d/%m/%y %H:%M:%S')(d);	
@@ -74,8 +74,8 @@
 					};
 					if (result.tstart && result.tend && result.url && result.domain) {
 						// build page:
-						if (!pages[result.url]) { 
-							pages[result.url] = { 
+						if (!$scope.pages[result.url]) { 
+							$scope.pages[result.url] = { 
 								thumbnail : activity.peek('what').peek('thumbnail'),
 								title: activity.peek('what').peek('title'),
 								url:result.url
@@ -120,12 +120,7 @@
 				}, update_values = function() { 
 					if (cf && pagegroup) {
 						sa(function() { 
-							var remainders = pagegroup.top(Infinity)
-								.filter(function(x) { return x.value.count > 0; })
-								.map(function(x) { 
-									return _({}).extend(pages[x.key], x.value);
-								});							
-							$scope.main_values = remainders;
+							$scope.main_values = pagegroup.top(Infinity); // .filter(function(x) { return x.value.count > 0; });
 						});
 					}
 				}, make_facet_vals = function(dim) { 
@@ -180,7 +175,6 @@
 						console.info('facet ::: load browse >> ', events.length);
 						var expanded = events.map(expand).filter(u.defined);
 						console.log('expanded >> ', expanded);
-						console.log('pages >> ', pages);
 						init_cf(expanded);
 					});
 				};
@@ -203,7 +197,6 @@
 					if ($scope.box) { set_box($scope.box);	}
 				});
 				window.$f = $scope;
-				window.pp = pages;
 			}};
 		});
 }());
