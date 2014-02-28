@@ -4,7 +4,15 @@
 // requires crossfilter
 
 (function() {
-	angular.module('aditl').directive('facets', function() {
+	angular.module('aditl').filter('obj2Array', function() {
+	    return function(input) {
+	      var out = []; 
+	      for(i in input){
+	        out.push(input[i]);
+	      }
+	      return out;
+	    }
+   }).directive('facets', function() {
 		return {
 			restrict:'E',
 			scope:{ box:'=box'},
