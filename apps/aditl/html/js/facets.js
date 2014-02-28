@@ -4,15 +4,7 @@
 // requires crossfilter
 
 (function() {
-	angular.module('aditl').filter('obj2Array', function() {
-	    return function(input) {
-	      var out = []; 
-	      for(i in input){
-	        out.push(input[i]);
-	      }
-	      return out;
-	    }
-   }).directive('facets', function() {
+	angular.module('aditl').directive('facets', function() {
 		return {
 			restrict:'E',
 			scope:{ box:'=box'},
@@ -28,8 +20,8 @@
 					topOfDay = function(d) { 
 					    var day = new Date(d.valueOf());
 					    day.setHours(0); day.setMinutes(0); day.setSeconds(0); day.setMilliseconds(0); // midnight
-					    return day;;
-					}, 
+					    return day;
+					},
 					today = topOfDay(new Date()),
 					yesterday = topOfDay(new Date() - 24 * 60 * 60 * 1000),
 					rawdate = function(vd) { return new Date(vd['@value']);  },
@@ -54,8 +46,12 @@
 				$scope.datetimeFormat = function(d) { 
 					return d3.time.format('%d/%m/%y %H:%M:%S')(d);	
 				};
-				$scope.timeFormat = function(d) { 
+				$scope.open_page = function(d) { window.open(d, '_blank'); };
+				$scope.timeFormat = function(d) {
 					return d3.time.format('%H:%M:%S')(d);	
+				};
+				$scope.format_mins = function(long) {
+					return d3.format('2.2r')(long);
 				};
 				var deargs = function(url) { 
 					var q = url.indexOf('?')>=0;
@@ -74,7 +70,8 @@
 						tend:activity.peek('tend'),
 						url: activity.peek('what').id,
 						domain : urlDomain(activity.peek('what').id),
-						title : activity.peek('what').peek('title')
+						title : activity.peek('what').peek('title'),
+						thumbnail: activity.peek('what').peek('thumbnail')
 					};
 					if (result.tstart && result.tend && result.url && result.domain) {
 						return result;
@@ -94,16 +91,31 @@
 				}, set_ordering = function(dimension) { 
 					ordering = dimension;
 				}, update_values = function() { 
-					sa(function() {
-						if (cf) { 
-							sa(function() { 
-								$scope.filtered_values = ordering.d.top(Infinity);	
-							});
-						}
-					});
+					if (cf && ordering) {
+						var accesses = ordering.d.top(Infinity);
+						var pages = {};
+						accesses.map(function(d) { 
+							var p = pages[d.url] || { 
+								url: d.url,
+								title: d.title,
+								thumbnail: d.thumbnail,
+								domain: d.domain,
+								count: 0, 
+								duration: 0
+								// last_access: d.tstart.valueOf()
+							};
+							p.count++;
+							p.duration += (d.tend - d.tstart);
+							// p.last_access = Math.max(d.tstart.valueOf(), p.last_access);
+							pages[d.url] = p;
+						});
+						var by_dur = _(pages).values();
+						by_dur.sort(function(x,y) { return y.duration - x.duration; });
+						sa(function() { $scope.main_values = by_dur; });
+					}
 				}, make_facet_vals = function(dim) { 
 					var group = dim.g;
-					var gg = group.top(Infinity).map(function(x) { return [x.key+"", x.value]; });
+					var gg = group.top(Infinity).map(function(x) { return [x.key+'', x.value]; });
 					return u.dict(gg);
 				},
 				update_facet_vals = function() { 
@@ -111,7 +123,7 @@
 						dimensions.map(function(dim) { 
 							if (!dim.g) { return; }
 							dim.g.top(Infinity).map(function(kv) { 
-								var key = kv.key+"", val = kv.value;
+								var key = kv.key+'', val = kv.value;
 								dim.facetvals[key] = val;
 							});
 						});
