@@ -90,8 +90,14 @@
 						trailing = host.split('.').slice(-2).join('.');
 					return trailing;
 				}, add_event = function(evtm) { 
+					console.log('adding event >> ', evtm);
 					var expm = expand(evtm);
-					if (cf) { cf.add(expm); }
+					if (cf && expm) { 
+						console.log('adding to cf >> ', expm);
+						cf.add(expm); 
+						update_values();
+						update_facet_vals();
+					}
 				}, set_dimension_filter = function(dimension, value) { 
 					dimension.d.filter(value ? value : null);
 					update_values();
@@ -119,7 +125,6 @@
 								.map(function(x) { 
 									return _({}).extend(pages[x.key], x.value);
 								});							
-							console.log(' mm >> ', remainders);
 							$scope.main_values = remainders;
 						});
 					}
@@ -176,7 +181,6 @@
 						var expanded = events.map(expand).filter(u.defined);
 						console.log('expanded >> ', expanded);
 						console.log('pages >> ', pages);
-
 						init_cf(expanded);
 					});
 				};
@@ -188,10 +192,7 @@
 					$scope.dimensions = [];
 					box.on('obj-add', function(evtid) {
 						if (evtid.indexOf('activity') === 0 && evtid.indexOf('browse') > 0) {
-							box.getObj(evtid).then(function(evtm) {
-								add_event(evtm);
-								update_values();
-							});
+							box.getObj(evtid).then(function(evtm) {	add_event(evtm); });
 						}
 					}, guid);
 					old_box = box;
