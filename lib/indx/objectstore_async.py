@@ -482,7 +482,7 @@ class ObjectStoreAsync:
 
             def conn_cb(conn):
                 logging.debug("Objectstore get_latest, conn_cb")
-                conn.runQuery("SELECT triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype, uuid FROM wb_v_latest_triples", []).addCallbacks(lambda rows2: row_cb(self.combine_long_string_rows(rows2), version), err_cb) # ORDER BY is implicit, defined by the view, so no need to override it here
+                conn.runQuery("SELECT triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype, uuid, chunk FROM wb_v_latest_triples", []).addCallbacks(lambda rows2: row_cb(self.combine_long_string_rows(rows2), version), err_cb) # ORDER BY is implicit, defined by the view, so no need to override it here
             
             self.conns['conn']().addCallbacks(conn_cb, result_d.errback)
 
