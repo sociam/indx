@@ -926,8 +926,12 @@ angular
 						_(response.data).map(function(mraw,id) {
 							if (id[0] === '@') { return; }
 							var model = newmodels[id];
-							u.assert(id, "Got an id undefined");
-							u.assert(model, "Got a model we didnt ask for", id);
+							if (id === undefined) { 
+								console.log('id undefined >> ');
+								console.log("response >> ", response, mraw);
+							}
+							u.assert(id !== undefined, "Got an id undefined");
+							u.assert(model !== undefined, "Got a model we didnt ask for", id);
 							model._setFetched(true);
 							// console.debug('calling deserialise and set on ', mraw);
 							model._deserialiseAndSetForward(mraw, true, fetching).then(function() {
