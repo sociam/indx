@@ -1,6 +1,13 @@
-* { box-sizing:border-box; font-face: helvetica neue; } 
-
+* { 
+	box-sizing:border-box; font-face: "helvetica neue"; 
+	:focus { outline: none !important; }
+}
 .facetdemo { 
+	.facets {
+		position:fixed;
+		top:40px; left:0px;	right:0px; bottom:0px;
+		border:1px solid yellow;
+	}
 	vertical-align:top;
 	.page.ng-enter, .page.ng-leave {
 		-webkit-transition:0.5s linear all;
@@ -11,13 +18,46 @@
 	* { 
 		-webkit-transition:0.5s linear all;	transition:0.15s linear all;		
 	}
-	.dimension select {
-		height:100%;
-	}
-	select { 
-		option.fade { color:#eee; font-weight:100; } 
-	}
+
 	.access * { display:inline-block; }
+}
+
+
+.facets {
+	position:relative;
+	padding:0px 50px 0px 50px;
+	.searching {
+		padding:4px 16px 5px 16px !important;
+		input { 
+			border-top: 0px solid white;
+			border-left: 0px solid white;
+			border-right: 0px solid white;
+			padding-left:0px;
+			padding-bottom:2px;
+			&:focus {
+				border-bottom: 1px solid #0ee;
+			}
+		}
+ 	}	
+	.vals { 
+		overflow-y:scroll; 
+	}
+	.dimension select {	
+		height:100%; 
+		margin-bottom:100px;
+	}	
+	select { 
+		option {
+			font-size:10pt;
+			margin:13px !important;
+		}
+		option.fade { 
+			color:#eee; font-weight:100; 
+		} 
+		option:selected {
+			background-color:#0ff;
+		}
+	}
 	.page {
 		display:inline-block;
 		vertical-align: middle;

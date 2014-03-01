@@ -25,20 +25,22 @@
 					today = topOfDay(new Date()),
 					yesterday = topOfDay(new Date() - 24 * 60 * 60 * 1000),
 					rawdate = function(vd) { return new Date(vd['@value']);  },
+					searchdim, 
 					dimensions = [
-						{ name: 'url', f: function(d) { return d.url; }, type:'discrete' },
+						{ name: 'url', f: function(d) { return d.url; }, type:'discrete'},
 						{ name: 'domain', f : function(d) { return d.domain.trim(); }, type:'discrete', show:true },
 						{ name: 'duration', f : function(d) { return d.tend.valueOf() - d.tstart.valueOf(); }, type:'discrete'},
 						{ name: 'start', f : function(d) { return d.tend.valueOf(); }, type:'discrete'},
 						{ name: 'title', f : function(d) { return d.title; }, type:'discrete'},
 						{ name: 'end', f : function(d) { return d.tstart.valueOf(); }, type:'discrete'},
-						{ name: 'date', f : function(d) { return topOfDay(d.tstart).valueOf().toString(); }, facetformat: function(val) {
-							// val coming in will be a string
-							var tod = topOfDay(new Date(+val));
-							if (tod == today) { return 'Today'; }
-							if (tod == yesterday) { return 'Yesterday'; }
-							return d3.time.format('%a %d/%m')(tod);
-						}, show: true}
+						{ name: 'date', f : function(d) { return topOfDay(d.tstart).valueOf().toString(); }, colsize:'thin',
+							facetformat: function(val) {
+								// val coming in will be a string
+								var tod = topOfDay(new Date(+val));
+								if (tod == today) { return 'Today'; }
+								if (tod == yesterday) { return 'Yesterday'; }
+								return d3.time.format('%a %d/%m')(tod);
+							}, show: true}
 					];
 
 				$scope.pages = {};
@@ -138,19 +140,19 @@
 						});
 					});
 				}, set_dim_filter = function(dim, value) { 
-					console.log('setting dimension filter >> ', value);
+					// console.log('setting dimension filter >> ', value);
 					if (value) {
-						dim.filter(value[0]);
+						if (dim) { dim.filter(value[0]); }
 					} else {
-						dim.filter(null);
+						if (dim) { dim.filter(null); }
 					}
 					update_values();
 					update_facet_vals();
 				}, init_cf = function(values, dimdefs) { 
 					cf = crossfilter(values);
 					dimensions.map(function(dim) { 
-						dim.d = cf.dimension(dim.f);
 						if (dim.show) {
+							dim.d = cf.dimension(dim.f);
 							dim.g = cf.dimension(dim.f).group();
 							dim.facetvals = make_facet_vals(dim);
 						}
@@ -174,9 +176,22 @@
 					entities.activities.getByActivityType(box,undefined,undefined,'browse').then(function(events){
 						console.info('facet ::: load browse >> ', events.length);
 						var expanded = events.map(expand).filter(u.defined);
-						console.log('expanded >> ', expanded);
+						sa(function() { $scope.event_count = expanded.length }); // set some feedback
 						init_cf(expanded);
 					});
+				}, update_search = function(s) {
+					if (searchdim === undefined) {	
+						if (!cf) { return ; }
+						searchdim = cf.dimension(function(d) { return (d.title + " " + d.url).toLowerCase(); });
+					}
+					s = s.trim().toLowerCase();					
+					if (s.length > 0) { 
+						searchdim.filterFunction(function(x) { 
+							return x.indexOf(s) >= 0; 
+						});
+					} else {
+						searchdim.filterAll();
+					}
 				};
 				
 				var set_box = function(box) { 
@@ -186,12 +201,16 @@
 					$scope.dimensions = [];
 					box.on('obj-add', function(evtid) {
 						if (evtid.indexOf('activity') === 0 && evtid.indexOf('browse') > 0) {
+							sa(function() { $scope.event_count++; });
 							box.getObj(evtid).then(function(evtm) {	add_event(evtm); });
 						}
 					}, guid);
 					old_box = box;
 					load_box(box);
 				};
+				$scope.$watch('searchterm', function(search) {
+					update_search($scope.searchterm);
+				});
 				$scope.$watch('box', function(box) {
 					console.info('facet ::: watch box >> ', box);
 					if ($scope.box) { set_box($scope.box);	}

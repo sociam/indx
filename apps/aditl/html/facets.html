@@ -8,20 +8,9 @@
   <link rel="stylesheet/less" type="text/css" href="css/facetdemo.less">
 	<title>indx :: facets</title>
   </head>
-  <body ng-app="aditl" ng-controller="facetdemo" ng-cloak>
+  <body ng-app="aditl" ng-controller="facetdemo" ng-cloak class="facetdemo">
 	<toolbar box-var='boxid' username-var='user'></toolbar>
-  <div class="container" ng-show="user && boxid">
-    <div class="row">
-      <ul class="nav nav-pills nav-stacked col-xs-1">
-        <li><a href="index.html">Diary</a></li>
-        <li><a href="pages.html">Pages</a></li>
-        <li class="active"><a href="pages.html">Facets</a></li>
-      </ul>    
-    	<div class='facetdemo col-xs-11'>
-        <facets box="box"></facets>
-      </div>
-    </div>
-  </div> <!-- container --> 
+  <facets box="box" ng-show="user && boxid"></facets>
 	<div ng-show="!user">
 		<h1>Please log in.</h1>
 	</div>
