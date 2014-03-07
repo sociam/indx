@@ -22,9 +22,9 @@
         <diary-entry ng-repeat="e in selected_day.entries" entry="e"></diary-entry>
         <div ng-class="{entry:true, showing:entryPopup}">
           <div class="madlibs">
-            <div class="madlib" ng-repeat="p in madlibs" ng-click="addPhraseEntry(p)">{{ p }}</div>            
+            <div class="madlib" ng-repeat="p in madlibs" ng-click="addPhraseEntry(p)">{{ p.text }} </div>
           </div>
-          <input type="text" id="entrybox" ng-blur="doneEntryPopup()" autofocus ng-model="entrytext"></input>
+          <input type="text" id="entrybox" ng-blur="doneEntryPopup()" autofocus ng-model="entrytext" placeholder=".. or freely type your thoughts here "></input>
         </div>
         <div class="addNewButton" ng-click="showEntryPopup()">+</div>
       </div>

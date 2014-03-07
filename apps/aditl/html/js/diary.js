@@ -1,5 +1,5 @@
 /* jshint undef: true, strict:false, trailing:false, unused:false */
-/* global require, exports, console, process, module, L, angular, _, jQuery */
+/* global require, exports, console, process, module, L, angular, _, jQuery, $ */
 
 angular
 .module('aditl')
@@ -10,12 +10,11 @@ angular
 		$s = $scope,
 		box;
 
-
 	$s.madlibs = [
-		'i\'m feeling...',
-		'i\'m doing...',
-		'i like ... ',
-		'i wish....'		
+		{ text: 'i\'m feeling...', range: ['happy', 'sad', 'indifferent'] },
+		{ text: 'i\'m ...', range:['working', 'relaxing', 'doing some sport'] },
+		{ text: 'i like to ...' },
+		{ text: 'i wish i could ... '}
 	];
 
 	$s.dow_names = dateutils.weekday;
@@ -55,12 +54,28 @@ angular
 	$s.doneEntryPopup = function() { 
 		if ($s.entrytext !== undefined && $s.entrytext.trim().length > 0) {
 			console.log('saving text ... ', $s.entrytext);
+			$s.addTextEntry($s.entrytext);
 		}
 		$s.entrytext = '';
 		$s.entryPopup = false;
 	};
-	
-
+	$s.addTextEntry = function(t) {
+		var now = new Date(), d = u.deferred();
+		entities.activities.make1(box, 'journal', now, now, undefined, undefined, undefined, undefined, { 
+			journaltype:'text',
+			contents:'t'
+		}).then(function(obj) { d.resolve(obj); }).fail(d.reject);
+		return d.promise();
+	};
+	$s.addPhraseEntry = function(p) {
+		var now = new Date(), d = u.deferred();
+		entities.activities.make1(box, 'journal', now, now, undefined, undefined, undefined, undefined, { 
+			journaltype:'phrase',
+			phrase:p.text,
+			value:''
+		}).then(function(obj) { d.resolve(obj); }).fail(d.reject);
+		return d.promise();		
+	};
 	$s.$watch('user + box', function() { 
 		if ($s.box) {
 			client.store.getBox($s.box).then(function(b) { 
@@ -76,6 +91,7 @@ angular
 	return {
 		restrict:'E',
 		scope: {'entry' : '='},
+		templateUrl:'templates/diary-entry.html',
 		controller:function()  {
 
 		}
