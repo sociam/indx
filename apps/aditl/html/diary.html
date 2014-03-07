@@ -19,7 +19,7 @@
         <div class="month"> {{ month_names[selected_day.date.getMonth()].toUpperCase() }} </div>
       </div>
       <div class="entries col-xs-12">
-        <diary-entry ng-repeat="e in selected_day.entries" entry="e"></diary-entry>
+        <diary-entry ng-repeat="e in selected_day.entries" entry="e" entries='selected_day.entries'></diary-entry>
         <div ng-class="{entry:true, showing:entryPopup}">
           <div class="madlibs">
             <div class="madlib" ng-repeat="p in madlibs" ng-click="addPhraseEntry(p)">{{ p.text }} </div>

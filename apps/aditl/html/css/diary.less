@@ -101,4 +101,28 @@
 		color:#eee;
 		border-bottom:1px solid #eee;
 	}
+	.diary-entry {
+		position:relative;
+		border:1px solid #eee;
+		.delete {
+			position:absolute;
+			font-size:18pt;
+			font-weight:100;
+			top:0px;
+			right:10px;
+		}
+		.phrase, input {  display:inline-block;	}
+		input, textarea { 
+			border:none;
+			font-style:italic;
+			border-bottom:1px solid #aaa;
+			&:focus {
+				border-bottom:1px solid #222;
+			}
+		}
+		textarea {
+			width:100%;
+			min-height:30px;
+		}
+	}
 }

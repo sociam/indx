@@ -48,13 +48,11 @@ angular
 	$s.selectNextDay = function() { $s.selectDay(dateutils.dayAfter($s.selected_day.date));	};
 	$s.selectPrevDay = function() { $s.selectDay(dateutils.dayBefore($s.selected_day.date));	};
 	$s.showEntryPopup = function() { 
-		console.log('show entry popup');
 		$s.entryPopup = true;
 		setTimeout(function() { $('#entrybox').focus(); }, 200);
 	};
 	$s.doneEntryPopup = function() { 
 		if ($s.entrytext !== undefined && $s.entrytext.trim().length > 0) {
-			console.log('saving text ... ', $s.entrytext);
 			$s.addTextEntry($s.entrytext);
 		}
 		$s.entrytext = '';
@@ -64,17 +62,29 @@ angular
 		var now = new Date(), d = u.deferred();
 		entities.activities.make1(box, 'diary-entry-created', whom, now, now, undefined, undefined, undefined, undefined, { 
 			journaltype:'text',
-			contents:t
-		}).then(function(obj) { console.log('saving --- ', obj); obj.save(); d.resolve(obj); }).fail(d.reject);
+			value:t
+		}).then(function(obj) { 
+			console.log('saving --- ', obj); 
+			sa(function() { $s.selected_day.entries.push(obj);	});
+			obj.save(); 
+			d.resolve(obj); 
+		}).fail(d.reject);
 		return d.promise();
 	};
 	$s.addPhraseEntry = function(p) {
+		console.log('add phrase entry >> ', p);
 		var now = new Date(), d = u.deferred();
 		entities.activities.make1(box, 'diary-entry-created', whom, now, now, undefined, undefined, undefined, undefined, { 
 			journaltype:'phrase',
 			phrase:p.text,
-			value:''
-		}).then(function(obj) { console.log('saving --- ', obj);  obj.save(); d.resolve(obj); }).fail(d.reject);
+			range:p.range,
+			value:p.value
+		}).then(function(obj) { 
+			console.log('saving --- ', obj); 
+			obj.save(); 
+			sa(function() { $s.selected_day.entries.push(obj);	});
+			d.resolve(obj); 
+		}).fail(d.reject);
 		return d.promise();		
 	};
 	$s.$watch('user + box', function() { 
@@ -99,14 +109,17 @@ angular
 }).directive('diaryEntry', function() { 
 	return {
 		restrict:'E',
-		scope: {'entry' : '='},
+		scope: {'entry' : '=', 'entries':'='},
 		templateUrl:'templates/diary-entry.html',
 		controller:function($scope, utils)  {
 			var u = utils, 
 				sa = function(fn) { return u.safeApply($scope, fn); },
 				$s = $scope;
 
-			console.log('diary entry >> ', $scope);
+			$s.deleteMe = function(entry) {	
+				entry.destroy(); 
+				$s.entries = $s.entries.filter(function(x) { return x !== entry; });
+			};
 			$s.$watch('entry', function() { 
 				var entry = $s.entry;
 				$s.entryvalue = (entry !== undefined ? entry.peek('value') : ''); 
