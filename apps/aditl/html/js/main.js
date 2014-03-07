@@ -3,7 +3,18 @@
 
 angular
 	.module('aditl', ['ng','indx','infinite-scroll','ngAnimate'])
-	.directive('dayContainer', function() {
+	.factory('dateutils', function() { 
+		return {
+			weekday:['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'],
+			months: [ 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December' ],
+			dayAfter:function(d) { 	return new Date(d.valueOf() + 24*3600*1000);},
+			dayBefore:function(d) { return new Date(d.valueOf() - 24*3600*1000);},
+			isToday : function(d) { 
+				var today = new Date();
+				return d.getDate() == today.getDate() && d.getYear() == today.getYear() && d.getMonth() == today.getMonth();
+			}
+		};
+	}).directive('dayContainer', function() {
 		return {
 			restrict:'E',
 			scope:{ day:'=' },
@@ -54,14 +65,12 @@ angular
 			controller:function($scope) {
 			}
 		};
-	}).controller('main', function($scope, client, utils, entities) {
+	}).controller('main', function($scope, client, utils, dateutils, entities) {
 		var u = utils;
 		$scope.days = [];
 		// $scope.locations = [];
 		var box, all_locs = [];	
 		var sa = function(fn) { return u.safeApply($scope, fn); };
-		var weekday=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-		var months = [ 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December' ];
 
 		var getBrowsingTopDocs = function(tstart,tend) {
 			var d = u.deferred();
@@ -83,10 +92,6 @@ angular
 			return d.promise();
 		};
 
-		var isToday = function(d) { 
-			var today = new Date();
-			return d.getDate() == today.getDate() && d.getYear() == today.getYear() && d.getMonth() == today.getMonth();
-		};
 
 		var getNikeFuel  = function(tstart,tend) {
 			var d = u.deferred();
@@ -167,17 +172,15 @@ angular
 
 		var createDay = function(date) {
 			if (!box) return;
-
-
 			var dstart = new Date(date.valueOf()); dstart.setHours(0,0,0,0);
 			var dend = new Date(date.valueOf()); dend.setHours(23,59,59,999);
 			var todaystart = new Date(); todaystart.setHours(0,0,0,0);
 
 			var day = { 
 				date:date,dstart:dstart,dend:dend,
-				dow: weekday[dstart.getDay()].toLowerCase(),
-				dom:dstart.getDate(),
-				month:months[dstart.getMonth()].toLowerCase().slice(0,3),
+				dow: dateutils.weekday[dstart.getDay()].toLowerCase(),
+				dom: dstart.getDate(),
+				month:dateutils.months[dstart.getMonth()].toLowerCase().slice(0,3),
 				segments:[] 
 			};
 
@@ -218,7 +221,7 @@ angular
 					});
 
 
-					if (isToday(date)) {
+					if (dateutils.isToday(date)) {
 						// console.log('today is true !! ', segments.length > 0);
 						if (segments.length > 0) { 
 							var last_end = segments[segments.length-1].tend;

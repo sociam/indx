@@ -1,0 +1,63 @@
+<html>
+  <head>
+	<link href="/css/bootstrap.css" rel="stylesheet">
+	<link href="/css/angular-ui.css" rel="stylesheet">
+	<link rel="stylesheet/less" type="text/css" href="/components/toolbar/toolbar.less">
+  <link rel="stylesheet/less" type="text/css" href="css/diary.less"> 
+	<title>indx :: wellbeing observatory</title>
+  </head>
+  <body ng-app="aditl" ng-controller="diary" ng-cloak>
+	<toolbar box-var='box' username-var='user'></toolbar>
+  <div class="container diary-main" ng-show="user && box">
+    <div class="row day-display">
+      <!-- main day display -->
+      <div class="date">
+        <span class="datenav back" ng-click="selectPrevDay()">&lt;</span>
+        <span class="datenav fwd" ng-click="selectNextDay()">&gt;</span>
+        <div class="dow"> {{ dow_names[selected_day.date.getDay()].toUpperCase() }} </div>
+        <div class="dateval"> {{ selected_day.date.getDate() }} </div>
+        <div class="month"> {{ month_names[selected_day.date.getMonth()].toUpperCase() }} </div>
+      </div>
+      <div class="entries col-xs-12">
+        <diary-entry ng-repeat="e in selected_day.entries" entry="e"></diary-entry>
+        <div ng-class="{entry:true, showing:entryPopup}">
+          <div class="madlibs">
+            <div class="madlib" ng-repeat="p in madlibs" ng-click="addPhraseEntry(p)">{{ p }}</div>            
+          </div>
+          <input type="text" id="entrybox" ng-blur="doneEntryPopup()" autofocus ng-model="entrytext"></input>
+        </div>
+        <div class="addNewButton" ng-click="showEntryPopup()">+</div>
+      </div>
+  	</div>
+  </div> <!-- main container --> 
+	<div ng-show="!user">
+		<h1><span class="glyphicon glyphicon-book"></span>Please log in.</h1>
+    <h2><span class="glyphicon glyphicon-lock">This is a secure diary.</h2>
+	</div>
+	<div ng-show="user && !box">
+		<h1><span class="glyphicon glyphicon-arrow-up">Please select a box above.</h1>
+	</div>
+  </body>
+  <script src="/js/vendor/lesscss.min.js" type="text/javascript"></script>  
+  <script src="/js/vendor/jquery.min.js" type="text/javascript"></script>
+  <script src="/js/vendor/underscore.min.js" type="text/javascript"></script>
+  <script src="/js/vendor/backbone.min.js" type="text/javascript"></script>
+  <script src="/js/vendor/bootstrap.min.js" type="text/javascript"></script>
+  <!-- angular --> 
+  <script src="/js/vendor/angular.min.js" type="text/javascript"></script>
+  <script src="/js/vendor/angular-ui.js" type="text/javascript"></script>
+  <script src="/js/vendor/angular-animate.min.js" type="text/javascript"></script>
+
+  <script src="/js/vendor/ng-infinite-scroll.js" type="text/javascript"></script>
+
+  <!-- indx --> 
+  <script src="/js/indx.js" type="text/javascript"></script>
+  <script src="/js/indx-utils.js" type="text/javascript"></script>
+  <script src="/js/indx-entities.js" type="text/javascript"></script>
+  <script src="/components/toolbar/toolbar.js" type="text/javascript"></script>
+
+  <!-- leaflet --> 
+  <script src="js/main.js" type="text/javascript"></script>  
+  <script src="js/diary.js" type="text/javascript"></script>  
+
+</html>

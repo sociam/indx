@@ -1,0 +1,92 @@
+@import url(clearsans.less);
+// @import(opensans.less)
+
+
+* {
+	box-sizing:border-box;
+	:focus { outline: none !important; }
+
+}
+
+.diary-main * { 
+
+}
+
+.diary-main {
+	.nav {
+		font-size:48pt;
+		color:#aaa;
+		.arrow { 
+			&:hover { color:#222; }
+		}
+	}
+	position:relative;
+	.date {
+		background:white;
+		z-index:100;
+		font-weight:100; 
+		position:absolute;
+		right:30px;
+		top:30px;
+		min-width:240px;
+		text-align:center;
+		* { padding:0px; margin:0px; line-height:0.90; }
+		.dow { z-index:-10; color:grey; font-size:18pt; line-height:0.50; }
+		.dateval { font-size:98pt; }
+		.month { font-size:18pt; }
+		.datenav {
+			position:absolute;
+			font-size:24pt;
+			top:50%; margin-top:-12pt;
+			color:#aaa;
+			padding:5px 10px 10px 10px;			
+			border-radius:5px;			
+			&.back { left:0px; }
+			&.fwd { right:0px; }
+			&:hover { color:#222; border: 1px solid #aaa;  }
+		}
+	}
+	.entries {
+		padding-right:270px;
+		font:'Times New Roman', serif;
+		height:100%;
+		.entry {
+			padding:0px;
+			.madlibs {
+				.madlib { 
+					font-style:italic;
+					color:#aaa;
+					&:hover {
+						color:#222;
+					}
+				}
+			}			
+			width:100%;
+			overflow:hidden;
+			height:0px !important;
+	        -webkit-transition: height 0.5s, padding 0.5s; /* For Safari 3.1 to 6.0 */
+    	    transition: height 0.5s, padding:0.5s;
+			width:100%;
+			&.showing {	
+				padding:20px;
+				height:150px !important; 
+			}
+			#entrybox {
+				margin:1em 0px 0px 0px;
+				width:100%;
+				border:none;
+				border-bottom:1px solid #888;
+			}
+		}
+	}
+	.addNewButton {
+		height:200px;
+		line-height:150px;
+		width:100%;
+		text-align:center;
+		font-size:180pt;
+		color:#eee;
+		border-bottom:1px solid #eee;
+
+	}
+}
