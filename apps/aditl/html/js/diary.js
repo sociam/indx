@@ -8,7 +8,7 @@ angular
 	var u = utils, 
 		sa = function(fn) { return u.safeApply($scope, fn); },
 		$s = $scope,
-		box;
+		whom, box;
 
 	$s.madlibs = [
 		{ text: 'i\'m feeling...', range: ['happy', 'sad', 'indifferent'] },
@@ -36,7 +36,8 @@ angular
 			entries: []
 		};
 		if (box) { 
-			entities.activities.getByActivityType(box,dstart,dend,['diary']).then(function(x)  { 
+			entities.activities.getByActivityType(box,dstart,dend,['diary-entry-created']).then(function(x)  { 
+				console.log('got entries for day ', dstart, x);
 				sa(function() { 
 					$s.selected_day.entries = x;
 				});
@@ -61,39 +62,62 @@ angular
 	};
 	$s.addTextEntry = function(t) {
 		var now = new Date(), d = u.deferred();
-		entities.activities.make1(box, 'journal', now, now, undefined, undefined, undefined, undefined, { 
+		entities.activities.make1(box, 'diary-entry-created', whom, now, now, undefined, undefined, undefined, undefined, { 
 			journaltype:'text',
-			contents:'t'
-		}).then(function(obj) { d.resolve(obj); }).fail(d.reject);
+			contents:t
+		}).then(function(obj) { console.log('saving --- ', obj); obj.save(); d.resolve(obj); }).fail(d.reject);
 		return d.promise();
 	};
 	$s.addPhraseEntry = function(p) {
 		var now = new Date(), d = u.deferred();
-		entities.activities.make1(box, 'journal', now, now, undefined, undefined, undefined, undefined, { 
+		entities.activities.make1(box, 'diary-entry-created', whom, now, now, undefined, undefined, undefined, undefined, { 
 			journaltype:'phrase',
 			phrase:p.text,
 			value:''
-		}).then(function(obj) { d.resolve(obj); }).fail(d.reject);
+		}).then(function(obj) { console.log('saving --- ', obj);  obj.save(); d.resolve(obj); }).fail(d.reject);
 		return d.promise();		
 	};
 	$s.$watch('user + box', function() { 
 		if ($s.box) {
 			client.store.getBox($s.box).then(function(b) { 
 				box = b;
-				$s.selectDay();
+				if ($s.user !== undefined) {
+					b.getObj($s.user.username).then(function(whom_) {
+						console.log('whom >> ', whom_);
+						whom = whom_;
+						$s.selectDay();
+					});
+				} else {
+					$s.selectDay();
+				}
 			});
 		}
 	 });
 
 	window.$s = $s;
 
-}).directive('diary-entry', function() { 
+}).directive('diaryEntry', function() { 
 	return {
 		restrict:'E',
 		scope: {'entry' : '='},
 		templateUrl:'templates/diary-entry.html',
-		controller:function()  {
+		controller:function($scope, utils)  {
+			var u = utils, 
+				sa = function(fn) { return u.safeApply($scope, fn); },
+				$s = $scope;
 
+			console.log('diary entry >> ', $scope);
+			$s.$watch('entry', function() { 
+				var entry = $s.entry;
+				$s.entryvalue = (entry !== undefined ? entry.peek('value') : ''); 
+			});
+			$s.$watch('entryvalue', function(x) { 
+				console.log('setting value -- ', x, $s.entryvalue);
+				$s.entry.set('value', x);
+				$s.entry.save();
+			});
+
+			window.$se = $scope;
 		}
 	};
 });
