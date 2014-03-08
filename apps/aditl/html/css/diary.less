@@ -66,13 +66,14 @@
 						width:200px;
 					}
 				}
-			}			
+			}
 			width:100%;
 			overflow:hidden;
 			height:0px !important;
 	        -webkit-transition: height 0.5s, padding 0.5s; /* For Safari 3.1 to 6.0 */
     	    transition: height 0.5s, padding:0.5s;
 			width:100%;
+
 			&.showing {	
 				padding:20px;
 				height:220px !important; 
@@ -103,7 +104,11 @@
 	}
 	.diary-entry {
 		position:relative;
-		border:1px solid #eee;
+		padding-top:1.5em;
+		.created_time {
+			margin-bottom:1.2em;
+		}
+		// border:1px solid #eee;
 		.delete {
 			position:absolute;
 			font-size:18pt;
@@ -111,6 +116,18 @@
 			top:0px;
 			right:10px;
 		}
+		textarea {
+			font-family:serif;
+	        // -webkit-transition: height 0.8s, padding 0.8s; 
+    	    // transition: height 0.8s, padding:0.8s;
+    	    font-size:14pt;
+			overflow-y:hidden;
+			overflow-x:hidden;
+			scroll-x:none;
+			scroll-y:none;
+			resize:none;
+			border:none;
+		}		
 		.phrase, input {  display:inline-block;	}
 		input, textarea { 
 			border:none;

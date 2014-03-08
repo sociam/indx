@@ -10,13 +10,13 @@ angular
 		$s = $scope,
 		whom, box;
 
+	$s.isToday = dateutils.isToday;
 	$s.madlibs = [
 		{ text: 'i\'m feeling...', range: ['happy', 'sad', 'indifferent'] },
 		{ text: 'i\'m ...', range:['working', 'relaxing', 'doing some sport'] },
 		{ text: 'i like to ...' },
 		{ text: 'i wish i could ... '}
 	];
-
 	$s.dow_names = dateutils.weekday;
 	$s.month_names = dateutils.months;
 
@@ -37,8 +37,8 @@ angular
 		};
 		if (box) { 
 			entities.activities.getByActivityType(box,dstart,dend,['diary-entry-created']).then(function(x)  { 
-				console.log('got entries for day ', dstart, x);
 				sa(function() { 
+					x.sort(function(a,b) { return a.peek('tstart').valueOf() - b.peek('tstart').valueOf(); });
 					$s.selected_day.entries = x;
 				});
 			});
@@ -51,14 +51,8 @@ angular
 		$s.entryPopup = true;
 		setTimeout(function() { $('#entrybox').focus(); }, 200);
 	};
-	$s.doneEntryPopup = function() { 
-		if ($s.entrytext !== undefined && $s.entrytext.trim().length > 0) {
-			$s.addTextEntry($s.entrytext);
-		}
-		$s.entrytext = '';
-		$s.entryPopup = false;
-	};
 	$s.addTextEntry = function(t) {
+		$s.entryPopup = false;
 		var now = new Date(), d = u.deferred();
 		entities.activities.make1(box, 'diary-entry-created', whom, now, now, undefined, undefined, undefined, undefined, { 
 			journaltype:'text',
@@ -72,7 +66,7 @@ angular
 		return d.promise();
 	};
 	$s.addPhraseEntry = function(p) {
-		console.log('add phrase entry >> ', p);
+		$s.entryPopup = false;		
 		var now = new Date(), d = u.deferred();
 		entities.activities.make1(box, 'diary-entry-created', whom, now, now, undefined, undefined, undefined, undefined, { 
 			journaltype:'phrase',
@@ -104,6 +98,8 @@ angular
 		}
 	 });
 
+	// $(document).click(function() { sa(function() { $s.entryPopup = false; }); });
+
 	window.$s = $s;
 
 }).directive('diaryEntry', function() { 
@@ -125,12 +121,52 @@ angular
 				$s.entryvalue = (entry !== undefined ? entry.peek('value') : ''); 
 			});
 			$s.$watch('entryvalue', function(x) { 
-				console.log('setting value -- ', x, $s.entryvalue);
+				// console.log('setting value -- ', x, $s.entryvalue);
 				$s.entry.set('value', x);
 				$s.entry.save();
 			});
+			$s.toTimeString = function(d) {
+				console.error('tts >> ', d, d3.time.format('%I:%M %p')(d).toLowerCase());
+				return d3.time.format('%I:%M %p')(d).toLowerCase();
+			};
+
 
 			window.$se = $scope;
+		}
+	};
+}).directive('autoExpandingTextarea', function () {
+	return {
+		restrict:'E',
+		replace:true,
+		template:'<textarea class=\'auto-expanding-textarea\'></textarea>',
+		controller:function($scope, utils)  {
+			var u = utils, 
+				sa = function(fn) { return u.safeApply($scope, fn); },
+				$s = $scope;
+		},
+		link:function($scope, $element) {
+			var el = $element[0], last_length = 0;
+			var minheight = $(el).css('min-height') && parseInt($(el).css('min-height').slice(0,-2)) || 0;
+			console.log('link element >> ');
+			var twerk = function() {
+				var value = el.value;
+				console.log('sh ', el.scrollHeight, 'oh: ', $(el).outerHeight());
+				if (el.scrollHeight > $(el).outerHeight()) {
+					$(el).height(el.scrollHeight + 10);
+				}
+
+				if (value.length < last_length) { 
+					console.error('shrink!', 'initial h :: ', 'scrollHeight', el.scrollHeight, ' outerheight ', $(el).outerHeight(), minheight);
+					$(el).height(minheight);
+					$(el).height(el.scrollHeight + 10);					
+					// setTimeout(function() { $(el).height(el.scrollHeight); }, 100);
+				}
+				last_length = value.length;
+		    };
+		    $(el).keydown(twerk);
+		    // $scope.watch('model', function(x) { console.log('model! ', x);    });
+			$(el).keyup(twerk);
+			$scope.$watch('model', function(x) { console.log('model! ', x);  twerk();  });			
 		}
 	};
 });

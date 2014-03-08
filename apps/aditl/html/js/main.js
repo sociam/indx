@@ -11,7 +11,7 @@ angular
 			dayBefore:function(d) { return new Date(d.valueOf() - 24*3600*1000);},
 			isToday : function(d) { 
 				var today = new Date();
-				return d.getDate() == today.getDate() && d.getYear() == today.getYear() && d.getMonth() == today.getMonth();
+				return d !== undefined && d.getDate() == today.getDate() && d.getYear() == today.getYear() && d.getMonth() == today.getMonth();
 			}
 		};
 	}).directive('dayContainer', function() {
