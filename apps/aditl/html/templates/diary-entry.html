@@ -1,0 +1,13 @@
+<div class="diary-entry">
+	<div class="delete" ng-click="deleteMe(entry)">x</div>
+	<div class="created_time">{{ toTimeString(entry.peek('tstart')) }}</div>
+
+	<!-- phrasetype --> 
+	<div ng-show="entry.peek('journaltype')=='phrase'">
+		<div class="phrase">{{ entry.peek('phrase') }}</div>
+		<input type="text" ng-model='entryvalue'>
+	</div>
+	<div ng-show="entry.peek('journaltype')=='text'">
+		<auto-expanding-textarea ng-model='entryvalue'></auto-expanding-textarea>
+	</div>	
+</div>
