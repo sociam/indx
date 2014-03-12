@@ -1,30 +1,56 @@
 .indx-toolbar {
   .navbar {
-    background: rgba(255, 255, 255, 0.8);
+    background: white;
+    opacity: 1;
   }
 }
 
-.obj-toolbar {
-  margin-top: 50px;
+.boxie-toolbar {
+  position: fixed;
+  top: 42px;
+  left: 0;
+  right: 0;
   height: 40px;
-  padding: 8px 10px;
+  padding: 5px 10px;
   box-sizing: border-box;
-  background: rgba(255, 255, 255, 0.8);
-  box-shadow: 0 8px 8px -8px rgba(0, 0, 0, 0.3);
+  background: white;
+  box-shadow: 1px 2px 3px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  label > * {
+    display: inline-block;
+  }
+  select {
+    width: 200px;
+  }
+  input[type=text] {
+    display: inline-block;
+    width: 200px;
+  }
+  .result {
+    display: inline;
+    font-size: 12px;
+    color: #bbb;
+  }
+  .toolbar-right {
+    position: absolute;
+    right: 10px;
+    top: 5px;
+  }
+}
+
+body {
+  margin-top: 90px;
 }
 
 .obj-list {
   @li-height: 34px;
-  padding: 10px;
   ul.objs {
     padding: 0;
     margin: 0;
     list-style: none;
-    height: @li-height * 15;
-    overflow: hidden;
     border-top: 1px solid #eee;
-    white-space: nowrap;
     li {
+      white-space: nowrap;
       height: @li-height;
       line-height: @li-height;
       box-sizing: border-box;
@@ -55,4 +81,44 @@
 
 .blur {
   z-index: 10000;-webkit-filter: blur(4px) contrast(0.7) grayscale(0.3);
+}
+
+.mosaic {
+  display: inline-block;
+  @cell-size: 10px;
+  .mosaic-row {
+    .mosaic-cell {
+      display: inline-block;
+      width: @cell-size;
+      height: @cell-size;
+      position: relative;
+      &.mosaic-shape-chamfer, &.mosaic-shape-spike {
+        border-style: solid;
+        border-width: @cell-size/2;
+      }
+      &.mosaic-shape-spike {
+        border-width: @cell-size/3;
+      }
+    }
+    &:first-child {
+      .mosaic-shape-round {
+        &:first-child { border-radius: 100% 0 0 0; }
+        &:last-child { border-radius: 0 100% 0 0; }
+      }
+      .mosaic-shape-chamfer, .mosaic-shape-spike {
+        &:first-child { border-color: white transparent transparent white; }
+        &:last-child { border-color: white white transparent transparent; } 
+      }
+    }
+    &:last-child {
+      .mosaic-shape-round {
+        &:first-child { border-radius: 0 0 0 100% 0; }
+        &:last-child { border-radius: 0 0 100%; }
+      }
+      .mosaic-shape-chamfer, .mosaic-shape-spike {
+        &:first-child { border-color: transparent transparent white white; }
+        &:last-child { border-color: transparent white white transparent; } 
+      }
+    }
+  }
 }

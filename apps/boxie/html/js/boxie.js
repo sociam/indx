@@ -1,7 +1,9 @@
 /* global angular, console, _, Backbone, $ */
 angular
-	.module('boxie', ['ui', 'indx'])
+	.module('boxie', ['ui', 'indx', 'infinite-scroll'])
 	.factory('ObjsFactory', function () {
+
+		
 		var Objs = Backbone.Collection.extend({
 			initialize: function (attributes, options) {
 				if (options && options.box) { this.setBox(options.box); }
@@ -45,9 +47,12 @@ angular
 				this.objs.on('add', this.add, this);
 				this.objs.on('remove', this.remove, this);
 				this.objs.on('reset', function (objs) {
-					this.reset(objs.models);
+					//this.reset(objs.models);
+					//this.filtered = [];
+					this.reload();
 				}, this);
 				this._textFilter = '';
+				this.filtered = [];
 			},
 			fetch: function () {
 				return this.objs.fetch();
@@ -58,7 +63,12 @@ angular
 			},
 			textFilter: function (str) {
 				this._textFilter = str.toLocaleLowerCase();
+				this.reload()
+			},
+			reload: function () {
 				this.reset(this.objs.select(this.objPassFilter, this));
+				this.filtered = [];
+				this.more(50);
 			},
 			add: function (obj) {
 				if (_.isArray(obj)) {
@@ -73,13 +83,38 @@ angular
 			objPassFilter: function (obj) {
 				if (!obj) { return false; }
 				return obj.id.toLocaleLowerCase().indexOf(this._textFilter) > -1;
+			},
+			order: function (order) {
+				this.orderField = order.field;
+				this.orderAscending = order.ascending;
+				this.reload();
+			},
+			comparator: function (model1, model2) {
+				var a = model1.get(this.orderField),
+					b = model2.get(this.orderField),
+					sorted = [a, b].sort();
+				if (this.orderAscending) { sorted.reverse(); }
+				return (sorted.indexOf(a) === 0) ? -1 : 1;
+			},
+			more: function (count) {
+				if (this.filtered.length < this.models.length) {
+					console.log('more')
+					var l = this.filtered.length;
+					this.filtered = this.filtered.concat(this.models.slice(l, l + (count || 10))); 
+				}
 			}
 		});
 
 		return FilterObjs;
 	})
-	.controller('root', function ($scope, client, utils, FilterObjsFactory) {
+	.controller('root', function ($scope, $location, client, utils, FilterObjsFactory) {
 		'use strict';
+
+		$scope.$watch(function() {
+			return $location.path();
+		}, function (path) {
+			$scope.selectedBox = path.split('/')[1];
+		});
 
 		var box,
 			u = utils,
@@ -95,6 +130,10 @@ angular
 			objs.textFilter($scope.s.textFilter);
 		});
 
+		$scope.$watch('s.order', function () {
+			objs.order($scope.s.order)
+		});
+
 		$scope.$watch('selectedBox + selectedUser', function () {
 			delete $scope.msg;
 			if (!$scope.selectedUser) {
@@ -102,12 +141,37 @@ angular
 			} else if (!$scope.selectedBox) {
 				$scope.msg = 'Please select a box.';
 			} else {
+				$location.path($scope.selectedBox);
 				client.store.getBox($scope.selectedBox)
 					.then(function (box) { init(box); })
 					.fail(function (e) { u.error('error ', e); $scope.msg = 'An error occured.'; });
 			}
-			
 		});
+
+		var colors = ['#1f77b4', '#ff7f0e', '#2ca02c', 
+				'#d62728', '#9467bd', '#8c564b'],
+			shapes = ['square', 'round', 'chamfer', 'spike'],
+
+			generateColor = function (n) {
+				return colors[n % colors.length];
+			},
+			generateShape = function (n) {
+				return shapes[n % shapes.length];
+			};
+
+		var mosaics = {};
+		$scope.mosaic = function (obj) {
+			console.log('mosaic')
+			if (mosaics[obj.id]) { return mosaics[obj.id]; }
+			var hash = md5(_.keys(obj.attributes).join(''));
+			return mosaics[obj.id] = _.times(2, function (x) {
+				return _.times(2, function (y) {
+					var color = generateColor(hash.charCodeAt(x * 6 + y)),
+						shape = generateShape(hash.charCodeAt(x * 6 + 3 + y));
+					return [color, shape];
+				});
+			});
+		};
 
 		var init = function (box) {
 			window.box = box;
@@ -119,16 +183,10 @@ angular
 		};
 		$scope.s = {
 			page: 0,
-			orderBy: 'id',
-			orderReverse: false,
+			order: { field: 'id', ascending: true },
 			perPage: 15,
 			textFilter: ''
 		}; // state
 		$scope.Math = window.Math;
 
-	}).filter('startFrom', function() {
-		return function (input, start) {
-			start = +start; //parse to int
-			return input.slice(start);
-		}
 	});

@@ -80,7 +80,7 @@ angular
 							var matchapps = apps.filter(function(x) { return x["@id"] === ourname; });
 							if (matchapps.length > 0 && matchapps[0].icons && matchapps[0].icons["128"]) {
 								sa(function() { 
-									$scope.appicon_url = matchapps[0].icons["128"]; 
+									$scope.appicon_url = matchapps[0].icons["svg"] || matchapps[0].icons["128"]; 
 									$scope.appname = matchapps[0].name;
 								});
 								return;
