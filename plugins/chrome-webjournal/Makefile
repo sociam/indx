@@ -7,8 +7,9 @@ build:
 	cp -r ../../html/components ./components
 	cp -r ../../html/fonts ./fonts
 	cp -r ../../html/css ./css-platform
+	bower install
 	touch build
 
 clean:
-	rm -rf js-platform components css-platform fonts
+	rm -rf js-platform components css-platform fonts lib
 	rm -rf build
