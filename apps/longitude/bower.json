@@ -1,0 +1,20 @@
+{
+  "name": "longitude",
+  "version": "0.0.0",
+  "homepage": "https://github.com/sociam/indx",
+  "authors": [
+    "Peter West <peter.g.west@gmail.com>"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "html/lib",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "leaflet": "~0.7.2"
+  }
+}

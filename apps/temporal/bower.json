@@ -1,0 +1,23 @@
+{
+  "name": "temporal",
+  "version": "0.0.0",
+  "homepage": "https://github.com/sociam/indx",
+  "authors": [
+    "Gustavo Buzogany Eboli",
+    "Peter West <peter.g.west@gmail.com>"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "html/lib",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "d3": "~3.4.1",
+    "draggabilly": "~1.0.9",
+    "packery": "~1.2.2"
+  }
+}

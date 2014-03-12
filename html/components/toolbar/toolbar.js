@@ -264,12 +264,6 @@ angular
 
 				bindStoreListeners();
 								
-				// totally not necessary anymore: 
-				// var domEl = $('<div></div>').addClass('toolbar').prependTo('body');			
-				// $(domEl).append(templates.main.template);
-				// var app = angular.module('WebboxToolbar', []);
-				// app.controller('ToolbarController', ToolbarController);
-				// angular.bootstrap(domEl, ["WebboxToolbar"]);
 				return toolbar;
 			}
 		};

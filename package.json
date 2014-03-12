@@ -1,0 +1,26 @@
+{
+  "name": "indx",
+  "version": "0.1.0",
+  "description": "Browser Personal Data Store.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/sociam/indx.git"
+  },
+  "author": "",
+  "license": "AGPL-3.0",
+  "readmeFilename": "README.md",
+  "gitHead": "f0fa3eb26cf2b76bfb7a1fcd30a7c38852b68f14",
+  "dependencies": {
+    "bower": "~1.2.8",
+    "gulp": "~3.5.2",
+    "gulp-less": "~1.2.1",
+    "gulp-util": "~2.2.14",
+    "gulp-bower": "0.0.2",
+    "gulp-clean": "~0.2.4",
+    "gulp-chug": "~0.1.8"
+  }
+}

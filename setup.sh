@@ -19,13 +19,11 @@
 # set up the virtualenv
 virtualenv env
 echo "export PYTHONPATH=\"\$VIRTUAL_ENV/../lib:\$PYTHONPATH\"" >> env/bin/activate
+echo "export PATH=\"\$VIRTUAL_ENV/../node_modules/.bin:\$PATH\"" >> env/bin/activate
 source env/bin/activate
 
 # install the required modules
 # emax changed from "--ignore-installed" b/c that wreaks havoc w/ virutalnev
 pip install --upgrade -r requirements.txt
 
-
-# install doc and test framework dependencies
-#(cd lib/docs; npm install)
-#(cd lib/tests; npm install)
+./build.sh

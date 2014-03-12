@@ -3,8 +3,7 @@
 	"version": 0.1,
 	"description": "Core indx client library",
 	"icons": {
-		"128": "/apps/devtools/icons/indx.png",
-		"font-awesome": { "class": "fa fa-bolt", "background": "#FFD300" }
+		"128": "/apps/devtools/icons/indx.png"
 	},
 	"author": [
 		{

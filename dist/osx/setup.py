@@ -20,12 +20,12 @@ DATA_FILES = [
  '../scripts',
 # '../setup_env.sh',
 # '../tests',
- '../webbox.json.default',
- 'webbox.icns',
+ '../indx.json.default',
+ 'indx.icns',
  ]
 
 OPTIONS = {
-    'iconfile': 'webbox.icns',
+    'iconfile': 'indx.icns',
     'argv_emulation': True,
     'includes': # all external modules, taken from generate_includes.py
         [
@@ -38,9 +38,9 @@ OPTIONS = {
         'sparqlparse',
         'sparqlresults',
         'subscriptions',
-        'webbox',
-        'webboxhandler',
-        'webboxvhost',
+        'indx',
+        'indxhandler',
+        'indxvhost',
         'websocketclient',
         'wsupdateserver',
 

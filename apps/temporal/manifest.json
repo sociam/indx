@@ -3,10 +3,11 @@
 	"version": 0.1,
 	"enabled":false,
 	"type":["app"],
+	"hidden": true,
 	"description": "Temporal Data Manipulator",
 	"author": [
 		{
-			"name": "Gustavo"
+			"name": "Gustavo Buzogany Eboli"
 		}
 	]
 }

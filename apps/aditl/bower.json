@@ -1,0 +1,23 @@
+{
+  "name": "aditl",
+  "version": "0.0.0",
+  "homepage": "https://github.com/sociam/indx",
+  "authors": [
+    "Peter West <peter.g.west@gmail.com>"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "html/lib",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "ngInfiniteScroll": "~1.0.0",
+    "angular-animate": "~1.2.12",
+    "leaflet": "~0.7.2",
+    "d3": "~3.4.1"
+  }
+}

@@ -25,12 +25,12 @@ export WBDIR=`pwd`
 export PATH="$WBDIR/4store:$PATH" # add supplied 4store binaries to the path
 
 # do initial per-user set up
-cd "$WBDIR"
-./scripts/setup_4store.sh # create /var/lib/4store (prompts for admin password)
-cd "$WBDIR"
-./scripts/new_4store_kb.sh # create webbox kb (if not exists)
+#cd "$WBDIR"
+#./scripts/setup_4store.sh # create /var/lib/4store (prompts for admin password)
+#cd "$WBDIR"
+#./scripts/new_4store_kb.sh # create kb (if not exists)
 
 cd "$WBDIR"
 # send the 4store bin directory (subprocess.pyc fails otherwise)
-../MacOS/run "$@" > /tmp/webbox.log   2>&1
+../MacOS/run "$@" > /tmp/indx-app.log   2>&1
 
