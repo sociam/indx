@@ -621,8 +621,9 @@ angular
 				if (this._get_token_queue === undefined) { this._get_token_queue = []; }
 				var tq = this._get_token_queue, this_ = this, d = u.deferred(), box_id = this.getID();
 				tq.push(d);
+				window._b = this;
 				if (tq.length === 1) { 
-					// console.debug('tq === 1, calling -------------- get_token');
+					console.log('calling getToken -- ', box_id, ' app id ', this.store.get('app'));
 					this.store._ajax('POST', 'auth/get_token', { box:box_id,  app: this.store.get('app') })
 						.then(function(data) {
 							console.debug('setting token ', data.token);

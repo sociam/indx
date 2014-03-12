@@ -66,6 +66,7 @@ angular
 			}
 		};
 	}).controller('main', function($scope, client, utils, dateutils, entities) {
+		console.log('maaaaaaaaaaaaaaaaaaaaaaain');
 		var u = utils;
 		$scope.days = [];
 		// $scope.locations = [];
@@ -277,8 +278,10 @@ angular
 			}
 		};
 
-		$scope.$watch('user + box', function() { 
+		$scope.$watch('user + box', function() {
+			console.log('user box change ', $scope.user, ' -- ', $scope.box);
 			if (!$scope.user) { console.log('no user :( '); return; }
+			if (!$scope.box) { console.log(' no box :( '); return; }
 			$scope.days = [];
 			client.store.getBox($scope.box).then(function(_box) { 
 				window.box = _box;
@@ -295,4 +298,5 @@ angular
 		});
 		window._s = $scope;
 		window.entities = entities;
+		window.store = client.store;
 	});

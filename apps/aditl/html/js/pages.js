@@ -39,6 +39,7 @@ angular.module('aditl')
 		};
 	}).controller('pages2', function($scope, $injector, client, utils, entities) { 
 		$scope.$watch('user + box', function() { 
+			if ($scope.user === undefined || $scope.box === undefined) { return; }
 			var u = utils;
 			var sa = function(fn) { return u.safeApply($scope, fn); };
 			$scope.pages = [];
