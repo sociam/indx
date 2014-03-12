@@ -18,7 +18,7 @@
 import logging, traceback, json
 from twisted.web.resource import Resource
 from twisted.web.server import NOT_DONE_YET
-from indx.webserver.session import INDXSession, ISession
+from indx.webserver.session import INDXSession 
 from indx.exception import ResponseOverride
 from mimeparse import quality
 from urlparse import parse_qs
@@ -48,10 +48,10 @@ class BaseHandler():
     }
     mappings = []
 
-    def __init__(self, webserver, indx_reactor, base_path=None, register=True):
+    def __init__(self, webserver, base_path=None, register=True):
         #Resource.__init__(self)
         self.webserver = webserver
-        self.indx_reactor = indx_reactor
+        self.indx_reactor = webserver.indx_reactor
 
         if base_path is not None:
             self.base_path = base_path
@@ -221,13 +221,14 @@ class BaseHandler():
 #            raise ResponseOverride(403, "Forbidden")
 
     def get_session(self,request):
-        session = request.getSession()
-        # persists for life of a session (based on the cookie set by the above)
-        wbSession = session.getComponent(ISession)
-        if not wbSession:
-            wbSession = INDXSession(session, self.webserver)
-            session.setComponent(ISession, wbSession)
-        return wbSession
+        return self.indx_reactor.get_session(request)
+#        session = request.getSession()
+#        # persists for life of a session (based on the cookie set by the above)
+#        wbSession = session.getComponent(ISession)
+#        if not wbSession:
+#            wbSession = INDXSession(session, self.webserver)
+#            session.setComponent(ISession, wbSession)
+#        return wbSession
 
     def render(self, request):
         """ Twisted resource handler."""
@@ -379,7 +380,7 @@ class BaseHandler():
             this_sh['handler'](self, request, token)
 
         for sh in self.subhandlers:
-            mapping = (lambda sh_: IndxMapping(sh_['methods'], self.base_path + "/" + sh_['prefix'], sh_, lambda request, token: handler_req(request, token, sh_)))(sh)
+            mapping = (lambda sh_: IndxMapping(self.indx_reactor, sh_['methods'], self.base_path + "/" + sh_['prefix'], sh_, lambda request, token: handler_req(request, token, sh_)))(sh)
             mappings.append(mapping)
 
         return mappings

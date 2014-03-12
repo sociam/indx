@@ -17,12 +17,15 @@
 import logging
 from twisted.internet import reactor
 from indx.reactor import IndxResponse
+from indx.webserver.session import INDXSession
 
 class IndxReactor:
 
-    def __init__(self):
+    def __init__(self, tokens):
         self.subscribers = []
         self.mappings = []
+        self.sessions = {} # sessionid -> INDXSession
+        self.tokens = tokens
         
     ###
     #   Subscribe/Messaging
@@ -49,11 +52,20 @@ class IndxReactor:
     def incoming(self, request):
         for mapping in self.mappings:
             if mapping.matches(request):
-                token = "TODO" # TODO XXX
-                return mapping.request(request, token)
+                return mapping.request(request)
+
         # no match
         request.callback(IndxResponse(404, "Not Found"))
 
     def add_mapping(self, mapping):
         self.mappings.append(mapping)
+
+    def get_session(self, request):
+        logging.debug("INDXReactor getting session with ID: {0}".format(request.sessionid))
+        session = self.sessions.get(request.sessionid)
+        if session is None:
+            session = INDXSession(request.sessionid)
+            self.sessions[request.sessionid] = session
+
+        return session
 

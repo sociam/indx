@@ -59,7 +59,7 @@ class IndxWebHandler(Resource):
             except Exception as e:
                 logging.debug("IndxWebHandler error sending response: {0},\ntrace: {1}".format(e, traceback.format_exc()))
 
-        indx_request = IndxRequest(method, path, params, request.getSession().uid, callback)
+        indx_request = IndxRequest(method, path, params, request.content, request.getSession().uid, callback, request.getClientIP())
         self.indx_reactor.incoming(indx_request)
         return NOT_DONE_YET
 

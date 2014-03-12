@@ -50,7 +50,6 @@ class WebServer:
         from twisted.internet.defer import setDebugging
         setDebugging(True)
 
-        self.indx_reactor = IndxReactor()
 
         # enable ssl (or not)
         self.ssl = config['server'].get('ssl') or False
@@ -101,6 +100,7 @@ class WebServer:
         user,password = self.get_indx_user_password()
         self.database = database.IndxDatabase(config['indx_db'], user, password)
         self.tokens = token.TokenKeeper(self.database)
+        self.indx_reactor = IndxReactor(self.tokens)
         self.database.auth_indx(database = "postgres").addCallbacks(auth_cb, auth_err)
 
 
@@ -180,14 +180,14 @@ class WebServer:
         # register("json-ld", Serializer, "rdfliblocal.jsonld", "JsonLDSerializer")
 
         ## initialize handlers
-        [handler(self, self.indx_reactor) for handler in handlers.HANDLERS]
+        [handler(self) for handler in handlers.HANDLERS]
 
         ## start boxes
         self.register_boxes(self.root)
 
         ## XXX TODO temporaily remove for debugging
-#        self.appshandler = AppsMetaHandler(self)
-#        self.root.putChild('apps', self.appshandler)        
+        self.appshandler = AppsMetaHandler(self)
+        self.root.putChild('apps', self.appshandler)        
 
 
         self.start()
@@ -324,7 +324,7 @@ class WebServer:
         # register a generic web handler with the twisted web server
         parent.putChild(name, IndxWebHandler(self.indx_reactor))
 
-        box_handler = BoxHandler(self, self.indx_reactor, base_path = name)
+        box_handler = BoxHandler(self, base_path = name)
         # register the handler with the indx reactor
         for mapping in box_handler.get_mappings():
             self.indx_reactor.add_mapping(mapping)

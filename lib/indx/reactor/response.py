@@ -18,10 +18,14 @@ import logging
 
 class IndxResponse:
 
-    def __init__(self, code, message, data = {}):
+    def __init__(self, code, message, data = {}, headers = {}):
         self.code = code
         self.message = message
         if data is None: # handle legacy code
             data = {}
         self.data = data
+        self.headers = {}
+
+    def setHeader(self, key, value):
+        self.headers[key] = value
 
