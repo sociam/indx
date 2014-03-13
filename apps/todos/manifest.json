@@ -3,8 +3,7 @@
 	"version": 0.8,
 	"description": "Stay organised with a simple todo list!",
 	"icons": {
-		"128": "icon.png",
-		"svg": "icon.svg"
+		"128": "icon.png"
 	},
 	"documents": [
 		{ "type": "markdown", "title": "Readme", "file" : "readme.md" }
