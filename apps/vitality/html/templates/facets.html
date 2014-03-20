@@ -1,0 +1,25 @@
+<div class="facets">
+  <div class="num_items"> {{ event_count }} </div>
+  <div class="row searching">
+    <input type="search" ng-model="searchterm" class="col-xs-12"></input>
+  </div>
+  <div class="row">
+    <div ng-class="{dimension:true, 'col-xs-3':(d.colsize!=='thin'), 'col-xs-2':(d.colsize=='thin')}" ng-repeat="d in dimensions" ng-show="d.show">
+      <select class="form-control" multiple ng-model="d.selected">
+      	<option ng-repeat="(k,v) in d.facetvals" value="{{ k }}" ng-class="{fade:(v===0)}">
+          {{ (d.facetformat && d.facetformat(k)) || k }} ({{ v }})
+        </option>
+      </select>
+  	</div> <!-- dimensions --> 
+    <div class="vals col-xs-6">
+      <!--<div class="">( {{ main_values.filter(function(v) { return v.value.count > 0; }).length }} )</div>-->
+    	<div ng-repeat="kv in main_values" class="page" ng-click="open_page(kv.key)" ng-show="kv.value.count > 0">   
+          <img ng-src="{{ pages[kv.key].thumbnail }}" class='thumbnail'>
+          <div class="duration">{{ format_mins(kv.value.duration/60000) }} min</div>
+          <div class="count">{{ kv.value.count }}</div>
+          <div class="title">{{ pages[kv.key].title }}</div>
+          <!--<div class="url">{{ strip(kv.key) }}</div>-->
+      </div>
+    </div> <!-- vals -->
+  </div><!-- row --> 
+</div>
