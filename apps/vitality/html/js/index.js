@@ -1,7 +1,7 @@
 /* jshint undef: true, strict:false, trailing:false, unused:false */
 /* global require, exports, console, process, module, L, angular, _, jQuery, $ */
 
-var vApp = angular.module('vitality', ['ui.router']);
+var vApp = angular.module('vitality', ['indx', 'ui.router']);
 
 // app 
 // wellbeing diary 
@@ -18,25 +18,9 @@ vApp.config(function($stateProvider, $urlRouterProvider) {
     .state('home', { 
       url:'/home',
       template:'<div class="home">welcome home <ol><li ui-sref="diary">Goto diary</li></ol></div>',
-    })
-    // .state('diary', {
-    //   url: '/diary',
-    //   template:'<div><h2>Diary</h2><div ui-view></div></div>',
-    //   controller:function($scope, $state, $stateParams) {
-    //     console.log('diary >> ', $state, $stateParams);
-    //   }
-    // })
-    .state('diary', {
-      url: '/diary/:entry',
-      template: '<div class="entry"> entry {{ entry }} </div>',
-      controller: function($scope, $state, $stateParams) {
-        console.log('stateparams >> ', $stateParams, $stateParams.entry);        
-        $scope.items = ['A', 'List', 'Of', 'Items'];
-        $scope.entry = $stateParams.entry;
-        if (!$stateParams.entry || $stateParams.entry.trim().length == 0) {  
-          console.log('going >> ');
-          $state.go('diary', {entry:'today'}); 
-        }
+      controller:function($scope, $stateParams) { 
+        console.log('stateparams >> ', $scope.error, $stateParams.error);
+        if ($stateParams.error) { $scope.error = $stateParams.error; }
       }
     })
     .state('edit', {
@@ -62,10 +46,28 @@ vApp.config(function($stateProvider, $urlRouterProvider) {
   });
 
 // main controller.
-vApp.controller('main', function($scope, $rootScope) {
-  console.log('main >> ');
+vApp.controller('main', function($scope, $rootScope, $state, client, utils) {
+  var u = utils, sa = function(fn) { return u.safeApply($scope, fn); };
+
+  $scope.errorContainer = {};
+
   $rootScope.$on('$stateChangeStart', function(x, y, z) { console.info('state change start >> ', x, y, z);  });
   $rootScope.$on('$stateChangeSuccess', function(x, y, z) { console.info('state change success >> ', x, y, z); });
-  $rootScope.$on('$stateChangeError', function(x, y, z) { console.error('state change success >> ', x, y, z); });
+  $rootScope.$on('$stateChangeError', function(x, y, z) { 
+    console.error('state change error >> ', x, y, z); 
+    $state.go('home', {error: 'Something happened -- please make sure you are logged in '}); 
+    $scope.errorContainer.error = 'something happened - please make sure you are logged in';
+  });
   $rootScope.$on('$stateNotFound', function(x, y, z) { console.error('state not found >> ', x, y, z); });
+
+  $scope.$watch('boxid', function(boxid) { 
+    if (boxid !== undefined) { 
+      client.store.getBox(boxid).then(function(box) {
+        sa(function() { $scope.box = box; });
+      }).fail(function(error) { 
+        console.error('error getting box', error);
+      });
+    }
+  });
+  _ts = $scope;
 });

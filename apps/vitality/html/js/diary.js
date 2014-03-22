@@ -1,24 +1,24 @@
 /* jshint undef: true, strict:false, trailing:false, unused:false */
-/* global require, exports, console, process, module, L, angular, _, jQuery, $ */
+/* global require, exports, console, process, module, L, angular, _, jQuery, $, d3 */
 
 angular
 .module('aditl')
 .controller('diary', function($scope, client, utils, dateutils, entities) {
 
-	var u = utils, 
+	var u = utils, du = dateutils,
 		sa = function(fn) { return u.safeApply($scope, fn); },
 		$s = $scope,
 		whom, box;
 
-	$s.isToday = dateutils.isToday;
+	$s.isToday = du.isToday;
 	$s.madlibs = [
 		{ text: 'i\'m feeling...', range: ['happy', 'sad', 'indifferent'] },
 		{ text: 'i\'m ...', range:['working', 'relaxing', 'doing some sport'] },
 		{ text: 'i like to ...' },
 		{ text: 'i wish i could ... '}
 	];
-	$s.dow_names = dateutils.weekday;
-	$s.month_names = dateutils.months;
+	$s.dow_names = du.weekday;
+	$s.month_names = du.months;
 
 	$s.selectDay = function(date) { 
 		if (date === undefined){
@@ -45,8 +45,8 @@ angular
 		}
 	};
 
-	$s.selectNextDay = function() { $s.selectDay(dateutils.dayAfter($s.selected_day.date));	};
-	$s.selectPrevDay = function() { $s.selectDay(dateutils.dayBefore($s.selected_day.date));	};
+	$s.selectNextDay = function() { $s.selectDay(du.dayAfter($s.selected_day.date));	};
+	$s.selectPrevDay = function() { $s.selectDay(du.dayBefore($s.selected_day.date));	};
 	$s.showEntryPopup = function() { 
 		$s.entryPopup = true;
 		setTimeout(function() { $('#entrybox').focus(); }, 200);

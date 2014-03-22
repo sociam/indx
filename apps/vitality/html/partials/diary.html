@@ -1,0 +1,20 @@
+<div class="diary">
+	<!-- main day display -->
+	<div class="date">
+		<span class="datenav back" ng-click="selectPrevDay()">&lt;</span>
+		<span class="datenav fwd" ng-click="selectNextDay()" ng-show="!isToday(selected_day.date)">&gt;</span>
+		<div class="dow"> {{ dow_names[selected_day.date.getDay()].toUpperCase() }} </div>
+		<div class="dateval"> {{ selected_day.date.getDate() }} </div>
+		<div class="month"> {{ month_names[selected_day.date.getMonth()].toUpperCase() }} </div>
+	</div>
+	<div class="entries col-xs-12">
+		<diary-entry ng-repeat="e in selected_day.entries" entry="e" entries='selected_day.entries'></diary-entry>
+		<div ng-show="isToday(selected_day.date)" ng-class="{entry:true, showing:entryPopup}">
+			<div class="madlibs">
+				<div class="madlib" ng-repeat="p in madlibs" ng-click="addPhraseEntry(p)">{{ p.text }} </div>
+				<div class="madlib" ng-click="addTextEntry()">Other ... (type freely)</div>
+			</div>
+		</div>
+		<div ng-show="isToday(selected_day.date)" class="addNewButton" ng-click="showEntryPopup()">+</div>
+	</div>
+</div>
