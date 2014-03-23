@@ -100,7 +100,10 @@
 		padding:1.2em 18px 0px 18px;
 		margin:15px;
 		.created_time {
-			margin-bottom:1.2em;
+			font-weight:200;
+			position:absolute;
+			color:#222;
+			left:18px; top:18px;
 		}
 		// border:1px solid #eee;
 		.delete {
@@ -111,31 +114,32 @@
 			top:0px;
 			right:14px;
 		}
-		textarea {
-			font-family:serif;
-	        // -webkit-transition: height 0.8s, padding 0.8s; 
-    	    // transition: height 0.8s, padding:0.8s;
-    	    font-size:14pt;
-			overflow-y:hidden;
-			overflow-x:hidden;
-			scroll-x:none;
-			scroll-y:none;
-			resize:none;
-			border:none;
-		}		
-		.phrase, input {  display:inline-block;	}
-		input, textarea { 
-			border:none;
-			font-style:italic;
-			// &:focus { border-bottom:1px solid #222;	}
+		.contents { 
+			margin-left:80px;
+			textarea {
+				font-family:serif;
+		        // -webkit-transition: height 0.8s, padding 0.8s; 
+	    	    // transition: height 0.8s, padding:0.8s;
+	    	    font-size:14pt;
+				overflow-y:hidden;
+				overflow-x:hidden;
+				scroll-x:none;
+				scroll-y:none;
+				resize:none;
+				border:none;
+				border:none;
+				font-style:italic;
+				width:100%;
+				min-height:30px;
+			}					
 		}
-
-		// border-bottom:1px solid #eee;
 		border:1px solid #eee;
-
-		textarea {
-			width:100%;
-			min-height:30px;
+		-webkit-transition:0.3s linear all;
+		-moz-transition:0.3s linear all;
+		-o-transition:0.3s linear all;
+		transition:0.3s linear all;
+		&:hover {
+			border:1px solid #8ff;
 		}
 		&.ng-enter, &.ng-move, &.ng-leave {
 			-webkit-transition:0.5s linear all;

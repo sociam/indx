@@ -7,7 +7,7 @@
 		<div class="phrase">{{ entry.peek('phrase') }}</div>
 		<input type="text" ng-model='entryvalue'>
 	</div>
-	<div ng-show="entry.peek('journaltype')=='text'">
+	<div class="contents" ng-show="entry.peek('journaltype')=='text'">
 		<auto-expanding-textarea model='entry.entryvalue'></auto-expanding-textarea>
 	</div>	
 </div>
