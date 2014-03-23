@@ -146,11 +146,13 @@
 		return {
 			restrict:'E',
 			replace:true,
-			template:'<div class="auto-expanding-textarea-container"><textarea class=\'auto-expanding-textarea\' ng-model="entry.entryvalue"></textarea></div>',
+			scope:{model:"="},
+			template:'<div class="auto-expanding-textarea-container"><textarea ng-model="model" class=\'auto-expanding-textarea\'></textarea></div>',
 			controller:function($scope, utils)  {
 				var u = utils, 
 				sa = function(fn) { return u.safeApply($scope, fn); },
 				$s = $scope;
+				console.log("model is ", $scope.model);
 			},
 			link:function($scope, $element) {
 				var el = $element.find('textarea')[0], div = $element[0], last_length = 0;
@@ -164,7 +166,9 @@
 					$(div).height('auto');
 				};
 			    $(el).keyup(twerk);
-			    $scope.$watch('model', function(x) { console.log('model! ', x);  twerk();  });			
+			    $scope.$watch('model', function(x) { 
+			    	twerk();  
+			    });			
 			}
 		};
 	});
