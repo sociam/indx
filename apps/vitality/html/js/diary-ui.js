@@ -164,9 +164,8 @@
 					$(div).height('auto');
 				};
 			    $(el).keyup(twerk);
-			    $scope.$watch('model', function(x) { 
-			    	twerk();  
-			    });			
+			    $scope.$watch('model', function(x) { twerk();  $(el).focus(); });			
+
 			}
 		};
 	});
