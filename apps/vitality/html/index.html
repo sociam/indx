@@ -11,7 +11,14 @@
     <toolbar box-var='boxid' username-var='user'></toolbar>
     <div ng-show="errorContainer.error" class="alert alert-danger">{{ errorContainer.error }}</div>
     <div class="container">
-      <div ui-view></div>
+      <div ng-show="boxid && user" ui-view></div>
+      <div ng-show="!user">
+        <h1><span class="glyphicon glyphicon-book"></span>Please log in.</h1>
+        <h2><span class="glyphicon glyphicon-lock">This is a secure diary.</h2>
+      </div>
+      <div ng-show="user && !boxid">
+        <h1><span class="glyphicon glyphicon-arrow-up">Please select a box above.</h1>
+      </div>
     </div>
     <footer></footer>
     <!-- dependencies --> 
