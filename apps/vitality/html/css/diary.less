@@ -5,6 +5,7 @@
 }
 
 .diary {
+	height:100%;
 	.nav {
 		font-size:48pt;
 		color:#aaa;
@@ -89,14 +90,15 @@
 		height:200px;
 		line-height:150px;
 		width:100%;
-		text-align:center;
-		font-size:180pt;
+		text-align:left;
+		font-size:140pt;
 		color:#eee;
-		border-bottom:1px solid #eee;
 	}
 	.diary-entry {
+		overflow:hidden;
 		position:relative;
-		padding-top:1.5em;
+		padding:1.2em 15px 15px 15px;
+		margin:15px;
 		.created_time {
 			margin-bottom:1.2em;
 		}
@@ -127,11 +129,32 @@
 			// &:focus { border-bottom:1px solid #222;	}
 		}
 
-		border-bottom:1px solid #eee;
+		// border-bottom:1px solid #eee;
+		border:1px solid #eee;
 
 		textarea {
 			width:100%;
 			min-height:30px;
+		}
+		&.ng-enter, &.ng-move, &.ng-leave {
+			-webkit-transition:0.5s linear all;
+			-moz-transition:0.5s linear all;
+			-o-transition:0.5s linear all;
+			transition:0.5s linear all;
+		}
+		&.ng-enter { min-height:0px;  }
+		&.ng-enter.ng-enter-active, &.ng-move-active {
+			min-height:20px;
+		}
+		&.ng-leave.ng-leave-active {
+			height:0px;
+			margin:0px;
+		}		
+		&.ng-leave {
+			height:100px;
+		}
+		.auto-expanding-textarea-container {
+			// border:1px solid orange;
 		}
 	}
 }

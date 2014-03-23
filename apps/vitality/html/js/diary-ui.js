@@ -61,16 +61,12 @@
 				selectDay(du.dayBefore($s.selected_day.date)); 
 			};
 			$s.isToday = du.isToday;
-			$s.showEntryPopup = function() { 
-				$s.entryPopup = true;
-				setTimeout(function() { $('#entrybox').focus(); }, 200);
-			};
-			$s.addTextEntry = function(t) {
+			$s.addTextEntry = function() {
 				delete $s.entryPopup;
 				var now = new Date(), d = u.deferred();
 				entities.activities.make1(box, 'diary-entry-created', whom, now, now, undefined, undefined, undefined, undefined, { 
 					journaltype:'text',
-					value:t
+					value:''
 				}).then(function(obj) { 
 					console.log('saving --- ', obj); 
 					sa(function() { $s.selected_day.entries.push(obj);	});
@@ -94,7 +90,12 @@
 					d.resolve(obj); 
 				}).fail(d.reject);
 				return d.promise();		
-			};			
+			};
+			$s.toggleEntryPopup = function() { 
+				console.log('entrypopup >> ', $s.entryPopup);
+				$s.entryPopup = !$s.entryPopup; 
+			};
+
 
 			if (!$stateParams.entry || $stateParams.entry.trim().length === 0) { $state.go('diary', { entry:'today' });	}
 			$s.dow_names = dateutils.weekday;
@@ -105,27 +106,38 @@
 	}).directive('diaryEntry', function() { 
 		return {
 			restrict:'E',
+			replace:true,
 			scope: {'entry' : '=', 'entries':'='},
 			templateUrl:'partials/diary-entry.html',
-			controller:function($scope, utils)  {
+			controller:function($scope, $timeout, utils)  {
 				var u = utils, 
-				sa = function(fn) { return u.safeApply($scope, fn); },
-				$s = $scope;
+					sa = function(fn) { return u.safeApply($scope, fn); },
+					$s = $scope,
+					timeout;
 				$s.deleteMe = function(entry) {	
 					entry.destroy(); 
 					$s.entries = $s.entries.filter(function(x) { return x !== entry; });
 				};
 				$s.$watch('entry', function() { 
 					var entry = $s.entry;
-					$s.entryvalue = (entry !== undefined ? entry.peek('value') : ''); 
+					entry.entryvalue = (entry !== undefined ? entry.peek('value') : ''); 
 				});
-				$s.$watch('entryvalue', function(x) { 
+				$s.$watch('entry.entryvalue', function(x) { 
 					// console.log('setting value -- ', x, $s.entryvalue);
-					$s.entry.set('value', x);
-					$s.entry.save();
+					if (timeout) { 
+						console.log('clearing .. ');
+						$timeout.cancel(timeout);
+					}
+					timeout = $timeout(function() { 
+						console.log('... saving');
+						$s.entry.set('value', x);
+						$s.entry.save();
+						timeout = undefined;
+					}, 1000);
+
 				});
 				$s.toTimeString = function(d) {
-					console.error('tts >> ', d, d3.time.format('%I:%M %p')(d).toLowerCase());
+					// console.error('tts >> ', d, d3.time.format('%I:%M %p')(d).toLowerCase());
 					return d3.time.format('%I:%M %p')(d).toLowerCase();
 				};
 			}
@@ -134,21 +146,22 @@
 		return {
 			restrict:'E',
 			replace:true,
-			template:'<textarea class=\'auto-expanding-textarea\'></textarea>',
+			template:'<div class="auto-expanding-textarea-container"><textarea class=\'auto-expanding-textarea\' ng-model="entry.entryvalue"></textarea></div>',
 			controller:function($scope, utils)  {
 				var u = utils, 
 				sa = function(fn) { return u.safeApply($scope, fn); },
 				$s = $scope;
 			},
 			link:function($scope, $element) {
-				var el = $element[0], last_length = 0;
+				var el = $element.find('textarea')[0], div = $element[0], last_length = 0;
 				var minheight = $(el).css('min-height') && parseInt($(el).css('min-height').slice(0,-2)) || 0;
 				var twerk = function(e) {
-					var dh = $(document).height();
-					$('body').height(dh);
+					console.log('size of div before : ', $(div).height());
+					console.log('setting height -- ');
+					$(div).height($(div).height() + 50);
 					$(el).height(minheight);
-					// console.log('doc height ', $(document).height(), dh);
 					$(el).height(el.scrollHeight + 20);
+					$(div).height('auto');
 				};
 			    $(el).keyup(twerk);
 			    $scope.$watch('model', function(x) { console.log('model! ', x);  twerk();  });			

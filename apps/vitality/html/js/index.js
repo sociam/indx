@@ -1,7 +1,7 @@
 /* jshint undef: true, strict:false, trailing:false, unused:false */
 /* global require, exports, console, process, module, L, angular, _, jQuery, $ */
 
-var vApp = angular.module('vitality', ['indx', 'ui.router']);
+var vApp = angular.module('vitality', ['indx', 'ui.router', 'ngAnimate']);
 
 // app 
 // wellbeing diary 

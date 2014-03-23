@@ -28,6 +28,7 @@
     "less": "~1.6.3",
     "jquery": "git://github.com/components/jquery.git#=2.1.0",
     "underscore": "~1.6.0",
-    "angular-ui-router":"~0.2.10"
+    "angular-ui-router":"~0.2.10",
+    "angular-animate":"~1.2.15"
   }
 }
