@@ -3,9 +3,8 @@
 	<div class="date">
 		<span class="datenav back" ng-click="selectPrevDay()">&lt;</span>
 		<span class="datenav fwd" ng-click="selectNextDay()" ng-show="!isToday(selected_day.date)">&gt;</span>
-		<div class="dow"> {{ dow_names[selected_day.date.getDay()].toUpperCase() }} </div>
+		<div class="dow"> {{ dow_names[selected_day.date.getDay()].toUpperCase().slice(0,3) }}  {{ month_names[selected_day.date.getMonth()].toUpperCase().slice(0,3) }} </div>
 		<div class="dateval"> {{ selected_day.date.getDate() }} </div>
-		<div class="month"> {{ month_names[selected_day.date.getMonth()].toUpperCase() }} </div>
 	</div>
 	<div class="entries col-xs-12">
 		<diary-entry ng-repeat="e in selected_day.entries" entry="e" entries='selected_day.entries'></diary-entry>

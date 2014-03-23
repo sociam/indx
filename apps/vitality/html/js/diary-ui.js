@@ -96,10 +96,9 @@
 				$s.entryPopup = !$s.entryPopup; 
 			};
 
-
 			if (!$stateParams.entry || $stateParams.entry.trim().length === 0) { $state.go('diary', { entry:'today' });	}
 			$s.dow_names = dateutils.weekday;
-			$s.month_name = dateutils.months;				
+			$s.month_names = dateutils.months;				
 			$s.$watch('box', function() { box = $scope.box;	_init($stateParams.entry); });
 		}
 	});

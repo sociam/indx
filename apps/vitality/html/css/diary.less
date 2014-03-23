@@ -15,32 +15,38 @@
 	}
 	position:relative;
 	.date {
+		position:fixed;
+		top:40px;
 		background:white;
-		z-index:100;
-		font-weight:100; 
-		position:absolute;
+		// border-left:1px solid #eee;
+		// border-right:1px solid #eee;
+		border-bottom:1px solid #eee;
+		border-top:1px solid white;
+
+		z-index:10000;
+		font-weight:200; 
 		right:30px;
-		top:30px;
-		min-width:240px;
+		min-width:160px;
 		text-align:center;
+		padding:0px 0px 20px 0px;
 		* { padding:0px; margin:0px; line-height:0.90; }
-		.dow { z-index:-10; color:grey; font-size:18pt; line-height:0.50; }
-		.dateval { font-size:98pt; }
-		.month { font-size:18pt; }
+		.dow { z-index:-10; color:grey; font-size:18pt; line-height:1.50;  }
+		.dateval { font-family:"Helvetica Neue"; font-weight:100; font-size:42pt; }
 		.datenav {
 			position:absolute;
 			font-size:24pt;
 			top:50%; margin-top:-12pt;
-			color:#aaa;
+			color:#ddd;
 			padding:5px 10px 10px 10px;			
+
 			border-radius:5px;			
-			&.back { left:0px; }
-			&.fwd { right:0px; }
+			&.back { left:5px; }
+			&.fwd { right:5px; }
 			&:hover { color:#222; border: 1px solid #aaa;  }
 		}
 	}
 	.entries {
-		padding-right:270px;
+		padding-right:100px;
 		// font-family:'Times New Roman', serif;
 		height:100%;
 		.entry {
@@ -95,6 +101,13 @@
 		color:#eee;
 	}
 	.diary-entry {
+		// border:1px solid #eee;
+		border:none;
+		border-left:1px solid #eee;
+		&:hover {
+			border-left:3px solid #8ff;
+			margin-left:13px;
+		}
 		overflow:hidden;
 		position:relative;
 		border-radius:4px;
@@ -106,7 +119,6 @@
 			color:#222;
 			left:18px; top:18px;
 		}
-		// border:1px solid #eee;
 		.delete {
 			position:absolute;
 			font-size:18pt;
@@ -134,14 +146,11 @@
 				min-height:30px;
 			}					
 		}
-		border:1px solid #eee;
 		-webkit-transition:0.3s linear all;
 		-moz-transition:0.3s linear all;
 		-o-transition:0.3s linear all;
 		transition:0.3s linear all;
-		&:hover {
-			border:1px solid #8ff;
-		}
+
 		&.ng-enter, &.ng-move, &.ng-leave {
 			-webkit-transition:0.5s linear all;
 			-moz-transition:0.5s linear all;
