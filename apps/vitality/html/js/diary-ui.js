@@ -158,8 +158,6 @@
 				var el = $element.find('textarea')[0], div = $element[0], last_length = 0;
 				var minheight = $(el).css('min-height') && parseInt($(el).css('min-height').slice(0,-2)) || 0;
 				var twerk = function(e) {
-					console.log('size of div before : ', $(div).height());
-					console.log('setting height -- ');
 					$(div).height($(div).height() + 50);
 					$(el).height(minheight);
 					$(el).height(el.scrollHeight + 20);
