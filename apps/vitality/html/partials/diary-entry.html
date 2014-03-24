@@ -1,6 +1,6 @@
 <div class="diary-entry">
 	<div class="delete" ng-click="deleteMe(entry)">x</div>
-	<div class="created_time">{{ toTimeString(entry.peek('tstart')) }}</div>
+	<div class="created_time">{{ toTimeString(entry.peek('created')) }}</div>
 
 	<!-- phrasetype --> 
 	<div ng-show="entry.peek('journaltype')=='phrase'">

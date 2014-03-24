@@ -16,6 +16,9 @@
                 	L.map(function(l) { o[l] = true; });
                 	return o;
                 },
+				toQueryTime : function(date) {	
+					return date.toISOString().slice(0,-5);	// chop off the .000Z or queries don't like it
+				}, 
                 zip:function(a1,a2) {
                 	return this.range(Math.min(a1.length,a2.length)).map(function(i) {
                 		return [a1[i],a2[i]];

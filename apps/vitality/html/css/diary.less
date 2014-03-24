@@ -100,6 +100,7 @@
 		font-size:140pt;
 		color:#eee;
 	}
+			
 	.diary-entry {
 		// border:1px solid #eee;
 		border:none;
@@ -108,6 +109,7 @@
 			border-left:3px solid #8ff;
 			margin-left:13px;
 		}
+		
 		overflow:hidden;
 		position:relative;
 		border-radius:4px;
@@ -152,14 +154,14 @@
 		transition:0.3s linear all;
 
 		&.ng-enter, &.ng-move, &.ng-leave {
-			-webkit-transition:0.5s linear all;
-			-moz-transition:0.5s linear all;
-			-o-transition:0.5s linear all;
-			transition:0.5s linear all;
+			-webkit-transition:0.3s linear all;
+			-moz-transition:0.3s linear all;
+			-o-transition:0.3s linear all;
+			transition:0.3s linear all;
 		}
-		&.ng-enter { min-height:0px;  }
+		&.ng-enter { height:0px;  }
 		&.ng-enter.ng-enter-active, &.ng-move-active {
-			min-height:20px;
+			height:50px;
 		}
 		&.ng-leave.ng-leave-active {
 			height:0px;

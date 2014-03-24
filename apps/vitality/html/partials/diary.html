@@ -7,13 +7,13 @@
 		<div class="dateval"> {{ selected_day.date.getDate() }} </div>
 	</div>
 	<div class="entries col-xs-12">
-		<diary-entry ng-repeat="e in selected_day.entries" entry="e" entries='selected_day.entries'></diary-entry>
+		<diary-entry ng-repeat="e in selected_day.entries" entry="e" entries='selected_day.entries' box='box' whom='whom'></diary-entry>
 		<div ng-show="isToday(selected_day.date)" ng-class="{entry:true, showing:entryPopup}">
 			<div class="madlibs">
 				<div class="madlib" ng-repeat="p in madlibs" ng-click="addPhraseEntry(p)">{{ p.text }} </div>
 				<div class="madlib" ng-click="addTextEntry()">Other ... (type freely)</div>
 			</div>
 		</div>
-		<div ng-show="isToday(selected_day.date)" class="addNewButton" ng-click="toggleEntryPopup()">+</div>
+		<div ng-show="isToday(selected_day.date)" class="addNewButton" ng-click="addTextEntry()">+</div>
 	</div>
 </div>

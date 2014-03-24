@@ -15,23 +15,28 @@
 					return d.promise();
 				}
 			},
-			controller: function($scope, $state, $stateParams, who, utils, dateutils, entities) {
+			controller: function($scope, $state, $stateParams, who, utils, dateutils, entities, prov) {
 				var u = utils, du = dateutils,
 					sa = function(fn) { return u.safeApply($scope, fn); },
 					$s = $scope,
-					whom, box;
+					box;
 
 				var	_init = function(entryid) {
 					var date = entryIdToDate(entryid), 
 						dstart = du.midnight(date), 
-						dend = du.lastMSecOf(date);
+						dend = du.lastMSecOf(date),
+						query = ({
+							'$and':[ 
+							{'created': {'$ge': u.toQueryTime(dstart) }},
+							{'created': {'$le': u.toQueryTime(dend) }},							
+							{type:'diary-entry'}
+						]});
 					$scope.selected_day = {	date : dstart, dend : dend,	entries: [] };
 					if (!box) { return; }
-					entities.activities.getByActivityType(box,dstart,dend,['diary-entry-created']).then(function(x)  { 
-						sa(function() { 
-							x.sort(function(a,b) { return a.peek('tstart').valueOf() - b.peek('tstart').valueOf(); });
-							$scope.selected_day.entries = x;
-						});
+					box.query(query).then(function(entries)  {
+						console.log('got entries >> ', entries);
+						entries.sort(function(a,b) { return a.peek('created').valueOf() - b.peek('created').valueOf(); });
+						sa(function() { $scope.selected_day.entries = entries; });
 					});
 				},
 				entryIdToDate = function(eid) { 
@@ -63,31 +68,37 @@
 			$s.isToday = du.isToday;
 			$s.addTextEntry = function() {
 				delete $s.entryPopup;
-				var now = new Date(), d = u.deferred();
-				entities.activities.make1(box, 'diary-entry-created', whom, now, now, undefined, undefined, undefined, undefined, { 
-					journaltype:'text',
-					value:''
-				}).then(function(obj) { 
-					console.log('saving --- ', obj); 
-					sa(function() { $s.selected_day.entries.push(obj);	});
-					obj.save(); 
-					d.resolve(obj); 
+				var now = new Date(),
+					d = u.deferred(),
+					id = 'diary-entry-' + u.guid();
+				box.getObj(id).then(function(obj) { 
+					obj.set({
+						created: new Date(),
+						author: who,
+						'type': 'diary-entry',
+						'journaltype': 'text',
+						value:''
+					}).save().then(function() { d.resolve(obj); }).fail(d.reject);
+					sa(function() { $s.selected_day.entries.push(obj); });
+					prov.makeCreatedProv(box, $s.whom, $s.entry, new Date());					
 				}).fail(d.reject);
 				return d.promise();
 			};
 			$s.addPhraseEntry = function(p) {
 				delete $s.entryPopup;
-				var now = new Date(), d = u.deferred();
-				entities.activities.make1(box, 'diary-entry-created', whom, now, now, undefined, undefined, undefined, undefined, { 
-					journaltype:'phrase',
-					phrase:p.text,
-					range:p.range,
-					value:p.value
-				}).then(function(obj) { 
-					console.log('saving --- ', obj); 
-					obj.save(); 
-					sa(function() { $s.selected_day.entries.push(obj);	});
-					d.resolve(obj); 
+				var now = new Date(), d = u.deferred(),
+					id = 'diary-entry-' + u.guid();
+				box.getObj(id).then(function(obj) { 
+					obj.set({
+						created: new Date(),
+						author: who,
+						'type': 'diary-entry',
+						'journaltype': 'phrase',
+						phrase:p,
+						range:p.range,
+						value:''
+					}).save().then(function() { d.resolve(obj); }).fail(d.reject);
+					prov.makeCreatedProv(box, $s.whom, $s.entry, new Date());
 				}).fail(d.reject);
 				return d.promise();		
 			};
@@ -100,21 +111,23 @@
 			$s.dow_names = dateutils.weekday;
 			$s.month_names = dateutils.months;				
 			$s.$watch('box', function() { box = $scope.box;	_init($stateParams.entry); });
+			$s.whom = who; // for subscopes
 		}
 	});
 	}).directive('diaryEntry', function() { 
 		return {
 			restrict:'E',
 			replace:true,
-			scope: {'entry' : '=', 'entries':'='},
+			scope: {'entry' : '=', 'entries':'=', 'box':'=', 'whom':'='},
 			templateUrl:'partials/diary-entry.html',
-			controller:function($scope, $timeout, utils)  {
+			controller:function($scope, $timeout, utils, prov)  {
 				var u = utils, 
 					sa = function(fn) { return u.safeApply($scope, fn); },
 					$s = $scope,
 					timeout;
 				$s.deleteMe = function(entry) {	
 					entry.destroy(); 
+					prov.makeDeletedProv($s.box, $s.whom, entry, new Date());
 					$s.entries = $s.entries.filter(function(x) { return x !== entry; });
 				};
 				$s.$watch('entry', function() { 
@@ -131,6 +144,12 @@
 						console.log('... saving');
 						$s.entry.set('value', x);
 						$s.entry.save();
+						console.log('make edited prov >> ', $s.box);
+						if ($s.box) {
+							prov.makeEditedProv($s.box, $s.whom, $s.entry, 'value', x, new Date());
+						} else {
+							console.error('no $s.box');
+						}
 						timeout = undefined;
 					}, 1000);
 
