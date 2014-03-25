@@ -8,9 +8,10 @@
 			return {
 				restrict:'E',
 				template:'<div></div>',
+				scope: { selected:"=" },
 				link:function($scope, $element) {
 					var margin = {top: 20, right: 20, bottom: 30, left: 40},
-							width = 460 - margin.left - margin.right,
+							width = 520 - margin.left - margin.right,
 							height = 300 - margin.top - margin.bottom;
 
 					var x = d3.scale.ordinal()
@@ -67,15 +68,20 @@
 						d.frequency = +d.frequency;
 						return d;
 					}
+					$($element[0]).on('mouseenter', 'rect.bar', function(e) { 
+						console.log('hover > ');
+						$scope.$apply(function() { $scope.selected = e; });
+					});
 			} // link
 		}; // return
 	}).directive('bullets', function() { 
 		return {
 			restrict:'E',
-			template:'<div><button class="update">Update</button></div>',
+			template:'<div></div>',
+			scope:{selected:'='},
 			link:function($scope, $element) {
 				var margin = {top: 5, right: 40, bottom: 20, left: 120},
-				    width = 460 - margin.left - margin.right,
+				    width = 520 - margin.left - margin.right,
 				    height = 50 - margin.top - margin.bottom;
 
 				var chart = d3.bullet()
@@ -109,6 +115,10 @@
 				  d3.selectAll("button.update").on("click", function() {
 				    svg.datum(randomize).call(chart.duration(1000)); // TODO automatic transition
 				  });
+					$scope.$watch('selected', function() { 
+					    svg.datum(randomize).call(chart.duration(1000)); // TODO automatic transition
+					});
+
 				});
 
 				function randomize(d) {
@@ -125,6 +135,7 @@
 				    return Math.max(0, d + k * (Math.random() - .5));
 				  };
 				}
+
 			}
 		};
 	});	

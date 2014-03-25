@@ -2,7 +2,7 @@
 	<h2 ng-show="name" class="header"> {{ name.toLowerCase() }}'s vitality </h2>
 	<h2 ng-show="!name" class="header"> welcome to vitality!</h2>
 	<div class="row">
-		<div class="col-lg-6">
+		<div class="col-lg-4">
 			<div class="input-group">
 				<div class="input-group-btn">
 					<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">Action <span class="caret"></span></button>
@@ -25,9 +25,12 @@
 				<li class="no"><i>no reminders</i></li>		
 			</ul>
 		</div><!-- /.col-lg-6 -->
-		<div class="col-lg-6">
-			<weekchart></weekchart>
-			<bullets></bullets>
+		<div class="col-lg-8">
+			<h3>12-26 March 2014</h4>
+			<h4>Wellness index</h4>
+			<weekchart selected="hoversel"></weekchart>
+			<h4>Individual health metrics</h4>
+			<bullets selected="hoversel"></bullets>
 		</div><!-- /.col-lg-6 -->
 	</div><!-- /.row -->
 </div>
