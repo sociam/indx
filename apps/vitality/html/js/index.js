@@ -17,10 +17,21 @@ vApp.config(function($stateProvider, $urlRouterProvider) {
   $stateProvider
     .state('home', { 
       url:'/home',
-      template:'<div class="home">welcome home <ol><li ui-sref="diary">Goto diary</li></ol></div>',
-      controller:function($scope, $stateParams) { 
+      templateUrl:'partials/home.html',
+      resolve: {
+        whom: function(client, utils) { 
+          var u = utils, d = u.deferred();
+          client.store.checkLogin().then(function(x) { d.resolve(x);  }).fail(d.reject);
+          return d.promise();
+        }
+      },      
+      controller:function($scope, $stateParams, whom) { 
         console.log('stateparams >> ', $scope.error, $stateParams.error);
         if ($stateParams.error) { $scope.error = $stateParams.error; }
+        if (whom && whom.user_metadata) { 
+            var um = JSON.parse(whom.user_metadata);
+            if (um.name) { $scope.name = um.name; };
+        }
       }
     })
     .state('edit', {
