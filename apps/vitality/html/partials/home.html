@@ -2,16 +2,28 @@
 	<h2 ng-show="name" class="header"> {{ name.toLowerCase() }}'s vitality </h2>
 	<h2 ng-show="!name" class="header"> welcome to vitality!</h2>
 
-	<ul class="nav nav-pills nav-stacked">
-		<li ui-sref="home" class="active"><a href="#">Home</a></li>
-		<li ui-sref="diary"><a href="#">My Diary</a></li>
-		<li ui-sref="reminders">
-	        <span class="badge pull-right">0</span>
-			<a href="#">Reminders</a>
-		</li>
-		<li ui-sref="messages">
-	        <span class="badge pull-right">0</span>
-			<a href="#">Messages</a>
-		</li>
-	</ul>
+	<div class="row">
+		<ul class="nav nav-pills nav-stacked col-xs-2">
+			<li ui-sref="home" class="active"><a href="#">Home</a></li>
+			<li ui-sref="diary"><a href="#">My Diary</a></li>
+			<li ui-sref="reminders">
+		        <span class="badge pull-right">0</span>
+				<a href="#">Reminders</a>
+			</li>
+			<li ui-sref="messages">
+		        <span class="badge pull-right">0</span>
+				<a href="#">Messages</a>
+			</li>
+		</ul>
+		<div class="col-xs-4">
+			<h2>reminders:</h2>
+			<ul>
+			<li><i>no reminders</i>
+			</ul>
+			<h2>messages:</h2>
+			<ul>
+			<li><i>no reminders</i>
+			</ul>
+
+		</div>
 </div>
