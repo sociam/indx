@@ -1,7 +1,7 @@
 <html>
   <head>
-  <link href="/lib/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="/lib/angular-ui/build/angular-ui.min.css" rel="stylesheet">
+  <link href="lib/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="lib/angular-ui/build/angular-ui.css" rel="stylesheet">
   <link rel="stylesheet/less" type="text/css" href="/components/toolbar/toolbar.less">
   <link rel="stylesheet/less" type="text/css" href="css/vitality.less"> 
   <link rel="stylesheet/less" type="text/css" href="css/diary.less"> 
@@ -13,7 +13,6 @@
     <toolbar box-var='boxid' username-var='user'></toolbar>
     <div ng-show="errorContainer.error" class="alert alert-danger">{{ errorContainer.error }}</div>
     <div class="container">
-      <div ng-show="boxid && user" ui-view></div>
       <div ng-show="!user">
         <h1><span class="glyphicon glyphicon-book"></span>Please log in.</h1>
         <h2><span class="glyphicon glyphicon-lock">This is a secure diary.</h2>
@@ -21,6 +20,26 @@
       <div ng-show="user && !boxid">
         <h1><span class="glyphicon glyphicon-arrow-up">Please select a box above.</h1>
       </div>
+      <div ng-show="boxid && user">
+        <ul class="nav nav-pills nav-stacked col-xs-2">
+          <li ng-class="{active:state=='home'}">
+            <a ui-sref="home">Home</a>
+          </li>
+          <li ng-class="{active:state=='diary'}">
+            <a ui-sref="diary">My Diary</a>
+          </li>
+          <li ng-class="{active:state=='reminders'}">
+            <a ui-sref="reminders">Reminders
+              <span class="badge pull-right">{{ reminders || 0 }}</span>
+            </a>                      
+          </li>
+          <li ng-class="{active:state=='messages'}">
+            <a ui-sref="messages" href="#">Messages
+              <span class="badge pull-right">{{ messages || 0 }}</span>
+            </a>
+          </li>
+        </ul>
+        <div class="col-xs-10" ui-view></div>
     </div>
     <footer></footer>
     <!-- dependencies --> 
@@ -42,6 +61,7 @@
 
     <!-- app --> 
     <script src="js/index.js" type="text/javascript"></script>
+    <script src="js/chart.js" type="text/javascript"></script>    
     <!-- diary subapp -->
     <script src="js/dateutils.js" type="text/javascript"></script>
     <script src="js/diary-ui.js" type="text/javascript"></script>

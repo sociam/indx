@@ -1,29 +1,32 @@
 <div class="home">
 	<h2 ng-show="name" class="header"> {{ name.toLowerCase() }}'s vitality </h2>
 	<h2 ng-show="!name" class="header"> welcome to vitality!</h2>
-
 	<div class="row">
-		<ul class="nav nav-pills nav-stacked col-xs-2">
-			<li ui-sref="home" class="active"><a href="#">Home</a></li>
-			<li ui-sref="diary"><a href="#">My Diary</a></li>
-			<li ui-sref="reminders">
-		        <span class="badge pull-right">0</span>
-				<a href="#">Reminders</a>
-			</li>
-			<li ui-sref="messages">
-		        <span class="badge pull-right">0</span>
-				<a href="#">Messages</a>
-			</li>
-		</ul>
-		<div class="col-xs-4">
+		<div class="col-lg-6">
+			<div class="input-group">
+				<div class="input-group-btn">
+					<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">Action <span class="caret"></span></button>
+					<ul class="dropdown-menu">
+						<li><a href="#">Action</a></li>
+						<li><a href="#">Another action</a></li>
+						<li><a href="#">Something else here</a></li>
+						<li class="divider"></li>
+						<li><a href="#">Separated link</a></li>
+					</ul>
+				</div><!-- /btn-group -->
+				<input type="text" class="form-control">
+			</div><!-- /input-group -->
 			<h2>reminders:</h2>
 			<ul>
-			<li><i>no reminders</i>
+				<li class="no"><i>no reminders</i></li>
 			</ul>
 			<h2>messages:</h2>
 			<ul>
-			<li><i>no reminders</i>
+				<li class="no"><i>no reminders</i></li>		
 			</ul>
-
-		</div>
+		</div><!-- /.col-lg-6 -->
+		<div class="col-lg-6">
+			<weekchart></weekchart>
+		</div><!-- /.col-lg-6 -->
+	</div><!-- /.row -->
 </div>

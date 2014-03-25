@@ -61,15 +61,25 @@ vApp.controller('main', function($scope, $rootScope, $state, client, utils) {
   var u = utils, sa = function(fn) { return u.safeApply($scope, fn); };
 
   $scope.errorContainer = {};
+  console.log('$state -- ', $state && $state.current && $state.current.name);
+  $scope.state = $state && $state.current && $state.current.name;
+  window._state =  $state;
 
   $rootScope.$on('$stateChangeStart', function(x, y, z) { console.info('state change start >> ', x, y, z);  });
-  $rootScope.$on('$stateChangeSuccess', function(x, y, z) { console.info('state change success >> ', x, y, z); });
+  $rootScope.$on('$stateChangeSuccess', function(x, y, z) { console.info('state change success >> ', x, y, z); 
+      $scope.state = y.name;
+      console.log('state >> ', $scope.state);    
+  });
   $rootScope.$on('$stateChangeError', function(x, y, z) { 
     console.error('state change error >> ', x, y, z); 
     $state.go('home', {error: 'Something happened -- please make sure you are logged in '}); 
     $scope.errorContainer.error = 'something happened - please make sure you are logged in';
   });
-  $rootScope.$on('$stateNotFound', function(x, y, z) { console.error('state not found >> ', x, y, z); });
+  $rootScope.$on('$stateNotFound', function(x, y, z) { 
+    console.error('state not found >> ', x, y, z); 
+    $state.go('home', {error: 'Something happened -- please make sure you are logged in '}); 
+    $scope.errorContainer.error = 'something happened - please make sure you are logged in';    
+  });
 
   $scope.$watch('boxid', function(boxid) { 
     if (boxid !== undefined) { 

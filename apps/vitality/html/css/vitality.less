@@ -5,15 +5,50 @@
 .alert {
 	margin-top:42px;
 }
+h1, h2, h3, h4 { 
+	font-family:'helvetica neue';
+	font-weight:200;
+}
+ul {
+	list-style-type:none;
+	padding-left:10px;
+}
 .home {
+	position:relative;
+	width:100% !important;
+	margin:0px; padding-top:0px;
 	.header  {
-		position:absolute;
-		right:50px;
-		top:50px;		
+		padding:0px 0px 0px 0px;
 		font-size:200%;
-		text-align:right;
-		font-family:'helvetica neue';
-		font-weight:100;
+	}
+	.no {
+		color:#aaa;
+	}
+	min-height:500px;
+	svg {
+		.bar {
+		  fill: steelblue;
+		}
+
+		.bar:hover {
+		  fill: brown;
+		}
+
+		.axis {
+		  font: 10px sans-serif;
+		}
+
+		.axis path,
+		.axis line {
+		  fill: none;
+		  stroke: #000;
+		  shape-rendering: crispEdges;
+		}
+
+		.x.axis path {
+		  display: none;
+		}
+
 	}
 }
 
