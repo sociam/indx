@@ -2,7 +2,7 @@
 	<h2 ng-show="name" class="header"> {{ name.toLowerCase() }}'s vitality </h2>
 	<h2 ng-show="!name" class="header"> welcome to vitality!</h2>
 	<div class="row">
-		<div class="col-lg-4">
+		<div class="col-lg-5">
 			<div class="input-group">
 				<div class="input-group-btn">
 					<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">Action <span class="caret"></span></button>
@@ -22,10 +22,23 @@
 			</ul>
 			<h2>messages:</h2>
 			<ul>
-				<li class="no"><i>no reminders</i></li>		
+				<li class="no"><i>no messages</i></li>		
 			</ul>
+			<h2>diet:</h2>
+			<ul>
+				<li><span class="glyphicon glyphicon-ok green">- Great!</span> - You've been meeting your calorie target <b>6/7</b> days over the past week.</li>		
+			</ul>	
+			<h2>fitness:</h2>
+			<ul>
+				<li><span class="glyphicon glyphicon-ok orange">- Good!</span> - You exceeded your activity targets <b>5/7</b> days over the past week.</li>		
+			</ul>		
+			<h2>daily tips:</h2>
+			<ul>
+				<li><span class="glyphicon glyphicon-cloud"></span> - Weather in London's warmer but still chilly (down to 2C) today, so bundle up</li>		
+			</ul>
+
 		</div><!-- /.col-lg-6 -->
-		<div class="col-lg-8">
+		<div class="col-lg-7">
 			<h3>12-26 March 2014</h4>
 			<h4>Wellness index</h4>
 			<weekchart selected="hoversel"></weekchart>
