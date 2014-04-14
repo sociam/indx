@@ -2,20 +2,7 @@
 	<h2 ng-show="name" class="header"> {{ name.toLowerCase() }}'s vitality </h2>
 	<h2 ng-show="!name" class="header"> welcome to vitality!</h2>
 	<div class="row">
-		<div class="col-lg-5">
-			<div class="input-group">
-				<div class="input-group-btn">
-					<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">Action <span class="caret"></span></button>
-					<ul class="dropdown-menu">
-						<li><a href="#">Action</a></li>
-						<li><a href="#">Another action</a></li>
-						<li><a href="#">Something else here</a></li>
-						<li class="divider"></li>
-						<li><a href="#">Separated link</a></li>
-					</ul>
-				</div><!-- /btn-group -->
-				<input type="text" class="form-control">
-			</div><!-- /input-group -->
+		<div class="col-lg-6">
 			<h2>reminders:</h2>
 			<ul>
 				<li class="no"><i>no reminders</i></li>
@@ -36,9 +23,21 @@
 			<ul>
 				<li><span class="glyphicon glyphicon-cloud"></span> - Weather in London's warmer but still chilly (down to 2C) today, so bundle up</li>		
 			</ul>
-
+			<div class="input-group">
+				<div class="input-group-btn">
+					<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">Action <span class="caret"></span></button>
+					<ul class="dropdown-menu">
+						<li><a href="#">Action</a></li>
+						<li><a href="#">Another action</a></li>
+						<li><a href="#">Something else here</a></li>
+						<li class="divider"></li>
+						<li><a href="#">Separated link</a></li>
+					</ul>
+				</div><!-- /btn-group -->
+				<input type="text" class="form-control">
+			</div><!-- /input-group -->
 		</div><!-- /.col-lg-6 -->
-		<div class="col-lg-7">
+		<div class="col-lg-6">
 			<h3>12-26 March 2014</h4>
 			<h4>Wellness index</h4>
 			<weekchart selected="hoversel"></weekchart>
