@@ -5,6 +5,8 @@
   <link rel="stylesheet/less" type="text/css" href="/components/toolbar/toolbar.less">
   <link rel="stylesheet/less" type="text/css" href="css/vitality.less"> 
   <link rel="stylesheet/less" type="text/css" href="css/diary.less"> 
+  <link rel="stylesheet/less" type="text/css" href="css/clinical.less"> 
+
   <link rel="stylesheet" type="text/css" href="css/diary-css-4.css"> 
 
 	<title>vitality for indx</title>
@@ -27,6 +29,9 @@
           </li>
           <li ng-class="{active:state=='diary'}">
             <a ui-sref="diary">My Diary</a>
+          </li>
+          <li ng-class="{active:state=='diary'}">
+            <a ui-sref="clinical-input">Clinical incident</a>
           </li>
           <li ng-class="{active:state=='reminders'}">
             <a ui-sref="reminders">Reminders
@@ -66,4 +71,6 @@
     <!-- diary subapp -->
     <script src="js/dateutils.js" type="text/javascript"></script>
     <script src="js/diary-ui.js" type="text/javascript"></script>
+    <script src="js/clinical.js" type="text/javascript"></script>
+
 </html>
