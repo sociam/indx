@@ -39,7 +39,8 @@
 					var el = element[0], data = [];
 					$scope.data = data;
 					var cur_line = undefined;
-					var svg = d3.select(el).append('svg'); // .attr('width', 500).attr('height', 800);
+					var svg = d3.select(el).append('svg');
+
 					var offset;
 					var linefn = d3.svg.line()
 						.x(function(d) { return d.x; })
@@ -51,8 +52,7 @@
 						if (cur_line) {
 							svg.append('path')
 								.attr('class', 'scribble drawing')
-								.attr('d', linefn(cur_line))
-								.data(cur_line);
+								.attr('d', linefn(cur_line));
 						}
 					};
 					var evt2pos = function(evt) { 
@@ -71,7 +71,6 @@
 						d3.select(this).attr('class', 'scribble selected');
 						sa(function() { $scope.selected_path = this_; });
 					};
-
 					$(svg[0]).on('touchstart', function(evt) { 
 						clear_select();
 						cur_line = [ evt2pos(evt) ];
@@ -92,7 +91,6 @@
 					$scope.deleteSelected = function() { 
 						var selected = $scope.selected_path;
 						var selected_points = d3.select(selected).attr('data-points');
-						console.log('selected_points >> ', selected_points);
 						window.dd = selected_points;
 						d3.select(selected).remove();
 						clear_select();
