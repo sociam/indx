@@ -26,7 +26,7 @@
 			restrict:'E',
 			replace:true,
 			scope:{model:"="},
-			template:'<div class="scribble"></div>',
+			template:'<div class="scribbler"></div>',
 			controller:function($scope, utils)  {
 				var u = utils, 
 				sa = function(fn) { return u.safeApply($scope, fn); },
@@ -36,22 +36,19 @@
 				var el = $element[0], div = $element[0], last_length = 0;
 				var data = [];
 				var cur_line = undefined;
-				var svg = d3.select(el).append('svg').attr('width', 500).attr('height', 800);
+				var svg = d3.select(el).append('svg'); // .attr('width', 500).attr('height', 800);
 				var offset;
 				var linefn = d3.svg.line()
 					.x(function(d) { return d.x; })
 					.y(function(d) { return d.y; })
-					.interpolate('cardinal');
+					.interpolate('linear');
 
 				var render = function() { 
 					svg.selectAll('path.drawing').remove();
 					if (cur_line) {
 						svg.append('path')
-							.attr('class', 'drawing')
-							.attr('d', linefn(cur_line))
-							.attr('stroke','blue')
-							.attr('stroke-width','2')
-							.attr('fill', 'none');
+							.attr('class', 'scribble drawing')
+							.attr('d', linefn(cur_line));
 					}
 				};
 
@@ -60,33 +57,28 @@
 					return { x: evt.originalEvent.touches[0].clientX - offset.left, y: evt.originalEvent.touches[0].clientY - offset.top };
 				};
 
-				var _t;
-				var timeoutRender = function() { 
-					if (_t) { clearTimeout(_t); }
-					_t = setTimeout(function() { 
-						_t = undefined; 
-						render(); 
-					}, 10);
-				};
-
+				$(el).find('path.scribble').on('touchstart', function(evt) { 
+					console.error('YOOOOOOOOO scribble click!! ', this, evt.currentTarget);
+					$('.scribble.selected').removeClass('.selected');
+					$(this).addClass('selected');
+					evt.preventDefault();					
+				});
 				$(el).on('touchstart', function(evt) { 
 					console.log('touchstart >> ', evt);
 					cur_line = [ evt2pos(evt) ];
-					timeoutRender();
 				});
 				$(el).on('touchend', function(evt) { 
 					console.log('<< touchend >> ', evt);
 					data.push(cur_line);
-					svg.selectAll('path.drawing').attr('class', '');
+					svg.selectAll('path.drawing').attr('class', 'scribble');
 					cur_line = undefined;
-					timeoutRender();
 				});
 				$(el).on('touchmove', function(evt, e) {
 					// console.log('<< touchdrag ', evt, e);
 					evt.preventDefault();					
 					window.evt = evt; 
 					cur_line.push(evt2pos(evt));
-					timeoutRender();					
+					render();
 				});
 				window.data = data;
 			}
