@@ -44,14 +44,15 @@
 					.interpolate('cardinal');
 
 				var render = function() { 
-					svg.selectAll('path').remove();
-					(cur_line ? data.concat([cur_line]) : data).map(function(D) {
+					svg.selectAll('path.drawing').remove();
+					if (cur_line) {
 						svg.append('path')
-							.attr('d', linefn(D))
+							.attr('class', 'drawing')
+							.attr('d', linefn(cur_line))
 							.attr('stroke','blue')
 							.attr('stroke-width','2')
 							.attr('fill', 'none');
-					});
+					}
 				};
 
 				var evt2pos = function(evt) { 
@@ -76,6 +77,7 @@
 				$(el).on('touchend', function(evt) { 
 					console.log('<< touchend >> ', evt);
 					data.push(cur_line);
+					svg.selectAll('path.drawing').attr('class', '');
 					cur_line = undefined;
 					timeoutRender();
 				});
