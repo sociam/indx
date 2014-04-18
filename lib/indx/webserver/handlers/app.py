@@ -81,14 +81,14 @@ class AppsMetaHandler(Resource):
             logging.debug("Instantiating handler for New Style App : {0}".format(appbase))
             # first add html directory
             if os.path.exists(os.path.join(basedir, appbase, 'html')):
-                logging.debug("Adding html static dir {0}".format(os.path.join(basedir, appbase, 'html')))
+                # logging.debug("Adding html static dir {0}".format(os.path.join(basedir, appbase, 'html')))
                 file_handler = File(os.path.join(basedir,  appbase, 'html'))
             else:
                 file_handler = NoHTMLHandler()
             # # try to see if it's a service
             handler = ServiceHandler(server, appbase)
             if handler.is_service() :
-                logging.debug(" This is a service, so registering an api child >>>>>>>>>>>>>>>>>>>>>>>> ");
+                # logging.debug(" This is a service, so registering an api child >>>>>>>>>>>>>>>>>>>>>>>> ");
                 ## putting child under api
                 file_handler.putChild('api', handler) 
                 if handler.on_boot() :

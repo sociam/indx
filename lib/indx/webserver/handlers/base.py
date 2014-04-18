@@ -55,7 +55,7 @@ class BaseHandler(Resource):
 
         self.isLeaf = True # stops twisted from seeking children resources from me
         if register:
-            logging.debug("Adding web server handler to path: /" + (self.base_path or ''))
+            # logging.debug("Adding web server handler to path: /" + (self.base_path or ''))
             webserver.root.putChild(self.base_path, self) # register path with webserver
 
         self.database = self.webserver.database
@@ -65,34 +65,34 @@ class BaseHandler(Resource):
         path_fields = request.path.split("/")
         sub_path = '/'.join(path_fields[2:]) if len(path_fields) >= 3 else ''
 
-        logging.debug('sub_path {0} {1}'.format(sub_path, subhandler['prefix']))
+        # logging.debug('sub_path {0} {1}'.format(sub_path, subhandler['prefix']))
 
         # if the subhandler supports content negotiation, then determine the best one
         assert subhandler['accept'], 'No accept clause in subhandler %s ' % subhandler['prefix']
 
         if not (subhandler["prefix"] == sub_path or subhandler["prefix"] == '*'):
-            logging.debug("__PREFIX mismatch " + sub_path + "  "  + subhandler["prefix"])
-            logging.debug('prefix mismatch')
+            # logging.debug("__PREFIX mismatch " + sub_path + "  "  + subhandler["prefix"])
+            # logging.debug('prefix mismatch')
             return False
         if self._get_best_content_type_match_score(request,subhandler) <= 0:
-            logging.debug("__NOT content type match " + self._get_best_content_type_match_score(request,subhandler))
-            logging.debug('content type mismatch ')
+            # logging.debug("__NOT content type match " + self._get_best_content_type_match_score(request,subhandler))
+            # logging.debug('content type mismatch ')
             return False
         if not request.method in subhandler["methods"]:
-            logging.debug("__NOT in subhandler " + request.method)
-            logging.debug('method type mismatch ' + request.method + ' ' + repr(subhandler["methods"]))
+            # logging.debug("__NOT in subhandler " + request.method)
+            # logging.debug('method type mismatch ' + request.method + ' ' + repr(subhandler["methods"]))
             return False
-        logging.debug("Handler match where path={0} and method={1}".format(sub_path, request.method))
+        # logging.debug("Handler match where path={0} and method={1}".format(sub_path, request.method))
         return True
 
     def _get_best_content_type_match_score(self,request,subhandler):
         request_accept = request.getHeader('Accept') or '*/*'
-        logging.debug("subhandler accept {0} /// requestaccept {1} ".format(subhandler["accept"], request_accept))
+        # logging.debug("subhandler accept {0} /// requestaccept {1} ".format(subhandler["accept"], request_accept))
         return max(map(lambda handler_mimetype:quality(handler_mimetype,request_accept), subhandler["accept"]))
 
     def _matches_auth_requirements(self, request, subhandler):
         session = self.get_session(request)
-        logging.debug('matches_auth_requirements -- {0} - session {1}, {2}, {3}'.format(request, session, session.is_authenticated, session.username))
+        # logging.debug('matches_auth_requirements -- {0} - session {1}, {2}, {3}'.format(request, session, session.is_authenticated, session.username))
         if subhandler['require_auth'] and not session.is_authenticated:
             return False
         # @TODO
@@ -113,7 +113,7 @@ class BaseHandler(Resource):
 
     def _matches_acl_requirements(self, request, subhandler):
         """ Check the ACL permissions for this user matches the requirements for this access. """
-        logging.debug("BaseHandler _matches_acl_requirements")
+        # logging.debug("BaseHandler _matches_acl_requirements")
         return_d = Deferred()
 
         if 'require_acl' not in subhandler:
@@ -122,7 +122,7 @@ class BaseHandler(Resource):
         else:
 
             req_acl = subhandler['require_acl']
-            logging.debug("BaseHandler _matches_acl_requirements got req_acl: {0}".format(req_acl))
+            # logging.debug("BaseHandler _matches_acl_requirements got req_acl: {0}".format(req_acl))
 
             def token_cb(token):
                 username = token.username
@@ -198,12 +198,12 @@ class BaseHandler(Resource):
         else:
             token = token_false
 
-        logging.debug("_matches_token_requirements, force_get: {0}".format(force_get))
+        # logging.debug("_matches_token_requirements, force_get: {0}".format(force_get))
 
         # token,boxid,appid = self.get_token(request, force_get=force_get), self.get_request_box(request, force_get=force_get), self.get_request_app(request, force_get=force_get)
         boxid,appid = self.get_request_box(request, force_get=force_get), self.get_request_app(request, force_get=force_get)
 
-        logging.debug("_matches_token_requirements, token: {0}, boxid: {1}, appid: {2}".format(token, boxid, appid))
+        # logging.debug("_matches_token_requirements, token: {0}, boxid: {1}, appid: {2}".format(token, boxid, appid))
 
         if token and token.verify(boxid, appid, self.get_origin(request)):
             return True
@@ -222,24 +222,24 @@ class BaseHandler(Resource):
 
     def render(self, request):
         """ Twisted resource handler."""
-        logging.debug("Calling base render() - " + '/'.join(request.path.split("/")) + " " + repr( self.__class__)  + ' _ subhandlers::' + repr(len(self.subhandlers)))
+        # logging.debug("Calling base render() - " + '/'.join(request.path.split("/")) + " " + repr( self.__class__)  + ' _ subhandlers::' + repr(len(self.subhandlers)))
         try:
             def err_cb(failure):
                 logging.error("BaseHandler render(), error: {0}".format(failure))
 
             self.set_cors_headers(request)
             matching_handlers = filter(lambda h: self._matches_request(request,h), self.subhandlers)
-            logging.debug('Matching handlers %d' % len(matching_handlers))
+            # logging.debug('Matching handlers %d' % len(matching_handlers))
             matching_handlers.sort(key=lambda h: self._get_best_content_type_match_score(request,h),reverse=True)
             matching_auth_hs = filter(lambda h: self._matches_auth_requirements(request,h), matching_handlers)
-            logging.debug('Post-auth matching handlers: {0}'.format(matching_auth_hs))
+            # logging.debug('Post-auth matching handlers: {0}'.format(matching_auth_hs))
 
             # TODO re implement so that we don't request a token twice pre-emptively
             def token_true_cb(token_true):
                 def token_false_cb(token_false):
 
                     matching_token_hs = filter(lambda h: self._matches_token_requirements(request,h, token_true, token_false), matching_auth_hs)
-                    logging.debug('Post-token matching handlers %d' % len(matching_token_hs))
+                    # logging.debug('Post-token matching handlers %d' % len(matching_token_hs))
 
                     matching_acl_hs = []
                     def acl_cb(acl, h):
@@ -254,10 +254,10 @@ class BaseHandler(Resource):
                             self._matches_acl_requirements(request, h2).addCallbacks(lambda acl2: acl_cb(acl2, h2), lambda failure: self.return_internal_error(request))
                         else:
                             # processed them all, run post-filter
-                            logging.debug('Post-acl matching handlers %d' % len(matching_acl_hs))
+                            # logging.debug('Post-acl matching handlers %d' % len(matching_acl_hs))
                             if len(matching_acl_hs) > 0:
                                 subhandler = matching_acl_hs[0]
-                                logging.debug('Using handler %s' % self.__class__.__name__ + " " + matching_acl_hs[0]["prefix"])
+                                # logging.debug('Using handler %s' % self.__class__.__name__ + " " + matching_acl_hs[0]["prefix"])
                                 if subhandler['content-type']:
                                     request.setHeader('Content-Type', subhandler['content-type'])
 
@@ -274,7 +274,7 @@ class BaseHandler(Resource):
                                 subhandler['handler'](self, request, token)
                                 return
                             else:
-                                logging.debug('Returning not found ')
+                                # logging.debug('Returning not found ')
                                 return self.return_not_found(request)
                             
                     acl_cb(None, None)
@@ -300,10 +300,10 @@ class BaseHandler(Resource):
         try:
             #responsejson = cjson.encode(response)
             responsejson = json.dumps(response)
-            logging.debug("Encoding response with cjson")
+            # logging.debug("Encoding response with cjson")
         except Exception as e:
             responsejson = json.dumps(response)
-            logging.debug("Encoding response with python json")
+            # logging.debug("Encoding response with python json")
 
         if not request._disconnected:
             request.setResponseCode(code, message=message)
@@ -311,9 +311,10 @@ class BaseHandler(Resource):
             request.setHeader("Content-Length", len(responsejson))
             request.write(responsejson)
             request.finish()
-            logging.debug(' just called request.finish() with code %d ' % code)
+            # logging.debug(' just called request.finish() with code %d ' % code)
         else:
-            logging.debug(' didnt call request.finish(), because it was already disconnected')
+            # logging.debug(' didnt call request.finish(), because it was already disconnected')
+            pass
 
     def return_ok_file(self,request,fil,contenttype):
         if not request._disconnected:
@@ -322,9 +323,10 @@ class BaseHandler(Resource):
             request.setHeader("Content-Length", len(fil))
             request.write(fil)
             request.finish()
-            logging.debug(' just called request.finish() with code %d ' % 200)
+            # logging.debug(' just called request.finish() with code %d ' % 200)
         else:
-            logging.debug(' didnt call request.finish(), because it was already disconnected')
+            # logging.debug(' didnt call request.finish(), because it was already disconnected')
+            pass
 
     def return_ok(self,request,data=None):
         self._respond(request, 200, "OK", data)
