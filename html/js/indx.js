@@ -331,11 +331,12 @@ angular
 				// returns a promise that will ring true when 
 				// deferredset is resolved.
 				var this_ = this;
-				if (deferredset === undefined) { 
-					deferredset = {}; 
-				}
+				if (deferredset === undefined) { deferredset = {}; }
 				var get_obj_d = function(id) { 
-					if (deferredset[id] === undefined) { deferredset[id] = u.deferred(); }
+					if (deferredset[id] === undefined) { 
+						console.log('adding an unfetched dude -------------', id);
+						deferredset[id] = u.deferred(); 
+					}
 					return deferredset[id];
 				};
 				var get_d = function(val) { 
@@ -351,7 +352,7 @@ angular
 					if (key.indexOf('@') === 0) { return; } // skip "@id" etc etc
 					var kd = u.deferred();
 					// values for keys
-					var val_dfds = vals.map(function(val) {	return get_d(val); });
+					var val_dfds = vals.map(function(val) {	return get_d(val); 	});
 					u.when(val_dfds).then(function(resolved_vals) { 
 						this_.set(key,resolved_vals,{silent: silent});
 						kd.resolve();
@@ -441,7 +442,7 @@ angular
 				});				
 				// set up web socket connection whenever we get a new token
 				this.on('new-token', function() { 
-					console.log('new token!! ', this_._getCachedToken(), this_._getStoredToken());
+					// console.log('new token!! ', this_._getCachedToken(), this_._getStoredToken());
 					this_._setUpWebSocket(); 
 				});
 			},
@@ -623,7 +624,7 @@ angular
 				tq.push(d);
 				window._b = this;
 				if (tq.length === 1) { 
-					console.log('calling getToken -- ', box_id, ' app id ', this.store.get('app'));
+					// console.log('calling getToken -- ', box_id, ' app id ', this.store.get('app'));
 					this.store._ajax('POST', 'auth/get_token', { box:box_id,  app: this.store.get('app') })
 						.then(function(data) {
 							console.debug('setting token ', data.token);
@@ -737,7 +738,6 @@ angular
 				if (predicates && predicates !== '*') {
 					if (!_.isArray(predicates)) { predicates = [predicates]; }
 					_(parameters).extend({predicate_list: predicates});
-					console.debug('new query pattern >> ', parameters);
 				}
 				var query_url = [this.getID(), 'query'].join('/');
 				this._ajax("GET", query_url, parameters)
@@ -756,7 +756,7 @@ angular
 							return dv_.promise();
 						});
 						// now we can fetch all of the things we've queued up
-						console.log('now fetching at once ', _(fetch_dfds).keys());
+						// console.log('now fetching at once ', _(fetch_dfds).keys());
 						if (_(fetch_dfds).keys().length) {
 							this_.getObj(_(fetch_dfds).keys()).then(function(objs) { 
 								objs.map(function(obj) { fetch_dfds[obj.id].resolve(obj); });
@@ -772,7 +772,7 @@ angular
 				var d = u.deferred();
 				var k = _(queryPattern).keys()[0]; // select one key
 				this.query(queryPattern,[k]).then(function(x) {
-					console.log('countQuery got results >> ', x, _(x.data).size());
+					// console.log('countQuery got results >> ', x, _(x.data).size());
 					d.resolve(_(x.data).size());
 				}).fail(d.reject);
 				return d.promise();
@@ -900,83 +900,100 @@ angular
 
 				u.assert(typeof objid === 'string' || typeof objid === 'number' || _.isArray(objid), "objid has to be a number or string or an array of such things");
 
-				var multi = _.isArray(objid),
-					ids = multi ? objid : [objid],
-					this_ = this,
-					fetching = {},
-					newmodels = {};
+				var ids = _.isArray(objid) ? objid : [objid], this_ = this,
+					fetching = {}, newids = [], skeletons = {}, objcache = this._objcache(),
+					chunkN = 50;
 
-				var fetchd = function(id)  {
-					var cachemodel = this_._objcache().get(id);
-					if (cachemodel) { return u.dresolve(cachemodel);	}
-					// not fetched
-					if (fetching[id] === undefined) { 
-						newmodels[id] = this_._createModelForID(id);
-						fetching[id] = u.deferred();
+				var deserialise_obj = function(id, skelmodels, deferredset, newids_) {
+					if (skelmodels[id] !== undefined) { 
+						return skelmodels[id];
+					}					
+					// if not currently fetching but already fetched ... 
+					var cachedobj;
+					if ((cachedobj = objcache.get(id)) !== undefined) { 
+						return cachedobj; 
 					}
-					return fetching[id];
+					// we have someone new 
+					skelmodels[id] = this_._createModelForID(id);
+					deferredset[id] = u.deferred(); // create a new placeholder 
+					newids_.push(id);
+					return skelmodels[id];
+				};
+				var deserialise = function(s_obj, into_model, deferredset, silent, skels, newids_) {
+					// resolves all of the properties into things that we have or
+					// know about
+					_(s_obj).map(function(vals, key) {
+						if (key.indexOf('@') === 0) { return; } // skip "@id" etc etc
+						var kd = u.deferred();
+						// values for keys
+						var values = vals.map(function(val) {	
+							// object
+							if (val.hasOwnProperty('@id')) { 
+								return deserialise_obj(val['@id'], skels, deferredset, newids_);
+							}
+							// literal
+							else if (val.hasOwnProperty("@value")) { 
+								return deserialiseLiteral(val, this_.box);		
+							}
+							// unknown
+							console.error('couldnt deserialise ', val);
+							return undefined;
+						});
+						into_model.set(key,values,{silent: silent});
+					});					
 				};
 
-				var ds = ids.map(fetchd); // -> side effect: fetching  map
-
-				// this produces fetching
-				var lacks = _(fetching).keys();
-				var dsets = u.chunked(lacks, 50).map(function(lids) {
-					var dset = u.deferred();
-					this_._ajax('GET', this_.getID(), {'id':lids}).then(function(response) {
+				var fetch = function(ids, skels, deferredset, newids_) {
+					var d = u.deferred();
+					this_._ajax('GET', this_.getID(), {'id':ids}).then(function(response) { 
 						_(response.data).map(function(mraw,id) {
 							if (id[0] === '@') { return; }
-							var model = newmodels[id];
-							if (id === undefined) { 
-								console.log('id undefined >> ');
-								console.log("response >> ", response, mraw);
+							var _d = u.deferred();
+							deserialise(mraw, skels[id], deferredset, true, skels, newids_);
+							deferredset[id].resolve(skels[id]);
+						});
+						// new objects that we ask for don't get returned 
+						ids.map(function(id) { 
+							if (response.data[id] === undefined) { 
+								deferredset[id].resolve(skels[id]); 
 							}
-							u.assert(id !== undefined, "Got an id undefined");
-							u.assert(model !== undefined, "Got a model we didnt ask for", id);
-							model._setFetched(true);
-							// console.debug('calling deserialise and set on ', mraw);
-							model._deserialiseAndSetForward(mraw, true, fetching).then(function() {
-								fetching[id].resolve(model);
-							}).fail(function(bail) { 
-								fetching[id].reject(bail);
-							});
-						}).filter(u.defined);
-
-						// new guys will not have a url coming back, so we manually finish them off.
-						lids.map(function(id) { 
-							if (response.data[id] === undefined) { fetching[id].resolve(newmodels[id]); }
 						});
-
-						dset.resolve();
-					}).fail(function(bail) {
-						lids.map(function(id) { fetching[id].reject(bail); });
-						dset.reject();
+						d.resolve();
+					}).fail(function(e) { 
+						console.error('error with ajax ', ids); 
+						d.reject();
 					});
-					return dset.promise();
+					return d.promise();
+				};
+
+				// prime the newids with all of the next guys we have to fetch
+				ids.map(function(id) { 
+					deserialise_obj(id, skeletons, fetching, newids); 
 				});
+				var ds = _(fetching).values();
 
-				u.when(dsets).then(function() { 
-					// fetch extras that we picked up along the ay
-					var extras = _(fetching).keys().filter(function(id) { return ids.indexOf(id) < 0; });
-					// console.log('extras >>>>>> ', extras);
-					if (extras.length > 0) {
-						this_.getObj(extras).then(function(extra_ms) { 
-							extra_ms.map(function(extra_m) { fetching[extra_m.id].resolve(extra_m);	});
-						});
+				var recurse = function(ids) { 
+					var idchunk = newids.splice(0,chunkN);
+					var d = u.deferred();
+					fetch(idchunk, skeletons, fetching, newids).then(function() { 
+						if (newids.length > 0) {
+							recurse(newids).then(d.resolve).fail(d.reject);
+							return;
+						}
+						d.resolve(); // resolve righ taway to go on to the next level
+					}).fail(d.reject);
+					return d.promise();
+				};
+
+				var d0 = u.deferred();
+				recurse(newids).then(function() { 
+					if (_.isArray(objid)) { 
+						u.when(ds).then(d0.resolve);
+					} else {
+						u.when(ds).then(function(v) { d0.resolve(v[0]); });
 					}
-				}); // no .fail needed because we've already rejected relevant dudes.
-
-				if (multi) {
-					return u.when(ds);	
-				} else {
-					// singular, we have to continue with just the argument, not an array
-					var d0 = u.deferred();
-					u.when(ds).then(function(objs) { 
-						// console.log('objs >> ', objs);
-						d0.resolve(objs[0]); 
-					}).fail(d0.reject);
-					return d0.promise();
-				}
+				}).fail(d0.reject);
+				return d0.promise();
 			},
 			// ----------------------------------------------------
 			_updateObjectList:function(updatedObjIDs, added, deleted) {

@@ -118,5 +118,72 @@ describe('creation of an object', function() {
             });
         });
     });
+});
+
+
+
+
+describe('object star stress test', function() { 
+    var N = 4, 
+        ids = u.range(N).map(function(x) { return 'star-stress-' + u.guid(5); });
+    it('creates the objects', function(done) { 
+        console.log(' creates the objects  ', ids.length);
+        var os = {};
+        tests.connect().then(function(store) { 
+            store.getBox(test_box).then(function(box) { 
+                box.getObj(ids).then(function(objs) {
+                    objs.map(function(v) { os[v.id] = v; });
+                    var saved =  objs.map(function(o) {
+                        var allbutme = _(os).omit(o.id);
+                        expect(_(allbutme).size()).toBe(N-1);
+
+                        
+                        o.set(allbutme);
+                        console.log('setting allbutme ', allbutme);
+                        o.set('all', objs);
+                        return o.save();
+                    }); 
+                    u.when(saved).then(function() { 
+                        done();
+                    });
+                });
+            });
+        });
+    });
+    it('loads and tests the objects', function(done) { 
+        console.log('load and test the objects ------------- ');
+        var os = {};        
+        tests.connect().then(function(store) { 
+            store.getBox(test_box).then(function(box) { 
+                console.log('getting ids ------------------------------------- !', ids.length);
+                box.getObj(ids).then(function(objs) {
+                    console.log('got ids ...  ', objs.length);
+                    try {
+                        // first make sure we got all of the objects back
+                        expect(objs.length).toBe(N);
+                        // second, let's build up an array
+                        objs.map(function(v) { os[v.id] = v; });
+                        objs.map(function(o){ 
+                            var keys = _(ids).without(o.id);
+                            console.log(o.id, ' - keys > ', keys);
+                            // expect(keys.length).toBe(N); // 'all' + 'each of the ids'
+                            keys.map(function(k) { 
+                                 expect(o.get(k)).toBeDefined();
+                                 expect(o.get(k).length).toBe(1);
+                                 expect(o.get(k)[0]).toBe(os[k]);
+                            });
+                            expect(o.get('all')).toBeDefined();
+                            expect(o.get('all').length).toBe(N);
+                            expect(_(o.get('all')).difference(objs).length).toBe(0);
+                        });
+                        done();
+                    } catch(e) { 
+                        console.error(e); 
+                        done();
+                    }
+                });
+            });
+        });
+    });
 
 });
