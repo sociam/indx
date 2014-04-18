@@ -774,7 +774,7 @@ BoxHandler.subhandlers = [
         'methods': ['DELETE'],
         'require_auth': False,
         'require_token': True,
-        'require_acl': ['owner'],
+        'require_acl': ['write'],
         'handler': BoxHandler.do_DELETE,
         'accept':['application/json'],
         'content-type':'application/json'        

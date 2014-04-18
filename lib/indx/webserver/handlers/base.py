@@ -352,7 +352,7 @@ class BaseHandler(Resource):
     ## allowed for cors
     def get_cors_methods(self, request):
         # default set of allowed methods
-        return ("POST", "GET", "PUT", "HEAD", "OPTIONS")
+        return ("POST", "GET", "PUT", "HEAD", "OPTIONS", "DELETE")
     def get_cors_origin(self, request):
         # default set of allowed origin hosts
         origin = request.getHeader("origin")
