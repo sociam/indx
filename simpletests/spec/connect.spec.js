@@ -139,8 +139,7 @@ describe('object star stress test', function() {
                         
                         o.set(allbutme);
                         console.log('setting allbutme ', allbutme);
-
-                        //  o.set('all', _(objs).without(o));
+                        o.set('all', objs);
                         return o.save();
                     }); 
                     u.when(saved).then(function() { 
@@ -156,7 +155,7 @@ describe('object star stress test', function() {
         tests.connect().then(function(store) { 
             store.getBox(test_box).then(function(box) { 
                 console.log('getting ids ------------------------------------- !', ids.length);
-                box.getObj(ids[0]).then(function(objs) {
+                box.getObj(ids).then(function(objs) {
                     console.log('got ids ...  ', objs.length);
                     try {
                         // first make sure we got all of the objects back
@@ -164,17 +163,17 @@ describe('object star stress test', function() {
                         // second, let's build up an array
                         objs.map(function(v) { os[v.id] = v; });
                         objs.map(function(o){ 
-                            var keys = o.keys();
-                            console.log('keys > ', keys);
+                            var keys = _(ids).without(o.id);
+                            console.log(o.id, ' - keys > ', keys);
                             // expect(keys.length).toBe(N); // 'all' + 'each of the ids'
-                            // keys.map(function(k) { 
-                            //     expect(o.get(k)).toBeDefined();
-                            //     expect(o.get(k).length).toBe(1);
-                            //     expect(o.get(k)[0]).toBe(os[k]);
-                            // });
-                            // expect(o.get('all')).toBeDefined();
-                            // expect(o.get('all').length).toBe(N);
-                            // expect(o.get('all').difference(objs).length).toBe(0);
+                            keys.map(function(k) { 
+                                 expect(o.get(k)).toBeDefined();
+                                 expect(o.get(k).length).toBe(1);
+                                 expect(o.get(k)[0]).toBe(os[k]);
+                            });
+                            expect(o.get('all')).toBeDefined();
+                            expect(o.get('all').length).toBe(N);
+                            expect(_(o.get('all')).difference(objs).length).toBe(0);
                         });
                         done();
                     } catch(e) { 
