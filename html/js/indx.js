@@ -901,7 +901,7 @@ angular
 				u.assert(typeof objid === 'string' || typeof objid === 'number' || _.isArray(objid), "objid has to be a number or string or an array of such things");
 
 				var ids = _.isArray(objid) ? objid : [objid], this_ = this,
-					fetching = {}, newids = [], objcache = this._objcache(),
+					fetching = {}, newids = [], skeletons = {}, objcache = this._objcache(),
 					chunkN = 50;
 
 				var deserialise_obj = function(id, deferredset, newids_) {
@@ -913,7 +913,6 @@ angular
 					if ((cachedobj = objcache.get(id)) !== undefined) { 
 						return u.dresolve(cachedobj); 
 					}
-
 					// we have someone new 
 					deferredset[id] = u.deferred(); 
 					newids_.push(id);
@@ -940,7 +939,7 @@ angular
 							return u.dreject('couldnt deserialise ', val);
 						});
 						u.when(val_dfds).then(function(resolved_vals) { 
-							this_.set(key,resolved_vals,{silent: silent});
+							into_model.set(key,resolved_vals,{silent: silent});
 							kd.resolve();
 						}).fail(kd.reject);
 						return kd.promise();
@@ -953,12 +952,9 @@ angular
 					this_._ajax('GET', this_.getID(), {'id':ids}).then(function(response) { 
 						_(response.data).map(function(mraw,id) {
 							if (id[0] === '@') { return; }
-							var skeleton = this_._createModelForID(id);
-							deserialise(mraw, skeleton, true, deferredset, newids_).then(function() {
-								deferredset[id].resolve(skeleton);
-							}).fail(function(bail) { 
-								deferredset[id].reject(bail);
-							});
+							var _d = u.deferred();
+							skeletons[id] = this_._createModelForID(id);
+							deserialise(mraw, skeletons[id], true, deferredset, newids_);
 						});
 						// new objects that we ask for don't get returned 
 						ids.map(function(id) { 
@@ -984,14 +980,22 @@ angular
 					var d = u.deferred();
 					fetch(idchunk, fetching, newids).then(function() { 
 						if (newids.length > 0) {
-							return recurse(newids).then(d.resolve).fail(d.reject);
+							recurse(newids).then(d.resolve).fail(d.reject);
+							return;
 						}
-						d.resolve();
+						d.resolve(); // resolve righ taway to go on to the next level
 					}).fail(d.reject);
 					return d.promise();
 				};
 
-				recurse(newids);
+				// now we release all of the deferreds
+				recurse(newids).then(function() { 
+					_(fetching).map(function(dfd, id) {
+						if (dfd.state() == 'pending') {
+							dfd.resolve(skeletons[id]);
+						}
+					});
+				})
 
 				// wrap up!
 				if (_.isArray(objid)) {	return u.when(ds);	} 
