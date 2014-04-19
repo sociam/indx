@@ -2,7 +2,7 @@
 	"name": "datawell",
 	"version": 0.1,
 	"type":["app"],
-	"description": "indx electronic health diary",
+	"description": "electronic health diary",
 	"icons": { 
 		"128": "imgs/icon.png"
 	},
@@ -10,10 +10,6 @@
 		{
 			"name": "eMax",
 			"email":"max@hip.cat"
-		},
-		{
-			"name": "Laura Dragan",
-			"email":"lcd@ecs.soton.ac.uk"
 		},
 		{
 			"name": "Daniel Alexander Smith",
