@@ -120,11 +120,8 @@ describe('creation of an object', function() {
     });
 });
 
-
-
-
 describe('object star stress test', function() { 
-    var N = 4, 
+    var N = 60 || process.env.starN, 
         ids = u.range(N).map(function(x) { return 'star-stress-' + u.guid(5); });
     it('creates the objects', function(done) { 
         console.log(' creates the objects  ', ids.length);
@@ -139,7 +136,7 @@ describe('object star stress test', function() {
 
                         
                         o.set(allbutme);
-                        console.log('setting allbutme ', allbutme);
+                        // console.log('setting allbutme ', allbutme);
                         o.set('all', objs);
                         return o.save();
                     }); 
@@ -165,7 +162,7 @@ describe('object star stress test', function() {
                         objs.map(function(v) { os[v.id] = v; });
                         objs.map(function(o){ 
                             var keys = _(ids).without(o.id);
-                            console.log(o.id, ' - keys > ', keys);
+                            // console.log(o.id, ' - keys > ', keys);
                             // expect(keys.length).toBe(N); // 'all' + 'each of the ids'
                             keys.map(function(k) { 
                                  expect(o.get(k)).toBeDefined();
