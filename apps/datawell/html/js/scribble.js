@@ -4,8 +4,8 @@
 (function() {
 	var vApp = angular.module('vitality');
 	vApp.config(function($stateProvider) {
-		$stateProvider.state('scribble', {
-			url: '/scribble',
+		$stateProvider.state('scribble-test', {
+			url: '/scribble-test',
 			templateUrl: 'partials/scribble-input.html',
 			resolve: {
 				who: function(client, utils) { 
@@ -26,13 +26,12 @@
 			restrict:'E',
 			replace:true,
 			scope:{model:"="},
-			template:'<div class="scribbler"><div class="buttons"><div ng-show="selected_path" class="btn glyphicon glyphicon-remove" ng-click="deleteSelected()"></div><div ng-show="data.length > 0" class="btn glyphicon glyphicon-backward" ng-click="deleteLast()"></div></div></div>',
+			templateUrl:'partials/scribbler.html',
 			controller:function($scope, utils)  {
 
 				var u = utils, 
 					sa = function(fn) { return u.safeApply($scope, fn); },
-					$s = $scope; 
-
+					$s = $scope;
 
 				$scope.$watch('element', function(element) { 
 					console.log('element >> ', el);
@@ -62,8 +61,7 @@
 					var clear_select = function() { 
 						d3.selectAll('.scribble.selected').attr('class', 'scribble');
 						sa(function() { delete $scope.selected_path; });
-					};
-				
+					};				
 					var click_handler = function(evt){
 						var this_ = this;
 						clear_select();
@@ -88,16 +86,19 @@
 						cur_line.push(evt2pos(evt));
 						render();
 					});
-					$scope.deleteSelected = function() { 
+					$scope.deleteSelected = function() {
+						if (!$scope.selected_path) { return; }
 						var selected = $scope.selected_path;
 						var selected_points = d3.select(selected).attr('data-points');
-						window.dd = selected_points;
+						var ii = d3.selectAll('path.scribble')[0].indexOf(selected);
+						data.splice(ii,1);
 						d3.select(selected).remove();
 						clear_select();
 						return true;
 					};
 					$scope.deleteLast = function() { 
 						var paths = svg.selectAll('path.scribble')[0];
+						data.splice(data.length-1,1);
 						if (paths.length > 0) {
 							d3.select(paths[paths.length -1]).remove();
 						}
