@@ -945,7 +945,10 @@ angular
 
 				var fetch = function(ids, skels, deferredset, newids_) {
 					var d = u.deferred();
+					var tstart = new Date().valueOf();
+					// console.log('asking to get >> ', ids);					
 					this_._ajax('GET', this_.getID(), {'id':ids}).then(function(response) { 
+						// console.log('got them , time ', (new Date()).valueOf() - tstart);
 						_(response.data).map(function(mraw,id) {
 							if (id[0] === '@') { return; }
 							var _d = u.deferred();

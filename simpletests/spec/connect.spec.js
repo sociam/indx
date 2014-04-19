@@ -13,9 +13,11 @@ var nodeindx = require('../../lib/services/nodejs/nodeindx'),
     _ = require('underscore'),
     jQuery = require('jquery'),
     tests = require('../common'),
-    test_box = 'c';
+    test_box = process.env.box || 'test';
 
-jasmine.getEnv().defaultTimeoutInterval = 50000;
+console.log("USING BOX ", test_box);
+
+jasmine.getEnv().defaultTimeoutInterval = process.env.timeout && parseInt(process.env.timeout)|| 50000;
 
 describe('indx basic connect', function() { 
     // 
@@ -121,7 +123,7 @@ describe('creation of an object', function() {
 });
 
 describe('object star stress test', function() { 
-    var N = 60 || process.env.starN, 
+    var N = process.env.starN && parseInt(process.env.starN) || 20, 
         ids = u.range(N).map(function(x) { return 'star-stress-' + u.guid(5); });
     it('creates the objects', function(done) { 
         console.log(' creates the objects  ', ids.length);
