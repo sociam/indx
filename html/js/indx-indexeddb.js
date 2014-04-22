@@ -32,6 +32,58 @@ angular
 
 		// (Mozilla has never prefixed these objects, so we don't need window.mozIDB*)		
 		var u = utils, log = utils.log, error = utils.error, debug = utils.debug, jQ = jQuery;
+
+		var IndxModel = Backbone.Model.extend({
+			/// @arg {String} p - Property to fetch
+			/// @return {value || undefined} - Returns this.get('property')[0] if the property exists
+			/// returns the id of this object			
+			getFirst:function(p) { return this.get(p,[])[0]; },
+			peek: function(p) { return this.get(p,[])[0]; },
+			// @arg {String} p - Property to push on to
+			// @arg {value} v - Value to push onto end of p
+			// Pushes v onto array of p if exists otherwise creates new array
+			push:function(p,v) { 
+				var ov = this.get(p);
+				if (ov !== undefined) {
+					ov.push(v);
+					return this.trigger('change:'+p,ov);
+				}
+				this.set(p,[v]);
+			},
+			// @arg {String} p - Property to push on to
+			// @arg {value} v - Value to push onto end of p
+			// Pops last element off of property p
+			pop:function(p) { 
+				var result = this.get(p,[]).pop();
+				this.trigger('change:'+p,this.get(p));
+				return result;
+			},
+			_allValuesToArrays:function(o) {
+				if (!_(o).isObject()) { utils.error(' not an object', o); return o; }
+				var this_ = this;
+				// ?!?! this isn't doing anything (!!)
+				return u.dict(_(o).map(function(v,k) {
+					var val = this_._valueToArray(k,v);
+					if (u.defined(val)) { return [k,val]; }
+					return undefined;
+				}).filter(u.defined));
+			},
+			set:function(k,v,options) {
+				// set is tricky because it can be called like
+				// set('foo',123) or set({foo:123})
+				if (typeof k === 'string') { v = this._valueToArray(k,v);	}
+				else {	k = this._allValuesToArrays(k);	}
+				return Backbone.Model.prototype.set.apply(this,[k,v,options]);
+			},
+			fetch:function() { 
+				console.log('fetch!!!'0;
+				return Backbone.model.fetch.apply(this, arguments);
+			},
+			save:function() {
+				console.log('save!!!'0;
+				return Backbone.model.save.apply(this, arguments);
+			}
+		});
 		
 		function deleteDB(dbid) {
 		    try {
@@ -85,7 +137,7 @@ angular
 						}
 					});
 				}
-			 	var DBModel = Backbone.Model.extend({ database: db, storeName:bid	}),
+			 	var DBModel = IndxModel.extend({ database: db, storeName:bid	}),
 				 	Collection = Backbone.Collection.extend({ 
 				 		database:db,
 				 		storeName:bid,
