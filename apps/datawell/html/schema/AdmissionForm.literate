@@ -1,0 +1,49 @@
+## admissions form
+Category	Patient Details
+	Item	Multiple	Patient Details	Transfer, A&E, Clinic, Routine, GP, NHS, Private
+	Group PatientID
+		Item	NumericCode	Hospital No.
+		Item	String	Patient Name
+		Item	Date	D.O.B.
+		Item	GP	G.P.
+	Group Admission
+		Item	Date	Admission Date
+		Item	SGH Staff	SGH Cardiologist
+		Item	SGH Staff	SGH Cardiac Surgeon
+		Item	Cardiologist	District Cardiologist
+	Item	Multiple	MRSA Status	Pos, Neg, Contact, Unknown
+	Item	String	Allergies
+Category	CC/HPC
+	Item 	NaturalNumber	Age
+	Item	String	Chief Complaint / History of Presenting Complaint
+Category	Cardiac Symptoms
+	Category
+		Item	YN	Angina
+		Category	Pain
+			Item	YN	Typical
+			Item	YN	Atypical
+		Category Duration
+			Item	YN	< 6/12
+			Item	YN	> 6/12
+		Item	YN	Stable
+		Item	YN	Unstable
+		Item 	YN	Worsening
+		Item	YN	Rest Pain
+		Item 	NaturalNumber	Exercise Tol (meters)
+		Item	Range(1,4)	CCS Class
+		Item	YN(String)	Previous MI (Site)
+		Item	YN(Number)	Peak CK
+		Item	YN	Thrombolysis < 1/12
+		Item	YN	SOB
+		Item	YN	PND
+		Item	YN	Orthopnoea
+		Item	YN	Peripheral Oedema
+		Item	YN	Palpitations
+		Item	YN	Dizziness
+		Item	YN	Syncope
+		Category	Smoking
+			Item	YN	Current
+			Item	YN	Ex
+			Item	YN	Never
+		Item	YN	Hyperlibidaemia
+		Item	YN(String)	Latest Cholesterol
