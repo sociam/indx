@@ -1,0 +1,9 @@
+<div class="scribbler">
+	<div class="buttons">
+		<div ng-class="{'btn':true, 'disabled': !selected_path}" 
+			 ng-click="deleteSelected()"> x
+		</div>
+		<div ng-class="{'btn':true, 'disabled':(data.length == 0)}" ng-click="deleteLast()"> &lt; 
+		</div>
+	</div>
+</div>
