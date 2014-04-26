@@ -1,0 +1,22 @@
+<div ng-class="{item:true}" ng-switch on="item.type">
+   	<select ng-switch-when="Multiple" ng-option="item.values" ng-model='selected'></select>
+    <input ng-switch-when="String" type="text" placeholder="{{item.name}}" ng-model='selected'></input>
+    <input ng-switch-when="NaturalNumber" type="text" placeholder="{{item.name}}" ng-model='selected'></input>
+    <div ng-switch-when="YN" type="text">
+    	<input ng-show="false" name="{{item.name}}" type="radio" ng-model="selected" value="" />
+		<label><input name="{{item.name}}" type="radio" ng-model="selected" value="Y" />Y</label>
+    	<label><input name="{{item.name}}" type="radio" ng-model="selected" value="N" />N</label>
+    </div>
+    <div ng-switch-when="YN(String)" type="text">    	
+    	<input ng-show="false" name="{{item.name}}" type="radio" ng-model="selected" value="" />
+		<label><input name="{{item.name}}" type="radio" ng-model="selected" value="Y" />Y
+			<input type="text" ng-disabled="selected!=='Y'" ng-model="ytext"></label>
+    	<label><input name="{{item.name}}" type="radio" ng-model="selected" value="N" />N</label>
+    </div>
+    <div ng-switch-when="YN(Number)" type="text">    	
+    	<input ng-show="false" name="{{item.name}}" type="radio" ng-model="selected" value="" />
+		<label><input name="{{item.name}}" type="radio" ng-model="selected" value="Y" />Y
+			<input type="text" ng-disabled="selected!=='Y'" ng-model="ytext"></label>
+    	<label><input name="{{item.name}}" type="radio" ng-model="selected" value="N" />N</label>
+    </div>
+</div>

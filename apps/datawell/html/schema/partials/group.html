@@ -1,0 +1,6 @@
+<div ng-class="{group:true}">
+	<h2 ng-if="root._meta.title"></h2>
+	<ol>
+		<component ng-repeat="ri in root" root="ri"></component>
+	</ol>
+</div>
