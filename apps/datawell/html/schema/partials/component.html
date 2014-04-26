@@ -1,5 +1,4 @@
 <div ng-class="{component:true}" ng-switch on="root.type">
-	<h3 ng-bind="root.name"></h3>
     <category ng-switch-when="category" root="root"></category>
     <group ng-switch-when="group" root="root"></group>
     <inputitem ng-switch-when="item" item="root"></inputitem>

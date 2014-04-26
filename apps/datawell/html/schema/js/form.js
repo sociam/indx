@@ -50,7 +50,10 @@ angular.module('datawell')
 	            return RecursionHelper.compile(element, function(scope, iElement, iAttrs, controller, transcludeFn){});
 	        },
 	        controller:function($scope) {
-		        console.log('inputitem item is > ', $scope.item);	
+	        	
+	        	$scope.$watch('item.selected', function(sel) { 
+	        		console.log('scope item selected >> ', $scope.item, $scope.item.selected); 
+	        	});
 	        }
 	    };
 	});

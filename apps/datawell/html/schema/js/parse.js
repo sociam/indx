@@ -15,7 +15,24 @@ var parseItem = function(s) {
 	if (si[0].trim() == 'Form') { return { name: si[1] && si[1].trim(), version:si[2] }; }
 	if (si[0].trim() == 'Category') { return { type: 'category', name: si[1] && si[1].trim() }; }
 	if (si[0].trim() == 'Group') { return { type: 'group', name: si[1] && si[1].trim() }; }
-	if (si[0].trim() == 'Item') { return { type: 'item', valuetype: si[1], name: si[2], values: si[3] && si[3].split(',').map(function(x) { return x.trim(); }) }};
+	if (si[0].trim() == 'Item') { 
+		var toreturn = { 
+			type: 'item', 
+			valuetype:si[1] , 
+			name: si[2], 
+			values: si[3] && si[3].split(',').map(function(x) { return x.trim(); }) 
+		};	
+		if (toreturn.valuetype.indexOf('Range') == 0) {	
+			var minmaxre = /Range\(([\d]+),([\d]+)\)/,
+				match = minmaxre.exec(toreturn.valuetype);
+			if (match !== null) {
+				toreturn.rangemin = parseInt(match[1]);
+				toreturn.rangemax = parseInt(match[2]);
+			}
+			toreturn.valuetype='Range';
+		}
+		return toreturn;
+	};
 	return undefined;
 }
 
