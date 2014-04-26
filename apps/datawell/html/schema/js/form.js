@@ -22,12 +22,35 @@ angular.module('datawell')
 				}
 			}
 		};
-	}).directive('component', function() { 
-		return { restrict:'E', scope:{root:'='}, templateUrl:'partials/component.html' };	
-	}).directive('group', function() { 
-		return { replace:true, restrict:'E', scope:{root:'='}, templateUrl:'partials/group.html' };	
-	}).directive('category', function() { 
-		return { replace:true, restrict:'E', scope:{root:'='}, templateUrl:'partials/category.html' };	
-	}).directive('inputItem', function() { 
-		return { replace:true, restrict:'E', scope:{root:'='}, templateUrl:'partials/inputitem.html' };
+	}).directive('component', function(RecursionHelper) { 
+		return { 
+			restrict:'E', scope:{root:'='}, templateUrl:'partials/component.html',
+			compile: function(element) {
+	            return RecursionHelper.compile(element, function(scope, iElement, iAttrs, controller, transcludeFn){});
+	        },
+	        controller:function($scope) {
+	        	console.log('root is > ', $scope.root);
+	        }
+		};	
+	}).directive('group', function(RecursionHelper) { 
+		return { replace:true, restrict:'E', scope:{root:'='}, templateUrl:'partials/group.html',
+			compile: function(element) {
+	            return RecursionHelper.compile(element, function(scope, iElement, iAttrs, controller, transcludeFn){});
+	        }
+		 };	
+	}).directive('category', function(RecursionHelper) { 
+		return { replace:true, restrict:'E', scope:{root:'='}, templateUrl:'partials/category.html',
+			compile: function(element) {
+	            return RecursionHelper.compile(element, function(scope, iElement, iAttrs, controller, transcludeFn){});
+	        }
+	    };
+	}).directive('inputitem', function(RecursionHelper) { 
+		return { replace:true, restrict:'E', scope:{item:'='}, templateUrl:'partials/inputitem.html',
+			compile: function(element) {
+	            return RecursionHelper.compile(element, function(scope, iElement, iAttrs, controller, transcludeFn){});
+	        },
+	        controller:function($scope) {
+		        console.log('inputitem item is > ', $scope.item);	
+	        }
+	    };
 	});

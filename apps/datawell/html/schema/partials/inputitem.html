@@ -1,5 +1,7 @@
-<div ng-class="{item:true}" ng-switch on="item.type">
-   	<select ng-switch-when="Multiple" ng-option="item.values" ng-model='selected'></select>
+<div ng-class="{item:true}" ng-switch on="item.valuetype">
+   	<select ng-switch-when="Multiple" ng-options="v for v in item.values" ng-model='selected'>
+    </select>
+    <div ng-repeat="v in item.values" ng-bind="v"></div>
     <input ng-switch-when="String" type="text" placeholder="{{item.name}}" ng-model='selected'></input>
     <input ng-switch-when="NaturalNumber" type="text" placeholder="{{item.name}}" ng-model='selected'></input>
     <div ng-switch-when="YN" type="text">

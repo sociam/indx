@@ -1,5 +1,5 @@
 <div ng-class="{category:true}">
-	<h2 ng-if="root._meta.title"></h2>
+	<h2 ng-if="root.title" ng-bind="root.title"></h2>
 	<ol>
 		<component ng-repeat="ri in root" root="ri"></component>
 	</ol>

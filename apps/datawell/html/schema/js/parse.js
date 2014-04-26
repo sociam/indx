@@ -15,7 +15,7 @@ var parseItem = function(s) {
 	if (si[0].trim() == 'Form') { return { name: si[1] && si[1].trim(), version:si[2] }; }
 	if (si[0].trim() == 'Category') { return { type: 'category', name: si[1] && si[1].trim() }; }
 	if (si[0].trim() == 'Group') { return { type: 'group', name: si[1] && si[1].trim() }; }
-	if (si[0].trim() == 'Item') { return { type: 'item', type: si[1], name: si[2], values: si[3] && si[3].split(',').map(function(x) { return x.trim(); }) }};
+	if (si[0].trim() == 'Item') { return { type: 'item', valuetype: si[1], name: si[2], values: si[3] && si[3].split(',').map(function(x) { return x.trim(); }) }};
 	return undefined;
 }
 
@@ -45,7 +45,7 @@ angular.module('datawell')
 					var newlevel = [];
 					stack[stack.length-1].push(newlevel);
 					stack.push(newlevel);
-					if (meta !== undefined) { newlevel._meta = meta; }
+					if (meta !== undefined) { _(newlevel).extend(meta); }
 				}
 				stack[stack.length-1].push(parseItem(l.trim()));
 				lastindent = leading_indents;

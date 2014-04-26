@@ -1,6 +1,7 @@
-<div ng-class="{component:true}" ng-switch on="root._meta.type">
+<div ng-class="{component:true}" ng-switch on="root.type">
+	<h3 ng-bind="root.name"></h3>
     <category ng-switch-when="category" root="root"></category>
     <group ng-switch-when="group" root="root"></group>
-    <input-item ng-switch-when="item" root="root"></input-item>
-    <div ng-switch-default unknown-type="root"> {{ root._meta.title }} </div>
+    <inputitem ng-switch-when="item" item="root"></inputitem>
+    <div ng-switch-default unknown-type="{{root.type}}"> {{ root.name }} </div>
 </div>
