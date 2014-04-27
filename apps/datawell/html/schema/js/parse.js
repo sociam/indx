@@ -12,7 +12,7 @@ var countLeadIndents = function(s) {
 
 var parseItem = function(s) {
 	var si = s.split('\t');
-	if (si[0].trim() == 'Form') { return { name: si[1] && si[1].trim(), version:si[2] }; }
+	if (si[0].trim() == 'Form') { return { type:'form', name: si[1] && si[1].trim(), version:si[2] }; }
 	if (si[0].trim() == 'Category') { return { type: 'category', name: si[1] && si[1].trim() }; }
 	if (si[0].trim() == 'Group') { return { type: 'group', name: si[1] && si[1].trim() }; }
 	if (si[0].trim() == 'Item') { 
@@ -39,6 +39,7 @@ var parseItem = function(s) {
 angular.module('datawell')
 	.factory('fmlParser', function() {
 		var parse = function(text){
+
 			var lines = 
 				text.split('\n')
 				.filter(function(x) { return x[0] !== '#' && x.length > 0; });
@@ -55,10 +56,10 @@ angular.module('datawell')
 				if (leading_indents > lastindent) {
 					var meta, last = stack[stack.length-1].slice(-1)[0];
 					// pop las tthing as it was the title of this
-					if ((last && last.type == 'category') || (last && last.type == 'group')) { 
-						// pop up the last one
-						meta = stack[stack.length-1].pop();
-					}
+					// if ((last && ['category', 'group', 'form'].indexOf(last.type) >= 0)) { 
+					// 	// pop up the last one
+					meta = stack[stack.length-1].pop();
+					// }
 					var newlevel = [];
 					stack[stack.length-1].push(newlevel);
 					stack.push(newlevel);

@@ -1,6 +1,10 @@
 <div ng-class="{component:true}" ng-switch on="root.type">
     <category ng-switch-when="category" root="root"></category>
     <group ng-switch-when="group" root="root"></group>
-    <inputitem ng-switch-when="item" item="root"></inputitem>
+    <inputitem ng-switch-when="item" item="root" class="row"></inputitem>
+    <div ng-switch-when="form" class="container">
+    	<h1 ng-bind='root.name'></h1>
+	    <component ng-repeat="ri in root" root="ri"></component>
+    </div>
     <div ng-switch-default unknown-type="{{root.type}}"> {{ root.name }} </div>
 </div>

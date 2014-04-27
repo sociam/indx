@@ -1,24 +1,23 @@
 ## admissions form
 Form	SGH Patient Admission Form	v.0.1
-Category	Patient Details
-	Item	Multiple	Patient Details	Transfer, A&E, Clinic, Routine, GP, NHS, Private
-	Group	PatientID
-		Item	NumericCode	Hospital No.
-		Item	String	Patient Name
-		Item	Date	D.O.B.
-		Item	GP	G.P.
-	Group	Admission
-		Item	Date	Admission Date
-		Item	Person	SGH Staff	SGH Cardiologist
-		Item	Person	SGH Staff	SGH Cardiac Surgeon
-		Item	Person	*	District Cardiologist
-	Item	Multiple	MRSA Status	Pos, Neg, Contact, Unknown
-	Item	String	Allergies
-Category	CC/HPC
-	Item 	NaturalNumber	Age
-	Item	String	Chief Complaint / History of Presenting Complaint
-Category	Cardiac Symptoms
-	Category	Set 1
+	Category	Patient Details
+		Item	Multiple	Patient Details	Transfer, A&E, Clinic, Routine, GP, NHS, Private
+		Group	PatientID
+			Item	String	Hospital No.
+			Item	String	Patient Name
+			Item	Date	D.O.B.
+			Item	String	G.P.
+		Group	Admission
+			Item	Date	Admission Date
+			Item	Person	SGH Staff	SGH Cardiologist
+			Item	Person	SGH Staff	SGH Cardiac Surgeon
+			Item	Person	*	District Cardiologist
+		Item	Multiple	MRSA Status	Pos, Neg, Contact, Unknown
+		Item	String	Allergies
+	Category	CC/HPC
+		Item 	NaturalNumber	Age
+		Item	Essay	Chief Complaint / History of Presenting Complaint
+	Category	Cardiac Symptoms
 		Item	YN	Angina
 		Category	Pain
 			Item	YN	Typical
@@ -31,8 +30,7 @@ Category	Cardiac Symptoms
 		Item 	YN	Worsening
 		Item	YN	Rest Pain
 		Item 	NaturalNumber	Exercise Tol (meters)
-		Item	Range(0,4)	CCS Class
-	Category	Set 2
+		Item	Multiple	CCS Class	0,1,2,3,4
 		Item	YN(String)	Previous MI (Site)
 		Item	YN(Number)	Peak CK
 		Item	YN	Thrombolysis < 1/12
@@ -43,7 +41,6 @@ Category	Cardiac Symptoms
 		Item	YN	Palpitations
 		Item	YN	Dizziness
 		Item	YN	Syncope
-	Category	Set 3
 		Category	Smoking
 			Item	YN	Current
 			Item	YN	Ex
