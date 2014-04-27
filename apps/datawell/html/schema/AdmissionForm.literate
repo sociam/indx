@@ -1,17 +1,16 @@
 ## admissions form
 Form	SGH Patient Admission Form	v.0.1
 	Category	Patient Details
-		Item	Multiple	Patient Details	Transfer, A&E, Clinic, Routine, GP, NHS, Private
-		Group	PatientID
-			Item	String	Hospital No.
-			Item	String	Patient Name
-			Item	Date	D.O.B.
-			Item	String	G.P.
+		Item	Multiple	Arrival	Transfer, A&E, Clinic, Routine, GP, NHS, Private
+		Item	String	Hospital No.
+		Item	String	Patient Name
+		Item	Date	D.O.B.
+		Item	String	G.P.
 		Group	Admission
 			Item	Date	Admission Date
-			Item	Person	SGH Staff	SGH Cardiologist
-			Item	Person	SGH Staff	SGH Cardiac Surgeon
-			Item	Person	*	District Cardiologist
+			Item	String	Cardiologist
+			Item	String	Cardiac Surgeon
+			Item	String	District Cardiologist
 		Item	Multiple	MRSA Status	Pos, Neg, Contact, Unknown
 		Item	String	Allergies
 	Category	CC/HPC
