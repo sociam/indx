@@ -47,10 +47,12 @@ angular.module('datawell')
 	}).directive('inputitem', function(RecursionHelper) { 
 		return { replace:true, restrict:'E', scope:{item:'='}, templateUrl:'partials/inputitem.html',
 			compile: function(element) {
-	            return RecursionHelper.compile(element, function(scope, iElement, iAttrs, controller, transcludeFn){});
+	            return RecursionHelper.compile(element, function(scope, iElement, iAttrs, controller, transcludeFn){
+	            	// console.log('iElement > ', iElement[0]);
+	            	// console.log('')
+	            });
 	        },
-	        controller:function($scope) {
-	        	
+	        controller:function($scope) {	        	
 	        	$scope.$watch('item.selected', function(sel) { 
 	        		console.log('scope item selected >> ', $scope.item, $scope.item.selected); 
 	        	});
