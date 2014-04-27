@@ -20,6 +20,7 @@ angular.module('datawell')
 				} else {
 					console.error('no src provided');
 				}
+				window.u = utils;
 			}
 		};
 	}).directive('component', function(RecursionHelper) { 

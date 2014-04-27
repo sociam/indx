@@ -177,11 +177,109 @@ angular
 					app:this.box.store.get('app'),
 					token:this.box.get('token'),
 					box:this.box.getID()
-				}, url = [this.box.store._getBaseURL(), this.box.id, 'files'].join('/') + '?' + jQ.param(params);
+				}, url = [this. 	box.store._getBaseURL(), this.box.id, 'files'].join('/') + '?' + jQ.param(params);
 				// u.debug("IMAGE URL IS ", url, params);
 				return url;
 			}
 		});
+
+		var ObjProxy = function(get_deferred) {
+			var this_ = this;
+			this.chain = [];
+			this.thenchain = [];
+			this.failchain = [];
+			get_deferred.then(function(obj) {
+				var recurse = function(left) {
+					if (left.length === 0) { 
+						return this_.thenchain.map(function(x) { x(obj); });
+					}	
+					left[0](obj).then(function() { recurse(left.slice(1)); })
+						.fail(function(err) {  this_.failchain.map(function(x) { x(err); }); });
+				};
+				recurse(this_.chain);
+			}).fail(function(err) { 
+				console.error('error in getting '); 
+				this_.failchain.map(function(f) { f(err); }); 
+			});
+		};
+		ObjProxy.prototype = {
+			get:function(field, continuation) {
+				this.chain.push(function(obj) { 
+					var retval;
+					if (_.isArray(obj)) {
+						retval = continuation(obj.map(function(obj_i) { return obj_i.get(field); }));
+						return $.when(retval); // all objects treated as a deferred
+					} else {
+						retval = continuation(obj.get(field));
+						return $.when(retval);
+					}
+				});
+				return this;
+			},
+			set:function(obj) {
+				var a = _.toArray(arguments);
+				this.chain.push(function(obj) { 
+					if (_.isArray(obj)) {
+						return u.when(obj.map(function(obj_i) { return obj_i.set.apply(obj_i, a); }));
+					} else {
+						return obj.set.apply(obj, a);
+					}
+				});
+				return this;
+			},
+			save:function() {
+				var a = _.toArray(arguments);
+				this.chain.push(function(obj) { 
+					if (_.isArray(obj)) {
+						return u.when(obj.map(function(obj_i) { return obj_i.save(); }));
+					} else {
+						return obj.save();
+					}
+				});
+				return this;
+			},
+			destroy:function(obj) {
+				var a = _.toArray(arguments);
+				this.chain.push(function(obj) { 
+					if (_.isArray(obj)) {
+						return u.when(obj.map(function(obj_i) { return obj_i.destroy(); }));
+					} else {
+						return obj.destroy();
+					}
+				});
+				return this;	
+			},
+			on:function() {
+				var a = _.toArray(arguments);
+				this.chain.push(function(obj) { 
+					if (_.isArray(obj)) {
+						return u.when(obj.map(function(obj_i) { return obj_i.on.apply(obj_i, a); }));
+					} else {
+						return obj.on.apply(obj, a);
+					}
+				});
+				return this;		
+			},
+			off:function() {
+				var a = _.toArray(arguments);
+				this.chain.push(function(obj) { 
+					if (_.isArray(obj)) {
+						return u.when(obj.map(function(obj_i) { return obj_i.off.apply(obj_i, a); }));
+					} else {
+						return obj.off.apply(obj, a);
+					}
+				});
+				return this;		
+			},			
+			then:function(f) {
+				this.thenchain.push(function(obj) { f(obj);  });
+				return this;
+			},
+			fail:function(f) { 
+				this.failchain.push(function(err) { f(err);  });
+				return this;
+			}
+		};
 
 		// MAP OF THIS MODUULE :::::::::::::: -----
 		//
@@ -890,6 +988,11 @@ angular
 				this._objcache().add(model);
 				return model;
 			},
+			obj:function(objid) {
+				// proxy version
+				var dfd = this.getObj(objid);
+				return new ObjProxy(dfd);
+			},
 			/// @arg {string|string[]} objid - id or ids of objects to retrieve
 			/// retrieves all of the objects by their ids specified from the server into the cache if not loaded, otherwise just returns the cached models
 			/// @then({Obj|Obj[]} Array of loaded objects)
@@ -911,6 +1014,8 @@ angular
 					// if not currently fetching but already fetched ... 
 					var cachedobj;
 					if ((cachedobj = objcache.get(id)) !== undefined) { 
+						deferredset[id] = u.dresolve(cachedobj); // create a new placeholder 
+						skelmodels[id] = cachedobj;						
 						return cachedobj; 
 					}
 					// we have someone new 
