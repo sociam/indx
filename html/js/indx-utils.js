@@ -16,6 +16,9 @@
                 	L.map(function(l) { o[l] = true; });
                 	return o;
                 },
+				toQueryTime : function(date) {	
+					return date.toISOString().slice(0,-5);	// chop off the .000Z or queries don't like it
+				}, 
                 zip:function(a1,a2) {
                 	return this.range(Math.min(a1.length,a2.length)).map(function(i) {
                 		return [a1[i],a2[i]];
@@ -105,6 +108,14 @@
 						}).fail(d.reject);
 					}).fail(d.reject);
 					return d.promise();
+				},
+				quickSame:function(a,b) { 
+					// a, b are two Arrays
+					if (a.length !== b.length) { return false; }
+					for (var i = 0; i < a.length; i++) {
+						if (a[i] !== b[i]) return false;
+					}
+					return true;
 				},
 				safeApply: function($scope, fn) { if (window) { window.setTimeout(function() { $scope.$apply(fn); }, 0); } },
 				log : function() { try { if (DEBUG_LEVEL >= LOG) { console.log.apply(console,arguments);  }} catch(e) { } },

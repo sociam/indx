@@ -328,6 +328,7 @@ class ObjectStoreAsync:
 
 
     def combine_long_string_rows(self, rows, diff_row = False):
+        logging.debug("Objectstore combine_long_string_rows for len(rows) = {0}, diff_row = {1}".format(len(rows), diff_row))
 
         new_rows = []
         prev_uuid = None
@@ -363,6 +364,7 @@ class ObjectStoreAsync:
         if len(this_row) > 0:
             new_rows.append(this_row)
         
+        logging.debug("Objectstore combine_long_string_rows completed, len(new_rows) = {0}".format(len(new_rows)))
         return new_rows
 
 
@@ -482,7 +484,7 @@ class ObjectStoreAsync:
 
             def conn_cb(conn):
                 logging.debug("Objectstore get_latest, conn_cb")
-                conn.runQuery("SELECT triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype, uuid FROM wb_v_latest_triples", []).addCallbacks(lambda rows2: row_cb(self.combine_long_string_rows(rows2), version), err_cb) # ORDER BY is implicit, defined by the view, so no need to override it here
+                conn.runQuery("SELECT triple_order, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype, uuid, chunk FROM wb_v_latest_triples", []).addCallbacks(lambda rows2: row_cb(self.combine_long_string_rows(rows2), version), err_cb) # ORDER BY is implicit, defined by the view, so no need to override it here
             
             self.conns['conn']().addCallbacks(conn_cb, result_d.errback)
 
@@ -510,10 +512,10 @@ class ObjectStoreAsync:
         self.debug("ObjectStore _get_diff_versions, versions: {0}".format(versions))
    
         if len(versions) == 1:
-            query = "SELECT * FROM wb_v_diffs WHERE version = %s"
+            query = "SELECT version, diff_type, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype, object_order, uuid, chunk FROM wb_v_diffs WHERE version = %s"
             params = [versions[0]]
         else:
-            query = "SELECT * FROM wb_v_diffs WHERE version = ANY(%s)"
+            query = "SELECT version, diff_type, subject, predicate, obj_value, obj_type, obj_lang, obj_datatype, object_order, uuid, chunk FROM wb_v_diffs WHERE version = ANY(%s)"
             params = [versions]
 
 
@@ -928,7 +930,7 @@ class ObjectStoreAsync:
 
                 elif uri in existing_diff['deleted']:
                     subkey = "deleted"
-                    del existing_diff['deleted'][uri]
+                    existing_diff['deleted'].remove(uri)
 
                     if uri not in existing_diff['changed']:
                         existing_diff['changed'][uri] = {}

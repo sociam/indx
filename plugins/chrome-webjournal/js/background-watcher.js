@@ -5,7 +5,9 @@
     var OBJ_TYPE = localStorage.indx_webjournal_type || 'web-page-view';
     var OBJ_ID = localStorage.indx_webjournal_id || 'my-web-journal';
     var tabthumbs = {};
+    var MIN_DURATION = 1000; // filters switches for min duration
 
+    window.tt = tabthumbs;
     var app = angular.module('webjournal').factory('watcher', function(utils, client, entities, pluginUtils, $injector) {
         var u = utils, pu = pluginUtils;
 
@@ -17,22 +19,28 @@
                 this._fetching_thumbnail = {};
                 this.bind('user-action', function() { this_.handle_action.apply(this_, arguments); });
                 var _trigger = function(windowid, tabid, tab) {
+                    var url;
                     var _done = function() {
-                       this_.trigger('user-action', { url: tab.url, title: tab.title, favicon:tab.favIconUrl, tabid:tab.id, windowid:windowid, thumbnail:tabthumbs[tab.url] });
+                       this_.trigger('user-action', { url: url, title: tab.title, favicon:tab.favIconUrl, tabid:tab.id, windowid:windowid, thumbnail:tabthumbs[url] });
                     };
                     var _thumbs = function() { 
-                        // console.log("_thumbs", tab.url, tab.status, 'already have? ', tabthumbs[tab.url] !== undefined);
-                        if (tabthumbs[tab.url]) {  _done(); } 
-                        else if (tab.status == 'complete' && !_fetching[tab.url]) {
+                        // console.log("_thumbs", url, tab.status, 'already have? ', tabthumbs[url] !== undefined);
+                        console.log('tab status ', tab.url, tab.status);
+                        if (tabthumbs[url]) {  
+                            console.log(url + ' - tabthumbs already ');
+                            _done(); 
+                        } 
+                        else if (tab.status == 'complete' && !_fetching[url]) {
                             // no thumb, loaded so let's capture
-                            // console.log('getting thumb >> ');
-                            _fetching[tab.url] = true;
-                            this_._getThumbnail(windowid, tab.url).then(function(thumbnail_model) {
-                                // console.log('continuation thumb ', thumbnail_model.slice(0,10)); // thumbnail_model.id, _(thumbnail_model.attributes).keys().length);
-                                delete _fetching[tab.url];
+                            console.log('getting thumb >> ', url);
+                            _fetching[url] = true;
+                            this_._getThumbnail(windowid, url).then(function(thumbnail_model) {
+                                delete _fetching[url];
                                 _done();
                             }).fail(function(bail) {  
-                                console.error('error with thumbnail, ', bail);  
+                                delete _fetching[url];                                
+                                console.error('error with thumbnail, ', bail);
+                                // _done();
                             });
                         } else {
                             // loading, let's just start and try again
@@ -40,13 +48,17 @@
                             // _done();
                         }
                     };
-                    if (tab) { return _thumbs(); }
+                    if (tab) { 
+                        url = tab.url;
+                        return _thumbs(); 
+                    }
                     if (tabid) { 
                         chrome.tabs.get(tabid, function(_tab) { 
                             tab = _tab; 
-                            if (tab) { return _thumbs();  }
-                            this_.trigger('user-action', undefined);
-
+                            if (tab) { 
+                                url = tab.url;
+                                return _thumbs();  
+                            }
                         });
                     } else {
                         this_.trigger('user-action', undefined);
@@ -65,11 +77,13 @@
                 // removed window, meaning focus lost
                 chrome.windows.onRemoved.addListener(function(window) { this_.trigger('user-action', undefined); });
                 // window focus changed
-                chrome.windows.onFocusChanged.addListener(function(w) {
-                    if (w && w.id) {
-                        // console.log('window created >> ', w);
-                        chrome.tabs.query({windowId:w.id, active:true}, function(tab) { 
-                            if (tab) { _trigger(w.id, undefined, tab);  } else { 
+                chrome.windows.onFocusChanged.addListener(function(wid) {
+                    if (wid) {
+                        chrome.tabs.query({windowId:wid, active:true}, function(tab) { 
+                            if (tab) { 
+                                console.log('trigger --', wid, tab.url);
+                                _trigger(wid, undefined, tab[0]);
+                            } else { 
                                 this_.trigger('user-action', undefined);  
                             }
                         });
@@ -78,14 +92,14 @@
                 // tab selection changed
                 chrome.tabs.onActivated.addListener(function(activeInfo) {
                     var tabId = activeInfo.tabId, windowId = activeInfo.windowId;
+                    console.log('onactivated > wid ' ,windowId, ' tabId ', tabId );
                     _trigger(windowId, tabId);
-
                 });
                 // updated a tab 
                 chrome.tabs.onUpdated.addListener(function(tabid, changeinfo, tab) {
-                    // console.info('tab_updated', t.url, changeinfo.status);
-                    if (changeinfo.status == 'loading') { return; }
-                    _trigger(tab.windowId, tabid);
+                    console.info('tab_updated', tab.url, changeinfo);
+                    if (changeinfo.status !== 'complete') { return; }
+                    _trigger(tab.windowId, tabid, tab);
                     // this_.trigger('user-action', { url: tab.url, title: tab.title, tabid: tab.id, favicon:tab.favIconUrl, windowid:window.id });
                 });
 
@@ -93,10 +107,11 @@
                 // todo: start it up on current focused window.
                 //  ---------------------------------------
                 this.on('connection-error', function(e) {  
-                    pu.setErrorBadge('connection error -- attempting reconnect');
-                    this_._attempt_reconnect()
-                        .then(function() {  this_._trigger_connection_ok(); })
-                        .fail(function() { console.error('getToken failed :( '); });
+                    pu.setErrorBadge('connection error -- ');
+                    if (this_.box) { this_.box.disconnect(); }
+                    // this_._attempt_reconnect()
+                    //     .then(function() {  this_._trigger_connection_ok(); })
+                    //     .fail(function() { console.error('getToken failed :( '); });
                 });
                 window.watcher = this;
             },
@@ -109,56 +124,31 @@
                     this._fetching_thumbnail[url].then(function() { d.resolve(tabthumbs[url]);    }).fail(d.reject);
                 } else {
                     this._fetching_thumbnail[url] = d;
-                    chrome.tabs.captureVisibleTab(wid, { format:'png' }, function(dataUrl) {
-                        if (dataUrl) {
-                            u.resizeImage(dataUrl, 90, 90).then(function(smallerDataUri) {
-                                tabthumbs[url] = smallerDataUri;
-                                delete this_._fetching_thumbnail[url];
-                                d.resolve(smallerDataUri); 
-                            }).fail(function() { console.error('failed resizing '); d.reject(); });
-                        } else { 
-                            console.log('couldnt get thumbnail -- ', wid, url);
-                            d.resolve(); 
+                    console.log('query ', wid);
+                    chrome.tabs.query({windowId:wid, active:true}, function(tabs) { 
+                        if (tabs && tabs[0] && tabs[0].url == url) { 
+                            chrome.tabs.captureVisibleTab(wid, { format:'png' }, function(dataUrl) {
+                                if (dataUrl) {
+                                    u.resizeImage(dataUrl, 120, 120).then(function(smallerDataUri) {
+                                        tabthumbs[url] = smallerDataUri;
+                                        delete this_._fetching_thumbnail[url];
+                                        d.resolve(smallerDataUri); 
+                                    }).fail(function() { console.error('failed resizing '); d.reject(); });
+                                } else { 
+                                    console.log('couldnt get thumbnail -- ', wid, url);
+                                    d.resolve(); 
+                                }
+                            });
+                        } else {
+                            console.info('active wasnt on the right tab ', url, ' vs ', tabs && tabs[0] && tabs[0].url, tabs);
+                            d.reject();
                         }
                     });
                 }
                 return d.promise();
             },
-            _attempt_reconnect:function() {
-                // very suspicious about this >_< .. TODO look at 
-                if (this._timeout !== undefined) { 
-                    console.log('timeout is not undefined >> ', this._timeout);
-                    return u.when(this._timeout);   
-                }
-                if (!this.store) { return u.dreject(); }
-
-                var this_ = this, d = u.deferred();
-                if (!this.box) { 
-                    this_._timeout = d;
-                    this._load_box().then(function() { 
-                        console.error('thenning loadbox');
-                        delete this_._timeout; 
-                        d.resolve();
-                    }).fail(function() { 
-                        console.error('loadbox failing on reconnect');
-                        delete this_._timeout; 
-                        console.log('this timeout ', this_._timeout)
-                        d.reject();
-                    });
-                    return d.promise();
-                }
-
-                console.info('Attempting to refresh tokens ... ');
-                this._timeout = d;
-                this.box.reconnect().then(function() { 
-                    delete this_._timeout;
-                    d.resolve();
-                }).fail(function() { 
-                    delete this_._timeout;
-                    console.log('getToken fail and timeout ', this_._timeout);
-                    d.reject();
-                });
-                return d.promise();
+            _record_duration:function(rec) {
+                return rec.peek('tend') && rec.peek('tstart') && rec.peek('tend').valueOf() - rec.peek('tstart').valueOf() || 0;
             },
             _init_history:function() { 
                 // keep history around for plugins etc 
@@ -166,10 +156,11 @@
                 if (!this._history) { this._history = []; }
                 var N = 25, records = this._history, threshold_secs = 0; //.80;
                 this.on('new-record', function(record) {
-                    console.log('new record >> ', record);
+                    console.log('new record >> ', record.id, record.peek('what').id, record.peek('tend').valueOf() - record.peek('tstart').valueOf());
                     if (records.indexOf(record) >= 0) {
                         var old_indx = records.indexOf(record);
                         records.splice(0, 0, records.splice(old_indx,1)[0]);
+                        this.trigger('updated-history', records);
                     } else {
                         if (pu.duration_secs(record) > threshold_secs) { 
                             records.splice(0, 0, record);
@@ -182,7 +173,7 @@
             _get_history:function() { return this._history || [];  },
             _load_box:function() {
                 var bid = pu.getBoxName(), d = u.deferred(), this_ = this, store = this.store;
-                // console.log('load box !! ', bid);
+                console.log('load box !! ', bid);
                 if (bid && store) {
                     store.getBox(bid).then(function(box) {
                         // TODO: need to get username from the box//token
@@ -190,9 +181,11 @@
                             jQuery.when(jobj.save()).then(function() { 
                                 this_.box = box;
                                 this_.set('journal', jobj);
+                                this_.trigger('change:box', box);
                                 d.resolve(box); 
                             }).fail(d.reject); 
                         }).fail(d.reject); 
+                        // get user id out of the token                        
                         // box.getObj([OBJ_ID, store.get('username')]).then(function(objuser) {
                         //     var jobj = objuser[0], whom = objuser[1];
                         //     jQuery.when(jobj.save(), whom.save()).then(function() { 
@@ -202,7 +195,7 @@
                         //     }).fail(d.reject); 
                         // }).fail(d.reject); 
                     }).fail(function(err) { 
-                        console.error('_load_box fail getBox(', bid, ')', error);
+                        console.error('_load_box fail getBox(', bid, ')', err);
                         d.reject();
                     });
                 } else { 
@@ -211,11 +204,15 @@
                  }
                 return d.promise();
             },
+            get_box: function() { 
+               return this.box; 
+            },
             set_store:function(store) {
                 var this_ = this;
                 this.store = store;
+                this.trigger('change:store', store);
                 if (!store) { 
-                    delete this.box; 
+                    delete this.box;
                     this.unset('journal');
                     return;
                 }
@@ -250,7 +247,6 @@
                         });
                     } else if (tabinfo) {
                         // different now
-                        console.info('new record!');
                         if (this_.current_record) {
                             // finalise last one
                             this_.current_record.set({tend:now});
@@ -261,11 +257,11 @@
                             this_.trigger('new-record', this_.current_record);
                         }
                         delete this_.current_record;
-                        if (tabinfo) {
+                        if (tabinfo && this_.passes_url_filter(url)) {
                             this_.make_record(now, now, url, title, tabinfo).then(function(record) {
                                 this_.current_record = record;
                                 this_.trigger('new-record', record);
-                                this_._trigger_connection_ok();
+                                // this_._trigger_connection_ok();
                             }).fail(function(x) { 
                                 console.error(' error on _make_record >> ', x);
                                 this_._trigger_connection_error('error on make record');
@@ -274,42 +270,43 @@
                     }
                 });
             },
+            passes_url_filter:function(url) { 
+                // todo flesh this out in nice ways
+                var filters = [
+                    url.length >= 0,
+                    url.indexOf('chrome') !== 0
+                ];
+                return filters.reduce(function(a,b) { return a && b; }, true);
+            },
             make_record:function(tstart, tend, url, title, tabinfo) {
                 // console.log('make record >> ', options, options.location);
-
-                if (!this.box) { return u.dreject(); }
-                var geowatcher = $injector.get('geowatcher'), d = u.deferred(), this_ = this;
-                this.getDoc(url,title,tabinfo).then(function(docmodel) { 
-                    entities.activities.make1(this_.box, 
-                      'browse',
-                      this.whom, tstart, tend,
-                      undefined, undefined, undefined,
-                      geowatcher.watcher && geowatcher.watcher.get('current_position'), 
-                      { what: docmodel }).then(d.resolve).fail(d.reject);
-                }).fail(d.reject);
+                var dbox = this.box ? u.dresolve(this.box) : this._load_box(), 
+                    d = u.deferred(), this_ = this;
+                var geowatcher = $injector.get('geowatcher');
+                dbox.then(function(box) {
+                    this_.getDoc(url,title,tabinfo).then(function(docmodel) { 
+                        entities.activities.make1(box, 
+                          'browse',
+                          this_.whom, tstart, tend,
+                          undefined, undefined, undefined,
+                          geowatcher.watcher && geowatcher.watcher.get('current_position'), 
+                          { what: docmodel }).then(d.resolve).fail(d.reject);
+                    }).fail(d.reject);
+                }).fail(function(bail) { 
+                    console.error('make_record error on dbox ', bail);
+                    d.reject();
+                });
                 return d.promise();
             },
             getDoc:function(url,title,tabinfo) {
-                var d = u.deferred(), this_ = this;
-                entities.documents.getWebPage(this.box, url).then(function(results) {
-                    if (results && results.length) { 
-                        // console.log('updating page > and saving', results[0].id, tabinfo);
-                        if ( (!results[0].peek('thumbnail') && tabinfo.thumbnail) || 
-                             (!results[0].peek('favicon') && tabinfo.favicon) ) { 
-                            results[0].set(tabinfo); 
-                            return results[0].save().then(function() { d.resolve(results[0]); }).fail(d.reject);
-                        }
-                        return d.resolve(results[0]).fail(d.reject);
-                    }
-                    entities.documents.makeWebPage(this_.box, url, title, tabinfo).then(d.resolve).fail(d.reject);
-                }).fail(d.reject);
-                return d.promise();
+                return entities.documents.makeWebPage(this.box, url, title, tabinfo);
             },
             _record_updated:function() {
                 // console.log('record updated ... box ', this.box, current_record);
                 var this_ = this, box = this.box, store = this.get('store'), journal = this.get('journal'), 
                     current_record = this.current_record;
-                if (current_record) { 
+                if (current_record && (!MIN_DURATION || this_._record_duration(current_record) >= MIN_DURATION)) { 
+                    console.info('current_record passes > ', this_._record_duration(current_record));
                     return u.when( current_record.save(), current_record.peek('what').save() );
                 } 
                 return u.dresolve();

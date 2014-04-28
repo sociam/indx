@@ -5,8 +5,9 @@
 			<ul class="applist">
 				<li ng-repeat='a in apps | appenabled | apptype:"app"' class="app">
 					<a ng-href='apps/{{ a.url || a["@id"] }}' target="_blank" title="{{ a.about }}">
-						<img class="appicon" ng-show="a.icons[128]" ng-src="apps/{{ a['@id'] }}/{{ a.icons[128] }}">
-						<img class="appicon" ng-show="!a.icons[128]" ng-src="/img/hypercube-lt.png">
+						<img class="appicon" ng-if="a.icons['svg']" ng-src="apps/{{ a['@id'] }}/{{ a.icons['svg'] }}">
+						<img class="appicon" ng-if="!a.icons['svg'] && a.icons[128]" ng-src="apps/{{ a['@id'] }}/{{ a.icons[128] }}">
+						<img class="appicon" ng-if="!a.icons['svg'] && !a.icons[128]" ng-src="/img/hypercube-lt.png">
 						<div class="appname">{{ (a.name || a["@id"]) | lowercase }}</div>
 					</a>
 				</li>
@@ -17,15 +18,16 @@
 			<ul class="applist">
 				<li ng-repeat='a in apps | appenabled | apptype:"svc"' class="app">
 					<a ng-href='apps/{{ a.url || a["@id"] }}' target="_blank" title="{{ a.about }}">
-						<img class="appicon" ng-show="a.icons[128]" ng-src="apps/{{ a['@id'] }}/{{ a.icons[128] }}">
-						<img class="appicon" ng-show="!a.icons[128]" ng-src="/img/hypercube-lt.png">
+						<img class="appicon" ng-if="a.icons['svg']" ng-src="apps/{{ a['@id'] }}/{{ a.icons['svg'] }}">
+						<img class="appicon" ng-if="!a.icons['svg'] && a.icons[128]" ng-src="apps/{{ a['@id'] }}/{{ a.icons[128] }}">
+						<img class="appicon" ng-if="!a.icons['svg'] && !a.icons[128]" ng-src="/img/hypercube-lt.png">
 						<div class="appname">{{ (a.name || a["@id"]) | lowercase }}</div>
 					</a>
 				</li>
 			</ul>
 		</div>
 	</div>
-	<div ng-show="boxes" class="boxes col-xs-2">
+	<div ng-if="boxes" class="boxes col-xs-2">
 		<h2>boxes:</h2>
 		<ul>
 			<li><indx-boxlist-box ng-repeat="b in boxes" b="b"></indx-boxlist-box></li>

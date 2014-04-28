@@ -1,0 +1,25 @@
+<div class="keyset">
+	<h2>Please set your private key</h2>
+
+	<p>The private and public keys will be stored
+	in a secure box inside your INDX and will be 
+	associated with your personal profile.
+
+	<h4>who</h4>
+	<div class="who">
+		<div class="username">{{ username }}</div>
+		<div ng-show="first_name || last_name">: {{ first_name }} {{ last_name }}</div>
+	</div>
+
+	<h4>private key</h4>
+	<textarea ng-model="privatekey">
+	</textarea>
+
+	<h4>public key</h4>
+	<textarea ng-model="pubkey">
+	</div>
+
+	<div class='btn btn-default' ng-click='save()'>Save</div>
+	<div class='btn btn-cancel' ng-click='cancel()''>Cancel</div>
+
+</div>

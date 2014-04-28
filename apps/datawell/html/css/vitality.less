@@ -1,0 +1,79 @@
+* {
+	box-sizing:border-box;
+	:focus { outline: none !important; }
+}
+.alert {
+	margin-top:42px;
+}
+h1, h2, h3, h4 { 
+	font-family:'helvetica neue';
+	font-weight:200;
+}
+ul {
+	list-style-type:none;
+	padding-left:0px;
+}
+.home {
+	position:relative;
+	width:100% !important;
+	margin:0px; padding-top:0px;
+	h1, h2, h3, h4 { 
+		margin-top:1em;
+	}
+
+	.green { color:green; }
+	.orange { color: orange; }
+	.header  {
+		padding:0px 0px 0px 0px;
+		font-size:200%;
+	}
+	.no {
+		padding-left:10px;
+		color:#aaa;
+	}
+	min-height:500px;
+	weekchart {
+		.bar {
+		  fill: #eea;
+		}
+
+		.bar:hover {
+		  fill: #ff2;
+		}
+
+		.axis {
+		  font: 10px sans-serif;
+		}
+
+		.axis path,
+		.axis line {
+		  fill: none;
+		  stroke: #000;
+		  shape-rendering: crispEdges;
+		}
+
+		.x.axis path {
+		  display: none;
+		}
+
+	}
+	bullets {
+		button {
+		  position: absolute;
+		  right: 10px;
+	  	top: 10px;
+		}
+
+		.bullet { font: 10px sans-serif; }
+		.bullet .marker { stroke: #000; stroke-width: 2px; }
+		.bullet .tick line { stroke: #666; stroke-width: .5px; }
+		.bullet .range.s0 { fill: #eee; }
+		.bullet .range.s1 { fill: #ddd; }
+		.bullet .range.s2 { fill: #ccc; }
+		.bullet .measure.s0 { fill: lightsteelblue; }
+		.bullet .measure.s1 { fill: steelblue; }
+		.bullet .title { font-size: 14px; font-weight: bold; }
+		.bullet .subtitle { fill: #999; }
+	}
+}
+

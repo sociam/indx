@@ -39,22 +39,12 @@
             server.set('server_host', server_url); 
         }
         return server;
-
-        // var d = utils.deferred();
-        // server.checkLogin().then(function(response) {
-        //     if (response.is_authenticated) { 
-        //         setOKBadge(':)');
-        //         return d.resolve(server, response);  
-        //     }
-        //     d.reject('not logged in');
-        // }).fail(d.reject);
-        // return d.promise();
     };
 
     // declare modules -----------------|
     var app = angular.module('webjournal', ['indx'])
         .config(function($compileProvider){ 
-            $compileProvider.aHrefSanitizationWhitelist(/^\s*(https?|ftp|mailto|file|chrome-extension):/); 
+            $compileProvider.aHrefSanitizationWhitelist(/^\s*(https?|ftp|data|mailto|file|chrome-extension|chrome|chrome\-extension):/); 
         }).config(function($sceProvider) {
             // Completely disable SCE - options iframe interference
             $sceProvider.enabled(false);
@@ -64,7 +54,10 @@
                 setOKBadge:setOKBadge,
                 getBoxName:getBoxName,
                 duration_secs:duration_secs,
-                clearBadge:clearBadge
+                clearBadge:clearBadge,
+                get_watcher:get_watcher,
+                get_store:get_store,
+                make_store:make_store
             };
         }).controller('popup', function($scope, watcher, utils) {
             window.$s = $scope;
@@ -76,10 +69,10 @@
                 var secs = duration_secs(d);
                 if (secs < 60) {  return secs.toFixed(2) + 's'; }  
                 return (secs/60.0).toFixed(2) + 'm';
-            };        
+            };    
+            var thumbs = [];    
             $scope.thumb = function(d) {
                 var what = d && d.peek('what');
-                if (!what) return false;
                 return what.peek('thumbnail');
             };
             $scope.label = function(d) { 
@@ -97,56 +90,22 @@
             };
             var update_history = function(history) {  
                 // console.log('update history >> ', history, history.length );
+                if (history) { 
+                    window.hh = utils.dict(history.map(function(h) { 
+                        return [h.peek('what').id, h.peek('what').peek('thumbnail')]; 
+                    }));
+                }
                 utils.safeApply($scope, function() { $scope.data = history.concat(); });     
             };
             get_watcher().on('updated-history', function(history) {  update_history(history); }, guid);
             update_history(get_watcher()._get_history());
             window.onunload=function() { get_watcher().off(undefined, undefined, guid);  };
-        }).controller('options', function($scope, client, utils) {
-            // options screen only  -------------------------------------------
-            var watcher = get_watcher(), guid = utils.guid(), old_store = get_store();
-            var sa = function(f) { utils.safeApply($scope, f); };
-            window.$s = $scope;
-            var load_stats = function(store) {
-                store.getBoxList().then(function(boxes) {  sa(function() { $scope.boxes = boxes; });   });
-                $scope.user = store.get('username');
-                $scope.memuse = watcher._box._getCacheSize();
-            };
-            if (get_store()) {
-                var store = get_store();
-                load_stats(store);
-                store.on('disconnect', function() { sa(function() { $scope.status = 'disconnected :('; }); }, guid);
-                store.on('login', function() { load_stats(get_store()); }, guid);
-                store.on('logout', function() { sa(function() { $scope.status = 'logged out'; }); },guid);
-                store.on('error', function(e) { sa(function() { $scope.status = 'error - ' + e.toString(); }); },guid);
-            }
-            watcher.on('change:store', function(s) {
-                console.info('change:store', s);
-                if(old_store) { old_store.off(undefined, undefined, guid); }
-                if (get_store()) { load_stats(get_store()); }
-            }, guid);
-            // clean up
-            window.onunload=function() {
-                get_watcher().off(undefined, undefined, guid);
-                if (get_store()) { get_store().off(undefined,undefined,guid); }
-            };  
-            $scope.server_url = localStorage.indx_url;
-            $scope.set_server = function(url) {
-                console.log('setting server ... ', url);
-                localStorage.indx_url = $scope.server_url;
-                get_watcher().set_store(make_store(client,utils));
-            };
-            $scope.box_selection = localStorage.indx_box;
-            $scope.set_box = function(boxid) {
-                console.log('setting box ', boxid);
-                localStorage.indx_box = boxid;
-                get_watcher()._load_box();
-            };
-    }).controller('background', function($scope, watcher, geowatcher, client, utils, entities) {
+        }).controller('background', function($scope, watcher, geowatcher, client, utils, entities) {
         // main -------------->
         // background page
         window.utils = utils;
         var winstance = watcher.init(), n_logged = 0, geoinstance = GEO_ENABLE && geowatcher.init();
+        var store = make_store(client,utils);
         // 
         var displayFail = function(reason) { 
             setErrorBadge('x' , reason);
@@ -159,6 +118,7 @@
         winstance.on('connection-error', function() { setErrorBadge('Error');  });
         winstance.on('connection-ok', function() { setOKBadge(':)');  });
         window.watcher_instance = winstance;    
-        winstance.set_store(make_store(client,utils));              
+        winstance.set_store(store);              
+        window.store = store;
     });
 }());

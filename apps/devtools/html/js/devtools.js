@@ -281,7 +281,7 @@ angular
 				var that = this;
 				this.documentation = new DocumentationModel(undefined, { manifest: this });
 				this.tests = new Tests(this.get('tests'), { manifest: this });
-				this.icon = this.get('icons')['128'];
+				this.icon = this.get('icons')['svg'] || this.get('icons')['128'];
 				this.documentation.on('all', function (event) {
 					if (['start_build', 'end_build'].indexOf(event) === -1) { return; }
 					//var args = Array.prototype.slice.call(arguments, 1);

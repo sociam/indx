@@ -25,7 +25,7 @@ import copy
 from indx.server import WebServer
 from twisted.internet import reactor
 
-def setup_logger(logfile, stdout, error_log):
+def setup_logger(logfile, stdout, color, error_log):
     """ Set up the logger, based on options. """
     formatter = logging.Formatter('%(name)s\t%(levelname)s\t%(asctime)s\t%(message)s')
 
@@ -43,6 +43,10 @@ def setup_logger(logfile, stdout, error_log):
         stdout_handler.setLevel(logging.DEBUG)
         stdout_handler.setFormatter(formatter)
         logger.addHandler(stdout_handler)
+
+    if color:
+        logging.addLevelName(logging.WARNING, "\033[1;31m%s\033[1;m" % logging.getLevelName(logging.WARNING))
+        logging.addLevelName(logging.ERROR, "\033[1;41m%s\033[1;m" % logging.getLevelName(logging.ERROR))
 
     if error_log:
         error_log_handler = logging.FileHandler(error_log, "a")
@@ -88,6 +92,7 @@ parser.add_argument('--log', default="/tmp/indx.log", type=str, help="Location o
 parser.add_argument('--error-log', default=None, type=str, help="Location of errors-only logfile e.g. /tmp/indx_error.log (off by default)")
 parser.add_argument('--port', default=8211, type=int, help="Override the server listening port")
 parser.add_argument('--log-stdout', default=False, action="store_true", help="Also log to stdout?")
+parser.add_argument('--log-stdout-color', default=False, action="store_true", help="Color logs to stdout?")
 parser.add_argument('--ssl', default=False, action="store_true", help="Turn on SSL")
 parser.add_argument('--ssl-cert', default="data/server.crt", type=str, help="Path to SSL certificate")
 parser.add_argument('--ssl-key', default="data/server.key", type=str, help="Path to SSL private key")
@@ -102,7 +107,8 @@ args = vars(parser.parse_args())
 password = args['password'] or getpass.getpass()
 
 """ Set up the logging based on the user's options. """
-setup_logger(args['log'], args['log_stdout'], args['error_log'])
+log_stdout = args['log_stdout_color'] or args['log_stdout']
+setup_logger(args['log'], log_stdout, args['log_stdout_color'], args['error_log'])
 
 """ Set up the configuration structure. """
 config = {

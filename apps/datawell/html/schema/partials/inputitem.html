@@ -1,0 +1,57 @@
+<div ng-class="{item:true}" ng-switch on="item.valuetype">
+
+    <div class="form-group" ng-switch-when="Multiple">
+        <label class="itemlabel" ng-bind="item.name"></label>
+        <select ng-options="v for v in item.values" ng-model='item.selected'></select>
+    </div>
+
+    <div class="form-group" ng-switch-when="String">
+        <label class="itemlabel" ng-bind="item.name"></label>
+        <input type="text" placeholder="{{item.name}}" ng-model='item.selected' class=""></input>
+    </div>
+
+    <div class="form-group" ng-switch-when="Date">
+        <label class="itemlabel" ng-bind="item.name"></label>
+        <input type="date" ng-model='item.selected'></input>
+    </div>
+
+    <div class="form-group" ng-switch-when="NaturalNumber">
+        <label class="itemlabel" ng-bind="item.name"></label>
+        <input type="text" placeholder="{{item.name}}" ng-model='item.selected' class=""></input>
+    </div>
+
+    <div class="form-group essay" ng-switch-when="Essay">
+        <label class="itemlabel" ng-bind="item.name"></label>    
+        <textarea ng-model='item.selected'></textarea>
+    </div>
+
+    <div ng-switch-when="YN" type="text" class="form-group radiogroup">
+        <label class="itemlabel" ng-bind="item.name"></label>        
+    	<input ng-show="false" name="{{item.name}}" type="radio" ng-model='item.selected' value="" />
+		<label class="valuelabel"><input name="{{item.name}}" type="radio" ng-model='item.selected' value="Y" />Y</label>
+    	<label class="valuelabel"><input name="{{item.name}}" type="radio" ng-model='item.selected' value="N" />N</label>
+    </div>
+
+    <div ng-switch-when="YN(String)" class="form-group radiogroup">    	
+        <label class="itemlabel" ng-bind="item.name"></label>        
+    	<input ng-show="false" name="{{item.name}}" type="radio" ng-model='item.selected' value="" />
+		<label class="valuelabel"><input name="{{item.name}}" type="radio" ng-model='item.selected' value="Y" />Y</label>
+		<input type="text" ng-disabled="item.selected!=='Y'" ng-class="{faded:item.selected!=='Y', yexplain:true}" ng-model="ytext">
+    	<label class="valuelabel"><input name="{{item.name}}" type="radio" ng-model='item.selected' value="N" />N</label>
+    </div>
+
+    <div ng-switch-when="YN(Number)" class="form-group radiogroup">    	
+        <label class="itemlabel" ng-bind="item.name"></label>        
+    	<input ng-show="false" name="{{item.name}}" type="radio" ng-model='item.selected' value="" />
+		<label class="valuelabel"><input name="{{item.name}}" type="radio" ng-model='item.selected' value="Y" />Y</label>
+		<input type="text" ng-disabled="item.selected!=='Y'" ng-class="{faded:item.selected!=='Y', yexplain:true}" ng-model="ytext">
+    	<label class="valuelabel"><input name="{{item.name}}" type="radio" ng-model='item.selected' value="N" />N</label>
+    </div>
+
+    <div ng-switch-when="Range" class="form-group radiogroup">
+        <label class="itemlabel" ng-bind="item.name"></label>
+        <input type="range" name="points" min="{{item.rangemin}}" max="{{ item.rangemax }}" step="1" 
+            value="0" ng-model='item.selected'> <label ng-bind="item.selected"></label>
+    </div>
+
+</div>

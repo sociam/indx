@@ -8,6 +8,15 @@
             <img ng-src="img/edit-clear.png" />
         </div>
     </div>
-    <div class="name">{{ box.id }}</div>
-	<!-- <svg class="canvas"></svg> -->
+    <div class="name">
+        <a href="/apps/boxie/#/{{ box.id }}" target="_blank">{{ box.id }}</a>
+    </div>
+    <div class="visual_gettoken">
+        <span class="glyphicon glyphicon-phone" ng-click="show_qrcode=!show_qrcode">
+    </div>
+    <div ng-class="{token_qrcode_display:true, visible:show_qrcode}">
+        <h2> authentication token for {{ box.id }} </h2>
+        <!--<pre>{{ boxtoken }}</pre>-->
+        <token-qrcode box="box"></token-qrcode>
+    </div>
 </div>

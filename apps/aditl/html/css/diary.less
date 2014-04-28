@@ -1,0 +1,145 @@
+@import url(clearsans.less);
+// @import(opensans.less)
+
+
+* {
+	box-sizing:border-box;
+	:focus { outline: none !important; }
+
+}
+
+.diary-main * { 
+
+}
+
+.diary-main {
+	.nav {
+		font-size:48pt;
+		color:#aaa;
+		.arrow { 
+			&:hover { color:#222; }
+		}
+	}
+	position:relative;
+	.date {
+		background:white;
+		z-index:100;
+		font-weight:100; 
+		position:absolute;
+		right:30px;
+		top:30px;
+		min-width:240px;
+		text-align:center;
+		* { padding:0px; margin:0px; line-height:0.90; }
+		.dow { z-index:-10; color:grey; font-size:18pt; line-height:0.50; }
+		.dateval { font-size:98pt; }
+		.month { font-size:18pt; }
+		.datenav {
+			position:absolute;
+			font-size:24pt;
+			top:50%; margin-top:-12pt;
+			color:#aaa;
+			padding:5px 10px 10px 10px;			
+			border-radius:5px;			
+			&.back { left:0px; }
+			&.fwd { right:0px; }
+			&:hover { color:#222; border: 1px solid #aaa;  }
+		}
+	}
+	.entries {
+		padding-right:270px;
+		// font-family:'Times New Roman', serif;
+		height:100%;
+		.entry {
+			padding:0px;
+			.madlibs {
+				font-size:14pt;
+				.madlib { 
+					font-style:italic;
+					color:#aaa;
+					&:hover { color:#222; }
+					margin-bottom:0.2em;
+					.dummy { 
+						margin-left:30px; 
+						border:none;
+						border-bottom:1px solid #eee;
+						width:200px;
+					}
+				}
+			}
+			width:100%;
+			overflow:hidden;
+			height:0px !important;
+	        -webkit-transition: height 0.5s, padding 0.5s; /* For Safari 3.1 to 6.0 */
+    	    transition: height 0.5s, padding:0.5s;
+			width:100%;
+
+			&.showing {	
+				padding:20px;
+				height:220px !important; 
+			}
+			#entrybox {
+				font-style:italic;
+				padding-left:10px;
+				font-size:16pt;
+				margin:1em 0px 0px 0px;
+				width:100%;
+				border:none;
+				border-bottom:1px solid #888;
+				&::-webkit-input-placeholder {
+				   color: #bbb;
+				   font-style:italic;
+				}				
+			}
+		}
+	}
+	.addNewButton {
+		height:200px;
+		line-height:150px;
+		width:100%;
+		text-align:center;
+		font-size:180pt;
+		color:#eee;
+		border-bottom:1px solid #eee;
+	}
+	.diary-entry {
+		position:relative;
+		padding-top:1.5em;
+		.created_time {
+			margin-bottom:1.2em;
+		}
+		// border:1px solid #eee;
+		.delete {
+			position:absolute;
+			font-size:18pt;
+			font-weight:100;
+			top:0px;
+			right:10px;
+		}
+		textarea {
+			font-family:serif;
+	        // -webkit-transition: height 0.8s, padding 0.8s; 
+    	    // transition: height 0.8s, padding:0.8s;
+    	    font-size:14pt;
+			overflow-y:hidden;
+			overflow-x:hidden;
+			scroll-x:none;
+			scroll-y:none;
+			resize:none;
+			border:none;
+		}		
+		.phrase, input {  display:inline-block;	}
+		input, textarea { 
+			border:none;
+			font-style:italic;
+			// &:focus { border-bottom:1px solid #222;	}
+		}
+
+		border-bottom:1px solid #eee;
+
+		textarea {
+			width:100%;
+			min-height:30px;
+		}
+	}
+}

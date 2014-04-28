@@ -20,3 +20,7 @@ for D in ./apps/*; do
         fi
     fi
 done
+
+echo "building chrome plugin"
+(cd ./plugins/chrome-webjournal; bower install; make)
+
