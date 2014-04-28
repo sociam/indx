@@ -186,24 +186,24 @@ angular
 		var ObjProxy = function(get_deferred) {
 			var this_ = this;
 			this.chain = [];
-			this.thenchain = [];
-			this.failchain = [];
+			this.dthen = u.deferred();
 			get_deferred.then(function(obj) {
 				var recurse = function(left) {
+					console.log('recursing with left ', left);
 					if (left.length === 0) { 
-						return this_.thenchain.map(function(x) { x(obj); });
+						return this_.dthen.resolve(obj);
 					}	
 					var fn = left[0];
 					$.when(fn(obj)).then(function() { 
 						recurse(left.slice(1)); 
 					}).fail(function(err) {  
-						this_.failchain.map(function(x) { x(err); }); 
+						this_.dthen.reject(err);
 					});
 				};
 				recurse(this_.chain);
 			}).fail(function(err) { 
 				console.error('error in getting '); 
-				this_.failchain.map(function(f) { f(err); }); 
+				this_.dthen.reject(err); 
 			});
 		};
 		ObjProxy.prototype = {
@@ -235,7 +235,14 @@ angular
 					if (_.isArray(obj)) {
 						return u.when(obj.map(function(obj_i) { return obj_i.save(); }));
 					} else {
-						return obj.save();
+						console.log('saving >>>>>>>>>>>> ');
+						var d = u.deferred();
+						setTimeout(function() { 
+							console.log('done >>>>>>>>');
+							d.resolve(); 
+						}, 1000);
+						return d.promise();
+						// return obj.save();
 					}
 				});
 				return this;
@@ -274,11 +281,11 @@ angular
 				return this;		
 			},			
 			then:function(f) {
-				this.thenchain.push(function(obj) { f(obj);  });
+				this.dthen.then(f);
 				return this;
 			},
 			fail:function(f) { 
-				this.failchain.push(function(err) { f(err);  });
+				this.dthen.fail(f);
 				return this;
 			}
 		};
