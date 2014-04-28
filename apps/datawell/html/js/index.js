@@ -90,5 +90,17 @@ vApp.controller('main', function($scope, $rootScope, $state, client, utils) {
       });
     }
   });
-  _ts = $scope;
+  window.$s = $scope;
+
+
+  // debugging
+
+  console.log('hi');
+  client.store.getBox('a').then(function(c) { 
+    window.c = c; 
+    c.obj('hello').set({c:Math.random()}).save().then(function(x) { console.log('got hello ', x.attributes); });
+  });
+
+
+
 });

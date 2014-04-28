@@ -185,71 +185,65 @@ angular
 
 		var ObjProxy = function(get_deferred) {
 			var this_ = this;
-			this.chain = [];
-			this.dthen = u.deferred();
-			get_deferred.then(function(obj) {
-				var recurse = function(left) {
-					console.log('recursing with left ', left);
-					if (left.length === 0) { 
-						return this_.dthen.resolve(obj);
-					}	
-					var fn = left[0];
-					$.when(fn(obj)).then(function() { 
-						recurse(left.slice(1)); 
-					}).fail(function(err) {  
-						this_.dthen.reject(err);
-					});
-				};
-				recurse(this_.chain);
-			}).fail(function(err) { 
-				console.error('error in getting '); 
-				this_.dthen.reject(err); 
+			this.d = get_deferred;
+			// set first 
+			this.d = this.d.pipe(function(x) { 
+				console.log('resolved >> ', x);
+				this_.obj = x;
+				return u.dresolve();
 			});
 		};
 		ObjProxy.prototype = {
 			get:function(field, continuation) {
-				this.chain.push(function(obj) { 
-					var retval;
+				var this_ = this;
+				this.d = this.d.pipe(function() { 
+					var obj = this_.obj;
 					if (_.isArray(obj)) {
-						return continuation(obj.map(function(obj_i) { return obj_i.get(field); }));
+						return $.when(continuation(obj.map(function(obj_i) { return obj_i.get(field); })));
 					} else {
-						return continuation(obj.get(field));
+						return $.when(continuation(obj.get(field)));
 					}
 				});
 				return this;
 			},
 			set:function(obj) {
-				var a = _.toArray(arguments);
-				this.chain.push(function(obj) { 
+				var a = _.toArray(arguments), this_ = this;
+				this.d = this.d.pipe(function() { 
+					var obj = this_.obj;
 					if (_.isArray(obj)) {
 						obj.map(function(obj_i) { return obj_i.set.apply(obj_i, a); });
 					} else {
 						obj.set.apply(obj, a);
 					}
+					return u.dresolve();
 				});
 				return this;
 			},
 			save:function() {
-				var a = _.toArray(arguments);
-				this.chain.push(function(obj) { 
-					if (_.isArray(obj)) {
+				var a = _.toArray(arguments), this_ = this;
+				this.d = this.d.pipe(function() { 
+					console.log("EXECUTING SAVE");
+					var obj = this_.obj;
+					if (false && _.isArray(obj)) {
 						return u.when(obj.map(function(obj_i) { return obj_i.save(); }));
 					} else {
-						console.log('saving >>>>>>>>>>>> ');
-						var d = u.deferred();
-						setTimeout(function() { 
-							console.log('done >>>>>>>>');
-							d.resolve(); 
-						}, 1000);
-						return d.promise();
-						// return obj.save();
+						// console.log('saving >>>>>>>>>>>> ');
+						// var d = u.deferred();
+						// setTimeout(function() { 
+						// 	console.log('done >>>>>>>>');
+						// 	d.resolve(); 
+						// }, 2000);
+						// return d.promise();
+						// real code >> 
+						return obj.save();
 					}
 				});
 				return this;
 			},
 			destroy:function(obj) {
-				var a = _.toArray(arguments);
-				this.chain.push(function(obj) { 
+				var a = _.toArray(arguments), this_ = this;
+				this.d = this.d.pipe(function() { 
+					var obj = this_.obj;
 					if (_.isArray(obj)) {
 						return u.when(obj.map(function(obj_i) { return obj_i.destroy(); }));
 					} else {
@@ -259,33 +253,45 @@ angular
 				return this;	
 			},
 			on:function() {
-				var a = _.toArray(arguments);
-				this.chain.push(function(obj) { 
+				var a = _.toArray(arguments), this_ = this;
+				this.d = this.d.pipe(function() { 
+					var obj = this_.obj;
 					if (_.isArray(obj)) {
 						obj.map(function(obj_i) { return obj_i.on.apply(obj_i, a); });
 					} else {
 						obj.on.apply(obj, a);
 					}
+					return u.deferred();
 				});
 				return this;		
 			},
 			off:function() {
-				var a = _.toArray(arguments);
-				this.chain.push(function(obj) { 
+				var a = _.toArray(arguments), this_ = this;
+				this.d = this.d.pipe(function() { 
+					var obj = this_.obj;
 					if (_.isArray(obj)) {
-						return u.when(obj.map(function(obj_i) { return obj_i.off.apply(obj_i, a); }));
+						obj.map(function(obj_i) { return obj_i.off.apply(obj_i, a); });
 					} else {
-						return obj.off.apply(obj, a);
+						obj.off.apply(obj, a);
 					}
+					return u.deferred();
 				});
 				return this;		
 			},			
 			then:function(f) {
-				this.dthen.then(f);
+				var this_ = this;
+				this.d = this.d.pipe(function() { 
+					console.log("EXECUTING THEN");
+					var obj = this_.obj;
+					return $.when(f(obj));
+				});
 				return this;
 			},
 			fail:function(f) { 
-				this.dthen.fail(f);
+				var this_ = this;
+				this.d.fail(function(err) { 
+					f(err,this_.obj);
+				});
 				return this;
 			}
 		};
