@@ -328,6 +328,7 @@ class ObjectStoreAsync:
 
 
     def combine_long_string_rows(self, rows, diff_row = False):
+        logging.debug("Objectstore combine_long_string_rows for len(rows) = {0}, diff_row = {1}".format(len(rows), diff_row))
 
         new_rows = []
         prev_uuid = None
@@ -363,6 +364,7 @@ class ObjectStoreAsync:
         if len(this_row) > 0:
             new_rows.append(this_row)
         
+        logging.debug("Objectstore combine_long_string_rows completed, len(new_rows) = {0}".format(len(new_rows)))
         return new_rows
 
 

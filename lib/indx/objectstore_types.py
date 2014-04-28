@@ -86,9 +86,13 @@ class Graph:
 
     def to_json(self):
         """ Get the list of object in the JSON format. """
+        logging.debug("ObjectStore Types, Graph to_json, root_object_ids: {0}".format(self.root_object_ids))
         obj_out = {}
+        value_id_list = []
         for id in self.root_object_ids:
-            obj_out[id] = self.objects_by_id[id].to_json()
+            model, value_id_list = self.objects_by_id[id].to_json_with_value_list(value_id_list = value_id_list)
+            obj_out[id] = model
+#            obj_out[id] = self.objects_by_id[id].to_json()
         return obj_out
 
     def to_flat_json(self):
@@ -316,10 +320,15 @@ class Resource:
 
 
     def to_json(self, value_id_list = []):
+        model, value_id_list_cpy = self.to_json_with_value_list(value_id_list)
+        return model
+
+    def to_json_with_value_list(self, value_id_list = []):
         """ Convert to the JSON format.
         
             value_id_list -- List of IDs of resources already rendered, used inside to_json() calls internally to prevent infinite cycles (leave blank when called externally).
         """
+        logging.debug("ObjectStore Types, Resource to_json {0}, value_id_list = {1}".format(self.id, value_id_list))
         model = {}
         value_id_list_cpy = copy.copy(value_id_list)
         value_id_list_cpy.append(self.id) # prevent this id from being rendered by its children/descendents
@@ -334,9 +343,18 @@ class Resource:
                     if isinstance(value, Resource) and value.id in value_id_list_cpy:
                         model[property].append({"@id": value.id, "@link_only": True}) # prevent cyclic rendering
                     else:
-                        model[property].append(value.to_json(value_id_list = value_id_list_cpy))
+                        if isinstance(value, Resource) and value.id not in value_id_list:
+                            value_id_list_cpy.append(value.id) # add the new value to the do-not-recurse list
 
-        return model
+                        if isinstance(value, Resource):
+                            # overwrites value_id_list_cpy with the deep version returned from the subtree.
+                            model_new, value_id_list_cpy = value.to_json_with_value_list(value_id_list = value_id_list_cpy)
+                            model[property].append(model_new)
+#                            model[property].append(value.to_json(value_id_list = value_id_list_cpy))
+                        else:
+                            model[property].append(value.to_json(value_id_list = value_id_list_cpy))
+
+        return model, value_id_list_cpy
 
     def __hash__(self):
         return hash(Resource) ^ hash(self.id) ^ hash(self.model)
@@ -371,6 +389,7 @@ class Literal:
         
             value_id_list -- For compatibility with Resource
         """
+        logging.debug("ObjectStore Types, Literal to_json {0}".format(self.value))
         return {"@value": self.value,
                 "@language": self.language or "",
                 "@type": self.type or "",
