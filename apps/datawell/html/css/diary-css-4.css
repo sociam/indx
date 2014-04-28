@@ -1,0 +1,10 @@
+
+$.diary-entry > textarea:focus {
+	border-left:3px solid #ff0000;
+	margin-left:13px;
+}
+
+.diary-entry! > textarea:focus {
+	border-left:3px solid #ff0000;
+	margin-left:13px;
+}

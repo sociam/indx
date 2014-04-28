@@ -1,0 +1,19 @@
+{
+	"name": "datawell",
+	"version": 0.1,
+	"type":["app"],
+	"description": "electronic health diary",
+	"icons": { 
+		"128": "imgs/icon.png"
+	},
+	"author": [
+		{
+			"name": "eMax",
+			"email":"max@hip.cat"
+		},
+		{
+			"name": "Daniel Alexander Smith",
+			"email":"ds@ecs.soton.ac.uk"
+		}
+	]
+}

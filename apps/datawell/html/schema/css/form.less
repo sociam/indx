@@ -1,0 +1,155 @@
+* {
+	box-sizing:border-box;
+	font-family:sans-serif;
+}
+
+body {
+	margin:0px;
+	padding:0px;
+	font-size:12pt;
+	color:#444;
+}
+h1 {
+	font-size:18pt;
+}
+h1,h2,h3,h4 {
+	font-weight:100;
+	margin:0px 0px 10px 0px;
+	padding:0px;
+}
+ol  {
+	padding:0px 0px 0px 20px;
+}
+label {
+	font-size:11pt;
+	font-weight:100;
+	-moz-user-select: -moz-none;
+	-khtml-user-select: none;
+	-webkit-user-select: none;
+	-ms-user-select: none;
+	user-select: none;	
+}
+*[placeholder] {
+	font-weight:100;
+}
+.fmlform {
+	// border: 1px solid green !important;
+}
+.category, .group {
+	padding:10px 10px 10px 10px;
+	border-left:1px solid white;
+	&:hover {
+		border-left:1px solid #ccf;
+	}
+}
+input,textarea {
+	outline:none;
+	color:#aaa;	
+	&:focus {
+		text-weight:200;
+		color:black;
+	}	
+}
+input {
+	border:none;
+	border-bottom:1px solid #aaa;
+	color:#aaa;
+	&:focus {
+		border-bottom:2px solid #aaa;
+	}
+}
+textarea {
+	border:1px solid #aaa;
+	&:focus {
+		border:2px solid #aaa;
+	}
+}
+input[type='text'] {
+	border:none;
+	border-bottom:1px solid #aaa;
+}
+input[type='date'] {
+	border:none;
+	border-bottom:1px solid #aaa;
+}
+
+.itemlabel {
+	display:inline-block;
+}
+.component .itemlabel {
+		min-width:240px;
+}
+.component .component .itemlabel {
+		min-width:200px;
+}
+.component .component .component .itemlabel {
+		min-width:160px;
+}
+.component .component .component .component .itemlabel {
+		min-width:129px;
+}
+
+
+.item {
+	margin:8px 0px 8px 0px;
+
+	select {
+		-webkit-appearance:none;
+		border:1px solid #aaa;
+		color:#222;
+		border-radius:0px;
+		padding:4px;
+		option {
+			color:#eee;
+			background-color:white !important;
+		}
+		min-width:180px;
+		content:'v';
+	}
+	input[type='text'], textarea {
+		padding:2px;
+		min-width:300px;
+		&.yexplain {
+			min-width:70px;
+			width:70px;
+			margin-left:-5px;
+			margin-right:20px;			
+		}
+	}
+	.valuelabel {
+		margin-left:0px !important;
+		padding:0px 5px 0px 5px;
+	}
+	input[type='date'] {
+		line-height:1em;
+	}
+	.form-group.essay {
+		padding:0px;
+
+		label, textarea { 
+			display:block; 
+			width:100%;
+			margin:0px;
+		}		
+		textarea{
+			min-height:200px
+		}
+	}
+}
+
+// 	// border:1px solid #eee;
+// 	// margin:20px;
+// 	.itemlabel {
+// 		display:inline-block;
+// 		// margin-right:20px;
+// 		border:1px solid grey;
+// 	}
+// 	.faded {
+// 		opacity:0.2;
+// 	}
+// 	input[type='text'] { }
+// 	textarea {
+// 		min-height:200px;
+// 	}
+// }
+// .radiogroup{ display:inline-block; }
