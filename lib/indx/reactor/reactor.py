@@ -52,9 +52,11 @@ class IndxReactor:
     def incoming(self, request):
         for mapping in self.mappings:
             if mapping.matches(request):
+                logging.debug("IndxReactor - using mapping: {0}".format(mapping))
                 return mapping.request(request)
 
         # no match
+        logging.debug("IndxReactor - no mapping found, returning 404.")
         request.callback(IndxResponse(404, "Not Found"))
 
     def add_mapping(self, mapping):

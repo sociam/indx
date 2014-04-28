@@ -41,6 +41,7 @@ class IndxWebHandler(Resource):
         logging.debug("IndxWebHandler, request, path: {0}".format(path))
 
         def callback(indx_response):
+            logging.debug("IndxWebHandler, request callback")
 
             try:
                 response = {"message": indx_response.message, "code": indx_response.code}

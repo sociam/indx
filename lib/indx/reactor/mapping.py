@@ -26,12 +26,30 @@ class IndxMapping:
         self.params = params
         self.handler = handler
 
+    def wildcard_match(self, a, b):
+        """ 'a' can't have a wildcard, 'b' can. """
+        if b[-1] == "*":
+            b = b[:-1] # strip star
+            if b[-1] == "/":
+                b = b[:-1] # strip trailing /
+            if a[-1] == "/":
+                a = a[:-1] # strip trailing /
+            if a[0:len(b)] == b:
+                return True
+
+            return False
+        else:
+            return a == b
+
+
     def matches(self, request):
         """ request is an IndxRequest """
-        if (request.method in self.methods) and (request.path == self.path):
-            logging.debug("Matched mapping: {0} = {1}, {2} = {3} for {4}".format(request.method, self.methods, request.path, self.path, self.handler))
+        logging.debug("Evaluating mapping, if: {0} in {1}, {2} == {3} for {4}".format(request.method, self.methods, request.path, self.path, self.handler))
+        if (request.method in self.methods) and self.wildcard_match(request.path, self.path):
+            logging.debug("...Mapping matched")
             return True
 
+        logging.debug("...Mapping did NOT match")
         return False
 
     def request(self, request):

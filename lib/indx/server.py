@@ -280,7 +280,7 @@ class WebServer:
         factory = WebSocketSite(self.root)
 
         class LongSession(Session):
-                sessionTimeout = 60 * 60 * 6 # = 6 hours (value is in seconds - default is 15 minutes)
+            sessionTimeout = 60 * 60 * 6 # = 6 hours (value is in seconds - default is 15 minutes)
 
         factory.sessionFactory = LongSession
 
