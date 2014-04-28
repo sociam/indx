@@ -12,89 +12,94 @@
 	<div class="row">
 		<h2>Moves for INDX</h2>
 	</div>
-	<div class="row">
-		<table class="status">
-			<tr>
-				<td><div ng-show="runstate">{{ runstate }}</div><img class='loadingspinner' src="/img/loading.gif" ng-show="!runstate"></td>
-				<td><div class="btn btn-primary glyphicon glyphicon-play" ng-disabled="runstate=='Running'" ng-click="doStart()"></div>
-				<div class="btn btn-default glyphicon glyphicon-stop" ng-disabled="runstate!=='Running'" ng-click="doStop()"></div></td>
-			</tr>
-		</table>
-	</div>
-	<div class="row">
-		<div class="btn btn-default" ng-show="!(config.access_token && config.user && config.password && config.box)" ng-click="showConfig = !showConfig"> Reconfigure <div class="glyphicon glyphicon-cog"></div></div>
-	</div>
-	<div class="row">
-		<div class="col-md-8">
-			<table ng-show="!(config.authcode && config.user && config.password && config.box) || showConfig">
-				<tr><td colspan="2"><h4>set up moves: </h4></td></tr>
-				<tr>
-					<td colspan"2">Register with Moves</td><td><a href="https://dev.moves-app.com/apps" class="btn btn-default" target="_blank">Create an app with moves-app.com</a></td>
-				</tr>
-				<tr>
-					<td>On that page, <br> set your app's <strong>redirect URL</strong> to: </td><td><code> {{ redirect_url }} </code> </td>
-				</tr>
-				<tr>
-					<td> Paste in the <b>Client ID</b> : </td><td><code><input type="text" ng-model="config.clientid"></input></code></td>
-				</tr>
-				<tr>
-					<td> And the <b>Client Secret</b> : </td><td><code><input type="text" ng-model="config.clientsecret"></input></code></td>
-				</tr>
-				<tr>
-					<td>Authenticate:</td><td><div class='btn btn-default' ng-click="getAuthCode()">Get Auth Code from Moves</div></td>
-				</tr>			
-				<tr ng-show="config.authcode">
-					<td>Auth Code:</td>
-					<td class="authcode">
-						<div>
-							<div class="pre">{{ config.authcode }}</div>
-							<div ng-show="authcode" class='clear glyphicon glyphicon-remove-circle' ng-click="clearAuthCode()"></div>
-						</div>
-					</td>
-				</tr>
-				<tr ng-show="config.access_token">
-					<td>Access Token:</td>
-					<td class="authcode"><code>{{ config.access_token }}</code></td>
-				</tr>
-				<tr ng-show="config.expires_in">
-					<td>Token Expiry:</td>
-					<td><code>{{ config.expires_in/60000.0 }}</code></td>
-				</tr>
-				<tr ng-show="config.token_type">
-					<td>Token Type:</td>
-					<td><code>{{ config.token_type }}</code></td>
-				</tr>
-				<tr ng-show="config.refresh_token">
-					<td>Refresh Token:</td>
-					<td><code>{{ config.refresh_token }}</code></td>
-				</tr>
-				<tr>
-					<td>Frequency (sleep milliseconds) </td><td><input type="text" name="sleep" ng-model="config.sleep"></td>
-				</tr>
-				<tr><td>INDX User</td><td><select ng-model="config.user" ng-options='u.name for u in users'></select></td></tr>
-				<tr><td>INDX User's Password</td><td><input type="password" ng-model='config.password'></td></tr>
-				<tr><td>Destination</td><td><select ng-model="config.box" ng-options='b for b in boxes'></select></td></tr>
-				<tr>
-					<td></td>
-					<td>
-						<div class="btn btn-warning" ng-show="config.user && config.box && (config.user !== selectedUser.id) && !granted"
-						ng-click="grantACL(config.user, config.box)">Authorise {{ config.user.name }} to have access to {{ config.box }}</div>
-						<div ng-show="granted" class="granted"> {{ granted_status }} </div>
-						<div class="btn btn-default" ng-click="setConfig(config)">Set config</div>
-					</td>
-				</tr>
-			</table>		
-		</div>		
-		<div class="col-md-4">
-			<entity-stats box='selectedBox' user='selectedUser'></entity-stats>
-		</div>
-	<div class="row">
-		<div class="status">{{ status }}</div>
-		<div class="stdout">{{ stdout }} </div>
-		<div class="stderr">{{ stderr }}</div>
+	<div ng-show="!selectedBox" class="row">
+		<h4>Please select a box in the toolbar above.</h4>
 	</div>
 	<div ng-show="!selectedUser" class="row">
-		<h1>Please log in.</h1>
+		<h4>Please log in.</h4>
+	</div>
+	<div ng-show="selectedBox && selectdUser">
+		<div class="row">
+			<table class="status">
+				<tr>
+					<td><div ng-show="runstate">{{ runstate }}</div><img class='loadingspinner' src="/img/loading.gif" ng-show="!runstate"></td>
+					<td><div class="btn btn-primary glyphicon glyphicon-play" ng-disabled="runstate=='Running'" ng-click="doStart()"></div>
+					<div class="btn btn-default glyphicon glyphicon-stop" ng-disabled="runstate!=='Running'" ng-click="doStop()"></div></td>
+				</tr>
+			</table>
+		</div>
+		<div class="row">
+			<div class="btn btn-default" ng-show="!(config.access_token && config.user && config.password && config.box)" ng-click="showConfig = !showConfig"> Reconfigure <div class="glyphicon glyphicon-cog"></div></div>
+		</div>
+		<div class="row">
+			<div class="col-md-8">
+				<table ng-show="!(config.authcode && config.user && config.password && config.box) || showConfig">
+					<tr><td colspan="2"><h4>set up moves: </h4></td></tr>
+					<tr>
+						<td colspan"2">Register with Moves</td><td><a href="https://dev.moves-app.com/apps" class="btn btn-default" target="_blank">Create an app with moves-app.com</a></td>
+					</tr>
+					<tr>
+						<td>On that page, <br> set your app's <strong>redirect URL</strong> to: </td><td><code> {{ redirect_url }} </code> </td>
+					</tr>
+					<tr>
+						<td> Paste in the <b>Client ID</b> : </td><td><code><input type="text" ng-model="config.clientid"></input></code></td>
+					</tr>
+					<tr>
+						<td> And the <b>Client Secret</b> : </td><td><code><input type="text" ng-model="config.clientsecret"></input></code></td>
+					</tr>
+					<tr>
+						<td>Authenticate:</td><td><div class='btn btn-default' ng-click="getAuthCode()">Get Auth Code from Moves</div></td>
+					</tr>			
+					<tr ng-show="config.authcode">
+						<td>Auth Code:</td>
+						<td class="authcode">
+							<div>
+								<div class="pre">{{ config.authcode }}</div>
+								<div ng-show="authcode" class='clear glyphicon glyphicon-remove-circle' ng-click="clearAuthCode()"></div>
+							</div>
+						</td>
+					</tr>
+					<tr ng-show="config.access_token">
+						<td>Access Token:</td>
+						<td class="authcode"><code>{{ config.access_token }}</code></td>
+					</tr>
+					<tr ng-show="config.expires_in">
+						<td>Token Expiry:</td>
+						<td><code>{{ config.expires_in/60000.0 }}</code></td>
+					</tr>
+					<tr ng-show="config.token_type">
+						<td>Token Type:</td>
+						<td><code>{{ config.token_type }}</code></td>
+					</tr>
+					<tr ng-show="config.refresh_token">
+						<td>Refresh Token:</td>
+						<td><code>{{ config.refresh_token }}</code></td>
+					</tr>
+					<tr>
+						<td>Frequency (sleep milliseconds) </td><td><input type="text" name="sleep" ng-model="config.sleep"></td>
+					</tr>
+					<tr><td>INDX User</td><td><select ng-model="config.user" ng-options='u.name for u in users'></select></td></tr>
+					<tr><td>INDX User's Password</td><td><input type="password" ng-model='config.password'></td></tr>
+					<tr><td>Destination</td><td><select ng-model="config.box" ng-options='b for b in boxes'></select></td></tr>
+					<tr>
+						<td></td>
+						<td>
+							<div class="btn btn-warning" ng-show="config.user && config.box && (config.user !== selectedUser.id) && !granted"
+							ng-click="grantACL(config.user, config.box)">Authorise {{ config.user.name }} to have access to {{ config.box }}</div>
+							<div ng-show="granted" class="granted"> {{ granted_status }} </div>
+							<div class="btn btn-default" ng-click="setConfig(config)">Set config</div>
+						</td>
+					</tr>
+				</table>		
+			</div>		
+			<div class="col-md-4">
+				<entity-stats box='selectedBox' user='selectedUser'></entity-stats>
+			</div>
+		<div class="row">
+			<div class="status">{{ status }}</div>
+			<div class="stdout">{{ stdout }} </div>
+			<div class="stderr">{{ stderr }}</div>
+		</div>
 	</div>
   </body>
   <script src="/lib/less/dist/less-1.6.2.min.js" type="text/javascript"></script>  

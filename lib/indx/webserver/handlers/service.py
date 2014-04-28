@@ -126,12 +126,14 @@ class ServiceHandler(BaseHandler):
         try:
             #print "in service.py - get config"
             manifest = self._load_manifest()
+            # logging.debug(' manfest {0} '.format(manifest['get_config']))
             result = subprocess.check_output(manifest['get_config'],cwd=self.get_app_cwd())
+            # logging.debug(' get config {0}'.format(result))
             #print "service.py - getConfig Manifest returned: "+str(result)
             #logging.debug(' get config result {0} {1}'.format(result))
             result = json.loads(result)
             #print "service.py - getConfig json: "+str(result)
-            logging.debug(' get json config result {0} '.format(result))
+            # logging.debug(' get json config result {0} '.format(result))
             return self.return_ok(request,data={'config':result})
         except :
             print "error in service.py get config"+str(sys.exc_info())
@@ -140,26 +142,25 @@ class ServiceHandler(BaseHandler):
 
     def get_app_cwd(self):
         cwd = "apps/{0}".format(self.service_path)
-        logging.debug('getappcwd {0}'.format(cwd))
+        # logging.debug('getappcwd {0}'.format(cwd))
         return cwd
         
     def set_config(self, request, token): 
         try:
             #print "in service.py - set config"
             # invoke external process to set their configs
-            logging.debug("set_config -- getting config from request")        
+            # logging.debug("set_config -- getting config from request")        
             jsonconfig = self.get_arg(request, "config")
-            logging.debug("set_config config arg {0}".format(jsonconfig))
+            # logging.debug("set_config config arg {0}".format(jsonconfig))
             ## load the manifest 
             manifest = self._load_manifest()
-            # jsonconfig = json.dumps(config)
-            logging.debug("set_config jsonconfig arg {0}".format(jsonconfig))
+            # logging.debug("set_config jsonconfig arg {0}".format(jsonconfig))
 
             # somewhere inside this we have put {0} wildcard so we wanna substitute that
             # with the actual config obj
             expanded = [x.format(jsonconfig) for x in manifest['set_config']]
             result = subprocess.call(expanded, cwd=self.get_app_cwd())
-            logging.debug("result of subprocess call {0}".format(result))
+            # logging.debug("result of subprocess call {0}".format(result))
             return self.return_ok(request, data={'result': result})
         except :
             logging.error("Error in set_config {0}".format(sys.exc_info()[0]))
