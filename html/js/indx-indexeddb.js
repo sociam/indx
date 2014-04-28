@@ -169,7 +169,7 @@ angular
 					// case 2: already deserialised
 					var cachedobj;
 					if ((cachedobj = objcache.get(id)) !== undefined) { 
-						deferredset[id] = u.dresolve(cachedobj); // create a new placeholder 
+						deferredset[id] = u.deferred(); // u.dresolve(cachedobj); // create a new placeholder 
 						skelmodels[id] = cachedobj;
 						return cachedobj; 	
 					}

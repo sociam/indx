@@ -193,8 +193,12 @@ angular
 					if (left.length === 0) { 
 						return this_.thenchain.map(function(x) { x(obj); });
 					}	
-					left[0](obj).then(function() { recurse(left.slice(1)); })
-						.fail(function(err) {  this_.failchain.map(function(x) { x(err); }); });
+					var fn = left[0];
+					$.when(fn(obj)).then(function() { 
+						recurse(left.slice(1)); 
+					}).fail(function(err) {  
+						this_.failchain.map(function(x) { x(err); }); 
+					});
 				};
 				recurse(this_.chain);
 			}).fail(function(err) { 
@@ -207,11 +211,9 @@ angular
 				this.chain.push(function(obj) { 
 					var retval;
 					if (_.isArray(obj)) {
-						retval = continuation(obj.map(function(obj_i) { return obj_i.get(field); }));
-						return $.when(retval); // all objects treated as a deferred
+						return continuation(obj.map(function(obj_i) { return obj_i.get(field); }));
 					} else {
-						retval = continuation(obj.get(field));
-						return $.when(retval);
+						return continuation(obj.get(field));
 					}
 				});
 				return this;
@@ -220,9 +222,9 @@ angular
 				var a = _.toArray(arguments);
 				this.chain.push(function(obj) { 
 					if (_.isArray(obj)) {
-						return u.when(obj.map(function(obj_i) { return obj_i.set.apply(obj_i, a); }));
+						obj.map(function(obj_i) { return obj_i.set.apply(obj_i, a); });
 					} else {
-						return obj.set.apply(obj, a);
+						obj.set.apply(obj, a);
 					}
 				});
 				return this;
@@ -253,9 +255,9 @@ angular
 				var a = _.toArray(arguments);
 				this.chain.push(function(obj) { 
 					if (_.isArray(obj)) {
-						return u.when(obj.map(function(obj_i) { return obj_i.on.apply(obj_i, a); }));
+						obj.map(function(obj_i) { return obj_i.on.apply(obj_i, a); });
 					} else {
-						return obj.on.apply(obj, a);
+						obj.on.apply(obj, a);
 					}
 				});
 				return this;		
@@ -1014,7 +1016,7 @@ angular
 					// if not currently fetching but already fetched ... 
 					var cachedobj;
 					if ((cachedobj = objcache.get(id)) !== undefined) { 
-						deferredset[id] = u.dresolve(cachedobj); // create a new placeholder 
+						// deferredset[id] = u.dresolve(cachedobj); // create a new placeholder 
 						skelmodels[id] = cachedobj;						
 						return cachedobj; 
 					}
@@ -1081,6 +1083,7 @@ angular
 				var ds = _(fetching).values();
 
 				var recurse = function(ids) { 
+					if (ids.length === 0) return u.dresolve();
 					var idchunk = newids.splice(0,chunkN);
 					var d = u.deferred();
 					fetch(idchunk, skeletons, fetching, newids).then(function() { 
@@ -1096,9 +1099,9 @@ angular
 				var d0 = u.deferred();
 				recurse(newids).then(function() { 
 					if (_.isArray(objid)) { 
-						u.when(ds).then(d0.resolve);
+						u.when(ds).then(function() { d0.resolve(objid.map(function(id) { return skeletons[id]; }));}).fail(d0.reject); 
 					} else {
-						u.when(ds).then(function(v) { d0.resolve(v[0]); });
+						u.when(ds).then(function(v) { d0.resolve(skeletons[objid]); }).fail(d0.reject);
 					}
 				}).fail(d0.reject);
 				return d0.promise();
