@@ -185,10 +185,7 @@ angular
 
 		var ObjProxy = function(get_deferred) {
 			var this_ = this;
-			this.d = get_deferred;
-			// set first 
-			this.d = this.d.pipe(function(x) { 
-				console.log('resolved >> ', x);
+			this.d = get_deferred.pipe(function(x) { 
 				this_.obj = x;
 				return u.dresolve();
 			});

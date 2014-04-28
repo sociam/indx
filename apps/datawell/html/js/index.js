@@ -91,15 +91,15 @@ vApp.controller('main', function($scope, $rootScope, $state, client, utils) {
     }
   });
   window.$s = $scope;
+  window.store = client.store;
 
 
   // debugging
-
-  console.log('hi');
-  client.store.getBox('a').then(function(c) { 
-    window.c = c; 
-    c.obj('hello').set({c:Math.random()}).save().then(function(x) { console.log('got hello ', x.attributes); });
-  });
+  // console.log('hi');
+  // client.store.getBox('a').then(function(c) { 
+  //   window.c = c; 
+  //   c.obj('hello').set({c:Math.random()}).save().then(function(x) { console.log('got hello ', x.attributes); });
+  // });
 
 
 
