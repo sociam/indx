@@ -516,6 +516,24 @@ angular
 		var ObjCollection = Backbone.Collection.extend({ model: Obj }),
 			FileCollection = Backbone.Collection.extend({ model: File });
 
+		// box proxy
+		var BoxProxy = function(get_deferred) {
+			var this_ = this;
+			this.d = get_deferred.pipe(function(x) { 
+				this_.box = x;
+				return u.dresolve();
+			});
+		};
+		BoxProxy.prototype = {
+			obj:function(objid) {
+				var this_ = this, dbox = u.deferred();
+				this.d = this.d.pipe(function() { 
+					this_.box.getObj(objid).then(dbox.resolve).fail(dbox.reject);
+				});
+				return new ObjProxy(dbox.promise());
+			}
+		};
+		
 		// new client: fetch is always lazy, only gets ids, and
 		// lazily get objects as you go
 		var Box = Backbone.Model.extend({
@@ -1388,6 +1406,9 @@ angular
 			getBox: function(boxid) {
 				var b = this.boxes().get(boxid) || this._create(boxid);
 				return b.fetch();
+			},
+			box:function(boxid) {
+				return new BoxProxy(this.getBox(boxid));
 			},
 			/// @arg <string|number> boxid: the id for the box
 			/// Creates a box with id boxid.  The user should have appropriate permissions
