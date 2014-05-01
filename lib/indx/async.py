@@ -53,7 +53,8 @@ class IndxAsync:
                 logging.debug("Async got an http request, data: {0}".format(data))
 
                 request = data.get("request")
-                session = data.get("session")
+                #session = data.get("session")
+                session = self.sessionid # TODO enable multiple sessions per websocket
                 logging.debug("Async got an http request: {0} in session {1}".format(request, session))
 
                 def req_cb(response):

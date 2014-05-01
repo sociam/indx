@@ -376,7 +376,7 @@ class BaseHandler():
         mappings = []
 
         def handler_req(request, token, this_sh):
-            logging.debug("Handle request for {0}, {1}, {2}".format(self.base_path, this_sh['prefix'], this_sh['handler']))
+            logging.debug("Handle request for {0}, {1}, {2}, token={3}".format(self.base_path, this_sh['prefix'], this_sh['handler'], token))
             this_sh['handler'](self, request, token)
 
         for sh in self.subhandlers:
