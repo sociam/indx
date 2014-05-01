@@ -29,3 +29,13 @@ class IndxResponse:
     def setHeader(self, key, value):
         self.headers[key] = value
 
+    def to_json(self):
+        """ To JSON e.g. for sending over a WebSocket. """
+        return {
+            "code": self.code,
+            "message": self.message,
+            "data": self.data,
+            "headers": self.headers,
+        }
+
+

@@ -18,10 +18,12 @@
 import logging
 import json
 import cjson
+import traceback
 from twisted.internet.defer import Deferred
 import indx_pg2 as database
 from indx.crypto import auth_keys, rsa_sign
 import indx.sync
+from indx.reactor import IndxRequest
 
 class IndxAsync:
     """ Abstracted logic for the INDX aynchronous (i.e. WebSocket) server. """
@@ -44,6 +46,31 @@ class IndxAsync:
             if data.get("action") == "diff" and data.get("operation") == "update":
                 # received after login_keys succeeds and we send the diff/start message
                 self.remote_observer(data)
+                return
+
+            if data.get("action") == "http":
+                # a call to an http request, over the websocket (via the reactor mappings)
+                logging.debug("Async got an http request, data: {0}".format(data))
+
+                request = data.get("request")
+                session = data.get("session")
+                logging.debug("Async got an http request: {0} in session {1}".format(request, session))
+
+                def req_cb(response):
+                    logging.debug("ASync sending http response in session: {0}".format(session))
+                    self.sendJSON({"respond_to": "http", "session": session, "response": response.to_json()})
+
+                indx_request = IndxRequest(
+                    request.get("method"),
+                    request.get("path"),
+                    request.get("params"),
+                    request.get("content"),
+                    session,
+                    req_cb,
+                    self.clientip
+                )
+
+                self.webserver.indx_reactor.incoming(indx_request)
                 return
 
             elif data.get('respond_to') == "login_keys":
@@ -135,7 +162,7 @@ class IndxAsync:
                 self.send400()
                 return
         except Exception as e:
-            logging.error("WebSocketsHandler frameRecevied, error: {0}".format(e))
+            logging.error("WebSocketsHandler frameRecevied, error: {0},\n trace: {1}".format(e, traceback.format_exc()))
             self.send500()
             return
 
