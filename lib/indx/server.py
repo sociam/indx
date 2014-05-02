@@ -36,6 +36,8 @@ from indx.keystore import IndxKeystore
 
 from indx.webserver.handlers.websockets import WebSocketsHandler
 from txWebSocket.websocket import WebSocketSite
+from indx.reactor import IndxReactor
+from indx.reactor import IndxWebHandler
 
 class WebServer:
     """ Twisted web server for running INDX. """
@@ -47,6 +49,7 @@ class WebServer:
 
         from twisted.internet.defer import setDebugging
         setDebugging(True)
+
 
         # enable ssl (or not)
         self.ssl = config['server'].get('ssl') or False
@@ -97,6 +100,7 @@ class WebServer:
         user,password = self.get_indx_user_password()
         self.database = database.IndxDatabase(config['indx_db'], user, password)
         self.tokens = token.TokenKeeper(self.database)
+        self.indx_reactor = IndxReactor(self.tokens)
         self.database.auth_indx(database = "postgres").addCallbacks(auth_cb, auth_err)
 
 
@@ -162,14 +166,15 @@ class WebServer:
         """ Setup the web server. """
         # TODO set up twisted to use gzip compression
 
+
         # Disable directory listings
         class FileNoDirectoryListings(File):
             def directoryListing(self):
                 return ForbiddenResource()
         # root handler is a static web server
         self.root = FileNoDirectoryListings(os.path.abspath(self.config['server']["html_dir"]))
-        self.root.processors = {'.rpy': script.ResourceScript}
-        self.root.ignoreExt('.rpy')
+        #self.root.processors = {'.rpy': script.ResourceScript}
+        #self.root.ignoreExt('.rpy')
         
         # TODO: config rdflib some day
         # register("json-ld", Serializer, "rdfliblocal.jsonld", "JsonLDSerializer")
@@ -179,8 +184,12 @@ class WebServer:
 
         ## start boxes
         self.register_boxes(self.root)
+
+        ## XXX TODO temporaily remove for debugging
         self.appshandler = AppsMetaHandler(self)
         self.root.putChild('apps', self.appshandler)        
+
+
         self.start()
         
         # load a web browser once the server has started
@@ -271,7 +280,7 @@ class WebServer:
         factory = WebSocketSite(self.root)
 
         class LongSession(Session):
-                sessionTimeout = 60 * 60 * 6 # = 6 hours (value is in seconds - default is 15 minutes)
+            sessionTimeout = 60 * 60 * 6 # = 6 hours (value is in seconds - default is 15 minutes)
 
         factory.sessionFactory = LongSession
 
@@ -310,7 +319,16 @@ class WebServer:
         
     def register_box(self, name, parent):
         """ Add a single INDX to the server. """
-        parent.putChild(name, BoxHandler(self, name)) # e.g. /indx
+        #parent.putChild(name, BoxHandler(self, name)) # e.g. /indx
+
+        # register a generic web handler with the twisted web server
+        parent.putChild(name, IndxWebHandler(self.indx_reactor))
+
+        box_handler = BoxHandler(self, base_path = name)
+        # register the handler with the indx reactor
+        for mapping in box_handler.get_mappings():
+            self.indx_reactor.add_mapping(mapping)
+
 
     def run(self, reactor_start = True):
         """ Run the server. """

@@ -18,19 +18,20 @@
 import logging, traceback, json
 from twisted.web.resource import Resource
 from twisted.web.server import NOT_DONE_YET
-from indx.webserver.session import INDXSession, ISession
+from indx.webserver.session import INDXSession 
 from indx.exception import ResponseOverride
 from mimeparse import quality
 from urlparse import parse_qs
 from indx.user import IndxUser
 from twisted.internet.defer import Deferred
+from indx.reactor import IndxMapping, IndxWebHandler, IndxResponse
 #try:
 #    import cjson
 #    logging.debug("Using CJSON.")
 #except Exception as e:
 #    logging.debug("No CJSON, falling back to python json.")
 
-class BaseHandler(Resource):
+class BaseHandler():
     """ Add/remove boxes, add/remove users, change config. """
 
     base_path=None  # Override me , e.g., 'auth'
@@ -45,18 +46,25 @@ class BaseHandler(Resource):
         #     'content-type':'text/plain' # optional
         # }
     }
+    mappings = []
 
     def __init__(self, webserver, base_path=None, register=True):
-        Resource.__init__(self)
+        #Resource.__init__(self)
         self.webserver = webserver
+        self.indx_reactor = webserver.indx_reactor
 
         if base_path is not None:
             self.base_path = base_path
 
         self.isLeaf = True # stops twisted from seeking children resources from me
         if register:
-            # logging.debug("Adding web server handler to path: /" + (self.base_path or ''))
-            webserver.root.putChild(self.base_path, self) # register path with webserver
+            logging.debug("Adding web server handler to path: /" + (self.base_path or ''))
+            #webserver.root.putChild(self.base_path, self) # register path with webserver
+            webserver.root.putChild(self.base_path, IndxWebHandler(self.indx_reactor)) # register path with webserver
+
+            # register the handler with the indx reactor
+            for mapping in self.get_mappings():
+                self.indx_reactor.add_mapping(mapping)
 
         self.database = self.webserver.database
 
@@ -212,13 +220,14 @@ class BaseHandler(Resource):
 #            raise ResponseOverride(403, "Forbidden")
 
     def get_session(self,request):
-        session = request.getSession()
-        # persists for life of a session (based on the cookie set by the above)
-        wbSession = session.getComponent(ISession)
-        if not wbSession:
-            wbSession = INDXSession(session, self.webserver)
-            session.setComponent(ISession, wbSession)
-        return wbSession
+        return self.indx_reactor.get_session(request)
+#        session = request.getSession()
+#        # persists for life of a session (based on the cookie set by the above)
+#        wbSession = session.getComponent(ISession)
+#        if not wbSession:
+#            wbSession = INDXSession(session, self.webserver)
+#            session.setComponent(ISession, wbSession)
+#        return wbSession
 
     def render(self, request):
         """ Twisted resource handler."""
@@ -293,28 +302,12 @@ class BaseHandler(Resource):
         # never get here
         pass
 
-    def _respond(self, request, code, message, additional_data=None):
-        response = {"message": message, "code": code}
-        if additional_data:
-            response.update(additional_data)
+    def _respond(self, request, code, message, additional_data = {}):
         try:
-            #responsejson = cjson.encode(response)
-            responsejson = json.dumps(response)
-            # logging.debug("Encoding response with cjson")
+            request.callback(IndxResponse(code, message, data = additional_data))
+            logging.debug(' just called request.finish() with code %d ' % code)
         except Exception as e:
-            responsejson = json.dumps(response)
-            # logging.debug("Encoding response with python json")
-
-        if not request._disconnected:
-            request.setResponseCode(code, message=message)
-            request.setHeader("Content-Type", "application/json")
-            request.setHeader("Content-Length", len(responsejson))
-            request.write(responsejson)
-            request.finish()
-            # logging.debug(' just called request.finish() with code %d ' % code)
-        else:
-            # logging.debug(' didnt call request.finish(), because it was already disconnected')
-            pass
+            logging.error("BaseHandler error sending response: {0}".format(e))
 
     def return_ok_file(self,request,fil,contenttype):
         if not request._disconnected:
@@ -377,4 +370,30 @@ class BaseHandler(Resource):
         else:
             #logging.debug('local request - skipping cors')
             pass
+
+
+    def get_mappings(self):
+        mappings = []
+
+        def handler_req(request, token, this_sh):
+            logging.debug("Handle request for {0}, {1}, {2}, token={3}".format(self.base_path, this_sh['prefix'], this_sh['handler'], token))
+            this_sh['handler'](self, request, token)
+
+        for sh in self.subhandlers:
+            mapping = (lambda sh_: IndxMapping(self.indx_reactor, sh_['methods'], self.base_path + "/" + sh_['prefix'], sh_, lambda request, token: handler_req(request, token, sh_)))(sh)
+            mappings.append(mapping)
+
+        return mappings
+
+##    {
+##        "prefix": "files",
+##        'methods': ['GET', 'PUT', 'DELETE'],
+##        'require_auth': False,
+##        'require_token': True,
+##        'require_acl': ['write'], # split this function into separate ones to allow for read-only file reading
+##        'force_get': True, # force the token function to get it from the query string for every method
+##        'handler': BoxHandler.files,
+##        'accept':['*/*'],
+##        'content-type':'application/json'
+##        },
 
