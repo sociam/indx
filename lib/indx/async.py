@@ -53,13 +53,15 @@ class IndxAsync:
                 logging.debug("Async got an http request, data: {0}".format(data))
 
                 request = data.get("request")
+                requestid = data.get("requestid")
+
                 #session = data.get("session")
                 session = self.sessionid # TODO enable multiple sessions per websocket
                 logging.debug("Async got an http request: {0} in session {1}".format(request, session))
 
                 def req_cb(response):
                     logging.debug("ASync sending http response in session: {0}".format(session))
-                    self.sendJSON({"respond_to": "http", "session": session, "response": response.to_json()})
+                    self.sendJSON({"requestid": requestid, "respond_to": "http", "session": session, "response": response.to_json()})
 
                 indx_request = IndxRequest(
                     request.get("method"),
