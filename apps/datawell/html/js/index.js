@@ -96,11 +96,8 @@ vApp.controller('main', function($scope, $rootScope, $state, client, utils) {
 
   // debugging
   // console.log('hi');
-  // client.store.getBox('a').then(function(c) { 
-  //   window.c = c; 
-  //   c.obj('hello').set({c:Math.random()}).save().then(function(x) { console.log('got hello ', x.attributes); });
+  // client.store.box('a').then(function(c) { 
+  //   console.log('c >> ', c);
   // });
-
-
 
 });

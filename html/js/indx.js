@@ -531,7 +531,17 @@ angular
 					this_.box.getObj(objid).then(dbox.resolve).fail(dbox.reject);
 				});
 				return new ObjProxy(dbox.promise());
-			}
+			},
+			then:function(dfd) {
+				var this_ = this;
+				this.d = this.d.pipe(function() { return $.when(dfd(this_.box));});
+				return this;
+			},
+			fail:function(f) { 
+				var this_ = this;
+				this.d.fail(function(err) { f(err,this_.box); });
+				return this;
+			}			
 		};
 		
 		// new client: fetch is always lazy, only gets ids, and
