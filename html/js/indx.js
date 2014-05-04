@@ -196,9 +196,9 @@ angular
 				this.d = this.d.pipe(function() { 
 					var obj = this_.obj;
 					if (_.isArray(obj)) {
-						return $.when(continuation(obj.map(function(obj_i) { return obj_i.get(field); })));
+						return jQuery.when(continuation(obj.map(function(obj_i) { return obj_i.get(field); })));
 					} else {
-						return $.when(continuation(obj.get(field)));
+						return jQuery.when(continuation(obj.get(field)));
 					}
 				});
 				return this;
@@ -280,7 +280,7 @@ angular
 				this.d = this.d.pipe(function() { 
 					console.log("EXECUTING THEN");
 					var obj = this_.obj;
-					return $.when(f(obj));
+					return jQuery.when(f(obj));
 				});
 				return this;
 			},
@@ -534,7 +534,7 @@ angular
 			},
 			then:function(dfd) {
 				var this_ = this;
-				this.d = this.d.pipe(function() { return $.when(dfd(this_.box));});
+				this.d = this.d.pipe(function() { return jQuery.when(dfd(this_.box));});
 				return this;
 			},
 			fail:function(f) { 
