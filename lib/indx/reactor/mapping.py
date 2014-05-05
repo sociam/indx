@@ -62,6 +62,7 @@ class IndxMapping:
         
 
     def get_post_args(self,request):
+        logging.debug("request content {0} - {1}".format(type(request.content), request.content))
         request.content.seek(0)
         return parse_qs(request.content.read())
 

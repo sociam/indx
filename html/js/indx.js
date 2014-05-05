@@ -68,7 +68,31 @@ angular
 
 		var WS_MESSAGES_SEND = {
 			auth: function(token) { return JSON.stringify({action:'auth', token:token}); },
-			diff: function(token) { return JSON.stringify({action:'diff', operation:"start"}); }
+			diff: function(token) { return JSON.stringify({action:'diff', operation:"start"}); },
+			http: function(requestid, method, path, data) { 
+				var toArrayVals = function(obj) {
+					var out = {};
+					_(obj).map(function(v,k) {
+						if (v !== undefined) {
+							out[k] = _.isArray(v) ? v : [v];
+						}
+					});
+					return out;
+				};
+				return JSON.stringify({
+					requestid:requestid,
+					action:'http',
+					request:{
+						path:"/"+path,
+						method:method,
+						params:{
+							headers:{"Accept": "*/*"},
+							args:toArrayVals(data)
+						}
+					},
+					content:{yabba:['doo']}
+				});
+			}
 		};
 
 		var _makeLocalUser = function(name) {
@@ -543,6 +567,90 @@ angular
 				return this;
 			}			
 		};
+
+		// 
+		var IndxWebSocketHandler = function(box, ws) {
+			this._ws = ws;
+			this.box = box;
+			this.requests = {};
+			this._setup();
+
+			this.authsuccess = u.deferred();
+			this.connected = u.deferred();
+		};
+		IndxWebSocketHandler.prototype = {
+			_genid : function() { return u.guid(16); },
+			_ws_auth : function() {
+				var token = this.box._getCachedToken() || this.box._getStoredToken();
+				if (this.box.isConnected()) {
+					var data = WS_MESSAGES_SEND.auth(token);
+					this._ws.send(data);
+				}
+			},			
+			_setup: function() {
+				var this_ = this, ws = this._ws, box = this.box;
+				/// @ignore
+				ws.onmessage = function(evt) {
+					// u.debug('websocket :: incoming a message ', evt.data.toString().substring(0,190)); // .substring(0,190));
+					var pdata = JSON.parse(evt.data);
+					if (pdata.requestid !== undefined) { 
+						if (this_.requests[pdata.requestid] !== undefined) {
+							var request = this_.requests[pdata.requestid];
+							console.info('continuing with ',typeof(pdata.response),pdata.response && pdata.response.data);
+							request.responsed.resolve(pdata.response && pdata.response.data);
+						} else {
+							console.error('had no request ', pdata.requestid);
+						}
+					} else if (pdata.action === 'diff') {
+						box._diffUpdate(pdata.data).then(function() {
+							box.trigger('update-from-master', this_.getVersion());
+						}).fail(function(err) {	u.error(err); });
+					} else if (pdata.action === undefined && pdata.success === true && this_.authsuccess) { 
+						console.log('websocket-success');
+						return this_.authsuccess.resolve();
+					} else if (pdata.error == "500 Internal Server Error" && pdata.success === false) {
+						console.error('got a 500 websocket kiss of death, disconnecting.');								
+						box._flush_tokens();
+						box.disconnect();
+					} else {
+						// unhandled here, pass it on.
+						console.log('ws :: unhanded message, passing on to the box ', pdata);
+						box.trigger('websocket-message', pdata);					
+					}
+				};
+				/// @ignore
+				ws.onopen = function() {
+					// u.debug("!!!!!!!!!!!!!!!! websocket open >>>>>>>>> sending token ", this_._getCachedToken() || this_._getStoredToken());
+					this_._ws_auth();
+					this_.authsuccess.then(function() { 
+						var data = WS_MESSAGES_SEND.diff();
+						ws.send(data);
+						box.trigger('ws-connect');
+						this_.connected.resolve();
+					});
+				};
+				/// @ignore
+				ws.onclose = function(evt) {
+					// what do we do now?!
+					console.error("!!!!!!!!!!!!!!!! websocket closed -- lost connection to server");
+					box.trigger('ws-disconnect');
+					box._disconnected();
+				};
+			},
+			addRequest:function(method, path, data) { 
+				var this_ = this, rid = this._genid(), req = {
+					rid:rid,
+					frame: WS_MESSAGES_SEND.http(rid, method, path, data),
+					responsed:u.deferred()
+				};
+				this.requests[rid] = req;
+				this.connected.then(function() { 
+					this_._ws.send(req.frame); 
+				});
+				return req.responsed.promise();
+			},
+		};
+
 		
 		// new client: fetch is always lazy, only gets ids, and
 		// lazily get objects as you go
@@ -563,21 +671,6 @@ angular
 				});
 				this.store.on('login', function() { console.debug('on login >> '); this_.reconnect(); });
 				this._reset();
-				this.on('websocket-message', function(pdata) { 
-					if (pdata.action === 'diff') {
-						this_._diffUpdate(pdata.data).then(function() {
-							this_.trigger('update-from-master', this_.getVersion());
-						}).fail(function(err) {	u.error(err); });
-					} 
-					if (pdata.action === undefined && pdata.success === true) {
-						this_.trigger('websocket-success');
-					}
-					if (pdata.error == "500 Internal Server Error" && pdata.success === false) {
-						console.error('got a 500 websocket kiss of death, disconnecting.');								
-						this_._flush_tokens();
-						this_.disconnect();
-					}
-				});				
 				// set up web socket connection whenever we get a new token
 				this.on('new-token', function() { 
 					// console.log('new token!! ', this_._getCachedToken(), this_._getStoredToken());
@@ -612,58 +705,23 @@ angular
 			uncacheObj: function(obj) {
 				return this._objcache().remove(obj);
 			},
-			_ws_auth : function() {
-				var token = this._getCachedToken() || this._getStoredToken();
-				if (this.isConnected()) {
-					var data = WS_MESSAGES_SEND.auth(token);
-					// console.log("AUTH WEBSOCKET >> ", data);
-					this._ws.send(data);
-				}
-			},
 			_setUpWebSocket:function() {
 				if (! this.getUseWebSockets() ) { return; }
 				if (! (this._getCachedToken() || this._getStoredToken()) ) { 
 					// console.info('Do not have a token cached or stored, so not setting up websocket ');
 					return ; 
 				}
-				if (this._ws) { 
-					// console.info('Websocket already set up ');
+				if (this._ws) {  
+					/* console.info('Websocket already set up '); */ 
 					return; 
 				}
-				// console.info('setUpWebSocket on ', this.getID());
 				var this_ = this, server_host = this.store.get('server_host'), store = this.store;
 				var protocol = (document.location.protocol === 'https:' || protocolOf(server_host) === 'https:') ? 'wss:/' : 'ws:/',
 					wprot = withoutProtocol(server_host),
 					wsURL = [protocol,withoutProtocol(server_host),'ws'].join('/'),
 					ws = new WebSocket(wsURL);
-
 				this_._ws = ws;
-
-				/// @ignore
-				ws.onmessage = function(evt) {
-					// u.debug('websocket :: incoming a message ', evt.data.toString().substring(0,190)); // .substring(0,190));
-					var pdata = JSON.parse(evt.data);
-					this_.trigger('websocket-message', pdata);
-				};
-				/// @ignoresou
-				ws.onopen = function() {
-					// u.debug("!!!!!!!!!!!!!!!! websocket open >>>>>>>>> sending token ", this_._getCachedToken() || this_._getStoredToken());
-					this_._ws_auth();
-					this_.once('websocket-success', function() { 
-						console.info('websocket success -- sending diff request >> ');
-						var data = WS_MESSAGES_SEND.diff();
-						ws.send(data);
-						this_._ws = ws;
-						this_.trigger('ws-connect');
-					});
-				};
-				/// @ignore
-				ws.onclose = function(evt) {
-					// what do we do now?!
-					console.error("!!!!!!!!!!!!!!!! websocket closed -- lost connection to server");
-					this_.trigger('ws-disconnect');
-					this_._disconnected();
-				};
+				this_._ws._handler = new IndxWebSocketHandler(this_,ws);
 			},
 			isConnected:function() {
 				return this._ws && this._ws.readyState === 1;
@@ -797,6 +855,11 @@ angular
 					// reconnect if somehow we dead
 					if (!this_._ws) { this_._setUpWebSocket(); }
 					token = this_._getCachedToken() || this_._getStoredToken();
+					if (this_._ws && this_._ws._handler) {
+						// use websocket approach instead
+						console.log('box._ajax -> diverting to websocket ', method, path);
+						return this_._ws._handler.addRequest(method, path, _(data||{}).extend({token:token, app:this_.store.get('app')}) );
+					} 
 					data = _(_(data||{}).clone()).extend({box:box_id, token:token});
 					return this_.store._ajax(method, path, data);
 				};
