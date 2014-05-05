@@ -64,6 +64,7 @@ class IndxAsync:
                     self.sendJSON({"requestid": requestid, "respond_to": "http", "session": session, "response": response.to_json()})
 
                 indx_request = IndxRequest(
+                    request.get("uri"),
                     request.get("method"),
                     request.get("path"),
                     request.get("params"),
