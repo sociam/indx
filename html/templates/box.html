@@ -14,7 +14,7 @@
     <div class="visual_gettoken">
         <span class="glyphicon glyphicon-phone" ng-click="show_qrcode=!show_qrcode">
     </div>
-    <div ng-class="{token_qrcode_display:true, visible:show_qrcode}">
+    <div ng-if="show_qrcode" ng-class="{token_qrcode_display:true, visible:show_qrcode}">
         <h2> authentication token for {{ box.id }} </h2>
         <!--<pre>{{ boxtoken }}</pre>-->
         <token-qrcode box="box"></token-qrcode>
