@@ -15,6 +15,7 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import logging
+from indx.reactor import IndxResponse
 
 class IndxRequest:
 
@@ -34,6 +35,12 @@ class IndxRequest:
         for key, value in self.response['headers'].items():
             response.setHeader(key, value)
 
+        if self.response.get("code") is not None:
+            response.code =  self.response.get("code")
+
+        if self.response.get("message") is not None:
+            response.message =  self.response.get("message")
+
         self.callback_f(response)
 
     ###
@@ -49,4 +56,20 @@ class IndxRequest:
     # Add a new _Response_ header
     def setHeader(self, key, value):
         self.response['headers'][key] = value
+
+    def setResponseCode(self, code, message):
+        """ Set the response code. """
+        self.response['code'] = code
+        self.response['message'] = message
+
+    def finish(self):
+        code = self.response.get("code")
+        message = self.response.get("message")
+
+        if code is None:
+            code = 500
+            message = "Internal Server Error"
+
+        response = IndxResponse(code, message)
+        self.callback(response)
 

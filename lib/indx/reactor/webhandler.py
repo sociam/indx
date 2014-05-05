@@ -52,6 +52,10 @@ class IndxWebHandler(Resource):
                     request.setResponseCode(indx_response.code, indx_response.message)
                     request.setHeader("Content-Type", "application/json")
                     request.setHeader("Content-Length", len(responsejson))
+
+                    for key, value in indx_response.headers.items():
+                        request.setHeader(key, value)
+
                     request.write(responsejson)
                     request.finish()
                     logging.debug(' just called request.finish() with code %d ' % indx_response.code)
