@@ -614,7 +614,7 @@ angular
 						}
 					} else if (pdata.action === 'diff') {
 						box._diffUpdate(pdata.data).then(function() {
-							box.trigger('update-from-master', this_.getVersion());
+							box.trigger('update-from-master', box.getVersion());
 						}).fail(function(err) {	u.error(err); });
 					} else if (pdata.action === undefined && pdata.success === true && this_.authsuccess) { 
 						console.log('websocket-success');
