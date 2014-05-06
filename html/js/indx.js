@@ -593,11 +593,20 @@ angular
 				ws.onmessage = function(evt) {
 					// u.debug('websocket :: incoming a message ', evt.data.toString().substring(0,190)); // .substring(0,190));
 					var pdata = JSON.parse(evt.data);
+					console.log('pdata >> ', pdata);
 					if (pdata.requestid !== undefined) { 
 						if (this_.requests[pdata.requestid] !== undefined) {
 							var request = this_.requests[pdata.requestid];
-							console.info('continuing with ',typeof(pdata.response),pdata.response && pdata.response.data);
-							request.responsed.resolve(pdata.response && pdata.response.data);
+							console.info('continuing on ', 
+								pdata.requestid, request.frame, 
+								' with ', typeof(pdata.response),pdata.response, 
+								pdata.response && pdata.response.data);
+							if (pdata.code >= 400) { 
+								request.responsed.fail(pdata.response);
+							} else {
+								request.responsed.resolve(pdata.response && pdata.response.data);
+							}
+							delete this_.requests[pdata.requestid];
 						} else {
 							console.error('had no request ', pdata.requestid);
 						}
