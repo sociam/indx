@@ -869,7 +869,7 @@ angular
 					if (this_._ws && this_._ws._handler) {
 						// use websocket approach instead
 						console.log('box._ajax -> diverting to websocket ', method, path);
-						return this_._ws._handler.addRequest(method, path, _(data||{}).extend({token:token, app:this_.store.get('app')}) );
+						return this_._ws._handler.addRequest(method, path, _(data||{}).extend({box:box_id, token:token, app:this_.store.get('app')}) );
 					} 
 					data = _(_(data||{}).clone()).extend({box:box_id, token:token});
 					return this_.store._ajax(method, path, data);
