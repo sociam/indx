@@ -15,6 +15,7 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import logging
+import json
 from urlparse import parse_qs
 
 class IndxMapping:
@@ -64,7 +65,14 @@ class IndxMapping:
     def get_post_args(self,request):
         logging.debug("request content {0} - {1}".format(type(request.content), request.content))
         request.content.seek(0)
-        return parse_qs(request.content.read())
+
+        # could be JSON encoded (from websocket) or url-encoded
+        data = request.content.read()
+        try:
+            decoded = json.loads(data)
+            return decoded
+        except Exception as e:
+            return parse_qs(data)
 
 
     def get_arg(self, request, argname, default = None, force_get = False):
