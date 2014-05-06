@@ -19,6 +19,7 @@ import logging
 import json
 import cjson
 import traceback
+import StringIO
 from twisted.internet.defer import Deferred
 import indx_pg2 as database
 from indx.crypto import auth_keys, rsa_sign
@@ -68,7 +69,7 @@ class IndxAsync:
                     request.get("method"),
                     request.get("path"),
                     request.get("params"),
-                    request.get("content"),
+                    StringIO.StringIO(request.get("content")),
                     session,
                     req_cb,
                     self.clientip
