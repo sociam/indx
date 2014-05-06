@@ -79,6 +79,7 @@ angular
 					});
 					return out;
 				};
+				data = toArrayVals(data);
 				return JSON.stringify({
 					requestid:requestid,
 					action:'http',
@@ -87,10 +88,10 @@ angular
 						method:method,
 						params:{
 							headers:{"Accept": "*/*"},
-							args:toArrayVals(data)
+							args:method == 'GET' ? data : undefined,
+							content:method !== 'GET' ? jQuery.param(data, true) : undefined
 						}
-					},
-					content:{yabba:['doo']}
+					}
 				});
 			}
 		};
