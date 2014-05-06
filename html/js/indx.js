@@ -54,10 +54,10 @@ angular
 	.module('indx', [])
 	.factory('client',function(utils) {
 		// long token support not fully implemented, disable for now
+
+		var HTTP_OVER_WEBSOCKET = true; // change here to turn off 
 		var ENABLE_LONG_TOKENS = false;
-
 		var u = utils, log = utils.log, error = utils.error, debug = utils.debug, jQ = jQuery;
-
 		var DEFAULT_HOST = document.location.host; // which may contain the port
 
 		// new patch for nodejs support
@@ -246,7 +246,7 @@ angular
 				this.d = this.d.pipe(function() { 
 					console.log("EXECUTING SAVE");
 					var obj = this_.obj;
-					if (false && _.isArray(obj)) {
+					if (_.isArray(obj)) {
 						return u.when(obj.map(function(obj_i) { return obj_i.save(); }));
 					} else {
 						// console.log('saving >>>>>>>>>>>> ');
@@ -863,7 +863,7 @@ angular
 					// reconnect if somehow we dead
 					if (!this_._ws) { this_._setUpWebSocket(); }
 					token = this_._getCachedToken() || this_._getStoredToken();
-					if (this_._ws && this_._ws._handler) {
+					if (HTTP_OVER_WEBSOCKET && this_._ws && this_._ws._handler) {
 						// use websocket approach instead
 						console.log('box._ajax -> diverting to websocket ', method, path);
 						return this_._ws._handler.addRequest(method, path, _(data||{}).extend({box:box_id, token:token, app:this_.store.get('app')}) );

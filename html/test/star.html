@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en" >
+<head>
+ 	<link href="/lib/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet"/>
+	<link href="/lib/angular-ui/build/angular-ui.min.css" rel="stylesheet"/>
+	<!-- cdmbase -->
+  <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1, maximum-scale=1">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<!-- cdmbase -->
+	<link rel="stylesheet/less" type="text/css" href="/components/toolbar/toolbar.less"/>
+	<title>star test</title>
+</head>
+<body ng-app="startest" ng-controller="main" ng-cloak>
+  <toolbar box-var='selected_box' username-var='userLoggedIn'></toolbar>
+  <h1 ng-if="!userLoggedIn">please log in</h1>
+  <h1 ng-if="userLoggedIn && !selected_box">please select a box</h1>
+  <h1 ng-if="userLoggedIn && selected_box">running tests on box {{ selected_box }}</h1>
+  <script src="../lib/jquery/jquery.min.js" type="text/javascript"></script>
+  <script src="../lib/less/dist/less-1.6.2.min.js" type="text/javascript"></script>
+  <script src="../lib/underscore/underscore.js" type="text/javascript"></script>
+  <script src="../lib/backbone/backbone.js" type="text/javascript"></script>
+  <script src="../lib/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+  <script src="../lib/angular/angular.min.js" type="text/javascript"></script>
+  <script src="../lib/angular-route/angular-route.min.js" type="text/javascript"></script>
+  <script src="../js/indx.js" type="text/javascript"></script>
+  <script src="../js/indx-utils.js" type="text/javascript"></script>
+  <script src="/components/toolbar/toolbar.js" type="text/javascript"></script>
+  <script src="js/star.js" type="text/javascript"></script>
+</body>
+</html>
