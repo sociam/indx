@@ -17,7 +17,7 @@ var nodeindx = require('../../lib/services/nodejs/nodeindx'),
 
 console.log("USING BOX ", test_box);
 
-jasmine.getEnv().defaultTimeoutInterval = process.env.timeout && parseInt(process.env.timeout)|| 50000;
+jasmine.getEnv().defaultTimeoutInterval = process.env.timeout && parseInt(process.env.timeout)|| 10000;
 
 describe('indx basic connect', function() { 
     // 
@@ -123,8 +123,9 @@ describe('creation of an object', function() {
 });
 
 describe('object star stress test', function() { 
-    var N = process.env.starN && parseInt(process.env.starN) || 20, 
+    var N = process.env.starN && parseInt(process.env.starN) || 10, 
         ids = u.range(N).map(function(x) { return 'star-stress-' + u.guid(5); });
+
     it('creates the objects', function(done) { 
         console.log(' creates the objects  ', ids.length);
         var os = {};
@@ -142,9 +143,14 @@ describe('object star stress test', function() {
                         o.set('all', objs);
                         return o.save();
                     }); 
-                    u.when(saved).then(function() { 
+                    u.when(saved).then(function() {
+                        console.log('done saving');
                         done();
-                    });
+                    }).fail(function(err) { 
+                        console.error('fail saving', err);
+                        expect(true).toBe(false);
+                        done();
+                    })
                 });
             });
         });

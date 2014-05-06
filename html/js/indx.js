@@ -598,13 +598,9 @@ angular
 					if (pdata.requestid !== undefined) { 
 						if (this_.requests[pdata.requestid] !== undefined) {
 							var request = this_.requests[pdata.requestid];
-							console.info('continuing on ', 
-								pdata.requestid, request.frame, 
-								' with ', typeof(pdata.response),pdata.response, 
-								pdata.response && pdata.response.data);
 							if (parseInt(pdata.response.code) >= 400) { 
 								console.error('error -- ', pdata.response.code, 'failing');
-								request.responsed.fail(pdata.response);
+								request.responsed.reject(pdata.response);
 							} else {
 								request.responsed.resolve(pdata.response && pdata.response.data);
 							}
@@ -616,9 +612,9 @@ angular
 						box._diffUpdate(pdata.data).then(function() {
 							box.trigger('update-from-master', box.getVersion());
 						}).fail(function(err) {	u.error(err); });
-					} else if (pdata.action === undefined && pdata.success === true && this_.authsuccess) { 
-						console.log('websocket-success');
-						return this_.authsuccess.resolve();
+					} else if (pdata.sessionid === undefined && pdata.action === undefined && pdata.success === true && this_.authsuccess) { 
+						this_.authsuccess.resolve();
+						delete this_.authsuccess;
 					} else if (pdata.error == "500 Internal Server Error" && pdata.success === false) {
 						console.error('got a 500 websocket kiss of death, disconnecting.');								
 						box._flush_tokens();
@@ -633,7 +629,8 @@ angular
 				ws.onopen = function() {
 					// u.debug("!!!!!!!!!!!!!!!! websocket open >>>>>>>>> sending token ", this_._getCachedToken() || this_._getStoredToken());
 					this_._ws_auth();
-					this_.authsuccess.then(function() { 
+					this_.authsuccess.then(function() {
+						console.log('--- asking for diff ');
 						var data = WS_MESSAGES_SEND.diff();
 						ws.send(data);
 						box.trigger('ws-connect');
