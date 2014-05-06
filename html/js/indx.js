@@ -88,9 +88,9 @@ angular
 						method:method,
 						params:{
 							headers:{"Accept": "*/*"},
-							args:method == 'GET' ? data : undefined,
-							content:method !== 'GET' ? data : undefined
-						}
+							args:method == 'GET' ? data : {},
+						},
+						content:method !== 'GET' ? data : undefined
 					}
 				});
 			}
