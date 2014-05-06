@@ -89,7 +89,7 @@ angular
 						params:{
 							headers:{"Accept": "*/*"},
 							args:method == 'GET' ? data : undefined,
-							content:method !== 'GET' ? jQuery.param(data, true) : undefined
+							content:method !== 'GET' ? data : undefined
 						}
 					}
 				});
