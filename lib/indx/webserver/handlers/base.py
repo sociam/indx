@@ -357,8 +357,14 @@ class BaseHandler():
         return ("Content-Type", "origin", "accept", "Depth", "User-Agent", "X-File-Size", "X-Requested-With", "Cookie", "Set-Cookie", "If-Modified-Since","X-File-Name", "Cache-Control")
 
     def get_post_args(self,request):
-        request.content.seek(0) # dan's fault.
-        return parse_qs(request.content.read())
+
+        # already decoded as JSON from the websocket
+        if type(request.content) == type({}):
+            return request.content
+
+        request.content.seek(0)
+        data = request.content.read()
+        return parse_qs(data)
 
     def set_cors_headers(self,request):
         if self.get_cors_origin(request):

@@ -63,16 +63,15 @@ class IndxMapping:
         
 
     def get_post_args(self,request):
-        logging.debug("request content {0} - {1}".format(type(request.content), request.content))
-        request.content.seek(0)
+        logging.debug("get_post_args: request content {0} - {1}".format(type(request.content), request.content))
 
-        # could be JSON encoded (from websocket) or url-encoded
+        # already decoded as JSON from the websocket
+        if type(request.content) == type({}):
+            return request.content
+
+        request.content.seek(0)
         data = request.content.read()
-        try:
-            decoded = json.loads(data)
-            return decoded
-        except Exception as e:
-            return parse_qs(data)
+        return parse_qs(data)
 
 
     def get_arg(self, request, argname, default = None, force_get = False):

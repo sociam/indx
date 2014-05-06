@@ -69,7 +69,7 @@ class IndxAsync:
                     request.get("method"),
                     request.get("path"),
                     request.get("params"),
-                    StringIO.StringIO(request.get("content")),
+                    request.get("content"),
                     session,
                     req_cb,
                     self.clientip
