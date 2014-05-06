@@ -601,7 +601,8 @@ angular
 								pdata.requestid, request.frame, 
 								' with ', typeof(pdata.response),pdata.response, 
 								pdata.response && pdata.response.data);
-							if (pdata.code >= 400) { 
+							if (parseInt(pdata.response.code) >= 400) { 
+								console.error('error -- ', pdata.response.code, 'failing');
 								request.responsed.fail(pdata.response);
 							} else {
 								request.responsed.resolve(pdata.response && pdata.response.data);
