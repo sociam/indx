@@ -77,6 +77,9 @@ class IndxAsync:
                 self.webserver.indx_reactor.incoming(indx_request)
                 return
 
+            elif data.get("action") == "echo":
+                self.sendJSON(requestid, {"session": session}, "echo")
+                return
             elif data.get('respond_to') == "login_keys":
                 # a response to our attempt to re-connect back to the client
                 logging.debug("Async got a respond to login_keys: {0}".format(data))
@@ -281,14 +284,17 @@ class IndxAsync:
         logging.debug("ASync send JSON of data: {0}, requestid: {1}".format(data, requestid))
         #encoded = cjson.encode(data)
 
-        if requestid:
-            data.update({"requestid": requestid})
+        try:
+            if requestid:
+                data.update({"requestid": requestid})
 
-        if respond_to:
-            data.update({"respond_to": respond_to})
+            if respond_to:
+                data.update({"respond_to": respond_to})
 
-        encoded = json.dumps(data)
-        self.send_f(encoded)
+            encoded = json.dumps(data)
+            self.send_f(encoded)
+        except Exception as e:
+            logging.error("Async error sending JSON: {0}".format(e))
 
     def send500(self, requestid, respond_to):
         self.sendJSON(requestid, {"success": False, "error": "500 Internal Server Error"}, respond_to)

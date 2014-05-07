@@ -27,7 +27,13 @@ class WebSocketsHandler(WebSocketHandler):
         WebSocketHandler.__init__(self, transport)
 
         def send_f(data):
-            transport.write(data)
+            try:
+                logging.debug("WebSocketsHandler, writing a frame: {0}".format(data))
+                if not transport._connected:
+                    logging.debug("WebSocketsHandler is CLOSED :(")
+                transport.write(data)
+            except Exception as e:
+                logging.error("Error writing frame to WebSocket transport: {0}".format(e))
 
         self.sessionid = "{0}".format(uuid.uuid1())
         self.async = IndxAsync(send_f, self.transport._request.site.webserver, self.sessionid, self.transport._request.getClientIP())
