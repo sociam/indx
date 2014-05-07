@@ -753,8 +753,9 @@ class WebSocketFrameDecoder(object):
     @type _currentFrameLength: C{int}
     """
 
-    MAX_LENGTH = 16384
+    #MAX_LENGTH = 16384
     MAX_BINARY_LENGTH = 2147483648
+    MAX_LENGTH = MAX_BINARY_LENGTH # DS
     closing = False
 
     def __init__(self, request, handler):
