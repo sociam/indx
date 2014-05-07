@@ -97,6 +97,13 @@ angular
 						content:method !== 'GET' ? data : undefined
 					}
 				});
+			},
+			echo:function(requestid, payload) {
+				return JSON.stringify({
+					requestid:requestid,
+					action:'echo',
+					request:payload
+				});
 			}
 		};
 
@@ -666,6 +673,20 @@ angular
 			_ws_diff:function() { 
 				var rid = this._genid();
 				return this.addRequest(rid, WS_MESSAGES_SEND.diff(rid));	
+			},
+			_echo:function(payload) { 
+				var rid = this._genid();
+				return this.addRequest(rid, WS_MESSAGES_SEND.echo(rid, payload));	
+			},
+			echoTest:function(size) {
+				var this_ = this;
+				size = size || 16384;
+				u.range(100).map(function(x) { 
+					var payload = u.guid(size), send = new Date().valueOf();
+					this_._echo(payload).then(function(response)  {
+						console.log('response received ', response, ' latency ', (new Date()).valueOf() - send, " msec ");
+					});
+				});
 			}
 		};
 
