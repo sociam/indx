@@ -41,9 +41,9 @@ class IndxAsync:
             def err_cb(failure):
                 logging.error("WebSocketsHandler receive, err_cb: {0}".format(failure))
             
-
-
             data = json.loads(frame)
+            requestid = data.get("requestid")
+
             if data.get("action") == "diff" and data.get("operation") == "update":
                 # received after login_keys succeeds and we send the diff/start message
                 self.remote_observer(data)
@@ -54,7 +54,6 @@ class IndxAsync:
                 logging.debug("Async got an http request, data: {0}".format(data))
 
                 request = data.get("request")
-                requestid = data.get("requestid")
 
                 #session = data.get("session")
                 session = self.sessionid # TODO enable multiple sessions per websocket
@@ -62,7 +61,7 @@ class IndxAsync:
 
                 def req_cb(response):
                     logging.debug("ASync sending http response in session: {0}".format(session))
-                    self.sendJSON({"requestid": requestid, "respond_to": "http", "session": session, "response": response.to_json()})
+                    self.sendJSON(requestid, {"respond_to": "http", "session": session, "response": response.to_json()}, "http")
 
                 indx_request = IndxRequest(
                     request.get("uri"),
@@ -82,7 +81,7 @@ class IndxAsync:
                 # a response to our attempt to re-connect back to the client
                 logging.debug("Async got a respond to login_keys: {0}".format(data))
                 # TODO handle errors
-                self.sendJSON({"action": "diff", "operation": "start"}) 
+                self.sendJSON(requestid, {"action": "diff", "operation": "start"}, "login_keys") 
                 return
 
             elif data['action'] == "auth":
@@ -90,7 +89,7 @@ class IndxAsync:
                 def token_cb(token):
                     try:    
                         if token is None:
-                            self.send401()
+                            self.send401(requestid, "auth")
                             return
                         logging.debug("WebSocketsHandler Auth by Token {0} successful.".format(data['token']))
                         self.token = token
@@ -99,22 +98,22 @@ class IndxAsync:
                         # so it can try to connect back over this websocket.
 #                        self.webserver.
 
-                        self.send200()
+                        self.send200(requestid, "auth")
                         return
                     except Exception as e:
                         logging.error("WebSocketsHandler frameReceived, token error: {0}".format(e))
-                        self.send401()
+                        self.send401(requestid, "auth")
                         return
 
                 self.tokens.get(data['token']).addCallbacks(token_cb, err_cb)
             elif data['action'] == "get_session_id":
-                self.send200(data = {'sessionid': self.sessionid})
+                self.send200(requestid, "auth", data = {'sessionid': self.sessionid})
             elif data['action'] == "login_keys":
                 try:
                     signature, key_hash, algo, method, appid, encpk2 = data['signature'], data['key_hash'], data['algo'], data['method'], data['appid'], data['encpk2']
                 except Exception as e:
                     logging.error("ASync login_keys error getting all parameters.")
-                    return self.send400()
+                    return self.send400(requestid, "login_keys")
 
                 def win(resp):
                     # authenticated now - state of this isn't saved though, we get a token immediately instead
@@ -125,7 +124,7 @@ class IndxAsync:
 
                     def got_acct(acct):
                         if acct == False:
-                            return self.send401()
+                            return self.send401(requestid, "login_keys")
 
                         db_user, db_pass = acct
 
@@ -136,39 +135,40 @@ class IndxAsync:
                                 # first, try to connect back through the websocket
                                 self.token = token
                                 self.connectBackToClient(key_hash, store).addCallbacks(lambda empty: logging.debug("ASync, success connecting back."), lambda failure: logging.error("ASync, failure connecting back: {0}".format(failure)))
-                                return self.send200(data = {"token": token.id, "respond_to": "login_keys"})
+                                return self.send200(requestid, "login_keys", data = {"token": token.id, "respond_to": "login_keys"})
 
-                            token.get_store().addCallbacks(store_cb, lambda failure: self.send500())
+                            token.get_store().addCallbacks(store_cb, lambda failure: self.send500(requestid, "login_keys"))
 
-                        self.webserver.tokens.new(username,password,boxid,appid,origin,self.clientip,self.webserver.server_id).addCallbacks(token_cb, lambda failure: self.send500())
+                        self.webserver.tokens.new(username,password,boxid,appid,origin,self.clientip,self.webserver.server_id).addCallbacks(token_cb, lambda failure: self.send500(requestid, "login_keys"))
 
 
-                    self.webserver.database.lookup_best_acct(boxid, username, password).addCallbacks(got_acct, lambda conn: self.send401())
+                    self.webserver.database.lookup_best_acct(boxid, username, password).addCallbacks(got_acct, lambda conn: self.send401(requestid, "login_keys"))
 
                 def fail(empty):
-                    self.send401()
+                    self.send401(requestid, "login_keys")
 
                 auth_keys(self.webserver.keystore, signature, key_hash, algo, method, self.sessionid, encpk2).addCallbacks(win, fail)
 
             elif data['action'] == "diff":
                 # turn on/off diff listening
                 if data['operation'] == "start":
-                    self.listen_diff()
-                    self.send200()
+                    self.listen_diff(requestid)
+                    self.send200(requestid, "diff")
                     return
                 elif data['operation'] == "stop":
                     #self.stop_listen()
-                    self.send200()
+                    self.send200(requestid, "diff")
                     return
                 else:
-                    self.send400()
+                    self.send400(requestid, "diff")
                     return
             else:
-                self.send400()
+                action = data.get("action") # could be None
+                self.send400(requestid, action)
                 return
         except Exception as e:
             logging.error("WebSocketsHandler frameRecevied, error: {0},\n trace: {1}".format(e, traceback.format_exc()))
-            self.send500()
+            self.send500(requestid, data.get("action"))
             return
 
     def connectBackToClient(self, public_key_hash, store):
@@ -209,7 +209,7 @@ class IndxAsync:
 
             values = {"action": "login_keys", "signature": signature, "key_hash": key_hash, "algo": algo, "method": method, "appid": "INDX ASync", "encpk2": encpk2}
 
-            self.sendJSON(values)
+            self.sendJSON(None, values, None)
 
         except Exception as e:
             logging.error("ASync: {0}".format(e))
@@ -257,9 +257,9 @@ class IndxAsync:
         self.token = None
 
         # send the session ID when connection works
-        self.send200(data = {'sessionid': self.sessionid})
+        self.send200(None, "connect", data = {'sessionid': self.sessionid})
 
-    def listen_diff(self):
+    def listen_diff(self, requestid):
         def err_cb(failure):
             logging.error("WebSocketsHandler listen_diff, err_cb: {0}".format(failure))
 
@@ -270,32 +270,39 @@ class IndxAsync:
                 """ Receive an update from the server. """
                 logging.debug("WebSocketsHandler listen_diff observer notified: {0}".format(diff))
 
-                self.sendJSON({"action": "diff", "operation": "update", "data": diff})
+                self.sendJSON(requestid, {"action": "diff", "operation": "update", "data": diff}, "diff")
 
             store.listen(observer_local) # no callbacks, nothing to do
 
         self.token.get_store().addCallbacks(store_cb, err_cb)
 
-    def sendJSON(self, data):
+    def sendJSON(self, requestid, data, respond_to = None):
         """ Send data as JSON to the WebSocket. """
-        logging.debug("ASync send JSON of data: {0}".format(data))
+        logging.debug("ASync send JSON of data: {0}, requestid: {1}".format(data, requestid))
         #encoded = cjson.encode(data)
+
+        if requestid:
+            data.update({"requestid": requestid})
+
+        if respond_to:
+            data.update({"respond_to": respond_to})
+
         encoded = json.dumps(data)
         self.send_f(encoded)
 
-    def send500(self):
-        self.sendJSON({"success": False, "error": "500 Internal Server Error"})
+    def send500(self, requestid, respond_to):
+        self.sendJSON(requestid, {"success": False, "error": "500 Internal Server Error"}, respond_to)
 
-    def send400(self):
-        self.sendJSON({"success": False, "error": "400 Bad Request"})
+    def send400(self, requestid, respond_to):
+        self.sendJSON(requestid, {"success": False, "error": "400 Bad Request"}, respond_to)
 
-    def send401(self):
-        self.sendJSON({"success": False, "error": "401 Unauthorized"})
+    def send401(self, requestid, respond_to):
+        self.sendJSON(requestid, {"success": False, "error": "401 Unauthorized"}, respond_to)
 
-    def send200(self, data = None):
+    def send200(self, requestid, respond_to, data = None):
         out = {"success": True}
         if data is not None:
             out.update(data)
-        self.sendJSON(out)
+        self.sendJSON(requestid, out, respond_to)
 
 
