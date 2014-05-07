@@ -1156,7 +1156,7 @@ angular
 
 				var ids = _.isArray(objid) ? objid : [objid], this_ = this,
 					fetching = {}, newids = [], skeletons = {}, objcache = this._objcache(),
-					chunkN = 50;
+					chunkN = 5000;
 
 				var deserialise_obj = function(id, skelmodels, deferredset, newids_) {
 					if (skelmodels[id] !== undefined) { 
