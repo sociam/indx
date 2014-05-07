@@ -78,7 +78,7 @@ class IndxAsync:
                 return
 
             elif data.get("action") == "echo":
-                self.sendJSON(requestid, {"session": session}, "echo")
+                self.sendJSON(requestid, {}, "echo")
                 return
             elif data.get('respond_to') == "login_keys":
                 # a response to our attempt to re-connect back to the client
