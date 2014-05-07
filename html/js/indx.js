@@ -67,8 +67,12 @@ angular
 		} 
 
 		var WS_MESSAGES_SEND = {
-			auth: function(token) { return JSON.stringify({action:'auth', token:token}); },
-			diff: function(token) { return JSON.stringify({action:'diff', operation:"start"}); },
+			auth: function(requestid, token) { 
+				return JSON.stringify({requestid:requestid,action:'auth',token:token}); 
+			},
+			diff: function(requestid, token) { 
+				return JSON.stringify({requestid:requestid,action:'diff',operation:"start"}); 
+			},
 			http: function(requestid, method, path, data) { 
 				var toArrayVals = function(obj) {
 					var out = {};
@@ -575,19 +579,10 @@ angular
 			this.box = box;
 			this.requests = {};
 			this._setup();
-
-			this.authsuccess = u.deferred();
 			this.connected = u.deferred();
 		};
 		IndxWebSocketHandler.prototype = {
-			_genid : function() { return u.guid(16); },
-			_ws_auth : function() {
-				var token = this.box._getCachedToken() || this.box._getStoredToken();
-				if (this.box.isConnected()) {
-					var data = WS_MESSAGES_SEND.auth(token);
-					this._ws.send(data);
-				}
-			},			
+			_genid: function() { return u.guid(16); },
 			_setup: function() {
 				var this_ = this, ws = this._ws, box = this.box;
 				/// @ignore
@@ -595,30 +590,30 @@ angular
 					// u.debug('websocket :: incoming a message ', evt.data.toString().substring(0,190)); // .substring(0,190));
 					var pdata = JSON.parse(evt.data);
 					console.log('pdata >> ', pdata);
-					if (pdata.requestid !== undefined) { 
+					if (pdata.action === 'diff') {
+						box._diffUpdate(pdata.data)
+							.then(function() { box.trigger('update-from-master', box.getVersion()); })
+							.fail(function(err) {	u.error(err); });
+					} else	if (pdata.requestid !== undefined) { 
 						if (this_.requests[pdata.requestid] !== undefined) {
 							var request = this_.requests[pdata.requestid];
-							if (parseInt(pdata.response.code) >= 400) { 
+							if (pdata.success === false || pdata.response && pdata.response.code && parseInt(pdata.response.code) >= 400) { 
 								console.error('error -- ', pdata.response.code, 'failing');
 								request.responsed.reject(pdata.response);
 							} else {
-								request.responsed.resolve(pdata.response && pdata.response.data);
+								request.responsed.resolve(pdata.response); // && pdata.response.data
 							}
 							delete this_.requests[pdata.requestid];
 						} else {
 							console.error('had no request ', pdata.requestid);
 						}
-					} else if (pdata.action === 'diff') {
-						box._diffUpdate(pdata.data).then(function() {
-							box.trigger('update-from-master', box.getVersion());
-						}).fail(function(err) {	u.error(err); });
-					} else if (pdata.sessionid === undefined && pdata.action === undefined && pdata.success === true && this_.authsuccess) { 
-						this_.authsuccess.resolve();
-						delete this_.authsuccess;
-					} else if (pdata.error == "500 Internal Server Error" && pdata.success === false) {
+					} else  if (pdata.error == "500 Internal Server Error" && pdata.success === false) {
 						console.error('got a 500 websocket kiss of death, disconnecting.');								
 						box._flush_tokens();
 						box.disconnect();
+					} else if (pdata.respond_to=="connect") { 
+						console.log('got session success');
+						this_.session = pdata.sessionid;
 					} else {
 						// unhandled here, pass it on.
 						console.log('ws :: unhanded message, passing on to the box ', pdata);
@@ -627,14 +622,18 @@ angular
 				};
 				/// @ignore
 				ws.onopen = function() {
-					// u.debug("!!!!!!!!!!!!!!!! websocket open >>>>>>>>> sending token ", this_._getCachedToken() || this_._getStoredToken());
-					this_._ws_auth();
-					this_.authsuccess.then(function() {
+					u.debug("!!!!!!!!!!!!!!!! websocket open >>>>>>>>> sending token ");
+					this_.connected.resolve();
+					this_._ws_auth().then(function() {
 						console.log('--- asking for diff ');
-						var data = WS_MESSAGES_SEND.diff();
-						ws.send(data);
-						box.trigger('ws-connect');
-						this_.connected.resolve();
+						this_._ws_diff().then(function() { 
+							console.log('diff success!');
+							box.trigger('ws-connect');
+						}).fail(function(err) {
+							console.log('diff fail ', err);
+						});
+					}).fail(function() { 
+						console.error('authentication failed -- ');
 					});
 				};
 				/// @ignore
@@ -645,18 +644,29 @@ angular
 					box._disconnected();
 				};
 			},
-			addRequest:function(method, path, data) { 
-				var this_ = this, rid = this._genid(), req = {
+			addRequest:function(rid, frame) { 
+				var this_ = this, req = {
 					rid:rid,
-					frame: WS_MESSAGES_SEND.http(rid, method, path, data),
+					frame: frame,
 					responsed:u.deferred()
 				};
 				this.requests[rid] = req;
-				this.connected.then(function() { 
-					this_._ws.send(req.frame); 
-				});
+				this.connected.then(function() { this_._ws.send(req.frame); });
 				return req.responsed.promise();
 			},
+			addHttpRequest:function(method, path, data) { 
+				var rid = this._genid();
+				return this.addRequest(rid, WS_MESSAGES_SEND.http(rid, method, path, data));
+			},
+			_ws_auth : function() {
+				var token = this.box._getCachedToken() || this.box._getStoredToken(), 
+					rid = this._genid();
+				return this.addRequest(rid, WS_MESSAGES_SEND.auth(rid, token));
+			},
+			_ws_diff:function() { 
+				var rid = this._genid();
+				return this.addRequest(rid, WS_MESSAGES_SEND.diff(rid));	
+			}
 		};
 
 		
@@ -866,7 +876,7 @@ angular
 					if (HTTP_OVER_WEBSOCKET && this_._ws && this_._ws._handler) {
 						// use websocket approach instead
 						console.log('box._ajax -> diverting to websocket ', method, path);
-						return this_._ws._handler.addRequest(method, path, _(data||{}).extend({box:box_id, token:token, app:this_.store.get('app')}) );
+						return this_._ws._handler.addHttpRequest(method, path, _(data||{}).extend({box:box_id, token:token, app:this_.store.get('app')}) );
 					} 
 					data = _(_(data||{}).clone()).extend({box:box_id, token:token});
 					return this_.store._ajax(method, path, data);
@@ -950,7 +960,8 @@ angular
 				}
 				var query_url = [this.getID(), 'query'].join('/');
 				this._ajax("GET", query_url, parameters)
-					.then(function(results) {
+					.then(function(response) {
+						var results = response.data;
 						if (predicates) {
 							// raw partials just including predicates - these are not whole
 							// objects
@@ -1165,7 +1176,8 @@ angular
 					// console.log('asking to get >> ', ids);					
 					this_._ajax('GET', this_.getID(), {'id':ids}).then(function(response) { 
 						// console.log('got them , time ', (new Date()).valueOf() - tstart);
-						_(response.data).map(function(mraw,id) {
+						console.log('fetch response >> ', response);
+						_(response.data.data).map(function(mraw,id) {
 							if (id[0] === '@') { return; }
 							var _d = u.deferred();
 							deserialise(mraw, skels[id], deferredset, true, skels, newids_);
@@ -1173,7 +1185,7 @@ angular
 						});
 						// new objects that we ask for don't get returned 
 						ids.map(function(id) { 
-							if (response.data[id] === undefined) { 
+							if (response.data.data[id] === undefined) { 
 								deferredset[id].resolve(skels[id]); 
 							}
 						});
@@ -1290,10 +1302,10 @@ angular
 				this._ajax("GET",[box,'get_object_ids'].join('/')).then(
 					function(response){
 						console.log('success on getobjids');
-						u.assert(response['@version'] !== undefined, 'no version provided');
+						u.assert(response.data && response.data['@version'] !== undefined, 'no version provided');
 						this_.id = this_.getID(); // sets so that _isFetched later returns true
-						this_._setVersion(response['@version']);
-						this_._updateObjectList(response.ids);
+						this_._setVersion(response.data['@version']);
+						this_._updateObjectList(response.data.ids);
 						fd.resolve(this_);
 					}).fail(fd.reject);				
 				fd.then(function() {
