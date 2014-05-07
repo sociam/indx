@@ -102,7 +102,7 @@ angular
 				return JSON.stringify({
 					requestid:requestid,
 					action:'echo',
-					request:payload
+					payload:payload
 				});
 			}
 		};
@@ -681,7 +681,7 @@ angular
 			echoTest:function(size) {
 				var this_ = this;
 				size = size || 16384;
-				u.range(100).map(function(x) { 
+				u.range(10).map(function(x) { 
 					var payload = u.guid(size), send = new Date().valueOf();
 					this_._echo(payload).then(function(response)  {
 						console.log('response received ', response, ' latency ', (new Date()).valueOf() - send, " msec ");
