@@ -78,6 +78,7 @@ class IndxAsync:
                 return
 
             elif data.get("action") == "echo":
+                logging.debug("Async got an echo request: {0}".format(data))
                 self.sendJSON(requestid, {}, "echo")
                 return
             elif data.get('respond_to') == "login_keys":
