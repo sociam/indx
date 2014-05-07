@@ -679,12 +679,19 @@ angular
 				return this.addRequest(rid, WS_MESSAGES_SEND.echo(rid, payload));	
 			},
 			echoTest:function(size) {
-				var this_ = this;
-				size = size || 200; // 16384;
-				u.range(1000).map(function(x) { 
-					size += 1;
-					var payload = u.guid(size), send = new Date().valueOf();
-					this_._echo(payload).then(function(response)  {
+				var this_ = this, packets = {};
+				size = size || 100000; // 16384;
+				u.range(10).map(function(x) { 
+					size += 100000;
+					var s = size;
+					packets[s] = setTimeout(function() {  console.error('never got response for size ', s); }, 15000);
+					var payload = u.guid(size), 
+						rid = this_._genid(), 
+						frame = WS_MESSAGES_SEND.echo(rid, payload),
+						send = new Date().valueOf();
+					this_.addRequest(rid, frame).then(function(response)  {
+						console.log('clearing time out for ', s);
+						clearTimeout(packets[s]);
 						console.log('response received ', response, ' latency ', (new Date()).valueOf() - send, " msec ");
 					});
 				});
