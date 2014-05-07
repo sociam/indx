@@ -17,9 +17,10 @@ angular.module('startest', ['indx'])
 	                   var saved =  objs.map(function(o) {
 	                        var allbutme = _(os).omit(o.id);
 	                        u.assert(_(allbutme).size() ==  N-1, "allbutme size is not N-1" + (N-1));	                        
-	                        o.set(allbutme);
+	                        // o.set(allbutme);
 	                        // console.log('setting allbutme ', allbutme);
-	                        o.set('all', objs);
+	                        // o.set('all', objs);
+	                        o.set('hi', u.range(100).map(function(x) { return Math.random(); }));
 	                        return o.save();
 	                    }); 
 	                    u.when(saved).then(function() {

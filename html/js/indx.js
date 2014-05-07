@@ -1050,7 +1050,7 @@ angular
 				var d = u.deferred();
 				this._ajax("GET", [this.getID(), 'get_acls'].join('/')).then(function(response) {
 					if (response.code == 200) {
-						return d.resolve(u.dict(response.data.map(function(x) { return [x.username, x.acl]; })));
+						return d.resolve(u.dict(response.data.data.map(function(x) { return [x.username, x.acl]; })));
 						// return d.resolve(response.data);
 					}
 					d.reject(d.message);
