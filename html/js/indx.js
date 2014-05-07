@@ -680,8 +680,9 @@ angular
 			},
 			echoTest:function(size) {
 				var this_ = this;
-				size = size || 16384;
-				u.range(10).map(function(x) { 
+				size = size || 200; // 16384;
+				u.range(1000).map(function(x) { 
+					size += 1;
 					var payload = u.guid(size), send = new Date().valueOf();
 					this_._echo(payload).then(function(response)  {
 						console.log('response received ', response, ' latency ', (new Date()).valueOf() - send, " msec ");
