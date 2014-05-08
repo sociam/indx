@@ -21,6 +21,7 @@ import cjson
 import traceback
 import StringIO
 from twisted.internet.defer import Deferred
+from twisted.python.failure import Failure
 import indx_pg2 as database
 from indx.crypto import auth_keys, rsa_sign
 import indx.sync
@@ -171,9 +172,16 @@ class IndxAsync:
                     if token is None:
                         return self.send400(requestid, "diff", data = {"error": "'token' required for diff start"})
 
-                    self.listen_diff(requestid, token)
-                    self.send200(requestid, "diff")
+                    def listen_cb(empty):
+                        self.send200(requestid, "diff")
+                    
+                    def diff_err_cb(failure):
+                        failure.trap(Exception)
+                        self.send400(requestid, "diff", data = {"error": "{0}".format(failure.value)})
+
+                    self.listen_diff(requestid, token).addCallbacks(listen_cb, diff_err_cb)
                     return
+
                 elif data['operation'] == "stop":
                     #self.stop_listen()
                     self.send200(requestid, "diff")
@@ -279,8 +287,7 @@ class IndxAsync:
         self.send200(None, "connect", data = {})
 
     def listen_diff(self, requestid, tokenid):
-        def err_cb(failure):
-            logging.error("WebSocketsHandler listen_diff, err_cb: {0}".format(failure))
+        return_d = Deferred()
 
         def store_cb(store):
             logging.debug("WebSocketsHandler listen_diff, store_cb: {0}".format(store))
@@ -292,13 +299,16 @@ class IndxAsync:
                 self.sendJSON(requestid, {"action": "diff", "operation": "update", "data": diff}, "diff")
 
             store.listen(observer_local) # no callbacks, nothing to do
+            return_d.callback(True) # much success
 
         token = self.tokens.get(tokenid)
 
         if token is None:
-            return self.send400(requestid, "diff", data = {"error": "token invalid (it must be authed successfully to this websocket to use it here)"})
+            return_d.errback(Failure(Exception("token invalid (it must be authed successfully to this websocket to use it here)")))
+            return return_d
 
-        token.get_store().addCallbacks(store_cb, err_cb)
+        token.get_store().addCallbacks(store_cb, return_d.errback)
+        return return_d
 
     def sendJSON(self, requestid, data, respond_to = None):
         """ Send data as JSON to the WebSocket. """
