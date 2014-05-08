@@ -29,10 +29,9 @@ from indx.reactor import IndxRequest
 class IndxAsync:
     """ Abstracted logic for the INDX aynchronous (i.e. WebSocket) server. """
 
-    def __init__(self, send_f, webserver, sessionid, clientip):
+    def __init__(self, send_f, webserver, clientip):
         self.send_f = send_f # send messages function reference
         self.webserver = webserver
-        self.sessionid = sessionid
         self.clientip = clientip
 
     def receive(self, frame):
@@ -54,9 +53,13 @@ class IndxAsync:
                 logging.debug("Async got an http request, data: {0}".format(data))
 
                 request = data.get("request")
+                #session = data.get("sessionid")
+                session = None
 
-                #session = data.get("session")
-                session = self.sessionid # TODO enable multiple sessions per websocket
+                #if session is None:
+                #    return self.send400(requestid, "http", data = {"error": "'sessionid' required in 'http'" })
+
+                #session = self.sessionid # TODO enable multiple sessions per websocket
                 logging.debug("Async got an http request: {0} in session {1}".format(request, session))
 
                 def req_cb(response):
@@ -96,7 +99,7 @@ class IndxAsync:
                             self.send401(requestid, "auth")
                             return
                         logging.debug("WebSocketsHandler Auth by Token {0} successful.".format(data['token']))
-                        self.token = token
+                        self.tokens[token.id] = token
                         
                         # also tell the webserver we just got a successful auth from an outside client via websocket
                         # so it can try to connect back over this websocket.
@@ -109,10 +112,13 @@ class IndxAsync:
                         self.send401(requestid, "auth")
                         return
 
-                self.tokens.get(data['token']).addCallbacks(token_cb, err_cb)
-            elif data['action'] == "get_session_id":
-                self.send200(requestid, "auth", data = {'sessionid': self.sessionid})
+                self.tokenkeeper.get(data['token']).addCallbacks(token_cb, err_cb)
+#            elif data['action'] == "get_session_id":
+#                self.send200(requestid, "auth", data = {'sessionid': self.sessionid})
             elif data['action'] == "login_keys":
+                if requestid is None:
+                    return self.send400(requestid, "login_keys", data = {"error": "'requestid' required for action 'login_keys'"})
+
                 try:
                     signature, key_hash, algo, method, appid, encpk2 = data['signature'], data['key_hash'], data['algo'], data['method'], data['appid'], data['encpk2']
                 except Exception as e:
@@ -137,9 +143,9 @@ class IndxAsync:
                             def store_cb(store):
                                 # success, send token back to user
                                 # first, try to connect back through the websocket
-                                self.token = token
+                                self.tokens[token.id] = token
                                 self.connectBackToClient(key_hash, store).addCallbacks(lambda empty: logging.debug("ASync, success connecting back."), lambda failure: logging.error("ASync, failure connecting back: {0}".format(failure)))
-                                return self.send200(requestid, "login_keys", data = {"token": token.id, "respond_to": "login_keys"})
+                                return self.send200(requestid, "login_keys", data = {"token": token.id})
 
                             token.get_store().addCallbacks(store_cb, lambda failure: self.send500(requestid, "login_keys"))
 
@@ -151,12 +157,17 @@ class IndxAsync:
                 def fail(empty):
                     self.send401(requestid, "login_keys")
 
-                auth_keys(self.webserver.keystore, signature, key_hash, algo, method, self.sessionid, encpk2).addCallbacks(win, fail)
+                auth_keys(self.webserver.keystore, signature, key_hash, algo, method, requestid, encpk2).addCallbacks(win, fail)
 
             elif data['action'] == "diff":
                 # turn on/off diff listening
                 if data['operation'] == "start":
-                    self.listen_diff(requestid)
+                    token = data.get("token")
+
+                    if token is None:
+                        return self.send400(requestid, "diff", data = {"error": "'token' required for diff start"})
+
+                    self.listen_diff(requestid, token)
                     self.send200(requestid, "diff")
                     return
                 elif data['operation'] == "stop":
@@ -208,7 +219,9 @@ class IndxAsync:
             if not (type(encpk2) == type("") or type(encpk2) == type(u"")):
                 encpk2 = json.dumps(encpk2)
 
-            ordered_signature_text = '{0}\t{1}\t"{2}"\t{3}\t{4}'.format(SSH_MSG_USERAUTH_REQUEST, self.sessionid, method, algo, key_hash)
+            requestid = "{0}".format(uuid.uuid1())
+
+            ordered_signature_text = '{0}\t{1}\t"{2}"\t{3}\t{4}'.format(SSH_MSG_USERAUTH_REQUEST, requestid, method, algo, key_hash)
             signature = rsa_sign(private_key, ordered_signature_text)
 
             values = {"action": "login_keys", "signature": signature, "key_hash": key_hash, "algo": algo, "method": method, "appid": "INDX ASync", "encpk2": encpk2}
@@ -255,15 +268,13 @@ class IndxAsync:
 
         
     def connected(self):
-        """ Call this when the connected is made through the real transport. """
+        """ Called by WebSocketsHandler when the connection is completed through the real transport. """
         # TokenKeeper from the webserver. The "webserver" attribtue in site is added in server.py when we create the WebSocketsSite.
-        self.tokens = self.webserver.tokens
-        self.token = None
+        self.tokenkeeper = self.webserver.tokens
+        self.tokens = {} # tokenid -> token object
+        self.send200(None, "connect", data = {})
 
-        # send the session ID when connection works
-        self.send200(None, "connect", data = {'sessionid': self.sessionid})
-
-    def listen_diff(self, requestid):
+    def listen_diff(self, requestid, tokenid):
         def err_cb(failure):
             logging.error("WebSocketsHandler listen_diff, err_cb: {0}".format(failure))
 
@@ -278,7 +289,12 @@ class IndxAsync:
 
             store.listen(observer_local) # no callbacks, nothing to do
 
-        self.token.get_store().addCallbacks(store_cb, err_cb)
+        token = self.tokens.get(tokenid)
+
+        if token is None:
+            return self.send400(requestid, "diff", data = {"error": "token invalid (it must be authed successfully to this websocket to use it here)"})
+
+        token.get_store().addCallbacks(store_cb, err_cb)
 
     def sendJSON(self, requestid, data, respond_to = None):
         """ Send data as JSON to the WebSocket. """
@@ -297,14 +313,23 @@ class IndxAsync:
         except Exception as e:
             logging.error("Async error sending JSON: {0}".format(e))
 
-    def send500(self, requestid, respond_to):
-        self.sendJSON(requestid, {"success": False, "error": "500 Internal Server Error"}, respond_to)
+    def send500(self, requestid, respond_to, data = None):
+        out = {"success": False, "error": "500 Internal Server Error"}
+        if data is not None:
+            out.update(data)
+        self.sendJSON(requestid, out, respond_to)
 
-    def send400(self, requestid, respond_to):
-        self.sendJSON(requestid, {"success": False, "error": "400 Bad Request"}, respond_to)
+    def send400(self, requestid, respond_to, data = None):
+        out = {"success": False, "error": "400 Bad Request"}
+        if data is not None:
+            out.update(data)
+        self.sendJSON(requestid, out, respond_to)
 
-    def send401(self, requestid, respond_to):
-        self.sendJSON(requestid, {"success": False, "error": "401 Unauthorized"}, respond_to)
+    def send401(self, requestid, respond_to, data = None):
+        out = {"success": False, "error": "401 Unauthorized"}
+        if data is not None:
+            out.update(data)
+        self.sendJSON(requestid, out, respond_to)
 
     def send200(self, requestid, respond_to, data = None):
         out = {"success": True}

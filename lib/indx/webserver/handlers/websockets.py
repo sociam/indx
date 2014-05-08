@@ -35,17 +35,16 @@ class WebSocketsHandler(WebSocketHandler):
             except Exception as e:
                 logging.error("Error writing frame to WebSocket transport: {0}".format(e))
 
-        self.sessionid = "{0}".format(uuid.uuid1())
-        self.async = IndxAsync(send_f, self.transport._request.site.webserver, self.sessionid, self.transport._request.getClientIP())
+        self.async = IndxAsync(send_f, self.transport._request.site.webserver, self.transport._request.getClientIP())
 
-    def startListen(self):
-        """ Start listening for changes to the database and send diffs when they occur. """
-        logging.debug("WebSocketsHandler startListen().")        
-        self.async.listen_diff()
-
-    def stopListen(self):
-        """ Stop listening for database changes. """
-        logging.debug("WebSocketsHandler stopListen().")
+#    def startListen(self):
+#        """ Start listening for changes to the database and send diffs when they occur. """
+#        logging.debug("WebSocketsHandler startListen().")        
+#        self.async.listen_diff()
+#
+#    def stopListen(self):
+#        """ Stop listening for database changes. """
+#        logging.debug("WebSocketsHandler stopListen().")
 
     def frameReceived(self, frame):
         logging.debug("WebSocketsHandler frameReceived from peer: {0}, frame: {1}".format(self.transport.getPeer(), frame))

@@ -71,7 +71,7 @@ angular
 				return JSON.stringify({requestid:requestid,action:'auth',token:token}); 
 			},
 			diff: function(requestid, token) { 
-				return JSON.stringify({requestid:requestid,action:'diff',operation:"start"}); 
+				return JSON.stringify({requestid:requestid,action:'diff',operation:"start",token:token}); 
 			},
 			http: function(requestid, method, path, data) { 
 				var toArrayVals = function(obj) {
@@ -671,8 +671,9 @@ angular
 				return this.addRequest(rid, WS_MESSAGES_SEND.auth(rid, token));
 			},
 			_ws_diff:function() { 
-				var rid = this._genid();
-				return this.addRequest(rid, WS_MESSAGES_SEND.diff(rid));	
+				var token = this.box._getCachedToken() || this.box._getStoredToken(), 
+				    rid = this._genid();
+				return this.addRequest(rid, WS_MESSAGES_SEND.diff(rid, token));	
 			},
 			_echo:function(payload) { 
 				var rid = this._genid();
