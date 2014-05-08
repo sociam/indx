@@ -64,7 +64,11 @@ class IndxAsync:
 
                 def req_cb(response):
                     logging.debug("ASync sending http response in session: {0}".format(session))
-                    self.sendJSON(requestid, {"respond_to": "http", "session": session, "response": response.to_json()}, "http")
+                    frame = {"respond_to": "http", "response": response.to_json()}
+                    if session is not None:
+                        frame['session'] = session
+
+                    self.sendJSON(requestid, frame, "http")
 
                 indx_request = IndxRequest(
                     request.get("uri"),
