@@ -104,7 +104,7 @@ class IndxAsync:
                             self.send401(requestid, "auth")
                             return
                         logging.debug("WebSocketsHandler Auth by Token {0} successful.".format(data['token']))
-                        self.tokens[token.id] = token
+                        self.tokens[data['token']] = token
                         
                         # also tell the webserver we just got a successful auth from an outside client via websocket
                         # so it can try to connect back over this websocket.
