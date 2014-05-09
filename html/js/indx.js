@@ -1445,7 +1445,7 @@ angular
 					objID = obj.id,
 					sobj = serialiseObj(obj);
 
-				this._ajax("PUT",  this.getID() + "/update", { version: escape(version), data : JSON.stringify([obj])  })
+				this._ajax("PUT",  this.getID() + "/update", { version: escape(version), data : JSON.stringify([sobj])  })
 					.then(function(response) {
 						// console.log('PUT response response >> ', response);
 						this_._setVersion(response.data.data["@version"]);
