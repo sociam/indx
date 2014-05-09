@@ -5,7 +5,7 @@ angular.module('startest', ['indx'])
 		var store = client.store, u = utils;
 
 		var run = function(test_box) { 
-			var N =  20, 
+			var N =  20000, 
 				ids = u.range(N).map(function(x) { return 'blitz-' + u.guid(8); });
 
 			var os = {};
