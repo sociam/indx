@@ -539,7 +539,7 @@ angular
 				case "create": return u.assert(false, "create is never used for Objs");
 				case "read"  : return model._fetch();
 				case "update":
-					return  model.box._update([model.id])[0];
+					return model.box._simpleUpdate(model); // // model.box._update([model.id])[0];
 				case "delete":
 					return this.box._deleteModels([this.id])[0];
 				}
@@ -850,7 +850,7 @@ angular
 				this.set("token", token);	
 				this._setStoredToken(token);
 			},
-			_setVersion:function(v) { this.set("version", v);	},
+			_setVersion:function(v) { this.set("version", v); },
 
 			/// @return {integer} - Current version of the box
 			/// gets the current version of this box
@@ -1078,6 +1078,7 @@ angular
 				}
 
 				// u.debug('setting latest version >> ', latest_version, added_ids, changed_ids, deleted_ids);
+				console.info('diff setVersion, ', latestVersion);
 				this_._setVersion(latestVersion);
 				this_._updateObjectList(undefined, addedIDs, deletedIDs);
 				var changed = _(changedObjs).map(function(obj, uri) {
@@ -1334,6 +1335,7 @@ angular
 						console.log('success on getobjids');
 						u.assert(response.data && response.data['@version'] !== undefined, 'no version provided');
 						this_.id = this_.getID(); // sets so that _isFetched later returns true
+						console.info('_fetch setVersion ', response.data['@version']);
 						this_._setVersion(response.data['@version']);
 						this_._updateObjectList(response.data.ids);
 						fd.resolve(this_);
@@ -1433,6 +1435,27 @@ angular
 					}).fail(d.reject);
 				return d.promise();
 			},
+			_simpleUpdate:function(obj) {
+
+				var d = u.deferred(), 
+					version = this.getVersion() || 0, 
+					this_ = this, 
+					oc = this._objcache(),
+					objID = obj.id,
+					sobj = serialiseObj(obj);
+
+				this._ajax("PUT",  this.getID() + "/update", { version: escape(version), data : JSON.stringify([obj])  })
+					.then(function(response) {
+						// console.log('PUT response response >> ', response);
+						this_._setVersion(response.data.data["@version"]);
+						var dobjlist = this_._objlistdict(); 
+						if (!dobjlist[objID]) {
+							this_._updateObjectList(undefined, [objID], []);
+						}
+						d.resolve(this_);
+					}).fail(d.reject);
+				return d.promise();
+			},
 			_update:function(originalIDs) {
 				// this is called by Backbone.save(),
 				var dfds = this._addToUpdateQueue(originalIDs);
@@ -1481,8 +1504,8 @@ angular
 				var version = this.get('version') || 0, d = u.deferred(), this_ = this;
 				this._ajax('DELETE', this.id+'/', { version:version, data: JSON.stringify(mIDs) })
 					.then(function(response) {
-						u.debug('DELETE response NEW version > ', response.data["@version"]);
-						this_._setVersion(response.data["@version"]);
+						u.debug('DELETE response NEW version > ', response.data.data["@version"]);
+						this_._setVersion(response.data.data["@version"]);
 						this_._updateObjectList(undefined, [], mIDs); // update object list
 						d.resolve(this_);
 					}).fail(d.reject);
