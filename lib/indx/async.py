@@ -173,9 +173,11 @@ class IndxAsync:
                     return self.send400(requestid, "diff", data = {"error": "'diffid' required for diff"})
 
                 def diffok_cb(operation):
+                    logging.debug("WebSocketsHandler diff action response: {0}".format(operation))
                     self.send200(requestid, "diff", data = {"diffid": diffid, "respond_to": "diff/{0}".format(operation)})
 
                 def diff_err_cb(failure):
+                    logging.error("WebSocketsHandler diff action error: {0}".format(failure.value))
                     failure.trap(Exception)
                     self.send400(requestid, "diff", data = {"error": "{0}".format(failure.value)})
 
