@@ -1379,12 +1379,10 @@ class ObjectStoreAsync:
                             # one or more of the objects altered in this update were already altered in a diff for this version
                             return prev_ver_exception()
                         else:
+                            new_ver = latest_ver # don't increment version
                             return do_update(new_ver)
 
-                    self._curexec(cur, "SELECT DISTINCT j_subject.string FROM wb_vers_diffs JOIN wb_triples ON (wb_vers_diffs.subject_uuid = j_subject.uuid) WHERE j_subject.string = ANY(%s) LIMIT 1", id_list).addCallbacks(in_ver_cb, interaction_err_cb)
-
-                    new_ver = latest_ver # don't increment version
-                    do_update(new_ver)
+                    self._curexec(cur, "SELECT DISTINCT j_subject.string FROM wb_vers_diffs JOIN wb_strings j_subject ON (wb_vers_diffs.subject_uuid = j_subject.uuid) WHERE j_subject.string = ANY(%s) LIMIT 1", [id_list]).addCallbacks(in_ver_cb, interaction_err_cb)
                     return
                 elif latest_ver == specified_prev_version:
                     self.debug("Objectstore update, latest_ver == specified_prev_version")
