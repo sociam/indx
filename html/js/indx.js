@@ -70,8 +70,8 @@ angular
 			auth: function(requestid, token) { 
 				return JSON.stringify({requestid:requestid,action:'auth',token:token}); 
 			},
-			diff: function(requestid, token) { 
-				return JSON.stringify({requestid:requestid,action:'diff',operation:"start",token:token}); 
+			diff: function(requestid, token, diffid) { 
+				return JSON.stringify({requestid:requestid,action:'diff',operation:"start",token:token,diffid:diffid}); 
 			},
 			http: function(requestid, method, path, data) { 
 				var toArrayVals = function(obj) {
@@ -632,8 +632,9 @@ angular
 					u.debug("!!!!!!!!!!!!!!!! websocket open >>>>>>>>> sending token ");
 					this_.connected.resolve();
 					this_._ws_auth().then(function() {
-						console.log('--- asking for diff ');
-						this_._ws_diff().then(function() { 
+                        this_.diffid = this_._genid();
+						console.log('--- asking for diff with id ' + this_.diffid);
+						this_._ws_diff(this_.diffid).then(function() { 
 							console.log('diff success!');
 							box.trigger('ws-connect');
 						}).fail(function(err) {
@@ -670,10 +671,10 @@ angular
 					rid = this._genid();
 				return this.addRequest(rid, WS_MESSAGES_SEND.auth(rid, token));
 			},
-			_ws_diff:function() { 
+			_ws_diff:function(diffid) { 
 				var token = this.box._getCachedToken() || this.box._getStoredToken(), 
 				    rid = this._genid();
-				return this.addRequest(rid, WS_MESSAGES_SEND.diff(rid, token));	
+				return this.addRequest(rid, WS_MESSAGES_SEND.diff(rid, token, diffid));	
 			},
 			_echo:function(payload) { 
 				var rid = this._genid();

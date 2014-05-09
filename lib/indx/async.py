@@ -164,31 +164,33 @@ class IndxAsync:
                 return
             elif data['action'] == "diff":
                 # turn on/off diff listening
+                token = data.get("token")
+                if token is None:
+                    return self.send400(requestid, "diff", data = {"error": "'token' required for diff"})
+
+                diffid = data.get("diffid")
+                if diffid is None:
+                    return self.send400(requestid, "diff", data = {"error": "'diffid' required for diff"})
+
+                def diffok_cb(operation):
+                    self.send200(requestid, "diff", data = {"diffid": diffid, "respond_to": "diff/{0}".format(operation)})
+
+                def diff_err_cb(failure):
+                    failure.trap(Exception)
+                    self.send400(requestid, "diff", data = {"error": "{0}".format(failure.value)})
+
                 if data['operation'] == "start":
-                    token = data.get("token")
-
-                    if token is None:
-                        return self.send400(requestid, "diff", data = {"error": "'token' required for diff start"})
-
-                    def listen_cb(empty):
-                        self.send200(requestid, "diff")
-                    
-                    def diff_err_cb(failure):
-                        failure.trap(Exception)
-                        self.send400(requestid, "diff", data = {"error": "{0}".format(failure.value)})
-
-                    self.listen_diff(requestid, token).addCallbacks(listen_cb, diff_err_cb)
+                    self.listen_diff(requestid, token, diffid).addCallbacks(lambda empty: diffok_cb("start"), diff_err_cb)
                     return
                 elif data['operation'] == "stop":
-                    #self.stop_listen()
-                    self.send200(requestid, "diff")
+                    self.stop_diff(requestid, token, diffid).addCallbacks(lambda empty: diffok_cb("stop"), diff_err_cb)
                     return
                 else:
-                    self.send400(requestid, "diff")
+                    self.send400(requestid, "diff", data = {"error": "no valid 'operation' found."})
                     return
             else:
                 action = data.get("action") # could be None
-                self.send400(requestid, action)
+                self.send400(requestid, action, data = {"error": "'action' value of '{0}' is unknown".format(action)})
                 return
         except Exception as e:
             logging.error("WebSocketsHandler frameRecevied, error: {0},\n trace: {1}".format(e, traceback.format_exc()))
@@ -283,7 +285,7 @@ class IndxAsync:
         self.tokens = {} # tokenid -> token object
         self.send200(None, "connect", data = {})
 
-    def listen_diff(self, requestid, tokenid):
+    def listen_diff(self, requestid, tokenid, diffid):
         return_d = Deferred()
 
         def store_cb(store):
@@ -292,10 +294,15 @@ class IndxAsync:
             def observer_local(diff):
                 """ Receive an update from the server. """
                 logging.debug("WebSocketsHandler listen_diff observer notified: {0}".format(diff))
+                self.sendJSON(requestid, {"action": "diff", "diffid": diffid, "operation": "update", "data": diff}, "diff")
 
-                self.sendJSON(requestid, {"action": "diff", "operation": "update", "data": diff}, "diff")
+            try:
+                store.listen(observer_local, f_id = diffid) # no callbacks, nothing to do
+            except Exception as e:
+                logging.error("WebSocketsHandler listen_diff error listening to store: {0}".format(e))
+                return_d.errback(Failure(e))
+                return
 
-            store.listen(observer_local) # no callbacks, nothing to do
             return_d.callback(True) # much success
 
         token = self.tokens.get(tokenid)
@@ -306,6 +313,33 @@ class IndxAsync:
 
         token.get_store().addCallbacks(store_cb, return_d.errback)
         return return_d
+
+    def stop_diff(self, requestid, tokenid, diffid):
+        """ Unsubscribe a diff, by ID. """
+        return_d = Deferred()
+
+        def store_cb(store):
+            logging.debug("WebSocketsHandler stop_diff, store_cb: {0}".format(store))
+
+            try:
+                store.unlisten(None, f_id = diffid) # no callbacks, nothing to do
+            except Exception as e:
+                logging.error("WebSocketsHandler listen_diff error listening to store: {0}".format(e))
+                return_d.errback(Failure(e))
+                return
+
+            return_d.callback(True) # much success
+
+        token = self.tokens.get(tokenid)
+
+        if token is None:
+            return_d.errback(Failure(Exception("token invalid (it must be authed successfully to this websocket to use it here)")))
+            return return_d
+
+        token.get_store().addCallbacks(store_cb, return_d.errback)
+        return return_d
+
+
 
     def sendJSON(self, requestid, data, respond_to = None):
         """ Send data as JSON to the WebSocket. """

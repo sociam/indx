@@ -194,13 +194,13 @@ class ObjectStoreAsync:
 
         return result_d
 
-    def unlisten(self, observer):
+    def unlisten(self, observer, f_id = None):
         """ Stop listening to updates to the box by this observer. """
         logging.debug("Objectstore unlisten.")
-        RAW_LISTENERS[self.boxid].unsubscribe(observer)
+        RAW_LISTENERS[self.boxid].unsubscribe(observer, f_id = f_id)
 
 
-    def listen(self, observer):
+    def listen(self, observer, f_id = None):
         """ Listen for updates to the box, and send callbacks when they occur.
         
             observer -- Function that is called when there is a notification.
@@ -208,7 +208,7 @@ class ObjectStoreAsync:
         logging.debug("Objectstore listen")
 
         if self.boxid in RAW_LISTENERS:
-            RAW_LISTENERS[self.boxid].subscribe(observer)
+            RAW_LISTENERS[self.boxid].subscribe(observer, f_id = f_id)
         else:
             """ We create box in RAW_LISTENERS immediately to try to avoid a race condition in the 'if' above.
                 This means we have to add the store via a function call, rather than through the constructor.
@@ -217,7 +217,7 @@ class ObjectStoreAsync:
                 subscription, but they only receive notifications when the notification connection has been established.
             """
             RAW_LISTENERS[self.boxid] = ConnectionSharer(self.boxid, self)
-            RAW_LISTENERS[self.boxid].subscribe(observer)
+            RAW_LISTENERS[self.boxid].subscribe(observer, f_id = f_id)
 
             def err_cb(failure):
                 logging.error("Token: subscribe, error on getting raw store: {0}".format(failure))
@@ -1820,7 +1820,7 @@ class ConnectionSharer:
         """
         self.box = box
         self.store = store
-        self.subscribers = []
+        self.subscribers = {}
 
     def add_conn(self, conn):
         """ A connection has been connected, so we can start listening.
@@ -1829,16 +1829,19 @@ class ConnectionSharer:
         self.conn = conn
         self.listen()
 
-    def unsubscribe(self, observer):
+    def unsubscribe(self, observer, f_id = None):
         """ Unsubscribe this observer to this box's updates. """
-        self.subscribers.remove(observer)
+        if f_id is None:
+            del self.subscribers[observer]
+        else:
+            del self.subscribers[f_id]
 
-    def subscribe(self, observer):
+    def subscribe(self, observer, f_id = None):
         """ Subscribe to this box's updates.
 
         observer -- A function to call when an update occurs. Parameter sent is re-dispatched from the database.
         """
-        self.subscribers.append(observer)
+        self.subscribers[f_id] = observer
 
     def listen(self):
         """ Start listening to INDX updates. """
@@ -1855,7 +1858,7 @@ class ConnectionSharer:
             def diff_cb(data):
                 logging.debug("ConnectionSharer observer dispatching diff to {0} subscribers, diff: {1}".format(len(self.subscribers), data))
 
-                for observer in self.subscribers:
+                for f_id, observer in self.subscribers.items():
                     observer(data)
 
             version = int(notify.payload)
