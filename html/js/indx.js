@@ -1416,7 +1416,7 @@ angular
 			},
 			_doUpdate:function(ids) {
 				// this actua
-				var d = u.deferred(), version = this.get('version') || 0, this_ = this, oc = this._objcache(),
+				var d = u.deferred(), version = this.getVersion() || 0, this_ = this, oc = this._objcache(),
 				objs = (ids === undefined ? oc.values() : ids.map(function(id) { return oc.get(id); })), // this._objcache().filter(function(x) { return ids === undefined || ids.indexOf(x.id) >= 0; }),
 				objIDs = (ids === undefined ? oc.keys() : ids.slice()), // objs.map(function(x) { return x.id; }),
 				sobjs = objs.map(function(obj){ return serialiseObj(obj); });

@@ -5,7 +5,7 @@ angular.module('startest', ['indx'])
 		var store = client.store, u = utils;
 
 		var run = function(test_box) { 
-			var N =  20000, 
+			var N =  20, 
 				ids = u.range(N).map(function(x) { return 'blitz-' + u.guid(8); });
 
 			var os = {};
@@ -24,7 +24,7 @@ angular.module('startest', ['indx'])
 		        		}).fail(function(e) { 
 		        			console.error('got error on ', o.id, objs.length, e);
 		        		});
-		        		setTimeout(function() { s(objs.slice(1)); }, 10); 
+		        		setTimeout(function() { s(objs.slice(1)); }, 100); 
 		        	};
 
 		        	console.log('got all objects, now commencing save blitz');
