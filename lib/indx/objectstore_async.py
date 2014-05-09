@@ -1312,75 +1312,63 @@ class ObjectStoreAsync:
                 self.debug("Objectstore update, ver_cb, latest_ver: {0}".format(latest_ver))
                 latest_ver = latest_ver[0][0] or 0
 
-                def do_check():
-                    self.debug("Objectstore do_check")
-                    if latest_ver == specified_prev_version:
-                        new_ver = latest_ver + 1
+                if latest_ver == specified_prev_version:
+                    new_ver = latest_ver + 1
 
-                        def check_err_cb(failure):
-                            self.debug("Objectstore check_err_cb, failure: {0}".format(failure))
-                            interaction_d.errback(failure)
+                    def check_err_cb(failure):
+                        self.debug("Objectstore check_err_cb, failure: {0}".format(failure))
+                        interaction_d.errback(failure)
 
-                        def compare_cb(val):
-                            self.debug("Objectstore update, compare_cb, val: {0}".format(val))
+                    def compare_cb(val):
+                        self.debug("Objectstore update, compare_cb, val: {0}".format(val))
 
-                            # do adding files etc here
+                        # do adding files etc here
 
-                            def files_added_cb(info):
-                                self.debug("Objectstore update, files_added_cb info: {0}".format(info))
-                                self._notify(cur, new_ver, propagate = propagate).addCallbacks(lambda _: interaction_d.callback({"@version": new_ver}), check_err_cb)
+                        def files_added_cb(info):
+                            self.debug("Objectstore update, files_added_cb info: {0}".format(info))
+                            self._notify(cur, new_ver, propagate = propagate).addCallbacks(lambda _: interaction_d.callback({"@version": new_ver}), check_err_cb)
 
-                            self._add_files_to_version(cur, new_files_oids, new_ver).addCallbacks(files_added_cb, check_err_cb)
+                        self._add_files_to_version(cur, new_files_oids, new_ver).addCallbacks(files_added_cb, check_err_cb)
 
 
-                        def objs_cb(objs_full):
-                            self.debug("Objectstore update, objs_cb, val: {0}".format(objs_full))
-                            # add all delete_ids to objs1 and not objs2 so that they get deleted by the ObjectSetDiff
-                            for obj_id in delete_ids:
-                                if obj_id in objs_full:
-                                    objs_full[obj_id] = {"@id": obj_id}
-
-                            for obj_id in delete_ids:
+                    def objs_cb(objs_full):
+                        self.debug("Objectstore update, objs_cb, val: {0}".format(objs_full))
+                        # add all delete_ids to objs1 and not objs2 so that they get deleted by the ObjectSetDiff
+                        for obj_id in delete_ids:
+                            if obj_id in objs_full:
                                 objs_full[obj_id] = {"@id": obj_id}
 
-                            # remove "@version" etc from objs_full
-                            non_obj_keys = []
-                            for key in objs_full:
-                                if key[0] == "@":
-                                    non_obj_keys.append(key)
-                            for key in non_obj_keys:
-                                del objs_full[key]
+                        for obj_id in delete_ids:
+                            objs_full[obj_id] = {"@id": obj_id}
 
-                            objs_full = objs_full.values() # objs_full is "id: {obj}", so extract just the objs
+                        # remove "@version" etc from objs_full
+                        non_obj_keys = []
+                        for key in objs_full:
+                            if key[0] == "@":
+                                non_obj_keys.append(key)
+                        for key in non_obj_keys:
+                            del objs_full[key]
 
-                            def conn_cb(conn):
-                                logging.debug("Objectstore update, conn_cb")
-                                set_diff = ObjectSetDiff(conn, objs_full, objs, new_ver)
-                                set_diff.compare(cur).addCallbacks(compare_cb, check_err_cb) # changes the DB for us
-                            
-                            self.conns['conn']().addCallbacks(conn_cb, result_d.errback)
- 
+                        objs_full = objs_full.values() # objs_full is "id: {obj}", so extract just the objs
 
-                        # add full objects from db to objs_orig if their id is in objs         
-                        objs_ids = map(lambda x: x['@id'], objs)
-                        self.get_latest_objs(objs_ids, cur).addCallbacks(objs_cb, check_err_cb)
+                        def conn_cb(conn):
+                            logging.debug("Objectstore update, conn_cb")
+                            set_diff = ObjectSetDiff(conn, objs_full, objs, new_ver)
+                            set_diff.compare(cur).addCallbacks(compare_cb, check_err_cb) # changes the DB for us
+                        
+                        self.conns['conn']().addCallbacks(conn_cb, result_d.errback)
 
-                    else:
-                        self.debug("In objectstore update, the previous version of the box {0} didn't match the actual {1}".format(specified_prev_version, latest_ver))
-                        ipve = IncorrectPreviousVersionException("Actual previous version is {0}, specified previous version is: {1}".format(latest_ver, specified_prev_version))
-                        ipve.version = latest_ver
-                        return Failure(ipve)
 
-                def ver_err_cb(failure):
-                    self.debug("Objectstore ver_err_cb, failure: {0}".format(failure))
-                    self.debug("ver_err_cb is calling errback on ver_d")
-                    interaction_d.errback(failure)
+                    # add full objects from db to objs_orig if their id is in objs         
+                    objs_ids = map(lambda x: x['@id'], objs)
+                    self.get_latest_objs(objs_ids, cur).addCallbacks(objs_cb, check_err_cb)
 
-                def check_cb(value):
-                    self.debug("Objectstore check_cb, value: {0}".format(value))
+                else:
+                    self.debug("In objectstore update, the previous version of the box {0} didn't match the actual {1}".format(specified_prev_version, latest_ver))
+                    ipve = IncorrectPreviousVersionException("Actual previous version is {0}, specified previous version is: {1}".format(latest_ver, specified_prev_version))
+                    ipve.version = latest_ver
+                    interaction_d.errback(Failure(ipve))
 
-                d = threads.deferToThread(do_check)
-                d.addCallbacks(check_cb, ver_err_cb)
 
             def lock_cb(val):
                 self.debug("Objectstore update, lock_cb, val: {0}".format(val))
