@@ -497,13 +497,7 @@ class ObjectStoreAsync:
     def ids_from_objs(self, objs):
         """ Return the object IDs from a set of objects.
         """
-        ids = []
-        for obj in objs:
-            if "@id" in obj:
-                uri = obj["@id"]
-                ids.append(uri)
-
-        return ids
+        return [x['@id'] for x in objs]
 
 
     def _get_diff_versions(self, versions):
@@ -1310,10 +1304,9 @@ class ObjectStoreAsync:
 
             def ver_cb(latest_ver):
                 self.debug("Objectstore update, ver_cb, latest_ver: {0}".format(latest_ver))
-                latest_ver = latest_ver[0][0] or 0
 
-                if latest_ver == specified_prev_version:
-                    new_ver = latest_ver + 1
+                def do_update(new_ver):
+                    self.debug("Objectstore update, do_update, new_ver: {0}".format(new_ver))
 
                     def check_err_cb(failure):
                         self.debug("Objectstore check_err_cb, failure: {0}".format(failure))
@@ -1360,14 +1353,48 @@ class ObjectStoreAsync:
 
 
                     # add full objects from db to objs_orig if their id is in objs         
-                    objs_ids = map(lambda x: x['@id'], objs)
+                    objs_ids = self.ids_from_objs(objs)
                     self.get_latest_objs(objs_ids, cur).addCallbacks(objs_cb, check_err_cb)
 
-                else:
+                def prev_ver_exception():
+                    # version did not match current / previous version, so throw errback
+                    self.debug("Objectstore update, prev_ver_exception")
                     self.debug("In objectstore update, the previous version of the box {0} didn't match the actual {1}".format(specified_prev_version, latest_ver))
                     ipve = IncorrectPreviousVersionException("Actual previous version is {0}, specified previous version is: {1}".format(latest_ver, specified_prev_version))
                     ipve.version = latest_ver
                     interaction_d.errback(Failure(ipve))
+                    return
+
+
+                if latest_ver - 1 == specified_prev_version:
+                    self.debug("Objectstore update, latest_ver - 1 == specified_prev_version")
+                    # this update is a batch update to the previous version
+                    # allow this if the update doesn't include object IDs already modified in this version update
+                    
+                    id_list = self.ids_from_objs(objs)
+                    
+                    def in_ver_cb(cur):
+                        rows = cur.fetchall()
+                        if len(rows) > 0:
+                            # one or more of the objects altered in this update were already altered in a diff for this version
+                            return prev_ver_exception()
+                        else:
+                            return do_update(new_ver)
+
+                    self._curexec(cur, "SELECT DISTINCT j_subject.string FROM wb_vers_diffs JOIN wb_triples ON (wb_vers_diffs.subject_uuid = j_subject.uuid) WHERE j_subject.string = ANY(%s) LIMIT 1", id_list).addCallbacks(in_ver_cb, interaction_err_cb)
+
+                    new_ver = latest_ver # don't increment version
+                    do_update(new_ver)
+                    return
+                elif latest_ver == specified_prev_version:
+                    self.debug("Objectstore update, latest_ver == specified_prev_version")
+                    # specified the current version, so the backend generates a new version
+
+                    new_ver = latest_ver + 1
+                    do_update(new_ver)
+                    return
+
+                return prev_ver_exception()
 
 
             def lock_cb(val):
@@ -1376,7 +1403,14 @@ class ObjectStoreAsync:
                 def exec_cb(cur):
                     self.debug("Objectstore update, exec_cb, cur: {0}".format(cur))
                     rows = cur.fetchall()
-                    ver_cb(rows)
+
+                    # get the latest version number
+                    if len(rows) > 0:
+                        latest_ver = rows[0][0]
+                    else:
+                        latest_ver = 0
+
+                    ver_cb(latest_ver)
 
                 self._curexec(cur, "SELECT latest_version FROM wb_v_latest_version").addCallbacks(exec_cb, interaction_err_cb)
 
