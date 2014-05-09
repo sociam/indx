@@ -48,7 +48,6 @@ class IndxAsync:
                 # received after login_keys succeeds and we send the diff/start message
                 self.remote_observer(data)
                 return
-
             if data.get("action") == "http":
                 # a call to an http request, over the websocket (via the reactor mappings)
                 logging.debug("Async got an http request, data: {0}".format(data))
@@ -84,7 +83,6 @@ class IndxAsync:
 
                 self.webserver.indx_reactor.incoming(indx_request)
                 return
-
             elif data.get("action") == "echo":
                 logging.debug("Async got an echo request: {0}".format(data))
                 self.sendJSON(requestid, {}, "echo")
@@ -95,7 +93,6 @@ class IndxAsync:
                 # TODO handle errors
                 self.sendJSON(requestid, {"action": "diff", "operation": "start"}, "login_keys") 
                 return
-
             elif data['action'] == "auth":
 
                 def token_cb(token):
@@ -120,6 +117,7 @@ class IndxAsync:
                 self.tokenkeeper.get(data['token']).addCallbacks(token_cb, err_cb)
 #            elif data['action'] == "get_session_id":
 #                self.send200(requestid, "auth", data = {'sessionid': self.sessionid})
+                return
             elif data['action'] == "login_keys":
                 if requestid is None:
                     return self.send400(requestid, "login_keys", data = {"error": "'requestid' required for action 'login_keys'"})
@@ -163,7 +161,7 @@ class IndxAsync:
                     self.send401(requestid, "login_keys")
 
                 auth_keys(self.webserver.keystore, signature, key_hash, algo, method, requestid, encpk2).addCallbacks(win, fail)
-
+                return
             elif data['action'] == "diff":
                 # turn on/off diff listening
                 if data['operation'] == "start":
@@ -181,7 +179,6 @@ class IndxAsync:
 
                     self.listen_diff(requestid, token).addCallbacks(listen_cb, diff_err_cb)
                     return
-
                 elif data['operation'] == "stop":
                     #self.stop_listen()
                     self.send200(requestid, "diff")
