@@ -727,7 +727,7 @@ class ObjectStoreAsync:
                 self._get_latest_ver(cur).addCallbacks(ver_cb, iresult_d.errback)
 
 
-            self._curexec(cur, "LOCK TABLE wb_files, wb_versions, wb_latest_vers, wb_triples, wb_users, wb_vers_diffs, wb_latest_subjects IN EXCLUSIVE MODE").addCallbacks(lock_cb, iresult_d.errback) # lock to other writes, but not reads
+            self._curexec(cur, "LOCK TABLE ix_commits, wb_files, wb_versions, wb_latest_vers, wb_triples, wb_users, wb_vers_diffs, wb_latest_subjects IN EXCLUSIVE MODE").addCallbacks(lock_cb, iresult_d.errback) # lock to other writes, but not reads
             return iresult_d
 
         def iconn_cb(conn):
@@ -1073,6 +1073,8 @@ class ObjectStoreAsync:
 
         the_commits = copy.copy(commits)
 
+        logging.debug("ObjectStore store_commits: {0}".format(the_commits))
+
         def connected(conn):
 
             def loop(empty):
@@ -1081,14 +1083,13 @@ class ObjectStoreAsync:
                     return
 
                 commit_id, commit = the_commits.popitem()
-                query = "SELECT EXISTS(SELECT commit_hash FROM ix_commits WHERE commit_hash = %s) AS EXISTENZ"
+                query = "SELECT commit_hash FROM ix_commits WHERE commit_hash = %s"
            
                 def checked_cb(rows):
-                    if cur is not None:
-                        rows = cur.fetchall()
+                    #if cur is not None:
+                    #    rows = cur.fetchall()
 
-                    exists = rows[0][0]
-                    if exists:
+                    if len(rows) > 0:
                         return loop(None)
 
                     ins_query = "INSERT INTO ix_commits (commit_hash, date, server_id, original_version, commit_log) VALUES (%s, %s, %s, %s, %s)"
@@ -1100,9 +1101,9 @@ class ObjectStoreAsync:
                         cur.execute(ins_query, ins_params).addCallbacks(loop, result_d.errback) 
                     
                 if cur is None:
-                    conn.runQuery(query, [commit_id]).addCallbacks(checked_cb, result_d.errback)
+                    conn.runQuery(query, [commit['commit_hash']]).addCallbacks(lambda rows: checked_cb(rows), result_d.errback)
                 else:
-                    cur.execute(query, [commit_id]).addCallbacks(checked_cb, result_d.errback)
+                    cur.execute(query, [commit['commit_hash']]).addCallbacks(lambda cur: checked_cb(cur.fetchall()), result_d.errback)
 
             loop(None)
 
@@ -1412,7 +1413,7 @@ class ObjectStoreAsync:
 
                 self._curexec(cur, "SELECT latest_version FROM wb_v_latest_version").addCallbacks(exec_cb, interaction_err_cb)
 
-            self._curexec(cur, "LOCK TABLE wb_files, wb_versions, wb_latest_vers, wb_triples, wb_users, wb_vers_diffs, wb_latest_subjects IN EXCLUSIVE MODE").addCallbacks(lock_cb, interaction_err_cb) # lock to other writes, but not reads
+            self._curexec(cur, "LOCK TABLE ix_commits, wb_files, wb_versions, wb_latest_vers, wb_triples, wb_users, wb_vers_diffs, wb_latest_subjects IN EXCLUSIVE MODE").addCallbacks(lock_cb, interaction_err_cb) # lock to other writes, but not reads
 ##             
             return interaction_d
  

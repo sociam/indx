@@ -49,9 +49,19 @@ class ObjectCommit:
         """ Save this commit to a database, using the supplied cursor. """
         return_d = Deferred()
 
-        query = "INSERT INTO ix_commits (commit_hash, date, server_id, original_version, commit_log) VALUES (%s, %s, %s, %s, %s)"
-        params = [self.commit_id, self.date, self.server_id, self.original_version, self.commit_log]
+        query = "SELECT commit_hash FROM ix_commits WHERE commit_hash = %s"
+   
+        def checked_cb(cur):
+            rows = cur.fetchall()
 
-        cur.execute(query, params).addCallbacks(return_d.callback, return_d.errback)
+            if len(rows) > 0:
+                return return_d.callback(True)
+
+            query = "INSERT INTO ix_commits (commit_hash, date, server_id, original_version, commit_log) VALUES (%s, %s, %s, %s, %s)"
+            params = [self.commit_id, self.date, self.server_id, self.original_version, self.commit_log]
+
+            cur.execute(query, params).addCallbacks(return_d.callback, return_d.errback)
+            
+        cur.execute(query, [self.commit_id]).addCallbacks(checked_cb, return_d.errback)
         return return_d
 

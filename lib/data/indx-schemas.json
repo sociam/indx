@@ -831,7 +831,7 @@
                 ]
             },
             "20140219-DIFFS_ORDERED_FOR_LONG_STRINGS": {
-                "next-version": "",
+                "next-version": "20140509-MULTIPLE_VERSION_UPDATES",
                 "sql": [
                     "CREATE OR REPLACE VIEW wb_v_diffs AS ",
                     " SELECT wb_vers_diffs.version, wb_vers_diffs.diff_type, ",
@@ -845,6 +845,12 @@
                     "   LEFT JOIN wb_strings j_predicate ON j_predicate.uuid = wb_vers_diffs.predicate_uuid",
                     "   LEFT JOIN wb_strings j_object ON j_object.uuid = wb_objects.obj_value_uuid",
                     "  ORDER BY wb_vers_diffs.version, wb_vers_diffs.diff_type, j_subject.string, j_predicate.string, wb_vers_diffs.object_order, j_object.uuid, j_object.chunk, j_object.string, wb_objects.obj_type, wb_objects.obj_lang, wb_objects.obj_datatype;"
+                ]
+            },
+            "20140509-MULTIPLE_VERSION_UPDATES": {
+                "next-version": "",
+                "sql": [
+                    "ALTER TABLE wb_versions DROP CONSTRAINT pk_version;"
                 ]
             }
         }
