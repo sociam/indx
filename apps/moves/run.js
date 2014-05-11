@@ -134,7 +134,7 @@ var MovesService = Object.create(nodeservice.NodeService, {
 
                 // catch up mode! update all the bloody time.
                 var endDate = new Date(lastGrabbedDate.valueOf() + SEVEN_DAYS_USEC);
-                // console.log('setting start-endDate to >> ', lastGrabbedDate, endDate);
+                console.log('grabbing timeline >> ', lastGrabbedDate, endDate);
                 this_.getTimeline(lastGrabbedDate,endDate).then(function() { 
                     updateLGD(endDate).fail(function() { 
                         console.log('updateLGD fail >> ');
