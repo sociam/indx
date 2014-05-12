@@ -1,0 +1,15 @@
+{
+	"name": "fb",
+	"version": 0.1,
+	"type":["app"],
+	"icons": { 
+		"128": "img/fb.png",
+		"512": "img/icon-512.png" 
+	},
+	"author": [
+		{
+			"name": "eMax",
+			"email": "max@hip.cat"
+		}
+	]
+}
