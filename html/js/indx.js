@@ -618,7 +618,9 @@ angular
 					// u.debug('websocket :: incoming a message ', evt.data.toString().substring(0,190)); // .substring(0,190));
 					var pdata = JSON.parse(evt.data);
 					console.log('pdata >> ', pdata);
-					if (pdata.action === 'diff') {
+					if (pdata.respond_to === 'connect' && pdata.success == true) {
+						this_.connected.resolve();
+					} else if (pdata.action === 'diff') {
 						box._diffUpdate(pdata.data)
 							.then(function() { box.trigger('update-from-master', box.getVersion()); })
 							.fail(function(err) {	u.error(err); });
@@ -651,7 +653,7 @@ angular
 				/// @ignore
 				ws.onopen = function() {
 					u.debug("!!!!!!!!!!!!!!!! websocket open >>>>>>>>> sending token ");
-					this_.connected.resolve();
+					// this_.connected.resolve();
 					this_._ws_auth().then(function() {
                         this_.diffid = this_._genid();
 						console.log('--- asking for diff with id ' + this_.diffid);
