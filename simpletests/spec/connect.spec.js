@@ -88,6 +88,8 @@ describe('creation of an object', function() {
         tests.connect().then(function(store) { 
             store.getBox(test_box).then(function(box) { 
                 box.getObj(oid).then(function(obj) {
+                    console.log('key ', key, ' - ', val);
+                    console.log('object -- ', obj.attributes);
                     expect(obj.get(key) !== undefined).toBe(true);
                     expect(obj.get(key).length).toBe(1);
                     expect(obj.get(key)[0]).toBe(val);

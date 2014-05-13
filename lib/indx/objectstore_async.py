@@ -1365,9 +1365,9 @@ class ObjectStoreAsync:
                     ipve.version = latest_ver
                     interaction_d.errback(Failure(ipve))
                     return
-
-
-                if latest_ver - 1 == specified_prev_version:
+                # emax foobarred this >
+                # if latest_ver - 1 == specified_prev_version: # crashing cos latest_ver was None
+                if latest_ver is not None and latest_ver - 1 == specified_prev_version:
                     self.debug("Objectstore update, latest_ver - 1 == specified_prev_version")
                     # this update is a batch update to the previous version
                     # allow this if the update doesn't include object IDs already modified in this version update
@@ -1385,11 +1385,15 @@ class ObjectStoreAsync:
 
                     self._curexec(cur, "SELECT DISTINCT j_subject.string FROM wb_vers_diffs JOIN wb_strings j_subject ON (wb_vers_diffs.subject_uuid = j_subject.uuid) WHERE j_subject.string = ANY(%s) LIMIT 1", [id_list]).addCallbacks(in_ver_cb, interaction_err_cb)
                     return
-                elif latest_ver == specified_prev_version:
+                # emax foobarred this >
+                # elif latest_ver == specified_prev_version:
+                elif (latest_ver == specified_prev_version) or (latest_ver is None and specified_prev_version == 0):
                     self.debug("Objectstore update, latest_ver == specified_prev_version")
                     # specified the current version, so the backend generates a new version
 
-                    new_ver = latest_ver + 1
+                    # emax foobarred this
+                    # new_ver = latest_ver + 1 
+                    new_ver = latest_ver + 1 if latest_ver is not None else 1
                     do_update(new_ver)
                     return
 

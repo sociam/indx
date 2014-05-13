@@ -361,7 +361,6 @@ angular
 					}										
 				}
 				var id = o["@id"] || [this.id,'-',k,u.guid(8)].join('');
-				console.info('setting naked obj in ', this.id, k, o, id);
 				var m = this.box._createModelForID(id);
 				m.set(o); // recurses! 
 				m.save(); // todo this is not really okay.
@@ -608,6 +607,7 @@ angular
 			this.requests = {};
 			this._setup();
 			this.connected = u.deferred();
+			this.authed = u.deferred();
 		};
 		IndxWebSocketHandler.prototype = {
 			_genid: function() { return u.guid(16); },
@@ -626,7 +626,7 @@ angular
 						if (this_.requests[pdata.requestid] !== undefined) {
 							var request = this_.requests[pdata.requestid];
 							if (pdata.success === false || pdata.response && pdata.response.code && parseInt(pdata.response.code) >= 400) { 
-								console.error('error -- ', pdata.response.code, 'failing');
+								console.error('error -- ', pdata.response && pdata.response.code, 'failing');
 								request.responsed.reject(pdata.response);
 							} else {
 								request.responsed.resolve(pdata.response); // && pdata.response.data
@@ -658,6 +658,7 @@ angular
 						this_._ws_diff(this_.diffid).then(function() { 
 							console.log('diff success!');
 							box.trigger('ws-connect');
+							this_.authed.resolve();
 						}).fail(function(err) {
 							console.log('diff fail ', err);
 						});
@@ -684,8 +685,11 @@ angular
 				return req.responsed.promise();
 			},
 			addHttpRequest:function(method, path, data) { 
-				var rid = this._genid();
-				return this.addRequest(rid, WS_MESSAGES_SEND.http(rid, method, path, data));
+				var rid = this._genid(), d = u.deferred(), this_ = this;
+				this.authed.then(function() {
+				   this_.addRequest(rid, WS_MESSAGES_SEND.http(rid, method, path, data)).then(d.resolve).fail(d.reject);
+				});
+				return d.promise();
 			},
 			_ws_auth : function() {
 				var token = this.box._getCachedToken() || this.box._getStoredToken(), 
@@ -1354,12 +1358,18 @@ angular
 				var box = this.getID();
 				this._ajax("GET",[box,'get_object_ids'].join('/')).then(
 					function(response){
-						console.log('success on getobjids');
-						u.assert(response.data && response.data['@version'] !== undefined, 'no version provided');
+						var data = response && response.data;
+						if (data && data.data) {
+							console.log('DOUBLE NESTED DATA ', response);
+							data = data.data;
+						} else {
+							console.log('single nested data ', response);
+						}
+						u.assert(data['@version'] !== undefined, 'no version provided');
 						this_.id = this_.getID(); // sets so that _isFetched later returns true
-						console.info('_fetch setVersion ', response.data['@version']);
-						this_._setVersion(response.data['@version']);
-						this_._updateObjectList(response.data.ids);
+						console.info('_fetch setVersion ', data['@version']);
+						this_._setVersion(data['@version']);
+						this_._updateObjectList(data.ids);
 						fd.resolve(this_);
 					}).fail(fd.reject);				
 				fd.then(function() {
