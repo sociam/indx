@@ -35,7 +35,9 @@ angular.module('facebook', ['indx'])
 			});			
 			FB.api('/me/friends','get',function(x) { 
 				console.log('/friends response >> ', x);
-				window.friends = x;
+				var get_friend = function(f) { 
+
+				};
 				sa(function() { $scope.me.friends = x.data; });
 			});
 		};

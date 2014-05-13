@@ -350,10 +350,31 @@ angular
 			/// @return {String} - ID of this object
 			/// returns the id of this object
 			getID:function() { return this.id;	},
+			_checkObj:function(k,o) {
+				if (!_.isObject(o)) { return o; }
+				if (o.id !== undefined) { return o; }
+				// it's an object 
+				if (o["@id"] !== undefined) {
+					var oc = this.box.objcache().get(o["@id"]);
+					if (oc !== undefined) {
+						return oc;
+					}										
+				}
+				var id = o["@id"] || [this.id,'-',k,u.guid(8)].join('');
+				console.info('setting naked obj in ', this.id, k, o, id);
+				var m = this.box._createModelForID(id);
+				m.set(o); // recurses! 
+				m.save(); // todo this is not really okay.
+				return m;
+			},
 			_valueToArray:function(k,v) {
+				var this_ = this;
+				if (_(v).isUndefined()) { return v; }
 				if (k === '@id') { return v; }
-				if (!_(v).isUndefined() && !_(v).isArray()) {
-					return [v];
+				if (!_(v).isArray()) {
+					return [this._checkObj(k,v)];
+				} else {
+					return v.map(function(vi) { return this_._checkObj(k,vi); });
 				}
 				return v;
 			},
