@@ -38,6 +38,10 @@
 					}
 					return ret;
                 },
+                chooseRandom:function(r) {
+                	var i = Math.floor(r.length*Math.random());
+                	return r[i];
+                },
                 joinModelChunksIntoString:function(model) {
                 	// inverse of the last method
 					var strs = [], val;
