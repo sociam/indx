@@ -17,126 +17,305 @@
 
 import logging
 import copy
+import indx_pg2
 from txpostgres import txpostgres
-from twisted.internet.defer import Deferred
+from twisted.internet.defer import Deferred, DeferredSemaphore, DeferredList
 from twisted.internet import threads
+from twisted.python.failure import Failure
+from twisted.internet import reactor
+
+MIN_CONNS = 1
+MAX_CONNS = 5
+
+WAITING = 'WAITING'
+INUSE = 'INUSE'
+FREE = 'FREE'
 
 class IndxConnectionPool:
     """ A wrapper for txpostgres connection pools, which auto-reconnects. """
 
-    def __init__(self, _ignored, *connargs, **connkw):
+    def __init__(self):
         logging.debug("IndxConnectionPool starting. ")
-        self._ignored = _ignored
-        self.connargs = connargs
-        self.connkw = connkw
-        self.subscribers = []
-        self.pool = self._connectPool()
+        self.connections = {} # by connection string
+        self.conn_strs = {} # by db_name
+        self.semaphore = DeferredSemaphore(1)
+        self.subscribers = {} # by db name
 
-    def _connectPool(self):
-        logging.debug("IndxConnectionPool _connectionPool")
-        return txpostgres.ConnectionPool(self._ignored, *self.connargs, **self.connkw)
+    def removeAll(self, db_name):
+        logging.debug("IndxConnectionPool removeAll {0}".format(db_name))
+        d_list = []
+        for conn_str in self.conn_strs[db_name]:
+            for conn in self.connections[conn_str][INUSE]:
+                d_list.append(conn.close())
+            for conn in self.connections[conn_str][FREE]:
+                d_list.append(conn.close())
 
-    # Wrap existing functions
-    def start(self, *args, **kwargs):
-        logging.debug("IndxConnectionPool start")
-        return self.pool.start(*args, **kwargs)
+        del self.connections[conn_str]
+        del self.conn_strs[db_name]
 
-    def close(self, *args, **kwargs):
-        logging.debug("IndxConnectionPool close")
-        return self.pool.close(*args, **kwargs)
+        dl = DeferredList(d_list)
+        return dl
 
-    def remove(self, *args, **kwargs):
-        logging.debug("IndxConnectionPool remove")
-        return self.pool.remove(*args, **kwargs)
+    def connect(self, db_name, db_user, db_pass, db_host, db_port):
+        """ Returns an IndxConnection (Actual connection and pool made when query is made). """
 
-    def add(self, *args, **kwargs):
-        logging.debug("IndxConnectionPool add")
-        return self.pool.add(*args, **kwargs)
+        return_d = Deferred()
+        log_conn_str = "dbname='{0}' user='{1}' password='{2}' host='{3}' port='{4}' application_name='{5}'".format(db_name, db_user, "XXXX", db_host, db_port, indx_pg2.APPLICATION_NAME)
+        conn_str = "dbname='{0}' user='{1}' password='{2}' host='{3}' port='{4}' application_name='{5}'".format(db_name, db_user, db_pass, db_host, db_port, indx_pg2.APPLICATION_NAME)
+        logging.debug("IndxConnectionPool connect: {0}".format(log_conn_str))
 
-#
-#    def reconnect_subscribe(self, cb):
-#        self.subscribers.append(cb)
-#
-#    def flush_subscribers(self):
-#        subs = copy.copy(self.subscribers)
-#        self.subscribers = []
-#
-#        for cb in subs:
-#            threads.deferToThread(cb, None)
-#
+        if db_name not in self.conn_strs:
+            self.conn_strs[db_name] = []
+        self.conn_strs[db_name].append(conn_str)
 
-    # Wrap query functions with auto-reconnection
+        def free_cb(conn):
+            logging.debug("IndxConnectionPool free_cb, conn: {0}".format(conn))
+
+            def locked_cb(empty):
+                logging.debug("IndxConnectionPool locked_cb")
+                self.connections[conn_str][INUSE].remove(conn)
+                
+                if len(self.connections[conn_str][WAITING]) > 0:
+                    callback = self.connections[conn_str][WAITING].pop()
+                    self.connections[conn_str][INUSE].append(conn)
+                    callback(conn)
+                else:
+                    self.connections[conn_str][FREE].append(conn)
+
+                self.semaphore.release()
+
+            def err_cb(failure):
+                logging.error("IndxConnectionPool error in free_cb: {0}".format(failure))
+                self.semaphore.release()
+
+            self.semaphore.acquire().addCallbacks(locked_cb, err_cb)
+
+
+        def alloc_cb(conn_str):
+            # a query was called - allocate a connection now and pass it back
+            return self._connect(conn_str)
+ 
+        indx_connection = IndxConnection(conn_str, alloc_cb, free_cb)
+        return_d.callback(indx_connection)
+        return return_d
+
+
+    def _connect(self, conn_str):
+        """ Connect and return a free Connection.
+            Figures out whether to make new connections, use the pool, or wait in a queue.
+        """
+        return_d = Deferred()
+
+        def err_cb(failure):
+            logging.error("IndxConnectionPool _connect err_cb: {0}".format(failure))
+            self.semaphore.release()
+            return_d.errback(failure)
+
+        def succeed_cb(empty):
+            logging.debug("IndxConnectionPool _connect succeed_cb")
+            # TODO pass a Connection back
+            
+            if len(self.connections[conn_str][FREE]) > 0:
+                # free connection, use it straight away
+                conn = self.connections[conn_str][FREE].pop()
+                self.connections[conn_str][INUSE].append(conn)
+                self.semaphore.release()
+                return_d.callback(conn)
+                return
+
+            if len(self.connections[conn_str][INUSE]) < MAX_CONNS:
+                # not at max connections for this conn_str
+                
+                # create a new one
+                d = self._newConnection(conn_str)
+
+                def connected_cb(indx_conn):
+                    logging.debug("IndxConnectionPool _connect connected_cb ({0})".format(indx_conn))
+                    self.connections[conn_str][FREE].remove(indx_conn)
+                    self.connections[conn_str][INUSE].append(indx_conn)
+                    self.semaphore.release()
+                    return_d.callback(indx_conn)
+                    return
+
+                d.addCallbacks(connected_cb, return_d.errback)
+                return
+
+            # wait for a connection
+            def wait_cb(conn):
+                logging.debug("IndxConnectionPool _connect wait_cb ({0})".format(conn))
+                # already put in 'inuse'
+                return_d.callback(conn)
+                return
+
+            self.connections[conn_str][WAITING].append(wait_cb)
+            self.semaphore.release()
+            return
+
+        def locked_cb(empty):
+            logging.debug("IndxConnectionPool _connect locked_cb")
+            if conn_str not in self.connections:
+                self._newConnections(conn_str).addCallbacks(succeed_cb, err_cb)
+            else:
+                succeed_cb(None)
+
+        self.semaphore.acquire().addCallbacks(locked_cb, err_cb)
+        return return_d
+
+    def _closeOldConnection(self):
+        logging.debug("IndxConnectionPool _closeOldConnection")
+        return_d = Deferred()
+
+        query = "SELECT "
+        return_d.callback(None)
+
+        return return_d
+
+    def _newConnection(self, conn_str):
+        """ Makes a new connection to the DB
+            and then puts it in the 'free' pool of this conn_str.
+        """
+        logging.debug("IndxConnectionPool _newConnection")
+        # lock with the semaphore before calling this
+        return_d = Deferred()
+
+        def close_old_cb(failure):
+            # couldn't connect, so close an old connection first
+            logging.error("IndxConnectionPool error close_old_cb: {0}".format(failure.value))
+            failure.trap(Exception)
+
+            def closed_cb(empty):
+                # closed, so try connecting again
+                self._newConnection(conn_str).addCallbacks(return_d.callback, return_d.errback)
+
+            self._closeOldConnection().addCallbacks(closed_cb, return_d.errback)
+
+        try:
+            # try to connect
+            def connected_cb(connection):
+                logging.debug("IndxConnectionPool _newConnection connected_cb, connection: {0}".format(connection))
+                self.connections[conn_str][FREE].append(connection)
+                return_d.callback(connection)
+
+            conn = txpostgres.Connection()
+            connection_d = conn.connect(conn_str)
+            connection_d.addCallbacks(connected_cb, close_old_cb)
+        except Exception as e:
+            # close an old connection first
+            logging.debug("IndxConnectionPool Exception, going to call close_old_cb: ({0})".format(e))
+            close_old_cb(Failure(e))
+
+        return return_d
+
+    def _newConnections(self, conn_str):
+        """ Make a pool of new connections. """
+        # lock with the semaphore before calling this
+        logging.debug("IndxConnectionPool _newConnections")
+        return_d = Deferred()
+
+        self.connections[conn_str] = {}
+        self.connections[conn_str][INUSE] = []
+        self.connections[conn_str][FREE] = []
+        self.connections[conn_str][WAITING] = []
+
+        try:
+            d_list = []
+            for i in range(MIN_CONNS):
+                connection_d = self._newConnection(conn_str) 
+                d_list.append(connection_d)
+
+            dl = DeferredList(d_list)
+            dl.addCallbacks(return_d.callback, return_d.errback)
+
+        except Exception as e:
+            logging.error("IndxConnectionPool error in _newConnections: {0}".format(e))
+            return_d.errback(Failure(e))
+
+        return return_d
+
+
+class IndxConnection():
+    """ Wrap a connection around a callback so we can track when it's in-use/free. """
+
+    def __init__(self, conn_str, alloc_cb, free_cb):
+        self.conn_str = conn_str
+        self.alloc_cb = alloc_cb
+        self.free_cb = free_cb
+
+    def _putBackAndPassthrough(self, result, connection):
+        self.free_cb(connection)
+        return result
+
     def runQuery(self, *args, **kwargs):
-        logging.debug("IndxConnectionPool runQuery, args: {0}, kwargs: {1}".format(args, kwargs))
-        deferred = Deferred()
-        pool_deferred = self.pool.runQuery(*args, **kwargs)
-        pool_deferred.addCallbacks(deferred.callback, deferred.errback)
-#        pool_deferred.addCallback(deferred.callback)
-#
-#        def err_cb(failure):
-#            logging.debug("IndxConnectionPool runQuery err_cb {0} {1}".format(failure, failure.value))
-#            # failure!
-#            # reconnect and try the query again
-#            # TODO check exception is a psycopg2.InterfaceError and a "connection already closed" error first, otherwise send on to the deferred errback instead
-#            def connected2(conn):
-#                logging.debug("IndxConnectionPool runQuery err_cb connected2")
-#                self.flush_subscribers()
-#                conn.runQuery(*args, **kwargs).addCallbacks(deferred.callback, deferred.errback)
-#
-#            self.pool.close() # clean up existing
-#            self.pool = self._connectPool()
-#            self.pool.start().addCallbacks(connected2, deferred.errback) # FIXME is this the best errback?
-#
-#        pool_deferred.addErrback(err_cb)
-        return deferred
+        """
+        Execute an SQL query using a pooled connection and return the result.
+
+        One of the pooled connections will be chosen, its
+        :meth:`~txpostgres.txpostgres.Connection.runQuery` method will be
+        called and the resulting :d:`Deferred` will be returned.
+
+        :return: A :d:`Deferred` obtained by a pooled connection's
+            :meth:`~txpostgres.txpostgres.Connection.runQuery`
+        """
+        logging.debug("IndxConnection runQuery: {0}".format(args))
+        return_d = Deferred()
+
+        def alloced_cb(connection):
+            d = connection.runQuery(*args, **kwargs)
+            d.addBoth(self._putBackAndPassthrough, connection)
+            d.addCallbacks(return_d.callback, return_d.errback)
+
+        self.alloc_cb(self.conn_str).addCallbacks(alloced_cb, return_d.errback)
+        return return_d
 
 
     def runOperation(self, *args, **kwargs):
-        logging.debug("IndxConnectionPool runOperation, args: {0}, kwargs: {1}".format(args, kwargs))
-        deferred = Deferred()
-        pool_deferred = self.pool.runOperation(*args, **kwargs)
-        pool_deferred.addCallbacks(deferred.callback, deferred.errback)
-#        pool_deferred.addCallback(deferred.callback)
-#
-#        def err_cb(failure):
-#            logging.debug("IndxConnectionPool runOperation err_cb {0} {1}".format(failure, failure.value))
-#            # failure!
-#            # reconnect and try the query again
-#            # TODO check exception is a psycopg2.InterfaceError and a "connection already closed" error first, otherwise send on to the deferred errback instead
-#            def connected2(conn):
-#                logging.debug("IndxConnectionPool runOperation err_cb connected2")
-#                self.flush_subscribers()
-#                conn.runOperation(*args, **kwargs).addCallbacks(deferred.callback, deferred.errback)
-#
-#            self.pool.close() # clean up existing
-#            self.pool = self._connectPool()
-#            self.pool.start().addCallbacks(connected2, deferred.errback) # FIXME is this the best errback?
-#
-#        pool_deferred.addErrback(err_cb)
-        return deferred
+        """
+        Execute an SQL query using a pooled connection and discard the result.
 
+        One of the pooled connections will be chosen, its
+        :meth:`~txpostgres.txpostgres.Connection.runOperation` method will be
+        called and the resulting :d:`Deferred` will be returned.
 
-    def runInteraction(self, *args, **kwargs):
-        logging.debug("IndxConnectionPool runInteraction, args: {0}, kwargs: {1}".format(args, kwargs))
-        deferred = Deferred()
-        pool_deferred = self.pool.runInteraction(*args, **kwargs)
-        pool_deferred.addCallbacks(deferred.callback, deferred.errback)
-#        pool_deferred.addCallback(deferred.callback)
-#
-#        def err_cb(failure):
-#            logging.debug("IndxConnectionPool runInteration err_cb {0} {1}".format(failure, failure.value))
-#            # failure!
-#            # reconnect and try the query again
-#            # TODO check exception is a psycopg2.InterfaceError and a "connection already closed" error first, otherwise send on to the deferred errback instead
-#            def connected2(conn):
-#                logging.debug("IndxConnectionPool runInteraction err_cb connected2")
-#                self.flush_subscribers()
-#                conn.runInteraction(*args, **kwargs).addCallbacks(deferred.callback, deferred.errback)
-#
-#            self.pool.close() # clean up existing
-#            self.pool = self._connectPool()
-#            self.pool.start().addCallbacks(connected2, deferred.errback) # FIXME is this the best errback?
-#
-#        pool_deferred.addErrback(err_cb)
-        return deferred
+        :return: A :d:`Deferred` obtained by a pooled connection's
+            :meth:`~txpostgres.txpostgres.Connection.runOperation`
+        """
+        logging.debug("IndxConnection runOperation: {0}".format(args))
+        return_d = Deferred()
+
+        def alloced_cb(connection):
+            d = connection.runOperation(*args, **kwargs)
+            d.addBoth(self._putBackAndPassthrough, connection)
+            d.addCallbacks(return_d.callback, return_d.errback)
+
+        self.alloc_cb(self.conn_str).addCallbacks(alloced_cb, return_d.errback)
+        return return_d
+
+    def runInteraction(self, interaction, *args, **kwargs):
+        """
+        Run commands in a transaction using a pooled connection and return the
+        result.
+
+        One of the pooled connections will be chosen, its
+        :meth:`~txpostgres.txpostgres.Connection.runInteraction` method will be
+        called and the resulting :d:`Deferred` will be returned.
+
+        :param interaction: A callable that will be passed to
+            :meth:`Connection.runInteraction
+            <txpostgres.Connection.runInteraction>`
+        :type interaction: any callable
+
+        :return: A :d:`Deferred` obtained by a pooled connection's
+            :meth:`Connection.runInteraction
+            <txpostgres.Connection.runInteraction>`
+        """
+        logging.debug("IndxConnection runInteraction: {0}".format(args))
+        return_d = Deferred()
+
+        def alloced_cb(connection):
+            d = connection.runInteraction(interaction, *args, **kwargs)
+            d.addBoth(self._putBackAndPassthrough, connection)
+            d.addCallbacks(return_d.callback, return_d.errback)
+
+        self.alloc_cb(self.conn_str).addCallbacks(alloced_cb, return_d.errback)
+        return return_d
 

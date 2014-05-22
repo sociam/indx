@@ -1,7 +1,7 @@
-#    Copyright (C) 2011-2013 University of Southampton
-#    Copyright (C) 2011-2013 Daniel Alexander Smith
-#    Copyright (C) 2011-2013 Max Van Kleek
-#    Copyright (C) 2011-2013 Nigel R. Shadbolt
+#    Copyright (C) 2011-2014 University of Southampton
+#    Copyright (C) 2011-2014 Daniel Alexander Smith
+#    Copyright (C) 2011-2014 Max Van Kleek
+#    Copyright (C) 2011-2014 Nigel R. Shadbolt
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Affero General Public License, version 3,
@@ -29,12 +29,12 @@ from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
 from indx.user import IndxUser
 
-POOLS = {} # dict of txpostgres.ConnectionPools, one pool for each box/user combo
-POOLS_BY_DBNAME = {} # dict of above indexed by dbname, used to close pools when databases are deleted
+POOL = IndxConnectionPool() # single indxconnectionpool
 
 INDX_PREFIX = "ix_" # prefix to the database names
 
 POSTGRES_DB = "postgres" # default db fallback if db name is none
+APPLICATION_NAME = "INDX{0}".format(uuid.uuid1())
 
 # changed by server.py if necessary
 HOST = "localhost"
@@ -731,6 +731,8 @@ class IndxDatabase:
         logging.debug("Delete box {0} req".format(box_name))
         return_d = Deferred()
 
+        db_name = INDX_PREFIX + box_name 
+
         def connected(conn):
             d = conn.runOperation("DROP DATABASE {0}".format(db_name))
 
@@ -748,13 +750,11 @@ class IndxDatabase:
 
             d.addCallbacks(dropped_cb, return_d.errback)
 
-        db_name = INDX_PREFIX + box_name 
-        if db_name in POOLS_BY_DBNAME:
-            for pool in POOLS_BY_DBNAME[db_name]:
-                pool.close()
-                # TODO remove these from here, and from POOLS ?
 
-        connect(POSTGRES_DB, self.db_user, self.db_pass).addCallbacks(connected, return_d.errback)
+        def removed_cb(empty):
+            connect(POSTGRES_DB, self.db_user, self.db_pass).addCallbacks(connected, return_d.errback)
+
+        POOL.removeAll(db_name).addCallbacks(removed_cb, return_d.errback)
         return return_d
 
     def list_users(self):
@@ -929,36 +929,21 @@ class IndxDatabase:
 # Connection Functions
 
 def connect(db_name, db_user, db_pass):
-    conn_str = ("dbname='{0}' user='{1}' password='{2}' host='{3}' port='{4}'".format(db_name or POSTGRES_DB, db_user, db_pass, HOST, PORT))
-
     result_d = Deferred()
-    if conn_str in POOLS:
-        logging.debug("indx_pg2: returning existing pool for db: {0}, user: {1}".format(db_name, db_user))
-        p = POOLS[conn_str]
-        # already connected, so just return a defered with itself
-        result_d.callback(p)
-    else:
-        # not connected yet, so return after start() finished
 
+    if db_name is None:
+        db_name is POSTGRES_DB
 
-        p = IndxConnectionPool(None, conn_str)
+    def connected(connection):
+        result_d.callback(connection)
 
-        def success(pool):
-            logging.debug("indx_pg2: returning new pool for db: {0}, user: {1}, pool: {2}, p: {3}".format(db_name, db_user, pool, p))
-            POOLS[conn_str] = p # only do this if it successfully connects
-            if db_name not in POOLS_BY_DBNAME:
-                POOLS_BY_DBNAME[db_name] = []
-            POOLS_BY_DBNAME[db_name].append(p)
-            result_d.callback(p)
-
-        p.start().addCallbacks(success, result_d.errback)
-
+    POOL.connect(db_name, db_user, db_pass, HOST, PORT).addCallbacks(connected, result_d.errback)
     return result_d
 
 
 def connect_sync(db_name, db_user, db_pass):
     """ Connect synchronously to the database - only used for large object support. """
-    conn_str = ("dbname='{0}' user='{1}' password='{2}' host='{3}' port='{4}'".format(db_name or POSTGRES_DB, db_user, db_pass, HOST, PORT))
+    conn_str = ("dbname='{0}' user='{1}' password='{2}' host='{3}' port='{4}' application_name='{5}'".format(db_name or POSTGRES_DB, db_user, db_pass, HOST, PORT, APPLICATION_NAME))
     conn = psycopg2.connect(conn_str)
     return conn
 
@@ -967,7 +952,7 @@ def connect_raw(db_name, db_user, db_pass):
     """ Connect to the database bypassing the connection pool (e.g., for adding a notify observer). """
 
     try:
-        conn_str = ("dbname='{0}' user='{1}' password='{2}' host='{3}' port='{4}'".format(db_name or POSTGRES_DB, db_user, db_pass, HOST, PORT))
+        conn_str = ("dbname='{0}' user='{1}' password='{2}' host='{3}' port='{4}' application_name='{5}'".format(db_name or POSTGRES_DB, db_user, db_pass, HOST, PORT, APPLICATION_NAME))
         conn = txpostgres.Connection()
         connection = conn.connect(conn_str)
         return connection
