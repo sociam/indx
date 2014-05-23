@@ -29,7 +29,8 @@ class Token:
         An objectstore_async is also kept in the token.
     """
 
-    def __init__(self, db, username, password, boxid, appid, origin, clientip, server_id):
+    def __init__(self, indx_reactor, db, username, password, boxid, appid, origin, clientip, server_id):
+        self.indx_reactor = indx_reactor
         self.db = db
         self.username = username
         self.password = password
@@ -77,11 +78,6 @@ class Token:
                 database.connect_box_sync(self.boxid, db_user, db_pass).addCallbacks(lambda conn: conn_passthru(conn, return_d), return_d.errback)
                 return return_d
 
-            def get_raw():
-                return_d = Deferred()
-                database.connect_box_raw(self.boxid, db_user, db_pass).addCallbacks(lambda conn: conn_passthru(conn, return_d), return_d.errback)
-                return return_d
-
             def get_conn():
                 return_d = Deferred()
                 database.connect_box(self.boxid, db_user, db_pass).addCallbacks(lambda conn: conn_passthru(conn, return_d), return_d.errback)
@@ -92,8 +88,8 @@ class Token:
                 self.db.connect_indx_db().addCallbacks(lambda conn: conn_passthru(conn, return_d), return_d.errback)
                 return return_d
 
-            conns = {"conn": get_conn, "sync_conn": get_sync, "raw_conn": get_raw, "indx_conn": get_indx_conn}
-            store = ObjectStoreAsync(conns, self.username, self.boxid, self.appid, self.clientip, self.server_id)
+            conns = {"conn": get_conn, "sync_conn": get_sync, "indx_conn": get_indx_conn}
+            store = ObjectStoreAsync(self.indx_reactor, conns, self.username, self.boxid, self.appid, self.clientip, self.server_id)
 
             def upgrade_cb(result):
                 result_d.callback(store)
@@ -123,6 +119,10 @@ class TokenKeeper:
     def __init__(self, db):
         self.tokens = {}
         self.db = db
+        self.indx_reactor = None
+
+    def set_reactor(self, indx_reactor):
+        self.indx_reactor = indx_reactor # ughh
 
     def close_all(self):
         """ Close all database connections. """
@@ -152,7 +152,7 @@ class TokenKeeper:
                 return
 
             username, password, boxid, appid, origin, clientip, server_id = token_tuple
-            token = Token(self.db, username, password, boxid, appid, origin, clientip, server_id)
+            token = Token(self.indx_reactor, self.db, username, password, boxid, appid, origin, clientip, server_id)
 
             self.add(token)
             return_d.callback(token)
@@ -169,7 +169,7 @@ class TokenKeeper:
         logging.debug("Token Keeper - new token for: {0} to {1}".format(username, boxid))
         return_d = Deferred()
 
-        token = Token(self.db,username,password,boxid,appid,origin,clientip, server_id)
+        token = Token(self.indx_reactor, self.db,username,password,boxid,appid,origin,clientip, server_id)
         self.add(token)
 
         def saved_cb(empty):

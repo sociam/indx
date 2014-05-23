@@ -26,6 +26,7 @@ from indx.objectstore_query import ObjectStoreQuery
 from indx.object_diff import ObjectSetDiff
 from indx.objectstore_types import Graph, Literal, Resource
 from indx.object_commit import ObjectCommit
+from indx.reactor import IndxSubscriber
 
 RAW_LISTENERS = {} # one connection per box to listen to updates
 
@@ -33,9 +34,10 @@ class ObjectStoreAsync:
     """ Stores objects in a database, handling import, export and versioning.
     """
 
-    def __init__(self, conns, username, boxid, appid, clientip, server_id):
+    def __init__(self, indx_reactor, conns, username, boxid, appid, clientip, server_id):
         """
         """
+        self.indx_reactor = indx_reactor
         self.conns = conns
         self.username = username
         self.boxid = boxid
@@ -53,8 +55,8 @@ class ObjectStoreAsync:
         """
         return_d = Deferred()
 
-        fh_schemas = open(os.path.join(os.path.dirname(__file__),"..","data","indx-schemas.json")) # FIXME put into config
-        schemas = json.load(fh_schemas)
+        fh_schemas = self.indx_reactor.open(os.path.join(os.path.dirname(__file__),"..","data","indx-schemas.json")) # FIXME put into config
+        schemas = json.loads(fh_schemas)
 
         def indx_conn_cb(indx_conn):
             logging.debug("Objectstore schema_upgrade, indx_conn_cb")
@@ -176,6 +178,10 @@ class ObjectStoreAsync:
 
         def new_ver_done(success):
             if propagate:
+                # via indx reactor
+                self.indx_reactor.send({"version": version}, {"type": "version_update"})
+
+                # and via database
                 self._curexec(cur, "SELECT * FROM wb_version_finished(%s)", [version]).addCallbacks(result_d.callback, err_cb)
             else:
                 result_d.callback(True)
@@ -207,28 +213,31 @@ class ObjectStoreAsync:
         """
         logging.debug("Objectstore listen")
 
-        if self.boxid in RAW_LISTENERS:
-            RAW_LISTENERS[self.boxid].subscribe(observer, f_id = f_id)
-        else:
-            """ We create box in RAW_LISTENERS immediately to try to avoid a race condition in the 'if' above.
-                This means we have to add the store via a function call, rather than through the constructor.
-                This is because the store is created through a callback, so there is a delay.
-                It works out OK because subscribers will always be added to the list at the point of
-                subscription, but they only receive notifications when the notification connection has been established.
-            """
-            RAW_LISTENERS[self.boxid] = ConnectionSharer(self.boxid, self)
-            RAW_LISTENERS[self.boxid].subscribe(observer, f_id = f_id)
+        sharer = ConnectionSharer(self.indx_reactor, self.boxid, self)
+        sharer.subscribe(observer, f_id = f_id)
 
-            def err_cb(failure):
-                logging.error("Token: subscribe, error on getting raw store: {0}".format(failure))
-                failure.trap(Exception)
-                raise failure.value # TODO check that exceptions are OK - I assume so becaus this function doesn't return a Deferred
-
-            def raw_conn_cb(conn):
-                logging.debug("Objectstore listen, raw_conn_cb")
-                RAW_LISTENERS[self.boxid].add_conn(conn)
-            
-            self.conns['raw_conn']().addCallbacks(raw_conn_cb, err_cb)
+#        if self.boxid in RAW_LISTENERS:
+#            RAW_LISTENERS[self.boxid].subscribe(observer, f_id = f_id)
+#        else:
+#            """ We create box in RAW_LISTENERS immediately to try to avoid a race condition in the 'if' above.
+#                This means we have to add the store via a function call, rather than through the constructor.
+#                This is because the store is created through a callback, so there is a delay.
+#                It works out OK because subscribers will always be added to the list at the point of
+#                subscription, but they only receive notifications when the notification connection has been established.
+#            """
+#            RAW_LISTENERS[self.boxid] = ConnectionSharer(self.indx_reactor, self.boxid, self)
+#            RAW_LISTENERS[self.boxid].subscribe(observer, f_id = f_id)
+#
+#            def err_cb(failure):
+#                logging.error("Token: subscribe, error on getting raw store: {0}".format(failure))
+#                failure.trap(Exception)
+#                raise failure.value # TODO check that exceptions are OK - I assume so becaus this function doesn't return a Deferred
+#
+#            def raw_conn_cb(conn):
+#                logging.debug("Objectstore listen, raw_conn_cb")
+#                RAW_LISTENERS[self.boxid].add_conn(conn)
+#            
+#            self.conns['conn']().addCallbacks(raw_conn_cb, err_cb)
 
 
     def query(self, q, predicate_filter = None, render_json = True, depth = 0):
@@ -1818,20 +1827,23 @@ class ConnectionSharer:
         Later authenticated users only subscribe to it. Each user receives the same update (that a change was made), they then each call a diff (or whatever they want to do) using their own authenticated and pooled connections - this is designed so that we have a single LISTEN call per database, but do not rely on that connection's permissions at all, that is handled by the individual user's connection pool privileges.
     """
 
-    def __init__(self, box, store):
+    def __init__(self, indx_reactor, box, store):
         """
             box -- The name of the box.
         """
+        self.indx_reactor = indx_reactor
         self.box = box
         self.store = store
         self.subscribers = {}
 
-    def add_conn(self, conn):
-        """ A connection has been connected, so we can start listening.
-            conn -- A raw connection using a non-pooled connection to the box (that supports adding an observer)
-        """
-        self.conn = conn
         self.listen()
+
+#    def add_conn(self, conn):
+#        """ A connection has been connected, so we can start listening.
+#            conn -- A raw connection using a non-pooled connection to the box (that supports adding an observer)
+#        """
+#        self.conn = conn
+#        self.listen()
 
     def unsubscribe(self, observer, f_id = None):
         """ Unsubscribe this observer to this box's updates. """
@@ -1865,17 +1877,20 @@ class ConnectionSharer:
                 for f_id, observer in self.subscribers.items():
                     observer(data)
 
-            version = int(notify.payload)
+            version = int(notify['version'])
             old_version = version - 1 # TODO do this a better way? (if we moved away from int versions, we would return the old and new version in the payload instead of calcualting it here.)
 
             self.store.diff(old_version, version, "diff").addCallbacks(diff_cb, err_cb)
 
-        def err_cb(failure):
-            logging.error("ConnectionSharer listen, err_cb, failure: {0}".format(failure))
+#        def err_cb(failure):
+#            logging.error("ConnectionSharer listen, err_cb, failure: {0}".format(failure))
+#
+#        def done_cb(val):
+#            logging.debug("ConnectionSharer listen, done_cb, val: {0}".format(val))
 
-        def done_cb(val):
-            logging.debug("ConnectionSharer listen, done_cb, val: {0}".format(val))
+        subscriber = IndxSubscriber({"type": "version_update"}, observer)
+        self.indx_reactor.add_subscriber(subscriber)
 
-        self.conn.addNotifyObserver(observer)
-        self.conn.runOperation("LISTEN wb_new_version").addCallbacks(done_cb, err_cb)
+#        self.conn.addNotifyObserver(observer)
+#        self.conn.runOperation("LISTEN wb_new_version").addCallbacks(done_cb, err_cb)
 

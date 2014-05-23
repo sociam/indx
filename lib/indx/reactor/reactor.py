@@ -26,7 +26,20 @@ class IndxReactor:
         self.mappings = []
         self.sessions = {} # sessionid -> INDXSession
         self.tokens = tokens
-        
+        self.tokens.set_reactor(self) # ughh
+        self.file_cache = {}
+
+    ### File caching (to prevent multiple reads to static files)
+
+    def open(self, filename):
+        if filename not in self.file_cache:
+            fh = open(filename)
+            data = fh.read()
+            fh.close()
+            self.file_cache[filename] = data
+
+        return self.file_cache[filename]
+
     ###
     #   Subscribe/Messaging
     ###

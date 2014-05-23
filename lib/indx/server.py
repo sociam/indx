@@ -101,6 +101,7 @@ class WebServer:
         self.database = database.IndxDatabase(config['indx_db'], user, password)
         self.tokens = token.TokenKeeper(self.database)
         self.indx_reactor = IndxReactor(self.tokens)
+        self.database.set_reactor(self.indx_reactor) # ughh
         self.database.auth_indx(database = "postgres").addCallbacks(auth_cb, auth_err)
 
 

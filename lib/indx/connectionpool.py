@@ -18,6 +18,8 @@
 import logging
 import copy
 import indx_pg2
+import time
+import psycopg2
 from txpostgres import txpostgres
 from twisted.internet.defer import Deferred, DeferredSemaphore, DeferredList
 from twisted.internet import threads
@@ -26,10 +28,7 @@ from twisted.internet import reactor
 
 MIN_CONNS = 1
 MAX_CONNS = 5
-
-WAITING = 'WAITING'
-INUSE = 'INUSE'
-FREE = 'FREE'
+REMOVE_AT_ONCE = 3
 
 class IndxConnectionPool:
     """ A wrapper for txpostgres connection pools, which auto-reconnects. """
@@ -45,9 +44,9 @@ class IndxConnectionPool:
         logging.debug("IndxConnectionPool removeAll {0}".format(db_name))
         d_list = []
         for conn_str in self.conn_strs[db_name]:
-            for conn in self.connections[conn_str][INUSE]:
+            for conn in self.connections[conn_str].getInuse():
                 d_list.append(conn.close())
-            for conn in self.connections[conn_str][FREE]:
+            for conn in self.connections[conn_str].getFree():
                 d_list.append(conn.close())
 
         del self.connections[conn_str]
@@ -73,16 +72,18 @@ class IndxConnectionPool:
 
             def locked_cb(empty):
                 logging.debug("IndxConnectionPool locked_cb")
-                self.connections[conn_str][INUSE].remove(conn)
+                self.connections[conn_str].getInuse().remove(conn)
                 
-                if len(self.connections[conn_str][WAITING]) > 0:
-                    callback = self.connections[conn_str][WAITING].pop()
-                    self.connections[conn_str][INUSE].append(conn)
+                if len(self.connections[conn_str].getWaiting()) > 0:
+                    callback = self.connections[conn_str].getWaiting().pop()
+                    self.connections[conn_str].getInuse().append(conn)
+                    self.semaphore.release()
                     callback(conn)
-                else:
-                    self.connections[conn_str][FREE].append(conn)
-
+                    return
+                
+                self.connections[conn_str].getFree().append(conn)
                 self.semaphore.release()
+
 
             def err_cb(failure):
                 logging.error("IndxConnectionPool error in free_cb: {0}".format(failure))
@@ -104,6 +105,7 @@ class IndxConnectionPool:
         """ Connect and return a free Connection.
             Figures out whether to make new connections, use the pool, or wait in a queue.
         """
+        logging.debug("IndxConnectionPool _connect ({0})".format(conn_str))
         return_d = Deferred()
 
         def err_cb(failure):
@@ -115,15 +117,16 @@ class IndxConnectionPool:
             logging.debug("IndxConnectionPool _connect succeed_cb")
             # TODO pass a Connection back
             
-            if len(self.connections[conn_str][FREE]) > 0:
+            if len(self.connections[conn_str].getFree()) > 0:
                 # free connection, use it straight away
-                conn = self.connections[conn_str][FREE].pop()
-                self.connections[conn_str][INUSE].append(conn)
+                conn = self.connections[conn_str].getFree().pop()
+
+                self.connections[conn_str].getInuse().append(conn)
                 self.semaphore.release()
                 return_d.callback(conn)
                 return
 
-            if len(self.connections[conn_str][INUSE]) < MAX_CONNS:
+            if len(self.connections[conn_str].getInuse()) < MAX_CONNS:
                 # not at max connections for this conn_str
                 
                 # create a new one
@@ -131,13 +134,13 @@ class IndxConnectionPool:
 
                 def connected_cb(indx_conn):
                     logging.debug("IndxConnectionPool _connect connected_cb ({0})".format(indx_conn))
-                    self.connections[conn_str][FREE].remove(indx_conn)
-                    self.connections[conn_str][INUSE].append(indx_conn)
+                    self.connections[conn_str].getFree().remove(indx_conn)
+                    self.connections[conn_str].getInuse().append(indx_conn)
                     self.semaphore.release()
                     return_d.callback(indx_conn)
                     return
 
-                d.addCallbacks(connected_cb, return_d.errback)
+                d.addCallbacks(connected_cb, err_cb)
                 return
 
             # wait for a connection
@@ -147,8 +150,8 @@ class IndxConnectionPool:
                 return_d.callback(conn)
                 return
 
-            self.connections[conn_str][WAITING].append(wait_cb)
             self.semaphore.release()
+            self.connections[conn_str].getWaiting().append(wait_cb)
             return
 
         def locked_cb(empty):
@@ -156,18 +159,45 @@ class IndxConnectionPool:
             if conn_str not in self.connections:
                 self._newConnections(conn_str).addCallbacks(succeed_cb, err_cb)
             else:
-                succeed_cb(None)
+                threads.deferToThread(succeed_cb, None)
+#                succeed_cb(None)
 
         self.semaphore.acquire().addCallbacks(locked_cb, err_cb)
         return return_d
 
     def _closeOldConnection(self):
+        """ Close the oldest connection, so we can open a new one up. """
+        # is already in a semaphore lock, from _newConnection
         logging.debug("IndxConnectionPool _closeOldConnection")
+
+        ### we could force quite them through postgresql like this - but instead we kill them from inside
+        #query = "SELECT * FROM pg_stat_activity WHERE state = 'idle' AND application_name = %s AND query != 'LISTEN wb_new_version' ORDER BY state_change LIMIT 1;"
+        #params = [indx_pg2.APPLICATION_NAME]
+
         return_d = Deferred()
 
-        query = "SELECT "
-        return_d.callback(None)
+        def err_cb(failure):
+            return_d.errback(failure)
 
+        ages = {}
+        for conn_str, dbpool in self.connections.items():
+            lastused = dbpool.getTime()
+            ages[lastused] = dbpool
+
+        times = ages.keys()
+        times.sort()
+
+        def removed_cb(count):
+
+            if count < REMOVE_AT_ONCE and len(times) > 0:
+                first_time = times.pop(0)
+                pool = ages[first_time]
+                pool.removeAll(count).addCallbacks(removed_cb, err_cb)
+                pool.getFree()
+            else:
+                return_d.callback(None)
+        
+        removed_cb(0)
         return return_d
 
     def _newConnection(self, conn_str):
@@ -179,21 +209,22 @@ class IndxConnectionPool:
         return_d = Deferred()
 
         def close_old_cb(failure):
+            failure.trap(psycopg2.OperationalError, Exception)
             # couldn't connect, so close an old connection first
             logging.error("IndxConnectionPool error close_old_cb: {0}".format(failure.value))
-            failure.trap(Exception)
 
             def closed_cb(empty):
                 # closed, so try connecting again
                 self._newConnection(conn_str).addCallbacks(return_d.callback, return_d.errback)
 
-            self._closeOldConnection().addCallbacks(closed_cb, return_d.errback)
+            closed_d = self._closeOldConnection()
+            closed_d.addCallbacks(closed_cb, return_d.errback)
 
         try:
             # try to connect
             def connected_cb(connection):
                 logging.debug("IndxConnectionPool _newConnection connected_cb, connection: {0}".format(connection))
-                self.connections[conn_str][FREE].append(connection)
+                self.connections[conn_str].getFree().append(connection)
                 return_d.callback(connection)
 
             conn = txpostgres.Connection()
@@ -212,10 +243,7 @@ class IndxConnectionPool:
         logging.debug("IndxConnectionPool _newConnections")
         return_d = Deferred()
 
-        self.connections[conn_str] = {}
-        self.connections[conn_str][INUSE] = []
-        self.connections[conn_str][FREE] = []
-        self.connections[conn_str][WAITING] = []
+        self.connections[conn_str] = DBConnectionPool(conn_str)
 
         try:
             d_list = []
@@ -230,6 +258,60 @@ class IndxConnectionPool:
             logging.error("IndxConnectionPool error in _newConnections: {0}".format(e))
             return_d.errback(Failure(e))
 
+        return return_d
+
+class DBConnectionPool():
+    """ A pool of DB connections for a specific connection string / DB. """
+
+    def __init__(self, conn_str):
+        self.waiting = []
+        self.inuse = []
+        self.free = []
+
+        self.semaphore = DeferredSemaphore(1)
+
+        self.updateTime()
+
+    def updateTime(self):
+        self.lastused = time.mktime(time.gmtime()) # epoch time
+
+    def getTime(self):
+        return self.lastused
+
+    def getWaiting(self):
+        self.updateTime()
+        return self.waiting
+
+    def getInuse(self):
+        self.updateTime()
+        return self.inuse
+
+    def getFree(self):
+        self.updateTime()
+        return self.free
+
+    def removeAll(self, count):
+        """ Remove a connection (usually because it's old and we're in
+            a freeing up perid.
+        """
+        return_d = Deferred()
+        self.updateTime()
+
+        def err_cb(failure):
+            self.semaphore.release()
+            return_d.errback(failure)
+
+        def locked_cb(count):
+            # immediately close the free connections
+            while len(self.free) > 0:
+                conn = self.free.pop()
+                conn.close()
+                count += 1
+
+            self.semaphore.release()
+            return_d.callback(count)
+
+        self.semaphore.acquire().addCallbacks(lambda s: locked_cb(count), err_cb)
         return return_d
 
 
@@ -260,6 +342,7 @@ class IndxConnection():
         return_d = Deferred()
 
         def alloced_cb(connection):
+            logging.debug("IndxConnection runQuery alloced")
             d = connection.runQuery(*args, **kwargs)
             d.addBoth(self._putBackAndPassthrough, connection)
             d.addCallbacks(return_d.callback, return_d.errback)
@@ -283,6 +366,7 @@ class IndxConnection():
         return_d = Deferred()
 
         def alloced_cb(connection):
+            logging.debug("IndxConnection runOperation alloced")
             d = connection.runOperation(*args, **kwargs)
             d.addBoth(self._putBackAndPassthrough, connection)
             d.addCallbacks(return_d.callback, return_d.errback)
@@ -312,6 +396,7 @@ class IndxConnection():
         return_d = Deferred()
 
         def alloced_cb(connection):
+            logging.debug("IndxConnection runInteraction alloced")
             d = connection.runInteraction(interaction, *args, **kwargs)
             d.addBoth(self._putBackAndPassthrough, connection)
             d.addCallbacks(return_d.callback, return_d.errback)

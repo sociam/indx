@@ -48,6 +48,10 @@ class IndxDatabase:
         self.db_name = db_name
         self.db_user = db_user
         self.db_pass = db_pass
+        self.indx_reactor = None
+
+    def set_reactor(self, indx_reactor):
+        self.indx_reactor = indx_reactor # ughhh
 
     def connect_indx_db(self):
         """ Connect to the indx database. """
@@ -157,8 +161,8 @@ class IndxDatabase:
         """
         return_d = Deferred()
 
-        fh_schemas = open(os.path.join(os.path.dirname(__file__),"..","data","indx-schemas.json")) # FIXME put into config
-        schemas = json.load(fh_schemas)
+        fh_schemas = self.indx_reactor.open(os.path.join(os.path.dirname(__file__),"..","data","indx-schemas.json")) # FIXME put into config
+        schemas = json.loads(fh_schemas)
 
         def upgrade_from_version(next_version):
             """ Upgrade the schema from the specified version. """
@@ -275,9 +279,7 @@ class IndxDatabase:
                             queries = ""
                             source_files = ['indx-schema.sql']
                             for src_file in source_files:
-                                fh_objsql = open(os.path.join(os.path.dirname(__file__),"..","data",src_file)) # FIXME put into config
-                                objsql = fh_objsql.read()
-                                fh_objsql.close()
+                                objsql = self.indx_reactor.open(os.path.join(os.path.dirname(__file__),"..","data",src_file)) # FIXME put into config
                                 queries += objsql + " "
 
                             def schema_cb(empty):
@@ -533,9 +535,7 @@ class IndxDatabase:
                     # ordered list of source database creation files
                     source_files = ['objectstore-schema.sql', 'objectstore-views.sql', 'objectstore-functions.sql', 'objectstore-indexes.sql']
                     for src_file in source_files:
-                        fh_objsql = open(os.path.join(os.path.dirname(__file__),"..","data",src_file)) # FIXME put into config
-                        objsql = fh_objsql.read()
-                        fh_objsql.close()
+                        objsql = self.indx_reactor.open(os.path.join(os.path.dirname(__file__),"..","data",src_file)) # FIXME put into config
                         queries += " " + objsql # concat operations together and run once below
 
                     def created_cb(user_details):
@@ -948,27 +948,8 @@ def connect_sync(db_name, db_user, db_pass):
     return conn
 
 
-def connect_raw(db_name, db_user, db_pass):
-    """ Connect to the database bypassing the connection pool (e.g., for adding a notify observer). """
-
-    try:
-        conn_str = ("dbname='{0}' user='{1}' password='{2}' host='{3}' port='{4}' application_name='{5}'".format(db_name or POSTGRES_DB, db_user, db_pass, HOST, PORT, APPLICATION_NAME))
-        conn = txpostgres.Connection()
-        connection = conn.connect(conn_str)
-        return connection
-    except Exception as e:
-        logging.error("DB: Error connecting to {0} as {1} ({2})".format(db_name, db_user, e))
-        d = Deferred()
-        failure = Failure(e)
-        d.errback(failure)
-        return d
-
-
 def connect_box_sync(box_name, db_user, db_pass):
     return connect_sync(INDX_PREFIX + box_name, db_user, db_pass)
-
-def connect_box_raw(box_name, db_user, db_pass):
-    return connect_raw(INDX_PREFIX + box_name, db_user, db_pass)
 
 def connect_box(box_name,db_user,db_pass):
     return connect(INDX_PREFIX + box_name, db_user, db_pass)
