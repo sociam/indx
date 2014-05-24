@@ -144,6 +144,9 @@ if args['runners']:
 
         logging.debug("Running a server with config: {0}".format(new_config))
 
+        if new_config['db']['host'] == 'localhost':
+            new_config['db']['host'] = "127.0.0.1"
+
         server = WebServer(new_config)
         server.run(reactor_start = False)
 
@@ -151,6 +154,10 @@ if args['runners']:
 
 else:
     """ Run the server using our configuration. """
+
+    if config['db']['host'] == 'localhost':
+        config['db']['host'] = "127.0.0.1"
+
     server = WebServer(config)
     server.run()
 
