@@ -24,10 +24,11 @@ from indx.reactor import IndxRequest
 class IndxWebHandler(Resource):
     """ Acts as a handler for the web server, and passes off requests to the IndxReactor. """
 
-    def __init__(self, indx_reactor):
+    def __init__(self, indx_reactor, name):
         Resource.__init__(self)
         self.indx_reactor = indx_reactor
         self.isLeaf = True
+        self.name = name # path name, e.g. box name
 
     def render(self, request):
 
@@ -65,7 +66,7 @@ class IndxWebHandler(Resource):
             except Exception as e:
                 logging.debug("IndxWebHandler error sending response: {0},\ntrace: {1}".format(e, traceback.format_exc()))
 
-        indx_request = IndxRequest(uri, method, path, params, request.content, request.getSession().uid, callback, request.getClientIP())
+        indx_request = IndxRequest(uri, method, self.name, path, params, request.content, request.getSession().uid, callback, request.getClientIP())
         self.indx_reactor.incoming(indx_request)
         return NOT_DONE_YET
 

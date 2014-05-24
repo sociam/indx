@@ -70,9 +70,14 @@ class IndxAsync:
 
                     self.sendJSON(requestid, frame, "http")
 
+                base_path = request.get("path")
+                if base_path[0] == "/":
+                    base_path = base_path[1:]
+
                 indx_request = IndxRequest(
                     request.get("uri"),
                     request.get("method"),
+                    base_path.split("/")[0], # e.g. box name / or auth/admin
                     request.get("path"),
                     request.get("params"),
                     request.get("content"),

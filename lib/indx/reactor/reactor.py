@@ -23,7 +23,7 @@ class IndxReactor:
 
     def __init__(self, tokens):
         self.subscribers = []
-        self.mappings = []
+        self.mappings = {} # indxed by base path, e.g. box name or auth/admin etc.
         self.sessions = {} # sessionid -> INDXSession
         self.tokens = tokens
         self.tokens.set_reactor(self) # ughh
@@ -63,17 +63,22 @@ class IndxReactor:
     ###
 
     def incoming(self, request):
-        for mapping in self.mappings:
-            if mapping.matches(request):
-                logging.debug("IndxReactor - using mapping: {0}".format(mapping))
-                return mapping.request(request)
+        """ Incoming IndxRequest - could be from HTTP Server or from a WebSocket frame. """
+        if request.base_path in self.mappings:
+
+            for mapping in self.mappings[request.base_path]:
+                if mapping.matches(request):
+                    logging.debug("IndxReactor - using mapping: {0}".format(mapping))
+                    return mapping.request(request)
 
         # no match
         logging.debug("IndxReactor - no mapping found, returning 404.")
         request.callback(IndxResponse(404, "Not Found"))
 
     def add_mapping(self, mapping):
-        self.mappings.append(mapping)
+        if mapping.base_path not in self.mappings:
+            self.mappings[mapping.base_path] = []
+        self.mappings[mapping.base_path].append(mapping)
 
     def get_session(self, request):
         logging.debug("INDXReactor getting session with ID: {0}".format(request.sessionid))

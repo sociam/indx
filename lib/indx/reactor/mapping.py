@@ -20,12 +20,14 @@ from urlparse import parse_qs
 
 class IndxMapping:
 
-    def __init__(self, indx_reactor, methods, path, params, handler):
+    def __init__(self, indx_reactor, methods, base_path, prefix, params, handler):
         self.indx_reactor = indx_reactor
         self.methods = methods
-        self.path = "/" + path
+        self.base_path = base_path
+        self.prefix = prefix
         self.params = params
         self.handler = handler
+        self.path = "/" + base_path + "/" + prefix
 
     def wildcard_match(self, a, b):
         """ 'a' can't have a wildcard, 'b' can. """

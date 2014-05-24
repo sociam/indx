@@ -60,7 +60,7 @@ class BaseHandler():
         if register:
             logging.debug("Adding web server handler to path: /" + (self.base_path or ''))
             #webserver.root.putChild(self.base_path, self) # register path with webserver
-            webserver.root.putChild(self.base_path, IndxWebHandler(self.indx_reactor)) # register path with webserver
+            webserver.root.putChild(self.base_path, IndxWebHandler(self.indx_reactor, self.base_path)) # register path with webserver
 
             # register the handler with the indx reactor
             for mapping in self.get_mappings():
@@ -386,7 +386,7 @@ class BaseHandler():
             this_sh['handler'](self, request, token)
 
         for sh in self.subhandlers:
-            mapping = (lambda sh_: IndxMapping(self.indx_reactor, sh_['methods'], self.base_path + "/" + sh_['prefix'], sh_, lambda request, token: handler_req(request, token, sh_)))(sh)
+            mapping = (lambda sh_: IndxMapping(self.indx_reactor, sh_['methods'], self.base_path, sh_['prefix'], sh_, lambda request, token: handler_req(request, token, sh_)))(sh)
             mappings.append(mapping)
 
         return mappings
