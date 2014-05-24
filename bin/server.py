@@ -22,6 +22,7 @@ import getpass
 import argparse
 import json
 import copy
+import resource
 from indx.server import WebServer
 from twisted.internet import reactor
 
@@ -130,6 +131,12 @@ config = {
     "indx_db": args['indx_db'],
     "no_browser": args['no_browser'],
 }
+
+""" Set some system configurations. """
+""" Increase max open file limit - the default under OSX is only 256 and gets exceeded easily. """
+curr_limits = resource.getrlimit(resource.RLIMIT_NOFILE)
+resource.setrlimit(resource.RLIMIT_NOFILE, (2048, curr_limits[1]))
+
 
 if args['runners']:
     """ Use 'config' as the base configuration, but run multiple servers using the differences in runners JSON. """
