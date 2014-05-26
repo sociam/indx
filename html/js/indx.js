@@ -617,7 +617,7 @@ angular
 				ws.onmessage = function(evt) {
 					// u.debug('websocket :: incoming a message ', evt.data.toString().substring(0,190)); // .substring(0,190));
 					var pdata = JSON.parse(evt.data);
-					console.log('resp['+this_.box.getID()+'] >> ', pdata);
+					console.log('recv['+this_.box.getID()+'] >> ', pdata);
 					if (pdata.respond_to === 'connect' && pdata.success === true) {
 						this_.connected.resolve();
 					} else if (pdata.action === 'diff') {
@@ -652,13 +652,10 @@ angular
 				};
 				/// @ignore
 				ws.onopen = function() {
-					u.debug("!!!!!!!!!!!!!!!! websocket open >>>>>>>>> sending token ");
 					// this_.connected.resolve();
 					this_._ws_auth().then(function() {
                         this_.diffid = this_._genid();
-						console.log('--- asking for diff with id ' + this_.diffid);
 						this_._ws_diff(this_.diffid).then(function() { 
-							console.log('diff success!');
 							box.trigger('ws-connect');
 							this_.authed.resolve();
 						}).fail(function(err) {
@@ -693,6 +690,7 @@ angular
 				};
 				this.requests[rid] = req;
 				this.connected.then(function() { 
+					// packet debug
 					console.info('send['+this_.box.getID() +'] > ', req.frame);
 					this_._ws.send(req.frame); 
 				});
@@ -945,7 +943,6 @@ angular
 					token = this_._getCachedToken() || this_._getStoredToken();
 					if (HTTP_OVER_WEBSOCKET && this_._ws && this_._ws._handler) {
 						// use websocket approach instead
-						console.log('box._ajax -> diverting to websocket ', method, path);
 						return this_._ws._handler.addHttpRequest(method, path, _(data||{}).extend({box:box_id, token:token, app:this_.store.get('app')}) );
 					} 
 					data = _(_(data||{}).clone()).extend({box:box_id, token:token});
@@ -1118,7 +1115,7 @@ angular
 				}
 
 				// u.debug('setting latest version >> ', latest_version, added_ids, changed_ids, deleted_ids);
-				console.info('diff setVersion, ', latestVersion);
+				console.info('diff setVersion, ', latestVersion, ' +/c/-: ', addedIDs, changedIDs, deletedIDs );
 				this_._setVersion(latestVersion);
 				this_._updateObjectList(undefined, addedIDs, deletedIDs);
 				var changed = _(changedObjs).map(function(obj, uri) {

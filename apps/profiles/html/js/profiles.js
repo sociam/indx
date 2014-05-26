@@ -121,12 +121,20 @@ angular.module('indx-profiles',['indx']).controller('main',
 				});
 		};
 
-		store.getBoxList().then(function(boxids) { 
-			boxids.sort();
-			store.getBox(boxids[0]).then(function(box_) { 
+		// store.getBoxList().then(function(boxids) { 
+		// 	boxids.sort();
+		// 	store.getBox(boxids[0]).then(function(box_) { 
+		// 		box = box_; // debug
+		// 		initusers();
+		// 	});
+		// });
+
+		$scope.$watch('selectedBox', function(b) {
+			if (b === undefined) { return; } 
+			store.getBox(b).then(function(box_) { 
 				box = box_; // debug
 				initusers();
-			});
+		 	});	
 		});
 		// we really need to store these in one box 
 		store.on('new-user', function() { initusers(); });
