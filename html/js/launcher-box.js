@@ -17,7 +17,8 @@ angular.module('launcher')
 				$scope.obj_ids = $scope.box ? $scope.box.getObjIDs() : [];
 				$scope.obj_count = $scope.obj_ids.length;
 
-				$scope.$watch('box', function() { 
+				$scope.$watch('box', function(b) { 
+					console.log('::::::::::::::::::::::::::::::::: boxlist box ', b);
 					if (!$scope.box) { return; }
 					if (old_box) { old_box.off(undefined, undefined, guid); }
 

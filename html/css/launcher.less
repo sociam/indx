@@ -183,6 +183,7 @@ div.main {
 		// max-width:@boxeswidth - 3; width:@boxeswidth - 3; margin:0px; 
 		margin:0px;
 		padding:0px;
+		overflow-y:auto;
 	}
 	// .toplevel {
 	// 	width:@appswidth + @boxeswidth + @toplevelmargin + 4;
@@ -267,7 +268,7 @@ div.main {
 		position:relative;
 		background:white;
 		border:1px solid #eee;
-		width:140px; height:95px;
+		width:140px; height:58px;
 		// margin:7px 10px 7px 0px;
 		margin: 7px 0px;
 		.canvas {
@@ -275,8 +276,8 @@ div.main {
 			top:0px; left:0px; right:0px; bottom:0px;
 		}
 		.name {
-			padding:5px;
-			float:left;
+			position:absolute;
+			top:5px; left:5px;
 			color:black;
 			font-weight:200;
 			font-size:14pt; 
@@ -290,9 +291,10 @@ div.main {
 			width:120px;
 		}
 		.boxactionicon {
+			position:absolute;
+			left:0px; bottom:0px;
 			vertical-align:top;
-			float:right;
-			width:120px;
+
 		}
 		.imgbtn {
 			float:right;

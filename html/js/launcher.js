@@ -125,6 +125,8 @@
 			}).fail(function(err) { u.error(err); });
 	}).controller('AppsList', function($scope, $location, client, utils) {
 		var u = utils, store = client.store, sa = function(f) { return utils.safeApply($scope,f); };
+		$scope.boxes = [];
+
 		var getAppsList = function() {
 			client.store.getAppsList().then(function(apps) {
 				console.log('got apps list', apps);
@@ -138,23 +140,16 @@
 		// box list too!
 		var getBoxesList = function() {
 			store.getBoxList().then(function(bids) {
-				console.log('got box list >> ', bids);
-				var remaining = bids.concat(), success_boxes = [];
-				var d = u.deferred();
-				var dfds = bids.map(function(bid) { 
-					console.log('getting ', bid);
+				console.log('getBoxList() ______ got box list >> ', bids);
+				sa(function() { $scope.boxes = []; });
+				bids.map(function(bid) { 
+					console.log('getBoxList() ____ getting ', bid);
 					store.getBox(bid).then(function(b) { 
-						success_boxes.push(b);
-						remaining = _(remaining).without(bid);
-						if (remaining.length == 0) { d.resolve(success_boxes); }
+						console.log('getBoxList() ____ got box >> ', bid);
+						sa(function() { $scope.boxes.push(b); });
 					}).fail(function(err) {
-						remaining = _(remaining).without(bid);
-						if (remaining.length == 0) { d.resolve(success_boxes); }						
+						console.info("could not get box -- ", bid); 
 					});
-				});
-				d.then(function() {
-					console.log("SUCCESS BOXES >> ", success_boxes);
-					sa(function() { $scope.boxes = success_boxes; });
 				});
 			}).fail(function() {
 				sa(function() { delete $scope.boxes; });

@@ -617,8 +617,8 @@ angular
 				ws.onmessage = function(evt) {
 					// u.debug('websocket :: incoming a message ', evt.data.toString().substring(0,190)); // .substring(0,190));
 					var pdata = JSON.parse(evt.data);
-					console.log('pdata >> ', pdata);
-					if (pdata.respond_to === 'connect' && pdata.success == true) {
+					console.log('resp['+this_.box.getID()+'] >> ', pdata);
+					if (pdata.respond_to === 'connect' && pdata.success === true) {
 						this_.connected.resolve();
 					} else if (pdata.action === 'diff') {
 						box._diffUpdate(pdata.data)
@@ -628,7 +628,7 @@ angular
 						if (this_.requests[pdata.requestid] !== undefined) {
 							var request = this_.requests[pdata.requestid];
 							if (pdata.success === false || pdata.response && pdata.response.code && parseInt(pdata.response.code) >= 400) { 
-								console.error('error -- ', pdata.response && pdata.response.code, 'failing');
+								console.error('error -- ', pdata, " - request was ", request.frame, pdata.response && pdata.response.code, 'failing');
 								request.responsed.reject(pdata.response);
 							} else {
 								request.responsed.resolve(pdata.response); // && pdata.response.data
@@ -666,6 +666,7 @@ angular
 						});
 					}).fail(function() { 
 						console.error('authentication failed -- ');
+						this_._fail_requests({ status: 409, error: "authentication failed" });
 					});
 				};
 				/// @ignore
@@ -676,6 +677,14 @@ angular
 					box._disconnected();
 				};
 			},
+			_fail_requests:function(status, message) {
+				// todo: might we want to filter these only for http?
+				var this_ = this, deadkeys = _(this.requests).map(function(val,key) {
+					val.responsed.reject({status:status, message:message});
+					return key;
+				});
+				deadkeys.map(function(k) { delete this_.requests[k]; });
+			},
 			addRequest:function(rid, frame) { 
 				var this_ = this, req = {
 					rid:rid,
@@ -683,7 +692,10 @@ angular
 					responsed:u.deferred()
 				};
 				this.requests[rid] = req;
-				this.connected.then(function() { this_._ws.send(req.frame); });
+				this.connected.then(function() { 
+					console.info('send['+this_.box.getID() +'] > ', req.frame);
+					this_._ws.send(req.frame); 
+				});
 				return req.responsed.promise();
 			},
 			addHttpRequest:function(method, path, data) { 
