@@ -326,9 +326,11 @@ class WebServer:
         parent.putChild(name, IndxWebHandler(self.indx_reactor, name))
 
         box_handler = BoxHandler(self, base_path = name)
+
+        ### commented out because BoxHandler registers itself
         # register the handler with the indx reactor
-        for mapping in box_handler.get_mappings():
-            self.indx_reactor.add_mapping(mapping)
+        #for mapping in box_handler.get_mappings():
+        #    self.indx_reactor.add_mapping(mapping)
 
 
     def run(self, reactor_start = True):
