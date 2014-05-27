@@ -69,28 +69,11 @@ class IndxConnectionPool:
         self.conn_strs[db_name].append(conn_str)
 
         def free_cb(conn):
+            """ Called back when this IndxConnection has finished querying, so
+                we put the real connection back into the pool. """
             logging.debug("IndxConnectionPool free_cb, conn: {0}".format(conn))
 
-            def locked_cb(empty):
-                logging.debug("IndxConnectionPool locked_cb")
-                self.connections[conn_str].getInuse().remove(conn)
-                
-                if len(self.connections[conn_str].getWaiting()) > 0:
-                    callback = self.connections[conn_str].getWaiting().pop()
-                    self.connections[conn_str].getInuse().append(conn)
-                    self.semaphore.release()
-                    callback(conn)
-                    return
-                
-                self.connections[conn_str].getFree().append(conn)
-                self.semaphore.release()
-
-
-            def err_cb(failure):
-                logging.error("IndxConnectionPool error in free_cb: {0}".format(failure))
-                self.semaphore.release()
-
-            self.semaphore.acquire().addCallbacks(locked_cb, err_cb)
+            self.connections[conn_str].freeConnection(conn) # no dealing with callbacks, just carry on
 
 
         def alloc_cb(conn_str):
@@ -303,6 +286,30 @@ class DBConnectionPool():
     def getFree(self):
         self.updateTime()
         return self.free
+
+    def freeConnection(self, conn):
+        """ Free a connection from this DBPool. """
+
+        def locked_cb(empty):
+            logging.debug("DBConnectionPool locked_cb")
+            self.getInuse().remove(conn)
+            
+            if len(self.getWaiting()) > 0:
+                callback = self.getWaiting().pop()
+                self.getInuse().append(conn)
+                self.semaphore.release()
+                callback(conn)
+            else: 
+                self.getFree().append(conn)
+                self.semaphore.release()
+
+        def err_cb(failure):
+            failure.trap(Exception)
+            logging.error("DBConnectionPool free, err_cb: {0}".format(failure.value))
+            self.semaphore.release()
+
+        self.semaphore.acquire().addCallbacks(locked_cb, err_cb)
+
 
     def removeAll(self, count):
         """ Remove all free connections (usually because they're old and we're in
