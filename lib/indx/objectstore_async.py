@@ -179,7 +179,7 @@ class ObjectStoreAsync:
         def new_ver_done(success):
             if propagate:
                 # via indx reactor
-                self.indx_reactor.send({"version": version}, {"type": "version_update"})
+                self.indx_reactor.send({"version": version}, {"type": "version_update", "box": self.boxid})
 
                 # and via database
                 self._curexec(cur, "SELECT * FROM wb_version_finished(%s)", [version]).addCallbacks(result_d.callback, err_cb)
@@ -1888,7 +1888,7 @@ class ConnectionSharer:
 #        def done_cb(val):
 #            logging.debug("ConnectionSharer listen, done_cb, val: {0}".format(val))
 
-        subscriber = IndxSubscriber({"type": "version_update"}, observer)
+        subscriber = IndxSubscriber({"type": "version_update", "box": self.box}, observer)
         self.indx_reactor.add_subscriber(subscriber)
 
 #        self.conn.addNotifyObserver(observer)
