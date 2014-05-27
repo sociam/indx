@@ -66,7 +66,7 @@ class IndxReactor:
         """ Incoming IndxRequest - could be from HTTP Server or from a WebSocket frame. """
         if request.base_path in self.mappings:
 
-            for mapping in self.mappings[request.base_path]:
+            for mapping in self.mappings[request.base_path]: # ordered
                 if mapping.matches(request):
                     logging.debug("IndxReactor - using mapping: {0}".format(mapping))
                     return mapping.request(request)
@@ -78,7 +78,7 @@ class IndxReactor:
     def add_mapping(self, mapping):
         if mapping.base_path not in self.mappings:
             self.mappings[mapping.base_path] = []
-        self.mappings[mapping.base_path].append(mapping)
+        self.mappings[mapping.base_path].append(mapping) # ordered
 
     def get_session(self, request):
         logging.debug("INDXReactor getting session with ID: {0}".format(request.sessionid))
