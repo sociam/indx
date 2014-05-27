@@ -28,7 +28,7 @@ from twisted.internet import reactor
 
 MIN_CONNS = 1
 MAX_CONNS = 5
-REMOVE_AT_ONCE = 3
+REMOVE_AT_ONCE = MAX_CONNS * 2
 
 class IndxConnectionPool:
     """ A wrapper for txpostgres connection pools, which auto-reconnects. """
@@ -41,6 +41,7 @@ class IndxConnectionPool:
         self.subscribers = {} # by db name
 
     def removeAll(self, db_name):
+        """ Remove all connections for a named database - used before deleting that database. """
         logging.debug("IndxConnectionPool removeAll {0}".format(db_name))
         d_list = []
         for conn_str in self.conn_strs[db_name]:
@@ -182,18 +183,24 @@ class IndxConnectionPool:
         ages = {}
         for conn_str, dbpool in self.connections.items():
             lastused = dbpool.getTime()
-            ages[lastused] = dbpool
+            if lastused not in ages:
+                ages[lastused] = []
+            ages[lastused].append(dbpool)
 
         times = ages.keys()
         times.sort()
 
+        pool_queue = []
+        for timekey in times:
+            pools = ages[timekey]
+            pool_queue.extend(pools)
+
         def removed_cb(count):
 
-            if count < REMOVE_AT_ONCE and len(times) > 0:
-                first_time = times.pop(0)
-                pool = ages[first_time]
-                pool.removeAll(count).addCallbacks(removed_cb, err_cb)
+            if count < REMOVE_AT_ONCE and len(pool_queue) > 0:
+                pool = pool_queue.pop(0)
                 pool.getFree()
+                pool.removeAll(count).addCallbacks(removed_cb, err_cb)
             else:
                 return_d.callback(None)
         
@@ -211,7 +218,9 @@ class IndxConnectionPool:
         def close_old_cb(failure):
             failure.trap(psycopg2.OperationalError, Exception)
             # couldn't connect, so close an old connection first
-            logging.error("IndxConnectionPool error close_old_cb: {0}".format(failure.value))
+            logging.error("IndxConnectionPool error close_old_cb: {0} - state of conns is: {1}".format(failure.value, self.connections))
+
+            logging.error("IndxConnectionPool connections: {0}".format("\n".join(map(lambda name: self.connections[name].__str__(), self.connections))))
 
             def closed_cb(empty):
                 # closed, so try connecting again
@@ -269,8 +278,13 @@ class DBConnectionPool():
         self.free = []
 
         self.semaphore = DeferredSemaphore(1)
-
         self.updateTime()
+
+    def __unicode__(self):
+        return self.__str__()
+
+    def __str__(self):
+        return "waiting: {0}, inuse: {1}, free: {2}, semaphore: {3}, lastused: {4}".format(self.waiting, self.inuse, self.free, self.semaphore, self.lastused)
 
     def updateTime(self):
         self.lastused = time.mktime(time.gmtime()) # epoch time
@@ -291,9 +305,10 @@ class DBConnectionPool():
         return self.free
 
     def removeAll(self, count):
-        """ Remove a connection (usually because it's old and we're in
-            a freeing up perid.
+        """ Remove all free connections (usually because they're old and we're in
+            a freeing up period.
         """
+        logging.debug("DBConnectionPool removeAll called, count: {0}".format(count))
         return_d = Deferred()
         self.updateTime()
 
@@ -304,7 +319,7 @@ class DBConnectionPool():
         def locked_cb(count):
             # immediately close the free connections
             while len(self.free) > 0:
-                conn = self.free.pop()
+                conn = self.free.pop(0)
                 conn.close()
                 count += 1
 
