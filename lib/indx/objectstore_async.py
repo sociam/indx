@@ -295,8 +295,7 @@ class ObjectStoreAsync:
             graph = Graph.from_rows(rows)
             if render_json:
                 obj_out = graph.to_json()
-                obj_out["@version"] = version
-                result_d.callback(obj_out) 
+                result_d.callback({"data": obj_out, "@version": version}) 
             else:
                 result_d.callback(graph)
 
@@ -308,7 +307,7 @@ class ObjectStoreAsync:
             self.debug("get_latest_objs ver_cb: {0}".format(version))
             if version == 0:
                 if render_json:
-                    return result_d.callback({"@version": 0 })
+                    return result_d.callback({"data": {}, "@version": 0})
                 else:
                     return result_d.callback(Graph())
 
@@ -481,10 +480,7 @@ class ObjectStoreAsync:
             graph = Graph.from_rows(rows)
             if render_json:
                 obj_out = graph.to_json()
-                if version is None:
-                    version = 0
-                obj_out["@version"] = version
-                result_d.callback(obj_out)
+                result_d.callback({"data": obj_out, "@version": version or 0})
             else:
                 result_d.callback(graph)
 
@@ -1336,6 +1332,7 @@ class ObjectStoreAsync:
 
                     def objs_cb(objs_full):
                         self.debug("Objectstore update, objs_cb, val: {0}".format(objs_full))
+                        objs_full = objs_full['data']
                         # add all delete_ids to objs1 and not objs2 so that they get deleted by the ObjectSetDiff
                         for obj_id in delete_ids:
                             if obj_id in objs_full:

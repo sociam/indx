@@ -524,11 +524,11 @@ class BoxHandler(BaseHandler):
                     # GET /box/?id=item1&id=item2&id=item3
                 BoxHandler.log(logging.DEBUG, "BoxHandler GET request", extra = {"request": request, "id": request.args.get('id'), "id[]": request.args.get('id[]')})
                 # return ids of the whole box
-                return store.get_latest_objs(id_list).addCallbacks(lambda obj: self.return_ok(request, {"data": obj}), err_cb)
+                return store.get_latest_objs(id_list).addCallbacks(lambda obj: self.return_ok(request, obj), err_cb)
             else:
                 BoxHandler.log(logging.DEBUG, "BoxHandler GET request no id {0}".format(request))
                 # return the whole box
-                return store.get_latest().addCallbacks(lambda obj: self.return_ok(request, {"data": obj}), err_cb)
+                return store.get_latest().addCallbacks(lambda obj: self.return_ok(request, obj), err_cb)
 
         token.get_store().addCallbacks(store_cb, err_cb)
    
