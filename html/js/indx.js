@@ -255,7 +255,6 @@ angular
 			save:function() {
 				var a = _.toArray(arguments), this_ = this;
 				this.d = this.d.pipe(function() { 
-					console.log("EXECUTING SAVE");
 					var obj = this_.obj;
 					if (_.isArray(obj)) {
 						return u.when(obj.map(function(obj_i) { return obj_i.save(); }));

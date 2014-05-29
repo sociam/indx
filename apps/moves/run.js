@@ -50,22 +50,28 @@ var save_aggressively = function(model, retryCount) {
     console.log('save aggressively >> ', model.id, retryCount);
     var d = u.deferred(), me = arguments.callee, box = model.box;
     model.save().then(d.resolve).fail(function(bail) {
-        console.log(' save fail 1023890189238901322809 ', bail.code);
-        if (retryCount && retryCount > 10) { 
-            console.error('exceeded retry ---- ');
-            return d.reject("exceeded retry"); 
-        }
-        var code = parseInt(bail.code);
-        if (code == 409 || code == 500) {
-            setTimeout(function() { 
-                console.error('save_aggressively :: RESUMINGGGGGGGGGGGGGGGGGGGGGG SETUP > ');
-                save_aggressively(model, (retryCount || 0)+1).then(d.resolve).fail(d.reject);
-            },1000);
-        } else {
-            // other failure code
-            console.error('other failure code >> ', bail.code);
-            d.reject();
-        }
+
+        model.box.once('update-from-master', function() {
+            console.log("___________________________________________________");
+            save_aggressively(model, (retryCount || 0)+1).then(d.resolve).fail(d.reject);
+        });   
+
+        // console.log(' save fail 1023890189238901322809 ', bail.code);
+        // if (retryCount && retryCount > 10) { 
+        //     console.error('exceeded retry ---- ');
+        //     return d.reject("exceeded retry"); 
+        // }
+        // var code = parseInt(bail.code);
+        // if (code == 409 || code == 500) {
+        //     setTimeout(function() { 
+        //         console.error('save_aggressively :: RESUMINGGGGGGGGGGGGGGGGGGGGGG SETUP > ');
+        //         save_aggressively(model, (retryCount || 0)+1).then(d.resolve).fail(d.reject);
+        //     },1000);
+        // } else {
+        //     // other failure code
+        //     console.error('other failure code >> ', bail.code);
+        //     d.reject();
+        // }
     });
     return d.promise();
 };
