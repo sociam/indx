@@ -351,7 +351,7 @@ angular
 			/// returns the id of this object
 			getID:function() { return this.id;	},
 			_checkObj:function(k,o) {
-				if (!_.isObject(o)) { return o; }
+				if (!_.isObject(o) || _.isDate(o)) { return o; }
 				if (o.id !== undefined) { return o; }
 				// it's an object 
 				if (o["@id"] !== undefined) {
@@ -617,7 +617,7 @@ angular
 				ws.onmessage = function(evt) {
 					// u.debug('websocket :: incoming a message ', evt.data.toString().substring(0,190)); // .substring(0,190));
 					var pdata = JSON.parse(evt.data);
-					console.log('recv['+this_.box.getID()+'] >> ', pdata);
+					// console.log('recv['+this_.box.getID()+'] >> ', pdata);
 					if (pdata.respond_to === 'connect' && pdata.success === true) {
 						this_.connected.resolve();
 					} else if (pdata.action === 'diff') {
@@ -691,7 +691,7 @@ angular
 				this.requests[rid] = req;
 				this.connected.then(function() { 
 					// packet debug
-					console.info('send['+this_.box.getID() +'] > ', req.frame);
+					// console.info('send['+this_.box.getID() +'] > ', req.frame);
 					this_._ws.send(req.frame); 
 				});
 				return req.responsed.promise();
