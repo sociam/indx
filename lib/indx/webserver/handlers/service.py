@@ -27,6 +27,8 @@ class ServiceHandler(BaseHandler):
         BaseHandler.__init__(self, server, register=False)
         self.indx_reactor = server.indx_reactor
 
+        self.base_path = service_path
+
         self.pipe = None
         self.service_path = service_path
         self.subhandlers = self._make_subhandlers()
