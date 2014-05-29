@@ -16,6 +16,9 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging, json, tempfile, subprocess, sys
+import traceback
+from indx.reactor import IndxRequest
+from twisted.web.server import NOT_DONE_YET
 from indx.webserver.handlers.base import BaseHandler
 
 class ServiceHandler(BaseHandler):
@@ -219,5 +222,49 @@ class ServiceHandler(BaseHandler):
 
     def render(self, request):
         logging.debug("SERVICE HANDLER RENDER :::::::::::::::::::::::::: ")
-        return BaseHandler.render(self,request)
+#        return BaseHandler.render(self,request)
+
+
+        uri = request.uri
+        method = request.method
+        path = request.path
+        params = {
+            "headers": request.headers,
+            "args": request.args,
+        }
+
+        logging.debug("IndxServiceHandker, request, path: {0}".format(path))
+
+        def callback(indx_response):
+            logging.debug("IndxServiceHandler, request callback")
+
+            try:
+                response = {"message": indx_response.message, "code": indx_response.code}
+                response.update(indx_response.data)
+                responsejson = json.dumps(response)
+
+                if not request._disconnected:
+                    request.setResponseCode(indx_response.code, indx_response.message)
+                    request.setHeader("Content-Type", "application/json")
+                    request.setHeader("Content-Length", len(responsejson))
+
+                    for key, value in indx_response.headers.items():
+                        request.setHeader(key, value)
+
+                    request.write(responsejson)
+                    request.finish()
+                    logging.debug(' just called request.finish() with code %d ' % indx_response.code)
+                else:
+                    logging.debug(' didnt call request.finish(), because it was already disconnected')
+            except Exception as e:
+                logging.debug("IndxServiceHandler error sending response: {0},\ntrace: {1}".format(e, traceback.format_exc()))
+
+        indx_request = IndxRequest(uri, method, self.name, path, params, request.content, request.getSession().uid, callback, request.getClientIP())
+        self.indx_reactor.incoming(indx_request)
+        return NOT_DONE_YET
+
+
+
+
+
 
