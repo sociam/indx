@@ -37,6 +37,8 @@ class AppsMetaHandler(Resource):
 
     def __init__(self,webserver):
         Resource.__init__(self)
+        self.indx_reactor = webserver.indx_reactor
+
         self.isLeaf = False
         self.index = File('html/index.html')
         self._register_apps(webserver)
@@ -91,6 +93,11 @@ class AppsMetaHandler(Resource):
                 # logging.debug(" This is a service, so registering an api child >>>>>>>>>>>>>>>>>>>>>>>> ");
                 ## putting child under api
                 file_handler.putChild('api', handler) 
+
+                # because register=False in serviceHandler.py
+                for mapping in handler.get_mappings():
+                    self.indx_reactor.add_mapping(mapping)
+
                 if handler.on_boot() :
                     handler.start()
             else:
