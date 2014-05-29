@@ -261,7 +261,7 @@ class ServiceHandler(BaseHandler):
             except Exception as e:
                 logging.debug("IndxServiceHandler error sending response: {0},\ntrace: {1}".format(e, traceback.format_exc()))
 
-        indx_request = IndxRequest(uri, method, self.name, path, params, request.content, request.getSession().uid, callback, request.getClientIP())
+        indx_request = IndxRequest(uri, method, self.service_path, path, params, request.content, request.getSession().uid, callback, request.getClientIP())
         self.indx_reactor.incoming(indx_request)
         return NOT_DONE_YET
 
