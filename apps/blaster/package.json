@@ -15,6 +15,8 @@
     "backbone":"",
     "request":"",
     "ws":"",
-    "optimist":""
+    "optimist":"",
+    "express":"",
+    "body-parser":""
   }
 }

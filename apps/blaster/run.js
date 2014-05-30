@@ -10,6 +10,7 @@
 var nodeindx = require('../../lib/services/nodejs/nodeindx'),
     nodeservice = require('../../lib/services/nodejs/service'),
     u = nodeindx.utils,
+    ajax = require('../../lib/services/nodejs/node_ajax')(u),    
     _ = require('underscore'),
     jQuery = require('jquery'),
     path = require('path'),
@@ -23,28 +24,36 @@ var nodeindx = require('../../lib/services/nodejs/nodeindx'),
 var BlasterService = Object.create(nodeservice.NodeService, {
     run: { 
         value: function() {
+
             var this_ = this, config = this.config, store = this.store,
                 types = config.types && config.types.split(',') || '*',
-                catchup = config.catchup || false;
+                catchup = config.catchup || false,
+                format = config.format || 'ntriples',
+                target_url = config.target_url;
 
-            console.log('blaster target url : ', config.target_url);
+            console.log('blaster target url : ', target_url);
             console.log('blaster target types : ', types);
             console.log('blaster catchup : ', catchup); 
-
-            var transmit_obj = function(objid) {
-                store.getObj(objid).then(function(o) { 
-
-                });
-            };
-
+            
             store.getBox(config.box).then(function(box) { 
                 box.on('obj-add', function(id) { 
                     console.log('object add!! ', id);
-                    exporter.exportObj(box, id, 'ntriples').then(function(data) { 
+                    exporter.exportObj(box, id, format).then(function(data) { 
                         console.log('data! ', data);
+                        if (target_url) { 
+                            console.log('attempting to put ..');
+                            ajax({ type:"PUT", url:target_url, data:{data:data} }).then(function(x) { 
+                                console.log("success putting!!");
+                            }).fail(function(e) { 
+                                console.error('fail putting ', e); 
+                            });
+                        }
                     });
                 }); 
             });
+
+
+
             process.stdin.resume();
         }
     }
