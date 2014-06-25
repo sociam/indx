@@ -1795,7 +1795,7 @@ angular
 			},
 			_fetch:function() {	throw new Error('dont fetch a store - any more!');	},
 			_getBaseURLHelper:utils.memoise_fast1(function(server_host) {
-				var url = server_host.indexOf('://') >= 0 ? server_host : [location.protocol, '', server_host].join('/');
+				var url = server_host.indexOf('://') >= 0 ? server_host : [document.location.protocol, '', server_host].join('/');
 				console.debug('executing getbaseurlhelper >> ', url);
 				return url;
 			}),
