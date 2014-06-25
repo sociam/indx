@@ -106,7 +106,7 @@ class IndxClient:
         return "_:{0}".format(uuid.uuid4()) # uuid4 to avoid collisions - uuid1 can (and did) cause collisions
 
 
-    def _prepare_objects(self, objects):
+    def _prepare_objects(self, objects, create_ids = False):
         """ Take raw JSON object and expand them into the INDX internal format. """
         logging.debug("IndxClient _prepare_objects: {0}".format(objects))
 
@@ -117,7 +117,10 @@ class IndxClient:
 
         for obj in objects:
             if "@id" not in obj:
-                raise Exception("@id required in all objects.")
+                if create_ids:
+                    obj["@id"] = "{0}".format(uuid.uuid4())
+                else:
+                    raise Exception("@id required in all objects.")
 
             obj_new = {}
 
@@ -166,6 +169,7 @@ class IndxClient:
         requires = [
             'get_object_ids',
             'update_raw',
+            'update_json',
             'update',
             'delete',
             'get_latest',
@@ -272,6 +276,22 @@ class IndxClient:
         
         values = {"data": json.dumps(prepared_objects), "version": version}
         return self.client.put(self.base, values)
+
+    @require_token
+    def update_json(self, version, objects):
+        """ Update objects in a box, from any JSON format, without IDs.
+        
+            version -- The current version of the box
+            objects -- List of objects to create/update
+        """
+        self._debug("Called API: update with version: {0}, objects: {1}".format(version, objects)) 
+
+        prepared_objects = self._prepare_objects(objects, create_ids = True)
+        self._debug("update: prepared_objects: {0}".format(pprint.pformat(prepared_objects, indent=2, width=80)))
+        
+        values = {"data": json.dumps(prepared_objects), "version": version}
+        return self.client.put(self.base, values)
+
 
     @require_token
     def delete(self, version, object_id_list):

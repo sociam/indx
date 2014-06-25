@@ -36,6 +36,8 @@ class CLIClient:
                       'get_object_ids': {'f': self.get_object_ids, 'args': ['box']},
                       'create_user': {'f': self.create_user, 'args': ['target_username','target_password']},
                       'update': {'f': self.update, 'args': ['box','data','version']},
+                      'update_json': {'f': self.update_json, 'args': ['box','data','version']},
+                      'update_raw': {'f': self.update_raw, 'args': ['box','data','version']},
                       'delete': {'f': self.delete, 'args': ['box','id','version']},
                       'get_latest': {'f': self.get_latest, 'args': ['box']},
                       'get_by_ids': {'f': self.get_by_ids, 'args': ['box','id']},
@@ -174,6 +176,19 @@ class CLIClient:
         logging.debug("Updating data to box: '{0}' on server '{1}'".format(self.args['box'], self.args['server']))
         #return self.indx.update(self.args['version'], cjson.decode(self.args['data'].read()), all_unicode=True)
         return self.indx.update(self.args['version'], json.loads(self.args['data'].read()))
+
+    def update_json(self):
+        """ Test to update json objects in a box. """
+        logging.debug("Updating data to box: '{0}' on server '{1}'".format(self.args['box'], self.args['server']))
+        #return self.indx.update(self.args['version'], cjson.decode(self.args['data'].read()), all_unicode=True)
+        return self.indx.update_json(self.args['version'], json.loads(self.args['data'].read()))
+
+    def update_raw(self):
+        """ Test to update raw objects in a box. """
+        logging.debug("Updating raw data to box: '{0}' on server '{1}'".format(self.args['box'], self.args['server']))
+        #return self.indx.update(self.args['version'], cjson.decode(self.args['data'].read()), all_unicode=True)
+        return self.indx.update_raw(self.args['version'], json.loads(self.args['data'].read()))
+
 
 
     def delete(self):
