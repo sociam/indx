@@ -160,7 +160,8 @@ class FitbitHarvester:
         self.config_box = stored_config_harvester['box']
         self.config_indx_user = stored_config_harvester['user']
         self.config_indx_pass = stored_config_harvester['password']
-        self.config_overwrite = stored_config_harvester['overwrite']
+        if 'overwrite' in stored_config_harvester :
+            self.config_overwrite = stored_config_harvester['overwrite']
 
     def run(self):
         args = vars(self.parser.parse_args())

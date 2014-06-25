@@ -17,6 +17,7 @@
 		  		<label class="btn"><input ng-model='format' type="radio" value="json" name="output-type" checked="true">JSON</label>
                 <label class="btn"><input ng-model='format' type="radio" value="jsonld" name="output-type">JSON-LD</label>
 		  		<label class="btn"><input ng-model='format' type="radio" value="csv" name="output-type">CSV</label>
+		  		<label class="btn"><input ng-model='format' type="radio" value="tiddlywiki" name="output-type">TiddlyWiki</label>
 		  	</div>	
 		  	<div class="btn btn-primary savebtn" ng-disabled="wait" ng-click='doSave()'><span class="glyphicon glyphicon-floppy-open"></span> Export </div>
             <div class="btn btn-primary savebtn" ng-disabled="wait" ng-click='toFile()' ng-show='boxData'><span class="glyphicon glyphicon-floppy-open"></span> Save as </div>

@@ -28,10 +28,18 @@ angular
 			box.query({}, "*").then(function(response) {
 				objects = response["data"];
 				u.safeApply($scope, function() {
-					$scope.boxData = $scope.serializers[$scope.format](objects);
-					$scope.fileext = file_formats[$scope.format];
+                    if ($scope.format === "tiddlywiki") {
+                        toTiddlyWiki(objects, function(boxdata) {
+                            $scope.boxData = boxdata;
+                            $scope.fileext = file_formats[$scope.format];
+                            dd.resolve();
+                        });
+                    } else {
+                        $scope.boxData = $scope.serializers[$scope.format](objects);
+                        $scope.fileext = file_formats[$scope.format];
+				        dd.resolve();
+                    }
 				});
-				dd.resolve();
 			}).fail(dd.reject);
 
 			return dd.promise();
@@ -132,6 +140,58 @@ angular
 			}
 		};
 
+        var toTiddlyWiki = function(obs, doneCallback) {
+            var splitToken = '<div id="storeArea" style="display:none;">';
+            
+            jQuery.ajax({
+                "url": "data/tiddlywiki.html",
+                "success": function(data, textStatus, jqXHR) {
+                    var parts = data.split(splitToken);
+                    var first = parts.shift();
+                    var templ = "\n";
+
+                    var ids = Object.keys(obs);
+                    ids.map(function (oid) {
+                        var obj = obs[oid];
+                        var keys = Object.keys(obj);
+                        templ += "\n<div ";
+                        var todoTitle = "";
+                        for (var i in keys) {
+                            var key = keys[i];
+                            var vals = parseValue(obj[key]);
+                            if (!Array.isArray(vals)) { vals = [vals]; }
+                            //console.log("vals", vals);
+                            INNER: for (var j in vals) {
+                                var val = vals[j];
+                                if (typeof(val) === "string") {
+                                    val = val.replace("'", "\\'");
+                                }
+
+                                if (key === "@id") {
+                                    key = "title";
+                                } else if (key === "title") {
+                                    todoTitle += val + " ";
+                                    continue INNER;
+                                }
+                                templ += key + "='" + val + "' ";
+                            }
+                        }
+                        templ += ">\n";
+                        templ += "<pre>\n";
+                        templ += todoTitle;
+                        templ += "</pre>\n";
+                        templ += "</div>\n";
+                    });
+                    
+                    doneCallback(first + splitToken + templ + parts.join(splitToken));
+                    //doneCallback(templ);
+                },
+                "error": function(jqXHR, textStatus, errorThrown) {
+                    alert("Error getting empty TiddlyWiki template.");
+                }
+            });
+        };
+
 		var toCSV = function(obs) {
 			ids = Object.keys(obs);
 			cols=["@id"]
@@ -199,7 +259,8 @@ angular
 			'json' : 'json',
 			'jsonld' : 'jsonld',
 			'ntriples' : 'nt', 
-			'csv' : 'csv'
+			'csv' : 'csv',
+            'tiddlywiki': 'html'
 		};
 
 	});
