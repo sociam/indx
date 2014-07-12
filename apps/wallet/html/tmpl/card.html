@@ -1,21 +1,25 @@
 <div class='wallet-card'>
-    <div ng-show="editing">
-        <input ng-model="card.title"></input>
+    <div class="card-icon" ng-hide="editing">
     </div>
-    <div ng-hide="editing">
-        <h1 ng-bind="card.title"></h1>
-    </div>
-    <div ng-repeat="field in card.fields" class="field">
-        <div ng-hide="editing" class="fieldbox">
-            <span ng-bind="field.key" class="key"></span>: <span ng-bind="field.value" class="value"></span>
+    <div class="card-body">
+        <div ng-show="editing">
+            <input ng-model="card.title"></input>
         </div>
-        <div ng-show="editing" class="fieldbox">
-            <input ng-model="field.key" class="key"></input>: <input ng-model="field.value" class="value"></input>
+        <div ng-hide="editing">
+            <h1 ng-bind="card.title"></h1>
         </div>
-    </div>
-    <div class="buttons">
-        <button ng-show="editing" ng-click="addField();" ng-touch="addField();">Add Field</button>
-        <button ng-hide="editing" ng-click="toggleEdit();" ng-touch="toggleEdit();">Edit</button>
-        <button ng-show="editing" ng-click="toggleEdit();" ng-touch="toggleEdit();">Save</button>
+        <div ng-repeat="field in card.fields" class="field">
+            <div ng-hide="editing" class="fieldbox">
+                <span ng-bind="field.key" class="key"></span>: <span ng-bind="field.value" class="value"></span>
+            </div>
+            <div ng-show="editing" class="fieldbox">
+                <input ng-model="field.key" class="key"></input>: <input ng-model="field.value" class="value"></input>
+            </div>
+        </div>
+        <div class="buttons">
+            <button ng-show="editing" ng-click="addField();" ng-touch="addField();">Add Field</button>
+            <button ng-hide="editing" ng-click="toggleEdit();" ng-touch="toggleEdit();">Edit</button>
+            <button ng-show="editing" ng-click="toggleEdit();" ng-touch="toggleEdit();">Save</button>
+        </div>
     </div>
 </div>

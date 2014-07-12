@@ -15,7 +15,8 @@
 
     <div class="main-body" ng-if="!msg">
         <div class="wallet-topbar">
-            <button ng-click="addCard();" ng-touch="addCard();">Add New Card</button>
+            <select ng-model="newTemplate" ng-options="template.label for (name, template) in templates"></select>
+            <button ng-click="addCard(newTemplate);" ng-touch="addCard(newTemplate);">Add New Card</button>
         </div>
         <div class="cards">
             <card card="thecard" template="templates[thecard.template]" ng-repeat="thecard in cards"></card>

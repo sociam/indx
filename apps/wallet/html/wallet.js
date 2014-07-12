@@ -25,9 +25,20 @@ angular
         // TODO load from external source
         $scope.templates = {
             "airline-iberia": {
+                "label": "Airline / Iberia",
+                "name": "airline-iberia",
+                "defaults": {
+                    "title": "Iberia Plus",
+                    "fields": {
+                        "Number": "",
+                        "Status": "Clasico",
+                    },
+                },
                 "icon": {
                     "background-image": "url(data-templates/airline-iberia/classic-xl.jpg)",
                     "background-size": "cover",
+                    "width": "100px",
+                    "height": "64px",
                 },
                 "css": {
                     "background-color": "#d7192d",
@@ -79,18 +90,29 @@ angular
             },
         ];
 
-        $scope.addCard = function() {
-            $scope.cards.push(
-                {
-                    "title": "New Card",
-                    "template": "blank",
-                    "fields": [
-                        { "key": "Field",
-                          "value": "Value"
-                        }
-                    ],
+        $scope.addCard = function(newTemplate) {
+
+            var card = {
+                "title": "New Card",
+                "fields": [
+                    { "key": "Field",
+                      "value": "Value"
+                    }
+                ],
+                "template": newTemplate === undefined ? "blank" : newTemplate.name, // from select box
+            };
+
+            if (newTemplate !== undefined && "defaults" in newTemplate) {
+                "title" in newTemplate.defaults ? card.title = newTemplate.defaults.title : jQuery.noop();
+                if ("fields" in newTemplate.defaults) {
+                    card.fields = []; // reset
+                    jQuery.each(newTemplate.defaults.fields, function(field, value) {
+                        card.fields.push({"key": field, "value": value});
+                    });
                 }
-            );
+            }
+
+            $scope.cards.push(card);
         };
 
     }).directive('card', function() {
@@ -120,6 +142,9 @@ angular
                     var jEl = jQuery($element);
                     jQuery.each($scope.template.css, function (key, value) {
                         jEl.css(key, value);
+                    });
+                    jQuery.each($scope.template.icon, function (key, value) {
+                        jEl.find(".card-icon").css(key, value);
                     });
                 }
             }
