@@ -163,6 +163,7 @@ angular
 
         // TODO load/save from backbone/indx
         $scope.cards = [
+            /*
             { "title": "Sample card 1",
               "template": "airline-iberia",
               "fields": [
@@ -202,6 +203,7 @@ angular
                 },
               ]
             },
+            */
         ];
 
         $scope.addCard = function(newTemplate) {
