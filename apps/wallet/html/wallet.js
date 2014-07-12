@@ -24,6 +24,10 @@ angular
            
         // TODO load from external source
         $scope.templates = {
+            "blank": {
+                "label": "[Blank]",
+                "name": "blank",
+            },
             "airline-iberia": {
                 "label": "Airline / Iberia",
                 "name": "airline-iberia",
@@ -259,12 +263,16 @@ angular
                 console.log($scope.template);
                 if ($scope.template !== undefined) {
                     var jEl = jQuery($element);
-                    jQuery.each($scope.template.css, function (key, value) {
-                        jEl.css(key, value);
-                    });
-                    jQuery.each($scope.template.icon, function (key, value) {
-                        jEl.find(".card-icon").css(key, value);
-                    });
+                    if ("css" in $scope.template) {
+                        jQuery.each($scope.template.css, function (key, value) {
+                            jEl.css(key, value);
+                        });
+                    }
+                    if ("icon" in $scope.template) {
+                        jQuery.each($scope.template.icon, function (key, value) {
+                            jEl.find(".card-icon").css(key, value);
+                        });
+                    }
                 }
             }
         };
