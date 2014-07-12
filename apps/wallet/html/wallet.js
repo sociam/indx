@@ -45,6 +45,116 @@ angular
                     "color": "white",
                 },
             },
+            "airline-ba-blue": {
+                "label": "Airline / British Airways (Blue)",
+                "name": "airline-ba-blue",
+                "defaults": {
+                    "title": "British Airways",
+                    "fields": {
+                        "Number": "",
+                        "Status": "Blue",
+                        "Oneworld Status": "(None)",
+                    },
+                },
+                "icon": {
+                    "background-image": "url(data-templates/airline-ba-blue/blueCard_230x145.jpg)",
+                    "background-size": "cover",
+                    "width": "100px",
+                    "height": "64px",
+                },
+                "css": {
+                    "background-color": "#3c78c7",
+                    "color": "white",
+                },
+            },
+            "airline-ba-bronze": {
+                "label": "Airline / British Airways (Bronze)",
+                "name": "airline-ba-bronze",
+                "defaults": {
+                    "title": "British Airways",
+                    "fields": {
+                        "Number": "",
+                        "Status": "Bronze",
+                        "Oneworld Status": "Ruby",
+                    },
+                },
+                "icon": {
+                    "background-image": "url(data-templates/airline-ba-bronze/bronzeCard_230x145.jpg)",
+                    "background-size": "cover",
+                    "width": "100px",
+                    "height": "64px",
+                },
+                "css": {
+                    "background-color": "#9e6346",
+                    "color": "white",
+                },
+            },
+            "airline-ba-silver": {
+                "label": "Airline / British Airways (Silver)",
+                "name": "airline-ba-silver",
+                "defaults": {
+                    "title": "British Airways",
+                    "fields": {
+                        "Number": "",
+                        "Status": "Silver",
+                        "Oneworld Status": "Sapphire",
+                    },
+                },
+                "icon": {
+                    "background-image": "url(data-templates/airline-ba-silver/silverCard_230x145.jpg)",
+                    "background-size": "cover",
+                    "width": "100px",
+                    "height": "64px",
+                },
+                "css": {
+                    "background-color": "#666666",
+                    "color": "white",
+                },
+            },
+            "airline-ba-gold": {
+                "label": "Airline / British Airways (Gold)",
+                "name": "airline-ba-gold",
+                "defaults": {
+                    "title": "British Airways",
+                    "fields": {
+                        "Number": "",
+                        "Status": "Gold",
+                        "Oneworld Status": "Emerald",
+                    },
+                },
+                "icon": {
+                    "background-image": "url(data-templates/airline-ba-gold/goldCard_230x145.jpg)",
+                    "background-size": "cover",
+                    "width": "100px",
+                    "height": "64px",
+                },
+                "css": {
+                    "background-color": "#c9911a",
+                    "color": "white",
+                },
+            },
+            "airline-ba-premier": {
+                "label": "Airline / British Airways (Premier)",
+                "name": "airline-ba-premier",
+                "defaults": {
+                    "title": "British Airways",
+                    "fields": {
+                        "Number": "",
+                        "Status": "Premier",
+                        "Oneworld Status": "Emerald",
+                    },
+                },
+                "icon": {
+                    "background-image": "url(data-templates/airline-ba-premier/premierCard_230x145.jpg)",
+                    "background-size": "cover",
+                    "width": "100px",
+                    "height": "64px",
+                },
+                "css": {
+                    "background-color": "#101820",
+                    "color": "white",
+                },
+            },
         };
 
         // TODO load/save from backbone/indx
