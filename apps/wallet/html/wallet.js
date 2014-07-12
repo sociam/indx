@@ -236,6 +236,15 @@ angular
 
                 $scope.editing = false;
                 $scope.toggleEdit = function() {
+
+                    if ($scope.editing) {
+                        jQuery.each($scope.card.fields, function (i, field) {
+                            if (field.key === "" && field.value === "") {
+                                $scope.card.fields.pop(field);
+                            }
+                        });
+                    }
+
                     $scope.editing = !!!$scope.editing;
                 };
 
