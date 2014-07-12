@@ -1,0 +1,21 @@
+{
+  "name": "wallet",
+  "version": "0.1.0",
+  "homepage": "https://github.com/sociam/indx",
+  "authors": [
+    "Daniel A. Smith <daniel@danielsmith.eu>"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "html/lib",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "font-awesome": "~4.0.3",
+    "jquery-ui": "~1.10.3"
+  }
+}

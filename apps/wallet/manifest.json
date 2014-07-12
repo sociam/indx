@@ -1,0 +1,19 @@
+{
+	"name": "Wallet",
+	"version": 0.1,
+	"description": "Add, edit and retrieve personal information from a wallet",
+	"icons": {
+		"128": "icon.png"
+	},
+	"documents": [
+		{ "type": "markdown", "title": "Readme", "file" : "readme.md" }
+	],
+	"tests": [
+	],
+	"author": [
+		{
+			"name": "Daniel A. Smith",
+			"email": "daniel@danielsmith.eu"
+		}
+	]
+}

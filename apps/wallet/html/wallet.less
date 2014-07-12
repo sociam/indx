@@ -1,0 +1,125 @@
+@import url(//fonts.googleapis.com/css?family=Port+Lligat+Slab|Playball);
+
+@app-top: 42px;
+@shadow-size: 6px;
+@shadow-color: rgba(0, 0, 0, 0.1);
+
+body {
+    background: #f8f8f8;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    cursor: default;
+    overflow-x: hidden; 
+}
+
+.indx-toolbar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 1080;
+    .navbar { 
+        opacity: 1;
+        border-width: 0;
+        .navbar-inner { opacity: 0.88; }
+    }
+}
+
+.main-body {
+    padding: 55px 10px 10px 10px;
+}
+
+.wallet-topbar {
+    padding: 5px;
+
+    button {
+        border: 1px solid #eee;
+        border-radius: 5px;
+        background-color: white;
+        color: black;
+    }
+    
+}
+
+.wallet-card {
+    border: 1px solid #eee;
+    border-radius: 10px;
+    min-width: 300px;
+    max-width: 1000px;
+    float: left;
+    display: inline;
+    margin: 5px;
+    background-color: white;
+    padding: 10px;
+    position: relative;
+
+    h1 {
+        margin: 5px 0px 10px;
+    }
+
+    input {
+        background-color: white;
+        color: black;
+    }
+
+    .field {
+        margin: 5px 0px;
+    }
+
+    .buttons {
+        text-align: right;
+
+        button {
+            border: 1px solid #eee;
+            border-radius: 5px;
+            background-color: white;
+            color: black;
+        }
+    }
+}
+
+.dropping {
+    background-color: #fbeed5 !important;
+    color: #333 !important;
+}
+
+.messages {
+    font-size: 20px;
+    text-align: center;
+    margin: 60px 20px;
+}
+
+.loading { opacity: 0.7; }
+
+.intro-step {
+    position: relative;
+    margin: 10px;
+    max-width: 345px;
+    background: transparent;
+    border: transparent;
+    & > .fa {
+        font-size: 24px
+    }
+    & > h3 {
+        font-size: 1em;
+        font-weight: bold;
+        text-transform: uppercase;
+        margin: 0 0 13px 0;
+    }
+    
+    &.intro-step-create-list {
+        & > .fa {
+            position: absolute;
+            left: 10px;
+            top: 10px;
+        }
+        & > h3, & > p { padding-left: 35px; }
+    }
+    &.intro-step-create-todo {
+        text-align: center;
+        margin: 47px auto 0;
+        h3 { margin-top: 20px; }
+    }
+}
