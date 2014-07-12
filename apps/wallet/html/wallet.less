@@ -62,6 +62,7 @@ body {
 
         h1 {
             margin: 5px 0px 10px;
+            max-width: 175px;
         }
 
         input {
@@ -85,18 +86,26 @@ body {
         }
     }
 
-    .card-icon {
-        position: absolute;
+    .card-icon-container {
+        background-color: white;
+        padding: 2px;
+        border-radius: 3px;
+        z-index: 10;
 
+        position: absolute;
         top: 10px;
         right: 10px;
 
-        width: 100px;
-        height: 64px;
+        .card-icon {
 
-        background-repeat: no-repeat;
+            width: 100px;
+            height: 64px;
 
-        z-index: 10;
+            background-repeat: no-repeat;
+
+            z-index: 10;
+        }
+
     }
 }
 
