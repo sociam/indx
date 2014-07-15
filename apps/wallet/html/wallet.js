@@ -159,6 +159,48 @@ angular
                     "color": "white",
                 },
             },
+            "driving-license-full": {
+                "label": "Driving License / British / Full",
+                "name": "driving-license-full",
+                "defaults": {
+                    "title": "Driving License",
+                    "fields": {
+                        "Number": "",
+                        "Status": "Full",
+                    },
+                },
+                "icon": {
+                    "background-image": "url(data-templates/driving-license-full/card.jpg)",
+                    "background-size": "cover",
+                    "width": "100px",
+                    "height": "64px",
+                },
+                "css": {
+                    "background-color": "rgb(237,161,171)",
+                    "color": "black",
+                },
+            },
+            "driving-license-provisional": {
+                "label": "Driving License / British / Provisional",
+                "name": "driving-license-provisional",
+                "defaults": {
+                    "title": "Driving License",
+                    "fields": {
+                        "Number": "",
+                        "Status": "Provisional",
+                    },
+                },
+                "icon": {
+                    "background-image": "url(data-templates/driving-license-provisional/card.jpg)",
+                    "background-size": "cover",
+                    "width": "100px",
+                    "height": "64px",
+                },
+                "css": {
+                    "background-color": "rgb(227,246,222)",
+                    "color": "black",
+                },
+            },
         };
 
         // TODO load/save from backbone/indx
