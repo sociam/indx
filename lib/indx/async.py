@@ -192,24 +192,50 @@ class IndxAsync:
                     failure.trap(Exception)
                     self.send400(requestid, "diff", data = {"error": "{0}".format(failure.value)})
 
-                if data['operation'] == "start":
+                try:
+                    operation = data.get("operation").lower()
+                except Exception as e:
+                    return self.send400(requestid, "diff", data = {"error": "no valid 'operation' found."})
+
+                # operation functions
+                def op_start():
                     diffid = "{0}".format(uuid.uuid1()) # generate new diffid
                     self.listen_diff(requestid, token, diffid).addCallbacks(lambda empty: diffok_cb("start"), diff_err_cb)
-                    return
-                elif data['operation'] == "stop":
+
+                def op_stop():
                     self.stop_diff(requestid, token, diffid).addCallbacks(lambda empty: diffok_cb("stop"), diff_err_cb)
-                    return
+
+                def op_addids():
+                    break # TODO impl
+
+                def op_setids():
+                    break # TODO impl
+                
+                def op_removeids():
+                    break # TODO impl
+
+                def op_setquery():
+                    break # TODO impl
+
+                ops = {
+                    "start": op_start,
+                    "stop": op_stop,
+                    "addids": op_addids,
+                    "setids": op_setids,
+                    "removeids": op_removeids,
+                    "setquery": op_setquery,
+                }
+
+                if operation in ops:
+                    return ops[operation]()
                 else:
-                    self.send400(requestid, "diff", data = {"error": "no valid 'operation' found."})
-                    return
+                    return self.send400(requestid, "diff", data = {"error": "no valid 'operation' found."})
             else:
                 action = data.get("action") # could be None
-                self.send400(requestid, action, data = {"error": "'action' value of '{0}' is unknown".format(action)})
-                return
+                return self.send400(requestid, action, data = {"error": "'action' value of '{0}' is unknown".format(action)})
         except Exception as e:
             logging.error("WebSocketsHandler frameRecevied, error: {0},\n trace: {1}".format(e, traceback.format_exc()))
-            self.send500(requestid, data.get("action"))
-            return
+            return self.send500(requestid, data.get("action"))
 
     def connectBackToClient(self, public_key_hash, store):
         """ Try to connect back through this websocket to the other side. """ 
@@ -311,7 +337,7 @@ class IndxAsync:
                 self.sendJSON(requestid, {"action": "diff", "diffid": diffid, "operation": "update", "data": diff}, "diff")
 
             try:
-                store.listen(observer_local, f_id = diffid) # no callbacks, nothing to do
+                store.listen(observer_local, diffid) # no callbacks, nothing to do
             except Exception as e:
                 logging.error("WebSocketsHandler listen_diff error listening to store: {0}".format(e))
                 return_d.errback(Failure(e))
@@ -336,7 +362,7 @@ class IndxAsync:
             logging.debug("WebSocketsHandler stop_diff, store_cb: {0}".format(store))
 
             try:
-                store.unlisten(None, f_id = diffid) # no callbacks, nothing to do
+                store.unlisten(diffid) # no callbacks, nothing to do
             except Exception as e:
                 logging.error("WebSocketsHandler listen_diff error listening to store: {0}".format(e))
                 return_d.errback(Failure(e))
