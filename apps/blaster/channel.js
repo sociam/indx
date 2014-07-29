@@ -21,7 +21,6 @@ var nodeindx = require('../../lib/services/nodejs/nodeindx'),
     exporter = require('./exporter'),
     entities = injector.get('entities');
 
-
 var getChannels = function(box) {  return box.query({type:'IndxChannel'}); };
 
 var makeTestChannels = function(box) { 
@@ -43,6 +42,7 @@ var makeTestChannels = function(box) {
     return u.when(test_channels.map(function(tc) { 
         var jsoned = _.object( _.pairs(tc).map(function(pair) { return [pair[0],JSON.stringify(pair[1])]; }) ),
             id = 'channel-'+u.guid();
+        jsoned.type = 'IndxChannel';
         return box.obj(id).set(jsoned).save();
     }));
 };
