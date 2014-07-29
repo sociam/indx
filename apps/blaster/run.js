@@ -24,7 +24,6 @@ var nodeindx = require('../../lib/services/nodejs/nodeindx'),
 var BlasterService = Object.create(nodeservice.NodeService, {
     run: { 
         value: function() {
-
             var this_ = this, config = this.config, store = this.store,
                 types = config.types && config.types.split(',') || '*',
                 catchup = config.catchup || false,
@@ -51,9 +50,6 @@ var BlasterService = Object.create(nodeservice.NodeService, {
                     });
                 }); 
             });
-
-
-
             process.stdin.resume();
         }
     }
