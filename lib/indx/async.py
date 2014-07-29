@@ -20,6 +20,7 @@ import json
 import cjson
 import traceback
 import StringIO
+import uuid
 from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
 import indx_pg2 as database
@@ -92,12 +93,17 @@ class IndxAsync:
                 logging.debug("Async got an echo request: {0}".format(data))
                 self.sendJSON(requestid, {}, "echo")
                 return
-            elif data.get('respond_to') == "login_keys":
-                # a response to our attempt to re-connect back to the client
-                logging.debug("Async got a respond to login_keys: {0}".format(data))
-                # TODO handle errors
-                self.sendJSON(requestid, {"action": "diff", "operation": "start"}, "login_keys") 
-                return
+            elif data.get("action") == "response":
+                if data.get('respond_to') == "login_keys":
+                    # a response to our attempt to re-connect back to the client
+                    logging.debug("Async got a respond to login_keys: {0}".format(data))
+                    # TODO handle errors
+                    self.sendJSON(requestid, {"action": "diff", "operation": "start"}, "login_keys") 
+                    return
+                else:
+                    respond_to = data.get("respond_to") # could be None
+                    self.send400(requestid, data.get("action"), data = {"error": "'respond_to' value of '{0}' is unknown for action 'response'.".format(respond_to)})
+                    return
             elif data['action'] == "auth":
 
                 def token_cb(token):
@@ -174,7 +180,7 @@ class IndxAsync:
                     return self.send400(requestid, "diff", data = {"error": "'token' required for diff"})
 
                 diffid = data.get("diffid")
-                if diffid is None:
+                if diffid is None and data.get("operation") != 'start': # only 'start' is allowed to not have a diffid
                     return self.send400(requestid, "diff", data = {"error": "'diffid' required for diff"})
 
                 def diffok_cb(operation):
@@ -187,6 +193,7 @@ class IndxAsync:
                     self.send400(requestid, "diff", data = {"error": "{0}".format(failure.value)})
 
                 if data['operation'] == "start":
+                    diffid = "{0}".format(uuid.uuid1()) # generate new diffid
                     self.listen_diff(requestid, token, diffid).addCallbacks(lambda empty: diffok_cb("start"), diff_err_cb)
                     return
                 elif data['operation'] == "stop":
