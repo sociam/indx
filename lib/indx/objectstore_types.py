@@ -80,6 +80,9 @@ class Graph:
 
         return self.objects_by_id[id]
 
+    def get_objectids(self):
+        return self.root_object_ids
+
     def objects(self):
         """ Get the list of objects as a dict by id. """
         return self.objects_by_id
