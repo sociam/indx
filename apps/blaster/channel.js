@@ -9,15 +9,14 @@
 
 var nodeindx = require('../../lib/services/nodejs/nodeindx'),
     nodeservice = require('../../lib/services/nodejs/service'),
-    u = nodeindx.utils,
     ajax = require('../../lib/services/nodejs/node_ajax')(u),    
+    u = nodeindx.utils,     injector = nodeindx.injector,
     _ = require('underscore'),
     jQuery = require('jquery'),
     path = require('path'),
     https = require('https'),
     output = nodeservice.output,
     Backbone = require('backbone'),
-    injector = nodeindx.injector,
     exporter = require('./exporter'),
     entities = injector.get('entities');
 
