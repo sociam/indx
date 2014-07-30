@@ -238,18 +238,18 @@ class ObjectStoreAsync:
 
         return result_d
 
-    def unlisten(self, f_id):
+    def unlisten(self, listener):
         """ Stop listening to updates to the box by this observer. """
-        logging.debug("Objectstore unlisten to {0}".format(f_id))
-        return self.connection_sharer.unsubscribe(f_id)
+        logging.debug("Objectstore unlisten to {0}".format(listener.diffid))
+        return self.connection_sharer.unsubscribe(listener)
 
-    def listen(self, observer, f_id):
+    def listen(self, listener):
         """ Listen for updates to the box, and send callbacks when they occur.
         
             observer -- Function that is called when there is a notification.
         """
-        logging.debug("Objectstore listen to {0}".format(f_id))
-        return self.connection_sharer.subscribe(observer, f_id) # returns a deferred
+        logging.debug("Objectstore listen to {0}".format(listener.diffid))
+        return self.connection_sharer.subscribe(listener) # returns a deferred
 
     def query(self, q, predicate_filter = None, render_json = True, depth = 0):
         """ Perform a query and return results.
@@ -1864,7 +1864,10 @@ class ConnectionSharer:
         """
         return_d = Deferred()
         self.subscribers[listener.diffid] = listener
-        self.store.runIDQuery(listener.query).addCallbacks(return_d.callback, return_d.errback)
+        if listener.query and listener.query != "":
+            self.store.runIDQuery(listener.query).addCallbacks(return_d.callback, return_d.errback)
+        else:
+            return_d.callback([])
         return return_d
 
     def listen(self):
