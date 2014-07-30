@@ -457,8 +457,9 @@ class IndxDiffListener:
 
         # TODO this is where ['data']['data'] is -> the diff is filtered_diff below in ['data'], and it has ['data'] in it
 
-        filtered_diff = self.filterDiff(diff['data'], id_filter)
-        diff['data'] = filtered_diff
+        if not(self.query is None and len(self.ids) == 0): # if there's no query and no IDs specified, then don't filter
+            filtered_diff = self.filterDiff(diff['data'], id_filter)
+            diff['data'] = filtered_diff
 
         if not self.isEmptyDiff(diff['data']):
             self.sendJSON(self.requestid, {"action": "diff", "diffid": self.diffid, "operation": "update", "data": diff}, "diff")
