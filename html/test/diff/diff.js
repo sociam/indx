@@ -37,6 +37,7 @@ angular.module('test',['indx'])
 		    return D.promise();
 		};
 
+		$scope.jsondiffs = [];
 		$scope.rawdiffs = [];
 		$scope.diffs = {};
 
@@ -46,6 +47,23 @@ angular.module('test',['indx'])
 				$scope.diffs[b.id] = {};
 				b.on('diff', function(data) { 
 					console.log('DIFF!!! >> ', data);
+					sa(function() { 
+						$scope.rawdiffs.push(data);
+						$scope.jsondiffs.push(JSON.stringify(data));
+						if (data.data) { 
+							console.log('data data!', data.data);
+							_(data.data).map(function(objs,kadc) {
+								console.log('kadc ', kadc);
+								if (objs) {
+									_(objs).map(function(obj, oid) { 
+										console.log('cid ', oid);
+										$scope.diffs[b.id][oid] = $scope.diffs[b.id][oid] || [];
+										$scope.diffs[b.id][oid].push(obj);
+									});
+								}
+							});
+						}
+					});
 				});
 			});
 			console.log('boxes >> ', boxes);

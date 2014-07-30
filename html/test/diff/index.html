@@ -15,20 +15,23 @@
   <div ng-if="userLoggedIn" class="container">
     <h1>diff test</h1>
 
-    <h2>raw diffs</h2>
-    <ul>
-      <li ng-repeat="i in rawdiffs" ng-bind="JSON.stringify(i)"></li>
-    </ul>
-
     <h2>diffs by box</h2>
     <ul>
-      <li ng-repeat="i in diffs.keys()">
-        <h3>{{i}}</h3>
+      <li ng-repeat="(k,v) in diffs">
+        <h3>{{ k }}</h3>
         <ul>
-          <li ng-repeat="d in diffs[i]"></li>
+          <li ng-repeat="(o,i) in v">
+            {{ o }}
+          </li>
         </ul>
       </li>
     </ul>
+
+    <h2>raw diffs</h2>
+    <ul>
+      <li ng-repeat="i in jsondiffs" ><pre>{{i}}</pre></li>
+    </ul>
+
   </div>
   <script src="../../lib/jquery/jquery.min.js" type="text/javascript"></script>
   <script src="../../lib/less/dist/less-1.6.2.min.js" type="text/javascript"></script>
