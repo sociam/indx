@@ -52,7 +52,7 @@
 
 angular
 	.module('indx', [])
-	.factory('client',function(utils) {
+	.factory('client',function(utils, indxws) {
 		// long token support not fully implemented, disable for now
 
 		var HTTP_OVER_WEBSOCKET = true; // change here to turn off 
@@ -66,61 +66,9 @@ angular
 			ajax = _NODE_AJAX(u,jQ);
 		} 
 
-		var WS_MESSAGES_SEND = {
-			auth: function(requestid, token) { 
-				return JSON.stringify({requestid:requestid,action:'auth',token:token}); 
-			},
-			diff: function(requestid, token, diffid) { 
-				return JSON.stringify({requestid:requestid,action:'diff',operation:"start",token:token,diffid:diffid}); 
-			},
-			http: function(requestid, method, path, data) { 
-				var toArrayVals = function(obj) {
-					var out = {};
-					_(obj).map(function(v,k) {
-						if (v !== undefined) {
-							out[k] = _.isArray(v) ? v : [v];
-						}
-					});
-					return out;
-				};
-				data = toArrayVals(data);
-				return JSON.stringify({
-					requestid:requestid,
-					action:'http',
-					request:{
-						path:"/"+path,
-						method:method,
-						params:{
-							headers:{"Accept": "*/*"},
-							args:method == 'GET' ? data : {},
-						},
-						content:method !== 'GET' ? data : undefined
-					}
-				});
-			},
-			echo:function(requestid, payload) {
-				return JSON.stringify({
-					requestid:requestid,
-					action:'echo',
-					payload:payload
-				});
-			}
-		};
 
 		var _makeLocalUser = function(name) {
 			return {"@id":name,user_type:'local',username:name,name:name};
-		};
-		var withoutProtocol=function(url) {
-			if (url.indexOf('//') >= 0) {
-				return url.slice(url.indexOf('//')+2);
-			}
-			return url;
-		};
-		var protocolOf = function(url) {
-			if (url.indexOf('//') >= 0) {
-				return url.slice(0,url.indexOf('//'));
-			}
-			// fall through
 		};
 
 		var serialiseObj = function(obj) {
@@ -599,144 +547,6 @@ angular
 			}			
 		};
 
-		// 
-		var IndxWebSocketHandler = function(box, ws) {
-			this._ws = ws;
-			this.box = box;
-			this.requests = {};
-			this._setup();
-			this.connected = u.deferred();
-			this.authed = u.deferred();
-		};
-		IndxWebSocketHandler.prototype = {
-			_genid: function() { return u.guid(16); },
-			_setup: function() {
-				var this_ = this, ws = this._ws, box = this.box;
-				/// @ignore
-				ws.onmessage = function(evt) {
-					// u.debug('websocket :: incoming a message ', evt.data.toString().substring(0,190)); // .substring(0,190));
-					var pdata = JSON.parse(evt.data);
-					// console.log('recv['+this_.box.getID()+'] >> ', pdata);
-					if (pdata.respond_to === 'connect' && pdata.success === true) {
-						this_.connected.resolve();
-					} else if (pdata.action === 'diff') {
-						box._diffUpdate(pdata.data)
-							.then(function() { box.trigger('update-from-master', box.getVersion()); })
-							.fail(function(err) {	u.error(err); });
-					} else	if (pdata.requestid !== undefined) { 
-						if (this_.requests[pdata.requestid] !== undefined) {
-							var request = this_.requests[pdata.requestid];
-							if (pdata.success === false || pdata.response && pdata.response.code && parseInt(pdata.response.code) >= 400) { 
-								console.error('error -- ', pdata, " - request was ", request.frame, pdata.response && pdata.response.code, 'failing');
-								request.responsed.reject(pdata.response);
-							} else {
-								request.responsed.resolve(pdata.response); // && pdata.response.data
-							}
-							delete this_.requests[pdata.requestid];
-						} else {
-							console.error('had no request ', pdata.requestid);
-						}
-					} else  if (pdata.error == "500 Internal Server Error" && pdata.success === false) {
-						console.error('got a 500 websocket kiss of death, disconnecting.');								
-						box._flush_tokens();
-						box.disconnect();
-					} else if (pdata.respond_to=="connect") { 
-						console.log('got session success');
-						this_.session = pdata.sessionid;
-					} else {
-						// unhandled here, pass it on.
-						console.log('ws :: unhanded message, passing on to the box ', pdata);
-						box.trigger('websocket-message', pdata);					
-					}
-				};
-				/// @ignore
-				ws.onopen = function() {
-					// this_.connected.resolve();
-					this_._ws_auth().then(function() {
-                        this_.diffid = this_._genid();
-						this_._ws_diff(this_.diffid).then(function() { 
-							box.trigger('ws-connect');
-							this_.authed.resolve();
-						}).fail(function(err) {
-							console.log('diff fail ', err);
-						});
-					}).fail(function() { 
-						console.error('authentication failed -- ');
-						this_._fail_requests({ status: 409, error: "authentication failed" });
-					});
-				};
-				/// @ignore
-				ws.onclose = function(evt) {
-					// what do we do now?!
-					console.error("!!!!!!!!!!!!!!!! websocket closed -- lost connection to server");
-					box.trigger('ws-disconnect');
-					box._disconnected();
-				};
-			},
-			_fail_requests:function(status, message) {
-				// todo: might we want to filter these only for http?
-				var this_ = this, deadkeys = _(this.requests).map(function(val,key) {
-					val.responsed.reject({status:status, message:message});
-					return key;
-				});
-				deadkeys.map(function(k) { delete this_.requests[k]; });
-			},
-			addRequest:function(rid, frame) { 
-				var this_ = this, req = {
-					rid:rid,
-					frame: frame,
-					responsed:u.deferred()
-				};
-				this.requests[rid] = req;
-				this.connected.then(function() { 
-					// packet debug
-					// console.info('send['+this_.box.getID() +'] > ', req.frame);
-					this_._ws.send(req.frame); 
-				});
-				return req.responsed.promise();
-			},
-			addHttpRequest:function(method, path, data) { 
-				var rid = this._genid(), d = u.deferred(), this_ = this;
-				this.authed.then(function() {
-				   this_.addRequest(rid, WS_MESSAGES_SEND.http(rid, method, path, data)).then(d.resolve).fail(d.reject);
-				});
-				return d.promise();
-			},
-			_ws_auth : function() {
-				var token = this.box._getCachedToken() || this.box._getStoredToken(), 
-					rid = this._genid();
-				return this.addRequest(rid, WS_MESSAGES_SEND.auth(rid, token));
-			},
-			_ws_diff:function(diffid) { 
-				var token = this.box._getCachedToken() || this.box._getStoredToken(), 
-				    rid = this._genid();
-				return this.addRequest(rid, WS_MESSAGES_SEND.diff(rid, token, diffid));	
-			},
-			_echo:function(payload) { 
-				var rid = this._genid();
-				return this.addRequest(rid, WS_MESSAGES_SEND.echo(rid, payload));	
-			},
-			echoTest:function(size) {
-				var this_ = this, packets = {};
-				size = size || 100000; // 16384;
-				u.range(10).map(function(x) { 
-					size += 100000;
-					var s = size;
-					packets[s] = setTimeout(function() {  console.error('never got response for size ', s); }, 15000);
-					var payload = u.guid(size), 
-						rid = this_._genid(), 
-						frame = WS_MESSAGES_SEND.echo(rid, payload),
-						send = new Date().valueOf();
-					this_.addRequest(rid, frame).then(function(response)  {
-						console.log('clearing time out for ', s);
-						clearTimeout(packets[s]);
-						console.log('response received ', response, ' latency ', (new Date()).valueOf() - send, " msec ");
-					});
-				});
-			}
-		};
-
-		
 		// new client: fetch is always lazy, only gets ids, and
 		// lazily get objects as you go
 		var Box = Backbone.Model.extend({
@@ -757,10 +567,15 @@ angular
 				this.store.on('login', function() { console.debug('on login >> '); this_.reconnect(); });
 				this._reset();
 				// set up web socket connection whenever we get a new token
-				this.on('new-token', function() { 
-					// console.log('new token!! ', this_._getCachedToken(), this_._getStoredToken());
-					this_._setUpWebSocket(); 
-				});
+				// we want to manually update our websocket
+				// this.on('new-token', function(token) { 
+				// 	if (!this_.isConnected()) { return; }
+				// 	this_.wsh._ws_auth()
+				// 		.then(function() { console.log('new token auth success '); })
+				// 		.fail(function() { 
+				// 			console.error('error trying to ws_auth on new token ', token);
+				// 		});
+				// });
 			},
 			_flush_tokens:function() { 
 				this._setToken();
@@ -790,40 +605,17 @@ angular
 			uncacheObj: function(obj) {
 				return this._objcache().remove(obj);
 			},
-			_setUpWebSocket:function() {
-				if (! this.getUseWebSockets() ) { return; }
-				if (! (this._getCachedToken() || this._getStoredToken()) ) { 
-					// console.info('Do not have a token cached or stored, so not setting up websocket ');
-					return ; 
-				}
-				if (this._ws) {  
-					/* console.info('Websocket already set up '); */ 
-					return; 
-				}
-				var this_ = this, server_host = this.store.get('server_host'), store = this.store;
-				var protocol = (document.location.protocol === 'https:' || protocolOf(server_host) === 'https:') ? 'wss:/' : 'ws:/',
-					wprot = withoutProtocol(server_host),
-					wsURL = [protocol,withoutProtocol(server_host),'ws'].join('/'),
-					ws = new WebSocket(wsURL);
-				this_._ws = ws;
-				this_._ws._handler = new IndxWebSocketHandler(this_,ws);
-			},
 			isConnected:function() {
-				return this._ws && this._ws.readyState === 1;
+				return this.wsh && this.wsh.isConnected();
 			},
 			_disconnected:function() {
 				// called after disconnected
-				delete this._ws;
+				delete this.wsh;
 				this._reset(); // kill all pending queues
 			},
 			disconnect:function() {
-				if (this._ws !== undefined) { 
-					var ws = this._ws;		
-					console.error('calling close >> ', ws);
-					ws.onmessage = function() {};
-					ws.onopen = function() {};
-					ws.onclose = function() {};
-					ws.close();
+				if (this.wsh !== undefined) { 
+					this.wsh.close();
 					this._disconnected();
 					return u.dresolve();
 				}
@@ -916,7 +708,7 @@ angular
 						}).fail(function(bail) { 
 							console.error('error getting auth/get_token ', bail);
 							var args = arguments;
-							if (this_._ws) { 
+							if (this_.wsh) { 
 								console.error('warning >> forcing disconnect ');
 								this_.disconnect();							
 							}
@@ -935,14 +727,11 @@ angular
 					box_id = this.getID(),
 					this_ = this;
 				// console.log('_ajax() call :: ', method, path, data, ' token: ', token);
-
 				var cont = function() { 
-					// reconnect if somehow we dead
-					if (!this_._ws) { this_._setUpWebSocket(); }
 					token = this_._getCachedToken() || this_._getStoredToken();
-					if (HTTP_OVER_WEBSOCKET && this_._ws && this_._ws._handler) {
+					if (HTTP_OVER_WEBSOCKET && this_.wsh) {
 						// use websocket approach instead
-						return this_._ws._handler.addHttpRequest(method, path, _(data||{}).extend({box:box_id, token:token, app:this_.store.get('app')}) );
+						return this_.wsh.addHttpRequest(method, path, _(data||{}).extend({box:box_id, token:token, app:this_.store.get('app')}) );
 					} 
 					data = _(_(data||{}).clone()).extend({box:box_id, token:token});
 					return this_.store._ajax(method, path, data);
@@ -1096,7 +885,7 @@ angular
 			},
 			// handles updates from websockets the server
 			_diffUpdate:function(response) {
-				// console.debug("diffUpdate > ", response);
+				console.debug("diffUpdate > ", response);
 				var d = u.deferred(), this_ = this, latestVersion = response['@to_version'],
 				addedIDs  = _(response.data.added).keys(),
 				changedIDs = _(response.data.changed).keys(),
@@ -1324,41 +1113,6 @@ angular
 					this_._objcache().remove(rid);
 				});			
 			},
-			_prefetch:function() { 
-				// gets called by fetch() -- 
-				//  1. if already connected, we are already fetched
-				//  2. if not fetched yet, we get a fetch on.
-				// this does token management 
-				console.log('prefetch >> ');
-				if (this.isConnected()) { 
-					console.log('connected already! resolving straightaway --- ');
-					return u.dresolve(this); 
-				}
-				// not connectd, therefore we should really fetch
-				var d = u.deferred(), this_ = this;			
-				if (this._is_fetching !== undefined) { 
-					// already fetching, so do something else :: 
-					console.log('already fetching ... ');
-					this._is_fetching.push(d);
-					return d.promise();
-				} 
-				// not fetching already, so continue --
-				var success = function() { 
-					this_._setUpWebSocket();
-					this_._is_fetching.map(function(dfd) { dfd.resolve(this_); });
-					delete this_._is_fetching;
-					d.resolve(this_);
-				};
-				var fail = function(bail) { 
-					this_._is_fetching.map(function(dfd) { dfd.reject(bail); });
-					delete this_._is_fetching;
-					d.reject(bail);
-				};
-				this._is_fetching = [];
-				console.log('_prefetch - token state :: ', this._getCachedToken(), this._hasStoredToken());
-				this_._fetch().then(success).fail(fail);
-				return d.promise();
-			},
 			_fetch:function() {
 				// all fetch really does is retrieve ids!
 				// new client :: this now _only_ fetches object ids
@@ -1369,12 +1123,13 @@ angular
 				this._ajax("GET",[box,'get_object_ids'].join('/')).then(
 					function(response){
 						var data = response && response.data;
-						if (data && data.data) {
-							console.log('DOUBLE NESTED DATA ', response);
-							data = data.data;
-						} else {
-							console.log('single nested data ', response);
-						}
+						// Dear DAN, there something very inconsistent here ----------
+						// if (data && data.data) {
+						// 	console.log('DOUBLE NESTED DATA ', response);
+						// 	data = data.data;
+						// } else {
+						// 	console.log('single nested data ', response);
+						// }
 						u.assert(data['@version'] !== undefined, 'no version provided');
 						this_.id = this_.getID(); // sets so that _isFetched later returns true
 						console.info('_fetch setVersion ', data['@version']);
@@ -1592,8 +1347,25 @@ angular
 			},
 			boxes:function() { return this.attributes.boxes;	},
 			getBox: function(boxid) {
-				var b = this.boxes().get(boxid) || this._create(boxid);
-				return b.fetch();
+				var b = this.boxes().get(boxid) || this._create(boxid), 
+					this_ = this,
+					d = u.deferred();
+				if (b.wsh) {
+					console.log('connected already! resolving straightaway --- ');
+					return u.dresolve(this); 
+				}
+				// get ws connected
+				b.wsh = new indxws.Handler({store: this, box:b});
+				window.wsh = b.wsh;
+				b.wsh.getReadyD().then(function() {
+					console.log('websocket ready!');
+					b._fetch().then(d.resolve).fail(d.reject);
+				}).fail(function() { 
+					console.log('readyd failed ');
+					b.wsh = undefined;
+					d.reject();
+				});
+				return d.promise();
 			},
 			box:function(boxid) {
 				return new BoxProxy(this.getBox(boxid));
