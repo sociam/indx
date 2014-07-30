@@ -430,6 +430,8 @@ class IndxDiffListener:
 
     def filterDiff(self, diff, id_filter):
         """ Filter this diff to only include IDs in this set. """
+        logging.debug("IndxDiffListener filterDiff id_filter: {0} diff: {1}".format(id_filter, diff))
+
         for id_d in diff['deleted']:
             if id_d not in id_filter:
                 del diff['deleted'][id_d]
@@ -453,10 +455,13 @@ class IndxDiffListener:
 
         id_filter = self.previousIds | query_result_set | self.ids # set of IDs to filter by - anything in the query results (prev and current) or ids
 
-        filtered_diff = self.filterDiff(diff, id_filter)
+        # TODO this is where ['data']['data'] is -> the diff is filtered_diff below in ['data'], and it has ['data'] in it
 
-        if not self.isEmptyDiff(filtered_diff):
-            self.sendJSON(self.requestid, {"action": "diff", "diffid": self.diffid, "operation": "update", "data": filtered_diff}, "diff")
+        filtered_diff = self.filterDiff(diff['data'], id_filter)
+        diff['data'] = filtered_diff
+
+        if not self.isEmptyDiff(diff['data']):
+            self.sendJSON(self.requestid, {"action": "diff", "diffid": self.diffid, "operation": "update", "data": diff}, "diff")
 
         self.previousIds = query_result_set
 

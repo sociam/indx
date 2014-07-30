@@ -220,7 +220,7 @@ class ObjectStoreAsync:
                     # and via database
                     self._curexec(cur, "SELECT * FROM wb_version_finished(%s)", [version]).addCallbacks(result_d.callback, err_cb)
 
-                self.runQueries(self.connection_sharer.getQueries()).addCallbacks(queries_cb, err_cb)
+                self.runIDQueries(self.connection_sharer.getQueries()).addCallbacks(queries_cb, err_cb)
             else:
                 result_d.callback(True)
 
@@ -1885,7 +1885,10 @@ class ConnectionSharer:
             def diff_cb(data):
                 logging.debug("ConnectionSharer observer dispatching diff to {0} subscribers, diff: {1}".format(len(self.subscribers), data))
                 for f_id, listener in self.subscribers.items():
-                    listener.observer(data, notify['queryResults'][listener.query])
+                    if listener.query and listener.query != "":
+                        listener.observer(data, notify['queryResults'][listener.query])
+                    else:
+                        listener.observer(data, [])
 
             version = int(notify['version'])
             old_version = version - 1 # TODO do this a better way? (if we moved away from int versions, we would return the old and new version in the payload instead of calcualting it here.)
