@@ -207,6 +207,7 @@ angular.module('indx')
 					if (success) { 
 						diffhandlers[diffid] = function(diffdata) {
 							console.info('main diff handler for [', box.id, '] data >> ', diffdata);
+							box.trigger('diff', diffdata); // to help with diagnostics and debugging and apps interested
 							box._diffUpdate(diffdata)
 								.then(function() { box.trigger('update-from-master', box.getVersion()); })
 								.fail(function(err) {	u.error(err); });

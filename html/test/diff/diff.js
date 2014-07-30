@@ -45,7 +45,7 @@ angular.module('test',['indx'])
 			boxes.map(function(b) { 
 				$scope.diffs[b.id] = {};
 				b.on('diff', function(data) { 
-					console.log('data >> ', data);
+					console.log('DIFF!!! >> ', data);
 				});
 			});
 			console.log('boxes >> ', boxes);

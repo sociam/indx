@@ -261,7 +261,7 @@ angular
 			then:function(f) {
 				var this_ = this;
 				this.d = this.d.pipe(function() { 
-					console.log("EXECUTING THEN");
+					// console.log("EXECUTING THEN");
 					var obj = this_.obj;
 					return jQuery.when(f(obj));
 				});
@@ -901,7 +901,6 @@ angular
 					u.debug('asked to diff update, but already up to date, so just relax!', latestVersion, this_.getVersion());
 					return d.resolve();
 				}
-
 				// u.debug('setting latest version >> ', latest_version, added_ids, changed_ids, deleted_ids);
 				console.info('diff setVersion, ', latestVersion, ' +/c/-: ', addedIDs, changedIDs, deletedIDs );
 				this_._setVersion(latestVersion);
