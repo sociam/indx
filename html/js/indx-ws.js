@@ -205,9 +205,9 @@ angular.module('indx')
 					console.log('response from diff request coming back ', pdata);
 					var diffid = pdata.diffid, success = pdata.success;
 					if (success) { 
-						diffhandlers[diffid] = function(diffdata) { 
-							console.info('main ', box.id, ' diff handler ', diffdata);
-							box._diffUpdate(diffdata.data)
+						diffhandlers[diffid] = function(diffdata) {
+							console.info('main diff handler for [', box.id, '] data >> ', diffdata);
+							box._diffUpdate(diffdata)
 								.then(function() { box.trigger('update-from-master', box.getVersion()); })
 								.fail(function(err) {	u.error(err); });
 						};
