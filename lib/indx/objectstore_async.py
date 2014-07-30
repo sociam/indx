@@ -28,6 +28,8 @@ from indx.objectstore_types import Graph, Literal, Resource
 from indx.object_commit import ObjectCommit
 from indx.reactor import IndxSubscriber
 
+SHARERS = {}
+
 class ObjectStoreAsync:
     """ Stores objects in a database, handling import, export and versioning.
     """
@@ -45,7 +47,9 @@ class ObjectStoreAsync:
         self.loggerClass = logging
         self.loggerExtra = {}
         self.server_id = server_id
-        self.connection_sharer = ConnectionSharer(self.indx_reactor, self.boxid, self)
+
+        if self.boxid not in SHARERS:
+            SHARERS[self.boxid] = ConnectionSharer(self.indx_reactor, self.boxid, self)
 
     def schema_upgrade(self):
         """ Perform INDX schema upgrades.
@@ -185,7 +189,7 @@ class ObjectStoreAsync:
         def nextQ(empty):
             if len(queries) > 0: 
                 d.addCallback(doQuery)
-                d.callback(queries.pop(0))
+                d.callback(queries.pop())
             else:
                 return_d.callback(results)
 
@@ -220,7 +224,7 @@ class ObjectStoreAsync:
                     # and via database
                     self._curexec(cur, "SELECT * FROM wb_version_finished(%s)", [version]).addCallbacks(result_d.callback, err_cb)
 
-                self.runIDQueries(self.connection_sharer.getQueries()).addCallbacks(queries_cb, err_cb)
+                self.runIDQueries(SHARERS[self.boxid].getQueries()).addCallbacks(queries_cb, err_cb)
             else:
                 result_d.callback(True)
 
@@ -241,7 +245,7 @@ class ObjectStoreAsync:
     def unlisten(self, listener):
         """ Stop listening to updates to the box by this observer. """
         logging.debug("Objectstore unlisten to {0}".format(listener.diffid))
-        return self.connection_sharer.unsubscribe(listener)
+        return SHARERS[self.boxid].unsubscribe(listener)
 
     def listen(self, listener):
         """ Listen for updates to the box, and send callbacks when they occur.
@@ -249,7 +253,7 @@ class ObjectStoreAsync:
             observer -- Function that is called when there is a notification.
         """
         logging.debug("Objectstore listen to {0}".format(listener.diffid))
-        return self.connection_sharer.subscribe(listener) # returns a deferred
+        return SHARERS[self.boxid].subscribe(listener) # returns a deferred
 
     def query(self, q, predicate_filter = None, render_json = True, depth = 0):
         """ Perform a query and return results.
@@ -1849,9 +1853,7 @@ class ConnectionSharer:
         """ Get a set of all queries for all listeners.
             Used by the store to query at the notify stage.
         """
-        queries = set()
-        map(lambda sub: queries.add(sub.query), self.subscribers)
-        return queries
+        return set(filter(lambda query: query and query != '', map(lambda subid: self.subscribers[subid].query, self.subscribers)))
 
     def unsubscribe(self, listener):
         """ Unsubscribe this observer to this box's updates. """
