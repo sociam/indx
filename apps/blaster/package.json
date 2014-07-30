@@ -1,13 +1,15 @@
 {
-  "name": "nodejs-service",
-  "version": "0.0.0",
-  "main": "run.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "name": "channels",
+  "version": "0.1.11",
+  "description": "channel debug",
+  "main": "channel-manager.html",
+  "window": {
+    "width": 400,
+    "height": 520,
+    "show": true,
+    "title": "channels",
+    "toolbar": true
   },
-  "repository": "",
-  "author": "emax",
-  "license": "BSD",
   "dependencies": {
     "angular":"",
     "underscore": "~1.5.2",
@@ -18,5 +20,5 @@
     "optimist":"",
     "express":"",
     "body-parser":""
-  }
+  }  
 }
