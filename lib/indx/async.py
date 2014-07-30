@@ -466,9 +466,9 @@ class IndxDiffListener:
         self.diffid = diffid
         self.sendJSON = sendJSON # function reference to send JSON down the right websocket
 
-        self.ids = set() # limit to these IDs only
-        self.query = None # limit to objects that match this query only
-        self.previousIds = None # ids that match the query at the previous version
+        self.ids = set() # set to limit to these IDs only
+        self.query = None # limit to objects that match this query only, either the version before the diff or the version after
+        self.previousIds = set() # set of ids that match the query at the previous version
 
         def ids_cb(ids):
             self.previousIds = ids
@@ -479,9 +479,39 @@ class IndxDiffListener:
 
         self.runQuery.addCallbacks(ids_cb, err_cb)
 
+    def filterDiff(self, diff, id_filter):
+        """ Filter this diff to only include IDs in this set. """
+        for id_d in diff['deleted']:
+            if id_d not in id_filter:
+                del diff['deleted'][id_d]
+
+        fields = ['added', 'changed']
+        for field in fields:
+            for id_f in diff[field].keys():
+                if id_f not in id_filter:
+                    del diff[field][id_f]
+
+        return diff
+
+    def isEmptyDiff(self, diff):
+        """ Check if diff is empty. """
+        return not( len(diff['deleted']) == 0 and len(diff['added'].keys()) == 0 and len(diff['changed'].keys()) == 0 )
+
+    def observer(self, diff, query_results):
+        """ query_results is a list of IDs that match the query. """
+
+        query_result_set = set(query_results)
+
+        id_filter = self.previousIds | query_result_set | self.ids # set of IDs to filter by - anything in the query results (prev and current) or ids
+
+        filtered_diff = self.filterDiff(diff, id_filter)
+
+        if not self.isEmptyDiff(filtered_diff):
+            self.sendJSON(self.requestid, {"action": "diff", "diffid": self.diffid, "operation": "update", "data": filtered_diff}, "diff")
+
+        self.previousIds = query_result_set
+
     def subscribe(self):
-        def observer(diff):
-            self.sendJSON(self.requestid, {"action": "diff", "diffid": self.diffid, "operation": "update", "data": diff}, "diff")
         
         def err_cb(failure):
             failure.trap(Exception)
@@ -489,12 +519,12 @@ class IndxDiffListener:
 
         def subscribe_cb(ids):
             """ Returns the IDs in the query at this version. """
-            self.previousIDs = ids
+            self.previousIDs = set(ids)
 
-        self.store.listen(observer, self.diffid, self.query).addCallbacks(subscribe_cb, err_cb)
+        self.store.listen(self).addCallbacks(subscribe_cb, err_cb)
 
     def unsubscribe(self):
-        self.store.unlisten(self.diffid)
+        self.store.unlisten(self)
 
     def addIDs(self, ids):
         map(lambda id: self.ids.add(id), ids)

@@ -165,6 +165,41 @@ class ObjectStoreAsync:
         self.log(logging.ERROR, message)
 
 
+    def runIDQuery(self, query):
+        """ Runs the query on the store and returns the IDs that match it. """
+        return_d = Deferred()
+
+        def query_cb(graph):
+            ids = graph.get_objectids()
+            return_d.callback(ids)
+
+        self.query(query, render_json=False, depth=0).addCallbacks(query_cb, return_d.errback)
+        return return_d
+
+    def runIDQueries(self, queries):
+        return_d = Deferred()
+        results = {} # query -> results
+
+        d = Deferred()
+
+        def nextQ(empty):
+            if len(queries) > 0: 
+                d.addCallback(doQuery)
+                d.callback(queries.pop(0))
+            else:
+                return_d.callback(results)
+
+        def doQuery(query):
+
+            def ids_cb(ids):
+                results[query] = ids
+                nextQ(None)
+
+            self.runIDQuery(query).addCallbacks(ids_cb, return_d.errback)
+
+        nextQ(None)
+        return return_d
+
     def _notify(self, cur, version, commits = None, propagate = True):
         """ Notify listeners (in postgres) of a new version (called after update/delete has completed). """
         self.debug("ObjectStoreAsync _notify, version: {0}".format(version))
@@ -177,11 +212,15 @@ class ObjectStoreAsync:
 
         def new_ver_done(success):
             if propagate:
-                # via indx reactor
-                self.indx_reactor.send({"version": version}, {"type": "version_update", "box": self.boxid})
 
-                # and via database
-                self._curexec(cur, "SELECT * FROM wb_version_finished(%s)", [version]).addCallbacks(result_d.callback, err_cb)
+                def queries_cb(queries_results):
+                    # via indx reactor
+                    self.indx_reactor.send({"version": version, "queryResults": queries_results}, {"type": "version_update", "box": self.boxid})
+
+                    # and via database
+                    self._curexec(cur, "SELECT * FROM wb_version_finished(%s)", [version]).addCallbacks(result_d.callback, err_cb)
+
+                self.runQueries(self.connection_sharer.getQueries()).addCallbacks(queries_cb, err_cb)
             else:
                 result_d.callback(True)
 
@@ -1803,34 +1842,30 @@ class ConnectionSharer:
         self.indx_reactor = indx_reactor
         self.box = box
         self.store = store
-        self.subscribers = {} # id -> (observer, query)
+        self.subscribers = {} # id -> IndxDiffListener object
         self.indx_subscriber = self.listen()
 
-    def runQuery(self, query):
-        """ Runs the query on the existing store and returns the IDs that match it. """
-        return_d = Deferred()
+    def getQueries(self):
+        """ Get a set of all queries for all listeners.
+            Used by the store to query at the notify stage.
+        """
+        queries = set()
+        map(lambda sub: queries.add(sub.query), self.subscribers)
+        return queries
 
-        def query_cb(graph):
-            ids = graph.get_objectids()
-            return_d.callback(ids)
-
-        self.store.query(query, render_json=False, depth=0).addCallbacks(query_cb, return_d.errback)
-        return return_d
-
-    def unsubscribe(self, f_id):
+    def unsubscribe(self, listener):
         """ Unsubscribe this observer to this box's updates. """
-        del self.subscribers[f_id]
+        del self.subscribers[listener.diffid]
 
-    def subscribe(self, observer, f_id, query):
+    def subscribe(self, listener):
         """ Subscribe to this box's updates.
 
         observer -- A function to call when an update occurs. Parameter sent is re-dispatched from the database.
         """
         return_d = Deferred()
-        self.subscribers[f_id] = (observer, query)
-        self.runQuery(query).addCallbacks(return_d.callback, return_d.errback)
+        self.subscribers[listener.diffid] = listener
+        self.store.runIDQuery(listener.query).addCallbacks(return_d.callback, return_d.errback)
         return return_d
-
 
     def listen(self):
         """ Start listening to INDX updates. """
@@ -1846,10 +1881,8 @@ class ConnectionSharer:
 
             def diff_cb(data):
                 logging.debug("ConnectionSharer observer dispatching diff to {0} subscribers, diff: {1}".format(len(self.subscribers), data))
-
-                for f_id, val in self.subscribers.items():
-                    observer, query = val
-                    observer(data)
+                for f_id, listener in self.subscribers.items():
+                    listener.observer(data, notify['queryResults'][listener.query])
 
             version = int(notify['version'])
             old_version = version - 1 # TODO do this a better way? (if we moved away from int versions, we would return the old and new version in the payload instead of calcualting it here.)
