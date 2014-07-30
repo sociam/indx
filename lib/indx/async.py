@@ -246,7 +246,7 @@ class IndxAsync:
                     self.send200(requestid, "diff", data = {"diffid": diffid, "respond_to": "diff/{0}".format(operation)})
 
                 def op_setquery():
-                    if not data.get("query") or type(data.get("query")) != type(""):
+                    if not (data.get("query") or type(data.get("query")) != type("")):
                         return self.send400(requestid, "diff", data = {"error": "This action and operation requires a string 'query' field."})
 
                     self.listeners[diffid].setQuery(data.get("query"))
