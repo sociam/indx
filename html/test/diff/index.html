@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en" >
+<head>
+ 	<link href="/lib/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet"/>
+	<link href="/lib/angular-ui/build/angular-ui.min.css" rel="stylesheet"/>
+	<!-- cdmbase -->
+  <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1, maximum-scale=1">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<link rel="stylesheet/less" type="text/css" href="/components/toolbar/toolbar.less"/>
+	<title>star test</title>
+</head>
+<body ng-app="test" ng-controller="main" ng-cloak>
+  <toolbar box-var='selected_box' username-var='userLoggedIn'></toolbar>
+  <h1 ng-if="!userLoggedIn">please log in</h1>
+  <div ng-if="userLoggedIn" class="container">
+    <h1>diff test</h1>
+
+    <h2>raw diffs</h2>
+    <ul>
+      <li ng-repeat="i in rawdiffs" ng-bind="JSON.stringify(i)"></li>
+    </ul>
+
+    <h2>diffs by box</h2>
+    <ul>
+      <li ng-repeat="i in diffs.keys()">
+        <h3>{{i}}</h3>
+        <ul>
+          <li ng-repeat="d in diffs[i]"></li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+  <script src="../../lib/jquery/jquery.min.js" type="text/javascript"></script>
+  <script src="../../lib/less/dist/less-1.6.2.min.js" type="text/javascript"></script>
+  <script src="../../lib/underscore/underscore.js" type="text/javascript"></script>
+  <script src="../../lib/backbone/backbone.js" type="text/javascript"></script>
+  <script src="../../lib/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>
+  <script src="../../lib/angular/angular.min.js" type="text/javascript"></script>
+  <script src="../../lib/angular/angular-route.min.js" type="text/javascript"></script>
+  <script src="/js/indx.js" type="text/javascript"></script>
+  <script src="/js/indx-ws.js" type="text/javascript"></script>
+  <script src="/js/indx-utils.js" type="text/javascript"></script>
+  <script src="/components/toolbar/toolbar.js" type="text/javascript"></script>
+  <script src="diff.js" type="text/javascript"></script>
+</body>
+</html>
