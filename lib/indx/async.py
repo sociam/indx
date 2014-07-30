@@ -446,10 +446,11 @@ class IndxDiffListener:
 
     def isEmptyDiff(self, diff):
         """ Check if diff is empty. """
-        return not( len(diff['deleted']) == 0 and len(diff['added'].keys()) == 0 and len(diff['changed'].keys()) == 0 )
+        return len(diff['deleted']) == 0 and len(diff['added'].keys()) == 0 and len(diff['changed'].keys()) == 0
 
     def observer(self, diff, query_results):
         """ query_results is a list of IDs that match the query. """
+        logging.debug("IndxDiffListener Observer {0} called with diff {1} and query_results {2}".format(self.diffid, diff, query_results))
 
         query_result_set = set(query_results)
 
@@ -458,11 +459,17 @@ class IndxDiffListener:
         # TODO this is where ['data']['data'] is -> the diff is filtered_diff below in ['data'], and it has ['data'] in it
 
         if not(self.query is None and len(self.ids) == 0): # if there's no query and no IDs specified, then don't filter
+            logging.debug("IndxDiffListener Observer {0} IS calling diff filter using id_filter: {1}".format(self.diffid, id_filter))
             filtered_diff = self.filterDiff(diff['data'], id_filter)
             diff['data'] = filtered_diff
+        else:
+            logging.debug("IndxDiffListener Observer {0} is NOT calling diff filter using id_filter: {1}".format(self.diffid, id_filter))
 
         if not self.isEmptyDiff(diff['data']):
+            logging.debug("IndxDiffListener Observer {0} IS sending an update".format(self.diffid))
             self.sendJSON(self.requestid, {"action": "diff", "diffid": self.diffid, "operation": "update", "data": diff}, "diff")
+        else:
+            logging.debug("IndxDiffListener Observer {0} is NOT sending an update".format(self.diffid))
 
         self.previousIds = query_result_set
 
