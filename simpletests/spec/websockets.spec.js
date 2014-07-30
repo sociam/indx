@@ -50,11 +50,11 @@ describe('websocket diff test', function() {
                         msg.token = token;
                         if (diffid) { msg.diffid = diffid; }
 
-                        box._ws.send(JSON.stringify(msg));
+                        box.wsh._ws.send(JSON.stringify(msg));
                         return deferred;
                     };
 
-                box._ws.onmessage = function(evt) {
+                box.wsh._ws.onmessage = function(evt) {
                     var msg = JSON.parse(evt.data),
                         reqid = msg.requestid;
 

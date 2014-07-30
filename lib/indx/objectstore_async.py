@@ -1843,7 +1843,7 @@ class ConnectionSharer:
         self.box = box
         self.store = store
         self.subscribers = {} # id -> IndxDiffListener object
-        self.indx_subscriber = self.listen()
+        self.indx_subscriber = self._listen()
 
     def getQueries(self):
         """ Get a set of all queries for all listeners.
@@ -1870,7 +1870,7 @@ class ConnectionSharer:
             return_d.callback([])
         return return_d
 
-    def listen(self):
+    def _listen(self):
         """ Start listening to INDX updates. """
 
         def observer(notify):
@@ -1883,7 +1883,7 @@ class ConnectionSharer:
                 logging.error("ConnectionSharer observer error from diff: {0} {1}".format(failure, failure.value))
 
             def diff_cb(data):
-                logging.debug("ConnectionSharer observer dispatching diff to {0} subscribers, diff: {1}".format(len(self.subscribers), data))
+                logging.debug("ConnectionSharer observer dispatching diff to {0} subscribers, diff: {1}, queryResults: {2}".format(len(self.subscribers), data, notify['queryResults']))
                 for f_id, listener in self.subscribers.items():
                     if listener.query and listener.query != "":
                         listener.observer(data, notify['queryResults'][listener.query])
