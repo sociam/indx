@@ -20,6 +20,7 @@ import json
 import cjson
 import traceback
 import StringIO
+import uuid
 from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
 import indx_pg2 as database
@@ -34,6 +35,7 @@ class IndxAsync:
         self.send_f = send_f # send messages function reference
         self.webserver = webserver
         self.clientip = clientip
+        self.listeners = {}
 
     def receive(self, frame):
         """ Send data here when it is received from the real transport. """
@@ -92,12 +94,17 @@ class IndxAsync:
                 logging.debug("Async got an echo request: {0}".format(data))
                 self.sendJSON(requestid, {}, "echo")
                 return
-            elif data.get('respond_to') == "login_keys":
-                # a response to our attempt to re-connect back to the client
-                logging.debug("Async got a respond to login_keys: {0}".format(data))
-                # TODO handle errors
-                self.sendJSON(requestid, {"action": "diff", "operation": "start"}, "login_keys") 
-                return
+            elif data.get("action") == "response":
+                if data.get('respond_to') == "login_keys":
+                    # a response to our attempt to re-connect back to the client
+                    logging.debug("Async got a respond to login_keys: {0}".format(data))
+                    # TODO handle errors
+                    self.sendJSON(requestid, {"action": "diff", "operation": "start"}, "login_keys") 
+                    return
+                else:
+                    respond_to = data.get("respond_to") # could be None
+                    self.send400(requestid, data.get("action"), data = {"error": "'respond_to' value of '{0}' is unknown for action 'response'.".format(respond_to)})
+                    return
             elif data['action'] == "auth":
 
                 def token_cb(token):
@@ -174,8 +181,11 @@ class IndxAsync:
                     return self.send400(requestid, "diff", data = {"error": "'token' required for diff"})
 
                 diffid = data.get("diffid")
-                if diffid is None:
+                if diffid is None and data.get("operation") != 'start': # only 'start' is allowed to not have a diffid
                     return self.send400(requestid, "diff", data = {"error": "'diffid' required for diff"})
+                elif diffid not in self.listeners:
+                    return self.send400(requestid, "diff", data = {"error": "Existing diff with diffid '{0}' does not exist".format(diffid)})
+
 
                 def diffok_cb(operation):
                     logging.debug("WebSocketsHandler diff action response: {0}".format(operation))
@@ -186,23 +196,82 @@ class IndxAsync:
                     failure.trap(Exception)
                     self.send400(requestid, "diff", data = {"error": "{0}".format(failure.value)})
 
-                if data['operation'] == "start":
-                    self.listen_diff(requestid, token, diffid).addCallbacks(lambda empty: diffok_cb("start"), diff_err_cb)
-                    return
-                elif data['operation'] == "stop":
-                    self.stop_diff(requestid, token, diffid).addCallbacks(lambda empty: diffok_cb("stop"), diff_err_cb)
-                    return
+                try:
+                    operation = data.get("operation").lower()
+                except Exception as e:
+                    return self.send400(requestid, "diff", data = {"error": "no valid 'operation' found."})
+
+
+                # check that the 'ids' field is present and an array - sends a 400 back if not
+                def check_ids():
+                    if not data.get("ids") or type(data.get("ids")) != type([]):
+                        self.send400(requestid, "diff", data = {"error": "This action and operation requires an 'ids' field as an array of object IDs."})
+                        return False
+                    return True
+
+                # operation functions
+                def op_start():
+                    diffid = "{0}".format(uuid.uuid1()) # generate new diffid
+
+                    def store_cb(store):
+                        self.listeners[diffid] = IndxDiffListener(store, requestid, diffid, self.sendJSON)
+                        self.listeners[diffid].subscribe()
+                        self.send200(requestid, "diff", data = {"diffid": diffid, "respond_to": "diff/{0}".format(operation)})
+
+                    self.get_store_from_tokenid(token).addCallbacks(store_cb, diff_err_cb)
+
+                def op_stop():
+                    self.listeners[diffid].unsubscribe()
+                    del self.listeners[diffid]
+                    self.send200(requestid, "diff", data = {"diffid": diffid, "respond_to": "diff/{0}".format(operation)})
+
+                def op_addids():
+                    if not check_ids():
+                        return
+
+                    self.listeners[diffid].addIDs(data.get("ids"))
+                    self.send200(requestid, "diff", data = {"diffid": diffid, "respond_to": "diff/{0}".format(operation)})
+
+                def op_setids():
+                    if not check_ids():
+                        return
+
+                    self.listeners[diffid].setIDs(data.get("ids"))
+                    self.send200(requestid, "diff", data = {"diffid": diffid, "respond_to": "diff/{0}".format(operation)})
+                
+                def op_removeids():
+                    if not check_ids():
+                        return
+
+                    self.listeners[diffid].removeIDs(data.get("ids"))
+                    self.send200(requestid, "diff", data = {"diffid": diffid, "respond_to": "diff/{0}".format(operation)})
+
+                def op_setquery():
+                    if not data.get("query") or type(data.get("query")) != type(""):
+                        return self.send400(requestid, "diff", data = {"error": "This action and operation requires a string 'query' field."})
+
+                    self.listeners[diffid].setQuery(data.get("query"))
+                    self.send200(requestid, "diff", data = {"diffid": diffid, "respond_to": "diff/{0}".format(operation)})
+
+                ops = {
+                    "start": op_start,
+                    "stop": op_stop,
+                    "addids": op_addids,
+                    "setids": op_setids,
+                    "removeids": op_removeids,
+                    "setquery": op_setquery,
+                }
+
+                if operation in ops:
+                    return ops[operation]()
                 else:
-                    self.send400(requestid, "diff", data = {"error": "no valid 'operation' found."})
-                    return
+                    return self.send400(requestid, "diff", data = {"error": "no valid 'operation' found."})
             else:
                 action = data.get("action") # could be None
-                self.send400(requestid, action, data = {"error": "'action' value of '{0}' is unknown".format(action)})
-                return
+                return self.send400(requestid, action, data = {"error": "'action' value of '{0}' is unknown".format(action)})
         except Exception as e:
             logging.error("WebSocketsHandler frameRecevied, error: {0},\n trace: {1}".format(e, traceback.format_exc()))
-            self.send500(requestid, data.get("action"))
-            return
+            return self.send500(requestid, data.get("action"))
 
     def connectBackToClient(self, public_key_hash, store):
         """ Try to connect back through this websocket to the other side. """ 
@@ -292,25 +361,8 @@ class IndxAsync:
         self.tokens = {} # tokenid -> token object
         self.send200(None, "connect", data = {})
 
-    def listen_diff(self, requestid, tokenid, diffid):
+    def get_store_from_tokenid(self, tokenid):
         return_d = Deferred()
-
-        def store_cb(store):
-            logging.debug("WebSocketsHandler listen_diff, store_cb: {0}".format(store))
-
-            def observer_local(diff):
-                """ Receive an update from the server. """
-                logging.debug("WebSocketsHandler listen_diff observer notified: {0}".format(diff))
-                self.sendJSON(requestid, {"action": "diff", "diffid": diffid, "operation": "update", "data": diff}, "diff")
-
-            try:
-                store.listen(observer_local, f_id = diffid) # no callbacks, nothing to do
-            except Exception as e:
-                logging.error("WebSocketsHandler listen_diff error listening to store: {0}".format(e))
-                return_d.errback(Failure(e))
-                return
-
-            return_d.callback(True) # much success
 
         token = self.tokens.get(tokenid)
 
@@ -318,33 +370,48 @@ class IndxAsync:
             return_d.errback(Failure(Exception("token invalid (it must be authed successfully to this websocket to use it here)")))
             return return_d
 
-        token.get_store().addCallbacks(store_cb, return_d.errback)
+        token.get_store().addCallbacks(return_d.callback, return_d.errback)
         return return_d
 
-    def stop_diff(self, requestid, tokenid, diffid):
-        """ Unsubscribe a diff, by ID. """
-        return_d = Deferred()
-
-        def store_cb(store):
-            logging.debug("WebSocketsHandler stop_diff, store_cb: {0}".format(store))
-
-            try:
-                store.unlisten(None, f_id = diffid) # no callbacks, nothing to do
-            except Exception as e:
-                logging.error("WebSocketsHandler listen_diff error listening to store: {0}".format(e))
-                return_d.errback(Failure(e))
-                return
-
-            return_d.callback(True) # much success
-
-        token = self.tokens.get(tokenid)
-
-        if token is None:
-            return_d.errback(Failure(Exception("token invalid (it must be authed successfully to this websocket to use it here)")))
-            return return_d
-
-        token.get_store().addCallbacks(store_cb, return_d.errback)
-        return return_d
+#    def listen_diff(self, requestid, tokenid, diffid):
+#        return_d = Deferred()
+#
+#        def store_cb(store):
+#            logging.debug("WebSocketsHandler listen_diff, store_cb: {0}".format(store))
+#
+#            def observer_local(diff):
+#                """ Receive an update from the server. """
+#                logging.debug("WebSocketsHandler listen_diff observer notified: {0}".format(diff))
+#                self.sendJSON(requestid, {"action": "diff", "diffid": diffid, "operation": "update", "data": diff}, "diff")
+#
+#            try:
+#                store.listen(observer_local, diffid) # no callbacks, nothing to do
+#            except Exception as e:
+#                logging.error("WebSocketsHandler listen_diff error listening to store: {0}".format(e))
+#                return return_d.errback(Failure(e))
+#
+#            return_d.callback(True) # much success
+#
+#        self.get_store_from_tokenid(tokenid).addCallbacks(store_cb, return_d.errback)
+#        return return_d
+#
+#    def stop_diff(self, requestid, tokenid, diffid):
+#        """ Unsubscribe a diff, by ID. """
+#        return_d = Deferred()
+#
+#        def store_cb(store):
+#            logging.debug("WebSocketsHandler stop_diff, store_cb: {0}".format(store))
+#
+#            try:
+#                store.unlisten(diffid) # no callbacks, nothing to do
+#            except Exception as e:
+#                logging.error("WebSocketsHandler listen_diff error listening to store: {0}".format(e))
+#                return return_d.errback(Failure(e))
+#
+#            return_d.callback(True) # much success
+#
+#        self.get_store_from_tokenid(tokenid).addCallbacks(store_cb, return_d.errback)
+#        return return_d
 
 
 
@@ -388,5 +455,44 @@ class IndxAsync:
         if data is not None:
             out.update(data)
         self.sendJSON(requestid, out, respond_to)
+
+
+class IndxDiffListener:
+    """ Listens for diffs from the store, filters them and sends frames back to the client.
+    """
+
+    def __init__(self, store, requestid, diffid, sendJSON):
+        self.store = store
+        self.requestid = requestid
+        self.diffid = diffid
+        self.sendJSON = sendJSON # function reference to send JSON down the right websocket
+
+        self.ids = set() # limit to these IDs only
+        self.query = None # limit to objects that match this query only
+
+    def subscribe(self):
+
+        def observer(diff):
+            self.sendJSON(self.requestid, {"action": "diff", "diffid": self.diffid, "operation": "update", "data": diff}, "diff")
+
+        self.store.subscribe(observer, self.diffid)
+
+    def unsubscribe(self):
+        self.store.unsubscribe(self.diffid)
+
+    def addIDs(self, ids):
+        map(lambda id: self.ids.add(id), ids)
+
+    def removeIDs(self, ids):
+        map(lambda id: self.ids.remove(id), ids)
+
+    def setIDs(self, ids):
+        self.ids = ids
+
+    def setQuery(self, query):
+        if query != "":
+            self.query = query
+        else:
+            self.query = None
 
 

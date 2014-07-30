@@ -28,8 +28,6 @@ from indx.objectstore_types import Graph, Literal, Resource
 from indx.object_commit import ObjectCommit
 from indx.reactor import IndxSubscriber
 
-RAW_LISTENERS = {} # one connection per box to listen to updates
-
 class ObjectStoreAsync:
     """ Stores objects in a database, handling import, export and versioning.
     """
@@ -47,6 +45,7 @@ class ObjectStoreAsync:
         self.loggerClass = logging
         self.loggerExtra = {}
         self.server_id = server_id
+        self.connection_sharer = ConnectionSharer(self.indx_reactor, self.boxid, self)
 
     def schema_upgrade(self):
         """ Perform INDX schema upgrades.
@@ -200,45 +199,18 @@ class ObjectStoreAsync:
 
         return result_d
 
-    def unlisten(self, observer, f_id = None):
+    def unlisten(self, f_id):
         """ Stop listening to updates to the box by this observer. """
-        logging.debug("Objectstore unlisten.")
-        RAW_LISTENERS[self.boxid].unsubscribe(observer, f_id = f_id)
+        logging.debug("Objectstore unlisten to {0}".format(f_id))
+        return self.connection_sharer.unsubscribe(f_id)
 
-
-    def listen(self, observer, f_id = None):
+    def listen(self, observer, f_id):
         """ Listen for updates to the box, and send callbacks when they occur.
         
             observer -- Function that is called when there is a notification.
         """
-        logging.debug("Objectstore listen")
-
-        sharer = ConnectionSharer(self.indx_reactor, self.boxid, self)
-        sharer.subscribe(observer, f_id = f_id)
-
-#        if self.boxid in RAW_LISTENERS:
-#            RAW_LISTENERS[self.boxid].subscribe(observer, f_id = f_id)
-#        else:
-#            """ We create box in RAW_LISTENERS immediately to try to avoid a race condition in the 'if' above.
-#                This means we have to add the store via a function call, rather than through the constructor.
-#                This is because the store is created through a callback, so there is a delay.
-#                It works out OK because subscribers will always be added to the list at the point of
-#                subscription, but they only receive notifications when the notification connection has been established.
-#            """
-#            RAW_LISTENERS[self.boxid] = ConnectionSharer(self.indx_reactor, self.boxid, self)
-#            RAW_LISTENERS[self.boxid].subscribe(observer, f_id = f_id)
-#
-#            def err_cb(failure):
-#                logging.error("Token: subscribe, error on getting raw store: {0}".format(failure))
-#                failure.trap(Exception)
-#                raise failure.value # TODO check that exceptions are OK - I assume so becaus this function doesn't return a Deferred
-#
-#            def raw_conn_cb(conn):
-#                logging.debug("Objectstore listen, raw_conn_cb")
-#                RAW_LISTENERS[self.boxid].add_conn(conn)
-#            
-#            self.conns['conn']().addCallbacks(raw_conn_cb, err_cb)
-
+        logging.debug("Objectstore listen to {0}".format(f_id))
+        return self.connection_sharer.subscribe(observer, f_id)
 
     def query(self, q, predicate_filter = None, render_json = True, depth = 0):
         """ Perform a query and return results.
@@ -1835,21 +1807,11 @@ class ConnectionSharer:
 
         self.listen()
 
-#    def add_conn(self, conn):
-#        """ A connection has been connected, so we can start listening.
-#            conn -- A raw connection using a non-pooled connection to the box (that supports adding an observer)
-#        """
-#        self.conn = conn
-#        self.listen()
-
-    def unsubscribe(self, observer, f_id = None):
+    def unsubscribe(self, f_id):
         """ Unsubscribe this observer to this box's updates. """
-        if f_id is None:
-            del self.subscribers[observer]
-        else:
-            del self.subscribers[f_id]
+        del self.subscribers[f_id]
 
-    def subscribe(self, observer, f_id = None):
+    def subscribe(self, observer, f_id):
         """ Subscribe to this box's updates.
 
         observer -- A function to call when an update occurs. Parameter sent is re-dispatched from the database.
@@ -1879,15 +1841,6 @@ class ConnectionSharer:
 
             self.store.diff(old_version, version, "diff").addCallbacks(diff_cb, err_cb)
 
-#        def err_cb(failure):
-#            logging.error("ConnectionSharer listen, err_cb, failure: {0}".format(failure))
-#
-#        def done_cb(val):
-#            logging.debug("ConnectionSharer listen, done_cb, val: {0}".format(val))
-
         subscriber = IndxSubscriber({"type": "version_update", "box": self.box}, observer)
         self.indx_reactor.add_subscriber(subscriber)
-
-#        self.conn.addNotifyObserver(observer)
-#        self.conn.runOperation("LISTEN wb_new_version").addCallbacks(done_cb, err_cb)
 

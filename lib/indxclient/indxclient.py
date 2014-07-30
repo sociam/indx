@@ -572,7 +572,7 @@ class IndxWebSocketClient:
                         logging.error("IndxClient/ASync login_keys error getting all parameters.")
                         return self.sendMessage(json.loads({"success": False, "error": "400 Bad Request"}))
 
-                    def win(resp):
+                    def win(resp, data):
                         # authenticated now - state of this isn't saved though, we get a token immediately instead
 
 
@@ -591,7 +591,12 @@ class IndxWebSocketClient:
 
                                 def store_cb(store):
                                     # success, send token back to user
-                                    return self.sendMessage(json.loads({"success": True, "token": new_token.id, "respond_to": "login_keys"}))
+                                    msg = {"action": "response", "success": True, "token": new_token.id, "respond_to": "login_keys"}
+
+                                    if data.get("requestid"):
+                                        msg['requestid'] = data.get("requestid")
+
+                                    return self.sendMessage(json.loads(msg))
 
                                 new_token.get_store().addCallbacks(store_cb, lambda failure: json.loads({"success": False, "error": "500 Internal Server Error"}))
 
@@ -604,7 +609,7 @@ class IndxWebSocketClient:
                     def fail(empty):
                         self.sendMessage(json.loads({"success": False, "error": "401 Unauthorized"}))
 
-                    auth_keys(keystore, signature, key_hash, algo, method, self.sessionid, encpk2).addCallbacks(win, fail)
+                    auth_keys(keystore, signature, key_hash, algo, method, self.sessionid, encpk2).addCallbacks(lambda resp: win(resp, data), fail)
                     
 
 
