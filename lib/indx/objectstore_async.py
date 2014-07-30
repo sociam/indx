@@ -210,7 +210,7 @@ class ObjectStoreAsync:
             observer -- Function that is called when there is a notification.
         """
         logging.debug("Objectstore listen to {0}".format(f_id))
-        return self.connection_sharer.subscribe(observer, f_id)
+        return self.connection_sharer.subscribe(observer, f_id) # returns a deferred
 
     def query(self, q, predicate_filter = None, render_json = True, depth = 0):
         """ Perform a query and return results.
@@ -1803,20 +1803,34 @@ class ConnectionSharer:
         self.indx_reactor = indx_reactor
         self.box = box
         self.store = store
-        self.subscribers = {}
+        self.subscribers = {} # id -> (observer, query)
+        self.indx_subscriber = self.listen()
 
-        self.listen()
+    def runQuery(self, query):
+        """ Runs the query on the existing store and returns the IDs that match it. """
+        return_d = Deferred()
+
+        def query_cb(graph):
+            ids = graph.get_objectids()
+            return_d.callback(ids)
+
+        self.store.query(query, render_json=False, depth=0).addCallbacks(query_cb, return_d.errback)
+        return return_d
 
     def unsubscribe(self, f_id):
         """ Unsubscribe this observer to this box's updates. """
         del self.subscribers[f_id]
 
-    def subscribe(self, observer, f_id):
+    def subscribe(self, observer, f_id, query):
         """ Subscribe to this box's updates.
 
         observer -- A function to call when an update occurs. Parameter sent is re-dispatched from the database.
         """
-        self.subscribers[f_id] = observer
+        return_d = Deferred()
+        self.subscribers[f_id] = (observer, query)
+        self.runQuery(query).addCallbacks(return_d.callback, return_d.errback)
+        return return_d
+
 
     def listen(self):
         """ Start listening to INDX updates. """
@@ -1833,7 +1847,8 @@ class ConnectionSharer:
             def diff_cb(data):
                 logging.debug("ConnectionSharer observer dispatching diff to {0} subscribers, diff: {1}".format(len(self.subscribers), data))
 
-                for f_id, observer in self.subscribers.items():
+                for f_id, val in self.subscribers.items():
+                    observer, query = val
                     observer(data)
 
             version = int(notify['version'])
@@ -1841,6 +1856,7 @@ class ConnectionSharer:
 
             self.store.diff(old_version, version, "diff").addCallbacks(diff_cb, err_cb)
 
-        subscriber = IndxSubscriber({"type": "version_update", "box": self.box}, observer)
-        self.indx_reactor.add_subscriber(subscriber)
+        indx_subscriber = IndxSubscriber({"type": "version_update", "box": self.box}, observer)
+        self.indx_reactor.add_subscriber(indx_subscriber)
+        return indx_subscriber
 

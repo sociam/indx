@@ -215,8 +215,7 @@ class IndxAsync:
 
                     def store_cb(store):
                         self.listeners[diffid] = IndxDiffListener(store, requestid, diffid, self.sendJSON)
-                        self.listeners[diffid].subscribe()
-                        self.send200(requestid, "diff", data = {"diffid": diffid, "respond_to": "diff/{0}".format(operation)})
+                        self.listeners[diffid].subscribe().addCallbacks(diffok_cb, diff_err_cb)
 
                     self.get_store_from_tokenid(token).addCallbacks(store_cb, diff_err_cb)
 
@@ -469,16 +468,33 @@ class IndxDiffListener:
 
         self.ids = set() # limit to these IDs only
         self.query = None # limit to objects that match this query only
+        self.previousIds = None # ids that match the query at the previous version
+
+        def ids_cb(ids):
+            self.previousIds = ids
+
+        def err_cb(failure):
+            failure.trap(Exception)
+            logging.error("Exception while querying store in IndxDifflistener: {0}".format(failure))
+
+        self.runQuery.addCallbacks(ids_cb, err_cb)
 
     def subscribe(self):
-
         def observer(diff):
             self.sendJSON(self.requestid, {"action": "diff", "diffid": self.diffid, "operation": "update", "data": diff}, "diff")
+        
+        def err_cb(failure):
+            failure.trap(Exception)
+            logging.error("Exception while querying store in IndxDifflistener: {0}".format(failure))
 
-        self.store.subscribe(observer, self.diffid)
+        def subscribe_cb(ids):
+            """ Returns the IDs in the query at this version. """
+            self.previousIDs = ids
+
+        self.store.listen(observer, self.diffid, self.query).addCallbacks(subscribe_cb, err_cb)
 
     def unsubscribe(self):
-        self.store.unsubscribe(self.diffid)
+        self.store.unlisten(self.diffid)
 
     def addIDs(self, ids):
         map(lambda id: self.ids.add(id), ids)
@@ -494,5 +510,16 @@ class IndxDiffListener:
             self.query = query
         else:
             self.query = None
+
+    def runQuery(self):
+        """ Runs the query on the existing store. """
+        return_d = Deferred()
+
+        def query_cb(graph):
+            ids = graph.get_objectids()
+            return_d.callback(ids)
+
+        self.store.query(self.query, render_json=False, depth=0).addCallbacks(query_cb, return_d.errback)
+        return return_d
 
 
