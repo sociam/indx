@@ -298,6 +298,8 @@ class BoxHandler(BaseHandler):
 
         try:
             req_username = self.get_arg(request, "target_username") # username of the user of which to change the ACL
+            if req_username is None:
+                raise Exception("")
         except Exception as e:
             try:
                 req_public = self.get_arg(request, "unauth_user")
