@@ -15,13 +15,16 @@
   <div ng-if="userLoggedIn" class="container">
     <h1>diff test</h1>
 
+    <div class="btn btn-default" ng-if='blitz.enabled' ng-click="blitz.enabled=false">Stop blitz</div>
+    <div class="btn btn-default" ng-if='!blitz.enabled' ng-click="blitz.enabled=true">Start blitz</div>
+
     <h2>diffs by box</h2>
     <ul>
       <li ng-repeat="(k,v) in diffs">
         <h3>{{ k }}</h3>
         <ul>
           <li ng-repeat="(o,i) in v">
-            {{ o }}
+            {{ o }} - <span ng-repeat='p in i'> {{ p }} </span>
           </li>
         </ul>
       </li>

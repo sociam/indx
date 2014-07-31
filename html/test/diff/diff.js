@@ -40,23 +40,20 @@ angular.module('test',['indx'])
 		$scope.jsondiffs = [];
 		$scope.rawdiffs = [];
 		$scope.diffs = {};
+		$scope.blitz = {};
 
 		getAllBoxes().then(function(boxes) { 
 			sa(function() { $scope.boxes = boxes; });
 			boxes.map(function(b) { 
 				$scope.diffs[b.id] = {};
 				b.on('diff', function(data) { 
-					console.log('DIFF!!! >> ', data);
 					sa(function() { 
 						$scope.rawdiffs.push(data);
 						$scope.jsondiffs.push(JSON.stringify(data));
 						if (data.data) { 
-							console.log('data data!', data.data);
 							_(data.data).map(function(objs,kadc) {
-								console.log('kadc ', kadc);
 								if (objs) {
 									_(objs).map(function(obj, oid) { 
-										console.log('cid ', oid);
 										$scope.diffs[b.id][oid] = $scope.diffs[b.id][oid] || [];
 										$scope.diffs[b.id][oid].push(obj);
 									});
@@ -68,12 +65,14 @@ angular.module('test',['indx'])
 			});
 			console.log('boxes >> ', boxes);
 			setInterval(function() { 
-				var oid = 'difftest' + u.guid(8);
-				boxes[0].obj(oid).set({test:'hello'}).save().then(function(o) { 
-					console.log('obj ', o);
-					console.log('made a thing in ', boxes[0], o);
-				});
-			}, 3000);			
+				if ($scope.blitz.enabled) { 
+					var oid = 'difftest' + u.guid(8);
+					boxes[0].obj(oid).set({test:'hello'}).save().then(function(o) { 
+						console.log('obj ', o);
+						console.log('made a thing in ', boxes[0], o);
+					});
+				}
+			}, 400);			
 		});
 		console.log('ready ');
 		window.store = store;
