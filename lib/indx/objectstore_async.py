@@ -88,6 +88,8 @@ class ObjectStoreAsync:
 
                                 next_version = schemas['store-updates']['versions'][next_version]['next-version']
 
+                            sql_total.append("GRANT SELECT ON ALL TABLES IN SCHEMA public TO %s" % ("ix_" + self.boxid + "_ro"))
+
                             logging.debug("Objectstore schema_upgrade saving last_version as {0}".format(last_version))
                             indx_sql_total.append("DELETE FROM tbl_indx_core WHERE key = 'box_last_schema_version' AND boxid = '" + self.boxid + "';")
                             indx_sql_total.append("INSERT INTO tbl_indx_core (key, value, boxid) VALUES ('box_last_schema_version', '" + last_version + "', '" + self.boxid + "');")

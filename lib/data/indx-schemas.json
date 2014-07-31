@@ -848,9 +848,15 @@
                 ]
             },
             "20140509-MULTIPLE_VERSION_UPDATES": {
-                "next-version": "",
+                "next-version": "20140731-CODE_BUMP",
                 "sql": [
                     "ALTER TABLE wb_versions DROP CONSTRAINT pk_version;"
+                ]
+            },
+            "20140731-CODE_BUMP": {
+                "next-version": "",
+                "sql": [
+                    "SELECT 1 as one;"
                 ]
             }
         }
