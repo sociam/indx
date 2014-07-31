@@ -30,6 +30,7 @@ var makeTestChannels = function(box) {
     test_channels.push({
         name:'foafiser',
         query: { type:'Person' },
+        destbox:'foafs',
         transform: function(pobj) {
             var foafag = {};
             foafag[rdf+'type'] = foafns+'Agent';
