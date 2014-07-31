@@ -9,8 +9,10 @@ angular.module('test',['indx'])
 			guid = u.guid();
 
 		$scope.channels = [];
+		$scope.people = [];
 		$scope.test = {};
-		$scope.boxes = channels.getAllBoxes().then(function(boxes) { 
+		channels.getAllBoxes().then(function(boxes) { 
+			$scope.boxes = boxes;
 			console.log("!!!!!!!!!!!!! GET ALL BOXES CONT >>>>>>>>>>>>>> ", boxes);
 			sa(function() { 
 				console.log('boxes >> ', boxes, boxes.map(function(bb) { return bb.id; }));
@@ -26,8 +28,6 @@ angular.module('test',['indx'])
 				});
 			});
 		};
-
-
 		$scope.defineTests = function() { 
 			var d = u.deferred();
 			u.when(channels.getTestDefs().map(function(td) { 
@@ -39,6 +39,16 @@ angular.module('test',['indx'])
 			})).then(function() { 
 				console.log('all defined');
 				loadChannels();
+			});
+		};
+
+		$scope.createPerson = function(boxname) {
+			var box = $scope.boxes.filter(function(x) { return x.id === boxname; })[0],
+				uid = 'test-person-'+u.guid();
+			console.log('saving in box ', box, uid);
+			box.obj(uid).set({ given_name:'Fred'+u.guid(4).toLowerCase(), surname: 'Smith'+u.guid(6).toLowerCase(), type:"Person", age:Math.random()*100 }).save().then(function(x) { 
+				console.log('!!!!!!!!!!!!!! done creating ', x); 
+				sa(function() { $scope.people.push(x);  });
 			});
 		};
 
