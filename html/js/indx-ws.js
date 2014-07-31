@@ -11,6 +11,12 @@ angular.module('indx')
 			diff: function(requestid, token, diffid) { 
 				return JSON.stringify({requestid:requestid,action:'diff',operation:"start",token:token,diffid:diffid}); 
 			},
+			subscribe_diff_query:function(requestid, token, query) { 
+				return JSON.stringify({requestid:requestid,action:'diff',operation:"start",token:token,query:query}); 
+			},
+			unsubscribe_diff_query:function(requestid, diffid) { 
+				return JSON.stringify({requestid:requestid,action:'diff',operation:"stop",diffid:diffid});
+			},
 			http: function(requestid, method, path, data) { 
 				var toArrayVals = function(obj) {
 					var out = {};
@@ -44,7 +50,6 @@ angular.module('indx')
 				});
 			}
 		};
-
 		var withoutProtocol=function(url) {
 			if (url.indexOf('//') >= 0) {
 				return url.slice(url.indexOf('//')+2);
@@ -68,7 +73,8 @@ angular.module('indx')
 					wsURL = [protocol,withoutProtocol(server_host),'ws'].join('/'),
 					ws = new WebSocket(wsURL);
 
-				this.box = box; this.store = store;
+				this.box = box; 
+				this.store = store;
 				this._ws = ws;
 				this.requests = {}; // by requestid
 				this.diffs = {}; // by diffid
@@ -186,6 +192,10 @@ angular.module('indx')
 			_ws_auth : function() {
 				var token = this.box._getCachedToken() || this.box._getStoredToken(), 
 					rid = this._genid(), this_ = this, d = u.deferred();
+				if (token === undefined) {
+					// no token, so reject immediately.
+					return u.dreject('token undefined'); 
+				}
 				console.info('attempting auth with token ', token);
 				this.addRequest(rid, WS_MESSAGES_SEND.auth(rid, token)).then(function() { 
 					console.log('auth successful');	d.resolve();
@@ -219,6 +229,43 @@ angular.module('indx')
 					}
 				}).fail(function(err) { console.error('diff start error ', err); d.reject(); });
 				return d.promise();
+			},
+			subscribeDiffQuery:function(query, callback) {
+				var rid = this._genid(),
+					token = this.box._getCachedToken() || this.box._getStoredToken(),
+				    box = this.box,
+				    d = u.deferred(),
+				    diffhandlers = this.diffs;
+
+				this.addRequest(rid, WS_MESSAGES_SEND.subscribe_diff_query(rid, token, query)).then(function(pdata) { 
+					var diffid = pdata.diffid, success = pdata.success;
+					if (success) {
+						diffhandlers[diffid] = function(diffdata) {
+							console.info('diff queryhandler for [', box.id, '] data >> ', diffdata, query);
+							callback(diffdata);
+						};
+						d.resolve(diffid);
+					} else {
+						d.reject('failure adding query', pdata);
+					}
+				}).fail(d.reject);
+				return d.promise();
+			},
+			unsubscribeDiffQuery:function(diffid) { 
+				var d = u.deferred(), 
+					diffhandlers = this.diffs, 
+					rid = this._genid();
+				this.addRequest(rid, WS_MESSAGES_SEND.unsubscribe_diff_query(rid, diffid)).then(function(pdata) { 
+					var success = pdata.success;
+					if (success) { 
+						console.log('success unsusbcribing to query ', diffid); 
+						delete diffhandlers[diffid];
+						d.resolve();
+						return;
+					}
+					d.reject();
+				});
+				return d.promise();				
 			},
 			close: function() { 
 				var ws = this._ws;		

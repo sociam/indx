@@ -8,7 +8,8 @@
 
 angular.module('indx').factory('channels', function(client, utils)  {
 
-    var u = utils;
+    var u = utils,
+        store = client.store;
 
     var testChannelDefs = function(box) { 
         var test_channels = [];
@@ -30,14 +31,29 @@ angular.module('indx').factory('channels', function(client, utils)  {
         });
         return test_channels;
     };
+    var defineChannel = function(id, box, definition) { 
+        var d = u.deferred();
+        box.getObj(id).then(function(x) { 
+            x.set({
+                type:'IndxChannel',
+                name: definition.name,
+                query: JSON.stringify(definition.query),
+                destbox: definition.destbox,
+                transform : definition.transform.toString()
+            });
+            x.save().then(d.resolve).fail(d.reject);
+        });
+        return d.promise();
+    };
 
     // in-memory representation
     var Channel = Backbone.Model.extend({ 
         initialize:function(params) {
             // takes in params { obj: object }
             var obj = this.obj = params.obj, 
-                transformsrc = obj.peek('trasnform'), 
-                querysrc = obj.peek('query'),
+                transformsrc = this.transformsrc = obj.peek('transform'), 
+                querysrc = this.querysrc = obj.peek('query'),
+                name = this.name = obj.peek('name'),
                 destbox = obj.peek('destbox'),
                 boxd = u.deferred(),
                 readyd = this.readyd = u.deferred(),
@@ -47,7 +63,8 @@ angular.module('indx').factory('channels', function(client, utils)  {
             this.resultds = {};
 
             if (transformsrc !== undefined) { 
-                this.transform = eval(transformsrc);  
+                console.info('transformsrc ', transformsrc);
+                this.transform = eval("("+transformsrc+")");  
             } else {
                 console.warn('no transform fn specified ', obj);                 
             }
@@ -73,32 +90,30 @@ angular.module('indx').factory('channels', function(client, utils)  {
             var startd = u.deferred(), this_ = this;
             if (this.livequery) {  this.livequery.stop();  }
             this.readyd.then(function() { 
-                this_.livequery = this_.srcbox.streamQuery(this_.query, function(result) { 
-                    var resultd = this_.make_resultd(result.id);
+                this_.livequery = this_.srcbox.standingQuery(this_.query, function(result) { 
+                    // callback for new result
+                    this_.trigger('incoming', result);
+                    console.log('new standing query result >> ', result);
+                    var resultd = this_._make_resultd(result.id);
                     this_._handleResult(result).then(function(tresult) { 
                         this_.publish(tresult)
                             .then(resultd.resolve)
                             .fail(function(err) {  console.error('failure publishing ', result); resultd.reject(err) ; });
                     }).fail(function(err) { console.error('failure transforming ', result); resultd.reject(err); });
-                });
+                }).then(function(livequery) { 
+                    this_.livequery = livequery;
+                }).fail(function(err) { console.error('error starting standingQuery ... ', err); startd.reject(); });
             }).fail(startd.reject);
             return startd.promise();
         },
         _make_resultd: function(oid) { 
             var d = u.deferred();
-            d.then(function() { console.info('successful publishing ', oid); })
-                 .fail(function(err) { console.err('error publishing ', oid); })
+            d.then(function() { console.info('successful publishing ', oid); }).fail(function(err) { console.err('error publishing ', oid); });
             return d;
         },
         _handleResult: function(result) {
             // gets called on live query result
-            var transformed = this.transform(result);
-            var d = u.deferred();
-            if (transformed !== undefined) {
-                var toid = transformed.id  || (transformed.getID && transformed.getID()) || u.guid();
-                this.destbox.obj(toid).set(transformed).save().then(d.resolve).fail(d.reject);
-            }
-            return d.promise;
+            return u.dresolve(this.transform(result));
         },
         stop:function() {
             if (this.livequery) { this.livequery.stop(); }
@@ -110,19 +125,24 @@ angular.module('indx').factory('channels', function(client, utils)  {
             );
             return this.obj.save();
         },
-        publish:function(tresult) { 
+        publish:function(transformed) {
             // can be overridden to ... 
             //   1. add to persistent queue for something
             //   2. POST it to a destination ..
             //   3. whatever you want!
-            console.log('publishing >> ', tresult);
-            return u.dresolve(tresult);            
+            console.log('publishing >> ', transformed);
+            var d = u.deferred();
+            if (transformed !== undefined) {
+                var toid = transformed.id  || (transformed.getID && transformed.getID()) || u.guid();
+                this.destbox.obj(toid).set(transformed).save().then(d.resolve).fail(d.reject);
+            }
+            return d.promise;
         }
     });
 
     var getAllBoxes = function() {
         // select only the boxes that we have read perms on
-        var store = this.store, D = u.deferred();
+        var D = u.deferred();
         store.getBoxList().then(function(boxlist) {
             u.when(boxlist.map(function(bid) { 
                 var d = u.deferred();
@@ -136,7 +156,8 @@ angular.module('indx').factory('channels', function(client, utils)  {
 
     return {
         Channel:Channel,
-        getTestChannelDefs:testChannelDefs,
+        getTestDefs:testChannelDefs,
+        getAllBoxes:getAllBoxes,
         getChannels:function() { 
             // gets all channels from all boxes you have connections to
             var d = u.deferred();
@@ -152,7 +173,8 @@ angular.module('indx').factory('channels', function(client, utils)  {
                 }).fail(d.reject);
             }).fail(d.reject);
             return d.promise();
-        }
+        },
+        define:defineChannel
     };
 
 });
