@@ -208,6 +208,13 @@ class IndxAsync:
 
                     def store_cb(store):
                         self.listeners[diffid] = IndxDiffListener(store, requestid, diffid, self.sendJSON)
+
+                        if data.get("ids"):
+                            self.listeners[diffid].setIDs(data.get("ids"))
+
+                        if data.get("query"):
+                            self.listeners[diffid].setQuery(data.get("query"))
+
                         self.listeners[diffid].subscribe().addCallbacks(started_cb, diff_err_cb)
 
                     self.get_store_from_tokenid(token).addCallbacks(store_cb, diff_err_cb)
