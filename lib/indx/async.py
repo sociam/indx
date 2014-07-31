@@ -110,26 +110,19 @@ class IndxAsync:
                 def token_cb(token):
                     try:    
                         if token is None:
-                            self.send401(requestid, "auth")
-                            return
-                        logging.debug("WebSocketsHandler Auth by Token {0} successful.".format(data['token']))
-                        self.tokens[data['token']] = token
-                        
-                        # also tell the webserver we just got a successful auth from an outside client via websocket
-                        # so it can try to connect back over this websocket.
-#                        self.webserver.
-
-                        self.send200(requestid, "auth")
-                        return
+                            return self.send401(requestid, "auth")
+                        logging.debug("WebSocketsHandler Auth by Token {0} successful.".format(data.get('token')))
+                        self.tokens[data.get('token')] = token
+                        return self.send200(requestid, "auth")
                     except Exception as e:
                         logging.error("WebSocketsHandler frameReceived, token error: {0}".format(e))
-                        self.send401(requestid, "auth")
-                        return
+                        return self.send401(requestid, "auth")
 
-                self.tokenkeeper.get(data['token']).addCallbacks(token_cb, err_cb)
-#            elif data['action'] == "get_session_id":
-#                self.send200(requestid, "auth", data = {'sessionid': self.sessionid})
-                return
+                if not "token" in data:
+                    return self.send400(requestid, data.get("action"), data={"error": "'token' must be specified for action 'auth'."})
+                else:
+                    return self.tokenkeeper.get(data.get('token')).addCallbacks(token_cb, err_cb)
+
             elif data['action'] == "login_keys":
                 if requestid is None:
                     return self.send400(requestid, "login_keys", data = {"error": "'requestid' required for action 'login_keys'"})
