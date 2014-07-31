@@ -343,7 +343,7 @@ class IndxUser:
 
                 elif not present:
                     # create a new db user for the unauth user
-                    self.db.create_user(UNAUTH_USERNAME, "", "unauth").addCallbacks(post_user_cb, return_d.errback)
+                    self.db.create_user(UNAUTH_USERNAME, "", "internal").addCallbacks(post_user_cb, return_d.errback)
                 else:
                     # continue without creating a user
                     post_user_cb(None)
