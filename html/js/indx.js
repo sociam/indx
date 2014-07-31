@@ -843,6 +843,20 @@ angular
 					}).fail(function(err) { error(err); d.reject(err); });
 				return d.promise();
 			},
+			standingQuery:function(queryPattern, callback) {
+				var this_ = this, d = u.deferred(), wsh = this.wsh;
+				this.query(queryPattern).then(function(results) { 
+					results.map(function(result) { callback(result); });
+					wsh.subscribeDiffQuery(queryPattern, callback).then(function(diffid) { 
+						console.info('standingQuery() got diffid >> ', diffid);
+						d.resolve({
+							diffid: function() { return diffid; },
+							stop:function() { wsh.unsubscribe_diff(diffid);	}
+						});
+					}).fail(d.reject);
+				}).fail(d.reject);
+				return d.promise();
+			},
 			countQuery:function(queryPattern) {
 				var d = u.deferred();
 				var k = _(queryPattern).keys()[0]; // select one key
@@ -859,7 +873,7 @@ angular
 			///TODO: object-level access control
 			///@then() : Success continuation when this has been set
 			///@fail({error object}) : Failure continuation
-			EVERYBODY:'__everybody__',
+			EVERYBODY:'##__everybody__##',
 			setACL:function(user,acl) {
 				var validKeys = ['read','write','owner','control'];
 				u.assert( _.isString(user), "User must be a string");
@@ -867,9 +881,11 @@ angular
 				_(acl).map(function(v,k) { u.assert(validKeys.indexOf(k) >= 0, "type " + k + " is not a valid acl type"); });
 				var perms = {read:false,write:false,owner:false,control:false};
 				_(perms).extend(acl);
-				var params = {acl:JSON.stringify(perms), 
+				var params = {
+					acl:JSON.stringify(perms), 
 					target_username: user !== this.EVERYBODY ? user : undefined, 
-					unauth_user:user === this.EVERYBODY};
+					unauth_user:user === this.EVERYBODY
+				};
 				return this._ajax("GET", [this.getID(), 'set_acl'].join('/'), params);
 			},
 			///@arg {string} user : ID of user to get access control list for
