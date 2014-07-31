@@ -17,6 +17,7 @@
 
 import logging, json, cjson
 import traceback
+from indx import UNAUTH_USERNAME
 from indx.webserver.handlers.base import BaseHandler
 from indx.objectstore_async import IncorrectPreviousVersionException, FileNotFoundException
 from indx.user import IndxUser
@@ -295,7 +296,18 @@ class BoxHandler(BaseHandler):
             BoxHandler.log(logging.ERROR, "Exception in box.set_acl decoding JSON in query, 'acl': {0}".format(e), extra = {"request": request, "token": token})
             return self.return_bad_request(request, "Specify acl as query string parameter 'acl' as valid JSON")
 
-        req_username = self.get_arg(request, "target_username") # username of the user of which to change the ACL
+        try:
+            req_username = self.get_arg(request, "target_username") # username of the user of which to change the ACL
+        except Exception as e:
+            try:
+                req_public = self.get_arg(request, "unauth_user")
+                if req_public:
+                    req_username = UNAUTH_USERNAME # use the magic reserved username in the DB for the unauth user permissions
+                else:
+                    return self.return_bad_request(request, "If 'target_username' is not specified, then 'unauth_user' must be set true.")
+            except Exception as e:
+                return self.return_bad_request(request, "If 'target_username' is not specified, then 'unauth_user' must be set true.")
+                
 
         def err_cb(failure):
             failure.trap(Exception)

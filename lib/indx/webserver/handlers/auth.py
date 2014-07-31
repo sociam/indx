@@ -22,6 +22,7 @@ from twisted.internet.defer import Deferred
 import json
 import urlparse
 import urllib
+from indx import UNAUTH_USERNAME
 from openid.store import memstore
 from openid.consumer import consumer
 from openid.oidutil import appendArgs
@@ -152,7 +153,7 @@ class AuthHandler(BaseHandler):
         # don't decode the user_metadata string, leave as a json string
         user.get_user_info(decode_json = False).addCallbacks(info_cb, lambda failure: self.return_internal_error(request))
 
-        
+
     def get_token_handler(self,request, token):
         ## 1. request contains appid & box being requested (?!)
         ## 2. check session is Authenticated, get username/password
@@ -165,7 +166,12 @@ class AuthHandler(BaseHandler):
             return self.return_bad_request(request)
 
         wbSession = self.get_session(request)
-        if not wbSession.is_authenticated:
+
+        username = wbSession.username or UNAUTH_USERNAME
+        password = wbSession.password
+        origin = self.get_origin(request)
+
+        if not wbSession.is_authenticated and username != UNAUTH_USERNAME:
             return self.return_unauthorized(request)
 
         # if this auth session is limited to a list of boxes, then only allow getting a token to them. 
@@ -173,9 +179,6 @@ class AuthHandler(BaseHandler):
         if limit_boxes is not None and boxid not in limit_boxes:
             return self.return_unauthorized(request)
 
-        username = wbSession.username
-        password = wbSession.password
-        origin = self.get_origin(request)
 
         def got_acct(acct):
             if acct == False:

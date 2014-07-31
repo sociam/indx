@@ -176,6 +176,7 @@ class IndxClient:
             'get_by_ids',
             'query',
             'set_acl',
+            'set_acl_public',
             'get_acls',
             'generate_new_key',
             'diff',
@@ -357,6 +358,17 @@ class IndxClient:
 
         url = "{0}/set_acl".format(self.base)
         return self.client.get(url, {'acl': acl, 'target_username': target_username})
+
+    @require_token
+    def set_acl_public(self, acl):
+        """ Set an ACL on a database for the public (not authed) user.
+
+            acl -- The ACL to set, must have "read", "write" and "control" fields, all boolean, e.g. {"read": true, "write": true, "control": false}
+        """
+        self._debug("Called API: set_acl_public with acl: {0}".format(acl))
+
+        url = "{0}/set_acl".format(self.base)
+        return self.client.get(url, {'acl': acl, 'unauth_user': True})
 
     @require_token
     def get_acls(self):
