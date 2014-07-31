@@ -859,14 +859,17 @@ angular
 			///TODO: object-level access control
 			///@then() : Success continuation when this has been set
 			///@fail({error object}) : Failure continuation
+			EVERYBODY:'__everybody__',
 			setACL:function(user,acl) {
 				var validKeys = ['read','write','owner','control'];
-				if (!user) { console.info('giving unauth user permissions '); }
-				u.assert(acl && _.isObject(acl), "acl must be an object with the following keys " + validKeys.join(', '));
+				u.assert( _.isString(user), "User must be a string");
+				acl = acl && _.isObject(acl) || {};
 				_(acl).map(function(v,k) { u.assert(validKeys.indexOf(k) >= 0, "type " + k + " is not a valid acl type"); });
 				var perms = {read:false,write:false,owner:false,control:false};
 				_(perms).extend(acl);
-				var params = {acl:JSON.stringify(perms), target_username: user || undefined, unauth_user:user === undefined};
+				var params = {acl:JSON.stringify(perms), 
+					target_username: user !== this.EVERYBODY ? user : undefined, 
+					unauth_user:user === this.EVERYBODY};
 				return this._ajax("GET", [this.getID(), 'set_acl'].join('/'), params);
 			},
 			///@arg {string} user : ID of user to get access control list for
