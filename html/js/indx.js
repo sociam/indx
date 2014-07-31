@@ -1351,7 +1351,7 @@ angular
 					d = u.deferred();
 				if (b.wsh) {
 					console.log('connected already! resolving straightaway --- ');
-					return u.dresolve(this); 
+					return u.dresolve(b); 
 				}
 				// get ws connected
 				b.wsh = new indxws.Handler({store: this, box:b});
