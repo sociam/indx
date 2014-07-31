@@ -852,7 +852,7 @@ angular
 				}).fail(d.reject);
 				return d.promise();
 			},
-			///@arg {string} user : ID of user to give access to
+			///@arg {string} user : ID of user to give access to, or undefined for unauth_user
 			///@arg {{read:{boolean}, write:{boolean}, owner:{boolean}, control: false} : Access control list for letting the specified user read, write, own and change ta box
 			///Sets the ACL for this whole box. The acl object takes keys 'read', 'write', 'owner', and 'control'
 			///each which take a boolean value
@@ -861,11 +861,12 @@ angular
 			///@fail({error object}) : Failure continuation
 			setACL:function(user,acl) {
 				var validKeys = ['read','write','owner','control'];
+				if (!user) { console.info('giving unauth user permissions '); }
 				u.assert(acl && _.isObject(acl), "acl must be an object with the following keys " + validKeys.join(', '));
 				_(acl).map(function(v,k) { u.assert(validKeys.indexOf(k) >= 0, "type " + k + " is not a valid acl type"); });
 				var perms = {read:false,write:false,owner:false,control:false};
 				_(perms).extend(acl);
-				var params = {acl:JSON.stringify(perms),target_username:user};
+				var params = {acl:JSON.stringify(perms), target_username: user || undefined, unauth_user:user === undefined};
 				return this._ajax("GET", [this.getID(), 'set_acl'].join('/'), params);
 			},
 			///@arg {string} user : ID of user to get access control list for
