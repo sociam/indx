@@ -28,17 +28,31 @@ angular.module('test',['indx'])
 				});
 			});
 		};
-		$scope.defineTests = function() { 
+		$scope.defineTests = function(srcboxid, dstboxid) { 
 			var d = u.deferred();
-			u.when(channels.getTestDefs().map(function(td) { 
+			u.when(channels.getTestDefs(srcboxid,dstboxid).map(function(td) { 
+				console.log('test definition ', td);
 				var dd = u.deferred();
-				store.getBox($scope.test.box).then(function(box) { 
-					channels.define('test-channel-'+td.name,box,td).then(dd.resolve).fail(dd.reject);
+				store.getBox(srcboxid).then(function(box) { 
+					console.log('got box ', box.id);
+					channels.define('test-channel-'+td.name,box,td).then(dd.resolve).fail(function() { 
+						console.error('error defining channel', err); 
+						dd.reject();
+					});
 				}).fail(dd.reject);
 				return dd.promise();
 			})).then(function() { 
 				console.log('all defined');
 				loadChannels();
+			});
+		};
+
+		$scope.deleteChannel = function(c) { 
+			console.log('deleting obj ', c.obj);
+			c.obj.destroy().then(function(x) { 
+				loadChannels();
+			}).fail(function(err) { 
+				console.error('error deleting ', err); 
 			});
 		};
 

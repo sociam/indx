@@ -11,16 +11,16 @@ angular.module('indx').factory('channels', function(client, utils)  {
     var u = utils,
         store = client.store;
 
-    var testChannelDefs = function(box) { 
+    var testChannelDefs = function(srcboxid, dstboxid) { 
         var test_channels = [];
         // let's make a happy indx person -> foaf channel
         var foafns = 'http://xmlns.com/foaf/0.1/',
             rdf = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
             rdfs = 'http://www.w3.org/2000/01/rdf-schema#';
         test_channels.push({
-            name:'foafiser',
+            name:'foafiser-'+srcboxid+'-'+dstboxid,
             query: { type:'Person' },
-            destbox:'foafs',
+            destbox:dstboxid,
             transform: function(pobj) {
                 var foafag = {};
                 foafag[rdf+'type'] = foafns+'Agent';
