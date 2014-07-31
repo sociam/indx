@@ -198,7 +198,7 @@ class ObjectStoreAsync:
         def doQuery(query):
 
             def ids_cb(ids):
-                results[query] = ids
+                results["{0}".format(query)] = ids
                 nextQ(None)
 
             self.runIDQuery(query).addCallbacks(ids_cb, return_d.errback)
@@ -1855,7 +1855,7 @@ class ConnectionSharer:
         """ Get a set of all queries for all listeners.
             Used by the store to query at the notify stage.
         """
-        return set(filter(lambda query: query and query != '', map(lambda subid: self.subscribers[subid].query, self.subscribers)))
+        return filter(lambda query: query and query != '', map(lambda subid: self.subscribers[subid].query, self.subscribers))
 
     def unsubscribe(self, listener):
         """ Unsubscribe this observer to this box's updates. """
@@ -1890,7 +1890,7 @@ class ConnectionSharer:
                 logging.debug("ConnectionSharer observer dispatching diff to {0} subscribers, diff: {1}, queryResults: {2}".format(len(self.subscribers), data, notify['queryResults']))
                 for f_id, listener in self.subscribers.items():
                     if listener.query and listener.query != "":
-                        listener.observer(data, notify['queryResults'][listener.query])
+                        listener.observer(data, notify['queryResults']["{0}".format(listener.query)])
                     else:
                         listener.observer(data, [])
 
