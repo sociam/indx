@@ -91,14 +91,17 @@ angular.module('indx').factory('channels', function(client, utils)  {
             if (this.livequery) {  this.livequery.stop();  }
             this.readyd.then(function() { 
                 this_.livequery = this_.srcbox.standingQuery(this_.query, function(result) { 
+                    // callback for new result
                     console.log('standing query result >> ', result);
-                    var resultd = this_.make_resultd(result.id);
+                    var resultd = this_._make_resultd(result.id);
                     this_._handleResult(result).then(function(tresult) { 
                         this_.publish(tresult)
                             .then(resultd.resolve)
                             .fail(function(err) {  console.error('failure publishing ', result); resultd.reject(err) ; });
                     }).fail(function(err) { console.error('failure transforming ', result); resultd.reject(err); });
-                });
+                }).then(function(livequery) { 
+                    this_.livequery = livequery;
+                }).fail(function(err) { console.error('error starting standingQuery ... ', err); startd.reject(); });
             }).fail(startd.reject);
             return startd.promise();
         },

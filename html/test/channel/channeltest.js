@@ -21,8 +21,12 @@ angular.module('test',['indx'])
 		var loadChannels = function() { 
 			channels.getChannels().then(function(chnls) { 
 				sa(function() { $scope.channels = chnls; });
+				chnls.map(function(x) { 
+					x.start().then(function(x) { console.log('started channel ', x.name); });
+				});
 			});
 		};
+
 
 		$scope.defineTests = function() { 
 			var d = u.deferred();

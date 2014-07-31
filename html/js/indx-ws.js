@@ -11,6 +11,12 @@ angular.module('indx')
 			diff: function(requestid, token, diffid) { 
 				return JSON.stringify({requestid:requestid,action:'diff',operation:"start",token:token,diffid:diffid}); 
 			},
+			subscribe_diff_query:function(requestid, token, query) { 
+				return JSON.stringify({requestid:requestid,action:'diff',operation:"start",token:token,query:query}); 
+			},
+			unsubscribe_diff_query:function(requestid, diffid) { 
+				return JSON.stringify({requestid:requestid,action:'diff',operation:"stop",diffid:diffid});
+			},
 			http: function(requestid, method, path, data) { 
 				var toArrayVals = function(obj) {
 					var out = {};
