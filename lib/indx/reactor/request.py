@@ -19,7 +19,7 @@ from indx.reactor import IndxResponse
 
 class IndxRequest:
 
-    def __init__(self, uri, method, base_path, path, params, content, sessionid, callback, clientip):
+    def __init__(self, uri, method, base_path, path, params, content, sessionid, callback, clientip, server_id):
         self.uri = uri
         self.method = method
         self.base_path = base_path
@@ -32,6 +32,7 @@ class IndxRequest:
         self.sessionid = sessionid
         self.callback_f = callback # response callback - pass in an IndxResponse to send it back to the user (HTTP or WebSocket usually)
         self.response = {"headers": {}} #
+        self.server_id = server_id
 
     def callback(self, response):
         for key, value in self.response['headers'].items():
@@ -74,4 +75,7 @@ class IndxRequest:
 
         response = IndxResponse(code, message)
         self.callback(response)
+
+    def getServerID(self):
+        return self.server_id
 

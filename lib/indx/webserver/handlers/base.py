@@ -25,6 +25,7 @@ from urlparse import parse_qs
 from indx.user import IndxUser
 from twisted.internet.defer import Deferred
 from indx.reactor import IndxMapping, IndxWebHandler, IndxResponse
+from indx import UNAUTH_USERNAME
 #try:
 #    import cjson
 #    logging.debug("Using CJSON.")
@@ -60,7 +61,7 @@ class BaseHandler():
         if register:
             logging.debug("Adding web server handler to path: /" + (self.base_path or ''))
             #webserver.root.putChild(self.base_path, self) # register path with webserver
-            webserver.root.putChild(self.base_path, IndxWebHandler(self.indx_reactor, self.base_path)) # register path with webserver
+            webserver.root.putChild(self.base_path, IndxWebHandler(self.indx_reactor, self.base_path, self.webserver.server_id)) # register path with webserver
 
             # register the handler with the indx reactor
             for mapping in self.get_mappings():
@@ -166,17 +167,50 @@ class BaseHandler():
 
 
     def get_token(self, request, force_get=False):
+        logging.debug("BaseHandler get_token")
         return_d = Deferred()
 
         tid = self.get_arg(request,'token', force_get = force_get)
         if tid is None:
-            return_d.callback(None)
-            return return_d
+            logging.debug("BaseHandler get_token - tid is None")
 
-        def token_cb(token):
-            return_d.callback(token) # can callback None, but that's OK.
+            if (not self.get_session().username or self.get_session().username == '') and not self.get_arg(request, 'username'):
+                # inject an unauthed user token here
+                logging.debug("BaseHandler get_token - injecting unauthed user token")
 
-        self.webserver.tokens.get(tid).addCallbacks(token_cb, return_d.errback)
+                boxid = self.get_request_box(request, force_get)
+                appid = self.get_request_app(request, force_get)
+                origin = self.get_origin(request)
+    
+                def got_acct(acct):
+                    logging.debug("BaseHandler get_token got acct: {0}".format(acct))
+                    if acct == False:
+                        return self.return_forbidden(request)
+
+                    db_user, db_pass = acct
+
+                    def check_app_perms(acct):
+                        logging.debug("BaseHandler get_token checked perms")
+                        
+                        def token_cb(token):
+                            logging.debug("BaseHandler get_token returning injecting token: {0}".format(token))
+                            return_d.callback(token)
+
+                        self.webserver.tokens.new(UNAUTH_USERNAME,"",boxid,appid,origin,request.getClientIP(),self.webserver.server_id).addCallbacks(token_cb, lambda failure: self.return_internal_error(request))
+
+                    # create a connection pool
+                    self.database.connect_box(boxid,db_user,db_pass).addCallbacks(check_app_perms, lambda conn: self.return_forbidden(request))
+
+                self.database.lookup_best_acct(request.get("box"), UNAUTH_USERNAME, "").addCallbacks(got_acct, lambda conn: self.return_forbidden(request))
+            else:
+                return_d.callback(None)
+        else:
+            logging.debug("BaseHandler get_token - tid not None")
+            def token_cb(token):
+                logging.debug("BaseHandler get_token - tid not None - returning token: {0}".format(token))
+                return_d.callback(token) # can callback None, but that's OK.
+
+            self.webserver.tokens.get(tid).addCallbacks(token_cb, return_d.errback)
         return return_d
 
     def get_origin(self,request):
@@ -305,7 +339,7 @@ class BaseHandler():
     def _respond(self, request, code, message, additional_data = {}):
         try:
             request.callback(IndxResponse(code, message, data = additional_data))
-            logging.debug(' just called request.finish() with code %d ' % code)
+            logging.debug('In BaseHandler just called request.finish() with code %d ' % code)
         except Exception as e:
             logging.error("BaseHandler error sending response: {0}".format(e))
 

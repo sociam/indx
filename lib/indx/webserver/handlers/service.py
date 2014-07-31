@@ -26,6 +26,7 @@ class ServiceHandler(BaseHandler):
     def __init__(self, server, service_path):
         BaseHandler.__init__(self, server, register=False)
         self.indx_reactor = server.indx_reactor
+        self.server = server
 
         self.base_path = "apps"
 
@@ -263,7 +264,7 @@ class ServiceHandler(BaseHandler):
             except Exception as e:
                 logging.debug("IndxServiceHandler error sending response: {0},\ntrace: {1}".format(e, traceback.format_exc()))
 
-        indx_request = IndxRequest(uri, method, self.base_path, path, params, request.content, request.getSession().uid, callback, request.getClientIP())
+        indx_request = IndxRequest(uri, method, self.base_path, path, params, request.content, request.getSession().uid, callback, request.getClientIP(), self.server.server_id)
         self.indx_reactor.incoming(indx_request)
         return NOT_DONE_YET
 

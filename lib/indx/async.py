@@ -85,7 +85,8 @@ class IndxAsync:
                     request.get("content"),
                     session,
                     req_cb,
-                    self.clientip
+                    self.clientip,
+                    self.webserver.server_id
                 )
 
                 self.webserver.indx_reactor.incoming(indx_request)

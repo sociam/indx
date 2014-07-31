@@ -517,9 +517,10 @@ class BoxHandler(BaseHandler):
 
 
     def do_GET(self,request,token):
-        BoxHandler.log(logging.DEBUG, "BoxHandler do_GET >>>>>>>>>>>>>>>>>>>>")
+        BoxHandler.log(logging.DEBUG, "BoxHandler do_GET >", extra={"request": request, "token": token})
 
         if not token:
+            BoxHandler.log(logging.DEBUG, "Boxhandler do_GET: No token, returning forbidden straight away.", extra={"request": request, "token": token})
             return self.return_forbidden(request)
 
         def err_cb(failure):

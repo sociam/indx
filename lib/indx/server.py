@@ -323,7 +323,7 @@ class WebServer:
         #parent.putChild(name, BoxHandler(self, name)) # e.g. /indx
 
         # register a generic web handler with the twisted web server
-        parent.putChild(name, IndxWebHandler(self.indx_reactor, name))
+        parent.putChild(name, IndxWebHandler(self.indx_reactor, name, self.server_id))
 
         box_handler = BoxHandler(self, base_path = name)
 

@@ -17,5 +17,5 @@
 
 
 # used to store/retrieve ACLs for the public (unauthorised) user, e.g. for serving public linked data
-UNAUTH_USERNAME = "_UNAUTH_"
+UNAUTH_USERNAME = "@UNAUTH"
 

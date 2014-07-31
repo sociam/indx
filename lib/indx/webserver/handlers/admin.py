@@ -176,7 +176,7 @@ class AdminHandler(BaseHandler):
 
             new_users = []
             for user in users:
-                if user["@id"][0] != "@": # don't return users whose names starts with '@' e.g. @indx user
+                if user["@id"][0] != "@" or user['type'] != 'internal': # don't return users whose names starts with '@' e.g. @indx user
                     new_users.append(user)
 
             self.return_ok(request, data = {"users": new_users})

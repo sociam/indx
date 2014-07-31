@@ -758,7 +758,7 @@ class IndxDatabase:
         return return_d
 
     def list_users(self):
-        """ Create a new user, and connect as the specified user.
+        """ List the users in the database. 
         """
         return_d = Deferred()
 

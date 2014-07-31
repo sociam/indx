@@ -16,7 +16,9 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import logging
 import json
+from indx import UNAUTH_USERNAME
 from urlparse import parse_qs
+from indx.reactor import IndxResponse
 
 class IndxMapping:
 
@@ -56,13 +58,59 @@ class IndxMapping:
         return False
 
     def request(self, request):
+        force_get = self.params.get('force_get')
+        tid = self.get_arg(request, 'token', force_get=force_get)
 
-        tid = self.get_arg(request, 'token', force_get = self.params.get('force_get'))
+        boxid = self.get_arg(request, 'box', force_get=force_get) or self.base_path
+        appid = self.get_arg(request, 'app', force_get=force_get) or "--unspecified-app--"
+
+        def throw500(err):
+            logging.error(err)
+            request.callback(IndxResponse(500, "Internal Server Error"))
+
         if tid is None:
-            return self.handler(request, None)
+            logging.debug("IndxMapping request - tid is None")
 
-        self.indx_reactor.tokens.get(tid).addCallbacks(lambda token: self.handler(request, token), lambda error: logging.error("IndxMapping: Error getting token for request {0}".format(error)))
-        
+            if (not self.params.get('username')) and boxid: # if you're not trying to be a user now AND you are trying to access a box
+                # inject an unauthed user token here
+                logging.debug("IndxMapping request get_token - injecting unauthed user token")
+
+                origin = "/{0}".format(boxid) # check this
+    
+#                def got_acct(acct):
+#                    logging.debug("IndxMapping request get_token got acct: {0}".format(acct))
+#                    if acct == False:
+#                        return self.return_forbidden(request)
+#
+#                    db_user, db_pass = acct
+#
+#                    def check_app_perms(acct):
+#                        logging.debug("IndxMapping request get_token checked perms")
+#                        
+#                        def token_cb(token):
+#                            logging.debug("IndxMapping request get_token returning injecting token: {0}".format(token))
+#
+#                            self.handler(request, token)
+#
+#                        self.indx_reactor.tokens.new(UNAUTH_USERNAME,"",boxid,appid,origin,request.getClientIP(),request.getServerID()).addCallbacks(token_cb, lambda failure: self.return_internal_error(request))
+#
+#                    # create a connection pool
+#                    self.database.connect_box(boxid,db_user,db_pass).addCallbacks(check_app_perms, lambda conn: self.return_forbidden(request))
+#
+#                self.database.lookup_best_acct(request.get("box"), UNAUTH_USERNAME, "").addCallbacks(got_acct, lambda conn: self.return_forbidden(request))
+
+                def token_cb(token):
+                    logging.debug("IndxMapping request get_token returning injecting token: {0}".format(token))
+
+                    self.handler(request, token)
+
+                self.indx_reactor.tokens.new(UNAUTH_USERNAME,"",boxid,appid,origin,request.getClientIP(),request.getServerID()).addCallbacks(token_cb, lambda failure: throw500("Error getting Unauth user token: {0}".format(failure)))
+
+            else:
+                return self.handler(request, None)
+        else:
+            return self.indx_reactor.tokens.get(tid).addCallbacks(lambda token: self.handler(request, token), lambda error: throw500("IndxMapping: Error getting token for request {0}".format(error)))
+
 
     def get_post_args(self,request):
         logging.debug("get_post_args: request content {0} - {1}".format(type(request.content), request.content))
