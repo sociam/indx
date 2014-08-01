@@ -9,18 +9,22 @@
   <link rel="stylesheet/less" type="text/css" href="css/timon.less"/>
 	<title>timon - tw-inspired microblog on indx</title>
 </head>
-<body ng-app="test" ng-controller="main" ng-cloak>
+<body ng-app="timon" ng-controller="main" ng-cloak>
   <toolbar box-var='selected_box' username-var='userLoggedIn'></toolbar>
   <h1 ng-if="!userLoggedIn">please log in</h1>
   <div class="main" ng-if="userLoggedIn">
     <div class="profilecard">
-      <div class="name" ng-bind="">{{ profile.peek('name') }}</div>
-      <div class="stats">Following: <div class="count">{{following.length}}</div></div>
-      <div class="stats">Known followers: <div class="count">{{followers.length}}</div></div>
-      <textarea class="input" ng-model="newPost"></textarea>
-      <div class="stats" ng-if="newPost.length > 0">
-        <div class="length">{{newPost.length}}</div>
-        <div ng-class="submit btn btn-default">Timonate!</div>
+      <div class="identity">
+        <div class="name">{{ username }}</div>
+        <div class="stats">following: <div class="count">{{ following.length }}</div></div>
+        <div class="stats">followers: <div class="count">{{ followers.length }}</div></div>
+      </div>
+      <div class="compose">
+        <textarea class="newpostinput" ng-model="newpost"></textarea>
+        <div class="stats" ng-if="newPost.length > 0">
+          <div class="length">{{newPost.length}}</div>
+          <div ng-class="submit btn btn-default">Timonate!</div>
+        </div>
       </div>
     </div>
     <div class="maincol">    
