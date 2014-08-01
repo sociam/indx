@@ -102,7 +102,7 @@ angular.module('indx').factory('channels', function(client, utils)  {
                             .then(resultd.resolve)
                             .fail(function(err) {  console.error('failure publishing ', result); resultd.reject(err) ; });
                     }).fail(function(err) { console.error('failure transforming ', result); resultd.reject(err); });
-                }).then(function(livequery) { 
+                }).then(function(livequery) {
                     this_.livequery = livequery;
                 }).fail(function(err) { console.error('error starting standingQuery ... ', err); startd.reject(); });
             }).fail(startd.reject);
@@ -110,7 +110,11 @@ angular.module('indx').factory('channels', function(client, utils)  {
         },
         _make_resultd: function(oid) { 
             var d = u.deferred();
-            d.then(function() { console.info('successful publishing ', oid); }).fail(function(err) { console.err('error publishing ', oid); });
+            d.then(function() { 
+                console.info('successful publishing ', oid); 
+            }).fail(function(err) { 
+                console.error('error publishing ', oid); 
+            });
             return d;
         },
         _handleResult: function(result) {
