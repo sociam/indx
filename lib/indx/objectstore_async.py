@@ -190,8 +190,8 @@ class ObjectStoreAsync:
 
         def nextQ(empty):
             if len(queries) > 0: 
-                d.addCallback(doQuery)
-                d.callbacks(queries.pop(), return_d.errback)
+                d.addCallbacks(doQuery, return_d.errback)
+                d.callback(queries.pop())
             else:
                 return_d.callback(results)
 
