@@ -14,15 +14,17 @@ angular.module('indx').factory('channels', function(client, utils)  {
     var testChannelDefs = function(srcboxid, dstboxid) { 
         var test_channels = [];
         // let's make a happy indx person -> foaf channel
-        var foafns = 'http://xmlns.com/foaf/0.1/',
-            rdf = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
-            rdfs = 'http://www.w3.org/2000/01/rdf-schema#';
+
         test_channels.push({
             name:'foafiser-'+srcboxid+'-'+dstboxid,
             query: { type:'Person' },
             destbox:dstboxid,
             transform: function(pobj) {
-                var foafag = {};
+                var foafns = 'http://xmlns.com/foaf/0.1/',
+                    rdf = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
+                    rdfs = 'http://www.w3.org/2000/01/rdf-schema#',
+                    foafag = {};
+
                 foafag[rdf+'type'] = foafns+'Agent';
                 foafag[foafns+'givenName'] = pobj.peek('given_name');
                 foafag[foafns+'familyName'] = pobj.peek('surname');
@@ -136,7 +138,7 @@ angular.module('indx').factory('channels', function(client, utils)  {
                 var toid = transformed.id  || (transformed.getID && transformed.getID()) || u.guid();
                 this.destbox.obj(toid).set(transformed).save().then(d.resolve).fail(d.reject);
             }
-            return d.promise;
+            return d.promise();
         }
     });
 
