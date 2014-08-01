@@ -204,7 +204,7 @@ class ObjectStoreAsync:
 
         d_list = []
         for queryKey, query in uniqueQueries.items():
-            d_list.push(runAndAssign(queryKey, query))
+            d_list.append(runAndAssign(queryKey, query))
 
 
         d = DeferredList(d_list)
