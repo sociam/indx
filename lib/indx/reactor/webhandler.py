@@ -17,6 +17,7 @@
 import logging
 import json
 import traceback
+import negotiator
 from twisted.web.resource import Resource
 from twisted.web.server import NOT_DONE_YET
 from indx.reactor import IndxRequest
@@ -30,6 +31,16 @@ class IndxWebHandler(Resource):
         self.isLeaf = True
         self.name = name # path name, e.g. box name
         self.server_id = server_id
+
+        self.defaultType = "application/json"
+        self.defaultHandler = self.indxJSONRender
+
+        # ordered by preference
+        self.contentTypesHandlers = [
+            ("application/json", self.indxJSONRender),
+            ("text/json", self.indxJSONRender),
+            ("application/rdf+xml", self.rdfXMLRender),
+        ]
 
     def render(self, request):
 
@@ -47,23 +58,23 @@ class IndxWebHandler(Resource):
             logging.debug("IndxWebHandler, request callback")
 
             try:
-                response = {"message": indx_response.message, "code": indx_response.code}
-                response.update(indx_response.data)
-                responsejson = json.dumps(response)
+                accept = request.getHeader("Accept")
 
-                if not request._disconnected:
-                    request.setResponseCode(indx_response.code, indx_response.message)
-                    request.setHeader("Content-Type", "application/json")
-                    request.setHeader("Content-Length", len(responsejson))
+                acceptable = []
+                for typ_tuple in self.contentTypesHandlers:
+                    typ = typ_tuple[0]
+                    acceptable.append(negotiator.AcceptParameters(negotiator.ContentType(typ), negotiator.Language("en")))
 
-                    for key, value in indx_response.headers.items():
-                        request.setHeader(key, value)
+                default_params = negotiator.AcceptParameters(negotiator.ContentType(self.defaultType), negotiator.Language("en"))
+                cn = negotiator.ContentNegotiator(default_params, acceptable)
+                chosenType = cn.negotiate(accept, "en").content_type.mimetype()
 
-                    request.write(responsejson)
-                    request.finish()
-                    logging.debug('In IndxWebHandler just called request.finish() with code %d ' % indx_response.code)
-                else:
-                    logging.debug('In IndxWebHandler didnt call request.finish(), because it was already disconnected')
+                for handler in self.contentTypesHandlers:
+                    if handler[0] == chosenType:
+                        return handler[1](request, indx_response, chosenType)
+                
+                return self.defaultHander(request, indx_response, self.defaultType)
+
             except Exception as e:
                 logging.debug("IndxWebHandler error sending response: {0},\ntrace: {1}".format(e, traceback.format_exc()))
 
@@ -71,3 +82,43 @@ class IndxWebHandler(Resource):
         self.indx_reactor.incoming(indx_request)
         return NOT_DONE_YET
 
+
+    def indxJSONRender(self, request, indx_response, typ):
+        """ Render the output in INDX JSON response format. """
+        response = {"message": indx_response.message, "code": indx_response.code}
+        response.update(indx_response.data)
+        responsejson = json.dumps(response)
+
+        if not request._disconnected:
+            request.setResponseCode(indx_response.code, indx_response.message)
+            request.setHeader("Content-Type", "application/json")
+            request.setHeader("Content-Length", len(responsejson))
+
+            for key, value in indx_response.headers.items():
+                request.setHeader(key, value)
+
+            request.write(responsejson)
+            request.finish()
+            logging.debug('In IndxWebHandler just called request.finish() with code %d in indxJSONRender' % indx_response.code)
+        else:
+            logging.debug('In IndxWebHandler didnt call request.finish(), because it was already disconnected (in indxJSONRender)')
+
+    def rdfXMLRender(self, request, indx_response, typ):
+        """ Render the output as RDF/XML (LD-compatible) format. """
+        # indx_response.data
+
+        response = "<RDFXMLLOL></RDFXMLLOL>"
+
+        if not request._disconnected:
+            request.setResponseCode(indx_response.code, indx_response.message)
+            request.setHeader("Content-Type", typ)
+            request.setHeader("Content-Length", len(response))
+
+            for key, value in indx_response.headers.items():
+                request.setHeader(key, value)
+
+            request.write(response)
+            request.finish()
+            logging.debug('In IndxWebHandler just called request.finish() with code %d in rdfXMLRender' % indx_response.code)
+        else:
+            logging.debug('In IndxWebHandler didnt call request.finish(), because it was already disconnected (in rdfXMLRender)')

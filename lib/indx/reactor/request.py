@@ -27,7 +27,18 @@ class IndxRequest:
         self.params = params
         self.content = content
         self.clientip = clientip
-        self.headers = self.params.get('headers') or {}
+
+        # lowercase all headers so that any gets are case-insensitive
+        self.headers = {}
+        for k in self.params.get('headers') or []:
+            v = self.params.get('headers')[k]
+            if type(v) == type([]):
+                self.headers[k] = []
+                for item in v:
+                    self.headers[k] = item.lower()
+            else:
+                self.headers[k] = v.lower()
+
         self.args = self.params.get('args') or {}
         self.sessionid = sessionid
         self.callback_f = callback # response callback - pass in an IndxResponse to send it back to the user (HTTP or WebSocket usually)
@@ -46,11 +57,15 @@ class IndxRequest:
 
         self.callback_f(response)
 
+    def getHeaders(self):
+        return self.headers
+
     ###
     #   compatibility with Twisted request object
     ###
     def getHeader(self, key):
         """ Get a header from this request, or None is not present. """
+        key = key.lower()
         return self.headers.get(key)
 
     def getClientIP(self):
