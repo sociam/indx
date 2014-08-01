@@ -21,9 +21,9 @@
       </div>
       <div class="compose">
         <textarea class="newpostinput" ng-model="newpost"></textarea>
-        <div class="stats" ng-if="newPost.length > 0">
-          <div class="length">{{newPost.length}}</div>
-          <div ng-class="submit btn btn-default">Timonate!</div>
+        <div class="newpoststats" ng-if="newpost.length > 0">
+          <div class="length">{{ 140 - newpost.length }}</div>
+          <div class="submit btn btn-default">Timonify</div>
         </div>
       </div>
     </div>
