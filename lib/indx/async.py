@@ -433,9 +433,11 @@ class IndxDiffListener:
         """ Filter this diff to only include IDs in this set. """
         logging.debug("IndxDiffListener filterDiff id_filter: {0} diff: {1}".format(id_filter, diff))
 
+        new_deleted = []
         for id_d in diff['deleted']:
-            if id_d not in id_filter:
-                del diff['deleted'][id_d]
+            if id_d in id_filter:
+                new_deleted.push(id_d)
+        diff['deleted'] = new_deleted
 
         fields = ['added', 'changed']
         for field in fields:
