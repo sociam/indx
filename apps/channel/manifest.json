@@ -1,0 +1,17 @@
+{
+	"name": "channel manager",
+	"version": 0.1,
+	"type":["app"],
+	"description": "channel manager",
+	"on_boot": 0,
+	"configpanel":"html/index.html",
+	"icons": { 
+		"128": "img/chan.gif"
+	},
+	"author": [
+		{
+			"name": "eMax",
+			"email":"max@hip.cat"
+		}
+	]
+}
