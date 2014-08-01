@@ -102,6 +102,9 @@ class ObjectStoreQuery:
             return query, params
 
 
+        if q is None:
+            return "", params # this means we can look at length of wheres in to_sql to determine if this is an empty query
+
         for predicate, val in q.items():
 
             if predicate in self.logical_map:
