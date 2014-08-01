@@ -131,6 +131,25 @@ class IndxWebHandler(Resource):
 
         logging.debug("IndxWebHandler rdfXMLRender data: {0}".format(indx_response.data))
 
+        if not("data" in indx_response.data) or indx_response.code < 200 or indx_response.code > 299:
+            # means a 500 or something
+            response = ""
+            if not request._disconnected:
+                request.setResponseCode(indx_response.code, indx_response.message)
+                request.setHeader("Content-Type", typ)
+                request.setHeader("Content-Length", len(response))
+
+                for key, value in indx_response.headers.items():
+                    request.setHeader(key, value)
+
+                request.write(response)
+                request.finish()
+                logging.debug('In IndxWebHandler just called request.finish() with code %d in rdfXMLRender' % indx_response.code)
+            else:
+                logging.debug('In IndxWebHandler didnt call request.finish(), because it was already disconnected (in rdfXMLRender)')
+            return
+
+
         objs = ""
         for obj_id, obj in indx_response.data['data'].items():
             logging.debug("IndxWebHandler rdfXMLRender obj_id: {0}, obj: {1}".format(obj_id, obj))
