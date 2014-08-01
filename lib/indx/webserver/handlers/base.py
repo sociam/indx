@@ -355,6 +355,10 @@ class BaseHandler():
             # logging.debug(' didnt call request.finish(), because it was already disconnected')
             pass
 
+    def return_override(self, request, override):
+        """ Respond with the status, message and data in a ResponseOverride object. """
+        self._respond(request, override.status, override.reason, override.data)
+
     def return_ok(self,request,data=None):
         self._respond(request, 200, "OK", data)
     def return_created(self,request,data=None):

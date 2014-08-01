@@ -18,6 +18,7 @@
 import logging, json, cjson
 import traceback
 from indx import UNAUTH_USERNAME
+from indx.exception import ResponseOverride
 from indx.webserver.handlers.base import BaseHandler
 from indx.objectstore_async import IncorrectPreviousVersionException, FileNotFoundException
 from indx.user import IndxUser
@@ -524,9 +525,13 @@ class BoxHandler(BaseHandler):
             return self.return_forbidden(request)
 
         def err_cb(failure):
-            failure.trap(Exception)
-            BoxHandler.log(logging.ERROR, "BoxHandler do_GET err_cb: {0}".format(failure), extra = {"request": request, "token": token})
-            return self.return_internal_error(request)
+            if type(failure.value) == type(ResponseOverride(200, "OK")):
+                failure.trap(ResponseOverride)
+                return self.return_override(request, failure.value)
+            else:
+                failure.trap(Exception)
+                BoxHandler.log(logging.ERROR, "BoxHandler do_GET err_cb: {0}".format(failure), extra = {"request": request, "token": token})
+                return self.return_internal_error(request)
 
         def store_cb(store):
             store.setLoggerClass(BoxHandler, extra = {"token": token, "request": request})

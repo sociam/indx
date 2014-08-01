@@ -18,6 +18,7 @@
 import logging
 import uuid
 import indx.indx_pg2 as database
+from indx.exception import ResponseOverride
 from indx.objectstore_async import ObjectStoreAsync
 from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
@@ -58,7 +59,9 @@ class Token:
         def got_acct(new_acct):
 
             if new_acct is False:
-                failure = Failure(Exception("No access to box {0} for user {1}".format(self.boxid, self.username)))
+                logging.debug("No access to box {0} for user {1}, sending 403".format(self.boxid, self.username))
+#                failure = Failure(Exception("No access to box {0} for user {1}".format(self.boxid, self.username)))
+                failure = Failure(ResponseOverride(403, "Forbidden"))
                 result_d.errback(failure)
                 return
 
