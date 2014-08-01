@@ -1251,6 +1251,7 @@ angular
 					}).fail(d.reject);
 				return d.promise();
 			},
+			_save_queue : [],
 			_simpleUpdate:function(obj) {
 
 				var d = u.deferred(), 
@@ -1269,7 +1270,23 @@ angular
 							this_._updateObjectList(undefined, [objID], []);
 						}
 						d.resolve(this_);
-					}).fail(d.reject);
+					}).fail(function(err) { 
+						console.log('save errr ', err);
+						if (err.code == 409) { 
+							// ----- 
+							console.info('obsolete postponing save .. ');
+							this_.once('diff', function() { 
+								console.info('got diff update, attempting resave of ', obj.id);
+								this_._simpleUpdate(obj).then(function() { 
+									console.info('resumed save succeeded for ', obj.id);
+									d.resolve(obj);
+								}).fail(d.reject);
+							});
+						} else {
+							// some other error
+							d.reject(err);
+						}
+					});
 				return d.promise();
 			},
 			_update:function(originalIDs) {
