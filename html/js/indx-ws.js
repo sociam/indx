@@ -125,7 +125,11 @@ angular.module('indx')
 					if (this_.requests[pdata.requestid] !== undefined) {
 						var request = this_.requests[pdata.requestid];
 						if (pdata.success === false || pdata.response && pdata.response.code && parseInt(pdata.response.code) >= 400) { 
-							console.error('error -- ', pdata, " - request was ", request.frame, pdata.response && pdata.response.code, 'failing');
+
+							if (pdata.response && pdata.response.code && parseInt(pdata.response.code) !== 409) { 
+								// suppress debug 
+								console.error('error -- ', pdata, " - request was ", request.frame, pdata.response && pdata.response.code, 'failing');
+							}
 							// error :(
 							request.responsed.reject(pdata.response);
 						} else {
