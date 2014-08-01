@@ -39,6 +39,7 @@ class IndxWebHandler(Resource):
         self.contentTypesHandlers = [
             ("application/json", self.indxJSONRender),
             ("text/json", self.indxJSONRender),
+            ("application/ld+json", self.jsonLDRender),
             ("application/rdf+xml", self.rdfXMLRender),
         ]
 
@@ -91,7 +92,7 @@ class IndxWebHandler(Resource):
 
         if not request._disconnected:
             request.setResponseCode(indx_response.code, indx_response.message)
-            request.setHeader("Content-Type", "application/json")
+            request.setHeader("Content-Type", typ)
             request.setHeader("Content-Length", len(responsejson))
 
             for key, value in indx_response.headers.items():
@@ -103,11 +104,45 @@ class IndxWebHandler(Resource):
         else:
             logging.debug('In IndxWebHandler didnt call request.finish(), because it was already disconnected (in indxJSONRender)')
 
+
+    def jsonLDRender(self, request, indx_response, typ):
+        """ Render the output in JSON-LD response format (without being wrapped in INDX message/code). """
+        response = indx_response.data
+        responsejson = json.dumps(response)
+
+        if not request._disconnected:
+            request.setResponseCode(indx_response.code, indx_response.message)
+            request.setHeader("Content-Type", typ)
+            request.setHeader("Content-Length", len(responsejson))
+
+            for key, value in indx_response.headers.items():
+                request.setHeader(key, value)
+
+            request.write(responsejson)
+            request.finish()
+            logging.debug('In IndxWebHandler just called request.finish() with code %d in jsonLDRender' % indx_response.code)
+        else:
+            logging.debug('In IndxWebHandler didnt call request.finish(), because it was already disconnected (in jsonLDRender)')
+
+
     def rdfXMLRender(self, request, indx_response, typ):
         """ Render the output as RDF/XML (LD-compatible) format. """
         # indx_response.data
 
-        response = "<RDFXMLLOL></RDFXMLLOL>"
+        logging.debug("IndxWebHandler rdfXMLRender data: {0}".format(indx_response.data))
+
+        objs = ""
+        for obj_id, obj in indx_response.data['data'].items():
+            logging.debug("IndxWebHandler rdfXMLRender obj_id: {0}, obj: {1}".format(obj_id, obj))
+            if obj_id[0] != "@":
+                objs += self._objToRDFXML(obj) + "\n"
+
+        xmlheader = '<?xml version="1.0"?>'
+
+        rdfhead = '<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" xmlns:owl="http://www.w3.org/2002/07/owl#">'
+        rdffoot = '</rdf:RDF>'
+
+        response = "{0}\n{1}\n{2}{3}\n".format(xmlheader, rdfhead, objs, rdffoot)
 
         if not request._disconnected:
             request.setResponseCode(indx_response.code, indx_response.message)
@@ -122,3 +157,22 @@ class IndxWebHandler(Resource):
             logging.debug('In IndxWebHandler just called request.finish() with code %d in rdfXMLRender' % indx_response.code)
         else:
             logging.debug('In IndxWebHandler didnt call request.finish(), because it was already disconnected (in rdfXMLRender)')
+
+    def _objToRDFXML(self, obj):
+        rdf = ''
+        rdf += '  <rdf:Description rdf:about="{0}">\n'.format(obj['@id'])
+
+        for pred in obj.keys():
+            if pred[0] == "@":
+                continue
+
+            for val in obj[pred]:
+                if "@id" in val:
+                    rdf += '    <{0} rdf:resource="{1}" />\n'.format(pred, val['@id'])
+                elif "@value" in val:
+                    rdf += '    <{0}>{1}</{0}>\n'.format(pred, val['@value'])
+                else:
+                    continue
+
+        rdf += '  </rdf:Description>'
+        return rdf
