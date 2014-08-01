@@ -19,7 +19,7 @@ import logging
 import os
 import json
 import copy
-from twisted.internet.defer import Deferred
+from twisted.internet.defer import Deferred, DeferredList
 from twisted.internet import threads
 from twisted.python.failure import Failure
 from indx.objectstore_query import ObjectStoreQuery
@@ -184,30 +184,32 @@ class ObjectStoreAsync:
 
     def runIDQueries(self, queries, cur):
         return_d = Deferred()
-        results = {} # query -> results
+        results = {} # query[as string] -> results
 
-        d = Deferred()
-
-        def nextQ(empty):
-            if len(queries) > 0: 
-                d.addCallbacks(doQuery, return_d.errback)
-                d.callback(queries.pop())
-            else:
-                return_d.callback(results)
-
-        def doQuery(query):
+        uniqueQueries = {}
+        for query in queries:
             queryKey = "{0}".format(query)
+            if not uniqueQueries[queryKey]:
+                uniqueQueries[queryKey] = query
 
-            def ids_cb(ids):
+        def runAndAssign(queryKey, query):
+            this_d = Deferred()
+
+            def ran_cb(ids):
                 results[queryKey] = ids
-                nextQ(None)
+                this_d.callback(None)
 
-            if queryKey in results:
-                nextQ(None)
-            else:
-                self.runIDQuery(query, cur).addCallbacks(ids_cb, return_d.errback)
+            self.runIDQuery(query, cur).addCallbacks(ran_cb, this_d.errback)
+            return this_d
 
-        nextQ(None)
+        d_list = []
+        for queryKey, query in uniqueQueries.items():
+            d_list.push(runAndAssign(queryKey, query))
+
+
+        d = DeferredList(d_list)
+        d.addCallbacks(lambda empty: return_d.callback(results), return_d.errback)
+
         return return_d
 
     def _notify(self, cur, version, commits = None, propagate = True):
