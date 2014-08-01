@@ -545,10 +545,29 @@ class BoxHandler(BaseHandler):
                 BoxHandler.log(logging.DEBUG, "BoxHandler GET request", extra = {"request": request, "id": request.args.get('id'), "id[]": request.args.get('id[]')})
                 # return ids of the whole box
                 return store.get_latest_objs(id_list).addCallbacks(lambda obj: self.return_ok(request, obj), err_cb)
-            else:
-                BoxHandler.log(logging.DEBUG, "BoxHandler GET request no id {0}".format(request))
-                # return the whole box
-                return store.get_latest().addCallbacks(lambda obj: self.return_ok(request, obj), err_cb)
+
+            # see if there is an id in the path e.g. /box/someobjectid
+            pathsplit = request.path.lstrip("/")
+            pathsplit = pathsplit.rstrip("/")
+            pathsplit = pathsplit.split("/", 1)
+            if len(pathsplit) > 1:
+                obj_id = pathsplit[1]
+                if obj_id is not None and obj_id != "":
+                    id_list = [obj_id]
+                    BoxHandler.log(logging.DEBUG, "BoxHandler GET request (single ID in path, id_list is: {0})".format(id_list), extra = {"request": request, "id": request.args.get('id'), "id[]": request.args.get('id[]')})
+
+                    def returnit_cb(exists):
+                        if exists:
+                            return store.get_latest_objs(id_list).addCallbacks(lambda obj: self.return_ok(request, obj), err_cb)
+                        else:
+                            return self.return_not_found(request)
+
+                    return store.check_object_exists(obj_id).addCallbacks(returnit_cb, err_cb)
+
+
+            BoxHandler.log(logging.DEBUG, "BoxHandler GET request no id {0}".format(request))
+            # return the whole box
+            return store.get_latest().addCallbacks(lambda obj: self.return_ok(request, obj), err_cb)
 
         token.get_store().addCallbacks(store_cb, err_cb)
    

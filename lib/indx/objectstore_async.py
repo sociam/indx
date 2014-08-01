@@ -464,6 +464,37 @@ class ObjectStoreAsync:
 
         return result_d
 
+    def check_object_exists(self, object_id):
+        result_d = Deferred()
+
+        def err_cb(failure):
+            self.error("Objectstore check_object_exists, err_cb, failure: {0}".format(failure))
+            result_d.errback(failure)
+            return
+
+        def row_cb(rows, version):
+            self.debug("check_object_exists row_cb: version={0}, len(rows)={1}".format(version, len(rows)))
+            ids = map(lambda row: row[0], rows)
+            if len(ids) < 1:
+                result_d.callback(False)
+            else:
+                result_d.callback(True)
+            return
+
+        def ver_cb(version):
+            self.debug("check_object_exists ver_cb: {0}".format(version))
+            if version == 0:
+                return result_d.callback({"@version": 0 })
+
+            def conn_cb(conn):
+                logging.debug("Objectstore check_object_exists, conn_cb")
+                conn.runQuery("SELECT DISTINCT j_subject.string AS subject FROM wb_latest_vers JOIN wb_triples ON wb_triples.id_triple = wb_latest_vers.triple JOIN wb_strings j_subject ON j_subject.uuid = wb_triples.subject_uuid WHERE j_subject.string = %s", [object_id]).addCallbacks(lambda rows2: row_cb(rows2, version), err_cb)
+            
+            self.conns['conn']().addCallbacks(conn_cb, result_d.errback)
+
+        self._get_latest_ver().addCallbacks(ver_cb, err_cb)
+        return result_d
+
 
     def get_object_ids(self):
         """ Get a list of IDs of objects in this box.
