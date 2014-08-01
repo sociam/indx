@@ -189,7 +189,7 @@ class ObjectStoreAsync:
         uniqueQueries = {}
         for query in queries:
             queryKey = "{0}".format(query)
-            if not uniqueQueries[queryKey]:
+            if uniqueQueries.get(queryKey) is None:
                 uniqueQueries[queryKey] = query
 
         def runAndAssign(queryKey, query):
