@@ -847,7 +847,19 @@ angular
 				var this_ = this, d = u.deferred(), wsh = this.wsh;
 				this.query(queryPattern).then(function(results) { 
 					results.map(function(result) { callback(result); });
-					wsh.subscribeDiffQuery(queryPattern, callback).then(function(diffid) { 
+					wsh.subscribeDiffQuery(queryPattern, function(diffdata) { 
+						if (diffdata && diffdata.data) { 
+							var acd = diffdata.data,
+								ids = u.uniqstr([acd.added, acd.changed]
+									.map(function(x) { return _(x).keys(); })
+									.reduce(function(x,y) { return x.concat(y); }));
+							console.info(acd, ' ~ asking for ids ', ids);
+							this_.getObj(ids).then(function(objs) { 
+								console.log('firing callback with objs >> ', objs);
+								objs.map(function(obj) { callback(obj); });
+							});
+						}
+					}).then(function(diffid) { 
 						console.info('standingQuery() got diffid >> ', diffid);
 						d.resolve({
 							diffid: function() { return diffid; },
