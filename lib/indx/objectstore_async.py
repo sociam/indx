@@ -171,7 +171,7 @@ class ObjectStoreAsync:
         self.log(logging.ERROR, message)
 
 
-    def runIDQuery(self, query):
+    def runIDQuery(self, query, cur=None):
         """ Runs the query on the store and returns the IDs that match it. """
         return_d = Deferred()
 
@@ -179,10 +179,10 @@ class ObjectStoreAsync:
             ids = graph.get_objectids()
             return_d.callback(ids)
 
-        self.query(query, render_json=False, depth=0).addCallbacks(query_cb, return_d.errback)
+        self.query(query, render_json=False, depth=0, cur=cur).addCallbacks(query_cb, return_d.errback)
         return return_d
 
-    def runIDQueries(self, queries):
+    def runIDQueries(self, queries, cur):
         return_d = Deferred()
         results = {} # query -> results
 
@@ -196,12 +196,16 @@ class ObjectStoreAsync:
                 return_d.callback(results)
 
         def doQuery(query):
+            queryKey = "{0}".format(query)
 
             def ids_cb(ids):
-                results["{0}".format(query)] = ids
+                results[queryKey] = ids
                 nextQ(None)
 
-            self.runIDQuery(query).addCallbacks(ids_cb, return_d.errback)
+            if queryKey in results:
+                nextQ(None)
+            else:
+                self.runIDQuery(query, cur).addCallbacks(ids_cb, return_d.errback)
 
         nextQ(None)
         return return_d
@@ -226,7 +230,7 @@ class ObjectStoreAsync:
                     # and via database
                     self._curexec(cur, "SELECT * FROM wb_version_finished(%s)", [version]).addCallbacks(result_d.callback, err_cb)
 
-                self.runIDQueries(SHARERS[self.boxid].getQueries()).addCallbacks(queries_cb, err_cb)
+                self.runIDQueries(SHARERS[self.boxid].getQueries(), cur).addCallbacks(queries_cb, err_cb)
             else:
                 result_d.callback(True)
 
@@ -257,7 +261,7 @@ class ObjectStoreAsync:
         logging.debug("Objectstore listen to {0}".format(listener.diffid))
         return SHARERS[self.boxid].subscribe(listener) # returns a deferred
 
-    def query(self, q, predicate_filter = None, render_json = True, depth = 0):
+    def query(self, q, predicate_filter = None, render_json = True, depth = 0, cur = None):
         """ Perform a query and return results.
         
             q -- Query of objects to search for
@@ -268,29 +272,38 @@ class ObjectStoreAsync:
         query = ObjectStoreQuery()
         sql, params = query.to_sql(q, predicate_filter = predicate_filter)
  
-        def conn_cb(conn, *args, **kw):
-            logging.debug("Objectstore query, conn_cb")
+        def results_cb(rows, *args, **kw):
+            logging.debug("Objectstore query, results_cb")
+            graph = Graph.from_rows(self.combine_long_string_rows(rows))
 
-            def results_cb(rows, *args, **kw):
-                logging.debug("Objectstore query, results_cb")
-                graph = Graph.from_rows(self.combine_long_string_rows(rows))
-
-                def expanded_cb(*args, **kw):
-                    logging.debug("Objectstore query, expanded_cb")
-                    if render_json:
-                        objs_out = graph.to_json()
-                        result_d.callback(objs_out)
-                    else:
-                        result_d.callback(graph)
-
-                if depth > 0:
-                    graph.expand_depth(depth, self).addCallbacks(expanded_cb, result_d.errback)
+            def expanded_cb(*args, **kw):
+                logging.debug("Objectstore query, expanded_cb")
+                if render_json:
+                    objs_out = graph.to_json()
+                    result_d.callback(objs_out)
                 else:
-                    expanded_cb(None)
+                    result_d.callback(graph)
 
-            conn.runQuery(sql, params).addCallbacks(results_cb, result_d.errback)
-        
-        self.conns['conn']().addCallbacks(conn_cb, result_d.errback)
+            if depth > 0:
+                graph.expand_depth(depth, self).addCallbacks(expanded_cb, result_d.errback)
+            else:
+                expanded_cb(None)
+
+
+        if cur is None:
+            def conn_cb(conn):
+                logging.debug("Objectstore query, conn_cb")
+                conn.runQuery(sql, params).addCallbacks(results_cb, result_d.errback)
+            
+            self.conns['conn']().addCallbacks(conn_cb, result_d.errback)
+        else:
+
+            def exec_cb(cur):
+                self.debug("Objectstore query exec_cb, cur: {0}".format(cur))
+                rows = cur.fetchall()
+                results_cb(rows)
+
+            self._curexec(cur, sql, params).addCallbacks(exec_cb, result_d.errback)
 
         return result_d
 
