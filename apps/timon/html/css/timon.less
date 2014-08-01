@@ -1,61 +1,79 @@
-* { 
-	box-layout:border-box;
-	font-family:'helvetica neue', 'helvetica';
-}
+
 
 body {
 	background-color:#eee;
 }
-.profilecard {
-	position:absolute;
-	left:20px;
-	width:290px;
-	height:210px;
-	padding:0px; 
-	background-color:white;
-	border-radius:4px;		
-	.identity {
-		color:#666;
-		padding:85px 20px 20px 20px;
 
-		.name { 
-			font-size:18pt;
-		}
-		.stats { 
-			font-variant:small-caps;
-			width:49%;
-			.count { 
-				vertical-align:top;
-				color:#00bbff;
-				font-size:16pt;
-				.addbtn { 
-					padding:0px;
-					margin:-4px 0px 0px 8px;
+.modal-dialog {
+	color:#888;
+	margin:70px auto;
+}
+.addFollowingModal {
+	input {
+		width:100% !important;
+		font-size:14pt;
+	}
+}
+
+.timonmain {
+	* { 
+		box-layout:border-box;
+		font-family:'helvetica neue', 'helvetica';
+	}
+	.profilecard {
+		position:absolute;
+		top:60px;
+		left:40px;
+		width:290px;
+		height:210px;
+		padding:0px; 
+		background-color:white;
+		border-radius:4px;		
+		.identity {
+			color:#666;
+			padding:85px 20px 20px 20px;
+
+			.name { 
+				font-size:18pt;
+			}
+			.stats { 
+				font-variant:small-caps;
+				width:49%;
+				.count { 
+					vertical-align:top;
+					color:#00bbff;
 					font-size:16pt;
-					color:#aaa;
+					.addbtn { 
+						padding:0px;
+						margin:-4px 0px 0px 8px;
+						font-size:16pt;
+						color:#aaa;
+					}
+				}
+				display:inline-block;
+			}
+		}
+		.compose {
+			position:relative;
+			padding:10px 10px 10px 10px;
+			background:#BFBFFF !important;
+			border-top:1px solid #eee;
+			.newpostinput {
+				width:100%;
+				border:1px solid #eee;
+				border-radius:4px;
+			}
+			.newpoststats { 
+				position:relative;
+				.length { font-size:16pt; color:#222222; }
+				.submit { 
+					position:absolute;
+					right:0px;
+					top:0px;
 				}
 			}
-			display:inline-block;
 		}
 	}
-	.compose {
-		position:relative;
-		padding:10px 10px 10px 10px;
-		background:#BFBFFF !important;
-		border-top:1px solid #eee;
-		.newpostinput {
-			width:100%;
-			border:1px solid #eee;
-			border-radius:4px;
-		}
-		.newpoststats { 
-			position:relative;
-			.length { font-size:16pt; color:#222222; }
-			.submit { 
-				position:absolute;
-				right:0px;
-				top:0px;
-			}
-		}
-	}
+	
+	
 }
