@@ -1,17 +1,21 @@
 {
-	"name": "channel manager",
+	"name": "timon",
 	"version": 0.1,
 	"type":["app"],
-	"description": "channel manager",
+	"description": "Twitter Inspired Microblogging On INDX",
 	"on_boot": 0,
 	"configpanel":"html/index.html",
 	"icons": { 
-		"128": "img/chan.gif"
+		"128": "img/icon.jpg"
 	},
 	"author": [
 		{
 			"name": "eMax",
 			"email":"max@hip.cat"
+		},
+		{
+			"name": "eDan",
+			"email":"ds@ecs.soton.ac.uk"
 		}
 	]
 }
