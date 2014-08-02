@@ -96,6 +96,12 @@ angular.module('timon',['indx', 'ngAnimate'])
 
 			return d.promise();
 		};
+		$scope.deletePost = function(m) { 
+			delete $scope.timeline[m.id];
+			m.destroy().then(function(d) { 
+				console.info('deleted ', m.id);
+			}).fail(function(err) { console.error('failed to delete', m.id, err); });
+		};
 		$scope.clearNewPostInput = function() { 
 			console.log('clearnewpostinput');
 			$scope.newpostinput.text = '';
