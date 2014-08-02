@@ -6,13 +6,15 @@ angular.module('timon')
 		return {
 			restrict:'E',
 			scope:{m:'=model'},
+			replace:true,
 			templateUrl:'tmpl/tipost.html',
 			controller:function($scope, channels, utils) {
 				// not much needed here
 				window.tweet = $scope.m;
 				var u = utils;
 				$scope.shortFormat = function(d) { 
-					if (new Date().valueOf() - d.valueOf() < 15*60*1000) { 
+					if (new Date()
+						.valueOf() - d.valueOf() < 15*60*1000) { 
 						return Math.round((new Date().valueOf() - d.valueOf())/(60*1000)) + ' mins ago';
 					}
 					if (d) { 
