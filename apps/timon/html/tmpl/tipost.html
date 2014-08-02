@@ -1,0 +1,16 @@
+<div class="tipost">
+	<div class="content">
+		<div class="authorline">
+			<div class="profilepic"></div>		
+			<div class='username' ng-bind="m.peek('author').peek('name')"></div>
+			<div class='fullname' ng-bind="m.peek('author').peek('username')"></div>
+			<div class='datetime' ng-bind="shortFormat(m.peek('created'))"></div>
+		</div>
+		<div class='body' ng-bind="m.peek('body')"></div>
+		<div class='controls'>
+			<div class="btn glyphicon glyphicon-share-alt" ng-click="replyTo(m)"></div>
+			<div class="btn glyphicon glyphicon-retweet" ng-click="retweet(m)"></div>
+			<div class="btn glyphicon glyphicon-star-empty" ng-click="favourite(m)"></div>
+		</div>
+	</div>
+</div>
