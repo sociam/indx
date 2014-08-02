@@ -202,14 +202,18 @@ class ObjectStoreAsync:
             self.runIDQuery(query, cur).addCallbacks(ran_cb, this_d.errback)
             return this_d
 
-        d_list = []
+        queryQ = []
         for queryKey, query in uniqueQueries.items():
-            d_list.append(runAndAssign(queryKey, query))
+            queryQ.append( (queryKey, query) )
 
+        def nextQ():
+            if len(queryQ) < 1:
+                return_d.callback(results)
+            else:
+                queryKey, query = queryQ.pop()
+                runAndAssign(queryKey, query).addCallbacks(lambda empty: nextQ(), return_d.errback)
 
-        d = DeferredList(d_list)
-        d.addCallbacks(lambda empty: return_d.callback(results), return_d.errback)
-
+        nextQ()
         return return_d
 
     def _notify(self, cur, version, commits = None, propagate = True):
