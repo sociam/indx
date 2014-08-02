@@ -2,6 +2,7 @@
 
 body {
 	background-color:#eee;
+	height:100%;
 }
 
 .modal-dialog {
@@ -20,6 +21,7 @@ body {
 		box-layout:border-box;
 		font-family:'helvetica neue', 'helvetica';
 	}
+	height:100% !important;	
 	.profilecard {
 		position:absolute;
 		top:60px;
@@ -30,9 +32,9 @@ body {
 		background-color:white;
 		border-radius:4px;		
 		.identity {
+			position:relative;
 			color:#666;
 			padding:85px 20px 20px 20px;
-
 			.name { 
 				font-size:18pt;
 			}
@@ -45,12 +47,23 @@ body {
 					font-size:16pt;
 					.addbtn { 
 						padding:0px;
-						margin:-4px 0px 0px 8px;
-						font-size:16pt;
+						position:relative; 
+						top:-4px;
+						margin:0px 0px 0px 5px;
+						font-size:18pt;
 						color:#aaa;
-					}
+						&:hover {
+							color:#00bbff;
+							font-weight:bold;
+						}
+					} 
 				}
 				display:inline-block;
+			}
+			.configbtn {
+				font-family:"Glyphicons Halflings" !important;
+				position:absolute;
+				right:10px; top:10px;
 			}
 		}
 		.compose {
@@ -74,6 +87,45 @@ body {
 			}
 		}
 	}
-	
-	
+
+	// posts!
+	.timeline {
+		background-color:white;
+		width:590px;
+		margin-left:360px;
+		margin-top:60px;
+		border-radius:4px;
+		h2 { color:#888; }
+		padding-top:6px; 
+		padding-left:10px;
+		.tipost {
+			padding-top:6px; padding-left:10px;
+			.content {
+				margin-left:47px;
+				.profilepic { 
+					margin-left:-47px;
+					height:38px; width:38px;
+					border-radius:3px;
+					background-color:#888;
+				}
+				.authorline { 
+					vertical-align:top;
+					div { display:inline-block; vertical-align:top; }
+					.username { font-weight:bold; color:black; }
+					.fullname, .datetime { font-size: 10pt; color:#888; }
+				}
+				.body { 
+					font-size:12pt;
+					padding:6px 0px 6px 0px;
+				}
+				.controls {
+					div { display:inline-block; }
+					padding:6px 0px 6px 0px;
+				}
+			}
+			max-width:588px;
+			max-height:156px;
+		}	
+		height:100% !important;		
+	}
 }

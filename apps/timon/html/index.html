@@ -15,15 +15,38 @@
       <div class="modal-content">
         <div class="modal-header">
           <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-          <h4 class="modal-title">add a person to follow</h4>
+          <h4 class="modal-title">add a follow:</h4>
         </div>
         <div class="modal-body">
-          <h5>WebID or Channel URI:</h5>
+          <h5><a href="" target="_blank">WebID</a> or channel URI:</h5>
           <input type="text" ng-model="new_following_url" placeholder='https://'></input>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-          <button type="button" class="btn btn-primary" ng-click="addFollowing(new_following_url) && clearField(new_following_url)">Add to Following</button>
+          <button type="button" class="btn btn-primary" ng-click="(addFollowing(new_following_url) || true) && (new_following_url = '')">+ add following</button>
+        </div>
+      </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+  </div><!-- /.modal -->  
+  <div class="configModal modal fade" id="configModal">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+          <h4 class="modal-title">configure timon</h4>
+        </div>
+        <div class="modal-body">
+          <div>
+            <h5>display name:</h5>
+            <input type="text" ng-model="config.displayname"></input>
+          </div>
+          <div>
+            <h5>profile pic:</h5>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary" ng-click="saveConfig(config)">Save</button>
         </div>
       </div><!-- /.modal-content -->
     </div><!-- /.modal-dialog -->
@@ -34,20 +57,22 @@
     <div class="profilecard">
       <div class="identity">
         <div class="name">{{ username }}</div>
-        <div class="stats">following <div class="count">{{ following.length }}<span class="addbtn" data-toggle='modal' data-target='#addFollowingModal'>+</span></div></div>
+        <div class="configbtn btn glyphicon glyphicon-cog" data-toggle='modal' data-target='#configModal'></div>
+        <div class="stats">following <div class="count">{{ _(following).pairs().length }}<span class="addbtn" data-toggle='modal' data-target='#addFollowingModal'>+</span></div></div>
         <div class="stats">followers <div class="count">{{ followers.length }}</div></div>
       </div>
       <div class="compose">
         <textarea class="newpostinput" ng-model="newpost"></textarea>
         <div class="newpoststats" ng-if="newpost.length > 0">
           <div class="length">{{ 140 - newpost.length }}</div>
-          <div class="submit btn btn-default">timonify</div>
+          <div class="submit btn btn-default" ng-click="(addPost(newpostinput) || true) && (newpostinput = '')">timonify</div>
         </div>
       </div>
     </div>
-    <div class="maincol">    
+    <div class="timeline">
+      <h2>timeline</h2>
       <div class="timons">
-        <timon ng-repeat='t in timons' model="t"></timon>
+        <tipost ng-repeat='t in timeline | orderObjectBy:"created":true' model="t"></tipost>
       </div>
     </div>
   </div>
@@ -63,5 +88,6 @@
   <script src="/js/indx-utils.js" type="text/javascript"></script>
   <script src="/components/toolbar/toolbar.js" type="text/javascript"></script>
   <script src="js/timon.js" type="text/javascript"></script>
+  <script src="js/tipost.js" type="text/javascript"></script>
 </body>
 </html>
