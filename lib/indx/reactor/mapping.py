@@ -64,8 +64,9 @@ class IndxMapping:
         boxid = self.get_arg(request, 'box', force_get=force_get) or self.base_path
         appid = self.get_arg(request, 'app', force_get=force_get) or "--unspecified-app--"
 
-        def throw500(err):
-            logging.error(err)
+        def throw500(failure):
+            failure.trap(Exception)
+            logging.error("Failure getting new token: {0}".format(failure))
             request.callback(IndxResponse(500, "Internal Server Error"))
 
         if tid is None:
