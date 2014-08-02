@@ -25,7 +25,7 @@ angular.module('timon',['indx'])
 					var um = JSON.parse(l.user_metadata);
 					if (um && um.name) { return d.resolve(l, um.name); }
 				}
-				d.resolve(l.username);
+				d.resolve(l, l.username);
 			}).fail(function(err) { console.error(err); d.reject(); });
 			return d.promise();
 		};
@@ -78,6 +78,7 @@ angular.module('timon',['indx'])
 				username = $scope.login.username, 
 				name=  $scope.name, 
 				d = u.deferred();
+
 
 			box.obj($scope.login.username).then(function(author) { 
 				if (!author.peek('name')) { 
