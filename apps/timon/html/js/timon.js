@@ -53,7 +53,7 @@ angular.module('timon',['indx'])
 					console.error('error setting up standing query for following ', err); 
 				});
 				b.standingQuery({ type:'timfollow' }, function(following) {
-					console.info('new following > ', message);
+					console.info('new following > ', following);
 					sa(function() { $scope.following[following.peek('url')] = following; });
 				}).then(function(diffid) { diffQs.push(diffid); }).fail(function(err) { 
 					console.error('error setting up standing query for following ', err); 
@@ -96,6 +96,9 @@ angular.module('timon',['indx'])
 		$scope.clearNewPostInput = function() { 
 			console.log('clearnewpostinput');
 			$scope.newpostinput.text = '';
+		};
+		$scope.closeAddFollowing = function() { 
+			$("#addFollowingModal").modal('hide');
 		};
 		$scope.$watch('selected_box', function(boxid) {	initialise(boxid); });
 
