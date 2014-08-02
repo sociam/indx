@@ -1,6 +1,6 @@
 /* jshint undef: true, strict:false, trailing:false, unused:false, -W110 */
 /* global require, exports, console, process, module, describe, it, expect, jasmine, angular */
-angular.module('timon',['indx'])
+angular.module('timon',['indx', 'ngAnimate'])
 	.filter('orderObjectBy', function() {
 		return function(items, field, reverse) {
 		    var filtered = [];

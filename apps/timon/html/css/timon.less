@@ -101,7 +101,14 @@ body {
 		padding-top:6px; 
 		padding-left:14px;
 		padding-right:14px;
+
+			-webkit-transition:all 1.4s ease-in-out;
+			-moz-transition:all 1.4s ease-in-out;
+			-o-transition:all 1.4s ease-in-out;
+			transition:all 1.4s ease-in-out;
+
 		.tipost {
+			overflow:hidden;
 			padding:10px 0px 10px 10px;
 			border-bottom:1px solid #eee;
 			.content {
@@ -138,7 +145,24 @@ body {
 			}
 			max-width:588px;
 			max-height:156px;
-		}	
-		min-height:100% !important;		
+			// transform: translate3d(0,0,0); // force 3D accel
+			// position:absolute;
+
+ 
+			-webkit-transition:all 0.5s ease-in-out;
+			-moz-transition:all 0.5s ease-in-out;
+			-o-transition:all 0.5s ease-in-out;
+			transition:all 0.5s ease-in-out;
+			&.ng-enter {
+				padding:0px 0px 0px 10px;
+				max-height:0px;
+			}
+			&.ng-enter-active {
+				padding:10px 0px 10px 10px;
+				max-height:200px;
+			}
+		}
+		height:100% !important;		
 	}
 }
+
