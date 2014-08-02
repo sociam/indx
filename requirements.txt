@@ -14,3 +14,4 @@ keyring
 fs
 autobahn
 negotiator
+rdflib
