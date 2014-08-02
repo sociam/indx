@@ -4,9 +4,12 @@ angular.module('timon',['indx'])
 	.filter('orderObjectBy', function() {
 		return function(items, field, reverse) {
 		    var filtered = [];
-		    angular.forEach(items, function(item) {  filtered.push(item);  });
+		    angular.forEach(items, function(item) { filtered.push(item);  });
 		    filtered.sort(function (a, b) {
-		      return (a[field] > b[field] ? 1 : -1);
+		      var av = a.peek(field), bv = b.peek(field);
+		      if (_.isDate(av)) { av = av.valueOf(); }
+		      if (_.isDate(bv)) { bv = bv.valueOf(); }
+		      return (av > bv ? 1 : -1);
 		    });
 		    if(reverse) filtered.reverse();
 		    return filtered;
@@ -53,7 +56,7 @@ angular.module('timon',['indx'])
 					console.error('error setting up standing query for following ', err); 
 				});
 				b.standingQuery({ type:'timfollow' }, function(following) {
-					console.info('new following > ', message);
+					console.info('new following > ', following);
 					sa(function() { $scope.following[following.peek('url')] = following; });
 				}).then(function(diffid) { diffQs.push(diffid); }).fail(function(err) { 
 					console.error('error setting up standing query for following ', err); 
@@ -96,6 +99,9 @@ angular.module('timon',['indx'])
 		$scope.clearNewPostInput = function() { 
 			console.log('clearnewpostinput');
 			$scope.newpostinput.text = '';
+		};
+		$scope.closeAddFollowing = function() { 
+			$("#addFollowingModal").modal('hide');
 		};
 		$scope.$watch('selected_box', function(boxid) {	initialise(boxid); });
 
