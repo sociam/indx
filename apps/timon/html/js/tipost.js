@@ -16,7 +16,6 @@ angular.module('timon')
 					if (new Date().valueOf() - d.valueOf() < 15*60*1000) { 
 						return Math.round((new Date().valueOf() - d.valueOf())/(60*1000)) + ' mins ago';
 					}
-					console.log('shortFormat >> ', d);
 					if (d) { 
 						return u.MON_SHORT[d.getMonth()] + ' ' + (d.getDate() + 1) + ' - ' + u.toISOTimeString(d);
 					}
