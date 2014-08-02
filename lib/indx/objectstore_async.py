@@ -1936,7 +1936,11 @@ class ConnectionSharer:
                 logging.debug("ConnectionSharer observer dispatching diff to {0} subscribers, diff: {1}, queryResults: {2}".format(len(self.subscribers), data, notify['queryResults']))
                 for f_id, listener in self.subscribers.items():
                     if listener.query and listener.query != "":
-                        listener.observer(data, notify['queryResults']["{0}".format(listener.query)])
+                        queryKey = "{0}".format(listener.query)
+                        if queryKey in notify['queryResults']:
+                            listener.observer(data, notify['queryResults'][queryKey])
+                        else:
+                            listener.observer(data, [])
                     else:
                         listener.observer(data, [])
 
