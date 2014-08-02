@@ -1,10 +1,12 @@
 
 
+html, body {
+	min-height:100%; height:100%;
+	min-width:100%; width:100%;
+}
 body {
 	background-color:#eee;
-	height:100%;
 }
-
 .modal-dialog {
 	color:#888;
 	margin:70px auto;
@@ -17,6 +19,7 @@ body {
 }
 
 .timonmain {
+	h1,h2,h3,h4 { font-weight:200; color:#aaa; margin-top:10px; }
 	* { 
 		box-layout:border-box;
 		font-family:'helvetica neue', 'helvetica';
@@ -95,9 +98,8 @@ body {
 		margin-left:360px;
 		margin-top:60px;
 		border-radius:4px;
-		h2 { color:#888; }
 		padding-top:6px; 
-		padding-left:10px;
+		padding-left:14px;
 		.tipost {
 			padding-top:6px; padding-left:10px;
 			.content {
