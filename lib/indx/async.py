@@ -21,6 +21,7 @@ import cjson
 import traceback
 import StringIO
 import uuid
+import copy
 from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
 import indx_pg2 as database
@@ -461,16 +462,24 @@ class IndxDiffListener:
 
         # TODO this is where ['data']['data'] is -> the diff is filtered_diff below in ['data'], and it has ['data'] in it
 
+        this_diff = {}
+        this_data = copy.deepcopy(diff['data'])
         if not(self.query is None and len(self.ids) == 0): # if there's no query and no IDs specified, then don't filter
             logging.debug("IndxDiffListener Observer {0} IS calling diff filter using id_filter: {1}".format(self.diffid, id_filter))
-            filtered_diff = self.filterDiff(diff['data'], id_filter)
-            diff['data'] = filtered_diff
+            filtered_diff = self.filterDiff(this_data, id_filter)
+            this_diff['data'] = filtered_diff
         else:
             logging.debug("IndxDiffListener Observer {0} is NOT calling diff filter using id_filter: {1}".format(self.diffid, id_filter))
+            this_diff['data'] = diff['data']
 
-        if not self.isEmptyDiff(diff['data']):
+        # shallow copy some of the diff
+        for k in diff.keys():
+            if k != 'data':
+                this_diff[k] = copy.copy(diff[k])
+
+        if not self.isEmptyDiff(this_diff['data']):
             logging.debug("IndxDiffListener Observer {0} IS sending an update".format(self.diffid))
-            self.sendJSON(self.requestid, {"action": "diff", "diffid": self.diffid, "operation": "update", "data": diff}, "diff")
+            self.sendJSON(self.requestid, {"action": "diff", "diffid": self.diffid, "operation": "update", "data": this_diff}, "diff")
         else:
             logging.debug("IndxDiffListener Observer {0} is NOT sending an update".format(self.diffid))
 
