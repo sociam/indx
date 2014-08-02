@@ -1,54 +1,143 @@
-* { 
-	box-layout:border-box;
-	font-family:'helvetica neue', 'helvetica';
-}
 
+
+html, body {
+	min-height:100%; height:100%;
+	min-width:100%; width:100%;
+}
 body {
 	background-color:#eee;
 }
-.profilecard {
-	position:absolute;
-	left:20px;
-	width:290px;
-	height:210px;
-	padding:0px; 
-	background-color:white;
-	border-radius:4px;		
-	.identity {
-		color:#666;
-		padding:85px 20px 20px 20px;
+.modal-dialog {
+	color:#888;
+	margin:70px auto;
+}
+.addFollowingModal {
+	input {
+		width:100% !important;
+		font-size:14pt;
+	}
+}
 
-		.name { 
-			font-size:18pt;
-		}
-		.stats { 
-			font-variant:small-caps;
-			width:49%;
-			.count { 
-				color:#00bbff;
-				font-size:16pt;
+.timonmain {
+	h1,h2,h3,h4 { font-weight:200; color:#aaa; margin-top:10px; }
+	* { 
+		box-layout:border-box;
+		font-family:'helvetica neue', 'helvetica';
+	}
+	height:100% !important;	
+	.profilecard {
+		position:absolute;
+		top:60px;
+		left:40px;
+		width:290px;
+		height:210px;
+		padding:0px; 
+		background-color:white;
+		border-radius:4px;		
+		.identity {
+			position:relative;
+			color:#666;
+			padding:85px 20px 20px 20px;
+			.name { 
+				font-size:18pt;
 			}
-			display:inline-block;
+			.stats { 
+				font-variant:small-caps;
+				width:49%;
+				.count { 
+					vertical-align:top;
+					color:#00bbff;
+					font-size:16pt;
+					.addbtn { 
+						padding:0px;
+						position:relative; 
+						top:-4px;
+						margin:0px 0px 0px 5px;
+						font-size:18pt;
+						color:#aaa;
+						&:hover {
+							color:#00bbff;
+							font-weight:bold;
+						}
+					} 
+				}
+				display:inline-block;
+			}
+			.configbtn {
+				font-family:"Glyphicons Halflings" !important;
+				position:absolute;
+				right:10px; top:10px;
+			}
+		}
+		.compose {
+			position:relative;
+			padding:10px 10px 10px 10px;
+			background:#EFEFFF !important;
+			border-top:1px solid #eee;
+			.newpostinput {
+				width:100%;
+				border:1px solid #eee;
+				border-radius:4px;
+			}
+			.newpoststats { 
+				position:relative;
+				.length { font-size:16pt; color:#888; font-weight:200; }
+				.submit { 
+					position:absolute;
+					right:0px;
+					top:0px;
+				}
+			}
 		}
 	}
-	.compose {
-		position:relative;
-		padding:10px 10px 10px 10px;
-		background:#BFBFFF !important;
-		border-top:1px solid #eee;
-		.newpostinput {
-			width:100%;
-			border:1px solid #eee;
-			border-radius:4px;
-		}
-		.newpoststats { 
-			position:relative;
-			.length { font-size:16pt; color:#222222; }
-			.submit { 
-				position:absolute;
-				right:0px;
-				top:0px;
+
+	// posts!
+	.timeline {
+		background-color:white;
+		width:590px;
+		margin-left:360px;
+		margin-top:60px;
+		border-radius:4px;
+		padding-top:6px; 
+		padding-left:14px;
+		.tipost {
+			padding:10px 0px 10px 10px;
+			border-bottom:1px solid #eee;
+			.content {
+				margin-left:47px;
+				.profilepic { 
+					float:left;
+					margin-left:-47px;
+					margin-top:3px;
+					height:38px; width:38px;
+					border-radius:3px;
+					background-color:#888;
+				}
+				.authorline { 
+					vertical-align:top;
+					div { display:inline-block; vertical-align:top; }
+					.username { font-weight:bold; color:black; }
+					.fullname, .datetime { font-size: 10pt; color:#888; }
+				}
+				.body { 
+					font-size:12pt;
+					padding:0px 0px 4px 0px;
+				}
+				.controls {
+					div { 
+						font-size:12pt;
+						font-family:"Glyphicons Halflings" !important;
+						color:#aaa;
+						display:inline-block; 
+						padding:3px 40px;
+					}
+					padding:0px;
+					margin:0px;
+				}
 			}
-		}
+			max-width:588px;
+			max-height:156px;
+		}	
+		height:100% !important;		
 	}
 }

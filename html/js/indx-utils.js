@@ -9,6 +9,28 @@
 			var jQ = jQuery;
 			return {
 				DEBUG_LEVELS: { INFO:INFO, LOG:LOG, WARN:WARN, ERROR:ERROR },
+				SEVEN_DAYS_USEC : 5*24*60*60*1000, 
+				TWENTY_FOUR_HOURS_USEC : 24*60*60*1000,
+				DOW_SHORT: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+				DOW_FULL:['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+				MON_SHORT : ['Jan','Feb','Mar','Apr','May','Jun','July','Aug','Sep','Oct','Nov','Dec'],
+				startofDay: function(d) { 
+					d = new Date(d);
+					d.setHours(0);
+					d.setMinutes(0);
+					d.setSeconds(0);
+					d.setMilliseconds(0);
+					return d;
+				},
+				toISODateString:function(d) { 
+					return [d.getFullYear(), this.padded(d.getMonth() + 1), this.padded(d.getDate())].join('-');
+				},
+				toISOTimeString:function(t) { 
+					return this.padded(t.getHours())+":"+this.padded(t.getMinutes());
+				},
+				padded:function(n) { 
+					return n < 10 ? '0'+n : ''+n;
+				},
 				setDebugLevel:function(lvl) {	DEBUG_LEVEL = lvl; return lvl; },
                 uuid: function(){ return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {var r = Math.random()*16|0,v=c=='x'?r:r&0x3|0x8;return v.toString(16);});},
                 toBlankDict:function(L) {
