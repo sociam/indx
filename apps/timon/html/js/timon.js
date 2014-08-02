@@ -18,7 +18,7 @@ angular.module('timon',['indx'])
 			sa = function(fn) { return u.safeApply($scope, fn); },
 			guid = u.guid();
 
-		var get_username = function(store) { 
+		var get_user = function(store) { 
 			var d = u.deferred();
 			store.checkLogin().then(function(l) { 
 				if (l && l.user_metadata) { 
@@ -31,7 +31,6 @@ angular.module('timon',['indx'])
 		};
 
 		$scope._ = _;
-
 
 		var initialise = function(boxid) { 
 			// kill previous queries
@@ -48,32 +47,54 @@ angular.module('timon',['indx'])
 			store.getBox(boxid).then(function(b) { 
 				box = b;
 				b.standingQuery({ type:'timpost' }, function(message) { 
+					console.info('new post coming in > ', message);
 					sa(function() { $scope.timeline[message.id] = message; });
 				}).then(function(diffid) { diffQs.push(diffid); }).fail(function(err) { 
 					console.error('error setting up standing query for following ', err); 
 				});
 				b.standingQuery({ type:'timfollow' }, function(following) {
-					console.info('!!!!!!!!! standing query following .. ', following);
+					console.info('new following > ', message);
 					sa(function() { $scope.following[following.peek('url')] = following; });
 				}).then(function(diffid) { diffQs.push(diffid); }).fail(function(err) { 
 					console.error('error setting up standing query for following ', err); 
 				});
 			}).fail(function(err) {  console.error('error getting box ', err); });
 
-			get_username(store).then(function(login, uname) { 
+			get_user(store).then(function(login, name) { 
 				$scope.login = login; 
-				$scope.name = uname; 
+				$scope.name = name; 
 			});
 		};
 
 		$scope.addFollowing = function(url) { 
+			console.log('adding following url ... ', url);
 			var id = 'following-'+url;
 			return box.obj(id).set({url:url, followed:new Date(), type:'timfollow'}).save();
 		};
 		$scope.addPost = function(body) { 
-			var id = 'timpost-'+u.guid();
-			var author = { id: $scope.login.username, username: $scope.login.username, name: $scope.name };
-			return box.obj(id).set({body:body, author:author, created: new Date(), type:'timpost'}).save();
+			console.log('add post >> ', body);
+
+			var id = 'timpost-'+u.guid(), 
+				username = $scope.login.username, 
+				name=  $scope.name, 
+				d = u.deferred();
+
+			box.obj($scope.login.username).then(function(author) { 
+				if (!author.peek('name')) { 
+					author.set({name:name});
+					author.save();
+				}
+				box.obj(id).set({body:body, author:author, created: new Date(), type:'timpost'})
+					.save()
+					.then(d.resolve)
+					.fail(function(err) { console.error('error posting tweet', err); d.reject(); });
+			}).fail(function(err) { console.error('error getting author ', err); d.reject(); });
+
+			return d.promise();
+		};
+		$scope.clearNewPostInput = function() { 
+			console.log('clearnewpostinput');
+			$scope.newpostinput.text = '';
 		};
 		$scope.$watch('selected_box', function(boxid) {	initialise(boxid); });
 

@@ -56,16 +56,16 @@
   <div class="timonmain" ng-if="userLoggedIn">
     <div class="profilecard">
       <div class="identity">
-        <div class="name">{{ username }}</div>
+        <div class="name">{{ name }}</div>
         <div class="configbtn btn glyphicon glyphicon-cog" data-toggle='modal' data-target='#configModal'></div>
         <div class="stats">following <div class="count">{{ _(following).pairs().length }}<span class="addbtn" data-toggle='modal' data-target='#addFollowingModal'>+</span></div></div>
         <div class="stats">followers <div class="count">{{ followers.length }}</div></div>
       </div>
       <div class="compose">
-        <textarea class="newpostinput" ng-model="newpost"></textarea>
-        <div class="newpoststats" ng-if="newpost.length > 0">
-          <div class="length">{{ 140 - newpost.length }}</div>
-          <div class="submit btn btn-default" ng-click="(addPost(newpostinput) || true) && (newpostinput = '')">timonify</div>
+        <textarea class="newpostinput" ng-model="newpostinput.text" ng-focus='newfocus=true'></textarea>
+        <div class="newpoststats" ng-if="newfocus">
+          <div class="length">{{ 140 - newpostinput.text.length }}</div>
+          <div class="submit btn btn-default" ng-disabled='newpostinput.text.trim().length === 0' ng-click="addPost(newpostinput.text) && (newpostinput.text = '')">post</div>
         </div>
       </div>
     </div>
