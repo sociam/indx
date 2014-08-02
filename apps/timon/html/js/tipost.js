@@ -9,7 +9,6 @@ angular.module('timon')
 			templateUrl:'tmpl/tipost.html',
 			controller:function($scope, channels, utils) {
 				// not much needed here
-				console.log("scope ", $scope.m);
 				window.tweet = $scope.m;
 				var u = utils;
 				$scope.shortFormat = function(d) { 
