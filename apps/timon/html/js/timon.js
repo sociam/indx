@@ -10,9 +10,11 @@ angular.module('timon',['indx', 'ngAnimate'])
 				var el = $element[0],
 					fn = $attrs.entercall;
 				console.log('element >> ', $scope, el, fn);
-				$(el).on('keyup', function(evt) { 
-					if (evt.keyCode == 13) { $scope.$eval(fn); }
-					evt.preventDefault();
+				$(el).on('keydown', function(evt) { 
+					if (evt.keyCode == 13) { 
+						$scope.$eval(fn); 
+						evt.preventDefault();
+					}
 				});
 			}
 		};
@@ -49,6 +51,7 @@ angular.module('timon',['indx', 'ngAnimate'])
 		};
 
 		$scope._ = _;
+		$scope.input = {};
 
 		var initialise = function(boxid) { 
 			// kill previous queries
@@ -87,10 +90,10 @@ angular.module('timon',['indx', 'ngAnimate'])
 		$scope.addFollowing = function(url) { 
 			console.log('adding following url ... ', url);
 			var id = 'following-'+url;
-			return box.obj(id).set({url:url, followed:new Date(), type:'timfollow'}).save();
+			box.obj(id).set({url:url, followed:new Date(), type:'timfollow'}).save();
+			return true;
 		};
 		$scope.addPost = function(body) { 
-			console.log('add post >> ', body);
 
 			var id = 'timpost-'+u.guid(), 
 				username = $scope.login.username, 
@@ -109,7 +112,8 @@ angular.module('timon',['indx', 'ngAnimate'])
 					.fail(function(err) { console.error('error posting tweet', err); d.reject(); });
 			}).fail(function(err) { console.error('error getting author ', err); d.reject(); });
 
-			return d.promise();
+			// return d.promise();
+			return true;
 		};
 		$scope.deletePost = function(m) { 
 			delete $scope.timeline[m.id];
@@ -117,9 +121,9 @@ angular.module('timon',['indx', 'ngAnimate'])
 				console.info('deleted ', m.id);
 			}).fail(function(err) { console.error('failed to delete', m.id, err); });
 		};
-		$scope.clearNewPostInput = function() { 
-			console.log('clearnewpostinput');
-			$scope.newpostinput.text = '';
+		$scope.clearInput = function(name) { 
+			$scope.input[name] = '';
+			return true;
 		};
 		$scope.closeAddFollowing = function() { 
 			$("#addFollowingModal").modal('hide');
