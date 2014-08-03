@@ -1,7 +1,22 @@
 /* jshint undef: true, strict:false, trailing:false, unused:false, -W110 */
-/* global require, exports, console, process, module, describe, it, expect, jasmine, angular */
+/* global require, exports, console, process, module, describe, it, expect, jasmine, angular, _, $ */
 angular.module('timon',['indx', 'ngAnimate'])
-	.filter('orderObjectBy', function() {
+	.directive('entercall', function() { 
+		return {
+			link:function($element, $attributes) { 
+				console.log('link .. ', $element, $attributes);
+			},
+			controller:function($scope, $element, $attrs) { 
+				var el = $element[0],
+					fn = $attrs.entercall;
+				console.log('element >> ', $scope, el, fn);
+				$(el).on('keyup', function(evt) { 
+					if (evt.keyCode == 13) { $scope.$eval(fn); }
+					evt.preventDefault();
+				});
+			}
+		};
+	}).filter('orderObjectBy', function() {
 		return function(items, field, reverse) {
 		    var filtered = [];
 		    angular.forEach(items, function(item) { filtered.push(item);  });
@@ -113,6 +128,7 @@ angular.module('timon',['indx', 'ngAnimate'])
 			m.destroy();
 			sa(function() { delete $scope.following[m.peek('url')] });
 		};
+
 		$scope.$watch('selected_box', function(boxid) {	initialise(boxid); });
 
 		window.$s = $scope;

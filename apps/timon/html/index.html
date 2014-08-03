@@ -1,4 +1,4 @@
-<!doctype html>
+f<!doctype html>
 <html lang="en">
 <head>
 	<link href="/lib/angular-ui/build/angular-ui.min.css" rel="stylesheet"/>
@@ -22,7 +22,7 @@
         </div>
         <div class="modal-body">
           <h5><a href="" target="_blank">WebID</a> or channel URI:</h5>
-          <input type="text" ng-model="new_following_url" placeholder='https://'></input>
+          <input type="text" ng-model="new_following_url" placeholder='https://' entercall='addFollowing(new_following_url) || clearFollowing()'></input>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
@@ -98,7 +98,7 @@
         <div class="stats">followers <div class="count">{{ followers.length }}</div></div>
       </div>
       <div class="compose">
-        <textarea class="newpostinput" ng-model="newpostinput.text" ng-focus='newfocus=true'></textarea>
+        <textarea class="newpostinput" ng-model="newpostinput.text" ng-focus='newfocus=true' entercall="addPost(newpostinput.text) && (newpostinput.text = '')"></textarea>
         <div class="newpoststats" ng-if="newfocus">
           <div class="length">{{ 140 - newpostinput.text.length }}</div>
           <div class="submit btn btn-default" ng-disabled='newpostinput.text.trim().length === 0' ng-click="addPost(newpostinput.text) && (newpostinput.text = '')">post</div>
