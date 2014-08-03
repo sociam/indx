@@ -19,17 +19,24 @@ angular.module('indx').factory('channels', function(client, utils)  {
             name:'foafiser-'+srcboxid+'-'+dstboxid,
             query: { type:'Person' },
             destbox:dstboxid,
-            transform: function(pobj) {
-                console.log('pobj', pobj); 
+            transform: function(pobj, box, u) {
                 var foafns = 'http://xmlns.com/foaf/0.1/',
                     rdf = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
                     rdfs = 'http://www.w3.org/2000/01/rdf-schema#',
-                    foafag = {};
+                    d = u.deferred();
 
-                foafag[rdf+'type'] = foafns+'Agent';
-                foafag[foafns+'givenName'] = pobj.peek('given_name');
-                foafag[foafns+'familyName'] = pobj.peek('surname');
-                return foafag;
+                console.log('yo ', pobj, box, u);
+
+                box.getObj(foafns+'Agent').then(function(foafAgent) {
+                    var foafag = {};                    
+                    foafag.id = 'foaf-'+pobj.id;
+                    foafag[rdf+'type'] = foafAgent;
+                    foafag[foafns+'givenName'] = pobj.peek('given_name');
+                    foafag[foafns+'familyName'] = pobj.peek('surname');
+                    d.resolve(foafag);
+                }).fail(d.reject);
+
+                return d.promise();
             }
         });
         return test_channels;
@@ -120,7 +127,7 @@ angular.module('indx').factory('channels', function(client, utils)  {
         },
         _handleResult: function(result) {
             // gets called on live query result
-            return u.dresolve(this.transform(result));
+            return this.transform(result, this.destbox, u);
         },
         stop:function() {
             if (this.livequery) { this.livequery.stop(); }

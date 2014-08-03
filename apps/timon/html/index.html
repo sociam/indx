@@ -22,7 +22,7 @@
         </div>
         <div class="modal-body">
           <h5><a href="" target="_blank">WebID</a> or channel URI:</h5>
-          <input type="text" ng-model="input.new_following_url" placeholder='https://' entercall='addFollowing(input.new_following_url) && clearInput("new_following_url") && closeAddFollowing()'></input>
+          <input type="text" ng-model="input.new_following_url" placeholder=' channel url ' entercall='addFollowing(input.new_following_url) && clearInput("new_following_url") && closeAddFollowing()'></input>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
@@ -48,7 +48,7 @@
             </table>
           </div>
           <div class="addchan">add a follow:
-              <input type="text" ng-model="input.new_following_url" placeholder='https://' entercall="addFollowing(input.new_following_url) && clearInput('new_following_url')">
+              <input type="text" ng-model="input.new_following_url" placeholder=' channel url ' entercall="addFollowing(input.new_following_url) && clearInput('new_following_url')">
               <button type="button" class="btn btn-primary" ng-click="addFollowing(input.new_following_url) && clearInput('new_following_url') && closeAddFollowing()">+ add</button>
           </div> 
         </div><!--
