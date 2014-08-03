@@ -74,7 +74,11 @@ class IndxWebHandler(Resource):
 
                 default_params = negotiator.AcceptParameters(negotiator.ContentType(self.defaultType), negotiator.Language("en"))
                 cn = negotiator.ContentNegotiator(default_params, acceptable)
-                chosenType = cn.negotiate(accept, "en").content_type.mimetype()
+                negotiated = cn.negotiate(accept, "en")
+                if negotiated:
+                    chosenType = negotiated.content_type.mimetype()
+                else:
+                    chosenType = self.defaultType
 
                 for handler in self.contentTypesHandlers:
                     if handler[0] == chosenType:
@@ -204,17 +208,20 @@ class IndxWebHandler(Resource):
                     if pred[0] == "@":
                         continue
 
-                    try:
+                    # XXX TODO do something better
+                    if pred.startswith("http://") or pred.startswith("https://"):
                         pred_uriref = URIRef(pred)
-                    except Exception as e:
+                    else:
                         pred_uriref = URIRef(base_uri + "property/" + pred)
 
                     for val in obj[pred]:
                         if "@id" in val:
                             value = val["@id"]
-                            try:
+
+                            # XXX TODO do something better
+                            if value.startswith("http://") or value.startswith("https://"):
                                 val_uriref = URIRef(value)
-                            except Exception as e:
+                            else:
                                 val_uriref = URIRef(base_uri + "value/" + value)
 
                             graph.add( (obj_uriref, pred_uriref, val_uriref) )
