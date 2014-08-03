@@ -44,14 +44,15 @@ class IndxConnectionPool:
         """ Remove all connections for a named database - used before deleting that database. """
         logging.debug("IndxConnectionPool removeAll {0}".format(db_name))
         d_list = []
-        for conn_str in self.conn_strs[db_name]:
-            for conn in self.connections[conn_str].getInuse():
-                d_list.append(conn.close())
-            for conn in self.connections[conn_str].getFree():
-                d_list.append(conn.close())
+        if db_name in self.conn_strs:
+            for conn_str in self.conn_strs[db_name]:
+                for conn in self.connections[conn_str].getInuse():
+                    d_list.append(conn.close())
+                for conn in self.connections[conn_str].getFree():
+                    d_list.append(conn.close())
 
-        del self.connections[conn_str]
-        del self.conn_strs[db_name]
+                del self.connections[conn_str]
+            del self.conn_strs[db_name]
 
         dl = DeferredList(d_list)
         return dl
