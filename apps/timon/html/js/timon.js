@@ -1,7 +1,24 @@
 /* jshint undef: true, strict:false, trailing:false, unused:false, -W110 */
-/* global require, exports, console, process, module, describe, it, expect, jasmine, angular */
+/* global require, exports, console, process, module, describe, it, expect, jasmine, angular, _, $ */
 angular.module('timon',['indx', 'ngAnimate'])
-	.filter('orderObjectBy', function() {
+	.directive('entercall', function() { 
+		return {
+			link:function($element, $attributes) { 
+				console.log('link .. ', $element, $attributes);
+			},
+			controller:function($scope, $element, $attrs) { 
+				var el = $element[0],
+					fn = $attrs.entercall;
+				console.log('element >> ', $scope, el, fn);
+				$(el).on('keydown', function(evt) { 
+					if (evt.keyCode == 13) { 
+						$scope.$eval(fn); 
+						evt.preventDefault();
+					}
+				});
+			}
+		};
+	}).filter('orderObjectBy', function() {
 		return function(items, field, reverse) {
 		    var filtered = [];
 		    angular.forEach(items, function(item) { filtered.push(item);  });
@@ -34,6 +51,7 @@ angular.module('timon',['indx', 'ngAnimate'])
 		};
 
 		$scope._ = _;
+		$scope.input = {};
 
 		var initialise = function(boxid) { 
 			// kill previous queries
@@ -72,10 +90,10 @@ angular.module('timon',['indx', 'ngAnimate'])
 		$scope.addFollowing = function(url) { 
 			console.log('adding following url ... ', url);
 			var id = 'following-'+url;
-			return box.obj(id).set({url:url, followed:new Date(), type:'timfollow'}).save();
+			box.obj(id).set({url:url, followed:new Date(), type:'timfollow'}).save();
+			return true;
 		};
 		$scope.addPost = function(body) { 
-			console.log('add post >> ', body);
 
 			var id = 'timpost-'+u.guid(), 
 				username = $scope.login.username, 
@@ -94,7 +112,8 @@ angular.module('timon',['indx', 'ngAnimate'])
 					.fail(function(err) { console.error('error posting tweet', err); d.reject(); });
 			}).fail(function(err) { console.error('error getting author ', err); d.reject(); });
 
-			return d.promise();
+			// return d.promise();
+			return true;
 		};
 		$scope.deletePost = function(m) { 
 			delete $scope.timeline[m.id];
@@ -102,13 +121,18 @@ angular.module('timon',['indx', 'ngAnimate'])
 				console.info('deleted ', m.id);
 			}).fail(function(err) { console.error('failed to delete', m.id, err); });
 		};
-		$scope.clearNewPostInput = function() { 
-			console.log('clearnewpostinput');
-			$scope.newpostinput.text = '';
+		$scope.clearInput = function(name) { 
+			$scope.input[name] = '';
+			return true;
 		};
 		$scope.closeAddFollowing = function() { 
 			$("#addFollowingModal").modal('hide');
 		};
+		$scope.deleteFollowing = function(m) { 
+			m.destroy();
+			sa(function() { delete $scope.following[m.peek('url')] });
+		};
+
 		$scope.$watch('selected_box', function(boxid) {	initialise(boxid); });
 
 		window.$s = $scope;

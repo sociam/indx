@@ -10,6 +10,9 @@
 	<title>timon - tw-inspired microblog on indx</title>
 </head>
 <body ng-app="timon" ng-controller="main" ng-cloak>
+  <toolbar box-var='selected_box' username-var='userLoggedIn'></toolbar>
+  <h1 ng-if="!userLoggedIn">please log in</h1>
+  <!-- --------- add Following Modal -------------------------->
   <div class="addFollowingModal modal fade" id="addFollowingModal">
     <div class="modal-dialog">
       <div class="modal-content">
@@ -19,15 +22,43 @@
         </div>
         <div class="modal-body">
           <h5><a href="" target="_blank">WebID</a> or channel URI:</h5>
-          <input type="text" ng-model="new_following_url" placeholder='https://'></input>
+          <input type="text" ng-model="input.new_following_url" placeholder=' channel url ' entercall='addFollowing(input.new_following_url) && clearInput("new_following_url") && closeAddFollowing()'></input>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-          <button type="button" class="btn btn-primary" ng-click="(addFollowing(new_following_url) || true) && (new_following_url = '') || closeAddFollowing()">+ add following</button>
+          <button type="button" class="btn btn-primary" ng-click="addFollowing(input.new_following_url) && clearInput('new_following_url')|| closeAddFollowing()">+ add following</button>
         </div>
       </div><!-- /.modal-content -->
     </div><!-- /.modal-dialog -->
   </div><!-- /.modal -->  
+  <!-- --------- manage Following Modal --------------------------> 
+  <div class="followingModal modal fade" id="followingModal">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+          <h4 class="modal-title">following:</h4>
+        </div>
+        <div class="modal-body">
+          <div class="following_list">
+            <table>
+              <tr ng-repeat="n in following | orderObjectBy:'followed':true">
+                 <td class="url"><a href="" target="_top">{{ n.peek('url') }}</a></td><td> <div class="btn" ng-click="deleteFollowing(n)">&times;</div> </td>
+              </tr>
+            </table>
+          </div>
+          <div class="addchan">add a follow:
+              <input type="text" ng-model="input.new_following_url" placeholder=' channel url ' entercall="addFollowing(input.new_following_url) && clearInput('new_following_url')">
+              <button type="button" class="btn btn-primary" ng-click="addFollowing(input.new_following_url) && clearInput('new_following_url') && closeAddFollowing()">+ add</button>
+          </div> 
+        </div><!--
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        </div>-->
+      </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+  </div><!-- /.modal -->    
+  <!-- --------- config Modal --------------------------> 
   <div class="configModal modal fade" id="configModal">
     <div class="modal-dialog">
       <div class="modal-content">
@@ -51,21 +82,26 @@
       </div><!-- /.modal-content -->
     </div><!-- /.modal-dialog -->
   </div><!-- /.modal -->  
-  <toolbar box-var='selected_box' username-var='userLoggedIn'></toolbar>
-  <h1 ng-if="!userLoggedIn">please log in</h1>
+  <!-- --------- Main --------------------------> 
   <div class="timonmain" ng-if="userLoggedIn">
     <div class="profilecard">
       <div class="identity">
         <div class="name">{{ name }}</div>
         <div class="configbtn btn glyphicon glyphicon-cog" data-toggle='modal' data-target='#configModal'></div>
-        <div class="stats">following <div class="count">{{ _(following).pairs().length }}<span class="addbtn" data-toggle='modal' data-target='#addFollowingModal'>+</span></div></div>
+        <div class="stats">
+          <span data-toggle='modal' data-target='#followingModal'>following</span>
+          <div class="count">
+            <span data-toggle='modal' data-target='#followingModal'>{{ _(following).pairs().length }}</span> 
+            <span class="addbtn" data-toggle='modal' data-target='#addFollowingModal'>+</span>
+          </div>
+        </div>
         <div class="stats">followers <div class="count">{{ followers.length }}</div></div>
       </div>
       <div class="compose">
-        <textarea class="newpostinput" ng-model="newpostinput.text" ng-focus='newfocus=true'></textarea>
+        <textarea class="newpostinput" ng-model="input.newpostinput" ng-focus='newfocus=true' entercall="addPost(input.newpostinput) && clearInput('newpostinput')" autofocus></textarea>
         <div class="newpoststats" ng-if="newfocus">
-          <div class="length">{{ 140 - newpostinput.text.length }}</div>
-          <div class="submit btn btn-default" ng-disabled='newpostinput.text.trim().length === 0' ng-click="addPost(newpostinput.text) && (newpostinput.text = '')">post</div>
+          <div class="length">{{ 140 - input.newpostinput.length }}</div>
+          <div class="submit btn btn-default" ng-disabled='input.newpostinput.trim().length === 0' ng-click="addPost(input.newpostinput) && clearInput('newpostinput')">post</div>
         </div>
       </div>
     </div>
