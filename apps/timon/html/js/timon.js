@@ -109,6 +109,10 @@ angular.module('timon',['indx', 'ngAnimate'])
 		$scope.closeAddFollowing = function() { 
 			$("#addFollowingModal").modal('hide');
 		};
+		$scope.deleteFollowing = function(m) { 
+			m.destroy();
+			sa(function() { delete $scope.following[m.peek('url')] });
+		};
 		$scope.$watch('selected_box', function(boxid) {	initialise(boxid); });
 
 		window.$s = $scope;

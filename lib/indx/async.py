@@ -437,7 +437,7 @@ class IndxDiffListener:
         new_deleted = []
         for id_d in diff['deleted']:
             if id_d in id_filter:
-                new_deleted.push(id_d)
+                new_deleted.append(id_d)
         diff['deleted'] = new_deleted
 
         fields = ['added', 'changed']

@@ -7,14 +7,57 @@ html, body {
 body {
 	background-color:#eee;
 }
+
+// all dialogs
 .modal-dialog {
 	color:#888;
 	margin:70px auto;
 }
+
+// addFollowingModal
 .addFollowingModal {
 	input {
 		width:100% !important;
 		font-size:14pt;
+	}
+}
+
+// followingModal
+.followingModal {
+	.modal-footer, .modal-header { background-color:#fefefe !important; } 
+	.modal-body {
+		padding:0px;
+	}
+	.following_list {
+		width:100%;
+		border:1px solid #eee;
+		height:316px;
+		overflow-y:scroll;
+		table {
+			width:100%;
+			td.url { 
+				width:91%;	
+				padding:3px 20px;
+			}
+			tr { 
+				border-bottom:1px solid #eee;
+			}
+		}
+	}
+	.addchan { 
+		margin:0px;
+		background:#EFEFEF !important;
+		padding:4px 10px 10px 10px;
+		font-weight:200;
+		input { 
+			color:#222;
+			font-weight:400;
+			margin:0px 10px;
+			width:400px;
+		}
+	}
+	.modal-footer { 
+		margin-top:0px;
 	}
 }
 
