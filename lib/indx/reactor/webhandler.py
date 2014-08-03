@@ -43,7 +43,10 @@ class IndxWebHandler(Resource):
             ("application/json", self.indxJSONRender),
             ("text/json", self.indxJSONRender),
             ("application/ld+json", self.jsonLDRender),
-            ("application/rdf+xml", self.rdfXMLRender),
+            ("application/rdf+xml", self.rdfXMLRender), #xml
+            ("text/n3", self.rdfN3Render), #n3 
+            ("text/turtle", self.rdfTurtleRender), #turtle
+            ("application/n-triples", self.rdfNTriplesRender), #nt
         ]
 
     def render(self, request):
@@ -127,9 +130,25 @@ class IndxWebHandler(Resource):
         else:
             logging.debug('In IndxWebHandler didnt call request.finish(), because it was already disconnected (in jsonLDRender)')
 
-
     def rdfXMLRender(self, request, indx_request, indx_response, typ):
-        """ Render the output as RDF/XML (LD-compatible) format. """
+        return self.rdfRender(request, indx_request, indx_response, typ, "xml")
+
+    def rdfN3Render(self, request, indx_request, indx_response, typ):
+        return self.rdfRender(request, indx_request, indx_response, typ, "n3")
+
+    def rdfTurtleRender(self, request, indx_request, indx_response, typ):
+        return self.rdfRender(request, indx_request, indx_response, typ, "turtle")
+
+    def rdfNTriplesRender(self, request, indx_request, indx_response, typ):
+        return self.rdfRender(request, indx_request, indx_response, typ, "nt")
+
+
+    """ RDF conversion functions. """
+    #TODO move out to another module
+
+
+    def rdfRender(self, request, indx_request, indx_response, typ, output_format):
+        """ Convert objects to an RDF graph, serialize in the specified format and write them as a response. """
         # indx_response.data
 
         logging.debug("IndxWebHandler rdfXMLRender data: {0}".format(indx_response.data))
@@ -147,13 +166,14 @@ class IndxWebHandler(Resource):
 
                 request.write(response)
                 request.finish()
-                logging.debug('In IndxWebHandler just called request.finish() with code %d in rdfXMLRender' % indx_response.code)
+                logging.debug('In IndxWebHandler just called request.finish() with code %d in rdfRender' % indx_response.code)
             else:
-                logging.debug('In IndxWebHandler didnt call request.finish(), because it was already disconnected (in rdfXMLRender)')
+                logging.debug('In IndxWebHandler didnt call request.finish(), because it was already disconnected (in rdfRender)')
             return
 
         base_uri = indx_request.uri.split("/{0}".format(indx_request.base_path))[0] + "/{0}".format(indx_request.base_path) + "/"
-        response = self._objsToRDFXML(base_uri, indx_response.data['data'].items())
+        graph = self._objsToRDF(base_uri, indx_response.data['data'].items())
+        response = graph.serialize(format=output_format)
 
         if not request._disconnected:
             request.setResponseCode(indx_response.code, indx_response.message)
@@ -165,20 +185,17 @@ class IndxWebHandler(Resource):
 
             request.write(response)
             request.finish()
-            logging.debug('In IndxWebHandler just called request.finish() with code %d in rdfXMLRender' % indx_response.code)
+            logging.debug('In IndxWebHandler just called request.finish() with code %d in rdfRender' % indx_response.code)
         else:
-            logging.debug('In IndxWebHandler didnt call request.finish(), because it was already disconnected (in rdfXMLRender)')
+            logging.debug('In IndxWebHandler didnt call request.finish(), because it was already disconnected (in rdfRender)')
 
 
-    """ RDF conversion function. """
-    #TODO move out to another module
-
-    def _objsToRDFXML(self, base_uri, obj_dict):
+    def _objsToRDF(self, base_uri, obj_dict):
         graph = Graph()
         nsman = NamespaceManager(graph)
 
         for obj_id, obj in obj_dict:
-            logging.debug("IndxWebHandler rdfXMLRender obj_id: {0}, obj: {1}".format(obj_id, obj))
+            logging.debug("IndxWebHandler _objsToRDF obj_id: {0}, obj: {1}".format(obj_id, obj))
             if obj_id[0] != "@":
                 
                 obj_uriref = URIRef("{0}{1}".format(base_uri, obj_id))
@@ -207,5 +224,5 @@ class IndxWebHandler(Resource):
                         else:
                             continue
 
-        return graph.serialize(format="xml")
+        return graph
 
