@@ -117,7 +117,9 @@ class IndxWebID:
 
         for s, p, o in self.get_graph().triples( (None, rdflib.URIRef("{0}{1}".format(self.NS_RDF, "type")), rdflib.URIRef("{0}{1}".format(self.NS_SIOC, "Post"))) ):
             logging.debug("IndxWebID get_posts, type sioc:Post s: {0}, p: {1}, o: {2}".format(s, p, o))
-            posts.add(o)
+            result = self._parse("{0}".format(s))
+            logging.debug("IndxWebID get_posts result of parsing {0}: {1}".format(s, result))
+            posts.add(s)
 
         posts_full = []
         for post in posts:
