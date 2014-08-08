@@ -64,14 +64,20 @@ angular.module('timon',['indx', 'ngAnimate'])
 			}).fail(function(err) {  console.error('error getting box ', err); });
 
 		};
+		var getChannelURL = function(store,box,id) {
+			var url = [store._getBaseURL(), box.id, id].join('/');
+			console.info('channel url ', url);
+			return url;
+		};
 		var createChannel = function(box, ownerlogin, ownername) {
 			var d = u.deferred();
 			box.query({type:'channel'}).then(function(x) { 
 				if (x.length == 0) { 
+					var id = 'channel-main';
 					console.log(' no channels ');
-					box.obj(['channel-main', ownerlogin.username]).then(function(objs) { 
+					box.obj([id, ownerlogin.username]).then(function(objs) { 
 						var ch = objs[0], user = objs[1];
-						ch.set({type:'channel', owner:user, ownername:ownername, created: new Date()});
+						ch.set({type:'channel', owner:user, ownername:ownername, created: new Date(), url:getChannelURL(store,box,id)});
 						ch.save().then(function(c) { d.resolve([c]); }).fail(d.reject);
 					}).fail(d.reject);
 				} else {
@@ -86,13 +92,10 @@ angular.module('timon',['indx', 'ngAnimate'])
 			return true;
 		};
 		$scope.addPost = function(body) { 
-
 			var id = 'timon-post-'+u.guid(), 
 				username = $scope.login.username, 
 				name=  $scope.name, 
 				d = u.deferred();
-
-
 			box.obj($scope.login.username).then(function(author) { 
 				if (!author.peek('name')) { 
 					author.set({name:name});
