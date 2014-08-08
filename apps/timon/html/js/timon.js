@@ -37,6 +37,7 @@ angular.module('timon',['indx', 'ngAnimate'])
 			diffQs = [];			
 
 			store.getBox(boxid).then(function(b) { 
+				window.b = b;
 				box = b;
 				b.standingQuery({ type:'micropost' }, function(message) { 
 					sa(function() { $scope.timeline[message.id] = message; });
