@@ -18,6 +18,7 @@
 import logging
 import uuid
 import indx.indx_pg2 as database
+from indx.postconnect import IndxPostConnect
 from indx.exception import ResponseOverride
 from indx.objectstore_async import ObjectStoreAsync
 from twisted.internet.defer import Deferred
@@ -94,10 +95,11 @@ class Token:
             conns = {"conn": get_conn, "sync_conn": get_sync, "indx_conn": get_indx_conn}
             store = ObjectStoreAsync(self.indx_reactor, conns, self.username, self.boxid, self.appid, self.clientip, self.server_id)
 
-            def upgrade_cb(result):
-                result_d.callback(store)
-
-            store.schema_upgrade().addCallbacks(upgrade_cb, result_d.errback)
+#            def upgrade_cb(result):
+#                result_d.callback(store)
+#
+#            store.schema_upgrade().addCallbacks(upgrade_cb, result_d.errback)
+            self.call_postconnects(store).addCallbacks(lambda empty: result_d.callback(store), result_d.errback)
 
         if self.best_acct is None:
             self.db.lookup_best_acct(self.boxid, self.username, self.password).addCallbacks(got_acct, result_d.errback)
@@ -105,6 +107,26 @@ class Token:
             got_acct(self.best_acct)
 
         return result_d
+
+
+    def call_postconnects(self, store):
+        """ Call the post connect query runners before handing the token and store back to the caller. """
+        logging.debug("Token call_postconnects")
+        return_d = Deferred()
+
+        ipc = IndxPostConnect(store)
+        pcs = ipc.get_post_connects()
+        
+        def doNext(empty):
+            logging.debug("Token call_postconnects, doNext")
+            if len(pcs) > 0:
+                pc = pcs.pop(0)(store)
+                pc.run_post_connect().addCallbacks(doNext, return_d.errback)
+            else:
+                return_d.callback(True)
+
+        doNext(None)
+        return return_d
 
 
     def verify(self,boxname,appname,origin):
