@@ -39,12 +39,12 @@ angular.module('timon',['indx', 'ngAnimate'])
 			store.getBox(boxid).then(function(b) { 
 				window.b = b;
 				box = b;
-				b.standingQuery({ type:'micropost' }, function(message) { 
+				b.standingQuery({ type:'post' }, function(message) { 
 					sa(function() { $scope.timeline[message.id] = message; });
 				}).then(function(diffid) { diffQs.push(diffid); }).fail(function(err) { 
 					console.error('error setting up standing query for following ', err); 
 				});
-				b.standingQuery({ type:'microfollow' }, function(following) {
+				b.standingQuery({ type:'follow' }, function(following) {
 					sa(function() { $scope.following[following.peek('url')] = following; });
 				}).then(function(diffid) { diffQs.push(diffid); }).fail(function(err) { 
 					console.error('error setting up standing query for following ', err); 
@@ -54,13 +54,11 @@ angular.module('timon',['indx', 'ngAnimate'])
 				}).then(function(diffid) { diffQs.push(diffid); }).fail(function(err) { 
 					console.error('error setting up standing query for following ', err); 
 				});
-
 				get_user(store).then(function(login, name) { 
 					createChannel(b,login,name);
 					$scope.login = login; 
 					$scope.name = name; 
 				});
-
 			}).fail(function(err) {  console.error('error getting box ', err); });
 
 		};
@@ -74,7 +72,7 @@ angular.module('timon',['indx', 'ngAnimate'])
 			box.query({type:'channel'}).then(function(x) { 
 				if (x.length == 0) { 
 					var id = 'channel-main';
-					console.log(' no channels ');
+					// console.log(' no channels ');
 					box.obj([id, ownerlogin.username]).then(function(objs) { 
 						var ch = objs[0], user = objs[1];
 						ch.set({type:'channel', owner:user, ownername:ownername, created: new Date(), url:getChannelURL(store,box,id)});
@@ -88,20 +86,21 @@ angular.module('timon',['indx', 'ngAnimate'])
 		};
 		$scope.addFollowing = function(url) { 
 			var id = 'following-'+url;
-			box.obj(id).set({url:url, followed:new Date(), type:'microfollow'}).save();
+			box.obj(id).set({url:url, followed:new Date(), type:'follow'}).save();
 			return true;
 		};
-		$scope.addPost = function(body) { 
+		$scope.addPost = function(body, channel) { 
 			var id = 'timon-post-'+u.guid(), 
 				username = $scope.login.username, 
 				name=  $scope.name, 
 				d = u.deferred();
+			channel = channel ? channel : $scope.channels['channel-main'];
 			box.obj($scope.login.username).then(function(author) { 
 				if (!author.peek('name')) { 
 					author.set({name:name});
 					author.save();
 				}
-				box.obj(id).set({body:body, author:author, created: new Date(), type:'micropost'})
+				box.obj(id).set({body:body, author:author, created: new Date(), type:'post', channel:channel})
 					.save()
 					.then(d.resolve)
 					.fail(function(err) { console.error('error posting tweet', err); d.reject(); });
