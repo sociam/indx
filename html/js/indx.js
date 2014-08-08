@@ -863,7 +863,7 @@ angular
 						console.info('standingQuery() got diffid >> ', diffid);
 						d.resolve({
 							diffid: function() { return diffid; },
-							stop:function() { wsh.unsubscribe_diff(diffid);	}
+							stop:function() { this_.wsh.unsubscribeDiffQuery(diffid);	}
 						});
 					}).fail(d.reject);
 				}).fail(d.reject);

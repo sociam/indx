@@ -1,8 +1,8 @@
 {
-	"name": "channel manager",
+	"name": "transforms",
 	"version": 0.1,
 	"type":["app"],
-	"description": "channel manager",
+	"description": "transforms",
 	"on_boot": 0,
 	"configpanel":"html/index.html",
 	"icons": { 

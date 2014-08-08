@@ -31,7 +31,7 @@ angular.module('timon',['indx', 'ngAnimate'])
 		    if(reverse) filtered.reverse();
 		    return filtered;
 		};
-	}).controller('main', function($scope, client, utils, channels) { 
+	}).controller('main', function($scope, client, utils, transformers) { 
 		
 		var store = client.store, 
 			u = utils, box, diffQs = [],
@@ -137,7 +137,7 @@ angular.module('timon',['indx', 'ngAnimate'])
 
 		window.$s = $scope;
 		window.store = store;
-		window.chan = channels;
+		window.xfn = transformers;
 	});
 
 console.log('hello hello');
