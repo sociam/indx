@@ -8,7 +8,7 @@ angular.module('timon')
 			scope:{m:'=model'},
 			replace:true,
 			templateUrl:'tmpl/tipost.html',
-			controller:function($scope, channels, utils) {
+			controller:function($scope, utils) {
 				// not much needed here
 				window.tweet = $scope.m;
 				var u = utils;

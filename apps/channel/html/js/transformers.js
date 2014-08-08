@@ -2,73 +2,66 @@
 /* global require, exports, console, process, module, describe, it, expect, jasmine*/
 
 angular.module('test',['indx'])
-	.controller('main', function($scope, client, utils, channels) { 
-		
+	.controller('main', function($scope, client, utils, transformers) { 
+		console.log('channeltest');
 		var store = client.store, u = utils,
 			boxes, sa = function(fn) { return u.safeApply($scope, fn); },
 			guid = u.guid();
 
-		$scope.channels = [];
+		$scope.transformers = [];
 		$scope.people = [];
 		$scope.test = {};
-		channels.getAllBoxes().then(function(boxes) { 
+
+		transformers.getAllBoxes().then(function(boxes) { 
 			$scope.boxes = boxes;
-			console.log("!!!!!!!!!!!!! GET ALL BOXES CONT >>>>>>>>>>>>>> ", boxes);
 			sa(function() { 
 				console.log('boxes >> ', boxes, boxes.map(function(bb) { return bb.id; }));
 				$scope.boxids = boxes.map(function(bb) { return bb.getID(); }); 
 			});
-		}).fail(function(err) { console.error('error getting boxes >> '); });
+		}).fail(function(err) { 
+			console.error('error getting boxes >> '); 
+		});
 
-		var loadChannels = function() { 
-			channels.getChannels().then(function(chnls) { 
-				sa(function() { $scope.channels = chnls; });
+		var startTrans = function() { 
+			$scope.transformers.map(function(t) { t.stop(); });
+			transformers.getTransformers().then(function(chnls) { 
+				sa(function() { $scope.transformers = chnls; });
 				chnls.map(function(x) { 
-					x.start().then(function(x) { console.log('started channel ', x.name); });
+					x.start().then(function(x) { console.log('started transformer ', x.name); });
 				});
 			});
 		};
 		$scope.defineTests = function(srcboxid, dstboxid) { 
 			var d = u.deferred();
-			u.when(channels.getTestDefs(srcboxid,dstboxid).map(function(td) { 
-				console.log('test definition ', td);
+			u.when(transformers.getTestDefs(srcboxid,dstboxid).map(function(td) { 
 				var dd = u.deferred();
 				store.getBox(srcboxid).then(function(box) { 
-					console.log('got box ', box.id);
-					channels.define('test-channel-'+td.name,box,td).then(dd.resolve).fail(function() { 
-						console.error('error defining channel', err); 
+					transformers.define('test-transformer-'+td.name,box,td).then(dd.resolve).fail(function() { 
+						console.error('error defining transformer', err); 
 						dd.reject();
 					});
 				}).fail(dd.reject);
 				return dd.promise();
 			})).then(function() { 
 				console.log('all defined');
-				loadChannels();
+				startTrans();
 			});
 		};
-
-		$scope.deleteChannel = function(c) { 
-			console.log('deleting obj ', c.obj);
-			c.obj.destroy().then(function(x) { 
-				loadChannels();
-			}).fail(function(err) { 
-				console.error('error deleting ', err); 
-			});
+		$scope.deleteTransformer = function(c) { 
+			// called with the obj, not with the thing.
+			c.obj.destroy().then(function(x) { 	startTrans(); }).fail(function(err) { console.error('error deleting ', err); });
 		};
 
 		$scope.createPerson = function(boxname) {
 			var box = $scope.boxes.filter(function(x) { return x.id === boxname; })[0],
 				uid = 'test-person-'+u.guid();
-			console.log('saving in box ', box, uid);
 			box.obj(uid).set({ given_name:'Fred'+u.guid(4).toLowerCase(), surname: 'Smith'+u.guid(6).toLowerCase(), type:"Person", age:Math.random()*100 }).save().then(function(x) { 
-				console.log('!!!!!!!!!!!!!! done creating ', x); 
 				sa(function() { $scope.people.push(x);  });
 			});
 		};
 
-		loadChannels();
-
+		startTrans();
 		window.$s = $scope;
 		window.store = store;
-		window.chan = channels;
+		window.chan = transformers;
 	});

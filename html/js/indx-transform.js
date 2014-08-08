@@ -1,21 +1,21 @@
 /* jshint undef: true, strict:false, trailing:false, unused:false */
 /* global require, exports, console, process, module, angular, Backbone */
 /**
- *  Channels ---
+ *  transformers ---
  *  This is an INDX service that grabs data from indx and turns it into magical RDF!
  *  Complies with INDX Entity Semantics 1.0 for People, Places, and Activities
  */
 
-angular.module('indx').factory('channels', function(client, utils)  {
+angular.module('indx').factory('transformers', function(client, utils)  {
 
     var u = utils,
         store = client.store;
 
-    var testChannelDefs = function(srcboxid, dstboxid) { 
-        var test_channels = [];
-        // let's make a happy indx person -> foaf channel
+    var testTransformerDefs = function(srcboxid, dstboxid) { 
+        var test_transformers = [];
+        // let's make a happy indx person -> foaf transformer
 
-        test_channels.push({
+        test_transformers.push({
             name:'foafiser-'+srcboxid+'-'+dstboxid,
             query: { type:'Person' },
             destbox:dstboxid,
@@ -24,8 +24,6 @@ angular.module('indx').factory('channels', function(client, utils)  {
                     rdf = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
                     rdfs = 'http://www.w3.org/2000/01/rdf-schema#',
                     d = u.deferred();
-
-                console.log('yo ', pobj, box, u);
 
                 box.getObj(foafns+'Agent').then(function(foafAgent) {
                     var foafag = {};                    
@@ -39,13 +37,15 @@ angular.module('indx').factory('channels', function(client, utils)  {
                 return d.promise();
             }
         });
-        return test_channels;
+        return test_transformers;
     };
-    var defineChannel = function(id, box, definition) { 
+
+
+    var defineTransformer = function(id, box, definition) { 
         var d = u.deferred();
         box.getObj(id).then(function(x) { 
             x.set({
-                type:'IndxChannel',
+                type:'Transformer',
                 name: definition.name,
                 query: JSON.stringify(definition.query),
                 destbox: definition.destbox,
@@ -57,9 +57,10 @@ angular.module('indx').factory('channels', function(client, utils)  {
     };
 
     // in-memory representation
-    var Channel = Backbone.Model.extend({ 
+    var Transformer = Backbone.Model.extend({ 
         initialize:function(params) {
             // takes in params { obj: object }
+
             var obj = this.obj = params.obj, 
                 transformsrc = this.transformsrc = obj.peek('transform'), 
                 querysrc = this.querysrc = obj.peek('query'),
@@ -85,7 +86,7 @@ angular.module('indx').factory('channels', function(client, utils)  {
                 console.warn('Query src not available ', obj);
             }
             if (!destbox) { 
-                console.warn('no destination box specified for channel ', obj);
+                console.warn('no destination box specified for transformer ', obj);
                 return;
             }
             this.srcbox = obj.box;
@@ -100,7 +101,7 @@ angular.module('indx').factory('channels', function(client, utils)  {
             var startd = u.deferred(), this_ = this;
             if (this.livequery) {  this.livequery.stop();  }
             this.readyd.then(function() { 
-                this_.livequery = this_.srcbox.standingQuery(this_.query, function(result) { 
+                this_.srcbox.standingQuery(this_.query, function(result) { 
                     // callback for new result
                     this_.trigger('incoming', result);
                     console.log('new standing query result >> ', result);
@@ -115,6 +116,12 @@ angular.module('indx').factory('channels', function(client, utils)  {
                 }).fail(function(err) { console.error('error starting standingQuery ... ', err); startd.reject(); });
             }).fail(startd.reject);
             return startd.promise();
+        },
+        stop: function() {
+            if (this.livequery) { 
+                this.livequery.stop(); 
+                delete this.livequery;
+            }
         },
         _make_resultd: function(oid) { 
             var d = u.deferred();
@@ -156,30 +163,35 @@ angular.module('indx').factory('channels', function(client, utils)  {
 
     var getAllBoxes = function() {
         // select only the boxes that we have read perms on
+        console.log('boxes .. ');
         var D = u.deferred();
         store.getBoxList().then(function(boxlist) {
+            console.log('boxlist', boxlist);
             u.when(boxlist.map(function(bid) { 
                 var d = u.deferred();
                 // if we fail, that means we probably don't have read perms, so just skip
                 store.getBox(bid).then(d.resolve).fail(function() { d.resolve(); });
                 return d.promise();
-            })).then(function(boxes) { D.resolve(boxes.filter(function(x) { return x; })); }).fail(D.reject);
+            })).then(function(boxes) { 
+                console.log('then');
+                D.resolve(boxes.filter(function(x) { return x; })); 
+            }).fail(D.reject);
         }).fail(D.reject);
         return D.promise();
     };
 
     return {
-        Channel:Channel,
-        getTestDefs:testChannelDefs,
+        Transformer:Transformer,
+        getTestDefs:testTransformerDefs,
         getAllBoxes:getAllBoxes,
-        getChannels:function() { 
-            // gets all channels from all boxes you have connections to
+        getTransformers:function() { 
+            // gets all transformers from all boxes you have connections to
             var d = u.deferred();
             getAllBoxes().then(function(boxes) { 
                 u.when(boxes.map(function(box) { 
                     var dc = u.deferred();
-                    box.query({type:'IndxChannel'}).then(function(chobjs) {
-                        dc.resolve(chobjs.map(function(x) { return new Channel({obj:x}); }));
+                    box.query({type:'Transformer'}).then(function(chobjs) {
+                        dc.resolve(chobjs.map(function(x) { return new Transformer({obj:x}); }));
                     }).fail(dc.reject);
                     return dc.promise();
                 })).then(function(chsets) { 
@@ -188,7 +200,7 @@ angular.module('indx').factory('channels', function(client, utils)  {
             }).fail(d.reject);
             return d.promise();
         },
-        define:defineChannel
+        define:defineTransformer
     };
 
 });
@@ -211,7 +223,7 @@ angular.module('indx').factory('channels', function(client, utils)  {
 
     var instantiate = function(indxhost) { 
         var d = u.deferred();
-        var svc = Object.create(ChannelerService);
+        var svc = Object.create(transformererService);
         svc.init(path.dirname(module.filename)).then(function() { 
             if (indxhost){ svc.setHost(indxhost); }
             d.resolve(svc);
@@ -224,12 +236,12 @@ angular.module('indx').factory('channels', function(client, utils)  {
         return d.promise();
     };
 
-    module.exports = {  makeTestChannels : makeTestChannels  };
+    module.exports = {  makeTesttransformers : makeTesttransformers  };
 
     if (require.main === module) { 
         instantiate().then(function(service) { service.check_args(); });
     }
-    var ChannelerService = Object.create(nodeservice.NodeService, {
+    var transformererService = Object.create(nodeservice.NodeService, {
         run: { 
             value: function() {
                 var this_ = this, config = this.config, store = this.store,

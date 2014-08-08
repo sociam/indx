@@ -2,8 +2,7 @@
 
 html, body {
 	min-height:100%; 
-	min-width:100%; 
-  
+	min-width:100%;  
 }
 body {
 	background-color:#ddd;
@@ -147,9 +146,7 @@ body {
 		margin-left:360px;
 		margin-top:60px;
 		border-radius:4px;
-		padding-top:6px; 
-		padding-left:14px;
-		padding-right:14px;
+		padding:6px 14px;
 
 			-webkit-transition:all 1.4s ease-in-out;
 			-moz-transition:all 1.4s ease-in-out;
@@ -160,6 +157,7 @@ body {
 			overflow:hidden;
 			padding:10px 0px 10px 10px;
 			border-bottom:1px solid #eee;
+			&:last-child { border-bottom:none; margin-bottom:-6px; }
 			.content {
 				margin-left:47px;
 				.profilepic { 
