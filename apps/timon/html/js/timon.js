@@ -36,19 +36,18 @@ angular.module('timon',['indx', 'ngAnimate'])
 		var store = client.store, 
 			u = utils, box, diffQs = [],
 			sa = function(fn) { return u.safeApply($scope, fn); },
-			guid = u.guid();
-
-		var get_user = function(store) { 
-			var d = u.deferred();
-			store.checkLogin().then(function(l) { 
-				if (l && l.user_metadata) { 
-					var um = JSON.parse(l.user_metadata);
-					if (um && um.name) { return d.resolve(l, um.name); }
-				}
-				d.resolve(l, l.username);
-			}).fail(function(err) { console.error(err); d.reject(); });
-			return d.promise();
-		};
+			guid = u.guid(),
+			get_user = function(store) { 
+				var d = u.deferred();
+				store.checkLogin().then(function(l) { 
+					if (l && l.user_metadata) { 
+						var um = JSON.parse(l.user_metadata);
+						if (um && um.name) { return d.resolve(l, um.name); }
+					}
+					d.resolve(l, l.username);
+				}).fail(function(err) { console.error(err); d.reject(); });
+				return d.promise();
+			};
 
 		$scope._ = _;
 		$scope.input = {};
@@ -76,6 +75,7 @@ angular.module('timon',['indx', 'ngAnimate'])
 				b.standingQuery({ type:'timfollow' }, function(following) {
 					console.info('new following > ', following);
 					sa(function() { $scope.following[following.peek('url')] = following; });
+
 				}).then(function(diffid) { diffQs.push(diffid); }).fail(function(err) { 
 					console.error('error setting up standing query for following ', err); 
 				});

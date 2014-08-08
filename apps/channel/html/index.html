@@ -25,18 +25,19 @@
       <div>
         <h4>destination box:</h4>
         <select ng-model="test.dstbox">
-          <option ng-repeat="b in boxids" value="{{b}}">{{b}}</option>
+          <option ng-repeat="b in boxids" value="{{ b }}">{{b}}</option>
         </select>
       </div>
-      <input  type="text" class="query" ng-model="test.query">
-      <textarea class="transformfn" ng-model="test.transformfn"></textarea>
+      <h4>query:</h4>
+      <textarea class="query-input" ng-model="test.query"></textarea>
+      <h4>transform:</h4>
+      <textarea class="transform-input" ng-model="test.transform"></textarea>
+      <div class="btn btn-default">Make new channel</div>
+      <div class="btn btn-default" ng-click="defineTests(test.srcbox, test.dstbox)" ng-disabled="!(test.srcbox && test.dstbox)">Create Test Channels</div>
     </div>
 
 
-    </textarea>
-    <div class="btn btn-default" ng-click="defineTests(test.srcbox, test.dstbox)" ng-disabled="!(test.srcbox && test.dstbox)">Create Test Channels</div>    
-
-    <table>
+    <table class="rules">
       <tr ng-repeat="c in channels">
         <td>{{ c.name }}</td><td>({{ c.srcbox.id }} -> {{ c.destbox.id }})</td><td><pre> {{ c.querysrc }} </pre></td><td><pre>{{ c.transformsrc }}</pre></td><td><div class='btn btn-danger' ng-click="deleteChannel(c)">x</div></td></tr>
       </tr>
