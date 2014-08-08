@@ -26,29 +26,33 @@ angular.module('timon',['indx', 'ngAnimate'])
 			// kill previous queries
 			if (!(boxid && boxid.length > 0)) { return ; }
 
-			diffQs.map(function(q) { q.stop(); });
-
 			$scope.followers = []; 
 			$scope.following = {};
+			$scope.channels = {};
 			$scope.timeline = {};
 			$scope.people = [];
 			$scope.test = {};
 
+			diffQs.map(function(q) { q.stop(); });
+			diffQs = [];			
+
 			store.getBox(boxid).then(function(b) { 
 				box = b;
 				b.standingQuery({ type:'timpost' }, function(message) { 
-					console.info('new post coming in > ', message);
 					sa(function() { $scope.timeline[message.id] = message; });
 				}).then(function(diffid) { diffQs.push(diffid); }).fail(function(err) { 
 					console.error('error setting up standing query for following ', err); 
 				});
 				b.standingQuery({ type:'timfollow' }, function(following) {
-					console.info('new following > ', following);
 					sa(function() { $scope.following[following.peek('url')] = following; });
-
 				}).then(function(diffid) { diffQs.push(diffid); }).fail(function(err) { 
 					console.error('error setting up standing query for following ', err); 
 				});
+				b.standingQuery({ type:'channel' }, function(cobj) {
+					sa(function() { $scope.channels[channel.id] = cobj; });
+				}).then(function(diffid) { diffQs.push(diffid); }).fail(function(err) { 
+					console.error('error setting up standing query for following ', err); 
+				});				
 			}).fail(function(err) {  console.error('error getting box ', err); });
 
 			get_user(store).then(function(login, name) { 
@@ -58,7 +62,6 @@ angular.module('timon',['indx', 'ngAnimate'])
 		};
 
 		$scope.addFollowing = function(url) { 
-			console.log('adding following url ... ', url);
 			var id = 'following-'+url;
 			box.obj(id).set({url:url, followed:new Date(), type:'timfollow'}).save();
 			return true;
@@ -110,4 +113,3 @@ angular.module('timon',['indx', 'ngAnimate'])
 		window.xfn = transformers;
 	});
 
-console.log('hello hello');
