@@ -18,6 +18,7 @@ import logging
 from twisted.internet import reactor
 from indx.reactor import IndxResponse
 from indx.webserver.session import INDXSession
+from twisted.internet.defer import Deferred
 
 class IndxReactor:
 
@@ -28,6 +29,7 @@ class IndxReactor:
         self.tokens = tokens
         self.tokens.set_reactor(self) # ughh
         self.file_cache = {}
+        self.running_pcs = {}
 
     ### File caching (to prevent multiple reads to static files)
 
@@ -57,6 +59,34 @@ class IndxReactor:
         """ Send a message to subscribers that match the properties specified. """
         # run each matching subscriber's callback in a thread immediately
         map(lambda sub: reactor.callInThread(sub.callback, msg), filter(lambda x: x.matches(match_properties), self.subscribers))
+
+    ###
+    #   Task Runner Handling
+    ###
+
+    def run_post_connect(self, pcc, store):
+        """ Run a post-connect runner on a store.
+            Handles running one per reactor, to stop duplication.
+        """
+        pc_name = pcc.__name__
+
+        already_running = False
+        if pc_name in self.running_pcs:
+            if store in self.running_pcs[pc_name]:
+                already_running = True
+            else:
+                self.running_pcs[pc_name].append(store)
+        else:
+            self.running_pcs[pc_name] = [store]
+
+        if not already_running:
+            pc = pcc(store)
+            d = pc.run_post_connect()
+        else:
+            d = Deferred()
+            d.callback(True)
+        return d
+
 
     ###
     #   Request/URL Handling

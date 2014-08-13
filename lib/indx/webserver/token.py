@@ -120,8 +120,8 @@ class Token:
         def doNext(empty):
             logging.debug("Token call_postconnects, doNext")
             if len(pcs) > 0:
-                pc = pcs.pop(0)(store)
-                pc.run_post_connect().addCallbacks(doNext, return_d.errback)
+                pc = pcs.pop(0)
+                self.indx_reactor.run_post_connect(pc, store).addCallbacks(doNext, return_d.errback)
             else:
                 return_d.callback(True)
 

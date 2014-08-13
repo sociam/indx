@@ -1350,8 +1350,9 @@ class ObjectStoreAsync:
         self.debug("Objectstore update, specified_prev_version: {0}".format(specified_prev_version))
    
         def err_cb(failure):
+            failure.trap(Exception)
             self.error("Objectstore update err_cb, failure: {0}".format(failure))
-            result_d.errback(failure)
+            result_d.errback(Failure(failure.value))
             return
 
         # TODO XXX deal with new_files_oids and delete_files_oids
