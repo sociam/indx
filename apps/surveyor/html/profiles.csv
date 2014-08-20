@@ -1,0 +1,7 @@
+id,name,image,gender,race,gender_pronoun
+d0,"John Smith, MA, MD, FRCP, FESC",img/cases/d0.jpg,male,white,his
+d1,"Benjamin Holdright MA, MD, FRCP, FESC",img/cases/d1.jpg,male,black,his
+d2,"Zenhe Li, MA, MD, FRCP, FESC",img/cases/d2.jpg,male,asian,his
+d3,"Su Wilson, MA, MD, FRCP, FESC",img/cases/d3.jpg,female,white,her
+d4,"Tanya Bailey, MA, MD, FRCP, FESC",img/cases/d4.jpg,female,black,her
+d5,"Su Min, MA, MD, FRCP, FESC",img/cases/d5.jpg,female,asian,her

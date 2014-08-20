@@ -1,0 +1,15 @@
+{
+	"name": "survey runner",
+	"version": 0.1,
+	"type":["app"],
+	"icons": { 
+		"128": "img/share-button-icon.jpg",
+		"512": "img/share-button-icon.jpg" 
+	},
+	"author": [
+		{
+			"name": "eMax",
+			"email": "max@hip.cat"
+		}
+	]
+}

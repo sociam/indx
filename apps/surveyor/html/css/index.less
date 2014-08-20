@@ -1,0 +1,63 @@
+* { box-sizing:border-box; }
+
+.survey {
+	padding:20px;
+}
+.sharingbox {
+}
+
+.c1  {
+	position:relative;
+	padding:38px 10px 38px 10px;
+	border: 1px solid #eee;
+	.nhslogo {
+		position:absolute;
+		right:10px;
+		top:38px;
+		width:200px;
+	}
+	font-size:14pt;
+	padding-right:240px;
+}
+.c2  {
+	position:relative;
+	padding:38px 10px 38px 10px;
+	border: 1px solid #eee;
+	img {
+		padding:0px 20px 20px 0px;
+	}
+	font-size:12pt;
+	padding-right:240px;
+}
+
+
+.question {
+	position:relative;
+	padding:12px 0px 0px 0px;
+	.question-text {
+		margin:10px 0px 10px 0px;
+	}
+	input,textarea{
+		margin:8px 0px 20px 0px;
+	}
+	textarea {
+		width:100%;
+	}
+	.boolean span, .multiple span {
+		&:first-child{
+			margin:0px 0px 0px 0px !important;
+		}
+		margin:0px 0px 0px 20px;
+	}
+	.likert input {
+		&:last-child {
+			margin:0px 20px 0px 20px;
+		}
+		margin:0px 2px 0px 20px;
+	}
+	.nextprev { 
+		position:absolute;
+		right:0px;
+		margin:10px 0px 0px 0px;
+	}
+}

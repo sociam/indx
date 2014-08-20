@@ -1,0 +1,29 @@
+<div class="question">
+	<div class="question-text" ng-bind-html="sce.trustAsHtml(q.question)"></div>
+	<div ng-switch="q.type" ng-show="q.type !== 'none'">
+		<div class="multiple" ng-switch-when="multiple">
+			<span ng-repeat="o in q.options.split(',')">
+				<input ng-model="q.answer" type="radio" name="{{q.qid}}" value="{{o}}">{{o}}</input>
+			</span>
+		</div>
+		<textarea ng-switch-when="paragraph" ng-model="q.answer"></textarea>
+		<div class="boolean" ng-switch-when="boolean">
+			<span ng-repeat="o in q.options.split(',')">
+				<input ng-model="q.answer" type="radio" name="{{q.qid}}" value="{{o}}">{{o}}</input>
+			</span>
+		</div>		
+		<div class="likert" ng-switch-when="likert(5)">
+			<label ng-bind="q.options.split(',')[0]"></label>
+			<input ng-model="q.answer" type="radio" name="{{q.qid}}" value="1">1</input>
+			<input ng-model="q.answer" type="radio" name="{{q.qid}}" value="2">2</input>
+			<input ng-model="q.answer" type="radio" name="{{q.qid}}" value="3">3</input>
+			<input ng-model="q.answer" type="radio" name="{{q.qid}}" value="4">4</input>
+			<input ng-model="q.answer" type="radio" name="{{q.qid}}" value="5">5</input>
+			<label ng-bind="q.options.split(',')[1]"></label>
+		</div>
+	</div>
+	<div class="nextprev">
+		<button class="btn btn-default" ng-show="q.qid > 0" ng-click="prev()">&lt; go back</button>
+		<button class="btn btn-primary" ng-disabled="!q.answer" ng-click="next()">Next &gt;</button>
+	</div>
+</div>
