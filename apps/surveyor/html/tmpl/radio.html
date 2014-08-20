@@ -1,0 +1,6 @@
+<div class="btn-group radio">
+	  <button type="button" ng-class="{btn:true, 'btn-default':true, 'radio-option':true, active:o==model}" 
+	  	value='{{o}}'
+	  	ng-repeat="o in opts" 
+	  	ng-click="setModel(o)">{{ o }}</button>
+</div>
