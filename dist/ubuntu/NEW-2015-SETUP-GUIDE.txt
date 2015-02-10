@@ -1,0 +1,35 @@
+### one-time setup
+
+sudo apt-get update
+sudo apt-get upgrade
+sudo apt-get install git python-dev python-pip python-virtualenv postgresql postgresql-server-dev-all python-psycopg2 libpq-dev npm nodejs nodejs-legacy libffi-dev
+git clone https://github.com/sociam/indx.git
+cd indx
+./setup.sh
+sudo -u postgres createuser indx -P -d -r -l
+    # then type a password for the user
+
+sudo nano /etc/postgresql/9.3/main/pg_hba.conf
+
+    # replace this line:
+
+local   all             all                                     peer
+
+    # with these lines:
+
+local   all             all                                    md5
+host    all             indx          samehost               md5
+
+sudo service postgresql restart
+
+### running the server
+
+source env/bin/activate
+python bin/server.py indx localhost --log-stdout --password indx --no-browser
+    # it will ask for the password you entered above for the indx user
+
+# The first time, it will ask to create an initial user, enter a Username and Password
+
+# You then have the server running at http://IP_ADDRESS:8211  (e.g. http://localhost:8211 if running locally )
+
+
