@@ -24,6 +24,4 @@ source env/bin/activate
 
 # install the required modules
 # emax changed from "--ignore-installed" b/c that wreaks havoc w/ virutalnev
-pip install --upgrade -r requirements.txt
-
-./build.sh
+pip install --upgrade -r requirements.txt && ./build.sh
