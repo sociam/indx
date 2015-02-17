@@ -15,7 +15,8 @@
   "readmeFilename": "README.md",
   "gitHead": "f0fa3eb26cf2b76bfb7a1fcd30a7c38852b68f14",
   "dependencies": {
-    "bower": "~1.2.8",
+    "tmp": "0.0.23",
+    "bower": "1.3.6",
     "gulp": "~3.5.2",
     "gulp-less": "~1.2.1",
     "gulp-util": "~2.2.14",
